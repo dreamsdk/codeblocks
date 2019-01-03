@@ -54,7 +54,6 @@
 #include "debuggeroptionsprjdlg.h"
 #include "editwatchdlg.h"
 
-
 #define implement_debugger_toolbar
 
 // function pointer to DebugBreakProcess under windows (XP+)
@@ -118,6 +117,7 @@ long idMenuInfoPrintElements200 = wxNewId();
 long idMenuInfoCatchThrow = wxNewId();
 
 long idGDBProcess = wxNewId();
+long idLoaderProcess = wxNewId();
 long idTimerPollDebugger = wxNewId();
 
 long idMenuWatchDereference = wxNewId();
@@ -138,6 +138,10 @@ BEGIN_EVENT_TABLE(DebuggerGDB, cbDebuggerPlugin)
     EVT_PIPEDPROCESS_STDOUT(idGDBProcess, DebuggerGDB::OnGDBOutput)
     EVT_PIPEDPROCESS_STDERR(idGDBProcess, DebuggerGDB::OnGDBError)
     EVT_PIPEDPROCESS_TERMINATED(idGDBProcess, DebuggerGDB::OnGDBTerminated)
+
+    EVT_PIPEDPROCESS_STDOUT(idLoaderProcess, DebuggerGDB::OnLoaderOutput)
+    EVT_PIPEDPROCESS_STDERR(idLoaderProcess, DebuggerGDB::OnLoaderError)
+    EVT_PIPEDPROCESS_TERMINATED(idLoaderProcess, DebuggerGDB::OnLoaderTerminated)
 
     EVT_IDLE(DebuggerGDB::OnIdle)
     EVT_TIMER(idTimerPollDebugger, DebuggerGDB::OnTimer)
@@ -528,6 +532,105 @@ void DebuggerGDB::DoWatches()
     m_State.GetDriver()->UpdateWatches(m_localsWatch, m_funcArgsWatch, m_watches);
 }
 
+void DebuggerGDB::LogLoader(const wxString& msg, Logger::level level)
+{
+    Log(msg, level);
+}
+
+#define LOADER_TIMEOUT_MULTIPLIER 100
+bool DebuggerGDB::LaunchLoader(const wxString& cwd)
+{
+    bool loaderStartedSuccessfully = false;
+
+    int maxTries = (GetActiveConfigEx().GetLoaderTimeout() * 1000) / LOADER_TIMEOUT_MULTIPLIER;
+
+    wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
+    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments();
+    wxString cmd = loaderPath + _(" ") + loaderArgs;
+
+    // start the loader process
+    m_pProcessLoader = new PipedProcess(&m_pProcessLoader, this, idLoaderProcess, true, cwd);
+    Log(_("Starting loader: ") + cmd);
+    m_PidLoader = wxExecute(cmd, wxEXEC_ASYNC, m_pProcessLoader);
+
+    if (!m_PidLoader)
+    {
+        delete m_pProcessLoader;
+        m_pProcessLoader = 0;
+        Log(_("failed"), Logger::error);
+    }
+    else if (!m_pProcessLoader->GetOutputStream())
+    {
+        delete m_pProcessLoader;
+        m_pProcessLoader = 0;
+        Log(_("failed (to get loader's stdin)"), Logger::error);
+    }
+    else if (!m_pProcessLoader->GetInputStream())
+    {
+        delete m_pProcessLoader;
+        m_pProcessLoader = 0;
+        Log(_("failed (to get loader's stdout)"), Logger::error);
+    }
+    else if (!m_pProcessLoader->GetErrorStream())
+    {
+        delete m_pProcessLoader;
+        m_pProcessLoader = 0;
+        Log(_("failed (to get loader's stderr)"), Logger::error);
+    }
+
+    wxString loaderReadyMessage = GetActiveConfigEx().GetLoaderReadyMessage();
+    if (!loaderReadyMessage.empty())
+    {
+        Log(_("Waiting for the loader..."));
+
+        wxInputStream *stream = m_pProcessLoader->GetInputStream();
+        wxTextInputStream reader (*stream);
+
+        int tries = 0;
+        bool done = false;
+        do
+        {
+            tries++;
+
+            if (m_pProcessLoader->IsInputAvailable() && stream && !stream->Eof() && stream->CanRead())
+            {
+                wxString line = reader.ReadLine();
+                LogLoader(line);
+                loaderStartedSuccessfully = line.Contains(loaderReadyMessage);
+            }
+
+            Manager::Get()->Yield();
+            wxMilliSleep(LOADER_TIMEOUT_MULTIPLIER);
+
+            done = loaderStartedSuccessfully || (tries > maxTries);
+        }
+        while(!done);
+
+        if (loaderStartedSuccessfully)
+        {
+            Log(_("Loader is now ready. Starting the debugger..."));
+        }
+        else
+        {
+            Log(_("Failed to get the ready message from the loader: timeout"), Logger::error);
+        }
+    }
+    else
+    {
+        loaderStartedSuccessfully = (m_PidLoader);
+        if (loaderStartedSuccessfully)
+        {
+            Log(_("Loader started successfully. Starting the debugger..."));
+        }
+        else
+        {
+            Log(_("Failed to start the loader..."), Logger::error);
+        }
+    }
+
+    return loaderStartedSuccessfully;
+}
+
 int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
 {
     if (m_pProcess)
@@ -867,12 +970,23 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             ShowWindow(windowHandle, SW_HIDE);
     }
     #endif
-    // start the gdb process
+
+    // prepare the debugger
     wxString wdir = m_State.GetDriver()->GetDebuggersWorkingDirectory();
     if (wdir.empty())
         wdir = m_pProject ? m_pProject->GetBasePath() : _T(".");
     DebugLog(_T("Command-line: ") + cmdline);
     DebugLog(_T("Working dir : ") + wdir);
+
+    // start the loader if necessary
+    if (GetActiveConfigEx().IsLoaderNecessary()) {
+        if (!LaunchLoader(wdir)) {
+            Log(_("An issue occurred when starting the loader..."), Logger::error);
+            Log(_("Starting the debugger anyway..."));
+        }
+    }
+
+    // start the gdb process
     int ret = LaunchProcess(cmdline, wdir);
 
     if (!rd.skipLDpath)
@@ -1880,6 +1994,25 @@ void DebuggerGDB::OnGDBTerminated(wxCommandEvent& event)
     MarkAsStopped();
 
     ///killerbot : run there the post shell commands ?
+}
+
+void DebuggerGDB::OnLoaderOutput(wxCommandEvent& event)
+{
+    wxString msg = event.GetString();
+    if (!msg.IsEmpty())
+        LogLoader(msg);
+}
+
+void DebuggerGDB::OnLoaderError(wxCommandEvent& event)
+{
+    wxString msg = event.GetString();
+    if (!msg.IsEmpty())
+        LogLoader(msg);
+}
+
+void DebuggerGDB::OnLoaderTerminated(wxCommandEvent& event)
+{
+    Log(_("Loader finished"));
 }
 
 void DebuggerGDB::KillConsole()

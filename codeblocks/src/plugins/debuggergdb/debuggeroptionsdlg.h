@@ -37,7 +37,11 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
         wxString GetUserArguments(bool expandMacro = true);
         wxString GetDisassemblyFlavorCommand();
         wxString GetInitCommands();
-
+        bool IsLoaderNecessary();
+        wxString GetLoaderExecutable(bool expandMacro = true);
+        wxString GetLoaderArguments(bool expandMacro = true);
+        wxString GetLoaderReadyMessage();
+        int GetLoaderTimeout();
 };
 
 #endif // DEBUGGEROPTIONSDLG_H

@@ -142,6 +142,8 @@ class DebuggerGDB : public cbDebuggerPlugin
         void ParseOutput(const wxString& output);
         void DoWatches();
         void MarkAllWatchesAsUnchanged();
+        void LogLoader(const wxString& msg, Logger::level level = Logger::info);
+        bool LaunchLoader(const wxString& cwd);
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
         int DoDebug(bool breakOnEntry);
         void DoBreak(bool temporary);
@@ -152,6 +154,9 @@ class DebuggerGDB : public cbDebuggerPlugin
         void OnGDBOutput(wxCommandEvent& event);
         void OnGDBError(wxCommandEvent& event);
         void OnGDBTerminated(wxCommandEvent& event);
+        void OnLoaderOutput(wxCommandEvent& event);
+        void OnLoaderError(wxCommandEvent& event);
+        void OnLoaderTerminated(wxCommandEvent& event);
         void OnIdle(wxIdleEvent& event);
         void OnTimer(wxTimerEvent& event);
         void OnShowFile(wxCommandEvent& event);
@@ -176,9 +181,11 @@ class DebuggerGDB : public cbDebuggerPlugin
         void OnCatchThrow(wxCommandEvent &event);
     private:
         PipedProcess* m_pProcess;
+        PipedProcess* m_pProcessLoader;
         bool m_LastExitCode;
         int m_Pid;
         int m_PidToAttach; // for "attach to process"
+        int m_PidLoader;
         wxRect m_EvalRect;
         wxTimer m_TimerPollDebugger;
         bool m_NoDebugInfo;
