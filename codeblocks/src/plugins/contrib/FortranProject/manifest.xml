@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_plugin_manifest_file>
+    <SdkVersion major="1" minor="11"  release="12" />
+    <Plugin name="FortranProject">
+        <Value title="FortranProject" />
+        <Value version="1.5" />
+        <Value description="This plugin adds Fortran support (symbol browser, code-completion etc.) for C::B IDE." />
+        <Value author="Darius Markauskas" />
+        <Value authorEmail="darmar.lt@gmail.com" />
+        <Value authorWebsite="cbfortran.sourceforge.net" />
+        <Value thanksTo="Thanks to developers of Code::Blocks" />
+        <Value license="GPL" />
+    </Plugin>
+</CodeBlocks_plugin_manifest_file>

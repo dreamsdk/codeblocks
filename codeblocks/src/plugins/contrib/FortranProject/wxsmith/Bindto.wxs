@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<wxsmith>
+	<object class="wxDialog" name="Bindto">
+		<title>Bind To</title>
+		<id_arg>0</id_arg>
+		<style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
+		<object class="wxBoxSizer" variable="BoxSizer1" member="no">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<object class="wxBoxSizer" variable="BoxSizer6" member="no">
+					<object class="sizeritem">
+						<object class="wxNotebook" name="ID_NOTEBOOK1" variable="nb_settings" member="no">
+							<object class="notebookpage">
+								<object class="wxPanel" name="ID_PANEL2" variable="Panel2" member="yes">
+									<object class="wxBoxSizer" variable="BoxSizer7" member="no">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText1" member="no">
+												<label>This tool generates a wrapping for Fortran code to be called from the C language.</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText2" member="no">
+												<label>Generate wrapping for:</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer3" member="no">
+												<object class="spacer">
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<size>30,0</size>
+												</object>
+												<object class="sizeritem">
+													<object class="wxRadioButton" name="ID_BTOACTIVEPROJECT" variable="rb_ActiveProject" member="yes">
+														<label>Active project</label>
+														<style>wxRB_GROUP</style>
+														<handler function="Onrb_ActiveProjectSelect" entry="EVT_RADIOBUTTON" />
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxRadioButton" name="ID_BTOCURRENTFILE" variable="rb_CurrentFile" member="yes">
+														<label>Current file</label>
+														<handler function="Onrb_ActiveProjectSelect" entry="EVT_RADIOBUTTON" />
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer8" member="no">
+												<object class="sizeritem">
+													<object class="wxStaticText" name="wxID_ANY" variable="StaticText5" member="no">
+														<label>BIND(C, name=#):</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL1" variable="tc_bindCName" member="yes">
+														<tooltip>Write how the names called from C code will be constructed.&#x0A;Variables &quot;$procname$&quot;, &quot;$modulename$&quot; and &quot;$modname$&quot; will be changed procedure, module and truncated module names corespondingly.</tooltip>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxEXPAND</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="ID_STATICTEXT5" variable="StaticText16" member="yes">
+												<label>Note: $procname$ is changed to the original name of procedure;&#x0A;         $modulename$ is changed to the name of module;&#x0A;         $modname$ is changed to the truncated name of module.</label>
+											</object>
+											<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="ID_CHECKBOX9" variable="cb_incompleteWrapperProc" member="yes">
+												<label>Don&apos;t write incomplete (with errors) wrapper procedures</label>
+											</object>
+											<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer15" member="no">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="ID_CHECKBOX3" variable="cb_globalToOne" member="yes">
+														<label>Add wrapper code for global procedures into one file</label>
+														<handler function="Oncb_globalToOneClick" entry="EVT_CHECKBOX" />
+													</object>
+													<flag>wxLEFT|wxALIGN_CENTER_HORIZONTAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxBoxSizer" variable="BoxSizer16" member="no">
+														<object class="spacer">
+															<flag>wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<size>30,0</size>
+														</object>
+														<object class="sizeritem">
+															<object class="wxStaticText" name="wxID_ANY" variable="st_globalFilename" member="yes">
+																<label>File name:</label>
+															</object>
+															<flag>wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxTextCtrl" name="ID_TEXTCTRL6" variable="tc_globalFilename" member="yes">
+																<value>myprocedures.f90</value>
+															</object>
+															<flag>wxLEFT|wxRIGHT|wxEXPAND</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+													</object>
+													<flag>wxEXPAND</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxTOP|wxBOTTOM|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer17" member="no">
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT1" variable="StaticText7" member="yes">
+														<label>Output dir:</label>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="ID_TEXTCTRL7" variable="tc_OutputDir" member="yes">
+														<value>Text</value>
+													</object>
+													<flag>wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxButton" name="ID_BUTTON1" variable="bt_OutputDir" member="yes">
+														<label>...</label>
+														<style>wxBU_EXACTFIT</style>
+														<handler function="Onbt_OutputDirClick" entry="EVT_BUTTON" />
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+											</object>
+											<flag>wxALL|wxEXPAND</flag>
+										</object>
+									</object>
+								</object>
+								<label>General</label>
+							</object>
+							<object class="notebookpage">
+								<object class="wxPanel" name="ID_PANEL1" variable="Panel1" member="yes">
+									<pos>314,298</pos>
+									<object class="wxBoxSizer" variable="BoxSizer2" member="no">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer4" member="no">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="wxID_ANY" variable="StaticText3" member="no">
+														<label>Binding types</label>
+													</object>
+													<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxListView" name="ID_LV_TYPES" variable="lv_Types" member="yes">
+														<size>500,300</size>
+														<style>wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VRULES|wxSUNKEN_BORDER</style>
+													</object>
+													<flag>wxTOP|wxBOTTOM|wxEXPAND</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxBoxSizer" variable="BoxSizer5" member="no">
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON_ADD" variable="bt_Add" member="yes">
+																<label>Add</label>
+																<tooltip>Add a new type</tooltip>
+																<handler function="OnAdd" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON_COPY" variable="bt_copy" member="yes">
+																<label>Copy</label>
+																<tooltip>Copy selected type to a new one</tooltip>
+																<handler function="OnCopy" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON_EDIT" variable="bt_Edit" member="yes">
+																<label>Edit</label>
+																<tooltip>Edit selected type</tooltip>
+																<handler function="OnEdit" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON_REMOVE" variable="bt_Remove" member="yes">
+																<label>Remove</label>
+																<tooltip>Remove selected type</tooltip>
+																<handler function="OnRemove" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="spacer">
+															<flag>wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxButton" name="ID_BUTTON_DEFAULTS" variable="bt_Defaults" member="yes">
+																<label>Defaults</label>
+																<tooltip>Restore default binding types</tooltip>
+																<handler function="OnDefaults" entry="EVT_BUTTON" />
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+													</object>
+													<flag>wxALL|wxEXPAND</flag>
+													<border>5</border>
+												</object>
+											</object>
+											<flag>wxTOP|wxBOTTOM|wxEXPAND</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+								</object>
+								<label>Types</label>
+							</object>
+							<object class="notebookpage">
+								<object class="wxPanel" name="ID_PANEL3" variable="Panel3" member="no">
+									<object class="wxBoxSizer" variable="BoxSizer10" member="no">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText4" member="no">
+												<label>Recognize procedure, which name starts/ends with # as a constructor:</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer11" member="no">
+												<object class="sizeritem">
+													<object class="wxBoxSizer" variable="BoxSizer12" member="no">
+														<object class="spacer">
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<size>30,0</size>
+														</object>
+														<object class="sizeritem">
+															<object class="wxFlexGridSizer" variable="FlexGridSizer2" member="no">
+																<cols>2</cols>
+																<rows>2</rows>
+																<vgap>2</vgap>
+																<hgap>1</hgap>
+																<object class="sizeritem">
+																	<object class="wxCheckBox" name="ID_CHECKBOX4" variable="cb_ctorStart" member="yes">
+																		<label>Constructor starts with:</label>
+																		<handler function="OnClick_cbCtorStart" entry="EVT_CHECKBOX" />
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxTextCtrl" name="ID_TEXTCTRL4" variable="tc_ctorStart" member="yes">
+																		<value>Text</value>
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxCheckBox" name="ID_CHECKBOX5" variable="cb_ctorEnd" member="yes">
+																		<label>Constructor ends with:</label>
+																		<handler function="OnClick_cbCtorEnd" entry="EVT_CHECKBOX" />
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxTextCtrl" name="ID_TEXTCTRL5" variable="tc_ctorEnd" member="yes">
+																		<value>Text</value>
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<option>1</option>
+														</object>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+										</object>
+									</object>
+								</object>
+								<label>Constructor</label>
+							</object>
+							<object class="notebookpage">
+								<object class="wxPanel" name="ID_PANEL4" variable="Panel4" member="yes">
+									<object class="wxBoxSizer" variable="BoxSizer9" member="no">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText9" member="no">
+												<label>Recognize subroutine, which name starts/ends with # as a destructor:</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer" variable="BoxSizer13" member="no">
+												<object class="sizeritem">
+													<object class="wxBoxSizer" variable="BoxSizer14" member="no">
+														<object class="spacer">
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<size>30,0</size>
+														</object>
+														<object class="sizeritem">
+															<object class="wxFlexGridSizer" variable="FlexGridSizer1" member="no">
+																<cols>2</cols>
+																<rows>2</rows>
+																<vgap>2</vgap>
+																<object class="sizeritem">
+																	<object class="wxCheckBox" name="ID_CHECKBOX1" variable="cb_dtorStart" member="yes">
+																		<label>Destructor starts with:</label>
+																		<handler function="OnClick_cbDtorStart" entry="EVT_CHECKBOX" />
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxTextCtrl" name="ID_TEXTCTRL2" variable="tc_dtorStart" member="yes">
+																		<value>Text</value>
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxCheckBox" name="ID_CHECKBOX2" variable="cb_dtorEnd" member="yes">
+																		<label>Destructor ends with:</label>
+																		<handler function="OnClick_cbDtorEnd" entry="EVT_CHECKBOX" />
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxTextCtrl" name="ID_TEXTCTRL3" variable="tc_dtorEnd" member="yes">
+																		<value>Text</value>
+																	</object>
+																	<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																	<option>1</option>
+																</object>
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+														</object>
+													</object>
+													<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+												</object>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText10" member="no">
+												<label>Note: a default destructor is created for the derived type if</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText12" member="no">
+												<label>         another destructor is not found.</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+										</object>
+									</object>
+								</object>
+								<label>Destructor</label>
+							</object>
+							<object class="notebookpage">
+								<object class="wxPanel" name="ID_PANEL5" variable="Panel5" member="yes">
+									<object class="wxBoxSizer" variable="BoxSizer18" member="no">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxStaticText" name="wxID_ANY" variable="StaticText13" member="no">
+												<label>This tool can generate Cython code which wraps Fortran. Generated *.pyx file&#x0A; can later be compiled into an extention module for the Python language.</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="ID_CHECKBOX6" variable="cb_genCython" member="yes">
+												<label>Generate Cython files</label>
+												<handler function="Oncb_genCythonClick" entry="EVT_CHECKBOX" />
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxPanel" name="ID_PANEL6" variable="pn_pyOpts" member="yes">
+												<object class="wxBoxSizer" variable="BoxSizer20" member="no">
+													<orient>wxVERTICAL</orient>
+													<object class="sizeritem">
+														<object class="wxBoxSizer" variable="BoxSizer19" member="no">
+															<object class="sizeritem">
+																<object class="wxStaticText" name="wxID_ANY" variable="StaticText14" member="no">
+																	<label>Python function names:</label>
+																</object>
+																<flag>wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+																<border>5</border>
+															</object>
+															<object class="sizeritem">
+																<object class="wxTextCtrl" name="ID_TEXTCTRL8" variable="tc_pyFunName" member="yes">
+																	<value>Text</value>
+																</object>
+																<flag>wxALIGN_CENTER_VERTICAL</flag>
+																<border>5</border>
+																<option>1</option>
+															</object>
+														</object>
+														<flag>wxALL|wxEXPAND</flag>
+														<border>5</border>
+													</object>
+													<object class="sizeritem">
+														<object class="wxStaticText" name="wxID_ANY" variable="StaticText15" member="no">
+															<label>Note: $procname$ is changed to the original name of procedure;&#x0A;         $modulename$ is changed to the name of module;&#x0A;         $modname$ is changed to the truncated name of module.</label>
+														</object>
+														<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+														<border>5</border>
+													</object>
+													<object class="sizeritem">
+														<object class="wxCheckBox" name="ID_CHECKBOX7" variable="cb_pyGenClass" member="yes">
+															<label>Generate Python class from Fortran module</label>
+														</object>
+														<flag>wxALL|wxALIGN_LEFT</flag>
+														<border>5</border>
+													</object>
+													<object class="sizeritem">
+														<object class="wxCheckBox" name="ID_CHECKBOX8" variable="cb_pyFirstSelf" member="yes">
+															<label>Use first argument of the derived type as &apos;self&apos; in Python</label>
+														</object>
+														<flag>wxALL|wxALIGN_LEFT</flag>
+														<border>5</border>
+													</object>
+												</object>
+											</object>
+											<flag>wxEXPAND</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+								</object>
+								<label>Python</label>
+							</object>
+						</object>
+						<flag>wxALL|wxEXPAND</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+				</object>
+				<flag>wxEXPAND</flag>
+				<border>5</border>
+				<option>1</option>
+			</object>
+			<object class="sizeritem">
+				<object class="wxStdDialogButtonSizer" variable="StdDialogButtonSizer1" member="no">
+					<object class="button">
+						<object class="wxButton" name="wxID_OK">
+							<label></label>
+						</object>
+					</object>
+					<object class="button">
+						<object class="wxButton" name="wxID_CANCEL">
+							<label></label>
+						</object>
+					</object>
+				</object>
+				<flag>wxALL|wxALIGN_CENTER_HORIZONTAL</flag>
+				<border>5</border>
+			</object>
+		</object>
+	</object>
+</wxsmith>

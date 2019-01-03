@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
+	<object class="wxPanel" name="dlgFPSettings">
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<object class="wxNotebook" name="ID_NOTEBOOK1">
+					<object class="notebookpage">
+						<object class="wxPanel" name="tabCC">
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer">
+										<label>Code-completion</label>
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkEnableCC">
+												<label>Enable Fortran code-completion</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxBoxSizer">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="chkSmartCodeCompletion">
+														<label>Use smart code-completion (makes CC list shorter)</label>
+													</object>
+													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+													<border>8</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="chkOnlyUseAssociated">
+														<label>Follow use-assiciation and include-file path</label>
+													</object>
+													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+													<border>8</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="chkShowHiddenEntities">
+														<label>Show hidden entities</label>
+													</object>
+													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+													<border>8</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxCheckBox" name="chkShowTypeVariables">
+														<label>Show type of variables</label>
+													</object>
+													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+													<border>8</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxFlexGridSizer">
+														<cols>2</cols>
+														<vgap>8</vgap>
+														<hgap>8</hgap>
+														<object class="sizeritem">
+															<object class="wxStaticText" name="ID_STATICTEXT8">
+																<label>Maximum allowed code-completion matches:</label>
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+														</object>
+														<object class="sizeritem">
+															<object class="wxSpinCtrl" name="spnMaxMatches">
+																<value>16384</value>
+																<min>1</min>
+																<max>100000</max>
+															</object>
+															<flag>wxALL|wxALIGN_TOP</flag>
+														</object>
+													</object>
+													<flag>wxALL|wxALIGN_LEFT</flag>
+													<border>8</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticBoxSizer">
+														<label>Keyword sets to additionally include:</label>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_1">
+																<label>1</label>
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_2">
+																<label>2</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_3">
+																<label>3</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_4">
+																<label>4</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_5">
+																<label>5</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_6">
+																<label>6</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_7">
+																<label>7</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_8">
+																<label>8</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxCheckBox" name="chkKL_9">
+																<label>9</label>
+															</object>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>8</border>
+														</object>
+													</object>
+													<flag>wxALL|wxEXPAND</flag>
+													<border>8</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxRadioBox" name="rbCase">
+														<label>Keyword case</label>
+														<content>
+															<item>From lexer</item>
+															<item>All caps</item>
+															<item>First cap</item>
+															<item>All lower</item>
+														</content>
+														<default>-1</default>
+														<style>wxRA_SPECIFY_ROWS</style>
+													</object>
+													<flag>wxALL|wxEXPAND</flag>
+													<border>8</border>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxLEFT|wxEXPAND</flag>
+											<border>25</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+									<border>8</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxCheckBox" name="chkCallTipsArrays">
+										<label>Show call-tips for arrays</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT</flag>
+									<border>8</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkConstrHighlighterEnable">
+												<label>Highlight matching statement of construct</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+										</object>
+										<object class="sizeritem">
+											<object class="wxFlexGridSizer">
+												<cols>2</cols>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="stCHFullColour">
+														<label>Colour of full construct</label>
+													</object>
+													<flag>wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>25</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxButton" name="btCHFullColour">
+														<label>...</label>
+														<bg>wxSYS_COLOUR_ACTIVECAPTION</bg>
+													</object>
+													<flag>wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxStaticText" name="stCHUnfinColour">
+														<label>Colour of unfinished construct</label>
+													</object>
+													<flag>wxLEFT|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL</flag>
+													<border>25</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
+													<object class="wxButton" name="btCHUnfinColour">
+														<label>...</label>
+														<bg>wxSYS_COLOUR_ACTIVECAPTION</bg>
+													</object>
+													<flag>wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>5</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT</flag>
+									<border>8</border>
+									<option>1</option>
+								</object>
+							</object>
+						</object>
+						<label>Settings</label>
+					</object>
+					<object class="notebookpage">
+						<object class="wxPanel" name="tabBrowser">
+							<pos>133,18</pos>
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<object class="wxCheckBox" name="chkEnableSB">
+										<label>Enable symbols browser</label>
+									</object>
+									<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+									<border>8</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkFloatSB">
+												<label>Display as free floating/docking window</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkBottomTree">
+												<label>Display member list in separate tree</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkSortSB">
+												<label>Sort symbols alphabetically</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkLocVarSB">
+												<label>Show local variables</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+											<option>1</option>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkInclSepar">
+												<label>Show &apos;include&apos; files separately</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxLEFT|wxEXPAND</flag>
+									<border>25</border>
+								</object>
+							</object>
+						</object>
+						<label>FSymbols browser</label>
+					</object>
+					<object class="notebookpage">
+						<object class="wxPanel" name="tabInfo">
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<object class="wxCheckBox" name="chkFortranInfo">
+										<label>Enable Fortran info tab in Logs window</label>
+									</object>
+									<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+									<border>8</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxBoxSizer">
+										<orient>wxVERTICAL</orient>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkComAbove">
+												<label>Include comment lines which are above procedure declaration</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkComBelow">
+												<label>Include comment lines which are below procedure declaration</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkDeclarLog">
+												<label>Include declarations of dummy arguments</label>
+											</object>
+											<flag>wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxCheckBox" name="chkLogComRight">
+												<label>Include comments on the right from variable declarations</label>
+											</object>
+											<flag>wxALL|wxALIGN_LEFT</flag>
+											<border>8</border>
+										</object>
+									</object>
+									<flag>wxLEFT|wxEXPAND</flag>
+									<border>25</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT2">
+										<label>Show documentation window side-by-side to the code-completion list:</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxBoxSizer">
+										<object class="sizeritem">
+											<object class="wxRadioButton" name="rbutDocWAlways">
+												<label>Always</label>
+												<style>wxRB_GROUP</style>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>8</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxRadioButton" name="rbutDocWOnly">
+												<label>Only when description is available</label>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+										</object>
+										<object class="sizeritem">
+											<object class="wxRadioButton" name="rbutDocWDont">
+												<label>Do not show</label>
+											</object>
+											<flag>wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+											<border>5</border>
+										</object>
+									</object>
+									<flag>wxLEFT|wxALIGN_LEFT</flag>
+									<border>25</border>
+								</object>
+							</object>
+						</object>
+						<label>Info</label>
+					</object>
+					<object class="notebookpage">
+						<object class="wxPanel" name="tabDocs">
+							<object class="wxBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<object class="sizeritem">
+									<object class="wxStaticText" name="ID_STATICTEXT4">
+										<label>This tool inserts &quot;end ...&quot; statements automaticaly.</label>
+										<style>wxALIGN_LEFT</style>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT</flag>
+									<border>10</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxCheckBox" name="cbAIEnable">
+										<label>Enable auto insert</label>
+									</object>
+									<flag>wxALL|wxALIGN_LEFT</flag>
+									<border>5</border>
+								</object>
+								<object class="sizeritem">
+									<object class="wxStaticBoxSizer">
+										<label>Options</label>
+										<object class="sizeritem">
+											<object class="wxBoxSizer">
+												<orient>wxVERTICAL</orient>
+												<object class="sizeritem">
+													<object class="wxBoxSizer">
+														<object class="sizeritem">
+															<object class="wxListBox" name="lbAIStatements">
+																<default>-1</default>
+															</object>
+															<flag>wxALL|wxEXPAND</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+														<object class="sizeritem">
+															<object class="wxBoxSizer">
+																<orient>wxVERTICAL</orient>
+																<object class="sizeritem">
+																	<object class="wxFlexGridSizer">
+																		<cols>2</cols>
+																		<rows>2</rows>
+																		<growablecols>1</growablecols>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="stAIText1">
+																				<label>Insert:</label>
+																			</object>
+																			<flag>wxALL</flag>
+																			<border>5</border>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxChoice" name="cbAIInsert">
+																				<content>
+																					<item>end subroutine</item>
+																				</content>
+																			</object>
+																			<flag>wxALL|wxEXPAND</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxStaticText" name="stAIText2">
+																				<label>Align:</label>
+																			</object>
+																			<flag>wxALL</flag>
+																			<border>5</border>
+																		</object>
+																		<object class="sizeritem">
+																			<object class="wxChoice" name="cbAIAlign" />
+																			<flag>wxALL|wxEXPAND</flag>
+																			<border>5</border>
+																			<option>1</option>
+																		</object>
+																	</object>
+																	<flag>wxALL|wxEXPAND</flag>
+																	<border>5</border>
+																</object>
+																<object class="sizeritem">
+																	<object class="wxCheckBox" name="cbAIAddName">
+																		<label>Add name</label>
+																	</object>
+																	<flag>wxALL|wxALIGN_LEFT</flag>
+																	<border>5</border>
+																</object>
+															</object>
+															<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<option>1</option>
+														</object>
+													</object>
+													<flag>wxALL|wxEXPAND</flag>
+													<option>1</option>
+												</object>
+											</object>
+											<flag>wxALL|wxEXPAND</flag>
+											<option>1</option>
+										</object>
+									</object>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+								</object>
+							</object>
+						</object>
+						<label>Auto insert</label>
+					</object>
+				</object>
+				<flag>wxLEFT|wxEXPAND</flag>
+				<border>8</border>
+				<option>1</option>
+			</object>
+		</object>
+	</object>
+</resource>

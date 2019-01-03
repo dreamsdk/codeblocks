@@ -1,0 +1,10 @@
+#! /bin/sh
+#
+
+mkdir -p ../../../devel31/share/codeblocks/images/fortranproject> /dev/null 2> /dev/null
+mkdir -p ../../../output31/share/codeblocks/images/fortranproject > /dev/null 2> /dev/null
+cp ./images/fortranproject/*.* ../../../devel31/share/codeblocks/images/fortranproject/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/*.* ../../../output31/share/codeblocks/images/fortranproject/ > /dev/null 2> /dev/null
+exit 0
+
+

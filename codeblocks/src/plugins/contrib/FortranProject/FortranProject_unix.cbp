@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="FortranProject (Unix)" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="default">
+				<Option platforms="Unix;Mac;" />
+				<Option output="FortranProject" prefix_auto="0" extension_auto="1" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option host_application="codeblocks" />
+				<Option run_host_application_in_terminal="0" />
+				<Compiler>
+					<Add option="-Wshadow" />
+					<Add option="-Wall" />
+					<Add option="-ansi" />
+					<Add option="$(#CB_RELEASE_TYPE)" />
+					<Add option="-fPIC" />
+					<Add option="-fexceptions" />
+					<Add option="-Winvalid-pch" />
+					<Add option="`wx-config --version=2.8 --cflags`" />
+					<Add option="-DcbDEBUG" />
+					<Add option="-DCB_PRECOMP" />
+					<Add option="-DWX_PRECOMP" />
+					<Add directory="$(#cb)/include" />
+					<Add directory="$(#cb)/sdk/wxscintilla/include" />
+				</Compiler>
+				<Linker>
+					<Add option="`wx-config --version=2.8 --libs`" />
+					<Add library="codeblocks" />
+					<Add directory="$(#cb)/devel" />
+				</Linker>
+				<ExtraCommands>
+					<Add after="zip -j9 FortranProject.zip manifest.xml resources/workspacebrowserf.xrc resources/settings.xrc resources/fortranprojecttoolbar.xrc resources/changecase.xrc resources/tab2space.xrc" />
+					<Add after="zip -r9  FortranProject.zip images" />
+					<Add after="zip -j9 FortranProject.cbplugin FortranProject.so FortranProject.zip" />
+				</ExtraCommands>
+			</Target>
+		</Build>
+		<Unit filename="autoinsert.cpp" />
+		<Unit filename="autoinsert.h" />
+		<Unit filename="bindto.cpp" />
+		<Unit filename="bindto.h" />
+		<Unit filename="bindtonewtype.cpp" />
+		<Unit filename="bindtonewtype.h" />
+		<Unit filename="bufferparserthread.cpp" />
+		<Unit filename="bufferparserthread.h" />
+		<Unit filename="ccsmartfilter.cpp" />
+		<Unit filename="ccsmartfilter.h" />
+		<Unit filename="changecase.cpp" />
+		<Unit filename="changecase.h" />
+		<Unit filename="docblock.cpp" />
+		<Unit filename="docblock.h" />
+		<Unit filename="farrays.cpp" />
+		<Unit filename="farrays.h" />
+		<Unit filename="finfowindow.cpp" />
+		<Unit filename="finfowindow.h" />
+		<Unit filename="fortranfileext.cpp" />
+		<Unit filename="fortranfileext.h" />
+		<Unit filename="fortranproject.cpp" />
+		<Unit filename="fortranproject.h" />
+		<Unit filename="fpoptionsdlg.cpp" />
+		<Unit filename="fpoptionsdlg.h" />
+		<Unit filename="includedb.cpp" />
+		<Unit filename="includedb.h" />
+		<Unit filename="jumptracker.cpp" />
+		<Unit filename="jumptracker.h" />
+		<Unit filename="keywordsparserf.cpp" />
+		<Unit filename="keywordsparserf.h" />
+		<Unit filename="lineaddress.cpp" />
+		<Unit filename="lineaddress.h" />
+		<Unit filename="makefilegen.cpp" />
+		<Unit filename="makefilegen.h" />
+		<Unit filename="manifest.xml" />
+		<Unit filename="moduletokenf.cpp" />
+		<Unit filename="moduletokenf.h" />
+		<Unit filename="nativeparserf.cpp" />
+		<Unit filename="nativeparserf.h" />
+		<Unit filename="parserf.cpp" />
+		<Unit filename="parserf.h" />
+		<Unit filename="parserthreadf.cpp" />
+		<Unit filename="parserthreadf.h" />
+		<Unit filename="projectdependencies.cpp" />
+		<Unit filename="projectdependencies.h" />
+		<Unit filename="resources/changecase.xrc" />
+		<Unit filename="resources/fortranprojecttoolbar.xrc" />
+		<Unit filename="resources/settings.xrc" />
+		<Unit filename="resources/tab2space.xrc" />
+		<Unit filename="resources/workspacebrowserf.xrc" />
+		<Unit filename="submoduletokenf.h" />
+		<Unit filename="tab2space.cpp" />
+		<Unit filename="tab2space.h" />
+		<Unit filename="textcutter.cpp" />
+		<Unit filename="textcutter.h" />
+		<Unit filename="tokenf.cpp" />
+		<Unit filename="tokenf.h" />
+		<Unit filename="tokenizerf.cpp" />
+		<Unit filename="tokenizerf.h" />
+		<Unit filename="usetokenf.cpp" />
+		<Unit filename="usetokenf.h" />
+		<Unit filename="workspacebrowserbuilder.cpp" />
+		<Unit filename="workspacebrowserbuilder.h" />
+		<Unit filename="workspacebrowserf.cpp" />
+		<Unit filename="workspacebrowserf.h" />
+		<Unit filename="workspaceparserthread.cpp" />
+		<Unit filename="workspaceparserthread.h" />
+		<Unit filename="wxsmith/Bindto.wxs" />
+		<Unit filename="wxsmith/BindtoNewType.wxs" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+			<wxsmith version="1">
+				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
+				<resources>
+					<wxDialog wxs="wxsmith/Bindto.wxs" src="bindto.cpp" hdr="bindto.h" fwddecl="0" i18n="1" name="Bindto" language="CPP" />
+					<wxDialog wxs="wxsmith/BindtoNewType.wxs" src="bindtonewtype.cpp" hdr="bindtonewtype.h" fwddecl="0" i18n="1" name="BindtoNewType" language="CPP" />
+				</resources>
+			</wxsmith>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

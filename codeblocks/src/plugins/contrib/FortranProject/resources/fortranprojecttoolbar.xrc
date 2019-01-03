@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_16x16">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/16x16/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/16x16/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/16x16/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+</resource>
