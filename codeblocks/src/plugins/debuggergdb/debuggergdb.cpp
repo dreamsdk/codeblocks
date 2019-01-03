@@ -546,7 +546,11 @@ bool DebuggerGDB::LaunchLoader(const wxString& cwd)
 
     wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
     wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments();
-    wxString cmd = loaderPath + _(" ") + loaderArgs;
+    wxString cmd = loaderPath;
+    if (!loaderArgs.empty())
+    {
+        cmd += _(" ") + loaderArgs;
+    }
 
     // start the loader process
     m_pProcessLoader = new PipedProcess(&m_pProcessLoader, this, idLoaderProcess, true, cwd);
