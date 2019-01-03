@@ -1,0 +1,86 @@
+﻿<?xml version="1.0"?>
+<!DOCTYPE CodeBlocks_compiler_options>
+<CodeBlocks_compiler_options>
+	<Program name="C"         value="sh-elf-gcc.exe"/>
+	<Program name="CPP"       value="sh-elf-g++.exe"/>
+	<Program name="LD"        value="sh-elf-g++.exe"/>
+	<Program name="DBGconfig" value="gdb_debugger:Sega Dreamcast"/>
+	<Program name="LIB"       value="sh-elf-ar.exe"/>
+	<Program name="WINDRES"   value=""/>
+	<Program name="MAKE"      value="make.exe"/>
+
+    <Switch name="includeDirs"             value="-I"/>
+    <Switch name="libDirs"                 value="-L"/>
+    <Switch name="linkLibs"                value="-l"/>
+    <Switch name="defines"                 value="-D"/>
+    <Switch name="genericSwitch"           value="-"/>
+    <Switch name="objectExtension"         value="o"/>
+    <Switch name="needDependencies"        value="true"/>
+    <Switch name="forceCompilerUseQuotes"  value="false"/>
+    <Switch name="forceLinkerUseQuotes"    value="false"/>
+    <Switch name="logging"                 value="default"/>
+    <Switch name="libPrefix"               value="lib"/>
+    <Switch name="libExtension"            value="a"/>
+    <Switch name="linkerNeedsLibPrefix"    value="false"/>
+    <Switch name="linkerNeedsLibExtension" value="false"/>
+     
+	<Option name="Produce debugging symbols"
+            option="-g -Wa,-g -Wl,-g"
+            category="Debugging"
+            checkAgainst="-O -O1 -O2 -O3 -Os"
+            checkMessage="You have optimizations enabled. This is Not A Good Thing(tm) when producing debugging symbols..."
+            supersedes="-s"/>
+   
+	<Option name="Profile code when executed"
+			option="-pg"
+			category="Profiling"
+			additionalLibs="-pg -lgmon"
+			supersedes="-s"/>     
+
+    <!-- warnings -->
+    <Common name="warnings"/>   
+
+    <!-- optimization -->
+	<Category name="Optimization">
+		<Option name="Strip all symbols from binary (minimizes size)"
+				additionalLibs="-s"
+				supersedes="-g -ggdb -pg"/>
+		<Option name="Optimize generated code (for speed)"
+				option="-O"
+				checkAgainst="-g -ggdb"
+				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."
+				supersedes="-O1 -O2 -Os"/>
+		<Option name="Optimize more (for speed)"
+				option="-O1"
+				checkAgainst="-g -ggdb"
+				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."
+				supersedes="-O -O2 -Os"/>
+		<Option name="Optimize even more (for speed)"
+				option="-O2"
+				checkAgainst="-g -ggdb"
+				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."
+				supersedes="-O -O1 -Os"/>
+		<Option name="Optimize generated code (for size)"
+				option="-Os"
+				checkAgainst="-g -ggdb"
+				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."
+				supersedes="-O -O1 -O2"/>
+		<Option name="Don't keep the frame pointer in a register for functions that don't need one"
+				option="-fomit-frame-pointer"				
+				checkAgainst="-g -ggdb"
+				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."/>
+	</Category>	  	  
+
+    <Command name="CompileObject" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -c $file -o $object"/>			 
+    <Command name="GenDependencies" value=""/>
+	<Command name="CompileResource" value=""/>
+	<Command name="LinkExe" value=""/>
+    <Command name="LinkConsoleExe" value=""/>	
+	<Command name="LinkDynamic" value=""/>
+	<Command name="LinkStatic" value=""/>
+	<Command name="LinkNative" value="$linker $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -Wl,-Ttext=0x8c010000 -Wl,--gc-sections -TC:\DreamSDK\msys\1.0\opt\toolchains\dc\kos\utils\ldscripts\shlelf.xc -nodefaultlibs $libdirs -o $exe_output $link_objects $link_resobjects $link_options $libs -Wl,--start-group -lkallisti -lc -lgcc -Wl,--end-group"/>
+
+	<Common name="cmds"/>
+    <Common name="re"/>
+    <Common name="sort"/>	
+</CodeBlocks_compiler_options>
