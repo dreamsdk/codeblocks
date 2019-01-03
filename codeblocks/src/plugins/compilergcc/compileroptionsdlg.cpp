@@ -102,6 +102,9 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_UPDATE_UI(            XRCID("btnResComp"),                      CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("txtMake"),                         CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnMake"),                         CompilerOptionsDlg::OnUpdateUI)
+    EVT_UPDATE_UI(            XRCID("txtLoader"),                       CompilerOptionsDlg::OnUpdateUI)
+    EVT_UPDATE_UI(            XRCID("btnLoader"),                       CompilerOptionsDlg::OnUpdateUI)
+    EVT_UPDATE_UI(            XRCID("txtLoaderArguments"),              CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("cmbCompiler"),                     CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreAdd"),                    CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreRemove"),                 CompilerOptionsDlg::OnUpdateUI)
@@ -151,6 +154,7 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_BUTTON(                XRCID("btnLibLinker"),                   CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnResComp"),                     CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnMake"),                        CompilerOptionsDlg::OnSelectProgramClick)
+    EVT_BUTTON(                XRCID("btnLoader"),                      CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnAdvanced"),                    CompilerOptionsDlg::OnAdvancedClick)
     EVT_BUTTON(                XRCID("btnIgnoreAdd"),                   CompilerOptionsDlg::OnIgnoreAddClick)
     EVT_BUTTON(                XRCID("btnIgnoreRemove"),                CompilerOptionsDlg::OnIgnoreRemoveClick)
@@ -591,6 +595,10 @@ void CompilerOptionsDlg::DoFillOthers()
     chk = XRCCTRL(*this, "chkNonPlatComp", wxCheckBox);
     if (chk)
         chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/non_plat_comp"), false));
+
+    ConfigManager *cfg = Manager::Get()->GetConfigManager(_("compiler"));
+    XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(cfg->Read(_T("/loader_executable"), wxEmptyString));
+    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(cfg->Read(_T("/loader_arguments"), wxEmptyString));
 } // DoFillOthers
 
 void CompilerOptionsDlg::DoFillTree()
@@ -2613,6 +2621,8 @@ void CompilerOptionsDlg::OnAutoDetectClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
 {
+    bool bSetWithFullPath = false;
+
     // see who called us
     wxTextCtrl* obj = 0L;
     if (event.GetId() == XRCID("btnCcompiler"))
@@ -2627,6 +2637,12 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
         obj = XRCCTRL(*this, "txtResComp", wxTextCtrl);
     else if (event.GetId() == XRCID("btnMake"))
         obj = XRCCTRL(*this, "txtMake", wxTextCtrl);
+    else if (event.GetId() == XRCID("btnLoader"))
+    {
+        obj = XRCCTRL(*this, "txtLoader", wxTextCtrl);
+        bSetWithFullPath = true;
+    }
+
 
     if (!obj)
         return; // called from invalid caller
@@ -2647,7 +2663,7 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
     if (dlg.ShowModal() != wxID_OK)
         return;
     wxFileName fname(dlg.GetPath());
-    obj->SetValue(fname.GetFullName());
+    obj->SetValue(bSetWithFullPath ? fname.GetFullPath() : fname.GetFullName());
     m_bDirty = true;
 } // OnSelectProgramClick
 
@@ -2853,6 +2869,14 @@ void CompilerOptionsDlg::OnApply()
                 m_Compiler->LoadOptions();
             }
         }
+
+        wxTextCtrl *txt = XRCCTRL(*this, "txtLoader", wxTextCtrl);
+        if (txt)
+            cfg->Write(_T("/loader_executable"), txt->GetValue());
+
+        txt = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl);
+        if (txt)
+            cfg->Write(_T("/loader_arguments"), txt->GetValue());
     }
 
     m_Compiler->SaveOptions();

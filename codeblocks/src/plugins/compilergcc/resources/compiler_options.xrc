@@ -869,6 +869,56 @@
 																						</object>
 																						<flag>wxEXPAND</flag>
 																					</object>
+																					<object class="sizeritem">
+																						<object class="wxStaticText" name="ID_STATICTEXT32">
+																							<label>Loader for native executables:</label>
+																						</object>
+																						<flag>wxALIGN_TOP</flag>
+																					</object>
+																					<object class="sizeritem">
+																						<object class="wxBoxSizer">
+																							<object class="sizeritem">
+																								<object class="wxTextCtrl" name="txtLoader" />
+																								<flag>wxEXPAND</flag>
+																								<border>8</border>
+																								<option>1</option>
+																							</object>
+																							<object class="sizeritem">
+																								<object class="wxButton" name="btnLoader">
+																									<label>...</label>
+																									<size>20,-1</size>
+																								</object>
+																								<flag>wxALIGN_TOP</flag>
+																							</object>
+																							<object class="sizeritem">
+																								<object class="wxPanel" name="ID_PANEL7">
+																									<size>4,-1</size>
+																								</object>
+																								<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																								<border>5</border>
+																							</object>
+																							<object class="sizeritem">
+																								<object class="wxStaticText" name="ID_STATICTEXT33">
+																									<label>Arguments:</label>
+																								</object>
+																								<flag>wxALIGN_TOP</flag>
+																							</object>
+																							<object class="sizeritem">
+																								<object class="wxPanel" name="ID_PANEL8">
+																									<size>4,-1</size>
+																								</object>
+																								<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+																								<border>5</border>
+																							</object>
+																							<object class="sizeritem">
+																								<object class="wxTextCtrl" name="txtLoaderArguments" />
+																								<flag>wxEXPAND</flag>
+																								<border>8</border>
+																								<option>1</option>
+																							</object>
+																						</object>
+																						<flag>wxEXPAND</flag>
+																					</object>
 																				</object>
 																				<flag>wxALL|wxEXPAND</flag>
 																				<border>8</border>

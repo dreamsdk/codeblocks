@@ -154,6 +154,8 @@ class CompilerGCC : public cbCompilerPlugin
     private:
         friend class CompilerOptionsDlg;
 
+        wxString GetLoaderCommand();
+
         void Dispatcher(wxCommandEvent& event);
         void TextURL(wxTextUrlEvent& event);
 

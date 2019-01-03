@@ -1808,6 +1808,26 @@ int CompilerGCC::Run(const wxString& target)
     return Run(m_pProject->GetBuildTarget(target.IsEmpty() ? m_LastTargetName : target));
 }
 
+wxString CompilerGCC::GetLoaderCommand()
+{
+    wxString result = wxEmptyString;
+
+    wxString loader = Manager::Get()->GetConfigManager(_T("compiler"))->Read(_T("/loader_executable"), wxEmptyString);
+    wxString loaderArgs = Manager::Get()->GetConfigManager(_T("compiler"))->Read(_T("/loader_arguments"), wxEmptyString);
+
+    if (wxFileExists(loader))
+    {
+        result = loader;
+        if (!loaderArgs.empty())
+        {
+            Manager::Get()->GetMacrosManager()->ReplaceEnvVars(loaderArgs);
+            result += _T(" ") + loaderArgs;
+        }
+    }
+
+    return result;
+}
+
 int CompilerGCC::Run(ProjectBuildTarget* target)
 {
     bool commandIsQuoted = false; // remember if we quoted the command, avoid unneeded quotes, because they break execution with "konsole" under KDE
@@ -2018,6 +2038,12 @@ int CompilerGCC::Run(ProjectBuildTarget* target)
                 m_pProject->SetCurrentlyCompilingTarget(0);
                 return -1;
         }
+    }
+
+    wxString loaderCmd = GetLoaderCommand();    
+    if (target->GetTargetType() == ttNative && !loaderCmd.empty())
+    {
+        cmd = loaderCmd;
     }
 
     Manager::Get()->GetLogManager()->Log(F(_("Executing: %s (in %s)"), cmd.wx_str(), m_CdRun.wx_str()), m_PageIndex);
