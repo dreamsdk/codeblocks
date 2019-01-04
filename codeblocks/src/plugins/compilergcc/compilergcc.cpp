@@ -1828,6 +1828,28 @@ wxString CompilerGCC::GetLoaderCommand()
     return result;
 }
 
+bool CompilerGCC::IsDebugTarget(ProjectBuildTarget *target)
+{
+    bool result = false;
+
+//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
+
+    wxArrayString targetOpts = target->GetCompilerOptions();
+
+    size_t i = 0;
+    while (!result && i < targetOpts.GetCount())
+    {
+        wxString opt = targetOpts[i].Upper();
+        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
+        i++;
+    }
+
+//    wxString resultStr = result ? _("YES") : _("NO");
+//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
+
+    return result;
+}
+
 int CompilerGCC::Run(ProjectBuildTarget* target)
 {
     bool commandIsQuoted = false; // remember if we quoted the command, avoid unneeded quotes, because they break execution with "konsole" under KDE
@@ -2040,10 +2062,19 @@ int CompilerGCC::Run(ProjectBuildTarget* target)
         }
     }
 
-    wxString loaderCmd = GetLoaderCommand();    
-    if (target->GetTargetType() == ttNative && !loaderCmd.empty())
+    wxString loaderCmd = GetLoaderCommand();
+    bool bEmbeddedSystemProject = (target->GetTargetType() == ttNative && !loaderCmd.empty());
+    if (bEmbeddedSystemProject)
     {
-        cmd = loaderCmd;
+        if (!IsDebugTarget(target))
+        {
+            cmd = loaderCmd;
+        }
+        else
+        {
+            cbMessageBox(_("Sorry, Debug target can only be debugged through GDB.\nPlease select the Release target in order to run your project."), _("Warning"), wxICON_EXCLAMATION);
+            return -1;
+        }
     }
 
     Manager::Get()->GetLogManager()->Log(F(_("Executing: %s (in %s)"), cmd.wx_str(), m_CdRun.wx_str()), m_PageIndex);

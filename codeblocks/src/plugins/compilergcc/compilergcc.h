@@ -155,6 +155,7 @@ class CompilerGCC : public cbCompilerPlugin
         friend class CompilerOptionsDlg;
 
         wxString GetLoaderCommand();
+        bool IsDebugTarget(ProjectBuildTarget *target);
 
         void Dispatcher(wxCommandEvent& event);
         void TextURL(wxTextUrlEvent& event);
