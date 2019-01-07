@@ -53,6 +53,7 @@ struct RemoteDebugging
 
 		skipLDpath = other.skipLDpath;
 		extendedRemote = other.extendedRemote;
+		loaderWaitingTime = other.loaderWaitingTime;
 
 		if (!additionalShellCmdsAfter.IsEmpty() && !other.additionalShellCmdsAfter.IsEmpty())
 			additionalShellCmdsAfter += _T('\n');
@@ -76,6 +77,7 @@ struct RemoteDebugging
 	wxString additionalShellCmdsBefore; ///< shell commands before establishing remote connection
 	bool skipLDpath; ///< skip adjusting LD_LIBRARY_PATH before launching debugger
 	bool extendedRemote;//!< connect with extended remote or not
+	int loaderWaitingTime;
 };
 
 typedef std::map<ProjectBuildTarget*, RemoteDebugging> RemoteDebuggingMap;

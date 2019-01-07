@@ -19,6 +19,12 @@
 #include "debuggerstate.h"
 #include "debugger_defs.h"
 
+#define LOADER_WAITING_TIME_MIN 1
+#define LOADER_WAITING_TIME_MAX 300
+#define LOADER_WAITING_TIME_DEFAULT 10
+#define LOADER_WAITING_TIME_DISABLED 0
+#define LOADER_WAITING_TIME_TOOLTIP "Waiting time (in seconds) before starting the debugger, just after executing the loader"
+
 extern const wxString g_EscapeChar;
 
 class cbProject;
@@ -142,9 +148,11 @@ class DebuggerGDB : public cbDebuggerPlugin
         void ParseOutput(const wxString& output);
         void DoWatches();
         void MarkAllWatchesAsUnchanged();
-        void LogLoader(const wxString& msg, Logger::level level = Logger::info);
-        bool LaunchLoader(const wxString& cwd);
+        bool IsDebugTarget(ProjectBuildTarget *target);
+        int ValidateLoaderWaitingTime(int waitingTime);
+        bool LaunchLoader(int projectWaitingTime);
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
+        ProjectBuildTarget* GetCurrentTarget();
         int DoDebug(bool breakOnEntry);
         void DoBreak(bool temporary);
 
@@ -154,9 +162,6 @@ class DebuggerGDB : public cbDebuggerPlugin
         void OnGDBOutput(wxCommandEvent& event);
         void OnGDBError(wxCommandEvent& event);
         void OnGDBTerminated(wxCommandEvent& event);
-        void OnLoaderOutput(wxCommandEvent& event);
-        void OnLoaderError(wxCommandEvent& event);
-        void OnLoaderTerminated(wxCommandEvent& event);
         void OnIdle(wxIdleEvent& event);
         void OnTimer(wxTimerEvent& event);
         void OnShowFile(wxCommandEvent& event);
@@ -181,11 +186,9 @@ class DebuggerGDB : public cbDebuggerPlugin
         void OnCatchThrow(wxCommandEvent &event);
     private:
         PipedProcess* m_pProcess;
-        PipedProcess* m_pProcessLoader;
         bool m_LastExitCode;
         int m_Pid;
         int m_PidToAttach; // for "attach to process"
-        int m_PidLoader;
         wxRect m_EvalRect;
         wxTimer m_TimerPollDebugger;
         bool m_NoDebugInfo;

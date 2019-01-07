@@ -149,11 +149,11 @@ wxPanel* DebuggerConfiguration::MakePanel(wxWindow *parent)
     XRCCTRL(*panel, "txtLoaderExecutablePath", wxTextCtrl)->ChangeValue(GetLoaderExecutable(false));
     panel->ValidateLoaderExecutablePath();
     XRCCTRL(*panel, "txtLoaderArguments", wxTextCtrl)->ChangeValue(GetLoaderArguments(false));
-    XRCCTRL(*panel, "txtLoaderReadyMessage", wxTextCtrl)->ChangeValue(GetLoaderReadyMessage());
 
-    wxSpinCtrl *spnLoaderTimeout = XRCCTRL(*panel, "spnLoaderTimeout", wxSpinCtrl);
-    spnLoaderTimeout->SetRange(1, 300);
-    spnLoaderTimeout->SetValue(GetLoaderTimeout());
+    wxSpinCtrl *spn = XRCCTRL(*panel, "spnLoaderWaitingTime", wxSpinCtrl);
+    spn->SetRange(LOADER_WAITING_TIME_MIN, LOADER_WAITING_TIME_MAX);
+    spn->SetToolTip(_(LOADER_WAITING_TIME_TOOLTIP));
+    spn->SetValue(GetLoaderWaitingTime());
 
     return panel;
 }
@@ -176,8 +176,7 @@ bool DebuggerConfiguration::SaveChanges(wxPanel *panel)
 
     m_config.Write(wxT("loader_executable_path"), XRCCTRL(*panel, "txtLoaderExecutablePath", wxTextCtrl)->GetValue());
     m_config.Write(wxT("loader_arguments"),       XRCCTRL(*panel, "txtLoaderArguments",      wxTextCtrl)->GetValue());
-    m_config.Write(wxT("loader_ready_message"),   XRCCTRL(*panel, "txtLoaderReadyMessage",   wxTextCtrl)->GetValue());
-    m_config.Write(wxT("loader_timeout"),         XRCCTRL(*panel, "spnLoaderTimeout",        wxSpinCtrl)->GetValue());
+    m_config.Write(wxT("loader_waiting_time"),    XRCCTRL(*panel, "spnLoaderWaitingTime",    wxSpinCtrl)->GetValue());
 
     return true;
 }
@@ -276,14 +275,9 @@ wxString DebuggerConfiguration::GetLoaderArguments(bool expandMacro)
     return result;
 }
 
-wxString DebuggerConfiguration::GetLoaderReadyMessage()
+int DebuggerConfiguration::GetLoaderWaitingTime()
 {
-    return m_config.Read(wxT("loader_ready_message"), wxEmptyString);
-}
-
-int DebuggerConfiguration::GetLoaderTimeout()
-{
-    return m_config.ReadInt(wxT("loader_timeout"), 10);
+    return m_config.ReadInt(wxT("loader_waiting_time"), LOADER_WAITING_TIME_DEFAULT);
 }
 
 wxString DebuggerConfiguration::GetDisassemblyFlavorCommand()

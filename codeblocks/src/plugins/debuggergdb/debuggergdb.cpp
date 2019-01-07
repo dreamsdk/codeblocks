@@ -117,7 +117,6 @@ long idMenuInfoPrintElements200 = wxNewId();
 long idMenuInfoCatchThrow = wxNewId();
 
 long idGDBProcess = wxNewId();
-long idLoaderProcess = wxNewId();
 long idTimerPollDebugger = wxNewId();
 
 long idMenuWatchDereference = wxNewId();
@@ -138,10 +137,6 @@ BEGIN_EVENT_TABLE(DebuggerGDB, cbDebuggerPlugin)
     EVT_PIPEDPROCESS_STDOUT(idGDBProcess, DebuggerGDB::OnGDBOutput)
     EVT_PIPEDPROCESS_STDERR(idGDBProcess, DebuggerGDB::OnGDBError)
     EVT_PIPEDPROCESS_TERMINATED(idGDBProcess, DebuggerGDB::OnGDBTerminated)
-
-    EVT_PIPEDPROCESS_STDOUT(idLoaderProcess, DebuggerGDB::OnLoaderOutput)
-    EVT_PIPEDPROCESS_STDERR(idLoaderProcess, DebuggerGDB::OnLoaderError)
-    EVT_PIPEDPROCESS_TERMINATED(idLoaderProcess, DebuggerGDB::OnLoaderTerminated)
 
     EVT_IDLE(DebuggerGDB::OnIdle)
     EVT_TIMER(idTimerPollDebugger, DebuggerGDB::OnTimer)
@@ -414,6 +409,8 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                         rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
                         rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
+                    if (rdOpt->Attribute("loader_waiting_time"))
+                        rd.loaderWaitingTime = atol(rdOpt->Attribute("loader_waiting_time"));
 
                     rdprj.insert(rdprj.end(), std::make_pair(bt, rd));
                 }
@@ -489,6 +486,7 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                     tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
                 if (!rd.additionalShellCmdsBefore.IsEmpty())
                     tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
+                tgtnode->SetAttribute("loader_waiting_time", (int)rd.loaderWaitingTime);
             }
         }
     }
@@ -532,20 +530,27 @@ void DebuggerGDB::DoWatches()
     m_State.GetDriver()->UpdateWatches(m_localsWatch, m_funcArgsWatch, m_watches);
 }
 
-void DebuggerGDB::LogLoader(const wxString& msg, Logger::level level)
+int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
 {
-    Log(msg, level);
+    int result = GetActiveConfigEx().GetLoaderWaitingTime();
+
+    if (waitingTime != LOADER_WAITING_TIME_DISABLED &&
+        waitingTime >= LOADER_WAITING_TIME_MIN &&
+        waitingTime <= LOADER_WAITING_TIME_MAX)
+    {
+        result = waitingTime;
+    }
+
+    return result;
 }
 
-#define LOADER_TIMEOUT_MULTIPLIER 100
-bool DebuggerGDB::LaunchLoader(const wxString& cwd)
+bool DebuggerGDB::LaunchLoader(int projectWaitingTime)
 {
     bool loaderStartedSuccessfully = false;
 
-    int maxTries = (GetActiveConfigEx().GetLoaderTimeout() * 1000) / LOADER_TIMEOUT_MULTIPLIER;
-
     wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
     wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments();
+
     wxString cmd = loaderPath;
     if (!loaderArgs.empty())
     {
@@ -553,83 +558,29 @@ bool DebuggerGDB::LaunchLoader(const wxString& cwd)
     }
 
     // start the loader process
-    m_pProcessLoader = new PipedProcess(&m_pProcessLoader, this, idLoaderProcess, true, cwd);
     Log(_("Starting loader: ") + cmd);
-    m_PidLoader = wxExecute(cmd, wxEXEC_ASYNC, m_pProcessLoader);
 
-    if (!m_PidLoader)
-    {
-        delete m_pProcessLoader;
-        m_pProcessLoader = 0;
-        Log(_("failed"), Logger::error);
-    }
-    else if (!m_pProcessLoader->GetOutputStream())
-    {
-        delete m_pProcessLoader;
-        m_pProcessLoader = 0;
-        Log(_("failed (to get loader's stdin)"), Logger::error);
-    }
-    else if (!m_pProcessLoader->GetInputStream())
-    {
-        delete m_pProcessLoader;
-        m_pProcessLoader = 0;
-        Log(_("failed (to get loader's stdout)"), Logger::error);
-    }
-    else if (!m_pProcessLoader->GetErrorStream())
-    {
-        delete m_pProcessLoader;
-        m_pProcessLoader = 0;
-        Log(_("failed (to get loader's stderr)"), Logger::error);
-    }
+    long pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_NOHIDE);
 
-    wxString loaderReadyMessage = GetActiveConfigEx().GetLoaderReadyMessage();
-    if (!loaderReadyMessage.empty())
+    loaderStartedSuccessfully = (pid);
+    if (loaderStartedSuccessfully)
     {
-        Log(_("Waiting for the loader..."));
+        DebugLog(wxString::Format( _("Loader Process ID: %d"), pid ) );
 
-        wxInputStream *stream = m_pProcessLoader->GetInputStream();
-        wxTextInputStream reader (*stream);
+        int waitingTime = ValidateLoaderWaitingTime(projectWaitingTime);
 
-        int tries = 0;
-        bool done = false;
-        do
+        Log(wxString::Format(_("Loader started successfully. Waiting %d second(s) before starting the debugger..."), waitingTime));
+        for(int i = 0; i < waitingTime; i++)
         {
-            tries++;
-
-            if (m_pProcessLoader->IsInputAvailable() && stream && !stream->Eof() && stream->CanRead())
-            {
-                wxString line = reader.ReadLine();
-                LogLoader(line);
-                loaderStartedSuccessfully = line.Contains(loaderReadyMessage);
-            }
-
-            Manager::Get()->Yield();
-            wxMilliSleep(LOADER_TIMEOUT_MULTIPLIER);
-
-            done = loaderStartedSuccessfully || (tries > maxTries);
+            DebugLog(wxString::Format( _("%d second(s) elapsed..."), (i + 1) ) );
+            wxMilliSleep(1000);
+            Manager::Yield();
         }
-        while(!done);
-
-        if (loaderStartedSuccessfully)
-        {
-            Log(_("Loader is now ready. Starting the debugger..."));
-        }
-        else
-        {
-            Log(_("Failed to get the ready message from the loader: timeout"), Logger::error);
-        }
+        DebugLog(wxString::Format( _("Ready to start the debugger!") ) );
     }
     else
     {
-        loaderStartedSuccessfully = (m_PidLoader);
-        if (loaderStartedSuccessfully)
-        {
-            Log(_("Loader started successfully. Starting the debugger..."));
-        }
-        else
-        {
-            Log(_("Failed to start the loader..."), Logger::error);
-        }
+        Log(_("Failed to start the loader..."), Logger::error);
     }
 
     return loaderStartedSuccessfully;
@@ -769,6 +720,47 @@ bool DebuggerGDB::Debug(bool breakOnEntry)
     return true;
 }
 
+bool DebuggerGDB::IsDebugTarget(ProjectBuildTarget *target)
+{
+    bool result = false;
+
+//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
+
+    wxArrayString targetOpts = target->GetCompilerOptions();
+
+    size_t i = 0;
+    while (!result && i < targetOpts.GetCount())
+    {
+        wxString opt = targetOpts[i].Upper();
+        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
+        i++;
+    }
+
+//    wxString resultStr = result ? _("YES") : _("NO");
+//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
+
+    return result;
+}
+
+ProjectBuildTarget* DebuggerGDB::GetCurrentTarget()
+{
+    ProjectBuildTarget* target = NULL;
+    if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
+    {
+        int tgtIdx = m_pProject->SelectTarget();
+        if (tgtIdx == -1)
+        {
+            return NULL;
+        }
+        target = m_pProject->GetBuildTarget(tgtIdx);
+        m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
+    }
+    else
+        target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
+
+    return target;
+}
+
 int DebuggerGDB::DoDebug(bool breakOnEntry)
 {
     // set this to true before every error exit point in this function
@@ -784,20 +776,13 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     if ( (m_PidToAttach == 0) && m_pProject)
     {
         Log(_("Selecting target: "));
-        if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
+        target = GetCurrentTarget();
+        if (!target)
         {
-            int tgtIdx = m_pProject->SelectTarget();
-            if (tgtIdx == -1)
-            {
-                Log(_("canceled"));
-                m_Canceled = true;
-                return 3;
-            }
-            target = m_pProject->GetBuildTarget(tgtIdx);
-            m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
+            Log(_("canceled"));
+            m_Canceled = true;
+            return 3;
         }
-        else
-            target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
 
         // make sure it's not a commands-only target
         if (target && target->GetTargetType() == ttCommandsOnly)
@@ -807,6 +792,17 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(_("aborted"));
             return 3;
         }
+
+        // make sure it's not a native and loaded target...
+        if (target && target->GetTargetType() == ttNative && !IsDebugTarget(target) && !GetActiveConfigEx().GetLoaderExecutable().empty())
+        {
+            cbMessageBox(_("The selected target is a Release target\n"
+                           "Can't debug such a target..."), _("Information"), wxICON_INFORMATION);
+            Log(_("aborted"));
+            m_Canceled = true;
+            return 3;
+        }
+
         if (target) Log(target->GetTitle());
 
         // find the target's compiler (to see which debugger to use)
@@ -961,11 +957,23 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         }
     }
 
+    // start the loader if necessary
+    if (GetActiveConfigEx().IsLoaderNecessary()) {
+        if (!LaunchLoader(rd.loaderWaitingTime)) {
+            Log(_("An issue occurred when starting the loader..."), Logger::error);
+            Log(_("Starting the debugger anyway..."));
+        }
+    }
+
     #ifdef __WXMSW__
     if (!m_State.GetDriver()->UseDebugBreakProcess())
     {
-        AllocConsole();
-        SetConsoleTitleA("Codeblocks debug console - DO NOT CLOSE!");
+        DebugLog(_("UseDebugBreakProcess is enabled!"));
+        if (!AllocConsole())
+        {
+            DebugLog(wxString::Format(_("AllocConsole failed: %d"), GetLastError()));
+        }
+        SetConsoleTitleA("Code::Blocks Debug Console - DO NOT CLOSE!");
         SetConsoleCtrlHandler(HandlerRoutine, TRUE);
         m_bIsConsole = true;
 
@@ -981,14 +989,6 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         wdir = m_pProject ? m_pProject->GetBasePath() : _T(".");
     DebugLog(_T("Command-line: ") + cmdline);
     DebugLog(_T("Working dir : ") + wdir);
-
-    // start the loader if necessary
-    if (GetActiveConfigEx().IsLoaderNecessary()) {
-        if (!LaunchLoader(wdir)) {
-            Log(_("An issue occurred when starting the loader..."), Logger::error);
-            Log(_("Starting the debugger anyway..."));
-        }
-    }
 
     // start the gdb process
     int ret = LaunchProcess(cmdline, wdir);
@@ -1696,6 +1696,7 @@ void DebuggerGDB::DoBreak(bool temporary)
     if (m_pProcess && m_Pid && !IsStopped())
     {
         long childPid = m_State.GetDriver()->GetChildPID();
+		DebugLog(wxString::Format(_("childPid: %d"), childPid));
         long pid = childPid;
     #ifndef __WXMSW__
         if (pid > 0 && !wxProcess::Exists(pid))
@@ -1998,25 +1999,6 @@ void DebuggerGDB::OnGDBTerminated(wxCommandEvent& event)
     MarkAsStopped();
 
     ///killerbot : run there the post shell commands ?
-}
-
-void DebuggerGDB::OnLoaderOutput(wxCommandEvent& event)
-{
-    wxString msg = event.GetString();
-    if (!msg.IsEmpty())
-        LogLoader(msg);
-}
-
-void DebuggerGDB::OnLoaderError(wxCommandEvent& event)
-{
-    wxString msg = event.GetString();
-    if (!msg.IsEmpty())
-        LogLoader(msg);
-}
-
-void DebuggerGDB::OnLoaderTerminated(wxCommandEvent& event)
-{
-    Log(_("Loader finished"));
 }
 
 void DebuggerGDB::KillConsole()

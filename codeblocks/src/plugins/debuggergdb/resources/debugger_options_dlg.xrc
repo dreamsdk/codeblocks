@@ -110,32 +110,13 @@
 						<object class="wxBoxSizer">
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT5">
-									<label>Ready message:</label>
+									<label>Waiting time:</label>
 								</object>
 								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 								<border>5</border>
 							</object>
 							<object class="sizeritem">
-								<object class="wxTextCtrl" name="txtLoaderReadyMessage" />
-								<flag>wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
-						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
-						<border>5</border>
-					</object>
-					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT6">
-									<label>Timeout in seconds:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxSpinCtrl" name="spnLoaderTimeout" />
+								<object class="wxSpinCtrl" name="spnLoaderWaitingTime" />
 								<flag>wxEXPAND</flag>
 								<border>5</border>
 								<option>1</option>

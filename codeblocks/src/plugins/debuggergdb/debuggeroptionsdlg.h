@@ -40,8 +40,7 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
         bool IsLoaderNecessary();
         wxString GetLoaderExecutable(bool expandMacro = true);
         wxString GetLoaderArguments(bool expandMacro = true);
-        wxString GetLoaderReadyMessage();
-        int GetLoaderTimeout();
+        int GetLoaderWaitingTime();
 };
 
 #endif // DEBUGGEROPTIONSDLG_H

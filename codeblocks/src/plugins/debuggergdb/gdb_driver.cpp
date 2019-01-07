@@ -378,6 +378,10 @@ bool GDB_driver::UseDebugBreakProcess()
 {
     RemoteDebugging* rd = GetRemoteDebuggingInfo();
     bool remoteDebugging = rd && rd->IsOk();
+    if (remoteDebugging)
+    {
+        DebugLog(_("Remote Debugging is enabled!"));
+    }
     return !remoteDebugging;
 }
 #endif
