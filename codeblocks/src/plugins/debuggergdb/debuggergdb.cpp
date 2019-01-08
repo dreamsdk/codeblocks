@@ -796,8 +796,8 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         // make sure it's not a native and loaded target...
         if (target && target->GetTargetType() == ttNative && !IsDebugTarget(target) && !GetActiveConfigEx().GetLoaderExecutable().empty())
         {
-            cbMessageBox(_("The selected target is a Release target\n"
-                           "Can't debug such a target..."), _("Information"), wxICON_INFORMATION);
+            cbMessageBox(_("The selected target is a Release target.\n"
+                           "Please select the Debug target if you want to debug the project."), _("Warning"), wxICON_WARNING);
             Log(_("aborted"));
             m_Canceled = true;
             return 3;

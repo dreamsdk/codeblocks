@@ -2648,9 +2648,12 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
         return; // called from invalid caller
 
     // common part follows
-    wxString file_selection = _("All files (*)|*");
+    wxString file_selection = wxEmptyString;
     if (platform::windows)
-        file_selection = _("Executable files (*.exe)|*.exe");
+    {
+        file_selection = _("Executable files (*.exe;*.cmd)|*.exe;*.cmd|");
+    }
+    file_selection += _("All files (*)|*");
     wxFileDialog dlg(this,
                      _("Select file"),
                      XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue() + _T("/bin"),

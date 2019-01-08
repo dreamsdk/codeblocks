@@ -2072,7 +2072,8 @@ int CompilerGCC::Run(ProjectBuildTarget* target)
         }
         else
         {
-            cbMessageBox(_("Sorry, Debug target can only be debugged through GDB.\nPlease select the Release target in order to run your project..."), _("Information"), wxICON_INFORMATION);
+            cbMessageBox(_("The selected target is a Debug target.\n"
+                           "Please select the Release target if you want to run the project."), _("Warning"), wxICON_WARNING);
             m_pProject->SetCurrentlyCompilingTarget(0);
             return -1;
         }
