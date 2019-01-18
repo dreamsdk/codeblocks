@@ -26,6 +26,7 @@
 #include "scriptbindings.h"
 #include <cbexception.h>
 #include "sc_base_types.h"
+#include "projectloader_hooks.h"
 
 namespace ScriptBindings
 {
@@ -265,6 +266,24 @@ namespace ScriptBindings
         }
         return sa.ThrowError("Invalid arguments to \"cbProject::ExportTargetAsProject\"");
     }
+
+    SQInteger cbProject_CallHooks(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount == 2)
+        {
+            cbProject* prj = SqPlus::GetInstance<cbProject,false>(v, 1);
+            if (!prj)
+                return sa.ThrowError("Null project in \"cbProject::CallHooks\"");
+            bool isLoading = (sa.GetBool(2) != 0);
+
+            ProjectLoaderHooks::CallHooks(prj, prj->GetExtensionsNode()->ToElement(), isLoading);
+            return 1;
+        }
+        return sa.ThrowError("Invalid arguments to \"cbProject::CallHooks\"");
+    }
+
     SQInteger ProjectManager_AddFileToProject(HSQUIRRELVM v)
     {
         StackHandler sa(v);
@@ -582,6 +601,7 @@ namespace ScriptBindings
                 func(&cbProject::GetCheckForExternallyModifiedFiles, "GetCheckForExternallyModifiedFiles").
                 func(&cbProject::ShowNotes, "ShowNotes").
                 func(&cbProject::AddToExtensions, "AddToExtensions").
+                staticFuncVarArgs(cbProject_CallHooks, "CallHooks", "*").
                 func(&cbProject::DefineVirtualBuildTarget, "DefineVirtualBuildTarget").
                 func(&cbProject::HasVirtualBuildTarget, "HasVirtualBuildTarget").
                 func(&cbProject::RemoveVirtualBuildTarget, "RemoveVirtualBuildTarget").
