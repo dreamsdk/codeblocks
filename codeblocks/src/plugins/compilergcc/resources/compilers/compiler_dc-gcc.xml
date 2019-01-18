@@ -7,9 +7,9 @@
     <Path type="master">
         <Search envVar="DREAMSDK_HOME" for="C"/>
         <Search envVar="PATH" for="C"/>
-		<Search path="C:\DreamSDK*\msys\1.0\opt\toolchains\dc\sh-elf"/>
+		<Search path="C:\DreamSDK\msys\1.0\opt\toolchains\dc\sh-elf"/>
 		<Fallback path="C:\DreamSDK\msys\1.0\opt\toolchains\dc\sh-elf"/>        
-    </Path>    
+    </Path>
 	<Path type="include">
 		<Add><master/><separator/>include</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>include</Add>

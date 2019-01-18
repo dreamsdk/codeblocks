@@ -2300,6 +2300,12 @@
 		<Unit filename="plugins/scriptedwizard/resources/d/wizard.script">
 			<Option target="Scripted wizard" />
 		</Unit>
+		<Unit filename="plugins/scriptedwizard/resources/dc/wizard.script">
+			<Option target="Scripted wizard" />
+		</Unit>
+		<Unit filename="plugins/scriptedwizard/resources/dc/wizard.xrc">
+			<Option target="Scripted wizard" />
+		</Unit>
 		<Unit filename="plugins/scriptedwizard/resources/directx/wizard.script">
 			<Option target="Scripted wizard" />
 		</Unit>

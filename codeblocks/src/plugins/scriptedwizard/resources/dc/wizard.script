@@ -1,0 +1,474 @@
+////////////////////////////////////////////////////////////////////////////////
+//
+// Code::Blocks new project wizard script
+//
+// Project: Sega Dreamcast Project (DreamSDK)
+// Author:  The DreamSDK Team
+//
+////////////////////////////////////////////////////////////////////////////////
+
+// Global Vars
+ProjectSettings <- {
+    UseRomdisk = false
+    ConsoleLang = 0 // Default to C
+    SelectedLibraryList = ::wxArrayString()
+}
+FileSystemObjects <- {
+    SoftwareDevelopmentKitHelperDir = _T("")
+    MakeRomdiskObjectFile = _T("")
+    WizardBaseDir = _T("")
+    WizardLibraryInformationDir = _T("")
+    TemplateStaticFilesDir = _T("")
+    TemplateDynamicFilesDir = _T("")
+}
+LibraryInformation <- {
+    IncludeList = _T("")
+    LibraryList = _T("")
+}
+Referential <- {
+    IdStr = _T("")
+    IdList = ::wxArrayString()
+    IncludeList = ::wxArrayString()
+    LibraryList = ::wxArrayString()
+}
+
+function BeginWizard()
+{
+    local wiz_type = Wizard.GetWizardType();
+
+    if (wiz_type == wizProject)
+    {
+        if (!InitializeWizard())
+        {
+            ShowError(_T("The path of the DreamSDK seems not to be valid.\n" +
+                         "Please check if the Global Variable \"dreamsdk_home\" is properly defined."));
+            return false;
+        }
+
+        // Introduction
+        local intro_msg = _T("Welcome to the Sega Dreamcast Project Wizard\n\n" +
+                             "This wizard will guide you to create a new Sega Dreamcast project.\n\n" +
+                             "When you are ready to proceed, please click \"Next\".");
+        Wizard.AddInfoPage(_T("IntroductionPage"), intro_msg);
+
+        // Project Information
+        Wizard.AddProjectPathPage();
+
+        // Compiler
+        Wizard.AddCompilerPage(_T("GNU GCC Compiler for Sega Dreamcast"), _T("dc-gcc"), true, false);
+
+        // Programming Language
+        Wizard.AddGenericSingleChoiceListPage(_T("ConsoleLanguagePage"), _T("Please select the language you want to use."), _T("C;C++"), ProjectSettings.ConsoleLang);
+
+        // Settings
+        Wizard.AddPage(_T("SettingsPage"));
+    }
+    else
+        print(wiz_type);
+}
+
+function SetupProject(project)
+{
+    project.SetTargetType(ttNative);
+
+    if (ProjectSettings.UseRomdisk)
+    {
+        project.SetVar(_T("DREAMSDK_MKRDOBJ"), FileSystemObjects.MakeRomdiskObjectFile, false);
+        project.AddCommandsBeforeBuild(_T("$(DREAMSDK_MKRDOBJ) $(PROJECT_DIR)"));
+    }
+
+    HandleUserLibraries(project);
+
+    // Initialize build targets
+    local targetDebug = CreateTarget(project, true);
+    local targetRelease = CreateTarget(project, false);
+
+    // Debug build target
+    InitializeTarget(targetDebug, true);
+    SetupDebugger(project);
+
+	// Release build target
+	InitializeTarget(targetRelease, false);
+
+	// Add CPP Exception handling support
+    if (ProjectSettings.ConsoleLang)
+    {
+        project.AddCompilerOption(_T("-fexceptions"));
+    }
+
+	return true;
+}
+
+function GetFilesDir()
+{
+    local result = _T("");
+    if (ProjectSettings.UseRomdisk)
+    {
+        result = FileSystemObjects.TemplateStaticFilesDir;
+    }
+    return result;
+}
+
+function GetGeneratedFile(file_index)
+{
+    switch(file_index)
+    {
+        case 0:
+            return GenerateSource(_T("main"));
+        case 1:
+            if (ProjectSettings.SelectedLibraryList.GetCount())
+            {
+                return GenerateHeader(_T("kosports"));
+            }
+
+    }
+    return _T(""); // no more generated files
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// GUI Events
+///////////////////////////////////////////////////////////////////////////////
+
+function OnEnter_ConsoleLanguagePage(fwd)
+{
+    Wizard.SetListboxSelection(_T("GenericChoiceList"), ProjectSettings.ConsoleLang);
+    return true;
+}
+
+function OnLeave_ConsoleLanguagePage(fwd)
+{
+    if (fwd)
+    {
+        ProjectSettings.ConsoleLang = Wizard.GetListboxSelection(_T("GenericChoiceList"));
+    }
+    return true;
+}
+
+function OnEnter_SettingsPage(fwd)
+{
+    if (fwd)
+    {
+        Wizard.FillContainerWithChoices(_T("lstLibraries"), Referential.IdStr);
+    }
+    return true;
+}
+
+function OnLeave_SettingsPage(fwd)
+{
+    if (fwd)
+    {
+        ProjectSettings.UseRomdisk = Wizard.IsCheckboxChecked(_T("cbxUseRomdisk"));
+        ProjectSettings.SelectedLibraryList = GetArrayFromString(Wizard.GetCheckListboxStringChecked(_T("lstLibraries")), _T(";"), false);
+        GenerateUserLibraryInformation();
+    }
+
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Defined Functions
+///////////////////////////////////////////////////////////////////////////////
+
+function InitializeWizard()
+{
+    local result = true;
+
+    // Handle DreamSDK IDE helper directory
+    FileSystemObjects.SoftwareDevelopmentKitHelperDir = GetSoftwareDevelopmentKitHelperDir();
+    if (!IO.DirectoryExists(FileSystemObjects.SoftwareDevelopmentKitHelperDir))
+    {
+        return false;
+    }
+
+    // Compute Make Romdisk Object File utility
+    // This replace basically the genromfs/bin2o commands
+    FileSystemObjects.MakeRomdiskObjectFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("bin2o.cmd");
+
+    // Wizard Base Directory
+    FileSystemObjects.WizardBaseDir = _T("dc") + wxFILE_SEP_PATH;
+
+    // Wizard Library Information Directory
+    FileSystemObjects.WizardLibraryInformationDir = FileSystemObjects.WizardBaseDir + _T("libinfo") + wxFILE_SEP_PATH;
+
+    // Static Files
+    FileSystemObjects.TemplateStaticFilesDir = FileSystemObjects.WizardBaseDir + _T("files") + wxFILE_SEP_PATH;
+
+    // Dynamic Files
+    FileSystemObjects.TemplateDynamicFilesDir = FileSystemObjects.WizardBaseDir + _T("templates") + wxFILE_SEP_PATH;
+
+    // Referential
+    Referential.IdStr = GetFileLibraryInfo(_T("id"));
+    Referential.IdList = GetArrayFromString(Referential.IdStr, _T(";"), false);
+    Referential.IncludeList = GetArrayFromString(GetFileLibraryInfo(_T("inc")), _T(";"), false);
+    Referential.LibraryList = GetArrayFromString(GetFileLibraryInfo(_T("lib")), _T(";"), false);
+
+    if (Referential.IdStr.IsEmpty())
+    {
+        ShowWarning(_T("No KallistiOS Ports are installed.\n" +
+                       "You can use DreamSDK Manager to install KallistiOS Ports."));
+    }
+
+    return result;
+}
+
+// -----------------------------------------------------------------------------
+// get the DreamSDK home folder for IDE helper scripts
+function GetSoftwareDevelopmentKitHelperDir()
+{
+    local dreamsdk = ReplaceMacros(_T("$(#DREAMSDK_HOME)"), true);
+
+    local result = dreamsdk +
+        _T("msys") + wxFILE_SEP_PATH +
+        _T("1.0") + wxFILE_SEP_PATH +
+        _T("opt") + wxFILE_SEP_PATH +
+        _T("dreamsdk") + wxFILE_SEP_PATH +
+        _T("ide") + wxFILE_SEP_PATH;
+
+    return result;
+}
+
+// -----------------------------------------------------------------------------
+// handle user library repository
+function GetFileLibraryInfo(fileId)
+{
+    local buffer = _T("");
+    local filePath = Wizard.FindTemplateFile(FileSystemObjects.WizardLibraryInformationDir + fileId + _T(".dat"));
+    if (IO.FileExists(filePath))
+    {
+        buffer = IO.ReadFileContents(filePath);
+        buffer.Replace(_T("\r\n"), _T(";"));
+        buffer.Replace(_T("\r"), _T(";"));
+        buffer.Replace(_T("\n"), _T(";"));
+
+    }
+    return buffer;
+}
+
+// -----------------------------------------------------------------------------
+// generate user library information (includes/libs)
+function GenerateUserLibraryInformation()
+{
+    LibraryInformation.IncludeList = _T("");
+    LibraryInformation.LibraryList = _T("");
+
+    for (local i = 0; i < ProjectSettings.SelectedLibraryList.GetCount(); i++)
+    {
+        local libraryIndex = Referential.IdList.Index(ProjectSettings.SelectedLibraryList.Item(i));
+
+        // Handle includes
+        local libraryInc = GetArrayFromString(Referential.IncludeList.Item(libraryIndex), _T("|"), false);
+        for(local j = 0; j < libraryInc.GetCount(); j++)
+        {
+            LibraryInformation.IncludeList = LibraryInformation.IncludeList + _T("#include <") + libraryInc.Item(j) + _T(">\r\n");
+        }
+
+        // Handle libraries
+        local sep = (LibraryInformation.LibraryList.IsEmpty()) ? _T("") : _T(";");
+        local libraryLink = GetArrayFromString(Referential.LibraryList.Item(libraryIndex), _T("|"), false);
+        for(local j = 0; j < libraryLink.GetCount(); j++)
+        {
+            LibraryInformation.LibraryList = LibraryInformation.LibraryList + sep + libraryLink.Item(j);
+            sep = _T(";");
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// add user library information to the project
+function HandleUserLibraries(project)
+{
+    local libraries = GetArrayFromString(LibraryInformation.LibraryList, _T(";"), false);
+    for(local i = 0; i < libraries.GetCount(); i++)
+    {
+        project.AddLinkLib(libraries.Item(i));
+    }
+}
+
+// -----------------------------------------------------------------------------
+// create the Debug and Release targets
+// these targets are mandatory
+function CreateTarget(project, isDebugTarget)
+{
+    local target, targetName;
+
+    if (isDebugTarget)
+    {
+        targetName = Wizard.GetDebugName();
+        target = project.GetBuildTarget(_T("default"));
+        if (IsNull(target))
+        {
+            target = project.AddBuildTarget(targetName);
+        }
+        else
+        {
+            project.RenameBuildTarget(_T("default"), targetName);
+        }
+    }
+    else
+    {
+        targetName = Wizard.GetReleaseName();
+        target = project.DuplicateBuildTarget(0, targetName);
+    }
+
+    return target;
+}
+
+// -----------------------------------------------------------------------------
+// initialize the build target
+function InitializeTarget(target, isDebugTarget)
+{
+    local outputDir, outputObjDir;
+
+    if (isDebugTarget)
+    {
+        outputDir = Wizard.GetDebugOutputDir();
+        outputObjDir = Wizard.GetDebugObjectOutputDir();
+    }
+    else
+    {
+        outputDir = Wizard.GetReleaseOutputDir();
+        outputObjDir = Wizard.GetReleaseObjectOutputDir();
+    }
+
+    target.SetTargetType(ttNative);
+    target.SetTargetFilenameGenerationPolicy(tgfpPlatformDefault, tgfpNone);
+    target.SetOutputFilename(outputDir + Wizard.GetProjectName() + _T(".elf"));
+    target.SetObjectOutput(outputObjDir);
+
+    if (ProjectSettings.UseRomdisk)
+    {
+        target.AddLinkerOption(outputObjDir + _T("romdisk.o"));
+    }
+
+    if (isDebugTarget)
+    {
+        target.AddCompilerOption(_T("-g -Wa,-g -Wl,-g"));
+        target.AddCompilerOption(_T("-DDEBUG"));
+    }
+    else
+    {
+        target.AddCompilerOption(_T("-O2"));
+        target.AddCompilerOption(_T("-DRELEASE"));
+    }
+
+    return target;
+}
+
+// -----------------------------------------------------------------------------
+// configure the debugger parameters
+function SetupDebugger(project)
+{
+    project.AddToExtensions(_T("debugger/remote_debugging/options:conn_type=0"));
+    project.AddToExtensions(_T("debugger/remote_debugging/options:ip_address=localhost"));
+    project.AddToExtensions(_T("debugger/remote_debugging/options:ip_port=2159"));
+    project.AddToExtensions(_T("debugger/remote_debugging/options:loader_waiting_time=0"));
+    project.AddToExtensions(_T("debugger/remote_debugging:target=Debug"));
+    project.CallHooks(true);
+}
+
+// -----------------------------------------------------------------------------
+// Generate the project file unit entry
+function GenerateProjectFileUnit(radicalFileName, dotExt)
+{
+    local fileEntry = radicalFileName + dotExt;
+    local path = Wizard.FindTemplateFile(GetTemplateFile(radicalFileName, dotExt));
+    local buffer = IO.ReadFileContents(path);
+    return fileEntry + _T(";") + SubstituteMacros(buffer);
+}
+
+// -----------------------------------------------------------------------------
+// return the header contents string
+function GenerateHeader(radicalFileName)
+{
+    return GenerateProjectFileUnit(radicalFileName, DOT_EXT_H);
+}
+
+// -----------------------------------------------------------------------------
+// return the implementation contents string
+function GenerateSource(radicalFileName)
+{
+    local dotExt = (ProjectSettings.ConsoleLang == 1) ? DOT_EXT_CPP : DOT_EXT_C;
+    return GenerateProjectFileUnit(radicalFileName, dotExt);
+}
+
+// -----------------------------------------------------------------------------
+// return the template's filename, appending <dot_ext> as an extension (must include the dot)
+function GetTemplateFile(radicalFileName, dotExt)
+{
+    return FileSystemObjects.TemplateDynamicFilesDir + radicalFileName + _T("_template") + dotExt;
+}
+
+// -----------------------------------------------------------------------------
+// substitute all plugin macros in <buffer>
+function SubstituteMacros(buffer)
+{
+    buffer = HandleDirective(buffer, _T("ROMDISK"), ProjectSettings.UseRomdisk);
+    buffer = HandleDirective(buffer, _T("KOSPORTS"), ProjectSettings.SelectedLibraryList.GetCount());
+    buffer.Replace(_T("[KOSPORTS_INC]"), LibraryInformation.IncludeList);
+    buffer.Replace(_T("[PROJECT_NAME]"), Wizard.GetProjectName());
+    buffer.Replace(_T("[NOW]"), ReplaceMacros(_T("$(TODAY)"), false));
+    return buffer;
+}
+
+// -----------------------------------------------------------------------------
+// if <enabled> is true, removes the [IF <directive>] and [ENDIF <directive>]
+// macros.
+// if <enabled> is false, removes everything enclosed by the [IF <directive>]
+// and [ENDIF <directive>] macros (including them).
+function HandleDirective(buffer, directive, enabled)
+{
+    local dir_if = _T("[IF ") + directive + _T("]");
+    local dir_endif = _T("[ENDIF ") + directive + _T("]");
+
+    while ( true )
+    {
+        local findStart = buffer.Find(dir_if);
+        if (findStart == -1)
+            return buffer;
+
+        local findEnd = buffer.Find(dir_endif);
+        if (findEnd == -1 || findEnd <= findStart)
+            return buffer;
+
+        // look for [ELSE]
+        local block = buffer.Mid(findStart, findEnd - findStart);
+        local findElse = block.Find(_T("[ELSE]")); // findElse is in "local scope", i.e. offset from findStart
+
+        if (!enabled)
+        {
+            if (findElse == -1)
+            {
+                // remove whole section
+                buffer.Remove(findStart, (findEnd - findStart) + dir_endif.Length());
+            }
+            else
+            {
+                // remove [ENDIF]
+                buffer.Remove(findEnd, dir_endif.Length());
+                // remove from [IF] to [ELSE] (including)
+                buffer.Remove(findStart, findElse + 6); // 6 is the [ELSE] size
+            }
+        }
+        else
+        {
+            if (findElse == -1)
+            {
+                // just remove the directives
+                // we must remove the [ENDIF] first because if we removed the [IF] it would
+                // render the findEnd index invalid!
+                buffer.Remove(findEnd, dir_endif.Length());
+                buffer.Remove(findStart, dir_if.Length());
+            }
+            else
+            {
+                // remove from [ELSE] to [ENDIF]
+                local start = findStart + findElse;
+                buffer.Remove(start, (findEnd - start) + dir_endif.Length());
+                // remove from [IF]
+                buffer.Remove(findStart, dir_if.Length());
+            }
+        }
+    }
+
+    return buffer;
+}
