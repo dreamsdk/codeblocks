@@ -5,7 +5,11 @@ cls
 set BASE_DIR=%~dp0
 set BASE_DIR=%BASE_DIR:~0,-1%
 
-if exist %BASE_DIR%\__DONE__ goto error
+set PACKAGE_FILE=codeblocks_dreamsdk_addon.7z
+set PACKAGE_DONE_DIR=__DONE__
+
+if exist %BASE_DIR%\%PACKAGE_DONE_DIR% goto error
+if exist %PACKAGE_FILE% goto error
 
 set CB_OUTPUT_HOME=..\codeblocks\src\output\
 set PACKAGE_DIR=%BASE_DIR%\package
@@ -43,17 +47,18 @@ copy share\CodeBlocks\compilers\options_dc-gcc.xml %CB_SHARE_COMPILERS_DIR%
 rem Project Wizard
 copy share\CodeBlocks\templates\wizard\config.script %CB_SHARE_TMPL_DIR%
 xcopy share\CodeBlocks\templates\wizard\dc %CB_SHARE_TMPL_DIR%\dc\ /E
+if exist %CB_SHARE_TMPL_DIR%\dc\libinfo\.gitkeep del %CB_SHARE_TMPL_DIR%\dc\libinfo\.gitkeep
 
 :mkpack
 cd %PACKAGE_DIR%
-%SEVENZIP% a -mx9 package.7z .
-move package.7z ..\
+%SEVENZIP% a -mx9 %PACKAGE_FILE% .
+move %PACKAGE_FILE% ..\
 cd ..
-ren %PACKAGE_DIR% __DONE__
+ren %PACKAGE_DIR% %PACKAGE_DONE_DIR%
 goto end
 
 :error
-echo Please delete the __DONE__ folder.
+echo Please delete the %PACKAGE_DONE_DIR% and %PACKAGE_FILE% objects.
 
 :end
 pause
