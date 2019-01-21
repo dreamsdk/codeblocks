@@ -26,10 +26,18 @@ LibraryInformation <- {
     LibraryList = _T("")
 }
 Referential <- {
-    IdStr = _T("")
-    IdList = ::wxArrayString()
-    IncludeList = ::wxArrayString()
-    LibraryList = ::wxArrayString()
+    CLanguage = {
+        IdStr = _T("")
+        IdList = ::wxArrayString()
+        IncludeList = ::wxArrayString()
+        LibraryList = ::wxArrayString()
+    }
+    CPPLanguage = {
+        IdStr = _T("")
+        IdList = ::wxArrayString()
+        IncludeList = ::wxArrayString()
+        LibraryList = ::wxArrayString()
+    }
 }
 
 function BeginWizard()
@@ -77,7 +85,8 @@ function SetupProject(project)
         project.AddCommandsBeforeBuild(_T("$(DREAMSDK_MKRDOBJ) $(PROJECT_DIR)"));
     }
 
-    HandleUserLibraries(project);
+    // Handle libraries
+    HandleLibraries(project);
 
     // Initialize build targets
     local targetDebug = CreateTarget(project, true);
@@ -111,16 +120,9 @@ function GetFilesDir()
 
 function GetGeneratedFile(file_index)
 {
-    switch(file_index)
+    if (file_index == 0)
     {
-        case 0:
-            return GenerateSource(_T("main"));
-        case 1:
-            if (ProjectSettings.SelectedLibraryList.GetCount())
-            {
-                return GenerateHeader(_T("kosports"));
-            }
-
+        return GenerateSource(_T("main"));
     }
     return _T(""); // no more generated files
 }
@@ -148,7 +150,7 @@ function OnEnter_SettingsPage(fwd)
 {
     if (fwd)
     {
-        Wizard.FillContainerWithChoices(_T("lstLibraries"), Referential.IdStr);
+        Wizard.FillContainerWithChoices(_T("lstLibraries"), GetReferentialId());
     }
     return true;
 }
@@ -169,6 +171,61 @@ function OnLeave_SettingsPage(fwd)
 // Defined Functions
 ///////////////////////////////////////////////////////////////////////////////
 
+function LoadReferential(isLangCPP)
+{
+    local id = GetFileLibraryInfo(isLangCPP, _T("id"));
+    local idList = GetArrayFromString(id, _T(";"), false);
+    local inc = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("inc")), _T(";"), false);
+    local lib = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("lib")), _T(";"), false);
+
+    if (isLangCPP)
+    {
+        Referential.CPPLanguage.IdStr = id;
+        Referential.CPPLanguage.IdList = idList;
+        Referential.CPPLanguage.IncludeList = inc;
+        Referential.CPPLanguage.LibraryList = lib;
+    }
+    else
+    {
+        Referential.CLanguage.IdStr = id;
+        Referential.CLanguage.IdList = idList;
+        Referential.CLanguage.IncludeList = inc;
+        Referential.CLanguage.LibraryList = lib;
+    }
+}
+
+function GetReferential()
+{
+    local result = Referential.CLanguage;
+    if (ProjectSettings.ConsoleLang)
+    {
+        result = Referential.CPPLanguage;
+    }
+    return result;
+}
+
+function GetReferentialId()
+{
+    return GetReferential().IdStr;
+}
+
+function GetReferentialIndex(libraryName)
+{
+    return GetReferential().IdList.Index(libraryName);
+}
+
+function GetReferentialInclude(libraryIndex)
+{
+    local data = GetReferential().IncludeList.Item(libraryIndex);
+    return GetArrayFromString(data, _T("|"), false);
+}
+
+function GetReferentialLibrary(libraryIndex)
+{
+    local data = GetReferential().LibraryList.Item(libraryIndex);
+    return GetArrayFromString(data, _T("|"), false);
+}
+
 function InitializeWizard()
 {
     local result = true;
@@ -182,7 +239,7 @@ function InitializeWizard()
 
     // Compute Make Romdisk Object File utility
     // This replace basically the genromfs/bin2o commands
-    FileSystemObjects.MakeRomdiskObjectFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("bin2o.cmd");
+    FileSystemObjects.MakeRomdiskObjectFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("mkrdobj.cmd");
 
     // Wizard Base Directory
     FileSystemObjects.WizardBaseDir = _T("dc") + wxFILE_SEP_PATH;
@@ -196,19 +253,33 @@ function InitializeWizard()
     // Dynamic Files
     FileSystemObjects.TemplateDynamicFilesDir = FileSystemObjects.WizardBaseDir + _T("templates") + wxFILE_SEP_PATH;
 
-    // Referential
-    Referential.IdStr = GetFileLibraryInfo(_T("id"));
-    Referential.IdList = GetArrayFromString(Referential.IdStr, _T(";"), false);
-    Referential.IncludeList = GetArrayFromString(GetFileLibraryInfo(_T("inc")), _T(";"), false);
-    Referential.LibraryList = GetArrayFromString(GetFileLibraryInfo(_T("lib")), _T(";"), false);
+    // Libraries Referential (C)
+    LoadReferential(false);
 
-    if (Referential.IdStr.IsEmpty())
+    // Libraries Referential (CPP)
+    LoadReferential(true);
+
+    if (GetReferential().IdStr.IsEmpty())
     {
-        ShowWarning(_T("No KallistiOS Ports are installed.\n" +
-                       "You can use DreamSDK Manager to install KallistiOS Ports."));
+        ShowWarning(_T("No KallistiOS libraries are installed.\n" +
+                       "You can use DreamSDK Manager to install them."));
     }
 
     return result;
+}
+
+// -----------------------------------------------------------------------------
+// add all required libraries to the project
+function HandleLibraries(project)
+{
+    // C++ library
+    if (ProjectSettings.ConsoleLang)
+    {
+        project.AddLinkLib(_T("stdc++"));
+    }
+
+    // KallistiOS Ports Libraries
+    HandleUserLibraries(project);
 }
 
 // -----------------------------------------------------------------------------
@@ -229,10 +300,12 @@ function GetSoftwareDevelopmentKitHelperDir()
 
 // -----------------------------------------------------------------------------
 // handle user library repository
-function GetFileLibraryInfo(fileId)
+function GetFileLibraryInfo(isLangCPP, fileId)
 {
     local buffer = _T("");
-    local filePath = Wizard.FindTemplateFile(FileSystemObjects.WizardLibraryInformationDir + fileId + _T(".dat"));
+    local langDir = isLangCPP ? _T("cpp") : _T("c");
+    local filePath = Wizard.FindTemplateFile(FileSystemObjects.WizardLibraryInformationDir
+                                             + langDir + wxFILE_SEP_PATH + fileId + _T(".dat"));
     if (IO.FileExists(filePath))
     {
         buffer = IO.ReadFileContents(filePath);
@@ -253,10 +326,12 @@ function GenerateUserLibraryInformation()
 
     for (local i = 0; i < ProjectSettings.SelectedLibraryList.GetCount(); i++)
     {
-        local libraryIndex = Referential.IdList.Index(ProjectSettings.SelectedLibraryList.Item(i));
+        local libraryName = ProjectSettings.SelectedLibraryList.Item(i);
+        local libraryIndex = GetReferentialIndex(libraryName);
 
         // Handle includes
-        local libraryInc = GetArrayFromString(Referential.IncludeList.Item(libraryIndex), _T("|"), false);
+        LibraryInformation.IncludeList = LibraryInformation.IncludeList + _T("\r\n// ") + libraryName + _T("\r\n");
+        local libraryInc = GetReferentialInclude(libraryIndex);
         for(local j = 0; j < libraryInc.GetCount(); j++)
         {
             LibraryInformation.IncludeList = LibraryInformation.IncludeList + _T("#include <") + libraryInc.Item(j) + _T(">\r\n");
@@ -264,7 +339,7 @@ function GenerateUserLibraryInformation()
 
         // Handle libraries
         local sep = (LibraryInformation.LibraryList.IsEmpty()) ? _T("") : _T(";");
-        local libraryLink = GetArrayFromString(Referential.LibraryList.Item(libraryIndex), _T("|"), false);
+        local libraryLink = GetReferentialLibrary(libraryIndex);
         for(local j = 0; j < libraryLink.GetCount(); j++)
         {
             LibraryInformation.LibraryList = LibraryInformation.LibraryList + sep + libraryLink.Item(j);
@@ -363,7 +438,7 @@ function SetupDebugger(project)
     project.AddToExtensions(_T("debugger/remote_debugging/options:ip_port=2159"));
     project.AddToExtensions(_T("debugger/remote_debugging/options:loader_waiting_time=0"));
     project.AddToExtensions(_T("debugger/remote_debugging:target=Debug"));
-    project.CallHooks(true);
+    project.CallHooks(true); // This is NOT a standard method. It uses a patched codeblocks.dll "SDK" library (provided in that trunk)
 }
 
 // -----------------------------------------------------------------------------
@@ -403,8 +478,8 @@ function GetTemplateFile(radicalFileName, dotExt)
 function SubstituteMacros(buffer)
 {
     buffer = HandleDirective(buffer, _T("ROMDISK"), ProjectSettings.UseRomdisk);
-    buffer = HandleDirective(buffer, _T("KOSPORTS"), ProjectSettings.SelectedLibraryList.GetCount());
-    buffer.Replace(_T("[KOSPORTS_INC]"), LibraryInformation.IncludeList);
+    buffer = HandleDirective(buffer, _T("KOSLIBS"), ProjectSettings.SelectedLibraryList.GetCount());
+    buffer.Replace(_T("[KOSLIBS_INC]"), LibraryInformation.IncludeList);
     buffer.Replace(_T("[PROJECT_NAME]"), Wizard.GetProjectName());
     buffer.Replace(_T("[NOW]"), ReplaceMacros(_T("$(TODAY)"), false));
     return buffer;

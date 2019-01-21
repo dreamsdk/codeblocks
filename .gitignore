@@ -38,3 +38,9 @@ output/
 *.depend
 *.layout
 autorevision.h
+
+# DreamSDK specific files
+codeblocks_dreamsdk_addon.7z
+id.dat
+inc.dat
+lib.dat

@@ -7,8 +7,7 @@
 #ifdef DEBUG
 #include <arch/gdb.h>
 #endif
-[IF KOSPORTS]#include "kosports.h"[ENDIF KOSPORTS]
-
+[KOSLIBS_INC]
 /* These macros tell KOS how to initialize itself. All of this initialization
    happens before main() gets called, and the shutdown happens afterwards. So
    you need to set any flags you want here. Here are some possibilities:
@@ -28,7 +27,7 @@ extern uint8 romdisk[];
 KOS_INIT_ROMDISK(romdisk);[ENDIF ROMDISK]
 
 /* Your program's main entry point */
-int main(int argc, char **argv) {
+int main(int argc, char *argv[]) {
 #ifdef DEBUG
 	gdb_init();
 #endif
