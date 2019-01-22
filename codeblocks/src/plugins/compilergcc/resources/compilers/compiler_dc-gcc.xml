@@ -10,15 +10,13 @@
 		<Search path="C:\DreamSDK\msys\1.0\opt\toolchains\dc\sh-elf"/>
 		<Fallback path="C:\DreamSDK\msys\1.0\opt\toolchains\dc\sh-elf"/>        
     </Path>
-	<Path type="include">
-		<Add><master/><separator/>include</Add>
+	<Path type="include">		
 		<Add><master/><separator/>..<separator/>kos<separator/>include</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>kernel<separator/>arch<separator/>dreamcast<separator/>include</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>addons<separator/>include</Add>
 		<Add><master/><separator/>..<separator/>kos-ports<separator/>include</Add>
 	</Path>
 	<Path type="lib">
-		<Add><master/><separator/>lib</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>lib<separator/>dreamcast</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>addons<separator/>lib<separator/>dreamcast</Add>
 		<Add><master/><separator/>..<separator/>kos-ports<separator/>lib</Add>
@@ -26,9 +24,6 @@
 	<Path type="extra">
 		<Add><master/><separator/>..<separator/>bin<separator/></Add>
 		<Add><master/><separator/>..<separator/>..<separator/>..<separator/>dreamsdk</Add>
-		<Add><master/><separator/>..<separator/>kos<separator/>utils<separator/>bin2o</Add>
-		<Add><master/><separator/>..<separator/>kos<separator/>utils<separator/>genromfs</Add>
-		<Add><master/><separator/>..<separator/>kos<separator/>utils<separator/>ldscripts</Add>
 		<Add><master/><separator/>..<separator/>kos<separator/>utils<separator/>vqenc</Add>
 	</Path>
 </CodeBlocks_compiler>

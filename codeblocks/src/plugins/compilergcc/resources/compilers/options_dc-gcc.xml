@@ -69,9 +69,14 @@
 				option="-fomit-frame-pointer"				
 				checkAgainst="-g -ggdb"
 				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."/>
-	</Category>	  	  
-
+	</Category>
+	
     <Command name="CompileObject" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -c $file -o $object"/>			 
+    <Command name="CompileObject" ext="cpp" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
+    <Command name="CompileObject" ext="cc" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
+    <Command name="CompileObject" ext="cxx" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
+    <Command name="CompileObject" ext="c++" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
+    <Command name="CompileObject" ext="cp" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-strict-aliasing -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
     <Command name="GenDependencies" value=""/>
 	<Command name="CompileResource" value=""/>
 	<Command name="LinkExe" value=""/>

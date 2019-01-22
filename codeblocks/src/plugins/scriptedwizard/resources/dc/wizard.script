@@ -82,7 +82,7 @@ function SetupProject(project)
     if (ProjectSettings.UseRomdisk)
     {
         project.SetVar(_T("DREAMSDK_MKRDOBJ"), FileSystemObjects.MakeRomdiskObjectFile, false);
-        project.AddCommandsBeforeBuild(_T("$(DREAMSDK_MKRDOBJ) $(PROJECT_DIR)"));
+        project.AddCommandsBeforeBuild(_T("$(DREAMSDK_MKRDOBJ) $(PROJECT_DIR) $(TARGET_OBJECT_DIR)"));
     }
 
     // Handle libraries
@@ -98,12 +98,6 @@ function SetupProject(project)
 
 	// Release build target
 	InitializeTarget(targetRelease, false);
-
-	// Add CPP Exception handling support
-    if (ProjectSettings.ConsoleLang)
-    {
-        project.AddCompilerOption(_T("-fexceptions"));
-    }
 
 	return true;
 }
@@ -272,14 +266,14 @@ function InitializeWizard()
 // add all required libraries to the project
 function HandleLibraries(project)
 {
+    // KallistiOS Ports Libraries
+    HandleUserLibraries(project);
+
     // C++ library
     if (ProjectSettings.ConsoleLang)
     {
         project.AddLinkLib(_T("stdc++"));
     }
-
-    // KallistiOS Ports Libraries
-    HandleUserLibraries(project);
 }
 
 // -----------------------------------------------------------------------------
