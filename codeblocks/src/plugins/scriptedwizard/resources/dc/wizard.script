@@ -22,8 +22,9 @@ FileSystemObjects <- {
     TemplateDynamicFilesDir = _T("")
 }
 LibraryInformation <- {
-    IncludeList = _T("")
-    LibraryList = _T("")
+    IncludeBufferText = _T("")
+    LibraryList = ::wxArrayString()
+    LibrarySortList = ::wxArrayString()
 }
 Referential <- {
     CLanguage = {
@@ -31,13 +32,18 @@ Referential <- {
         IdList = ::wxArrayString()
         IncludeList = ::wxArrayString()
         LibraryList = ::wxArrayString()
+        LibrarySortList = ::wxArrayString()
     }
     CPPLanguage = {
         IdStr = _T("")
         IdList = ::wxArrayString()
         IncludeList = ::wxArrayString()
         LibraryList = ::wxArrayString()
+        LibrarySortList = ::wxArrayString()
     }
+}
+Constants <- {
+    DefaultCompilerId = _T("dc-gcc")
 }
 
 function BeginWizard()
@@ -63,7 +69,7 @@ function BeginWizard()
         Wizard.AddProjectPathPage();
 
         // Compiler
-        Wizard.AddCompilerPage(_T("GNU GCC Compiler for Sega Dreamcast"), _T("dc-gcc"), true, false);
+        Wizard.SetCompilerDefault(Constants.DefaultCompilerId);
 
         // Programming Language
         Wizard.AddGenericSingleChoiceListPage(_T("ConsoleLanguagePage"), _T("Please select the language you want to use."), _T("C;C++"), ProjectSettings.ConsoleLang);
@@ -78,6 +84,8 @@ function BeginWizard()
 function SetupProject(project)
 {
     project.SetTargetType(ttNative);
+    project.SetCompilerID(Constants.DefaultCompilerId);
+    project.AddCompilerOption(_T("-Wall"));
 
     if (ProjectSettings.UseRomdisk)
     {
@@ -88,15 +96,13 @@ function SetupProject(project)
     // Handle libraries
     HandleLibraries(project);
 
-    // Initialize build targets
-    local targetDebug = CreateTarget(project, true);
-    local targetRelease = CreateTarget(project, false);
-
     // Debug build target
+    local targetDebug = project.GetBuildTarget(Wizard.GetDebugName());
     InitializeTarget(targetDebug, true);
     SetupDebugger(project);
 
 	// Release build target
+	local targetRelease = project.GetBuildTarget(Wizard.GetReleaseName());
 	InitializeTarget(targetRelease, false);
 
 	return true;
@@ -171,6 +177,7 @@ function LoadReferential(isLangCPP)
     local idList = GetArrayFromString(id, _T(";"), false);
     local inc = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("inc")), _T(";"), false);
     local lib = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("lib")), _T(";"), false);
+    local sort = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("sort")), _T(";"), false);
 
     if (isLangCPP)
     {
@@ -178,6 +185,7 @@ function LoadReferential(isLangCPP)
         Referential.CPPLanguage.IdList = idList;
         Referential.CPPLanguage.IncludeList = inc;
         Referential.CPPLanguage.LibraryList = lib;
+        Referential.CPPLanguage.LibrarySortList = sort;
     }
     else
     {
@@ -185,6 +193,7 @@ function LoadReferential(isLangCPP)
         Referential.CLanguage.IdList = idList;
         Referential.CLanguage.IncludeList = inc;
         Referential.CLanguage.LibraryList = lib;
+        Referential.CLanguage.LibrarySortList = sort;
     }
 }
 
@@ -208,16 +217,25 @@ function GetReferentialIndex(libraryName)
     return GetReferential().IdList.Index(libraryName);
 }
 
+function GetReferentialLibraryInfo(libraryData, libraryIndex)
+{
+    local data = libraryData.Item(libraryIndex);
+    return GetArrayFromString(data, _T("|"), false);
+}
+
 function GetReferentialInclude(libraryIndex)
 {
-    local data = GetReferential().IncludeList.Item(libraryIndex);
-    return GetArrayFromString(data, _T("|"), false);
+    return GetReferentialLibraryInfo(GetReferential().IncludeList, libraryIndex);
 }
 
 function GetReferentialLibrary(libraryIndex)
 {
-    local data = GetReferential().LibraryList.Item(libraryIndex);
-    return GetArrayFromString(data, _T("|"), false);
+    return GetReferentialLibraryInfo(GetReferential().LibraryList, libraryIndex);
+}
+
+function GetReferentialLibrarySortIndex(libraryIndex)
+{
+    return GetReferentialLibraryInfo(GetReferential().LibrarySortList, libraryIndex);
 }
 
 function InitializeWizard()
@@ -277,6 +295,33 @@ function HandleLibraries(project)
 }
 
 // -----------------------------------------------------------------------------
+// add user library information to the project
+function HandleUserLibraries(project)
+{
+    local separator = _T(":");
+
+    local buffer = ::wxArrayString();
+    local libraries = LibraryInformation.LibraryList;
+    local sortData = LibraryInformation.LibrarySortList;
+
+    // Add libraries name with weight (sort data)
+    for(local i = 0; i < libraries.GetCount(); i++)
+    {
+        local library = libraries.Item(i);
+        local sortIndex = sortData.Item(i);
+        buffer.Add(sortIndex + separator + library, 1);
+    }
+    buffer = JumpDownSort(buffer);
+
+    // Everything is now sorted.
+    // Remove the weight information before adding the libs.
+    for(local i = 0; i < buffer.GetCount(); i++)
+    {
+        project.AddLinkLib(buffer.Item(i).AfterFirst(separator));
+    }
+}
+
+// -----------------------------------------------------------------------------
 // get the DreamSDK home folder for IDE helper scripts
 function GetSoftwareDevelopmentKitHelperDir()
 {
@@ -315,71 +360,34 @@ function GetFileLibraryInfo(isLangCPP, fileId)
 // generate user library information (includes/libs)
 function GenerateUserLibraryInformation()
 {
-    LibraryInformation.IncludeList = _T("");
-    LibraryInformation.LibraryList = _T("");
+    LibraryInformation.IncludeBufferText = _T("");
+    LibraryInformation.LibraryList.Clear();
+    LibraryInformation.LibrarySortList.Clear();
 
     for (local i = 0; i < ProjectSettings.SelectedLibraryList.GetCount(); i++)
     {
-        local libraryName = ProjectSettings.SelectedLibraryList.Item(i);
-        local libraryIndex = GetReferentialIndex(libraryName);
+        local selectedLibraryName = ProjectSettings.SelectedLibraryList.Item(i);
+        local selectedLibraryIndex = GetReferentialIndex(selectedLibraryName);
 
         // Handle includes
-        LibraryInformation.IncludeList = LibraryInformation.IncludeList + _T("\r\n// ") + libraryName + _T("\r\n");
-        local libraryInc = GetReferentialInclude(libraryIndex);
+        LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("\r\n// ") + selectedLibraryName + _T("\r\n");
+        local libraryInc = GetReferentialInclude(selectedLibraryIndex);
         for(local j = 0; j < libraryInc.GetCount(); j++)
         {
-            LibraryInformation.IncludeList = LibraryInformation.IncludeList + _T("#include <") + libraryInc.Item(j) + _T(">\r\n");
+            LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include <") + libraryInc.Item(j) + _T(">\r\n");
         }
 
         // Handle libraries
-        local sep = (LibraryInformation.LibraryList.IsEmpty()) ? _T("") : _T(";");
-        local libraryLink = GetReferentialLibrary(libraryIndex);
-        for(local j = 0; j < libraryLink.GetCount(); j++)
+        local libraryNameList = GetReferentialLibrary(selectedLibraryIndex);
+        local librarySortList = GetReferentialLibrarySortIndex(selectedLibraryIndex);
+        for(local j = 0; j < libraryNameList.GetCount(); j++)
         {
-            LibraryInformation.LibraryList = LibraryInformation.LibraryList + sep + libraryLink.Item(j);
-            sep = _T(";");
+            local libraryName = libraryNameList.Item(j);
+            local librarySortIndex = librarySortList.Item(j);
+            LibraryInformation.LibraryList.Add(libraryName, 1);
+            LibraryInformation.LibrarySortList.Add(librarySortIndex, 1);
         }
     }
-}
-
-// -----------------------------------------------------------------------------
-// add user library information to the project
-function HandleUserLibraries(project)
-{
-    local libraries = GetArrayFromString(LibraryInformation.LibraryList, _T(";"), false);
-    for(local i = 0; i < libraries.GetCount(); i++)
-    {
-        project.AddLinkLib(libraries.Item(i));
-    }
-}
-
-// -----------------------------------------------------------------------------
-// create the Debug and Release targets
-// these targets are mandatory
-function CreateTarget(project, isDebugTarget)
-{
-    local target, targetName;
-
-    if (isDebugTarget)
-    {
-        targetName = Wizard.GetDebugName();
-        target = project.GetBuildTarget(_T("default"));
-        if (IsNull(target))
-        {
-            target = project.AddBuildTarget(targetName);
-        }
-        else
-        {
-            project.RenameBuildTarget(_T("default"), targetName);
-        }
-    }
-    else
-    {
-        targetName = Wizard.GetReleaseName();
-        target = project.DuplicateBuildTarget(0, targetName);
-    }
-
-    return target;
 }
 
 // -----------------------------------------------------------------------------
@@ -400,6 +408,7 @@ function InitializeTarget(target, isDebugTarget)
     }
 
     target.SetTargetType(ttNative);
+    target.SetCompilerID(Constants.DefaultCompilerId);
     target.SetTargetFilenameGenerationPolicy(tgfpPlatformDefault, tgfpNone);
     target.SetOutputFilename(outputDir + Wizard.GetProjectName() + _T(".elf"));
     target.SetObjectOutput(outputObjDir);
@@ -409,6 +418,7 @@ function InitializeTarget(target, isDebugTarget)
         target.AddLinkerOption(outputObjDir + _T("romdisk.o"));
     }
 
+    target.AddCompilerOption(_T("-Wall"));
     if (isDebugTarget)
     {
         target.AddCompilerOption(_T("-g -Wa,-g -Wl,-g"));
@@ -473,7 +483,7 @@ function SubstituteMacros(buffer)
 {
     buffer = HandleDirective(buffer, _T("ROMDISK"), ProjectSettings.UseRomdisk);
     buffer = HandleDirective(buffer, _T("KOSLIBS"), ProjectSettings.SelectedLibraryList.GetCount());
-    buffer.Replace(_T("[KOSLIBS_INC]"), LibraryInformation.IncludeList);
+    buffer.Replace(_T("[KOSLIBS_INC]"), LibraryInformation.IncludeBufferText);
     buffer.Replace(_T("[PROJECT_NAME]"), Wizard.GetProjectName());
     buffer.Replace(_T("[NOW]"), ReplaceMacros(_T("$(TODAY)"), false));
     return buffer;
@@ -540,4 +550,20 @@ function HandleDirective(buffer, directive, enabled)
     }
 
     return buffer;
+}
+
+// -----------------------------------------------------------------------------
+// Sort an wxArrayString (or any array type) using the jump-down sort algorithm.
+function JumpDownSort(array)
+{
+    for(local i = array.GetCount() - 1; i > 0; i--)
+        for(local j = 0; j < i; j++)
+            if (array.Item(i) < array.Item(j))
+            {
+                local tmp = array.Item(i);
+                array.SetItem(i, array.Item(j));
+                array.SetItem(j, tmp);
+            }
+
+    return array;
 }
