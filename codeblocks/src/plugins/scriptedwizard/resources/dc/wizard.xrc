@@ -18,14 +18,14 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxStaticText" name="m_staticText2">
-					<label>Libraries</label>
+					<label>Please select the libraries you want to use.</label>
 				</object>
 				<flag>wxALL</flag>
 				<border>5</border>
 			</object>
 			<object class="sizeritem">
 				<object class="wxCheckListBox" name="lstLibraries">
-					<size>226,100</size>
+					<size>250,250</size>
 					<style>wxLB_SORT</style>
 				</object>
 				<flag>wxALL</flag>

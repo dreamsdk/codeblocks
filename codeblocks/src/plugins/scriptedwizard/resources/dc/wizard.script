@@ -3,13 +3,13 @@
 // Code::Blocks new project wizard script
 //
 // Project: Sega Dreamcast Project (DreamSDK)
-// Author:  The DreamSDK Team
+// Author:  The DreamSDK Team (http://dreamsdk.org)
 //
 ////////////////////////////////////////////////////////////////////////////////
 
 // Global Vars
 ProjectSettings <- {
-    UseRomdisk = false
+    UseRomdisk = true // Use a Romdisk by default
     ConsoleLang = 0 // Default to C
     SelectedLibraryList = ::wxArrayString()
 }
@@ -60,9 +60,9 @@ function BeginWizard()
         }
 
         // Introduction
-        local intro_msg = _T("Welcome to the Sega Dreamcast Project Wizard\n\n" +
+        local intro_msg = _T("Welcome to the Sega Dreamcast Project Wizard.\n\n" +
                              "This wizard will guide you to create a new Sega Dreamcast project.\n\n" +
-                             "When you are ready to proceed, please click \"Next\".");
+                             "When you are ready to proceed, please click the \"Next\" button.");
         Wizard.AddInfoPage(_T("IntroductionPage"), intro_msg);
 
         // Project Information
@@ -72,7 +72,9 @@ function BeginWizard()
         Wizard.SetCompilerDefault(Constants.DefaultCompilerId);
 
         // Programming Language
-        Wizard.AddGenericSingleChoiceListPage(_T("ConsoleLanguagePage"), _T("Please select the language you want to use."), _T("C;C++"), ProjectSettings.ConsoleLang);
+        Wizard.AddGenericSingleChoiceListPage(_T("ConsoleLanguagePage"), _T("Please select the language you want to use.\n\n" +
+                                                                            "This choice has an impact on which additional libraries\n" +
+                                                                            "will be available."), _T("C;C++"), ProjectSettings.ConsoleLang);
 
         // Settings
         Wizard.AddPage(_T("SettingsPage"));
@@ -150,6 +152,7 @@ function OnEnter_SettingsPage(fwd)
 {
     if (fwd)
     {
+        Wizard.CheckCheckbox(_T("cbxUseRomdisk"), ProjectSettings.UseRomdisk);
         Wizard.FillContainerWithChoices(_T("lstLibraries"), GetReferentialId());
     }
     return true;
