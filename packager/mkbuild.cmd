@@ -1,18 +1,22 @@
 @echo off
-title Code::Blocks for DreamSDK Packager
+set TITLE=Code::Blocks for DreamSDK Packager
+title %TITLE%
 cls
+
+echo %TITLE%
+echo.
+
+set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.7z
+if exist %PACKAGE_FILE% goto error
+
+echo Preparing: %PACKAGE_FILE%...
 
 set BASE_DIR=%~dp0
 set BASE_DIR=%BASE_DIR:~0,-1%
-
-set PACKAGE_FILE=codeblocks_dreamsdk_addon.7z
-set PACKAGE_DONE_DIR=__DONE__
-
-if exist %BASE_DIR%\%PACKAGE_DONE_DIR% goto error
-if exist %PACKAGE_FILE% goto error
+set JREPL=%BASE_DIR%\tools\jrepl.bat
 
 set CB_OUTPUT_HOME=..\codeblocks\src\output\
-set PACKAGE_DIR=%BASE_DIR%\package
+set PACKAGE_DIR=%BASE_DIR%\.package
 set CB_SHARE_DIR=%PACKAGE_DIR%\share\CodeBlocks
 set CB_SHARE_COMPILERS_DIR=%CB_SHARE_DIR%\compilers
 set CB_SHARE_PLUGINS_DIR=%CB_SHARE_DIR%\plugins
@@ -21,6 +25,7 @@ set SEVENZIP="C:\Program Files\7-Zip\7z.exe"
 
 :mkdirtree
 if not exist %PACKAGE_DIR% mkdir %PACKAGE_DIR%
+attrib +h %PACKAGE_DIR%
 if not exist %PACKAGE_DIR%\share mkdir %PACKAGE_DIR%\share
 if not exist %CB_SHARE_DIR% mkdir %CB_SHARE_DIR%
 if not exist %CB_SHARE_COMPILERS_DIR% mkdir %CB_SHARE_COMPILERS_DIR%
@@ -41,24 +46,39 @@ copy share\CodeBlocks\debugger.zip %CB_SHARE_DIR%
 copy share\CodeBlocks\plugins\debugger.dll %CB_SHARE_PLUGINS_DIR%
 
 rem Compilers
-copy share\CodeBlocks\compilers\compiler_dc-gcc.xml %CB_SHARE_COMPILERS_DIR%
-copy share\CodeBlocks\compilers\options_dc-gcc.xml %CB_SHARE_COMPILERS_DIR%
+set COMPILER_FILE=share\CodeBlocks\compilers\compiler_dc-gcc.xml
+copy %COMPILER_FILE% %CB_SHARE_COMPILERS_DIR%
+call %JREPL% "\bC:\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
+
+rem Compilers Options
+set OPTIONS_FILE=share\CodeBlocks\compilers\options_dc-gcc.xml
+copy %OPTIONS_FILE% %CB_SHARE_COMPILERS_DIR%
+call %JREPL% "\bC:\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\bTC:\\DreamSDK\b" "T{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
 
 rem Project Wizard
 copy share\CodeBlocks\templates\wizard\config.script %CB_SHARE_TMPL_DIR%
 xcopy share\CodeBlocks\templates\wizard\dc %CB_SHARE_TMPL_DIR%\dc\ /E
-if exist %CB_SHARE_TMPL_DIR%\dc\libinfo\.gitkeep del %CB_SHARE_TMPL_DIR%\dc\libinfo\.gitkeep
+
+rem Resetting the libinfo directory
+set LIBINFO_DIR=%CB_SHARE_TMPL_DIR%\dc\libinfo
+if exist %LIBINFO_DIR% (
+  rmdir /S %LIBINFO_DIR% /Q
+  mkdir %LIBINFO_DIR%
+)
 
 :mkpack
 cd %PACKAGE_DIR%
 %SEVENZIP% a -mx9 %PACKAGE_FILE% .
 move %PACKAGE_FILE% ..\
 cd ..
-ren %PACKAGE_DIR% %PACKAGE_DONE_DIR%
+rmdir /S %PACKAGE_DIR% /Q
+echo.
+echo %TITLE% done!
 goto end
 
 :error
-echo Please delete the %PACKAGE_DONE_DIR% and %PACKAGE_FILE% objects.
+echo Error: File exists: %PACKAGE_FILE%
 
 :end
 pause

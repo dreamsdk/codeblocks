@@ -40,7 +40,7 @@ output/
 autorevision.h
 
 # DreamSDK specific files
-codeblocks_dreamsdk_addon.7z
+codeblocks-17.12-dreamsdk-addon-bin.7z
 id.dat
 inc.dat
 lib.dat
