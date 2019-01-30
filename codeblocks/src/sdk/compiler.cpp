@@ -124,6 +124,7 @@ Compiler::Compiler(const Compiler& other) :
     MakeValidID();
 
     m_MasterPath      = other.m_MasterPath;
+    m_LoaderArgs      = other.m_LoaderArgs;
     m_ExtraPaths      = other.m_ExtraPaths;
     m_Programs        = other.m_Programs;
     m_Switches        = other.m_Switches;
@@ -369,6 +370,7 @@ void Compiler::MirrorCurrentSettings()
 
     m_Mirror.Name             = m_Name;
     m_Mirror.MasterPath       = m_MasterPath;
+    m_Mirror.LoaderArgs       = m_LoaderArgs;
     m_Mirror.ExtraPaths       = m_ExtraPaths;
     for (int i = 0; i < ctCount; ++i)
         m_Mirror.Commands[i]  = m_Commands[i];
@@ -458,6 +460,8 @@ void Compiler::SaveSettings(const wxString& baseKey)
 
     if (m_Mirror.MasterPath != m_MasterPath)
         cfg->Write(tmp + _T("/master_path"),     m_MasterPath,         true);
+    if (m_Mirror.LoaderArgs != m_LoaderArgs)
+        cfg->Write(tmp + _T("/loader_args"),     m_LoaderArgs,         true);
     if (m_Mirror.ExtraPaths != m_ExtraPaths)
         cfg->Write(tmp + _T("/extra_paths"),     GetStringFromArray( MakeUniqueArray(m_ExtraPaths, true), _T(";") ), true);
     if (m_Mirror.Programs.C != m_Programs.C)
@@ -474,6 +478,8 @@ void Compiler::SaveSettings(const wxString& baseKey)
         cfg->Write(tmp + _T("/make"),            m_Programs.MAKE,      true);
     if (m_Mirror.Programs.DBGconfig != m_Programs.DBGconfig)
         cfg->Write(tmp + _T("/debugger_config"), m_Programs.DBGconfig, true);
+    if (m_Mirror.Programs.LOADER != m_Programs.LOADER)
+        cfg->Write(tmp + _T("/loader"), m_Programs.LOADER, true);
 
     for (int i = 0; i < ctCount; ++i)
     {
@@ -626,6 +632,7 @@ void Compiler::LoadSettings(const wxString& baseKey)
     m_Name = cfg->Read(tmp + _T("/name"), m_Name);
 
     m_MasterPath         = cfg->Read(tmp + _T("/master_path"),     m_MasterPath);
+    m_LoaderArgs         = cfg->Read(tmp + _T("/loader_args"),     m_LoaderArgs);
     m_ExtraPaths         = MakeUniqueArray(GetArrayFromString(cfg->Read(tmp + _T("/extra_paths"), _T("")), _T(";")), true);
     m_Programs.C         = cfg->Read(tmp + _T("/c_compiler"),      m_Programs.C);
     m_Programs.CPP       = cfg->Read(tmp + _T("/cpp_compiler"),    m_Programs.CPP);
@@ -634,6 +641,7 @@ void Compiler::LoadSettings(const wxString& baseKey)
     m_Programs.WINDRES   = cfg->Read(tmp + _T("/res_compiler"),    m_Programs.WINDRES);
     m_Programs.MAKE      = cfg->Read(tmp + _T("/make"),            m_Programs.MAKE);
     m_Programs.DBGconfig = cfg->Read(tmp + _T("/debugger_config"), m_Programs.DBGconfig);
+    m_Programs.LOADER    = cfg->Read(tmp + _T("/loader"),          m_Programs.LOADER);
 
     // set member variable containing the version string with the configuration toolchain executables, not only
     // with the default ones, otherwise we might have an empty version-string
@@ -909,6 +917,14 @@ void Compiler::LoadDefaultOptions(const wxString& name, int recursion)
                 m_Programs.MAKE = cfg->Read(cmpKey + wxT("/make"), value);
                 m_Mirror.Programs.MAKE = value;
             }
+            else if (prog == wxT("LOADER"))
+            {
+                const wxString loaderArgs = node->GetAttribute(wxT("args"), wxEmptyString);
+                m_Programs.LOADER = cfg->Read(cmpKey + wxT("/loader"), value);
+                m_LoaderArgs = loaderArgs;
+                m_Mirror.Programs.LOADER = value;
+                m_Mirror.LoaderArgs = loaderArgs;
+            }
         }
         else if (node->GetName() == wxT("Switch"))
         {
@@ -1090,6 +1106,7 @@ void Compiler::LoadDefaultOptions(const wxString& name, int recursion)
         m_Programs.LIB     = m_Mirror.Programs.LIB;
         m_Programs.WINDRES = m_Mirror.Programs.WINDRES;
         m_Programs.MAKE    = m_Mirror.Programs.MAKE;
+        m_Programs.LOADER  = m_Mirror.Programs.LOADER;
     }
 }
 
@@ -1282,5 +1299,7 @@ wxString Compiler::GetExecName(const wxString& name)
         ret = m_Programs.WINDRES;
     else if (name == wxT("MAKE"))
         ret = m_Programs.MAKE;
+    else if (name == wxT("LOADER"))
+        ret = m_Programs.LOADER;
     return ret;
 }

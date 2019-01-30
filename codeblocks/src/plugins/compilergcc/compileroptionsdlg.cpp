@@ -479,6 +479,7 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
     const CompilerPrograms& progs = compiler->GetPrograms();
 
     XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->SetValue(compiler->GetMasterPath());
+    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(compiler->GetLoaderArguments());
     XRCCTRL(*this, "txtCcompiler", wxTextCtrl)->SetValue(progs.C);
     XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->SetValue(progs.CPP);
     XRCCTRL(*this, "txtLinker", wxTextCtrl)->SetValue(progs.LD);
@@ -510,6 +511,7 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
 
     XRCCTRL(*this, "txtResComp", wxTextCtrl)->SetValue(progs.WINDRES);
     XRCCTRL(*this, "txtMake", wxTextCtrl)->SetValue(progs.MAKE);
+    XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(progs.LOADER);
 
     const wxArrayString& extraPaths = compiler->GetExtraPaths();
     ArrayString2ListBox(extraPaths, XRCCTRL(*this, "lstExtraPaths", wxListBox));
@@ -595,10 +597,6 @@ void CompilerOptionsDlg::DoFillOthers()
     chk = XRCCTRL(*this, "chkNonPlatComp", wxCheckBox);
     if (chk)
         chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/non_plat_comp"), false));
-
-    ConfigManager *cfg = Manager::Get()->GetConfigManager(_("compiler"));
-    XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(cfg->Read(_T("/loader_executable"), wxEmptyString));
-    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(cfg->Read(_T("/loader_arguments"), wxEmptyString));
 } // DoFillOthers
 
 void CompilerOptionsDlg::DoFillTree()
@@ -1105,12 +1103,14 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
 
     CompilerPrograms progs;
     wxString masterPath = XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue();
+    wxString loaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
     progs.C       = (XRCCTRL(*this, "txtCcompiler",   wxTextCtrl)->GetValue()).Trim();
     progs.CPP     = (XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->GetValue()).Trim();
     progs.LD      = (XRCCTRL(*this, "txtLinker",      wxTextCtrl)->GetValue()).Trim();
     progs.LIB     = (XRCCTRL(*this, "txtLibLinker",   wxTextCtrl)->GetValue()).Trim();
     progs.WINDRES = (XRCCTRL(*this, "txtResComp",     wxTextCtrl)->GetValue()).Trim();
     progs.MAKE    = (XRCCTRL(*this, "txtMake",        wxTextCtrl)->GetValue()).Trim();
+    progs.LOADER  = (XRCCTRL(*this, "txtLoader",      wxTextCtrl)->GetValue()).Trim();
     wxChoice *cmbDebugger = XRCCTRL(*this, "cmbDebugger", wxChoice);
     if (cmbDebugger)
     {
@@ -1120,6 +1120,7 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
     }
     compiler->SetPrograms(progs);
     compiler->SetMasterPath(masterPath);
+    compiler->SetLoaderArguments(loaderArgs);
     // and the extra paths
     wxListBox* control = XRCCTRL(*this, "lstExtraPaths", wxListBox);
     if (control)
@@ -1201,7 +1202,11 @@ void CompilerOptionsDlg::DoSaveCompilerDefinition()
     node = node->GetNext();
     node->AddAttribute(name, wxT("MAKE"));
     node->AddAttribute(value, compiler->GetPrograms().MAKE);
-
+    node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Program")));
+    node = node->GetNext();
+    node->AddAttribute(name, wxT("LOADER"));
+    node->AddAttribute(value, compiler->GetPrograms().LOADER);
+    node->AddAttribute(wxT("args"), compiler->GetLoaderArguments());
 
     node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Switch")));
     node = node->GetNext();
@@ -2872,14 +2877,6 @@ void CompilerOptionsDlg::OnApply()
                 m_Compiler->LoadOptions();
             }
         }
-
-        wxTextCtrl *txt = XRCCTRL(*this, "txtLoader", wxTextCtrl);
-        if (txt)
-            cfg->Write(_T("/loader_executable"), txt->GetValue());
-
-        txt = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl);
-        if (txt)
-            cfg->Write(_T("/loader_arguments"), txt->GetValue());
     }
 
     m_Compiler->SaveOptions();

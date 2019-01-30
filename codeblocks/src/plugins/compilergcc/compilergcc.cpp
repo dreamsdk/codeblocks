@@ -1808,12 +1808,19 @@ int CompilerGCC::Run(const wxString& target)
     return Run(m_pProject->GetBuildTarget(target.IsEmpty() ? m_LastTargetName : target));
 }
 
-wxString CompilerGCC::GetLoaderCommand()
+wxString CompilerGCC::GetLoaderCommand(ProjectBuildTarget* target)
 {
     wxString result = wxEmptyString;
 
-    wxString loader = Manager::Get()->GetConfigManager(_T("compiler"))->Read(_T("/loader_executable"), wxEmptyString);
-    wxString loaderArgs = Manager::Get()->GetConfigManager(_T("compiler"))->Read(_T("/loader_arguments"), wxEmptyString);
+    // Get the right Compiler instance.
+    wxString compilerId = target ? target->GetCompilerID() : m_pProject->GetCompilerID();
+    if (!CompilerFactory::IsValidCompilerID(compilerId))
+        compilerId = CompilerFactory::GetDefaultCompilerID();
+    Compiler* compiler = CompilerFactory::GetCompiler(compilerId);
+
+    // Get the loader and arguments.
+    wxString loader = compiler->GetPrograms().LOADER;
+    wxString loaderArgs = compiler->GetLoaderArguments();
 
     if (wxFileExists(loader))
     {
@@ -2062,7 +2069,7 @@ int CompilerGCC::Run(ProjectBuildTarget* target)
         }
     }
 
-    wxString loaderCmd = GetLoaderCommand();
+    wxString loaderCmd = GetLoaderCommand(target);
     bool bEmbeddedSystemProject = (target->GetTargetType() == ttNative && !loaderCmd.empty());
     if (bEmbeddedSystemProject)
     {
