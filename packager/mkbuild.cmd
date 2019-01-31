@@ -6,7 +6,7 @@ cls
 echo %TITLE%
 echo.
 
-set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.7z
+set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.zip
 if exist %PACKAGE_FILE% goto error
 
 echo Preparing: %PACKAGE_FILE%...
