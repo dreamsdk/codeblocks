@@ -6,35 +6,45 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, CBPatch;
+  Classes, SysUtils, CustApp, CBPatch, Version;
 
 type
-  { TCodeBlocksConfigurationInjector }
-  TCodeBlocksConfigurationInjector = class(TCustomApplication)
+  { TCodeBlocksPatcherApplication }
+  TCodeBlocksPatcherApplication = class(TCustomApplication)
   private
-    fCodeBlocksConfigurationManager: TCodeBlocksConfigurationManager;
+    fCodeBlocksPatcher: TCodeBlocksPatcher;
     procedure WriteHeader;
   protected
-    procedure DoInitialize(const FragmentDirectory, TargetConfigurationFileName: TFileName);
+    procedure DoInitialize;
     procedure DoRun; override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure WriteHelp; virtual;
-    property ConfigurationManager: TCodeBlocksConfigurationManager
-      read fCodeBlocksConfigurationManager;
+    property Patcher: TCodeBlocksPatcher
+      read fCodeBlocksPatcher;
   end;
 
 { TCodeBlocksConfigurationInjector }
 
-procedure TCodeBlocksConfigurationInjector.WriteHeader;
+procedure TCodeBlocksPatcherApplication.WriteHeader;
+var
+  ReleaseType: string;
+
 begin
-{$IFDEF DEBUG}
-//  WriteLn('DEBUG');
-{$ENDIF}
+  ReleaseType := EmptyStr;
+  if IsDebugBuild then
+    ReleaseType := '-DEBUG';
+
+  WriteLn(Title, ', Ver. ', GetFileVersion, ReleaseType);
+  WriteLn('Created by ', GetCompanyName, '.', sLineBreak);
 end;
 
-procedure TCodeBlocksConfigurationInjector.DoRun;
+procedure TCodeBlocksPatcherApplication.DoRun;
+const
+  ERR_HELP_PASSED = 1;
+  ERR_INVALID_OPTIONS = 2;
+
 var
   ErrorMsg: string;
 
@@ -54,52 +64,87 @@ begin
   if HasOption('h', 'help') then
   begin
     WriteHelp;
-    Terminate;
+    Terminate(ERR_HELP_PASSED);
     Exit;
   end;
 
-  { add your program here }
-  DoInitialize('..\rsrc', 'work.conf');
-  ConfigurationManager.Merge;
+  // initialize the patcher engine
+  DoInitialize;
+
+  // execute it!
+  with Patcher do
+    if Ready then
+    begin
+      InstallPatch;
+      ApplyConfiguration;
+    end
+    else
+    begin
+      WriteLn('Error: Missing or invalid parameters.', sLineBreak);
+      WriteHelp;
+      Terminate(ERR_INVALID_OPTIONS);
+      Exit;
+    end;
 
   // stop program loop
   Terminate;
 end;
 
-procedure TCodeBlocksConfigurationInjector.DoInitialize(const FragmentDirectory,
-  TargetConfigurationFileName: TFileName);
+procedure TCodeBlocksPatcherApplication.DoInitialize;
 begin
-  ConfigurationManager.FragmentDirectory := FragmentDirectory;
-  ConfigurationManager.TargetFileName := TargetConfigurationFileName;
-  ConfigurationManager.BaseDirectory := 'E:\DreamSDK\';
+  if ParamCount = 4 then
+    with Patcher do
+    begin
+      SourceDirectory := ParamStr(1);
+      SoftwareDevelopmentKitHomeDirectory := ParamStr(2);
+      CodeBlocksConfigurationFileName := ParamStr(3);
+      CodeBlocksInstallationDirectory := ParamStr(4);
+    end;
 end;
 
-constructor TCodeBlocksConfigurationInjector.Create(AOwner: TComponent);
+constructor TCodeBlocksPatcherApplication.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   StopOnException := True;
-  fCodeBlocksConfigurationManager := TCodeBlocksConfigurationManager.Create;
+  fCodeBlocksPatcher := TCodeBlocksPatcher.Create;
 end;
 
-destructor TCodeBlocksConfigurationInjector.Destroy;
+destructor TCodeBlocksPatcherApplication.Destroy;
 begin
-  fCodeBlocksConfigurationManager.Free;
+  fCodeBlocksPatcher.Free;
   inherited Destroy;
 end;
 
-procedure TCodeBlocksConfigurationInjector.WriteHelp;
+procedure TCodeBlocksPatcherApplication.WriteHelp;
+var
+  CmdName: string;
+
 begin
-  { add your help code here }
-  WriteLn('Usage: ', ExeName, ' -h');
+  CmdName := ExtractFileName(ChangeFileExt(ExeName, EmptyStr));
+  WriteLn('Usage:', sLineBreak,
+    '  ', CmdName, ' <SOURCE_DIR> <DREAMSDK_DIR> <CB_CONF_FILE> <CB_INST_DIR>', sLineBreak,
+    sLineBreak,
+    'Description:', sLineBreak,
+    '  SOURCE_DIR   : The directory where are stored the required files for the', sLineBreak,
+    '                 patcher.', sLineBreak,
+    '  DREAMSDK_DIR : The DreamSDK Home directory (typically ''C:\DreamSDK\'').', sLineBreak,
+    '  CB_CONF_FILE : The Code::Blocks configuration file to patch (typically ', sLineBreak,
+    '                 ''default.conf'').', sLineBreak,
+    '  CB_INST_DIR  : The Code::Blocks installation directory (typically ', sLineBreak,
+    '                 ''C:\Program Files\CodeBlocks\'').', sLineBreak,
+    sLineBreak,
+    'Note:', sLineBreak,
+    '  This patcher was made for the Code::Blocks 17.12 stable release.',
+    sLineBreak);
 end;
 
 var
-  Application: TCodeBlocksConfigurationInjector;
+  Application: TCodeBlocksPatcherApplication;
 
 {$R *.res}
 
 begin
-  Application := TCodeBlocksConfigurationInjector.Create(nil);
+  Application := TCodeBlocksPatcherApplication.Create(nil);
   try
     Application.Title:='Code::Blocks Patcher';
     Application.Run;
