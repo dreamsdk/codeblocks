@@ -717,7 +717,8 @@ var
   IniFile: TIniFile;
 
 begin
-  ConfigurationFileName := SoftwareDevelopmentKitHomeDirectory + IDE_CONFIGURATION_FILE;
+  ConfigurationFileName := IncludeTrailingPathDelimiter(SoftwareDevelopmentKitHomeDirectory)
+    + IDE_CONFIGURATION_FILE;
   Result := FileExists(ConfigurationFileName);
   if Result then
   begin
