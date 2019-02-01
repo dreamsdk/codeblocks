@@ -47,8 +47,9 @@ type
     function SourceKindToFileName(const SourceKind: TSourceKind): TFileName;
     {$IFDEF DEBUG}procedure IterateNodes(Node: TDOMNode);{$ENDIF}
   public
-    function InstallPatch: Boolean;
-    function ApplyConfiguration: Boolean;
+    function InstallFilesPatch: Boolean;
+    function PatchConfiguration: Boolean;
+    function UpdateConfiguration: Boolean;
 
     property CodeBlocksConfigurationFileName: TFileName
       read fCodeBlocksConfigurationFileName
@@ -68,7 +69,7 @@ type
 implementation
 
 uses
-  SysTools;
+  IniFiles, SysTools;
 
 const
   DREAMSDK_HOME_VARIABLE = '{app}';
@@ -116,7 +117,7 @@ begin
 end;
 {$ENDIF}
 
-function TCodeBlocksPatcher.InstallPatch: Boolean;
+function TCodeBlocksPatcher.InstallFilesPatch: Boolean;
 const
   PACKAGE_FILE = 'codeblocks-17.12-dreamsdk-addon-bin.zip';
   COMPILER_FILE = 'share\CodeBlocks\compilers\compiler_dc-gcc.xml';
@@ -698,11 +699,40 @@ begin
   Result := SourceDirectory + 'package' + DirectorySeparator;
 end;
 
-function TCodeBlocksPatcher.ApplyConfiguration: Boolean;
+function TCodeBlocksPatcher.PatchConfiguration: Boolean;
 begin
   Result := Merge(skDebugger);
   Result := Result and Merge(skGlobalVariables);
   Result := Result and Merge(skTools);
+end;
+
+function TCodeBlocksPatcher.UpdateConfiguration: Boolean;
+const
+  IDE_CONFIGURATION_FILE = 'msys\1.0\etc\dreamsdk\ide.conf';
+  IDE_EXPORT_LIB_INFO_DIR = 'share\CodeBlocks\templates\wizard\dc\libinfo\';
+
+var
+  ConfigurationFileName,
+  ExportLibraryInformationPath: TFileName;
+  IniFile: TIniFile;
+
+begin
+  ConfigurationFileName := SoftwareDevelopmentKitHomeDirectory + IDE_CONFIGURATION_FILE;
+  Result := FileExists(ConfigurationFileName);
+  if Result then
+  begin
+    ExportLibraryInformationPath := CodeBlocksInstallationDirectory + IDE_EXPORT_LIB_INFO_DIR;
+    if not DirectoryExists(ExportLibraryInformationPath) then
+      ForceDirectories(ExportLibraryInformationPath);
+    IniFile := TIniFile.Create(ConfigurationFileName);
+    try
+      IniFile.WriteInteger('IDE', 'Type', 1); // Code::Blocks
+      IniFile.WriteBool('IDE', 'ExportLibraryInformation', True);
+      IniFile.WriteString('IDE', 'ExportLibraryInformationPath', ExportLibraryInformationPath);
+    finally
+      IniFile.Free;
+    end;
+  end;
 end;
 
 

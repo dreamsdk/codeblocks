@@ -89,13 +89,19 @@ begin
     begin
       // Extracting the patch...
       Write('Patching Code::Blocks installation directory... ');
-      TaskResult := InstallPatch;
+      TaskResult := InstallFilesPatch;
       WriteBool(TaskResult);
       Result := TaskResult;
 
       // Modifying the configuration...
       Write('Patching Code::Blocks configuration file... ');
-      TaskResult := ApplyConfiguration;
+      TaskResult := PatchConfiguration;
+      WriteBool(TaskResult);
+      Result := Result and TaskResult;
+
+      // Updating the IDE configuration file...
+      Write('Updating the DreamSDK configuration file... ');
+      TaskResult := UpdateConfiguration;
       WriteBool(TaskResult);
       Result := Result and TaskResult;
 
