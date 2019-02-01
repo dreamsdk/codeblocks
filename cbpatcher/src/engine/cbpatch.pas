@@ -32,8 +32,11 @@ type
       const StartIndex: Integer);
     procedure ReformatXML;
     procedure HandleBaseDirectory;
-    procedure Merge(SourceKind: TSourceKind);
+    function Merge(SourceKind: TSourceKind): Boolean;
   protected
+    function GetSourceConfigurationDirectory: TFileName;
+    function GetSourceFragmentsDirectory: TFileName;
+    function GetSourcePackageDirectory: TFileName;
     function SelectSingleNode(XMLDoc: TXMLDocument; Path: string): TDOMNode;
     function NodeExists(XMLDocument: TXMLDocument; XPath: string; NodeValue: string): Boolean;
     function ForceNodes(XMLDoc: TXMLDocument; Path: string): TDOMNode;
@@ -42,15 +45,10 @@ type
     procedure ImportNode(TargetXMLDocument: TXMLDocument;
       SourceNode: TDOMNode; Path: string); overload;
     function SourceKindToFileName(const SourceKind: TSourceKind): TFileName;
-{$IFDEF DEBUG}
-    procedure IterateNodes(Node: TDOMNode);
-{$ENDIF}
+    {$IFDEF DEBUG}procedure IterateNodes(Node: TDOMNode);{$ENDIF}
   public
-    constructor Create;
-    destructor Destroy; override;
-
-    procedure InstallPatch;
-    procedure ApplyConfiguration;
+    function InstallPatch: Boolean;
+    function ApplyConfiguration: Boolean;
 
     property CodeBlocksConfigurationFileName: TFileName
       read fCodeBlocksConfigurationFileName
@@ -85,6 +83,11 @@ begin
     Result := DOM_ROOT_PATH + XPathExpression;
 end;
 
+function ParseInputFileSystemObject(const Parameter: TFileName): TFileName;
+begin
+  Result := ExpandFileName(ExpandEnvironmentStrings(Parameter));
+end;
+
 {$IFDEF DEBUG}
 procedure TCodeBlocksPatcher.IterateNodes(Node: TDOMNode);
 var
@@ -111,33 +114,22 @@ begin
       IterateNodes(CurrentNode);
   end;
 end;
+{$ENDIF}
 
-constructor TCodeBlocksPatcher.Create;
-begin
-
-end;
-
-destructor TCodeBlocksPatcher.Destroy;
-begin
-  inherited Destroy;
-end;
-
-procedure TCodeBlocksPatcher.InstallPatch;
+function TCodeBlocksPatcher.InstallPatch: Boolean;
 const
   PACKAGE_FILE = 'codeblocks-17.12-dreamsdk-addon-bin.zip';
   COMPILER_FILE = 'share\CodeBlocks\compilers\compiler_dc-gcc.xml';
   OPTIONS_FILE = 'share\CodeBlocks\compilers\options_dc-gcc.xml';
 
 begin
-  UncompressZipFile(SourceDirectory + PACKAGE_FILE,
+  Result := UncompressZipFile(GetSourcePackageDirectory + PACKAGE_FILE,
     CodeBlocksInstallationDirectory);
-  PatchTextFile(CodeBlocksInstallationDirectory + COMPILER_FILE, DREAMSDK_HOME_VARIABLE,
-    SoftwareDevelopmentKitHomeDirectory);
-  PatchTextFile(CodeBlocksInstallationDirectory + OPTIONS_FILE, DREAMSDK_HOME_VARIABLE,
-    SoftwareDevelopmentKitHomeDirectory);
+  Result := Result and PatchTextFile(CodeBlocksInstallationDirectory + COMPILER_FILE,
+    DREAMSDK_HOME_VARIABLE, SoftwareDevelopmentKitHomeDirectory);
+  Result :=  Result and PatchTextFile(CodeBlocksInstallationDirectory + OPTIONS_FILE,
+    DREAMSDK_HOME_VARIABLE, SoftwareDevelopmentKitHomeDirectory);
 end;
-
-{$ENDIF}
 
 procedure TCodeBlocksPatcher.InjectDebugger(SourceXML,
   TargetXML: TXMLDocument);
@@ -217,25 +209,28 @@ end;
 procedure TCodeBlocksPatcher.SetCodeBlocksInstallationDirectory(
   AValue: TFileName);
 begin
-  fCodeBlocksInstallationDirectory := IncludeTrailingPathDelimiter(ExpandFileName(AValue));
+  if fCodeBlocksInstallationDirectory <> AValue then
+    fCodeBlocksInstallationDirectory := IncludeTrailingPathDelimiter(
+      ParseInputFileSystemObject(AValue));
 end;
 
 procedure TCodeBlocksPatcher.SetDreamSDKHomeDirectory(AValue: TFileName);
 begin
   if fDreamSDKHomeDirectory <> AValue then
-    fDreamSDKHomeDirectory := ExcludeTrailingPathDelimiter(AValue);
+    fDreamSDKHomeDirectory := ExcludeTrailingPathDelimiter(
+      ParseInputFileSystemObject(AValue));
 end;
 
 procedure TCodeBlocksPatcher.SetSourceDirectory(AValue: TFileName);
 begin
   if fSourceDirectory <> AValue then
-    fSourceDirectory := IncludeTrailingPathDelimiter(ExpandFileName(AValue));
+    fSourceDirectory := IncludeTrailingPathDelimiter(ParseInputFileSystemObject(AValue));
 end;
 
 procedure TCodeBlocksPatcher.SetCodeBlocksConfigurationFileName(AValue: TFileName);
 begin
   if fCodeBlocksConfigurationFileName <> AValue then
-    fCodeBlocksConfigurationFileName := ExpandFileName(AValue);
+    fCodeBlocksConfigurationFileName := ParseInputFileSystemObject(AValue);
 end;
 
 procedure TCodeBlocksPatcher.FixSection(const SectionName,
@@ -529,12 +524,12 @@ procedure TCodeBlocksPatcher.FixTools;
     end;
 
   begin
-    ToolSeparatorTag := LoadFileToString(SourceDirectory + TOOLS_SEPARATOR_FILE)
-      + sLineBreak;
+    ToolSeparatorTag := LoadFileToString(GetSourceConfigurationDirectory
+      + TOOLS_SEPARATOR_FILE) + sLineBreak;
     Buffer := TStringList.Create;
     ToolsDesign := TStringList.Create;
     try
-      ToolsDesign.LoadFromFile(SourceDirectory + TOOLS_DESIGN_FILE);
+      ToolsDesign.LoadFromFile(GetSourceConfigurationDirectory + TOOLS_DESIGN_FILE);
       Buffer.LoadFromFile(CodeBlocksConfigurationFileName);
       SectionPositionIndex := StringListSubstringIndexOf(Buffer, '<tools>');
       if SectionPositionIndex <> -1 then
@@ -630,60 +625,84 @@ begin
     and DirectoryExists(CodeBlocksInstallationDirectory);
 end;
 
-procedure TCodeBlocksPatcher.Merge(SourceKind: TSourceKind);
+function TCodeBlocksPatcher.Merge(SourceKind: TSourceKind): Boolean;
 var
   TargetFileStream, SourceFileStream: TFileStream;
   TargetXML, SourceXML: TXMLDocument;
   SourceFileName: TFileName;
 
 begin
-  // Inject the DreamSDK fragment into the CodeBlocksConfig XML file.
-  TargetFileStream := TFileStream.Create(CodeBlocksConfigurationFileName, fmOpenReadWrite);
-  SourceFileName := SourceDirectory + SourceKindToFileName(SourceKind);
-  SourceFileStream := TFileStream.Create(SourceFileName, fmOpenRead);
+  Result := True;
   try
-    ReadXMLFile(TargetXML, TargetFileStream);
-    ReadXMLFile(SourceXML, SourceFileStream);
+    // Inject the DreamSDK fragment into the CodeBlocksConfig XML file.
+    TargetFileStream := TFileStream.Create(CodeBlocksConfigurationFileName, fmOpenReadWrite);
+    SourceFileName := GetSourceFragmentsDirectory + SourceKindToFileName(SourceKind);
+    SourceFileStream := TFileStream.Create(SourceFileName, fmOpenRead);
+    try
+      ReadXMLFile(TargetXML, TargetFileStream);
+      ReadXMLFile(SourceXML, SourceFileStream);
 
-    case SourceKind of
-      skDebugger:
-        InjectDebugger(SourceXML, TargetXML);
-      skGlobalVariables:
-        InjectGlobalVariables(SourceXML, TargetXML);
-      skTools:
-        InjectTools(SourceXML, TargetXML);
+      case SourceKind of
+        skDebugger:
+          InjectDebugger(SourceXML, TargetXML);
+        skGlobalVariables:
+          InjectGlobalVariables(SourceXML, TargetXML);
+        skTools:
+          InjectTools(SourceXML, TargetXML);
+      end;
+
+      TargetFileStream.Size := 0;
+      TargetFileStream.Seek(0, soBeginning);
+      WriteXMLFile(TargetXML, TargetFileStream);
+    finally
+      TargetXML.Free;
+      TargetFileStream.Free;
+      SourceXML.Free;
+      SourceFileStream.Free;
     end;
 
-    TargetFileStream.Size := 0;
-    TargetFileStream.Seek(0, soBeginning);
-    WriteXMLFile(TargetXML, TargetFileStream);
-  finally
-    TargetXML.Free;
-    TargetFileStream.Free;
-    SourceXML.Free;
-    SourceFileStream.Free;
+    // Fix the numbered sections if needed.
+    case SourceKind of
+      skDebugger:
+        FixDebugger;
+      skTools:
+        FixTools;
+    end;
+
+    // Handle the DREAMSDK_HOME_VARIABLE variable representing the DreamSDK home base directory.
+    HandleBaseDirectory;
+
+    // Reformat the indentation of the XML.
+    ReformatXML;
+  except
+    on E:Exception do
+    begin
+      Result := False;
+      WriteLn('Error: Unable to merge: ', E.Message);
+    end;
   end;
-
-  // Fix the numbered sections if needed.
-  case SourceKind of
-    skDebugger:
-      FixDebugger;
-    skTools:
-      FixTools;
-  end;
-
-  // Handle the DREAMSDK_HOME_VARIABLE variable representing the DreamSDK home base directory.
-  HandleBaseDirectory;
-
-  // Reformat the indentation of the XML.
-  ReformatXML;
 end;
 
-procedure TCodeBlocksPatcher.ApplyConfiguration;
+function TCodeBlocksPatcher.GetSourceConfigurationDirectory: TFileName;
 begin
-  Merge(skDebugger);
-  Merge(skGlobalVariables);
-  Merge(skTools);
+  Result := SourceDirectory + 'config' + DirectorySeparator;
+end;
+
+function TCodeBlocksPatcher.GetSourceFragmentsDirectory: TFileName;
+begin
+  Result := SourceDirectory + 'fragments' + DirectorySeparator;
+end;
+
+function TCodeBlocksPatcher.GetSourcePackageDirectory: TFileName;
+begin
+  Result := SourceDirectory + 'package' + DirectorySeparator;
+end;
+
+function TCodeBlocksPatcher.ApplyConfiguration: Boolean;
+begin
+  Result := Merge(skDebugger);
+  Result := Result and Merge(skGlobalVariables);
+  Result := Result and Merge(skTools);
 end;
 
 

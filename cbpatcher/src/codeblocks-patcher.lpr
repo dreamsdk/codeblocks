@@ -6,7 +6,7 @@ uses
   {$IFDEF UNIX}{$IFDEF UseCThreads}
   cthreads,
   {$ENDIF}{$ENDIF}
-  Classes, SysUtils, CustApp, CBPatch, Version;
+  Classes, SysUtils, CustApp, CBPatch, Version, SysTools;
 
 type
   { TCodeBlocksPatcherApplication }
@@ -44,9 +44,20 @@ procedure TCodeBlocksPatcherApplication.DoRun;
 const
   ERR_HELP_PASSED = 1;
   ERR_INVALID_OPTIONS = 2;
+  ERR_PATCH_FAILED = 3;
 
 var
   ErrorMsg: string;
+  TaskResult, Result: Boolean;
+  ProgramExitCode: Integer;
+
+  procedure WriteBool(const B: Boolean);
+  begin
+    if B then
+      WriteLn('OK!')
+    else
+      WriteLn('Failed!');
+  end;
 
 begin
   WriteHeader;
@@ -69,37 +80,71 @@ begin
   end;
 
   // initialize the patcher engine
+  ProgramExitCode := 0;
   DoInitialize;
 
   // execute it!
   with Patcher do
     if Ready then
     begin
-      InstallPatch;
-      ApplyConfiguration;
+      // Extracting the patch...
+      Write('Patching Code::Blocks installation directory... ');
+      TaskResult := InstallPatch;
+      WriteBool(TaskResult);
+      Result := TaskResult;
+
+      // Modifying the configuration...
+      Write('Patching Code::Blocks configuration file... ');
+      TaskResult := ApplyConfiguration;
+      WriteBool(TaskResult);
+      Result := Result and TaskResult;
+
+      // Displaying the result...
+      WriteLn(EmptyStr);
+      if Result then
+        WriteLn('Code::Blocks is now patched!')
+      else
+      begin
+        WriteLn('Code::Blocks was NOT successfully patched!');
+        ProgramExitCode := ERR_PATCH_FAILED;
+      end;
     end
     else
     begin
       WriteLn('Error: Missing or invalid parameters.', sLineBreak);
       WriteHelp;
-      Terminate(ERR_INVALID_OPTIONS);
-      Exit;
+      ProgramExitCode := ERR_INVALID_OPTIONS;
     end;
 
   // stop program loop
-  Terminate;
+  Terminate(ProgramExitCode);
 end;
 
 procedure TCodeBlocksPatcherApplication.DoInitialize;
+const
+  DEFAULT_SOURCE_DIR = 'data';
+
 begin
-  if ParamCount = 4 then
+  if ParamCount >= 3 then
     with Patcher do
     begin
-      SourceDirectory := ParamStr(1);
-      SoftwareDevelopmentKitHomeDirectory := ParamStr(2);
-      CodeBlocksConfigurationFileName := ParamStr(3);
-      CodeBlocksInstallationDirectory := ParamStr(4);
+      CodeBlocksInstallationDirectory := ParamStr(1);
+      CodeBlocksConfigurationFileName := ParamStr(2);
+      SoftwareDevelopmentKitHomeDirectory := ParamStr(3);
+      SourceDirectory := GetApplicationPath + DEFAULT_SOURCE_DIR;
+      if ParamCount > 3 then
+        SourceDirectory := ParamStr(4);
     end;
+
+{$IFDEF DEBUG}
+  with Patcher do
+  begin
+    WriteLn('CodeBlocksInstallationDirectory: ', CodeBlocksInstallationDirectory);
+    WriteLn('CodeBlocksConfigurationFileName: ', CodeBlocksConfigurationFileName);
+    WriteLn('SoftwareDevelopmentKitHomeDirectory: ', SoftwareDevelopmentKitHomeDirectory);
+    WriteLn('SourceDirectory: ', SourceDirectory);
+  end;
+{$ENDIF}
 end;
 
 constructor TCodeBlocksPatcherApplication.Create(AOwner: TComponent);
@@ -122,20 +167,22 @@ var
 begin
   CmdName := ExtractFileName(ChangeFileExt(ExeName, EmptyStr));
   WriteLn('Usage:', sLineBreak,
-    '  ', CmdName, ' <SOURCE_DIR> <DREAMSDK_DIR> <CB_CONF_FILE> <CB_INST_DIR>', sLineBreak,
+    '  ', CmdName, ' <CB_INST_DIR> <CB_CONF_FILE> <DREAMSDK_DIR> [SOURCE_DIR] ', sLineBreak,
     sLineBreak,
     'Description:', sLineBreak,
-    '  SOURCE_DIR   : The directory where are stored the required files for the', sLineBreak,
-    '                 patcher.', sLineBreak,
-    '  DREAMSDK_DIR : The DreamSDK Home directory (typically ''C:\DreamSDK\'').', sLineBreak,
-    '  CB_CONF_FILE : The Code::Blocks configuration file to patch (typically ', sLineBreak,
-    '                 ''default.conf'').', sLineBreak,
     '  CB_INST_DIR  : The Code::Blocks installation directory (typically ', sLineBreak,
-    '                 ''C:\Program Files\CodeBlocks\'').', sLineBreak,
+    '                 ''%ProgramFiles%\CodeBlocks\'' on 32-bits systems or', sLineBreak,
+    '                 ''%ProgramFiles(x86)%\CodeBlocks\'' on 64-bits systems).', sLineBreak,
+    '  CB_CONF_FILE : The Code::Blocks configuration file to patch (typically ', sLineBreak,
+    '                 ''%AppData%\CodeBlocks\default.conf'').', sLineBreak,
+    '  DREAMSDK_DIR : The DreamSDK Home directory (typically ''C:\DreamSDK\'').', sLineBreak,
+    '  SOURCE_DIR   : Optional. The directory where are stored the required', sLineBreak,
+    '                 files for the patcher. Default value is ''.\data\''.', sLineBreak,
     sLineBreak,
     'Note:', sLineBreak,
-    '  This patcher was made for the Code::Blocks 17.12 stable release.',
-    sLineBreak);
+    '  This patcher was made for the Code::Blocks 17.12 stable release only.', sLineBreak,
+    '  It was made for DreamSDK and it is not affiliated with the Code::Blocks Team', sLineBreak,
+    '  in any way.');
 end;
 
 var
