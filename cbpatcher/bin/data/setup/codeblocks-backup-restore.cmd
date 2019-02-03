@@ -9,8 +9,18 @@ echo.
 set BASE_DIR=%~dp0
 set BASE_DIR=%BASE_DIR:~0,-1%
 
-set CB_INSTALL_DIR=%ProgramFiles(x86)%\CodeBlocks
-set CB_BACKUP_DIR=%BASE_DIR%\backup
+rem Checking parameters
+if "%~1"=="" goto error
+if "%~2"=="" goto error
+if "%~3"=="" goto error
+
+rem Assigning parameters
+set OPERATION=%~1
+set CB_INSTALL_DIR=%~2
+set CB_BACKUP_DIR=%~3
+
+rem If the source directory doesn't exists, then stop.
+if not exist "%CB_INSTALL_DIR%" goto error
 
 rem Files definition
 :filesdef
@@ -26,10 +36,10 @@ set CB_DEBUGGER_DLL_FILE=debugger.dll
 set CB_CONFIG_FILE=config.script
 
 rem Which operation
-if "%1"=="/B" goto backup
-if "%1"=="/b" goto backup
-if "%1"=="/R" goto restore
-if "%1"=="/r" goto restore
+if "%OPERATION%"=="/B" goto backup
+if "%OPERATION%"=="/b" goto backup
+if "%OPERATION%"=="/R" goto restore
+if "%OPERATION%"=="/r" goto restore
 goto error
 
 :backup
@@ -69,8 +79,11 @@ echo Done!
 goto end
 
 :error
-echo /B    - Backup Code::Blocks files.
-echo /R    - Restore Code::Blocks files.
+echo Usage: %~n0 ^<OPERATION^> ^<CB_INSTALL_DIR^> ^<CB_BACKUP_DIR^> 
+echo.
+echo Operation can be:
+echo   /B    - Backup Code::Blocks files.
+echo   /R    - Restore Code::Blocks files.
 goto end
 
 :end
