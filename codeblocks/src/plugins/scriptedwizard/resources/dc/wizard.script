@@ -330,7 +330,7 @@ function GetSoftwareDevelopmentKitHelperDir()
 {
     local dreamsdk = ReplaceMacros(_T("$(#DREAMSDK_HOME)"), true);
 
-    local result = dreamsdk +
+    local result = dreamsdk + wxFILE_SEP_PATH +
         _T("msys") + wxFILE_SEP_PATH +
         _T("1.0") + wxFILE_SEP_PATH +
         _T("opt") + wxFILE_SEP_PATH +
