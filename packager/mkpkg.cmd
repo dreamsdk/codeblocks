@@ -6,6 +6,7 @@ cls
 echo %TITLE%
 echo.
 
+set RELEASE_DIR=..\cbpatcher\bin\data\package\
 set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.zip
 if exist %PACKAGE_FILE% goto error
 
@@ -37,13 +38,13 @@ if not exist %CB_SHARE_TMPL_DIR% mkdir %CB_SHARE_TMPL_DIR%
 cd %CB_OUTPUT_HOME%
 
 rem SDK
+copy *.exe %PACKAGE_DIR% 
 copy codeblocks.dll %PACKAGE_DIR%
 
 rem Plugins
 copy share\CodeBlocks\compiler.zip %CB_SHARE_DIR%
-copy share\CodeBlocks\plugins\compiler.dll %CB_SHARE_PLUGINS_DIR%
 copy share\CodeBlocks\debugger.zip %CB_SHARE_DIR%
-copy share\CodeBlocks\plugins\debugger.dll %CB_SHARE_PLUGINS_DIR%
+copy share\CodeBlocks\plugins\*.dll %CB_SHARE_PLUGINS_DIR%
 
 rem Compilers
 set COMPILER_FILE=share\CodeBlocks\compilers\compiler_dc-gcc.xml
@@ -70,7 +71,7 @@ if exist %LIBINFO_DIR% (
 :mkpack
 cd %PACKAGE_DIR%
 %SEVENZIP% a -mx9 %PACKAGE_FILE% .
-move %PACKAGE_FILE% ..\
+move %PACKAGE_FILE% ..\%RELEASE_DIR%
 cd ..
 rmdir /S %PACKAGE_DIR% /Q
 echo.
