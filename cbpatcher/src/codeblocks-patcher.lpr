@@ -141,7 +141,8 @@ begin
       SoftwareDevelopmentKitHomeDirectory := ParamStr(3);
       SourceDirectory := GetApplicationPath + DEFAULT_SOURCE_DIR;
       if ParamCount > 3 then
-        SourceDirectory := ParamStr(4);
+        if DirectoryExists(ParamStr(4)) then
+          SourceDirectory := ParamStr(4);
     end;
 
 {$IFDEF DEBUG}

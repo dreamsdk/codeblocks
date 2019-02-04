@@ -727,7 +727,7 @@ begin
       ForceDirectories(ExportLibraryInformationPath);
     IniFile := TIniFile.Create(ConfigurationFileName);
     try
-      IniFile.WriteInteger('IDE', 'Type', 1); // Code::Blocks
+      IniFile.WriteInteger('IDE', 'Kind', 1); // Code::Blocks
       IniFile.WriteBool('IDE', 'ExportLibraryInformation', True);
       IniFile.WriteString('IDE', 'ExportLibraryInformationPath', ExportLibraryInformationPath);
     finally
