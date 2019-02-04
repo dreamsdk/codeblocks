@@ -60,10 +60,12 @@ var
   end;
 
 begin
-  WriteHeader;
-
   // quick check parameters
-  ErrorMsg := CheckOptions('h', 'help');
+  ErrorMsg := CheckOptions('hn', 'help no-logo');
+
+  if not HasOption('n', 'no-logo') then
+    WriteHeader;
+
   if ErrorMsg <> EmptyStr then
   begin
     ShowException(Exception.Create(ErrorMsg));
@@ -173,7 +175,7 @@ var
 begin
   CmdName := ExtractFileName(ChangeFileExt(ExeName, EmptyStr));
   WriteLn('Usage:', sLineBreak,
-    '  ', CmdName, ' <CB_INST_DIR> <CB_CONF_FILE> <DREAMSDK_DIR> [SOURCE_DIR] ', sLineBreak,
+    '  ', CmdName, ' <CB_INST_DIR> <CB_CONF_FILE> <DREAMSDK_DIR> [SOURCE_DIR]', sLineBreak,
     sLineBreak,
     'Description:', sLineBreak,
     '  CB_INST_DIR  : The Code::Blocks installation directory (typically ', sLineBreak,
@@ -184,11 +186,12 @@ begin
     '  DREAMSDK_DIR : The DreamSDK Home directory (typically ''C:\DreamSDK\'').', sLineBreak,
     '  SOURCE_DIR   : Optional. The directory where are stored the required', sLineBreak,
     '                 files for the patcher. Default value is ''.\data\''.', sLineBreak,
+    '  --no-logo, -n: Don''t print application banner.', sLineBreak,
+    '  --help, -h   : Print this help.', sLineBreak,
     sLineBreak,
     'Note:', sLineBreak,
     '  This patcher was made for the Code::Blocks 17.12 stable release only.', sLineBreak,
-    '  It was made for DreamSDK and it is not affiliated with the Code::Blocks Team', sLineBreak,
-    '  in any way.');
+    '  It is not affiliated with the Code::Blocks Team in any way.');
 end;
 
 var
