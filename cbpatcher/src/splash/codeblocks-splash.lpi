@@ -4,27 +4,12 @@
     <Version Value="10"/>
     <PathDelim Value="\"/>
     <General>
-      <Flags>
-        <MainUnitHasCreateFormStatements Value="False"/>
-        <MainUnitHasScaledStatement Value="False"/>
-      </Flags>
       <SessionStorage Value="InProjectDir"/>
       <MainUnit Value="0"/>
-      <Title Value="Code::Blocks Patcher"/>
-      <UseAppBundle Value="False"/>
+      <Title Value="codeblocks-splash"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
-      <XPManifest>
-        <ExecutionLevel Value="requireAdministrator"/>
-      </XPManifest>
     </General>
-    <VersionInfo>
-      <UseVersionInfo Value="True"/>
-      <AutoIncrementBuild Value="True"/>
-      <MajorVersionNr Value="1"/>
-      <BuildNr Value="261"/>
-      <StringTable Comments="http://dreamsdk.org/" CompanyName="The DreamSDK Team" FileDescription="Code::Blocks Patcher" InternalName="codeblocks-patcher" LegalCopyright="© Copyleft 2019" LegalTrademarks="Code::Blocks is distributed under the GNU GPL3. Sega and Dreamcast are registered trademark of Sega Games Co., Ltd." OriginalFilename="codeblocks-patcher.exe" ProductName="DreamSDK" ProductVersion="2.0"/>
-    </VersionInfo>
     <BuildModes Count="2">
       <Item1 Name="Debug" Default="True"/>
       <Item2 Name="Release">
@@ -32,12 +17,12 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\bin\codeblocks-patcher"/>
+            <Filename Value="..\..\bin\codeblocks-splash"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="..\..\..\common\src\sys;engine"/>
-            <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)-$NameOnly($(ProjFile))"/>
+            <OtherUnitFiles Value="..\..\..\..\common\src\sys"/>
+            <UnitOutputDirectory Value="..\..\lib\$(TargetCPU)-$(TargetOS)-$NameOnly($(ProjFile))"/>
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
@@ -51,9 +36,14 @@
               <GenerateDebugInfo Value="False"/>
             </Debugging>
             <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
           </Linking>
           <Other>
-            <CustomOptions Value="-dRELEASE"/>
+            <CustomOptions Value="-dRELEASE -dGUI"/>
           </Other>
         </CompilerOptions>
       </Item2>
@@ -64,41 +54,44 @@
     <RunParams>
       <local>
         <FormatVersion Value="1"/>
-        <CommandLineParams Value="C:\Temp\CBFAKE\ default.conf C:\DreamSDK\"/>
+        <CommandLineParams Value="/install"/>
       </local>
     </RunParams>
-    <Units Count="4">
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LCL"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="3">
       <Unit0>
-        <Filename Value="codeblocks-patcher.lpr"/>
+        <Filename Value="codeblocks-splash.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="..\..\..\common\src\sys\systools.pas"/>
+        <Filename Value="main.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="SysTools"/>
+        <ComponentName Value="frmMain"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Main"/>
       </Unit1>
       <Unit2>
-        <Filename Value="engine\cbpatch.pas"/>
+        <Filename Value="..\..\..\..\common\src\sys\systools.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="CBPatch"/>
+        <UnitName Value="SysTools"/>
       </Unit2>
-      <Unit3>
-        <Filename Value="..\..\..\common\src\sys\version.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Version"/>
-      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\bin\codeblocks-patcher"/>
+      <Filename Value="..\..\bin\codeblocks-splash"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="..\..\..\common\src\sys;engine"/>
-      <UnitOutputDirectory Value="..\lib\$(TargetCPU)-$(TargetOS)-$NameOnly($(ProjFile))"/>
+      <OtherUnitFiles Value="..\..\..\..\common\src\sys"/>
+      <UnitOutputDirectory Value="..\..\lib\$(TargetCPU)-$(TargetOS)-$NameOnly($(ProjFile))"/>
     </SearchPaths>
     <Parsing>
       <SyntaxOptions>
@@ -125,13 +118,14 @@
         <TrashVariables Value="True"/>
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
     </Linking>
     <Other>
-      <Verbosity>
-        <ShowDebugInfo Value="True"/>
-        <ShowUsedFiles Value="True"/>
-      </Verbosity>
-      <CustomOptions Value="-dDEBUG"/>
+      <CustomOptions Value="-dDEBUG -dGUI"/>
     </Other>
   </CompilerOptions>
   <Debugging>

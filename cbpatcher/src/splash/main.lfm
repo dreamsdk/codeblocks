@@ -1,0 +1,27 @@
+object frmMain: TfrmMain
+  Left = 1021
+  Height = 50
+  Top = 552
+  Width = 300
+  BorderStyle = bsNone
+  Caption = '(%DYNAMIC%)'
+  ClientHeight = 50
+  ClientWidth = 300
+  FormStyle = fsSystemStayOnTop
+  OnClose = FormClose
+  PopupMode = pmAuto
+  Position = poScreenCenter
+  LCLVersion = '1.8.4.0'
+  object pnlSplash: TPanel
+    Left = 0
+    Height = 50
+    Top = 0
+    Width = 300
+    Align = alClient
+    BorderStyle = bsSingle
+    Caption = '(%DYNAMIC%)'
+    Font.Style = [fsBold]
+    ParentFont = False
+    TabOrder = 0
+  end
+end
