@@ -5,7 +5,8 @@ unit Main;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls;
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, ExtCtrls,
+  ComCtrls, StdCtrls;
 
 type
 
@@ -13,6 +14,8 @@ type
 
   TfrmMain = class(TForm)
     pnlSplash: TPanel;
+    pnlSplashBack: TPanel;
+    pbWait: TProgressBar;
     procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
   private
   public
