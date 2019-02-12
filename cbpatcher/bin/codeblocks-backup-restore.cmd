@@ -49,7 +49,7 @@ if not exist "%CB_BACKUP_DIR%\%CB_SHARE_PLUGINS_DIR%" mkdir "%CB_BACKUP_DIR%\%CB
 if not exist "%CB_BACKUP_DIR%\%CB_SHARE_TEMPLATES_DIR%" mkdir "%CB_BACKUP_DIR%\%CB_SHARE_TEMPLATES_DIR%"
 
 copy /Y /B "%CB_INSTALL_DIR%\*.exe" "%CB_BACKUP_DIR%"
-if exist "%CB_INSTALL_DIR%\uninstall.exe" del "%CB_INSTALL_DIR%\uninstall.exe"
+if exist "%CB_BACKUP_DIR%\uninstall.exe" del "%CB_BACKUP_DIR%\uninstall.exe"
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SDK_DLL_FILE%" "%CB_BACKUP_DIR%"
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_DIR%\%CB_COMPILER_FRM_FILE%" "%CB_BACKUP_DIR%\%CB_SHARE_DIR%"
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_DIR%\%CB_DEBUGGER_FRM_FILE%" "%CB_BACKUP_DIR%\%CB_SHARE_DIR%"
