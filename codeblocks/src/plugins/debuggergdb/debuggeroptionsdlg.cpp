@@ -148,7 +148,7 @@ wxPanel* DebuggerConfiguration::MakePanel(wxWindow *parent)
 
     XRCCTRL(*panel, "txtLoaderExecutablePath", wxTextCtrl)->ChangeValue(GetLoaderExecutable(false));
     panel->ValidateLoaderExecutablePath();
-    XRCCTRL(*panel, "txtLoaderArguments", wxTextCtrl)->ChangeValue(GetLoaderArguments(false));
+    XRCCTRL(*panel, "txtLoaderArguments", wxTextCtrl)->ChangeValue(GetLoaderArguments(wxEmptyString, false));
 
     wxSpinCtrl *spn = XRCCTRL(*panel, "spnLoaderWaitingTime", wxSpinCtrl);
     spn->SetRange(LOADER_WAITING_TIME_MIN, LOADER_WAITING_TIME_MAX);
@@ -267,11 +267,13 @@ wxString DebuggerConfiguration::GetLoaderExecutable(bool expandMacro)
     return result;
 }
 
-wxString DebuggerConfiguration::GetLoaderArguments(bool expandMacro)
+wxString DebuggerConfiguration::GetLoaderArguments(const wxString& debuggee, bool expandMacro)
 {
     wxString result = m_config.Read(wxT("loader_arguments"), wxEmptyString);
-    if (expandMacro)
+    if (expandMacro) {
+        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
         Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
+    }
     return result;
 }
 

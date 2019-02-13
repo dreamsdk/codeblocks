@@ -150,7 +150,7 @@ class DebuggerGDB : public cbDebuggerPlugin
         void MarkAllWatchesAsUnchanged();
         bool IsDebugTarget(ProjectBuildTarget *target);
         int ValidateLoaderWaitingTime(int waitingTime);
-        bool LaunchLoader(int projectWaitingTime);
+        bool LaunchLoader(const wxString& debuggee, int projectWaitingTime);
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
         ProjectBuildTarget* GetCurrentTarget();
         int DoDebug(bool breakOnEntry);

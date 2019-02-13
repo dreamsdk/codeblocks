@@ -544,12 +544,12 @@ int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
     return result;
 }
 
-bool DebuggerGDB::LaunchLoader(int projectWaitingTime)
+bool DebuggerGDB::LaunchLoader(const wxString& debuggee, int projectWaitingTime)
 {
     bool loaderStartedSuccessfully = false;
 
     wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
-    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments();
+    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee);
 
     wxString cmd = loaderPath;
     if (!loaderArgs.empty())
@@ -870,7 +870,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     wxString cmd;
 
     // prepare the driver
-    wxString cmdline;
+    wxString debuggee, cmdline;
     if (m_PidToAttach == 0)
     {
         m_State.GetDriver()->ClearDirectories();
@@ -902,7 +902,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         }
 
         // set the file to debug (depends on the target type)
-        wxString debuggee, path;
+        wxString path;
         if ( !GetDebuggee(debuggee, path, target) )
         {
             m_Canceled = true;
@@ -959,7 +959,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
 
     // start the loader if necessary
     if (GetActiveConfigEx().IsLoaderNecessary()) {
-        if (!LaunchLoader(rd.loaderWaitingTime)) {
+        if (!LaunchLoader(debuggee, rd.loaderWaitingTime)) {
             Log(_("An issue occurred when starting the loader..."), Logger::error);
             Log(_("Starting the debugger anyway..."));
         }

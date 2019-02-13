@@ -39,7 +39,7 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
         wxString GetInitCommands();
         bool IsLoaderNecessary();
         wxString GetLoaderExecutable(bool expandMacro = true);
-        wxString GetLoaderArguments(bool expandMacro = true);
+        wxString GetLoaderArguments(const wxString& debuggee, bool expandMacro = true);
         int GetLoaderWaitingTime();
 };
 
