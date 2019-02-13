@@ -6,7 +6,6 @@ cls
 echo %TITLE%
 echo.
 
-set RELEASE_DIR=..\cbpatcher\bin\data\package\
 set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.zip
 if exist %PACKAGE_FILE% goto error
 
@@ -71,7 +70,7 @@ if exist %LIBINFO_DIR% (
 :mkpack
 cd %PACKAGE_DIR%
 %SEVENZIP% a -mx9 %PACKAGE_FILE% .
-move %PACKAGE_FILE% ..\%RELEASE_DIR%
+move %PACKAGE_FILE% ..
 cd ..
 rmdir /S %PACKAGE_DIR% /Q
 echo.
