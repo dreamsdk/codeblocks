@@ -52,6 +52,7 @@ begin
   else
   begin
     RequireDerivedFormResource := True;
+  Application.Scaled:=True;
     Application.Initialize;
     frmMain := TfrmMain.Create(Application);
     frmMain.Caption := FORM_TITLE;
