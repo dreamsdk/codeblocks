@@ -92,7 +92,7 @@ function SetupProject(project)
     if (ProjectSettings.UseRomdisk)
     {
         project.SetVar(_T("DREAMSDK_MKRDOBJ"), FileSystemObjects.MakeRomdiskObjectFile, false);
-        project.AddCommandsBeforeBuild(_T("$(DREAMSDK_MKRDOBJ) $(PROJECT_DIR) $(TARGET_OBJECT_DIR) $(TARGET_OUTPUT_FILE)"));
+        project.AddCommandsBeforeBuild(_T("\"$(DREAMSDK_MKRDOBJ)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\" \"$(TARGET_OUTPUT_FILE)\""));
     }
 
     // Handle libraries
