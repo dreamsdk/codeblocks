@@ -13,7 +13,7 @@
       <XPManifest>
         <DpiAware Value="True"/>
         <TextName Value="DreamSDK.CodeBlocks.Splash"/>
-        <TextDesc Value="Code::Blocks Splash for DreamSDK Setup"/>
+        <TextDesc Value="Code::Blocks Splash for DreamSDK"/>
       </XPManifest>
     </General>
     <BuildModes Count="2">
@@ -23,7 +23,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\bin\codeblocks-splash"/>
+            <Filename Value="..\engine\embedded\codeblocks-splash"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -75,7 +75,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="3">
+    <Units Count="2">
       <Unit0>
         <Filename Value="codeblocks-splash.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -88,18 +88,13 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Main"/>
       </Unit1>
-      <Unit2>
-        <Filename Value="..\..\..\..\common\src\sys\systools.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="SysTools"/>
-      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\bin\codeblocks-splash"/>
+      <Filename Value="..\engine\embedded\codeblocks-splash"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

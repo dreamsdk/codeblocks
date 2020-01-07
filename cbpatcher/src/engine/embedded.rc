@@ -1,0 +1,3 @@
+BACKUPRESTORE      RCDATA         "embedded\codeblocks-backup-restore.cmd"
+SPLASH             RCDATA         "embedded\codeblocks-splash.exe"
+
