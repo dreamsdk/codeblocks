@@ -1,14 +1,26 @@
 unit CBPatch;
 
 {$mode objfpc}{$H+}
+
+{$IFNDEF LITE_VERSION}
 {$R embedded.rc}
+{$ENDIF}
 
 interface
 
 uses
-  Classes, SysUtils, DOM, XMLRead, XMLWrite, XPath, FSTools;
+  Classes,
+  SysUtils,
+  DOM,
+  XMLRead,
+  XMLWrite,
+  XPath,
+  FSTools;
 
 type
+  ECodeBlocksPatcher = class(Exception);
+  ECodeBlocksPatcherLiteVersion = class(ECodeBlocksPatcher);
+
   TTaskProc = function: Boolean of object;
 
   TCodeBlocksPatcherOperation = (pmUndefined, pmInstall, pmUninstall);
@@ -27,6 +39,7 @@ type
   { TCodeBlocksPatcher }
   TCodeBlocksPatcher = class(TObject)
   private
+    fCodeBlocksAvailableUsers: TStringList;
     fExecuteResult: Boolean;
     fProcessBegin: TNotifyEvent;
     fCodeBlocksBackupRestoreFileName: TFileName;
@@ -45,6 +58,7 @@ type
     procedure ExtractEmbeddedFiles;
     procedure FixTools(const CodeBlocksConfigurationFileName: TFileName);
     procedure FixDebugger(const CodeBlocksConfigurationFileName: TFileName);
+    function GetCodeBlocksAvailableUsers: TStringList;
     function GetConfigurationFileName: TFileName;
     function GetRegisteredString(const Key: string): string;
     function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
@@ -114,6 +128,10 @@ type
     property CodeBlocksConfigurationFileNames: TFileList
       read fCodeBlocksConfigurationFileNames;
 
+    // Code::Blocks Available Users
+    property CodeBlocksAvailableUsers: TStringList
+      read GetCodeBlocksAvailableUsers;
+
     // Code::Blocks Installation Directory
     property CodeBlocksInstallationDirectory: TFileName
       read fCodeBlocksInstallationDirectory
@@ -177,8 +195,10 @@ const
   DREAMSDK_HOME_VARIABLE = '{app}';
   DOM_ROOT_PATH = '/CodeBlocksConfig';
 
+{$IFNDEF LITE_VERSION}
   EMBEDDED_BACKUP_RESTORE = 'BACKUPRESTORE';
   EMBEDDED_SPLASH = 'SPLASH';
+{$ENDIF}
 
 function SanitizeXPath(XPathExpression: string): string;
 begin
@@ -261,6 +281,7 @@ constructor TCodeBlocksPatcher.Create;
 
 begin
   fCodeBlocksConfigurationFileNames := TFileList.Create;
+  fCodeBlocksAvailableUsers := TStringList.Create;
   fOperation := pmUndefined;
   InitializeDefaults;
   ExtractEmbeddedFiles;
@@ -269,14 +290,18 @@ end;
 destructor TCodeBlocksPatcher.Destroy;
 begin
   CleanEmbeddedFiles;
+  fCodeBlocksAvailableUsers.Free;
   fCodeBlocksConfigurationFileNames.Free;
+{$IFNDEF LITE_VERSION}
   Sleep(500);
   KillProcessByName(fCodeBlocksSplashFileName);
+{$ENDIF}
   inherited Destroy;
 end;
 
 function TCodeBlocksPatcher.Execute: Boolean;
 begin
+{$IFNDEF LITE_VERSION}
   fExecuteResult := False;
 
   if Ready then
@@ -308,6 +333,11 @@ begin
   end;
 
   Result := fExecuteResult;
+{$ELSE}
+  Result := False;
+  raise ECodeBlocksPatcherLiteVersion.Create(
+    'Unable to execute the Patcher engine in Lite version mode.');
+{$ENDIF}
 end;
 
 procedure TCodeBlocksPatcher.FixSection(
@@ -843,6 +873,28 @@ begin
   FixSection(CodeBlocksConfigurationFileName, 'gdb_debugger', 'conf', '%d', 1);
 end;
 
+function TCodeBlocksPatcher.GetCodeBlocksAvailableUsers: TStringList;
+var
+  i: Integer;
+  UsersDirectory: TFileName;
+  CurrentUserName,
+  CurrentUserFullName: string;
+
+begin
+  fCodeBlocksAvailableUsers.Clear;
+  UsersDirectory := GetUsersDirectory;
+  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+  begin
+    CurrentUserName := ExtractStr(UsersDirectory, DirectorySeparator,
+      CodeBlocksConfigurationFileNames[i]);
+    CurrentUserFullName := GetUserFullNameFromUserName(CurrentUserName);
+    if CurrentUserFullName <> EmptyStr then
+      CurrentUserName := Format('%s (%s)', [CurrentUserFullName, CurrentUserName]);
+    fCodeBlocksAvailableUsers.Add(CurrentUserName);
+  end;
+  Result := fCodeBlocksAvailableUsers;
+end;
+
 function TCodeBlocksPatcher.GetConfigurationFileName: TFileName;
 const
   IDE_CONFIGURATION_FILE = 'msys\1.0\etc\dreamsdk\ide.conf';
@@ -1123,6 +1175,7 @@ procedure TCodeBlocksPatcher.ExtractEmbeddedFiles;
   end;
 
 begin
+{$IFNDEF LITE_VERSION}
   // Code::Blocks Backup/Restore
   fCodeBlocksBackupRestoreFileName :=
     ExtractFileName(EMBEDDED_BACKUP_RESTORE, 'codeblocks-backup-restore.cmd');
@@ -1130,12 +1183,15 @@ begin
   // Code::Blocks Splash
   fCodeBlocksSplashFileName :=
     ExtractFileName(EMBEDDED_SPLASH, 'codeblocks-splash.exe');
+{$ENDIF}
 end;
 
 procedure TCodeBlocksPatcher.CleanEmbeddedFiles;
 begin
+{$IFNDEF LITE_VERSION}
   KillFile(fCodeBlocksBackupRestoreFileName);
   KillFile(fCodeBlocksSplashFileName);
+{$ENDIF}
 end;
 
 function TCodeBlocksPatcher.GetSourceConfigurationDirectory: TFileName;

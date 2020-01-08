@@ -214,13 +214,10 @@ var
   procedure DoPrintCodeBlocksConfigurationFiles;
   var
     i: Integer;
-    UsersDirectory: TFileName;
 
   begin
-    UsersDirectory := GetUsersDirectory;
-    for i := 0 to Patcher.CodeBlocksConfigurationFileNames.Count - 1 do
-      WriteLn(ExtractStr(UsersDirectory, DirectorySeparator,
-        Patcher.CodeBlocksConfigurationFileNames[i]));
+    for i := 0 to Patcher.CodeBlocksAvailableUsers.Count - 1 do
+      WriteLn(Patcher.CodeBlocksAvailableUsers[i]);
   end;
 
 begin
