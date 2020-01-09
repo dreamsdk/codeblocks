@@ -1,3 +1,4 @@
+PACKAGE            RCDATA         "embedded\codeblocks-17.12-dreamsdk-addon-bin.zip"
+CONFIG             RCDATA         "embedded\codeblocks-patcher-data.zip"
 BACKUPRESTORE      RCDATA         "embedded\codeblocks-backup-restore.cmd"
 SPLASH             RCDATA         "embedded\codeblocks-splash.exe"
-

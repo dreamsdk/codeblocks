@@ -74,7 +74,7 @@ type
 var
   ProgramName: string;
 
-{ TCodeBlocksConfigurationInjector }
+{ TCodeBlocksPatcherApplication }
 
 function TCodeBlocksPatcherApplication.ConvertCommandOperationToPatcherOperation:
   TCodeBlocksPatcherOperation;
@@ -119,7 +119,6 @@ begin
       PrintParam('Code::Blocks Backup Directory', CodeBlocksBackupDirectory);
       PrintParam('Code::Blocks Configuration File Names', CodeBlocksConfigurationFileNames.ToString); // TODO
       PrintParam('DreamSDK Home Directory', HomeDirectory);
-      PrintParam('Source Directory', SourceDirectory);
     end;
     WriteLn;
   end;
@@ -139,9 +138,6 @@ end;
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessTaskEnd(Sender: TObject;
   const Message: string; const Success: Boolean);
 begin
-{$IFDEF DEBUG}
-  DebugLog(Message);
-{$ENDIF}
   WriteBool(Success);
 end;
 
@@ -216,8 +212,9 @@ var
     i: Integer;
 
   begin
+    WriteLn('Code::Blocks available user profiles:');
     for i := 0 to Patcher.CodeBlocksAvailableUsers.Count - 1 do
-      WriteLn(Patcher.CodeBlocksAvailableUsers[i]);
+      WriteLn('  ', Patcher.CodeBlocksAvailableUsers[i]);
   end;
 
 begin
@@ -228,8 +225,8 @@ begin
 
   // Quick check parameters
   ErrorMsg := CheckOptions(
-    'hni:c:m:s:o:b:pv',
-    'help no-logo install-dir: config-files: home-dir: source-dir: operation: backup-dir: show-splash verbose'
+    'hni:c:m:o:b:se',
+    'help no-logo install-dir: config-files: home-dir: operation: backup-dir: show-splash verbose'
   );
   if ErrorMsg <> EmptyStr then
   begin
@@ -246,7 +243,7 @@ begin
   end;
 
   // Handle verbose
-  fVerbose := HasOption('v', 'verbose');
+  fVerbose := HasOption('e', 'verbose');
 
   // Check if an operation is specified (mandatory)
   if not HasOption('o', 'operation') then
@@ -298,7 +295,7 @@ begin
   end;
 
   // Handle Splash
-  Patcher.VisibleSplash := HasOption('p', 'show-splash');
+  Patcher.VisibleSplash := HasOption('s', 'show-splash');
 
   // Events
   Patcher.OnProcessBegin := @OnPatcherProcessBegin;
@@ -381,10 +378,6 @@ begin
     if GetParam([coInstall, coUninstall], 'm', 'home-dir', TempParam) then
       HomeDirectory := TempParam;
 
-    // Source Directory
-    if GetParam([coInstall, coUninstall], 's', 'source-dir', TempParam) then
-      SourceDirectory := TempParam;
-
     Result := not fErrorTerminate;
   end;
 end;
@@ -405,27 +398,52 @@ begin
 end;
 
 procedure TCodeBlocksPatcherApplication.WriteHelp;
+var
+  DefaultBackupDirectory: TFileName;
+
 begin
+  DefaultBackupDirectory := Format(DEFAULT_CODEBLOCKS_BACKUP_DIR, [
+    '%' + GetBaseEnvironmentVariableName + '%']);
+
   WriteLn('Usage:', sLineBreak,
-    '  ', ProgramName, ' [CB_INST_DIR] [CB_CONF_FILES] [DREAMSDK_DIR] [SOURCE_DIR]', sLineBreak,
+    '  ', ProgramName, ' --operation=<install, uninstall> [options]', sLineBreak,
     sLineBreak,
     'Description:', sLineBreak,
-    '  CB_INST_DIR   : The Code::Blocks installation directory (typically ', sLineBreak,
-    '                  ''%ProgramFiles%\CodeBlocks\'' on 32-bits systems or', sLineBreak,
-    '                  ''%ProgramFiles(x86)%\CodeBlocks\'' on 64-bits systems).', sLineBreak,
-    '  CB_CONF_FILES : Optional. The Code::Blocks configuration files to patch.', sLineBreak,
-    '                  It can be a single path or multiple paths separated by the', sLineBreak,
-    '                  '';'' character. If not specified, it will try to determine', sLineBreak,
-    '                  itself the patchable files (typically', sLineBreak,
-    '                  ''%AppData%\CodeBlocks\default.conf'' for each users on this', sLineBreak,
-    '                  system).', sLineBreak,
-    '  DREAMSDK_DIR  : Optional. The DreamSDK Home directory (typically ', sLineBreak,
-    '                  ''C:\DreamSDK\''). If not specified, the value is read from the', sLineBreak,
-    '                  ', GetBaseEnvironmentVariableName, ' environment variable.', sLineBreak,
-    '  SOURCE_DIR    : Optional. The directory where are stored the required', sLineBreak,
-    '                  files for the patcher. Default value is ''.\data\''.', sLineBreak,
-    '  --no-logo, -n : Don''t print application banner.', sLineBreak,
-    '  --help, -h    : Print this help.', sLineBreak,
+    '  --operation, -o    : The operation the patch need to perform. It can be', sLineBreak,
+    '                       ''install'', ''uninstall'' or ''print-codeblocks-users'' to', sLineBreak,
+    '                       list the users that have a valid Code::Blocks profile.', sLineBreak,
+    '                       To give eligibility to an user to get the patch, just', sLineBreak,
+    '                       run Code::Blocks one time with that user to create all', sLineBreak,
+    '                       the required files.', sLineBreak,
+    sLineBreak,
+    'Options:', sLineBreak,
+    '  --install-dir, -i  : The Code::Blocks installation directory. Default is ', sLineBreak,
+    '                       ''%ProgramFiles%\CodeBlocks\'' on 32-bits systems or', sLineBreak,
+    '                       ''%ProgramFiles(x86)%\CodeBlocks\'' on 64-bits systems.', sLineBreak,
+    sLineBreak,
+    '  --backup-dir, -b   : The directory where the original, unpatched Code::Blocks', sLineBreak,
+    '                       files will be stored. Default backup path is:', sLineBreak,
+    '                       ''', DefaultBackupDirectory, '''.', sLineBreak,
+    sLineBreak,
+    '  --config-files, -c : The Code::Blocks configuration files to patch.', sLineBreak,
+    '                       It can be a single file or multiple files separated by', sLineBreak,
+    '                       the '';'' character. If not specified, it will try to', sLineBreak,
+    '                       determine itself the patchable files (typically', sLineBreak,
+    '                       ''%AppData%\CodeBlocks\default.conf'' for each users', sLineBreak,
+    '                       on this system). You may use the --operation', sLineBreak,
+    '                       ''print-codeblocks-users'' to list these patchable files.', sLineBreak,
+    sLineBreak,
+    '  --home-dir, -m     : The DreamSDK Home directory (typically ', sLineBreak,
+    '                       ''C:\DreamSDK\''). If not specified, the value is read', sLineBreak,
+    '                       from the ''', GetBaseEnvironmentVariableName, ''' environment variable.', sLineBreak,
+    sLineBreak,
+    '  --show-splash, -s  : If enabled, display a progress screen while working.', sLineBreak,
+    sLineBreak,
+    '  --verbose, -e      : Print detailed information while working.', sLineBreak,
+    sLineBreak,
+    '  --no-logo, -n      : Don''t print application banner.', sLineBreak,
+    sLineBreak,
+    '  --help, -h         : Print this help.', sLineBreak,
     sLineBreak,
     'Note:', sLineBreak,
     '  This patcher was made for the Code::Blocks 17.12 stable release only.', sLineBreak,
