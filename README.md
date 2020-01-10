@@ -46,12 +46,13 @@ To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and
 
 1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
 2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_64` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
-4. Select (or create) the `cb_release_type` variable and enter `-O2` in the `base` field.
+4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
 5. Select (or create) the `wx` variable, enter `./wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field. Please use the provided `wxMSW` directory provided in that repository.
 
 ## Building a Code::Blocks release
 
 1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
+2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
 2. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 3. Run the `.\codeblocks\src\update.bat` file.
 
