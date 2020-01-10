@@ -11,6 +11,11 @@ if exist %PACKAGE_FILE% goto error
 
 echo Preparing: %PACKAGE_FILE%...
 
+rem This should match the drive specified in:
+rem   .\codeblocks\src\plugins\compilergcc\resources\compilers\compiler_dc-gcc.xml
+rem   .\codeblocks\src\plugins\compilergcc\resources\compilers\options_dc-gcc.xml
+set DREAMSDK_HOME_DEBUG_DRIVE=E:
+
 set BASE_DIR=%~dp0
 set BASE_DIR=%BASE_DIR:~0,-1%
 set JREPL=%BASE_DIR%\tools\jrepl.bat
@@ -48,13 +53,13 @@ copy share\CodeBlocks\plugins\*.dll %CB_SHARE_PLUGINS_DIR%
 rem Compilers
 set COMPILER_FILE=share\CodeBlocks\compilers\compiler_dc-gcc.xml
 copy %COMPILER_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\bC:\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
 
 rem Compilers Options
 set OPTIONS_FILE=share\CodeBlocks\compilers\options_dc-gcc.xml
 copy %OPTIONS_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\bC:\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
-call %JREPL% "\bTC:\\DreamSDK\b" "T{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\bT%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "T{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
 
 rem Project Wizard
 copy share\CodeBlocks\templates\wizard\config.script %CB_SHARE_TMPL_DIR%
