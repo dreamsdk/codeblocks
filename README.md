@@ -55,6 +55,21 @@ To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and
 2. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 3. Run the `.\codeblocks\src\update.bat` file.
 
+## Debugging the Code::Blocks build
+
+If you want to debug the **Code::Blocks** build, select the `src` target and install a **DreamSDK** working package in `E:\DreamSDK\`.
+If you don't have an `E:` drive, you have to do some modifications:
+
+1. Change the `DREAMSDK_HOME_DEBUG_DRIVE` variable in `.\packager\mkpkg.cmd`.
+2. Change the `E:` drive reference in the two files below:
+
+	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\compiler_dc-gcc.xml`
+	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\options_dc-gcc.xml`
+
+3. In the debugged **Code::Blocks**, go to the **Settings** > **Compiler** menu, 
+select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset defaults**.
+**Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
+
 ## Making the package
 
 After building the **Code::Blocks** release, you need to build the package that will be embedded in the **Code::Blocks Patcher for DreamSDK**.
