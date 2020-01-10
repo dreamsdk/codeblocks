@@ -177,6 +177,7 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(rd.extendedRemote);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(rd.additionalShellCmdsAfter);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(rd.additionalShellCmdsBefore);
+        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(rd.loaderArguments);
         XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue((int)rd.loaderWaitingTime);
     }
     else
@@ -192,6 +193,7 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(false);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(wxEmptyString);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(wxEmptyString);
+        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(wxEmptyString);
         XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue(LOADER_WAITING_TIME_DISABLED);
     }
 }
@@ -222,6 +224,7 @@ void DebuggerOptionsProjectDlg::SaveCurrentRemoteDebuggingRecord()
     rd.extendedRemote = XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->GetValue();
     rd.additionalShellCmdsAfter = XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->GetValue();
     rd.additionalShellCmdsBefore = XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->GetValue();
+    rd.loaderArguments = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
     rd.loaderWaitingTime = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->GetValue();
 }
 
@@ -300,6 +303,9 @@ void DebuggerOptionsProjectDlg::OnUpdateUI(wxUpdateUIEvent& WXUNUSED(event))
     XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->Enable(en);
+    wxTextCtrl* txt = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl);
+    txt->SetToolTip(_(LOADER_ARGUMENTS_TOOLTIP));
+    txt->Enable(en);
     wxSpinCtrl* spn = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl);
     spn->SetRange(LOADER_WAITING_TIME_DISABLED, LOADER_WAITING_TIME_MAX);
     spn->SetToolTip(wxString::Format(_("%s\nSet it to 0 to use the system default"), _(LOADER_WAITING_TIME_TOOLTIP)));

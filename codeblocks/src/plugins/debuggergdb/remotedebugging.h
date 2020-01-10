@@ -53,6 +53,7 @@ struct RemoteDebugging
 
 		skipLDpath = other.skipLDpath;
 		extendedRemote = other.extendedRemote;
+		loaderArguments = other.loaderArguments;
 		loaderWaitingTime = other.loaderWaitingTime;
 
 		if (!additionalShellCmdsAfter.IsEmpty() && !other.additionalShellCmdsAfter.IsEmpty())
@@ -77,6 +78,7 @@ struct RemoteDebugging
 	wxString additionalShellCmdsBefore; ///< shell commands before establishing remote connection
 	bool skipLDpath; ///< skip adjusting LD_LIBRARY_PATH before launching debugger
 	bool extendedRemote;//!< connect with extended remote or not
+	wxString loaderArguments;
 	int loaderWaitingTime;
 };
 

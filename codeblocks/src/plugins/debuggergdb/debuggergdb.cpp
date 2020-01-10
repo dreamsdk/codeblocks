@@ -409,6 +409,8 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                         rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
                         rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
+                    if (rdOpt->Attribute("loader_arguments"))
+                        rd.loaderArguments = cbC2U(rdOpt->Attribute("loader_arguments"));
                     if (rdOpt->Attribute("loader_waiting_time"))
                         rd.loaderWaitingTime = atol(rdOpt->Attribute("loader_waiting_time"));
 
@@ -486,6 +488,7 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                     tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
                 if (!rd.additionalShellCmdsBefore.IsEmpty())
                     tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
+                tgtnode->SetAttribute("loader_arguments", cbU2C(rd.loaderArguments));
                 tgtnode->SetAttribute("loader_waiting_time", (int)rd.loaderWaitingTime);
             }
         }
@@ -544,12 +547,15 @@ int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
     return result;
 }
 
-bool DebuggerGDB::LaunchLoader(const wxString& debuggee, int projectWaitingTime)
+bool DebuggerGDB::LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime)
 {
     bool loaderStartedSuccessfully = false;
 
     wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
-    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee);
+    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee); // Read from default DebuggerGDB panel
+    if (!projectLoaderArguments.empty()) {
+        loaderArgs = ParseLoaderArguments(projectLoaderArguments, debuggee);
+    }
 
     wxString cmd = loaderPath;
     if (!loaderArgs.empty())
@@ -959,7 +965,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
 
     // start the loader if necessary
     if (GetActiveConfigEx().IsLoaderNecessary()) {
-        if (!LaunchLoader(debuggee, rd.loaderWaitingTime)) {
+        if (!LaunchLoader(debuggee, rd.loaderArguments, rd.loaderWaitingTime)) {
             Log(_("An issue occurred when starting the loader..."), Logger::error);
             Log(_("Starting the debugger anyway..."));
         }
@@ -1068,6 +1074,20 @@ void DebuggerGDB::AddSourceDir(const wxString& dir)
     Log(_("Adding source dir: ") + filename);
     ConvertToGDBDirectory(filename, _T(""), false);
     m_State.GetDriver()->AddDirectory(filename);
+}
+
+// static
+wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee)
+{
+    wxString result = loaderArguments;
+
+    if (!result.empty())
+    {
+        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
+        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
+    }
+
+    return result;
 }
 
 // static

@@ -19,6 +19,8 @@
 #include "debuggerstate.h"
 #include "debugger_defs.h"
 
+#define LOADER_ARGUMENTS_TOOLTIP "Leave it empty to use the system default"
+
 #define LOADER_WAITING_TIME_MIN 1
 #define LOADER_WAITING_TIME_MAX 300
 #define LOADER_WAITING_TIME_DEFAULT 10
@@ -136,6 +138,8 @@ class DebuggerGDB : public cbDebuggerPlugin
 
         void DebuggeeContinued();
 
+        static wxString ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee);
+
     protected:
         cbProject* GetProject() { return m_pProject; }
         void ResetProject() { m_pProcess = NULL; }
@@ -150,7 +154,7 @@ class DebuggerGDB : public cbDebuggerPlugin
         void MarkAllWatchesAsUnchanged();
         bool IsDebugTarget(ProjectBuildTarget *target);
         int ValidateLoaderWaitingTime(int waitingTime);
-        bool LaunchLoader(const wxString& debuggee, int projectWaitingTime);
+        bool LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime);
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
         ProjectBuildTarget* GetCurrentTarget();
         int DoDebug(bool breakOnEntry);

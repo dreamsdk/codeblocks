@@ -85,7 +85,7 @@
 												<vgap>4</vgap>
 												<hgap>4</hgap>
 												<growablecols>1</growablecols>
-												<growablerows>3</growablerows>
+												<growablerows>2</growablerows>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT1">
 														<label>Connection type:</label>
@@ -187,7 +187,20 @@
 													<border>5</border>
 													<option>1</option>
 												</object>
-                                                <object class="sizeritem">
+												<object class="sizeritem">
+													<object class="wxStaticText" name="ID_STATICTEXT14">
+														<label>Loader arguments:</label>
+													</object>
+													<flag>wxALIGN_CENTER_VERTICAL</flag>
+													<border>5</border>
+												</object>
+												<object class="sizeritem">
+													<object class="wxTextCtrl" name="txtLoaderArguments" />
+													<flag>wxEXPAND</flag>
+													<border>5</border>
+													<option>1</option>
+												</object>
+												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT13">
 														<label>Waiting time:</label>
 													</object>

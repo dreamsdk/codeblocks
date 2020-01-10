@@ -271,8 +271,7 @@ wxString DebuggerConfiguration::GetLoaderArguments(const wxString& debuggee, boo
 {
     wxString result = m_config.Read(wxT("loader_arguments"), wxEmptyString);
     if (expandMacro) {
-        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
-        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
+        result = DebuggerGDB::ParseLoaderArguments(result, debuggee);
     }
     return result;
 }
