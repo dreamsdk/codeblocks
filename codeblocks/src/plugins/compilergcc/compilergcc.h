@@ -151,6 +151,8 @@ class CompilerGCC : public cbCompilerPlugin
         void OnClearErrors(wxCommandEvent& event);
         void OnUpdateUI(wxUpdateUIEvent& event);
         void OnConfig(wxCommandEvent& event);
+
+        void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
     private:
         friend class CompilerOptionsDlg;
 
@@ -328,6 +330,8 @@ class CompilerGCC : public cbCompilerPlugin
         size_t m_MaxProgress;
         size_t m_CurrentProgress;
         bool   m_LogBuildProgressPercentage;
+
+        int m_HookId; // project loader hook ID
 
         DECLARE_EVENT_TABLE()
 };

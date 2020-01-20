@@ -72,6 +72,8 @@
 #include "compilerG95.h"
 #include "compilerXML.h"
 
+#include "projectloader_hooks.h"
+
 #include <scripting/bindings/sc_base_types.h>
 
 namespace ScriptBindings
@@ -419,10 +421,16 @@ void CompilerGCC::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_TARGETS_MODIFIED, new cbEventFunctor<CompilerGCC, CodeBlocksEvent>(this, &CompilerGCC::OnProjectActivated));
 
     Manager::Get()->RegisterEventSink(cbEVT_COMPILE_FILE_REQUEST,     new cbEventFunctor<CompilerGCC, CodeBlocksEvent>(this, &CompilerGCC::OnCompileFileRequest));
+
+    // hook to project loading procedure
+    ProjectLoaderHooks::HookFunctorBase* myhook = new ProjectLoaderHooks::HookFunctor<CompilerGCC>(this, &CompilerGCC::OnProjectLoadingHook);
+    m_HookId = ProjectLoaderHooks::RegisterHook(myhook);
 }
 
 void CompilerGCC::OnRelease(bool appShutDown)
 {
+    ProjectLoaderHooks::UnregisterHook(m_HookId, true);
+
     // disable script functions
     ScriptBindings::gBuildLogId = -1;
 
@@ -1818,9 +1826,15 @@ wxString CompilerGCC::GetLoaderCommand(ProjectBuildTarget* target)
         compilerId = CompilerFactory::GetDefaultCompilerID();
     Compiler* compiler = CompilerFactory::GetCompiler(compilerId);
 
-    // Get the loader and arguments.
+    // Get the loader
     wxString loader = compiler->GetPrograms().LOADER;
-    wxString loaderArgs = compiler->GetLoaderArguments();
+
+    // Get the loader arguments
+    wxString loaderArgs = target->GetLoaderArguments();
+    if (loaderArgs.empty())
+        loaderArgs = m_pProject->GetLoaderArguments();
+    if (loaderArgs.empty())
+        loaderArgs = compiler->GetLoaderArguments();;
 
     if (wxFileExists(loader))
     {
@@ -4024,4 +4038,66 @@ wxString CompilerGCC::GetMinSecStr()
 #else
     return wxString::Format(_("%d minute(s), %d second(s)"), mins, secs);
 #endif // NO_TRANSLATION
+}
+
+void CompilerGCC::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading)
+{
+    if (loading)
+    {
+        // Hook called when loading project file.
+
+        TiXmlElement* conf = elem->FirstChildElement("compiler");
+        if (conf)
+        {
+            wxString projectLoaderArgs = cbC2U(conf->Attribute("project_loader_arguments"));
+            project->SetLoaderArguments(projectLoaderArgs);
+
+            TiXmlElement* rdElem = conf->FirstChildElement("compiler_settings");
+            while (rdElem)
+            {
+                wxString targetName = cbC2U(rdElem->Attribute("target"));
+                ProjectBuildTarget* bt = project->GetBuildTarget(targetName);
+                if (bt)
+                {
+                    bt->SetLoaderArguments(cbC2U(rdElem->Attribute("target_loader_arguments")));
+                }
+
+                rdElem = rdElem->NextSiblingElement("compiler_settings");
+            }
+        }
+    }
+    else
+    {
+        // Hook called when saving project file.
+
+        // since rev4332, the project keeps a copy of the <Extensions> element
+        // and re-uses it when saving the project (so to avoid losing entries in it
+        // if plugins that use that element are not loaded atm).
+        // so, instead of blindly inserting the element, we must first check it's
+        // not already there (and if it is, clear its contents)
+        TiXmlElement* node = elem->FirstChildElement("compiler");
+        if (!node)
+            node = elem->InsertEndChild(TiXmlElement("compiler"))->ToElement();
+        node->Clear();
+
+        node->SetAttribute("project_loader_arguments", cbU2C(project->GetLoaderArguments()));
+
+        if (project->GetBuildTargetsCount())
+        {
+            for(int i = 0; i < project->GetBuildTargetsCount(); i++)
+            {
+                ProjectBuildTarget* bt = project->GetBuildTarget(i);
+
+                if (bt)
+                {
+                    TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("compiler_settings"))->ToElement();
+                    if (rdnode)
+                    {
+                        rdnode->SetAttribute("target", cbU2C(bt->GetTitle()));
+                        rdnode->SetAttribute("target_loader_arguments", cbU2C(bt->GetLoaderArguments()));
+                    }
+                }
+            }
+        }
+    }
 }

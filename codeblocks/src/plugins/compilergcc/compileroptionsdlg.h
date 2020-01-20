@@ -136,6 +136,8 @@ class CompilerOptionsDlg : public cbConfigurationPanel
         bool                         m_BuildingTree;                 //!< flag to ignore tree changing events while building it
         static int                   m_MenuOption;
 
+        wxString                     m_LoaderArgs;
+
         DECLARE_EVENT_TABLE()
 };
 

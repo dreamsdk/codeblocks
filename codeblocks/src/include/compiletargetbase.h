@@ -146,6 +146,8 @@ class DLLIMPORT CompileTargetBase : public CompileOptionsBase
         virtual wxString GetMakeCommandFor(MakeCommand cmd) const { return m_MakeCommands[cmd]; } ///< Get the "make" command used for @c cmd
         virtual void SetMakeCommandFor(MakeCommand cmd, const wxString& make); ///< Set the "make" command used for @c cmd
         virtual bool MakeCommandsModified() const { return m_MakeCommandsModified; } ///< True if any of the "make" commands is modified.
+        virtual wxString GetLoaderArguments();
+        virtual void SetLoaderArguments(const wxString& loaderArgs);
     protected:
         friend class cbProject;
 
@@ -167,6 +169,7 @@ class DLLIMPORT CompileTargetBase : public CompileOptionsBase
         bool m_RunHostApplicationInTerminal;
         TargetFilenameGenerationPolicy m_PrefixGenerationPolicy;
         TargetFilenameGenerationPolicy m_ExtensionGenerationPolicy;
+        wxString m_LoaderArgs;
     private:
         void GenerateTargetFilename(wxString& filename) const;
 };

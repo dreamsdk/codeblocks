@@ -104,7 +104,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_UPDATE_UI(            XRCID("btnMake"),                         CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("txtLoader"),                       CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnLoader"),                       CompilerOptionsDlg::OnUpdateUI)
-    EVT_UPDATE_UI(            XRCID("txtLoaderArguments"),              CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("cmbCompiler"),                     CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreAdd"),                    CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreRemove"),                 CompilerOptionsDlg::OnUpdateUI)
@@ -190,6 +189,8 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_PG_CHANGED(            XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionChanged)
     EVT_PG_RIGHT_CLICK(        XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnFlagsPopup)
     EVT_PG_DOUBLE_CLICK(       XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionDoubleClick)
+
+    EVT_TEXT(                  XRCID("txtLoaderArguments"),             CompilerOptionsDlg::OnDirty)
 END_EVENT_TABLE()
 
 class ScopeTreeData : public wxTreeItemData
@@ -844,6 +845,8 @@ void CompilerOptionsDlg::DoLoadOptions()
             wxChoice* cmb = XRCCTRL(*this, "cmbLogging", wxChoice);
             if (cmb)
                 cmb->SetSelection((int)compiler->GetSwitches().logging);
+
+            m_LoaderArgs = compiler->GetLoaderArguments();
         }
     }
     else
@@ -869,6 +872,8 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_DistClean",        wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcDistClean));
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcSilentBuild));
+
+            m_LoaderArgs = m_pProject->GetLoaderArguments();
         }
         else
         {
@@ -896,6 +901,8 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_DistClean",        wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcDistClean));
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcSilentBuild));
+
+            m_LoaderArgs = m_pTarget->GetLoaderArguments();
         }
     }
     TextToOptions();
@@ -915,6 +922,8 @@ void CompilerOptionsDlg::DoLoadOptions()
         ArrayString2TextCtrl(CommandsAfterBuild, XRCCTRL(*this, "txtCmdAfter", wxTextCtrl));
         XRCCTRL(*this, "chkAlwaysRunPost", wxCheckBox)->SetValue(AlwaysUsePost);
     }
+
+    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(m_LoaderArgs);
 } // DoLoadOptions
 
 void CompilerOptionsDlg::OptionsToText()
@@ -1008,6 +1017,8 @@ void CompilerOptionsDlg::DoSaveOptions()
     DoGetCompileOptions(m_LinkerOptions,           XRCCTRL(*this, "txtLinkerOptions",           wxTextCtrl));
     OptionsToText();
 
+    wxString LoaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
+
     if (!m_pProject && !m_pTarget)
     {
         // global options
@@ -1064,6 +1075,8 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pProject->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
+
+            m_pProject->SetLoaderArguments(LoaderArgs);
         }
         else
         {
@@ -1091,6 +1104,8 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pTarget->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
+
+            m_pTarget->SetLoaderArguments(LoaderArgs);
         }
     }
 } // DoSaveOptions
