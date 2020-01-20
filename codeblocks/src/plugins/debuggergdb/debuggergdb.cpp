@@ -799,14 +799,32 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             return 3;
         }
 
-        // make sure it's not a native and loaded target...
-        if (target && target->GetTargetType() == ttNative && !IsDebugTarget(target) && !GetActiveConfigEx().GetLoaderExecutable().empty())
+        // make sure it's a native and loaded target...
+        if (target && target->GetTargetType() == ttNative && !GetActiveConfigEx().GetLoaderExecutable().empty())
         {
-            cbMessageBox(_("The selected target is a Release target.\n"
-                           "Please select the Debug target if you want to debug the project."), _("Warning"), wxICON_WARNING);
-            Log(_("aborted"));
-            m_Canceled = true;
-            return 3;
+            if (!IsDebugTarget(target))
+            {
+                // We are trying to debug a Release target: impossible
+
+                cbMessageBox(_("The selected target is a Release target.\n"
+                    "Please select the Debug target if you want to launch a debugging session on this project."), _("Warning"), wxICON_WARNING);
+                Log(_("aborted"));
+                m_Canceled = true;
+                return 3;
+            }
+            else
+            {
+                // We are trying to debug a Debug target: OK
+
+                AnnoyingDialog dlg(_("Information"),
+                   F(_("The loader will now run the Debug target remotely and wait %d second(s) before starting the debugger.\n"
+                       "This delay is essential in order to wait the upload and the execution on the remote system.\n"
+                       "You may adapt this delay in Project > Properties... > Debugger > Debug > Waiting time."),
+                     GetActiveConfigEx().GetLoaderWaitingTime()),
+                   wxART_INFORMATION,
+                   AnnoyingDialog::dStyle::OK);
+                dlg.ShowModal();
+            }
         }
 
         if (target) Log(target->GetTitle());
