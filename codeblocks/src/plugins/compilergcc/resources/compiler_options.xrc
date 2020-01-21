@@ -1417,9 +1417,7 @@
 															<border>4</border>
 														</object>
 														<object class="sizeritem">
-															<object class="wxTextCtrl" name="txtLoaderArguments">
-                                                                <tooltip>Leave the field blank to use the default</tooltip>
-                                                            </object>
+															<object class="wxTextCtrl" name="txtLoaderArguments" />                                                               
 															<flag>wxEXPAND</flag>
 															<option>1</option>
 														</object>

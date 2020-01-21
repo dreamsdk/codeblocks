@@ -298,6 +298,8 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
         XRCCTRL(*this, "txtMakeCmd_DistClean", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->Enable(en);
+
+        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetToolTip(wxT("Leave the field blank to use the default"));
     }
 
     // let's start filling in all the panels of the configuration dialog

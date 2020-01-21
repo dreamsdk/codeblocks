@@ -816,7 +816,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             {
                 // We are trying to debug a Debug target: OK
 
-                AnnoyingDialog dlg(_("Information"),
+                AnnoyingDialog dlg(_("About debugging through a loader"),
                    F(_("The loader will now run the Debug target remotely and wait %d second(s) before starting the debugger.\n"
                        "This delay is essential in order to wait the upload and the execution on the remote system.\n"
                        "You may adapt this delay in Project > Properties... > Debugger > Debug > Waiting time."),
