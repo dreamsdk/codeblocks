@@ -1101,7 +1101,7 @@ wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, cons
 
     if (!result.empty())
     {
-        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
+        result.Replace(wxT("${DEBUGGEE}"), debuggee);
         Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
     }
 

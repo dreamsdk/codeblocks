@@ -6,7 +6,15 @@
 			<object class="sizeritem">
 				<object class="wxCheckBox" name="cbxUseRomdisk">
 					<label>Use embedded resources (romdisk)</label>
-					<tooltip>Files embedded in a romdisk can be accessed throught the /rd mount point.</tooltip>
+					<tooltip>Files embedded in a romdisk can be accessed through the /rd mount point.</tooltip>
+				</object>
+				<flag>wxALL|wxALIGN_LEFT</flag>
+				<border>5</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxCheckBox" name="cbxUseVirtualCompactDisc">
+					<label>Use virtual CD-ROM (romdisk)</label>
+					<tooltip>Attach virtually a CD-ROM ISO that can be accessed through the /cd mount point.</tooltip>
 				</object>
 				<flag>wxALL|wxALIGN_LEFT</flag>
 				<border>5</border>

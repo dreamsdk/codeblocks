@@ -8,7 +8,7 @@
 	<Program name="LIB"       value="sh-elf-ar.exe"/>
 	<Program name="WINDRES"   value=""/>
 	<Program name="MAKE"      value="make.exe"/>
-	<Program name="LOADER"    value="E:\DreamSDK\msys\1.0\opt\dreamsdk\ide\dc-tool.cmd"    args="-x ${PROJECTDIR}${TARGET_OUTPUT_FILE}"/>
+	<Program name="LOADER"    value="E:\DreamSDK\msys\1.0\opt\dreamsdk\ide\dc-tool.cmd"    args="-x &quot;${PROJECTDIR}${TARGET_OUTPUT_FILE}&quot;"/>
 
     <Switch name="includeDirs"             value="-I"/>
     <Switch name="libDirs"                 value="-L"/>

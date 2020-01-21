@@ -10,12 +10,14 @@
 // Global Vars
 ProjectSettings <- {
     UseRomdisk = true // Use a Romdisk by default
+    UseVirtualCompactDisc = true // Use CDFS redirection by default
     ConsoleLang = 0 // Default to C
     SelectedLibraryList = ::wxArrayString()
 }
 FileSystemObjects <- {
     SoftwareDevelopmentKitHelperDir = _T("")
     MakeRomdiskObjectFile = _T("")
+    MakeIsoImageFile = _T("")
     WizardBaseDir = _T("")
     WizardLibraryInformationDir = _T("")
     TemplateStaticFilesDir = _T("")
@@ -95,17 +97,25 @@ function SetupProject(project)
         project.AddCommandsBeforeBuild(_T("\"$(DREAMSDK_MKRDOBJ)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\" \"$(TARGET_OUTPUT_FILE)\""));
     }
 
+    if (ProjectSettings.UseVirtualCompactDisc)
+    {
+        project.SetVar(_T("DREAMSDK_MKISOIMG"), FileSystemObjects.MakeIsoImageFile, false);
+        project.AddCommandsBeforeBuild(_T("\"$(DREAMSDK_MKISOIMG)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\""));
+    }
+
     // Handle libraries
     HandleLibraries(project);
 
     // Debug build target
     local targetDebug = project.GetBuildTarget(Wizard.GetDebugName());
     InitializeTarget(targetDebug, true);
-    SetupDebugger(project);
 
 	// Release build target
 	local targetRelease = project.GetBuildTarget(Wizard.GetReleaseName());
 	InitializeTarget(targetRelease, false);
+
+	// Set additional extension entries
+	SetupExtensions(project);
 
 	return true;
 }
@@ -113,11 +123,18 @@ function SetupProject(project)
 function GetFilesDir()
 {
     local result = _T("");
+
     if (ProjectSettings.UseRomdisk)
     {
-        result = FileSystemObjects.TemplateStaticFilesDir;
+        result = _T("rd");
     }
-    return result;
+
+    if (ProjectSettings.UseVirtualCompactDisc)
+    {
+        result += _T("cd");
+    }
+
+    return FileSystemObjects.TemplateStaticFilesDir + result + wxFILE_SEP_PATH;
 }
 
 function GetGeneratedFile(file_index)
@@ -153,6 +170,7 @@ function OnEnter_SettingsPage(fwd)
     if (fwd)
     {
         Wizard.CheckCheckbox(_T("cbxUseRomdisk"), ProjectSettings.UseRomdisk);
+        Wizard.CheckCheckbox(_T("cbxUseVirtualCompactDisc"), ProjectSettings.UseVirtualCompactDisc);
         Wizard.FillContainerWithChoices(_T("lstLibraries"), GetReferentialId());
     }
     return true;
@@ -163,6 +181,7 @@ function OnLeave_SettingsPage(fwd)
     if (fwd)
     {
         ProjectSettings.UseRomdisk = Wizard.IsCheckboxChecked(_T("cbxUseRomdisk"));
+        ProjectSettings.UseVirtualCompactDisc = Wizard.IsCheckboxChecked(_T("cbxUseVirtualCompactDisc"));
         ProjectSettings.SelectedLibraryList = GetArrayFromString(Wizard.GetCheckListboxStringChecked(_T("lstLibraries")), _T(";"), false);
         GenerateUserLibraryInformation();
     }
@@ -255,6 +274,10 @@ function InitializeWizard()
     // Compute Make Romdisk Object File utility
     // This replace basically the genromfs/bin2o commands
     FileSystemObjects.MakeRomdiskObjectFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("mkrdobj.cmd");
+
+    // Used when virtual CDFS redirection is enabled
+    // Generate CDFS Image utility
+    FileSystemObjects.MakeIsoImageFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("mkisoimg.cmd");
 
     // Wizard Base Directory
     FileSystemObjects.WizardBaseDir = _T("dc") + wxFILE_SEP_PATH;
@@ -437,14 +460,26 @@ function InitializeTarget(target, isDebugTarget)
 }
 
 // -----------------------------------------------------------------------------
-// configure the debugger parameters
-function SetupDebugger(project)
+// Setup the extensions
+function SetupExtensions(project)
 {
+    // Configure the debugger
     project.AddToExtensions(_T("debugger/remote_debugging/options:conn_type=0"));
     project.AddToExtensions(_T("debugger/remote_debugging/options:ip_address=localhost"));
     project.AddToExtensions(_T("debugger/remote_debugging/options:ip_port=2159"));
     project.AddToExtensions(_T("debugger/remote_debugging/options:loader_waiting_time=0"));
     project.AddToExtensions(_T("debugger/remote_debugging:target=Debug"));
+
+    // Configuring the loader
+    if (ProjectSettings.UseVirtualCompactDisc)
+    {
+        local iso = _T("-i \"${PROJECTDIR}$(TARGET_OBJECT_DIR)" + "cd_root.iso\"");
+        project.AddToExtensions(_T("compiler/compiler_settings:target=Release"));
+        project.AddToExtensions(_T("compiler/compiler_settings:target_loader_arguments=-x \"${PROJECTDIR}${TARGET_OUTPUT_FILE}\" ") + iso);
+        project.AddToExtensions(_T("debugger/remote_debugging/options:loader_arguments=-g -x \"${DEBUGGEE}\" ") + iso);
+    }
+
+    // Apply these changes
     project.CallHooks(true); // This is NOT a standard method. It uses a patched codeblocks.dll "SDK" library (provided in that trunk)
 }
 
