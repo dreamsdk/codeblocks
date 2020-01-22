@@ -473,10 +473,10 @@ function SetupExtensions(project)
     // Configuring the loader
     if (ProjectSettings.UseVirtualCompactDisc)
     {
-        local iso = _T("-i \"${PROJECTDIR}$(TARGET_OBJECT_DIR)" + "cd_root.iso\"");
+        local iso = _T("-i \"$(PROJECTDIR)$(TARGET_OBJECT_DIR)" + "cd_root.iso\"");
         project.AddToExtensions(_T("compiler/compiler_settings:target=Release"));
-        project.AddToExtensions(_T("compiler/compiler_settings:target_loader_arguments=-x \"${PROJECTDIR}${TARGET_OUTPUT_FILE}\" ") + iso);
-        project.AddToExtensions(_T("debugger/remote_debugging/options:loader_arguments=-g -x \"${DEBUGGEE}\" ") + iso);
+        project.AddToExtensions(_T("compiler/compiler_settings:target_loader_arguments=-x \"$(PROJECTDIR)$(TARGET_OUTPUT_FILE)\" ") + iso);
+        project.AddToExtensions(_T("debugger/remote_debugging/options:loader_arguments=-g -x \"$(DEBUGGEE)\" ") + iso);
     }
 
     // Apply these changes

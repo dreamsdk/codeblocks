@@ -1101,7 +1101,11 @@ wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, cons
 
     if (!result.empty())
     {
+        // This is dirty!
         result.Replace(wxT("${DEBUGGEE}"), debuggee);
+        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
+
+        // Normal procedure
         Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
     }
 

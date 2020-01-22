@@ -1,0 +1,23 @@
+<tool>
+	<NAME>
+		<str>
+			<![CDATA[---separator---]]>
+		</str>
+	</NAME>
+	<COMMAND>
+		<str>
+			<![CDATA[---separator---]]>
+		</str>
+	</COMMAND>
+	<PARAMS>
+		<str>
+			<![CDATA[]]>
+		</str>
+	</PARAMS>
+	<WORKINGDIR>
+		<str>
+			<![CDATA[]]>
+		</str>
+	</WORKINGDIR>
+	<LAUNCHOPTION int="0" />
+</tool>
