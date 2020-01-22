@@ -71,8 +71,30 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 
 1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
-2. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
-3. Run the `.\codeblocks\src\update.bat` file.
+3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11256` is the official revision for the `17.12` release.
+
+		/*0*/
+		//don't include this header, only configmanager-revision.cpp should do this.
+		#ifndef AUTOREVISION_H
+		#define AUTOREVISION_H
+	
+	
+		#include <wx/string.h>
+	
+		namespace autorevision
+		{
+			const unsigned int svn_revision = 11256;
+			const wxString svnRevision(_T("11256"));
+			const wxString svnDate(_T("YYYY-MM-DD hh:mm:ss")); // update manually the date/time using this format
+		}
+	
+	
+	
+		#endif
+
+
+4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
+5. Run the `.\codeblocks\src\update.bat` file.
 
 ## Making the package
 
@@ -98,7 +120,7 @@ Please verify the following:
 
 ### The message 'Mismatch between the program and library build versions detected.' is displayed ###
  
-When you rebuild the whole Code::Blocks workspace, the following message may be displayed:
+When you rebuild the whole **Code::Blocks** workspace, the following message may be displayed:
 
 	Fatal Error: Mismatch between the program and library build versions detected.
 	The library used 2.8 (wchar_t,compiler with C++ ABI 1008,STL containers,compatible with 2.8),
@@ -116,10 +138,10 @@ To solve this issue, you may need to recompile the provided `wxMSW` library ([wx
 3. Rebuild the **Code::Blocks** source.
 4. Try again.
 
-**Note:** You may need to enable debugging for wxWidgets, in this case you should just set the `BUILD` parameter to `debug` (i.e. `BUILD=debug`). Do this if you want to debug the wxWidgets library. 
+**Note:** You may need to enable debugging for **wxWidgets**, in this case you should just set the `BUILD` parameter to `debug` (i.e. `BUILD=debug`). Do this if you want to debug the wxWidgets library. 
 
 ### Couldn't add an image to the image list. ###
 
-This message is sometime shown when starting the debug build of **Code::Blocks**. It caused by missing images file in the `.\codeblocks\src\devel\share\CodeBlocks\images\` directory.
+This message is sometimes shown when starting the debug build of **Code::Blocks**. It caused by missing image files in the `.\codeblocks\src\devel\share\CodeBlocks\images\` directory.
 
-To solve this issue, you just have to run the `.\codeblocks\src\update.bat` file.
+To solve this issue, you just have to run the `.\codeblocks\src\update.bat` file, this will copy the missing files to the `devel` and `output` directories.
