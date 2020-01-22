@@ -25,7 +25,7 @@ wxString ConfigManager::GetRevisionString()
 {
     static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
 
-    return autorevision::svnRevision;
+    return autorevision::svnRevision + wxT("-DreamSDK");
 }
 
 unsigned int ConfigManager::GetRevisionNumber()

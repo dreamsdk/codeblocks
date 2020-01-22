@@ -3,7 +3,7 @@
     <SdkVersion major="1" minor="10" release="0" />
     <Plugin name="Debugger">
         <Value title="Debugger" />
-        <Value version="0.5-dreamsdk" />
+        <Value version="0.5-DreamSDK" />
         <Value description="Plugin that interfaces the GNU GDB and MS CDB debuggers." />
         <Value author="Yiannis An. Mandravellos" />
         <Value authorEmail="info@codeblocks.org" />
