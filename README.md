@@ -118,3 +118,8 @@ To solve this issue, you may need to recompile the provided `wxMSW` library ([wx
 
 **Note:** You may need to enable debugging for wxWidgets, in this case you should just set the `BUILD` parameter to `debug` (i.e. `BUILD=debug`). Do this if you want to debug the wxWidgets library. 
 
+### Couldn't add an image to the image list. ###
+
+This message is sometime shown when starting the debug build of **Code::Blocks**. It caused by missing images file in the `.\codeblocks\src\devel\share\CodeBlocks\images\` directory.
+
+To solve this issue, you just have to run the `.\codeblocks\src\update.bat` file.
