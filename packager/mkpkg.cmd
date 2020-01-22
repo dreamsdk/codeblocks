@@ -7,7 +7,9 @@ echo %TITLE%
 echo.
 
 set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.zip
-if exist %PACKAGE_FILE% goto error
+set PACKAGE_PATH=..\..\cbpatcher\src\engine\embedded\
+
+if exist %PACKAGE_PATH%%PACKAGE_FILE% del %PACKAGE_PATH%%PACKAGE_FILE%
 
 echo Preparing: %PACKAGE_FILE%...
 
@@ -44,6 +46,7 @@ cd %CB_OUTPUT_HOME%
 rem SDK
 copy *.exe %PACKAGE_DIR% 
 copy codeblocks.dll %PACKAGE_DIR%
+copy wx*.dll %PACKAGE_DIR%
 
 rem Plugins
 copy share\CodeBlocks\compiler.zip %CB_SHARE_DIR%
@@ -75,15 +78,12 @@ if exist %LIBINFO_DIR% (
 :mkpack
 cd %PACKAGE_DIR%
 %SEVENZIP% a -mx9 %PACKAGE_FILE% .
-move %PACKAGE_FILE% ..
+move %PACKAGE_FILE% %PACKAGE_PATH%
 cd ..
 rmdir /S %PACKAGE_DIR% /Q
 echo.
 echo %TITLE% done!
 goto end
-
-:error
-echo Error: File exists: %PACKAGE_FILE%
 
 :end
 pause

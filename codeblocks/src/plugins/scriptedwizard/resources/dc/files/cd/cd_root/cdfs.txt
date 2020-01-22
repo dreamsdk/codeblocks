@@ -1,0 +1,6 @@
+You may simulate a CD-ROM through a ISO file with Dreamcast Tool (dc-tool).
+
+To do so, you just have to add some files to the "cd_root" directory.
+
+In your code, just access these files through the /cd mount point.
+In production, the /cd mount point will be replaced with the real CD-ROM disc.
