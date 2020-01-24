@@ -6,7 +6,7 @@ cls
 echo %TITLE%
 echo.
 
-set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.zip
+set PACKAGE_FILE=codeblocks-17.12-dreamsdk-addon-bin.7z
 set PACKAGE_PATH=..\..\cbpatcher\src\engine\embedded\
 
 if exist %PACKAGE_PATH%%PACKAGE_FILE% del %PACKAGE_PATH%%PACKAGE_FILE%
