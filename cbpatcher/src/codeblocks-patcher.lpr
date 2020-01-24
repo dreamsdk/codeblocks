@@ -25,8 +25,6 @@ const
   ERR_PATCH_ALREADY_INSTALLED = 6;
   ERR_PATCH_NOT_UNINSTALLABLE = 7;
 
-  FILENAMES_SEPARATOR = ';';
-
 type
   TCodeBlocksPatcherCommandOperation = (coUnknown, coInstall, coUninstall,
     coPrintCodeBlocksUsers);
@@ -104,6 +102,16 @@ end;
 
 procedure TCodeBlocksPatcherApplication.PrintParameters;
 
+  function ToScreen(FileList: TFileList): string;
+  var
+    i: Integer;
+
+  begin
+    Result := EmptyStr;
+    for i := 0 to FileList.Count - 1 do
+      Result := Result + sLineBreak + '    * ' + FileList[i];
+  end;
+
   procedure PrintParam(const Message, Value: string);
   begin
     WriteLn('  ', Message, ': ', Value);
@@ -117,8 +125,9 @@ begin
     begin
       PrintParam('Code::Blocks Installation Directory', CodeBlocksInstallationDirectory);
       PrintParam('Code::Blocks Backup Directory', CodeBlocksBackupDirectory);
-      PrintParam('Code::Blocks Configuration File Names', CodeBlocksConfigurationFileNames.ToString); // TODO
+      PrintParam('Code::Blocks Configuration File Names', ToScreen(CodeBlocksConfigurationFileNames));
       PrintParam('DreamSDK Home Directory', HomeDirectory);
+      PrintParam('DreamSDK Configuration File Name', ConfigurationFileName);
     end;
     WriteLn;
   end;
@@ -126,7 +135,7 @@ end;
 
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessBegin(Sender: TObject);
 begin
-
+  // Nothing
 end;
 
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessTaskBegin(Sender: TObject;
@@ -369,10 +378,7 @@ begin
 
     // Code::Blocks Configuration File Names
     if GetParam([coInstall], 'c', 'config-files', TempParam) then
-    begin
-      CodeBlocksConfigurationFileNames.Clear;
-      CodeBlocksConfigurationFileNames.Add(TempParam, FILENAMES_SEPARATOR);
-    end;
+      CodeBlocksConfigurationFileNames.SetItems(TempParam, FILENAMES_SEPARATOR);
 
     // DreamSDK Home Directory
     if GetParam([coInstall, coUninstall], 'm', 'home-dir', TempParam) then

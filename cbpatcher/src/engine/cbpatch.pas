@@ -18,6 +18,8 @@ uses
   FSTools;
 
 const
+  FILENAMES_SEPARATOR = ';';
+
   DEFAULT_CODEBLOCKS_DIR_64 = '%ProgramFiles(x86)%\CodeBlocks';
   DEFAULT_CODEBLOCKS_DIR_32 = '%ProgramFiles%\CodeBlocks';
   DEFAULT_CODEBLOCKS_CONFIGURATION_FILE = '%sCodeBlocks\default.conf';
@@ -66,14 +68,15 @@ type
     procedure FixDebugger(const CodeBlocksConfigurationFileName: TFileName);
     function GetCodeBlocksAvailableUsers: TStringList;
     function GetConfigurationFileName: TFileName;
-    function GetRegisteredString(const Key: string): string;
-    function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
-    function GetRegisteredCodeBlocksBackupDirectory: TFileName;
+    function GetRegisteredString(const Section, Key: string): string;
     function GetGlobalVariablesActiveSet(XMLDocument: TXMLDocument): string;
     function GetReady: Boolean;
     procedure InjectDebugger(SourceXML, TargetXML: TXMLDocument);
     procedure InjectGlobalVariables(SourceXML, TargetXML: TXMLDocument);
     procedure InjectTools(SourceXML, TargetXML: TXMLDocument);
+    procedure RemoveDebugger(XML: TXMLDocument);
+    procedure RemoveGlobalVariables(XML: TXMLDocument);
+    procedure RemoveTools(XML: TXMLDocument);
     function IsCodeBlocksPatchInstalled: Boolean;
     procedure SetCodeBlocksBackupDirectory(AValue: TFileName);
     procedure SetCodeBlocksInstallationDirectory(AValue: TFileName);
@@ -169,6 +172,10 @@ type
       read fHomeDirectoryForDreamSDK
       write SetHomeDirectory;
 
+    // DreamSDK Configuration File
+    property ConfigurationFileName: TFileName
+      read GetConfigurationFileName;
+
     // Events
     property OnProcessBegin: TNotifyEvent
       read fProcessBegin
@@ -197,8 +204,15 @@ const
   DREAMSDK_HOME_VARIABLE = '{app}';
   DOM_ROOT_PATH = '/CodeBlocksConfig';
 
-var
-  WorkingDirectory: TFileName;
+  INI_SECTION_IDE = 'IDE';
+  INI_SECTION_SETUP = 'Setup';
+
+  INI_KEY_IDE_KIND = 'Kind';
+  INI_KEY_EXPORT_LIBRARY_INFORMATION_ENABLED = 'ExportLibraryInformation';
+  INI_KEY_EXPORT_LIBRARY_INFORMATION_PATH = 'ExportLibraryInformationPath';
+  INI_KEY_CONFIGURATION_FILENAMES = 'ConfigurationFileNames';
+  INI_KEY_INSTALLATION_PATH = 'InstallationPath';
+  INI_KEY_BACKUP_PATH = 'BackupPath';
 
 function SanitizeXPath(XPathExpression: string): string;
 begin
@@ -460,7 +474,7 @@ const
 
 begin
   Result := BackupFiles;
-  Result := Result and UncompressZipFile(fCodeBlocksPatchFileName,
+  Result := Result and UncompressLzmaFile(fCodeBlocksPatchFileName,
     CodeBlocksInstallationDirectory);
   Result := Result and PatchTextFile(CodeBlocksInstallationDirectory + COMPILER_FILE,
     DREAMSDK_HOME_VARIABLE, HomeDirectory);
@@ -543,9 +557,29 @@ begin
   end;
 end;
 
+procedure TCodeBlocksPatcher.RemoveDebugger(XML: TXMLDocument);
+var
+  Node: TDOMNode;
+
+begin
+  (*Node := SelectSingleNodeByText(XML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()', 'Sega Dreamcast');
+  if Assigned(Node) then
+    RemoveNode(Node.ParentNode.ParentNode.ParentNode.ParentNode);*)
+end;
+
+procedure TCodeBlocksPatcher.RemoveGlobalVariables(XML: TXMLDocument);
+begin
+
+end;
+
+procedure TCodeBlocksPatcher.RemoveTools(XML: TXMLDocument);
+begin
+
+end;
+
 function TCodeBlocksPatcher.IsCodeBlocksPatchInstalled: Boolean;
 begin
-  Result := SameText(GetRegisteredString('Kind'), '1');
+  Result := SameText(GetRegisteredString(INI_SECTION_IDE, INI_KEY_IDE_KIND), '1');
 end;
 
 procedure TCodeBlocksPatcher.SetCodeBlocksBackupDirectory(AValue: TFileName);
@@ -571,6 +605,22 @@ begin
 end;
 
 procedure TCodeBlocksPatcher.SetOperation(AValue: TCodeBlocksPatcherOperation);
+
+  function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH);
+  end;
+
+  function GetRegisteredCodeBlocksBackupDirectory: TFileName;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH);
+  end;
+
+  function GetRegisteredCodeBlocksConfigurationFileNames: string;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES);
+  end;
+
 begin
   if (fOperation <> AValue) then
   begin
@@ -584,6 +634,8 @@ begin
         GetRegisteredCodeBlocksInstallationDirectory;
       CodeBlocksBackupDirectory :=
         GetRegisteredCodeBlocksBackupDirectory;
+      CodeBlocksConfigurationFileNames.SetItems(
+        GetRegisteredCodeBlocksConfigurationFileNames, FILENAMES_SEPARATOR);
     end;
   end;
 end;
@@ -885,34 +937,21 @@ begin
     + IDE_CONFIGURATION_FILE;
 end;
 
-function TCodeBlocksPatcher.GetRegisteredString(const Key: string): string;
+function TCodeBlocksPatcher.GetRegisteredString(const Section, Key: string): string;
 var
-  ConfigurationFileName: TFileName;
   IniFile: TIniFile;
 
 begin
   Result := EmptyStr;
-  ConfigurationFileName := GetConfigurationFileName;
-
   if FileExists(ConfigurationFileName) then
   begin
     IniFile := TIniFile.Create(ConfigurationFileName);
     try
-      Result := IniFile.ReadString('IDE', Key, EmptyStr);
+      Result := IniFile.ReadString(Section, Key, EmptyStr);
     finally
       IniFile.Free;
     end;
   end;
-end;
-
-function TCodeBlocksPatcher.GetRegisteredCodeBlocksInstallationDirectory: TFileName;
-begin
-  Result := GetRegisteredString('InstallationPath');
-end;
-
-function TCodeBlocksPatcher.GetRegisteredCodeBlocksBackupDirectory: TFileName;
-begin
-  Result := GetRegisteredString('BackupPath');
 end;
 
 function TCodeBlocksPatcher.GetGlobalVariablesActiveSet(
@@ -932,7 +971,7 @@ var
   CodeBlocksConfigurationIndex: Integer;
 
 begin
-  Result := DirectoryExists(WorkingDirectory)
+  Result := DirectoryExists(GetWorkingPath)
     and DirectoryExists(HomeDirectory)
     and DirectoryExists(CodeBlocksInstallationDirectory);
 
@@ -1016,7 +1055,6 @@ const
   IDE_EXPORT_LIB_INFO_DIR = 'share\CodeBlocks\templates\wizard\dc\libinfo\';
 
 var
-  ConfigurationFileName,
   ExportLibraryInformationPath,
   InstallationPath,
   BackupPath: TFileName;
@@ -1025,8 +1063,6 @@ var
   ExportLibraryInformation: Boolean;
 
 begin
-  ConfigurationFileName := GetConfigurationFileName;
-
   case Operation of
 
     pmInstall:
@@ -1058,11 +1094,17 @@ begin
 
   IniFile := TIniFile.Create(ConfigurationFileName);
   try
-    IniFile.WriteInteger('IDE', 'Kind', Kind);
-    IniFile.WriteBool('IDE', 'ExportLibraryInformation', ExportLibraryInformation);
-    IniFile.WriteString('IDE', 'ExportLibraryInformationPath', ExportLibraryInformationPath);
-    IniFile.WriteString('IDE', 'InstallationPath', InstallationPath);
-    IniFile.WriteString('IDE', 'BackupPath', BackupPath);
+    IniFile.WriteInteger(INI_SECTION_IDE, INI_KEY_IDE_KIND, Kind);
+    IniFile.WriteBool(INI_SECTION_IDE,
+      INI_KEY_EXPORT_LIBRARY_INFORMATION_ENABLED, ExportLibraryInformation);
+    IniFile.WriteString(INI_SECTION_IDE,
+      INI_KEY_EXPORT_LIBRARY_INFORMATION_PATH, ExportLibraryInformationPath);
+
+    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH,
+      InstallationPath);
+    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH, BackupPath);
+    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES,
+      CodeBlocksConfigurationFileNames.GetItems(FILENAMES_SEPARATOR));
   finally
     IniFile.Free;
   end;
@@ -1160,6 +1202,7 @@ const
   FILE_SPLASH = 'codeblocks-splash.exe';
   FILE_PACKAGE = 'codeblocks-17.12-dreamsdk-addon-bin.zip';
   FILE_CONFIG = 'codeblocks-patcher-data.zip';
+  FILE_7ZIP = '7za.exe';
 
   DIRECTORY_SOURCE = 'data';
 
@@ -1171,30 +1214,29 @@ const
 var
   DataFileName: TFileName;
 
-  function ExtractFileName(const ResourceName: string;
-    const FileName: TFileName): TFileName;
-  begin
-    Result := WorkingDirectory + FileName;
-    ExtractEmbeddedResourceToFile(ResourceName, Result);
-  end;
-
 begin
 {$IFNDEF LITE_VERSION}
 
   // Code::Blocks Backup/Restore
   fCodeBlocksBackupRestoreFileName :=
-    ExtractFileName(EMBEDDED_BACKUP_RESTORE, FILE_BACKUP_RESTORE);
+    ExtractEmbeddedFileToWorkingPath(EMBEDDED_BACKUP_RESTORE, FILE_BACKUP_RESTORE);
+
+  // 7-Zip for Code::Blocks Backup/Restore
+{$IFDEF LZMA_SUPPORT}
+  ExtractEmbeddedFileToWorkingPath(EMBEDDED_7ZIP, FILE_7ZIP);
+{$ENDIF}
 
   // Code::Blocks Splash
   fCodeBlocksSplashFileName :=
-    ExtractFileName(EMBEDDED_SPLASH, FILE_SPLASH);
+    ExtractEmbeddedFileToWorkingPath(EMBEDDED_SPLASH, FILE_SPLASH);
 
   // Code::Blocks Patch Data
-  fCodeBlocksPatchFileName := ExtractFileName(EMBEDDED_PACKAGE, FILE_PACKAGE);
+  fCodeBlocksPatchFileName := ExtractEmbeddedFileToWorkingPath(
+    EMBEDDED_PACKAGE, FILE_PACKAGE);
 
   // Code::Blocks Configuration Data
-  fSourceDirectory := WorkingDirectory + DIRECTORY_SOURCE + DirectorySeparator;
-  DataFileName := ExtractFileName(EMBEDDED_CONFIG, FILE_CONFIG);
+  fSourceDirectory := GetWorkingPath + DIRECTORY_SOURCE + DirectorySeparator;
+  DataFileName := ExtractEmbeddedFileToWorkingPath(EMBEDDED_CONFIG, FILE_CONFIG);
   if FileExists(DataFileName) then
   begin
     UncompressZipFile(DataFileName, fSourceDirectory);
@@ -1306,14 +1348,6 @@ begin
   end;
 end;
 {$ENDIF}
-
-initialization
-  WorkingDirectory := IncludeTrailingPathDelimiter(
-    LowerCase(ChangeFileExt(SysUtils.GetTempFileName, '-' + GetProgramName)));
-  ForceDirectories(WorkingDirectory);
-
-finalization
-  KillDirectory(WorkingDirectory);
 
 end.
 
