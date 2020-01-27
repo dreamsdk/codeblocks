@@ -542,7 +542,7 @@ var
     if Assigned(RootNode) then
     begin
       NodeCount := RootNode.ChildNodes.Count;
-      for j := 0 to RootNode.ChildNodes.Count - 1 do
+      for j := RootNode.ChildNodes.Count - 1 downto 0 do
       begin
         CurrentNode := RootNode.ChildNodes[j];
 {$IFDEF DEBUG}
