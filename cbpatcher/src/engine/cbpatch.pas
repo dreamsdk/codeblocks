@@ -14,7 +14,6 @@ uses
   DOM,
   XMLRead,
   XMLWrite,
-  XPath,
   FSTools;
 
 const
@@ -84,7 +83,6 @@ type
     procedure SetOperation(AValue: TCodeBlocksPatcherOperation);
     procedure FixSection(const CodeBlocksConfigurationFileName: TFileName;
       const SectionName, ItemName, ItemFormat: string; const StartIndex: Integer);
-    procedure ReformatXML(const CodeBlocksConfigurationFileName: TFileName);
     procedure HandleBaseDirectory(
       const CodeBlocksConfigurationFileName: TFileName);
     function Merge(const CodeBlocksConfigurationFileName: TFileName;
@@ -112,13 +110,6 @@ type
     function GetSourceConfigurationDirectory: TFileName;
     function GetSourceFragmentsDirectory: TFileName;
     function GetSourcePackageDirectory: TFileName;
-    function SelectSingleNode(XMLDoc: TXMLDocument; Path: string): TDOMNode;
-    function NodeExists(XMLDocument: TXMLDocument; XPath: string; NodeValue: string): Boolean;
-    function ForceNodes(XMLDoc: TXMLDocument; Path: string): TDOMNode;
-    procedure ImportNode(TargetXMLDocument: TXMLDocument;
-      SourceNode: TDOMNode; Path: string; AppendNode: Boolean); overload;
-    procedure ImportNode(TargetXMLDocument: TXMLDocument;
-      SourceNode: TDOMNode; Path: string); overload;
     function SourceKindToFileName(const SourceKind: TSourceKind): TFileName;
 
     procedure DoPatchInstall;
@@ -198,11 +189,11 @@ uses
   SysTools,
   RefBase,
   Version,
-  RunTools;
+  RunTools,
+  XmlTools;
 
 const
   DREAMSDK_HOME_VARIABLE = '{app}';
-  DOM_ROOT_PATH = '/CodeBlocksConfig';
 
   INI_SECTION_IDE = 'IDE';
   INI_SECTION_SETUP = 'Setup';
@@ -214,14 +205,8 @@ const
   INI_KEY_INSTALLATION_PATH = 'InstallationPath';
   INI_KEY_BACKUP_PATH = 'BackupPath';
 
-function SanitizeXPath(XPathExpression: string): string;
-begin
-  Result := XPathExpression;
-  if not StartsWith('/', XPathExpression) then
-    XPathExpression := '/' + XPathExpression;
-  if not StartsWith(DOM_ROOT_PATH, XPathExpression) then
-    Result := DOM_ROOT_PATH + XPathExpression;
-end;
+  SEPARATOR_NAME = '---separator---';
+  TOOLS_DESIGN_FILE = 'tools-design.dat';
 
 constructor TCodeBlocksPatcher.Create;
 
@@ -402,54 +387,6 @@ begin
   end;
 end;
 
-function TCodeBlocksPatcher.ForceNodes(XMLDoc: TXMLDocument;
-  Path: string): TDOMNode;
-var
-  Buffer: TStringList;
-  Node, NewNode: TDOMNode;
-  i: Integer;
-  NodeName: string;
-
-begin
-  Result := nil;
-  Buffer := TStringList.Create;
-  try
-    Path := StringReplace(Path, DOM_ROOT_PATH, EmptyStr, [rfIgnoreCase]);
-    StringToStringList(Path, '/', Buffer);
-
-    Node := XMLDoc.DocumentElement;
-    for i := 0 to Buffer.Count - 1 do
-    begin
-      NodeName := Trim(Buffer[i]);
-      if not SameText(NodeName, EmptyStr) then
-      begin
-{$IFDEF DEBUG}
-        WriteLn('NodeName: ', NodeName, ' on ', Node.NodeName);
-{$ENDIF}
-        NewNode := Node.FindNode(WideString(NodeName));
-        if not Assigned(NewNode) then
-        begin
-{$IFDEF DEBUG}
-          WriteLn('  Creating: ', NodeName);
-{$ENDIF}
-          NewNode := XMLDoc.CreateElement(WideString(NodeName));
-          Node := Node.AppendChild(NewNode);
-        end
-        else
-        begin
-{$IFDEF DEBUG}
-          WriteLn('  Existing: ', NodeName);
-{$ENDIF}
-          Node := NewNode;
-        end;
-      end;
-    end;
-    Result := Node;
-  finally
-    Buffer.Free;
-  end;
-end;
-
 procedure TCodeBlocksPatcher.HandleBaseDirectory(
   const CodeBlocksConfigurationFileName: TFileName);
 var
@@ -562,19 +499,122 @@ var
   Node: TDOMNode;
 
 begin
-  (*Node := SelectSingleNodeByText(XML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()', 'Sega Dreamcast');
+  Node := SelectSingleNode(XML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()', 'Sega Dreamcast');
   if Assigned(Node) then
-    RemoveNode(Node.ParentNode.ParentNode.ParentNode.ParentNode);*)
+    DeleteNode(Node, 3);
 end;
 
 procedure TCodeBlocksPatcher.RemoveGlobalVariables(XML: TXMLDocument);
-begin
+var
+  Node: TDOMNode;
+  ActiveSet: string;
 
+begin
+  ActiveSet := GetGlobalVariablesActiveSet(XML);
+  Node := SelectSingleNode(XML, Format('/gcv/sets/%s/dreamsdk_home', [ActiveSet]));
+  if Assigned(Node) then
+    DeleteNode(Node);
 end;
 
 procedure TCodeBlocksPatcher.RemoveTools(XML: TXMLDocument);
-begin
+var
+  ToolsDesign: TStringList;
+  ToolsDesignFileName: TFileName;
+  i: Integer;
+  ToolDesignNodeValue: string;
+  ToolNode: TDOMNode;
 
+  procedure RemoveUselessToolsSeparators;
+  var
+    j, NodeCount: Integer;
+    RootNode,
+    CurrentNode,
+    CurrentTextNode,
+    PreviousNode: TDOMNode;
+    CurrentTextNodeValue: WideString;
+
+  begin
+{$IFDEF DEBUG}
+    DebugLog('RemoveUselessToolsSeparators');
+{$ENDIF}
+    PreviousNode := nil;
+    RootNode := SelectSingleNode(XML, '/tools');
+    if Assigned(RootNode) then
+    begin
+      NodeCount := RootNode.ChildNodes.Count;
+      for j := 0 to RootNode.ChildNodes.Count - 1 do
+      begin
+        CurrentNode := RootNode.ChildNodes[j];
+{$IFDEF DEBUG}
+        DebugLog(AnsiString(CurrentNode.NodeName));
+{$ENDIF}
+        CurrentTextNode := SelectSingleNode(XML, 'NAME/str/text()', CurrentNode);
+        if Assigned(CurrentTextNode) then
+        begin
+          CurrentTextNodeValue := CurrentTextNode.NodeValue;
+          if WideSameText(CurrentTextNodeValue, SEPARATOR_NAME) then
+          begin
+{$IFDEF DEBUG}
+            DebugLog('  IsSeparator!');
+{$ENDIF}
+            if Assigned(PreviousNode) then
+            begin
+              DeleteNode(PreviousNode);
+              Dec(NodeCount);
+{$IFDEF DEBUG}
+              DebugLog('  Deleted!');
+{$ENDIF}
+            end;
+            PreviousNode := CurrentNode;
+          end;
+        end;
+      end; // for
+
+      // If the tools section contains only one separator and nothing else, delete it
+      if Assigned(PreviousNode) and (NodeCount = 1) then
+      begin
+        DeleteNode(PreviousNode);
+{$IFDEF DEBUG}
+        DebugLog('Removing the only separator from the tools section!');
+{$ENDIF}
+      end;
+
+    end; // Assigned RootNode
+  end;
+
+begin
+{$IFDEF DEBUG}
+  DebugLog('RemoveTools:');
+{$ENDIF}
+
+  // Remove all tools added by DreamSDK
+  ToolsDesignFileName := GetSourceConfigurationDirectory
+    + TOOLS_DESIGN_FILE;
+  if NodeExists(XML, '/tools') then
+  begin
+    ToolsDesign := TStringList.Create;
+    try
+      ToolsDesign.LoadFromFile(ToolsDesignFileName);
+      for i := 0 to ToolsDesign.Count - 1 do
+      begin
+        ToolDesignNodeValue := ToolsDesign[i];
+        if not SameText(ToolDesignNodeValue, SEPARATOR_NAME) then
+        begin
+{$IFDEF DEBUG}
+          DebugLog('  ' + ToolDesignNodeValue);
+{$ENDIF}
+          ToolNode := SelectSingleNode(XML, '/tools/*/NAME/str/text()', ToolDesignNodeValue);
+          if Assigned(ToolNode) then
+            DeleteNode(ToolNode, 3); // delete the found tool
+        end;
+      end;
+    finally
+      ToolsDesign.Free;
+    end;
+
+    // Remove useless separators
+    RemoveUselessToolsSeparators;
+  end;
 end;
 
 function TCodeBlocksPatcher.IsCodeBlocksPatchInstalled: Boolean;
@@ -640,112 +680,6 @@ begin
   end;
 end;
 
-procedure TCodeBlocksPatcher.ReformatXML(
-  const CodeBlocksConfigurationFileName: TFileName);
-var
-  TargetFileStream: TFileStream;
-  TargetXML: TXMLDocument;
-
-begin
-  TargetFileStream := TFileStream.Create(CodeBlocksConfigurationFileName, fmOpenReadWrite);
-  try
-    ReadXMLFile(TargetXML, TargetFileStream);
-    TargetFileStream.Size := 0;
-    TargetFileStream.Seek(0, soBeginning);
-    WriteXMLFile(TargetXML, TargetFileStream);
-  finally
-    TargetXML.Free;
-    TargetFileStream.Free;
-  end;
-end;
-
-function TCodeBlocksPatcher.SelectSingleNode(XMLDoc: TXMLDocument;
-  Path: string): TDOMNode;
-var
-  XPathResult: TXPathVariable;
-
-begin
-  // Find DestinationNode
-  Result := nil;
-
-  Path := SanitizeXPath(Path);
-  XPathResult := EvaluateXPathExpression(WideString(Path), XMLDoc.DocumentElement);
-  if XPathResult.AsNodeSet.Count > 0 then
-    Result := TDOMNode(XPathResult.AsNodeSet.Items[0]);
-
-  // Destroying the XPathResult object...
-  FreeAndNil(XPathResult);
-end;
-
-function TCodeBlocksPatcher.NodeExists(XMLDocument: TXMLDocument;
-  XPath: string; NodeValue: string): Boolean;
-var
-  XPathResult: TXPathVariable;
-  i, NodesCount: Integer;
-  Node: TDOMNode;
-
-begin
-  Result := False;
-
-  XPath := SanitizeXPath(XPath);
-  XPathResult := EvaluateXPathExpression(WideString(XPath), XMLDocument.DocumentElement);
-
-  i := 0;
-  NodesCount := XPathResult.AsNodeSet.Count;
-  while (i < NodesCount) and (not Result) do
-  begin
-    Node := TDOMNode(XPathResult.AsNodeSet.Items[i]);
-    if Assigned(Node) then
-    begin
-{$IFDEF DEBUG}
-      WriteLn(Node.NodeName, ': ', Node.NodeValue);
-{$ENDIF}
-      Result := (AnsiString(Node.NodeValue) = NodeValue);
-    end;
-    Inc(i);
-  end;
-
-  // Destroying the XPathResult object...
-  FreeAndNil(XPathResult);
-end;
-
-procedure TCodeBlocksPatcher.ImportNode(
-  TargetXMLDocument: TXMLDocument; SourceNode: TDOMNode; Path: string;
-  AppendNode: Boolean);
-var
-  ImportedNode, DestinationNode, WorkingNode: TDOMNode;
-
-begin
-{$IFDEF DEBUG}
-  WriteLn('Importing: ', SourceNode.NodeName);
-{$ENDIF}
-
-  ImportedNode := TargetXMLDocument.ImportNode(SourceNode, True);
-
-  DestinationNode := SelectSingleNode(TargetXMLDocument, Path);
-
-  // Create the Destination SourceNode if not detected.
-  if not Assigned(DestinationNode) then
-    DestinationNode := ForceNodes(TargetXMLDocument, Path);
-
-  if not AppendNode then
-  begin
-    // Remove the existing SourceNode if needed.
-    WorkingNode := DestinationNode.FindNode(SourceNode.NodeName);
-    if Assigned(WorkingNode) then
-      DestinationNode.RemoveChild(WorkingNode);
-  end;
-
-  // Appending the SourceNode.
-  DestinationNode.AppendChild(ImportedNode);
-end;
-
-procedure TCodeBlocksPatcher.ImportNode(
-  TargetXMLDocument: TXMLDocument; SourceNode: TDOMNode; Path: string);
-begin
-  ImportNode(TargetXMLDocument, SourceNode, Path, False);
-end;
-
 function TCodeBlocksPatcher.SourceKindToFileName(
   const SourceKind: TSourceKind): TFileName;
 begin
@@ -779,9 +713,7 @@ procedure TCodeBlocksPatcher.FixTools(
 
   procedure FixToolsSeparators(const CodeBlocksConfigurationFileName: TFileName);
   const
-    SEPARATOR_NAME = '---separator---';
     TOOLS_SEPARATOR_FILE = 'tools-separator.dat';
-    TOOLS_DESIGN_FILE = 'tools-design.dat';
 
   var
     Buffer, ToolsDesign: TStringList;
@@ -1045,8 +977,51 @@ end;
 function TCodeBlocksPatcher.Cleanup(
   const CodeBlocksConfigurationFileName: TFileName;
   SourceKind: TSourceKind): Boolean;
+var
+  TargetFileStream: TFileStream;
+  TargetXML: TXMLDocument;
+
 begin
-  Result := True; // TODO
+  Result := True;
+  try
+    TargetFileStream := TFileStream.Create(CodeBlocksConfigurationFileName, fmOpenReadWrite);
+    try
+      ReadXMLFile(TargetXML, TargetFileStream);
+
+      case SourceKind of
+        skDebugger:
+          RemoveDebugger(TargetXML);
+        skGlobalVariables:
+          RemoveGlobalVariables(TargetXML);
+        skTools:
+          RemoveTools(TargetXML);
+      end;
+
+      TargetFileStream.Size := 0;
+      TargetFileStream.Seek(0, soBeginning);
+      WriteXMLFile(TargetXML, TargetFileStream);
+    finally
+      TargetXML.Free;
+      TargetFileStream.Free;
+    end;
+
+    // Fix the numbered sections if needed.
+    case SourceKind of
+      skDebugger:
+        FixDebugger(CodeBlocksConfigurationFileName);
+      skTools:
+        FixTools(CodeBlocksConfigurationFileName);
+    end;
+
+    // Reformat the indentation of the XML.
+    ReformatXML(CodeBlocksConfigurationFileName);
+  except
+    on E:Exception do
+    begin
+      Result := False;
+      WriteLn('Error: Unable to cleanup: ', E.Message);
+    end;
+  end;
 end;
 
 function TCodeBlocksPatcher.UpdateConfiguration(
@@ -1200,7 +1175,7 @@ procedure TCodeBlocksPatcher.ExtractEmbeddedFiles;
 const
   FILE_BACKUP_RESTORE = 'codeblocks-backup-restore.cmd';
   FILE_SPLASH = 'codeblocks-splash.exe';
-  FILE_PACKAGE = 'codeblocks-17.12-dreamsdk-addon-bin.zip';
+  FILE_PACKAGE = 'codeblocks-17.12-dreamsdk-addon-bin.7z';
   FILE_CONFIG = 'codeblocks-patcher-data.zip';
   FILE_7ZIP = '7za.exe';
 

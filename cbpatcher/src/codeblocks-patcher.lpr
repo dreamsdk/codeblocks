@@ -13,7 +13,7 @@ uses
   RefBase,
   Version,
   SysTools,
-  CBPatch;
+  CBPatch, xmltools;
 
 const
   ERR_SUCCESS = 0;

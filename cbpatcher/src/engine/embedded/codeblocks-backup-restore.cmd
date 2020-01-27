@@ -1,10 +1,5 @@
 @echo off
-set TITLE=Code::Blocks Backup/Restore
-title %TITLE%
 cls
-
-echo %TITLE%
-echo.
 
 pushd
 
