@@ -33,7 +33,7 @@ const
 
 type
   TCodeBlocksPatcherCommandOperation = (coUnknown, coInstall, coUninstall,
-    coPrintCodeBlocksUsers, coPrintStatus, coReinstall);
+    coPrintCodeBlocksUsers, coPrintStatus, coReinstall, coInternalStatus);
   TCodeBlocksPatcherOperationSet = set of TCodeBlocksPatcherCommandOperation;
 
   { TCodeBlocksPatcherApplication }
@@ -242,7 +242,9 @@ begin
   else if (Buffer = 'PRINT-STATUS') or (Buffer = 'STATUS') or (Buffer = 'S') then
     Result := coPrintStatus
   else if (Buffer = 'REINSTALL') or (Buffer = 'R') then
-    Result := coReinstall;
+    Result := coReinstall
+  else if (Buffer = 'INTERNAL-STATUS') then
+    Result := coInternalStatus; // Internal for DreamSDK Manager
 
   if Result <> coUnknown then
     fCommandOperationText := LowerCase(OperationValue);
@@ -271,6 +273,20 @@ var
       WriteLn('Patch is currently installed')
     else
       WriteLn('Patch is NOT currently installed');
+  end;
+
+  procedure DoPrintInternalStatus;
+  begin
+    with Patcher do
+    begin
+      WriteLn(
+        'IsPatchInstalled=', Installed, sLineBreak,
+        'AvailableUsers=', StringListToString(CodeBlocksAvailableUsers, FILENAMES_SEPARATOR), sLineBreak,
+        'InstallationDirectory=', CodeBlocksInstallationDirectory, sLineBreak,
+        'ConfigurationFileNames=', CodeBlocksConfigurationFileNames.GetItems(FILENAMES_SEPARATOR), sLineBreak,
+        'InstalledUsers=', StringListToString(CodeBlocksInstalledUsers, FILENAMES_SEPARATOR)
+      );
+    end;
   end;
 
 begin
@@ -387,7 +403,9 @@ begin
   else if (CommandOperation = coPrintCodeBlocksUsers) then
     DoPrintCodeBlocksConfigurationFiles
   else if (CommandOperation = coPrintStatus) then
-    DoPrintStatus;
+    DoPrintStatus
+  else if (CommandOperation = coInternalStatus) then
+    DoPrintInternalStatus; // Internal for DreamSDK Manager
 
   // stop program loop
   Terminate(fProgramExitCode);

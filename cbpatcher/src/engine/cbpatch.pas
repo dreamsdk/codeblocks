@@ -65,6 +65,7 @@ type
     fCodeBlocksPatchFileName: TFileName;
     fCodeBlocksBackupDirectory: TFileName;
     fCodeBlocksConfigurationFileNames: TFileList;
+    fCodeBlocksAvailableConfigurationFileNames: TFileList;
     fCodeBlocksInstallationDirectory: TFileName;
     fHomeDirectoryForDreamSDK: TFileName;
     fProcessEnd: TTerminateEvent;
@@ -79,10 +80,12 @@ type
     function GetCodeBlocksAvailableUsers: TStringList;
     function GetCodeBlocksInstalledUsers: TStringList;
     function GetConfigurationFileName: TFileName;
+    function GetInstalled: Boolean;
     function GetRegisteredString(const Section, Key: string): string;
     function GetGlobalVariablesActiveSet(XMLDocument: TXMLDocument): string;
     function GetReady: Boolean;
     function GetFriendlyUserName(const UserName: string): string;
+    procedure RetrieveRegisteredParameters;
     procedure InjectDebugger(SourceXML, TargetXML: TXMLDocument);
     procedure InjectGlobalVariables(SourceXML, TargetXML: TXMLDocument);
     procedure InjectTools(SourceXML, TargetXML: TXMLDocument);
@@ -171,7 +174,7 @@ type
       write fVisibleSplash;
 
     property Installed: Boolean
-      read IsCodeBlocksPatchInstalled;
+      read GetInstalled;
 
     // DreamSDK Home
     property HomeDirectory: TFileName
@@ -262,6 +265,7 @@ constructor TCodeBlocksPatcher.Create;
   {$ENDIF}
   {$ENDIF}
           CodeBlocksConfigurationFileNames.Add(CodeBlocksConfigurationFileName);
+          fCodeBlocksAvailableConfigurationFileNames.Add(CodeBlocksConfigurationFileName);
         end
   {$IFDEF DEBUG}
   {$IFDEF DEBUG_INITIALIZE_DEFAULTS}
@@ -284,6 +288,7 @@ constructor TCodeBlocksPatcher.Create;
 
 begin
   fCodeBlocksConfigurationFileNames := TFileList.Create;
+  fCodeBlocksAvailableConfigurationFileNames := TFileList.Create;
   fCodeBlocksAvailableUsers := TStringList.Create;
   fCodeBlocksInstalledUsers := TStringList.Create;
   fOperation := pmUndefined;
@@ -293,6 +298,7 @@ end;
 
 destructor TCodeBlocksPatcher.Destroy;
 begin
+  fCodeBlocksAvailableConfigurationFileNames.Free;
   fCodeBlocksInstalledUsers.Free;
   fCodeBlocksAvailableUsers.Free;
   fCodeBlocksConfigurationFileNames.Free;
@@ -668,22 +674,6 @@ begin
 end;
 
 procedure TCodeBlocksPatcher.SetOperation(AValue: TCodeBlocksPatcherOperation);
-
-  function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH);
-  end;
-
-  function GetRegisteredCodeBlocksBackupDirectory: TFileName;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH);
-  end;
-
-  function GetRegisteredCodeBlocksConfigurationFileNames: string;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES);
-  end;
-
 begin
   if (fOperation <> AValue) then
   begin
@@ -691,15 +681,8 @@ begin
 
     // When uninstalling, override supplied parameters with the proper one from
     // the DreamSDK configuration (if possible)
-    if (Operation <> pmInstall) and IsCodeBlocksPatchInstalled then
-    begin
-      CodeBlocksInstallationDirectory :=
-        GetRegisteredCodeBlocksInstallationDirectory;
-      CodeBlocksBackupDirectory :=
-        GetRegisteredCodeBlocksBackupDirectory;
-      CodeBlocksConfigurationFileNames.SetItems(
-        GetRegisteredCodeBlocksConfigurationFileNames, FILENAMES_SEPARATOR);
-    end;
+    if (Operation <> pmInstall) then
+      RetrieveRegisteredParameters;
   end;
 end;
 
@@ -867,10 +850,10 @@ var
 begin
   fCodeBlocksAvailableUsers.Clear;
   UsersDirectory := GetUsersDirectory;
-  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+  for i := 0 to fCodeBlocksAvailableConfigurationFileNames.Count - 1 do
   begin
     CurrentUserName := ExtractStr(UsersDirectory, DirectorySeparator,
-      CodeBlocksConfigurationFileNames[i]);
+      fCodeBlocksAvailableConfigurationFileNames[i]);
     fCodeBlocksAvailableUsers.Add(GetFriendlyUserName(CurrentUserName));
   end;
   Result := fCodeBlocksAvailableUsers;
@@ -883,15 +866,16 @@ var
 
 begin
   fCodeBlocksInstalledUsers.Clear;
-  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
-  begin
-    UserName := GetUserFromAppDataDirectory(CodeBlocksConfigurationFileNames[i]);
-    if not IsEmpty(UserName) then
-      UserName := GetFriendlyUserName(UserName)
-    else
-      UserName := Format('<%s>', [ExtractFileName(CodeBlocksConfigurationFileNames[i])]);
-    fCodeBlocksInstalledUsers.Add(UserName);
-  end;
+  if Installed then
+    for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+    begin
+      UserName := GetUserFromAppDataDirectory(CodeBlocksConfigurationFileNames[i]);
+      if not IsEmpty(UserName) then
+        UserName := GetFriendlyUserName(UserName)
+      else
+        UserName := Format('<%s>', [ExtractFileName(CodeBlocksConfigurationFileNames[i])]);
+      fCodeBlocksInstalledUsers.Add(UserName);
+    end;
   Result := fCodeBlocksInstalledUsers;
 end;
 
@@ -901,6 +885,13 @@ const
 begin
   Result := IncludeTrailingPathDelimiter(HomeDirectory)
     + IDE_CONFIGURATION_FILE;
+end;
+
+function TCodeBlocksPatcher.GetInstalled: Boolean;
+begin
+  Result := IsCodeBlocksPatchInstalled;
+  if Result then
+    RetrieveRegisteredParameters;
 end;
 
 function TCodeBlocksPatcher.GetRegisteredString(const Section, Key: string): string;
@@ -957,6 +948,32 @@ begin
   CurrentUserFullName := GetUserFullNameFromUserName(UserName);
   if not IsEmpty(CurrentUserFullName) then
     Result := Format('%s (%s)', [CurrentUserFullName, UserName]);
+end;
+
+procedure TCodeBlocksPatcher.RetrieveRegisteredParameters;
+
+  function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH);
+  end;
+
+  function GetRegisteredCodeBlocksBackupDirectory: TFileName;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH);
+  end;
+
+  function GetRegisteredCodeBlocksConfigurationFileNames: string;
+  begin
+    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES);
+  end;
+
+begin
+  CodeBlocksInstallationDirectory :=
+    GetRegisteredCodeBlocksInstallationDirectory;
+  CodeBlocksBackupDirectory :=
+    GetRegisteredCodeBlocksBackupDirectory;
+  CodeBlocksConfigurationFileNames.SetItems(
+    GetRegisteredCodeBlocksConfigurationFileNames, FILENAMES_SEPARATOR);
 end;
 
 function TCodeBlocksPatcher.Merge(
