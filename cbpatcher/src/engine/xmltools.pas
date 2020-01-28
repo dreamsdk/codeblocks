@@ -22,16 +22,16 @@ procedure ImportNode(TargetXMLDocument: TXMLDocument; SourceNode: TDOMNode;
 function NodeExists(XMLDocument: TXMLDocument;
   XPath, NodeValue: string): Boolean; overload;
 function NodeExists(XMLDocument: TXMLDocument; XPath: string): Boolean; overload;
-function SelectSingleNode(XMLDocument: TXMLDocument;
-  XPath: string): TDOMNode; overload;
-function SelectSingleNode(XMLDocument: TXMLDocument;
-  XPath: string; ParentNode: TDOMNode): TDOMNode; overload;
-function SelectSingleNode(XMLDocument: TXMLDocument;
-  XPath, NodeValue: string): TDOMNode; overload;
-function SelectSingleNode(XMLDocument: TXMLDocument;
-  XPath, NodeValue: string; ParentNode: TDOMNode): TDOMNode; overload;
+function SelectSingleNode(XPath: string;
+  XMLDocument: TXMLDocument): TDOMNode; overload;
+function SelectSingleNode(XPath: string;
+  ParentNode: TDOMNode): TDOMNode; overload;
+function SelectSingleNode(XPath, NodeValue: string;
+  XMLDocument: TXMLDocument): TDOMNode; overload;
+function SelectSingleNode(XPath, NodeValue: string;
+  ParentNode: TDOMNode): TDOMNode; overload;
 procedure ReformatXML(const FileName: TFileName);
-function SanitizeXPath(DomRootPath, XPathExpression: string): string;
+function SanitizeXPath(const DomRootPath, XPathExpression: string): string;
 
 implementation
 
@@ -41,13 +41,17 @@ uses
 const
   DOM_ROOT_PATH = '/CodeBlocksConfig';
 
-function SanitizeXPath(DomRootPath, XPathExpression: string): string;
+function SanitizeXPath(const DomRootPath, XPathExpression: string): string;
+var
+  WorkXPathExpression: string;
+
 begin
   Result := XPathExpression;
-  if not StartsWith('/', XPathExpression) then
-    XPathExpression := '/' + XPathExpression;
-  if not StartsWith(DomRootPath, XPathExpression) then
-    Result := DomRootPath + XPathExpression;
+  WorkXPathExpression := XPathExpression;
+  if not StartsWith('/', WorkXPathExpression) then
+    WorkXPathExpression := '/' + WorkXPathExpression;
+  if not StartsWith(DomRootPath, WorkXPathExpression) then
+    Result := DomRootPath + WorkXPathExpression;
 end;
 
 procedure DeleteNode(SourceNode: TDOMNode; ParentDeepLevel: Integer);
@@ -107,8 +111,7 @@ begin
   end;
 end;
 
-function SelectSingleNode(XMLDocument: TXMLDocument; XPath: string;
-  ParentNode: TDOMNode): TDOMNode;
+function SelectSingleNode(XPath: string; ParentNode: TDOMNode): TDOMNode;
 var
   XPathResult: TXPathVariable;
 
@@ -124,14 +127,14 @@ begin
   FreeAndNil(XPathResult);
 end;
 
-function SelectSingleNode(XMLDocument: TXMLDocument; XPath: string): TDOMNode;
+function SelectSingleNode(XPath: string; XMLDocument: TXMLDocument): TDOMNode;
 begin
-  XPath := SanitizeXPath(DOM_ROOT_PATH, XPath);
-  Result := SelectSingleNode(XMLDocument, XPath, XMLDocument.DocumentElement);
+  Result := SelectSingleNode(SanitizeXPath(DOM_ROOT_PATH, XPath),
+    XMLDocument.DocumentElement);
 end;
 
-function SelectSingleNode(XMLDocument: TXMLDocument;
-  XPath, NodeValue: string; ParentNode: TDOMNode): TDOMNode;
+function SelectSingleNode(XPath, NodeValue: string;
+  ParentNode: TDOMNode): TDOMNode;
 var
   XPathResult: TXPathVariable;
   i, NodesCount: Integer;
@@ -165,20 +168,21 @@ begin
   FreeAndNil(XPathResult);
 end;
 
-function SelectSingleNode(XMLDocument: TXMLDocument; XPath, NodeValue: string): TDOMNode;
+function SelectSingleNode(XPath, NodeValue: string;
+  XMLDocument: TXMLDocument): TDOMNode;
 begin
-  XPath := SanitizeXPath(DOM_ROOT_PATH, XPath);
-  Result := SelectSingleNode(XMLDocument, XPath, NodeValue, XMLDocument.DocumentElement);
+  Result := SelectSingleNode(SanitizeXPath(DOM_ROOT_PATH, XPath), NodeValue,
+    XMLDocument.DocumentElement);
 end;
 
 function NodeExists(XMLDocument: TXMLDocument; XPath, NodeValue: string): Boolean;
 begin
-  Result := Assigned(SelectSingleNode(XMLDocument, XPath, NodeValue));
+  Result := Assigned(SelectSingleNode(XPath, NodeValue, XMLDocument));
 end;
 
 function NodeExists(XMLDocument: TXMLDocument; XPath: string): Boolean;
 begin
-  Result := Assigned(SelectSingleNode(XMLDocument, XPath));
+  Result := Assigned(SelectSingleNode(XPath, XMLDocument));
 end;
 
 function ForceNodes(XMLDocument: TXMLDocument; Path: string): TDOMNode;
@@ -240,7 +244,7 @@ begin
 
   ImportedNode := TargetXMLDocument.ImportNode(SourceNode, True);
 
-  DestinationNode := SelectSingleNode(TargetXMLDocument, Path);
+  DestinationNode := SelectSingleNode(Path, TargetXMLDocument);
 
   // Create the Destination SourceNode if not detected.
   if not Assigned(DestinationNode) then

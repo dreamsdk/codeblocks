@@ -59,13 +59,13 @@
     </PublishOptions>
     <RunParams>
       <local>
-        <CommandLineParams Value="/install"/>
+        <CommandLineParams Value="/reinstall"/>
       </local>
       <FormatVersion Value="2"/>
       <Modes Count="1">
         <Mode0 Name="default">
           <local>
-            <CommandLineParams Value="/install"/>
+            <CommandLineParams Value="/reinstall"/>
           </local>
         </Mode0>
       </Modes>

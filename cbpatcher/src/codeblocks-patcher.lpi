@@ -25,7 +25,7 @@
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="2"/>
       <RevisionNr Value="1"/>
-      <BuildNr Value="575"/>
+      <BuildNr Value="620"/>
       <StringTable Comments="http://dreamsdk.org/" CompanyName="The DreamSDK Team" FileDescription="Code::Blocks Patcher for DreamSDK" InternalName="codeblocks-patcher" LegalCopyright="© Copyleft 2018-2020" LegalTrademarks="Code::Blocks is distributed under the GNU GPL3. 7-Zip Extra files are under the GNU LGPL license. Sega and Dreamcast are registered trademark of Sega Games Co., Ltd." OriginalFilename="codeblocks-patcher.exe" ProductName="DreamSDK" ProductVersion="3.0.4.2001"/>
     </VersionInfo>
     <BuildModes Count="2">
@@ -67,21 +67,24 @@
     </PublishOptions>
     <RunParams>
       <local>
-        <CommandLineParams Value="--operation=uninstall"/>
+        <CommandLineParams Value="--operation=reinstall --verbose"/>
       </local>
       <FormatVersion Value="2"/>
       <Modes Count="1">
         <Mode0 Name="default">
           <local>
-            <CommandLineParams Value="--operation=uninstall"/>
+            <CommandLineParams Value="--operation=reinstall --verbose"/>
           </local>
         </Mode0>
       </Modes>
     </RunParams>
-    <RequiredPackages Count="1">
+    <RequiredPackages Count="2">
       <Item1>
-        <PackageName Value="LazUtils"/>
+        <PackageName Value="uniqueinstance_package"/>
       </Item1>
+      <Item2>
+        <PackageName Value="LazUtils"/>
+      </Item2>
     </RequiredPackages>
     <Units Count="4">
       <Unit0>

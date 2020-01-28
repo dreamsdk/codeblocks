@@ -20,28 +20,48 @@ uses
 const
   CLOSE_SWITCH = '/CLOSE';
   INSTALL_SWITCH = '/INSTALL';
+  REINSTALL_SWITCH = '/REINSTALL';
+  UNINSTALL_SWITCH = '/UNINSTALL';
 
   FORM_TITLE = 'Code::Blocks Splash Application for DreamSDK';
-  PANEL_INSTALL_CAPTION = 'Setting up Code::Blocks... Please wait.';
-  PANEL_UNINSTALL_CAPTION = 'Restoring Code::Blocks... Please wait.';
+  PANEL_INSTALL_CAPTION = 'Setting up Code::Blocks';
+  PANEL_REINSTALL_CAPTION = 'Reinstalling Code::Blocks patch';
+  PANEL_UNINSTALL_CAPTION = 'Restoring Code::Blocks';
+
+type
+  TCodeBlocksSplashOperation = (soUnknown, soInstall, soUninstall, soReinstall, soClose);
 
 var
   FormHandle: THandle;
-  IsCloseAction: Boolean = False;
-  IsInstallMode: Boolean = False;
+  Operation: TCodeBlocksSplashOperation;
 
 function ParseCommandLine: Boolean;
+var
+  Parameter: string;
+
 begin
+  Operation := soUnknown;
   Result := (ParamCount > 0);
-  IsInstallMode := (UpperCase(ParamStr(1)) = INSTALL_SWITCH);
-  IsCloseAction := (UpperCase(ParamStr(1)) = CLOSE_SWITCH);
+  if Result then
+  begin
+    Parameter := UpperCase(ParamStr(1));
+    if SameText(Parameter, CLOSE_SWITCH) then
+      Operation := soClose
+    else if SameText(Parameter, INSTALL_SWITCH) then
+      Operation := soInstall
+    else if SameText(Parameter, REINSTALL_SWITCH) then
+      Operation := soReinstall
+    else if SameText(Parameter, UNINSTALL_SWITCH) then
+      Operation := soUninstall;
+  end;
 end;
 
 begin
+  Operation := soUnknown;
   if not ParseCommandLine then
     Exit;
 
-  if IsCloseAction then
+  if (Operation = soClose) then
   begin
 {$IFDEF WINDOWS}
     FormHandle := FindWindow(nil, PChar(FORM_TITLE));
@@ -52,13 +72,20 @@ begin
   else
   begin
     RequireDerivedFormResource := True;
-  Application.Scaled:=True;
+    Application.Scaled := True;
     Application.Initialize;
     frmMain := TfrmMain.Create(Application);
     frmMain.Caption := FORM_TITLE;
-    frmMain.pnlSplash.Caption := PANEL_INSTALL_CAPTION;
-    if not IsInstallMode then
-      frmMain.pnlSplash.Caption := PANEL_UNINSTALL_CAPTION;
+
+    case Operation of
+      soInstall:
+        SetPanelText(PANEL_INSTALL_CAPTION);
+      soUninstall:
+        SetPanelText(PANEL_UNINSTALL_CAPTION);
+      soReinstall:
+        SetPanelText(PANEL_REINSTALL_CAPTION);
+    end;
+
     frmMain.Show;
     Application.Run;
   end;

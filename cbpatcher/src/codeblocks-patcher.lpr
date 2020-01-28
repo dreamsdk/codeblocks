@@ -9,11 +9,13 @@ uses
   Classes,
   SysUtils,
   CustApp,
+  UniqueInstanceRaw,
   FSTools,
   RefBase,
   Version,
   SysTools,
-  CBPatch, xmltools;
+  CBPatch,
+  XmlTools;
 
 const
   ERR_SUCCESS = 0;
@@ -24,10 +26,14 @@ const
   ERR_NO_OPERATION_PASSED = 4;
   ERR_PATCH_ALREADY_INSTALLED = 6;
   ERR_PATCH_NOT_UNINSTALLABLE = 7;
+  ERR_PATCH_REINSTALL_FAILED = 8;
+  ERR_PATCH_NOT_REINSTALLABLE = 9;
+  ERR_PATCH_RUNNING = 10;
+  ERR_CODEBLOCKS_RUNNING = 11;
 
 type
   TCodeBlocksPatcherCommandOperation = (coUnknown, coInstall, coUninstall,
-    coPrintCodeBlocksUsers);
+    coPrintCodeBlocksUsers, coPrintStatus, coReinstall);
   TCodeBlocksPatcherOperationSet = set of TCodeBlocksPatcherCommandOperation;
 
   { TCodeBlocksPatcherApplication }
@@ -83,6 +89,8 @@ begin
       Result := pmInstall;
     coUninstall:
       Result := pmUninstall;
+    coReinstall:
+      Result := pmReinstall;
   end;
 end;
 
@@ -102,19 +110,35 @@ end;
 
 procedure TCodeBlocksPatcherApplication.PrintParameters;
 
-  function ToScreen(FileList: TFileList): string;
+  function FileListToScreen(FileList: TFileList): string;
   var
     i: Integer;
 
   begin
     Result := EmptyStr;
     for i := 0 to FileList.Count - 1 do
-      Result := Result + sLineBreak + '    * ' + FileList[i];
+      Result := Result + sLineBreak + '    * "' + FileList[i] + '"';
   end;
 
-  procedure PrintParam(const Message, Value: string);
+  procedure PrintParam(const Message, Value: string; const UseQuote: Boolean = True);
+  var
+    QuoteChar: string;
+
   begin
-    WriteLn('  ', Message, ': ', Value);
+    QuoteChar := EmptyStr;
+    if UseQuote then
+      QuoteChar := '"';
+    WriteLn('  ', Message, ': ', QuoteChar, Value, QuoteChar);
+  end;
+
+  function UsersFromFileListToScreen(InstalledUsers: TStringList): string;
+  var
+    i: Integer;
+
+  begin
+    Result := EmptyStr;
+    for i := 0 to InstalledUsers.Count - 1 do
+      Result := Result + sLineBreak + '    * ' + InstalledUsers[i];
   end;
 
 begin
@@ -125,9 +149,12 @@ begin
     begin
       PrintParam('Code::Blocks Installation Directory', CodeBlocksInstallationDirectory);
       PrintParam('Code::Blocks Backup Directory', CodeBlocksBackupDirectory);
-      PrintParam('Code::Blocks Configuration File Names', ToScreen(CodeBlocksConfigurationFileNames));
-      PrintParam('DreamSDK Home Directory', HomeDirectory);
-      PrintParam('DreamSDK Configuration File Name', ConfigurationFileName);
+      PrintParam('Code::Blocks Users List',
+        UsersFromFileListToScreen(CodeBlocksInstalledUsers), False);
+      PrintParam('Code::Blocks Configuration Files',
+        FileListToScreen(CodeBlocksConfigurationFileNames), False);
+      PrintParam('DreamSDK Home Directory', IncludeTrailingPathDelimiter(HomeDirectory));
+      PrintParam('DreamSDK Registry File', ConfigurationFileName);
     end;
     WriteLn;
   end;
@@ -173,6 +200,11 @@ begin
         FinalExitCode := ERR_PATCH_UNINSTALL_FAILED;
         FinalStr := 'restored';
       end;
+    coReinstall:
+      begin
+        FinalExitCode := ERR_PATCH_REINSTALL_FAILED;
+        FinalStr := 'reinstalled';
+      end;
   end;
 
   if Success then
@@ -206,13 +238,20 @@ begin
   else if (Buffer = 'UNINSTALL') or (Buffer = 'U') then
     Result := coUninstall
   else if (Buffer = 'PRINT-CODEBLOCKS-USERS') or (Buffer = 'C') then
-    Result := coPrintCodeBlocksUsers;
+    Result := coPrintCodeBlocksUsers
+  else if (Buffer = 'PRINT-STATUS') or (Buffer = 'STATUS') or (Buffer = 'S') then
+    Result := coPrintStatus
+  else if (Buffer = 'REINSTALL') or (Buffer = 'R') then
+    Result := coReinstall;
 
   if Result <> coUnknown then
     fCommandOperationText := LowerCase(OperationValue);
 end;
 
 procedure TCodeBlocksPatcherApplication.DoRun;
+const
+  CODEBLOCKS_FILE_NAME = 'codeblocks.exe';
+
 var
   ErrorMsg, OperationSwitch: string;
 
@@ -221,9 +260,17 @@ var
     i: Integer;
 
   begin
-    WriteLn('Code::Blocks available user profiles:');
+    WriteLn('Code::Blocks Available User Profiles:');
     for i := 0 to Patcher.CodeBlocksAvailableUsers.Count - 1 do
-      WriteLn('  ', Patcher.CodeBlocksAvailableUsers[i]);
+      WriteLn('  * ', Patcher.CodeBlocksAvailableUsers[i]);
+  end;
+
+  procedure DoPrintStatus;
+  begin
+    if Patcher.Installed then
+      WriteLn('Patch is currently installed')
+    else
+      WriteLn('Patch is NOT currently installed');
   end;
 
 begin
@@ -231,6 +278,20 @@ begin
   fDisplayBanner := not HasOption('n', 'no-logo');
   if DisplayBanner then
     WriteHeader;
+
+  // Check if the patch is already running
+  if InstanceRunning then
+  begin
+    DoErrorTerminate(ERR_PATCH_RUNNING, 'Patcher is already running, can''t continue.');
+    Exit;
+  end;
+
+  // Check if Code::Blocks is already running
+  if IsProcessRunning(CODEBLOCKS_FILE_NAME) then
+  begin
+    DoErrorTerminate(ERR_CODEBLOCKS_RUNNING, 'Code::Blocks is running, can''t continue.');
+    Exit;
+  end;
 
   // Quick check parameters
   ErrorMsg := CheckOptions(
@@ -296,6 +357,14 @@ begin
     Exit;
   end;
 
+  // Check if the patch cannot be reinstalled
+  if (not Patcher.Installed) and (CommandOperation = coReinstall) then
+  begin
+    DoErrorTerminate(ERR_PATCH_NOT_REINSTALLABLE,
+      'Patch is not installed, nothing to reinstall.');
+    Exit;
+  end;
+
   // Check input parameters
   if not Patcher.Ready then
   begin
@@ -313,10 +382,12 @@ begin
   Patcher.OnProcessEnd := @OnPatcherProcessEnd;
 
   // Execute it!
-  if CommandOperation in ([coInstall, coUninstall]) then
+  if CommandOperation in ([coInstall, coUninstall, coReinstall]) then
     Patcher.Execute
   else if (CommandOperation = coPrintCodeBlocksUsers) then
-    DoPrintCodeBlocksConfigurationFiles;
+    DoPrintCodeBlocksConfigurationFiles
+  else if (CommandOperation = coPrintStatus) then
+    DoPrintStatus;
 
   // stop program loop
   Terminate(fProgramExitCode);
@@ -412,15 +483,21 @@ begin
     '%' + GetBaseEnvironmentVariableName + '%']);
 
   WriteLn('Usage:', sLineBreak,
-    '  ', ProgramName, ' --operation=<install, uninstall> [options]', sLineBreak,
+    '  ', ProgramName, ' --operation=<install, uninstall, ...> [options]', sLineBreak,
     sLineBreak,
     'Description:', sLineBreak,
-    '  --operation, -o    : The operation the patch need to perform. It can be', sLineBreak,
-    '                       ''install'', ''uninstall'' or ''print-codeblocks-users'' to', sLineBreak,
-    '                       list the users that have a valid Code::Blocks profile.', sLineBreak,
-    '                       To give eligibility to an user to get the patch, just', sLineBreak,
-    '                       run Code::Blocks one time with that user to create all', sLineBreak,
-    '                       the required files.', sLineBreak,
+    '  --operation, -o    : The operation the patch need to perform. It can be:', sLineBreak,
+    sLineBreak,
+    '    * install, i                : Install the Code::Blocks patch for DreamSDK.', sLineBreak,
+    '    * uninstall, u              : Uninstall the patch. ', sLineBreak,
+    '    * reinstall, r              : Reinstall the patch (basically, it''s ', sLineBreak,
+    '                                  ''uninstall'' then ''install'' commands chained).', sLineBreak,
+    '    * print-codeblocks-users, c : List the users that have a valid Code::Blocks', sLineBreak,
+    '                                  profile. To give eligibility to an user to', sLineBreak,
+    '                                  get the patch, just run Code::Blocks one', sLineBreak,
+    '                                  time with that user to create all the', sLineBreak,
+    '                                  required files, then run the patch again.', sLineBreak,
+    '    * print-status, s           : Get the installation status of the patch.', sLineBreak,
     sLineBreak,
     'Options:', sLineBreak,
     '  --install-dir, -i  : The Code::Blocks installation directory. Default is ', sLineBreak,
@@ -451,9 +528,30 @@ begin
     sLineBreak,
     '  --help, -h         : Print this help.', sLineBreak,
     sLineBreak,
+    'Examples:', sLineBreak,
+    '  ', ProgramName, ' --operation=install', sLineBreak,
+    '    Install the Code::Blocks patch for DreamSDK using the defaults.', sLineBreak,
+    sLineBreak,
+    '  ', ProgramName, ' --operation=install --show-splash', sLineBreak,
+    '    Do the same thing as above but display the splash screen.', sLineBreak,
+    sLineBreak,
+    '  ', ProgramName, ' --operation=install --install-dir="E:\CodeBlocks\"', sLineBreak,
+    '    Install the patch by changing the Code::Blocks installation directory.', sLineBreak,
+    sLineBreak,
+    '  ', ProgramName, ' --operation=reinstall', sLineBreak,
+    '    Reinstall the Code::Blocks patch, by using the previous parameters.', sLineBreak,
+    sLineBreak,
+    '  ', ProgramName, ' --operation=uninstall', sLineBreak,
+    '    Remove completely the Code::Blocks patch for DreamSDK.', sLineBreak,
+    sLineBreak,
     'Note:', sLineBreak,
     '  This patcher was made for the Code::Blocks 17.12 stable release only.', sLineBreak,
-    '  It is not affiliated with the Code::Blocks Team in any way.');
+    '  It is NOT affiliated with the Code::Blocks Team in any way.', sLineBreak,
+    sLineBreak,
+    'Hint: ', sLineBreak,
+    '  The help is too big to fit in your screen? Don''t hesitate to use this tip:', sLineBreak,
+    '    ', ProgramName, ' --help | more'
+  );
 end;
 
 var

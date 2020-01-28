@@ -24,6 +24,8 @@ type
 var
   frmMain: TfrmMain;
 
+procedure SetPanelText(const Message: string);
+
 implementation
 
 uses
@@ -37,6 +39,11 @@ procedure TfrmMain.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
   Delay(1500);
   Application.Terminate;
+end;
+
+procedure SetPanelText(const Message: string);
+begin
+  frmMain.pnlSplash.Caption := Message + ' ... Please wait.';
 end;
 
 end.

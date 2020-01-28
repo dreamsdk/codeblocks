@@ -30,7 +30,8 @@ type
 
   TTaskProc = function: Boolean of object;
 
-  TCodeBlocksPatcherOperation = (pmUndefined, pmInstall, pmUninstall);
+  TCodeBlocksPatcherOperation = (pmUndefined, pmInstall, pmUninstall,
+    pmReinstall);
 
   TTerminateEvent = procedure(Sender: TObject;
     const Success: Boolean) of object;
@@ -40,13 +41,23 @@ type
     const Success: Boolean) of object;
 
   TCodeBlocksBackupRestoreOperation = (cbBackup, cbRestore);
-  TCodeBlocksSplashOperation = (soInstall, soUninstall, soClose);
+  TCodeBlocksSplashOperation = (soInstall, soUninstall, soReinstall, soClose);
   TSourceKind = (skDebugger, skGlobalVariables, skTools);
 
   { TCodeBlocksPatcher }
   TCodeBlocksPatcher = class(TObject)
   private
+    fDesignFileNameDebugger: TFileName;
+    fDesignFileNameGlobalVariables: TFileName;
+    fDesignFileNameTools: TFileName;
+    fFragmentFileNameDebugger: TFileName;
+    fFragmentFileNameGlobalVariables: TFileName;
+    fFragmentFileNameTools: TFileName;
+    fFragmentFileNameToolsSeparator: TFileName;
+    fNodeValueDebugger: string;
+    fNodeValueGlobalVariables: string;
     fCodeBlocksAvailableUsers: TStringList;
+    fCodeBlocksInstalledUsers: TStringList;
     fExecuteResult: Boolean;
     fProcessBegin: TNotifyEvent;
     fCodeBlocksBackupRestoreFileName: TFileName;
@@ -66,10 +77,12 @@ type
     procedure FixTools(const CodeBlocksConfigurationFileName: TFileName);
     procedure FixDebugger(const CodeBlocksConfigurationFileName: TFileName);
     function GetCodeBlocksAvailableUsers: TStringList;
+    function GetCodeBlocksInstalledUsers: TStringList;
     function GetConfigurationFileName: TFileName;
     function GetRegisteredString(const Section, Key: string): string;
     function GetGlobalVariablesActiveSet(XMLDocument: TXMLDocument): string;
     function GetReady: Boolean;
+    function GetFriendlyUserName(const UserName: string): string;
     procedure InjectDebugger(SourceXML, TargetXML: TXMLDocument);
     procedure InjectGlobalVariables(SourceXML, TargetXML: TXMLDocument);
     procedure InjectTools(SourceXML, TargetXML: TXMLDocument);
@@ -107,10 +120,8 @@ type
     function BackupFiles: Boolean;
     function RunCodeBlocksBackupRestore(
       const Operation: TCodeBlocksBackupRestoreOperation): Boolean;
-    function GetSourceConfigurationDirectory: TFileName;
-    function GetSourceFragmentsDirectory: TFileName;
     function GetSourcePackageDirectory: TFileName;
-    function SourceKindToFileName(const SourceKind: TSourceKind): TFileName;
+    function SourceKindToFragmentFileName(const SourceKind: TSourceKind): TFileName;
 
     procedure DoPatchInstall;
     procedure DoPatchUninstall;
@@ -132,6 +143,10 @@ type
     // Code::Blocks Available Users
     property CodeBlocksAvailableUsers: TStringList
       read GetCodeBlocksAvailableUsers;
+
+    // Code::Blocks Installed Users (if any)
+    property CodeBlocksInstalledUsers: TStringList
+      read GetCodeBlocksInstalledUsers;
 
     // Code::Blocks Installation Directory
     property CodeBlocksInstallationDirectory: TFileName
@@ -206,7 +221,6 @@ const
   INI_KEY_BACKUP_PATH = 'BackupPath';
 
   SEPARATOR_NAME = '---separator---';
-  TOOLS_DESIGN_FILE = 'tools-design.dat';
 
 constructor TCodeBlocksPatcher.Create;
 
@@ -227,7 +241,7 @@ constructor TCodeBlocksPatcher.Create;
     // Code::Blocks Configuration Files
     UsersAppData := TStringList.Create;
     try
-      GetUserAppDataList(UsersAppData);
+      GetAppDataListFromUsers(UsersAppData);
 
       for i := 0 to UsersAppData.Count - 1 do
       begin
@@ -271,6 +285,7 @@ constructor TCodeBlocksPatcher.Create;
 begin
   fCodeBlocksConfigurationFileNames := TFileList.Create;
   fCodeBlocksAvailableUsers := TStringList.Create;
+  fCodeBlocksInstalledUsers := TStringList.Create;
   fOperation := pmUndefined;
   InitializeDefaults;
   ExtractEmbeddedFiles;
@@ -278,6 +293,7 @@ end;
 
 destructor TCodeBlocksPatcher.Destroy;
 begin
+  fCodeBlocksInstalledUsers.Free;
   fCodeBlocksAvailableUsers.Free;
   fCodeBlocksConfigurationFileNames.Free;
 {$IFNDEF LITE_VERSION}
@@ -309,6 +325,12 @@ begin
         DoPatchInstall;
       pmUninstall:
         DoPatchUninstall;
+      pmReinstall:
+        begin
+          DoPatchUninstall;
+          Sleep(500);
+          DoPatchInstall;
+        end;
     end;
 
     // Notify the process end
@@ -426,12 +448,13 @@ var
 
   function SourceNode: TDOMNode;
   begin
-    Result := SelectSingleNode(SourceXML, '/debugger_common/sets/gdb_debugger/conf1');
+    Result := SelectSingleNode('/debugger_common/sets/gdb_debugger/conf1', SourceXML);
   end;
 
   function IsSegaDreamcastDebuggerProfileExists: Boolean;
   begin
-    Result := NodeExists(TargetXML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()', 'Sega Dreamcast');
+    Result := NodeExists(TargetXML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()',
+      fNodeValueDebugger);
   end;
 
 begin
@@ -473,7 +496,8 @@ var
 
   begin
     Result := False;
-    ToolNameNode := SelectSingleNode(SourceXML, Format('/tools/tool%0.2d/NAME/str/text()', [i]));
+    ToolNameNode := SelectSingleNode(Format('/tools/tool%0.2d/NAME/str/text()', [i]),
+      SourceXML);
     if Assigned(ToolNameNode) then
     begin
       ToolName := AnsiString(ToolNameNode.NodeValue);
@@ -499,7 +523,8 @@ var
   Node: TDOMNode;
 
 begin
-  Node := SelectSingleNode(XML, '/debugger_common/sets/gdb_debugger/*/NAME/str/text()', 'Sega Dreamcast');
+  Node := SelectSingleNode('/debugger_common/sets/gdb_debugger/*/NAME/str/text()',
+    fNodeValueDebugger, XML);
   if Assigned(Node) then
     DeleteNode(Node, 3);
 end;
@@ -511,7 +536,8 @@ var
 
 begin
   ActiveSet := GetGlobalVariablesActiveSet(XML);
-  Node := SelectSingleNode(XML, Format('/gcv/sets/%s/dreamsdk_home', [ActiveSet]));
+  Node := SelectSingleNode(Format('/gcv/sets/%s/%s',
+    [ActiveSet, fNodeValueGlobalVariables]), XML);
   if Assigned(Node) then
     DeleteNode(Node);
 end;
@@ -519,7 +545,6 @@ end;
 procedure TCodeBlocksPatcher.RemoveTools(XML: TXMLDocument);
 var
   ToolsDesign: TStringList;
-  ToolsDesignFileName: TFileName;
   i: Integer;
   ToolDesignNodeValue: string;
   ToolNode: TDOMNode;
@@ -538,7 +563,7 @@ var
     DebugLog('RemoveUselessToolsSeparators');
 {$ENDIF}
     PreviousNode := nil;
-    RootNode := SelectSingleNode(XML, '/tools');
+    RootNode := SelectSingleNode('/tools', XML);
     if Assigned(RootNode) then
     begin
       NodeCount := RootNode.ChildNodes.Count;
@@ -548,7 +573,7 @@ var
 {$IFDEF DEBUG}
         DebugLog(AnsiString(CurrentNode.NodeName));
 {$ENDIF}
-        CurrentTextNode := SelectSingleNode(XML, 'NAME/str/text()', CurrentNode);
+        CurrentTextNode := SelectSingleNode('NAME/str/text()', CurrentNode);
         if Assigned(CurrentTextNode) then
         begin
           CurrentTextNodeValue := CurrentTextNode.NodeValue;
@@ -588,13 +613,11 @@ begin
 {$ENDIF}
 
   // Remove all tools added by DreamSDK
-  ToolsDesignFileName := GetSourceConfigurationDirectory
-    + TOOLS_DESIGN_FILE;
   if NodeExists(XML, '/tools') then
   begin
     ToolsDesign := TStringList.Create;
     try
-      ToolsDesign.LoadFromFile(ToolsDesignFileName);
+      ToolsDesign.LoadFromFile(fDesignFileNameTools);
       for i := 0 to ToolsDesign.Count - 1 do
       begin
         ToolDesignNodeValue := ToolsDesign[i];
@@ -603,7 +626,7 @@ begin
 {$IFDEF DEBUG}
           DebugLog('  ' + ToolDesignNodeValue);
 {$ENDIF}
-          ToolNode := SelectSingleNode(XML, '/tools/*/NAME/str/text()', ToolDesignNodeValue);
+          ToolNode := SelectSingleNode('/tools/*/NAME/str/text()', ToolDesignNodeValue, XML);
           if Assigned(ToolNode) then
             DeleteNode(ToolNode, 3); // delete the found tool
         end;
@@ -668,7 +691,7 @@ begin
 
     // When uninstalling, override supplied parameters with the proper one from
     // the DreamSDK configuration (if possible)
-    if (Operation = pmUninstall) and IsCodeBlocksPatchInstalled then
+    if (Operation <> pmInstall) and IsCodeBlocksPatchInstalled then
     begin
       CodeBlocksInstallationDirectory :=
         GetRegisteredCodeBlocksInstallationDirectory;
@@ -680,17 +703,17 @@ begin
   end;
 end;
 
-function TCodeBlocksPatcher.SourceKindToFileName(
+function TCodeBlocksPatcher.SourceKindToFragmentFileName(
   const SourceKind: TSourceKind): TFileName;
 begin
   Result := EmptyStr;
   case SourceKind of
     skDebugger:
-      Result := 'debugger.conf';
+      Result := fFragmentFileNameDebugger;
     skGlobalVariables:
-      Result := 'gcv.conf';
+      Result := fFragmentFileNameGlobalVariables;
     skTools:
-      Result := 'tools.conf';
+      Result := fFragmentFileNameTools;
   end;
 end;
 
@@ -712,9 +735,6 @@ procedure TCodeBlocksPatcher.FixTools(
   const CodeBlocksConfigurationFileName: TFileName);
 
   procedure FixToolsSeparators(const CodeBlocksConfigurationFileName: TFileName);
-  const
-    TOOLS_SEPARATOR_FILE = 'tools-separator.dat';
-
   var
     Buffer, ToolsDesign: TStringList;
     i, SectionPositionIndex, ToolIndex, DesignToolIndex: Integer;
@@ -757,12 +777,11 @@ procedure TCodeBlocksPatcher.FixTools(
     end;
 
   begin
-    ToolSeparatorTag := LoadFileToString(GetSourceConfigurationDirectory
-      + TOOLS_SEPARATOR_FILE) + sLineBreak;
+    ToolSeparatorTag := LoadFileToString(fFragmentFileNameToolsSeparator) + sLineBreak;
     Buffer := TStringList.Create;
     ToolsDesign := TStringList.Create;
     try
-      ToolsDesign.LoadFromFile(GetSourceConfigurationDirectory + TOOLS_DESIGN_FILE);
+      ToolsDesign.LoadFromFile(fDesignFileNameTools);
       Buffer.LoadFromFile(CodeBlocksConfigurationFileName);
       SectionPositionIndex := StringListSubstringIndexOf(Buffer, '<tools>');
       if SectionPositionIndex <> -1 then
@@ -843,8 +862,7 @@ function TCodeBlocksPatcher.GetCodeBlocksAvailableUsers: TStringList;
 var
   i: Integer;
   UsersDirectory: TFileName;
-  CurrentUserName,
-  CurrentUserFullName: string;
+  CurrentUserName: string;
 
 begin
   fCodeBlocksAvailableUsers.Clear;
@@ -853,12 +871,24 @@ begin
   begin
     CurrentUserName := ExtractStr(UsersDirectory, DirectorySeparator,
       CodeBlocksConfigurationFileNames[i]);
-    CurrentUserFullName := GetUserFullNameFromUserName(CurrentUserName);
-    if CurrentUserFullName <> EmptyStr then
-      CurrentUserName := Format('%s (%s)', [CurrentUserFullName, CurrentUserName]);
-    fCodeBlocksAvailableUsers.Add(CurrentUserName);
+    fCodeBlocksAvailableUsers.Add(GetFriendlyUserName(CurrentUserName));
   end;
   Result := fCodeBlocksAvailableUsers;
+end;
+
+function TCodeBlocksPatcher.GetCodeBlocksInstalledUsers: TStringList;
+var
+  i: Integer;
+  UserName: string;
+
+begin
+  fCodeBlocksInstalledUsers.Clear;
+  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+  begin
+    UserName := GetUserFromAppDataDirectory(CodeBlocksConfigurationFileNames[i]);
+    fCodeBlocksInstalledUsers.Add(GetFriendlyUserName(UserName));
+  end;
+  Result := fCodeBlocksInstalledUsers;
 end;
 
 function TCodeBlocksPatcher.GetConfigurationFileName: TFileName;
@@ -893,7 +923,7 @@ var
 
 begin
   Result := 'default';
-  Node := SelectSingleNode(XMLDocument, '/gcv/ACTIVE/str/text()');
+  Node := SelectSingleNode('/gcv/ACTIVE/str/text()', XMLDocument);
   if Assigned(Node) then
     Result := AnsiString(Node.NodeValue);
 end;
@@ -914,6 +944,17 @@ begin
     Result := Result and IsCodeBlocksPatchInstalled;
 end;
 
+function TCodeBlocksPatcher.GetFriendlyUserName(const UserName: string): string;
+var
+  CurrentUserFullName: string;
+
+begin
+  Result := UserName;
+  CurrentUserFullName := GetUserFullNameFromUserName(UserName);
+  if not IsEmpty(CurrentUserFullName) then
+    Result := Format('%s (%s)', [CurrentUserFullName, UserName]);
+end;
+
 function TCodeBlocksPatcher.Merge(
   const CodeBlocksConfigurationFileName: TFileName;
   SourceKind: TSourceKind): Boolean;
@@ -927,7 +968,7 @@ begin
   try
     // Inject the DreamSDK fragment into the CodeBlocksConfig XML file.
     TargetFileStream := TFileStream.Create(CodeBlocksConfigurationFileName, fmOpenReadWrite);
-    SourceFileName := GetSourceFragmentsDirectory + SourceKindToFileName(SourceKind);
+    SourceFileName := SourceKindToFragmentFileName(SourceKind);
     SourceFileStream := TFileStream.Create(SourceFileName, fmOpenRead);
     try
       ReadXMLFile(TargetXML, TargetFileStream);
@@ -1144,6 +1185,7 @@ begin
   case Operation of
     soInstall: AdditionalSwitch := '/install';
     soUninstall: AdditionalSwitch := '/uninstall';
+    soReinstall: AdditionalSwitch := '/reinstall';
     soClose:
       begin
         AdditionalSwitch := '/close';
@@ -1189,6 +1231,31 @@ const
 var
   DataFileName: TFileName;
 
+  procedure InitializeDataFiles;
+  var
+    DesignDirectory,
+    FragmentsDirectory: TFileName;
+
+  begin
+    DesignDirectory := fSourceDirectory + 'design'
+      + DirectorySeparator;
+    FragmentsDirectory := fSourceDirectory + 'fragments'
+      + DirectorySeparator;
+
+    // Design
+    fDesignFileNameDebugger := DesignDirectory + 'debugger.dat';
+    fNodeValueDebugger := LoadFileToString(fDesignFileNameDebugger);
+    fDesignFileNameGlobalVariables := DesignDirectory + 'gcv.dat';
+    fNodeValueGlobalVariables := LoadFileToString(fDesignFileNameGlobalVariables);
+    fDesignFileNameTools := DesignDirectory + 'tools.dat';
+
+    // Fragments
+    fFragmentFileNameDebugger := FragmentsDirectory + 'debugger.xml';
+    fFragmentFileNameGlobalVariables := FragmentsDirectory + 'gcv.xml';
+    fFragmentFileNameTools := FragmentsDirectory + 'tools.xml';
+    fFragmentFileNameToolsSeparator := FragmentsDirectory + 'tools-separator.xml';
+  end;
+
 begin
 {$IFNDEF LITE_VERSION}
 
@@ -1215,20 +1282,11 @@ begin
   if FileExists(DataFileName) then
   begin
     UncompressZipFile(DataFileName, fSourceDirectory);
+    InitializeDataFiles;
     KillFile(DataFileName);
   end;
 
 {$ENDIF}
-end;
-
-function TCodeBlocksPatcher.GetSourceConfigurationDirectory: TFileName;
-begin
-  Result := fSourceDirectory + 'config' + DirectorySeparator;
-end;
-
-function TCodeBlocksPatcher.GetSourceFragmentsDirectory: TFileName;
-begin
-  Result := fSourceDirectory + 'fragments' + DirectorySeparator;
 end;
 
 function TCodeBlocksPatcher.GetSourcePackageDirectory: TFileName;
@@ -1293,6 +1351,8 @@ begin
       Result := soInstall;
     pmUninstall:
       Result := soUninstall;
+    pmReinstall:
+      Result := soReinstall;
   end;
 end;
 
