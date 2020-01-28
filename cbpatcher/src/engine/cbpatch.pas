@@ -886,7 +886,11 @@ begin
   for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
   begin
     UserName := GetUserFromAppDataDirectory(CodeBlocksConfigurationFileNames[i]);
-    fCodeBlocksInstalledUsers.Add(GetFriendlyUserName(UserName));
+    if not IsEmpty(UserName) then
+      UserName := GetFriendlyUserName(UserName)
+    else
+      UserName := Format('<%s>', [ExtractFileName(CodeBlocksConfigurationFileNames[i])]);
+    fCodeBlocksInstalledUsers.Add(UserName);
   end;
   Result := fCodeBlocksInstalledUsers;
 end;
