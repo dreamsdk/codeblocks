@@ -295,20 +295,6 @@ begin
   if DisplayBanner then
     WriteHeader;
 
-  // Check if the patch is already running
-  if InstanceRunning then
-  begin
-    DoErrorTerminate(ERR_PATCH_RUNNING, 'Patcher is already running, can''t continue.');
-    Exit;
-  end;
-
-  // Check if Code::Blocks is already running
-  if IsProcessRunning(CODEBLOCKS_FILE_NAME) then
-  begin
-    DoErrorTerminate(ERR_CODEBLOCKS_RUNNING, 'Code::Blocks is running, can''t continue.');
-    Exit;
-  end;
-
   // Quick check parameters
   ErrorMsg := CheckOptions(
     'hni:c:m:o:b:se',
@@ -357,6 +343,28 @@ begin
   // Display parameters
   PrintParameters;
 
+  // Internal for DreamSDK Manager
+  if (CommandOperation = coInternalStatus) then
+  begin
+    DoPrintInternalStatus;
+    Terminate(ERR_SUCCESS);
+    Exit;
+  end;
+
+  // Check if the patch is already running
+  if InstanceRunning then
+  begin
+    DoErrorTerminate(ERR_PATCH_RUNNING, 'Patcher is already running, can''t continue.');
+    Exit;
+  end;
+
+  // Check if Code::Blocks is already running
+  if IsProcessRunning(CODEBLOCKS_FILE_NAME) then
+  begin
+    DoErrorTerminate(ERR_CODEBLOCKS_RUNNING, 'Code::Blocks is running, can''t continue.');
+    Exit;
+  end;
+
   // Check if the patch is already installed
   if (Patcher.Installed) and (CommandOperation = coInstall) then
   begin
@@ -403,9 +411,7 @@ begin
   else if (CommandOperation = coPrintCodeBlocksUsers) then
     DoPrintCodeBlocksConfigurationFiles
   else if (CommandOperation = coPrintStatus) then
-    DoPrintStatus
-  else if (CommandOperation = coInternalStatus) then
-    DoPrintInternalStatus; // Internal for DreamSDK Manager
+    DoPrintStatus;
 
   // stop program loop
   Terminate(fProgramExitCode);
@@ -470,7 +476,8 @@ begin
       CodeBlocksConfigurationFileNames.SetItems(TempParam, FILENAMES_SEPARATOR);
 
     // DreamSDK Home Directory
-    if GetParam([coInstall, coUninstall], 'm', 'home-dir', TempParam) then
+    if GetParam([coInstall, coUninstall, coReinstall,
+      coInternalStatus, coPrintStatus], 'm', 'home-dir', TempParam) then
       HomeDirectory := TempParam;
 
     Result := not fErrorTerminate;
