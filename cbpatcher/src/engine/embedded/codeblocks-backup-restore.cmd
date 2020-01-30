@@ -31,13 +31,15 @@ rem Files definition
 set CB_SHARE_DIR=share\CodeBlocks
 set CB_SHARE_PLUGINS_DIR=%CB_SHARE_DIR%\plugins
 set CB_SHARE_TEMPLATES_DIR=%CB_SHARE_DIR%\templates\wizard
+set CB_SHARE_IMAGES_DIR=%CB_SHARE_DIR%\images
 
 set CB_SDK_DLL_FILE=codeblocks.dll
 set CB_COMPILER_FRM_FILE=compiler.zip
 set CB_DEBUGGER_FRM_FILE=debugger.zip
 set CB_CONFIG_FILE=config.script
+set CB_SPLASH_FILE=splash_1312.png
 
-set BACKUP_FILE=backup.7z
+set BACKUP_FILE=codeblocks-17.12-backup.7z
 
 rem Common parameters
 set BACKUP_WORK_DIR=%CB_BACKUP_DIR%\~working
@@ -60,6 +62,7 @@ attrib +h "%BACKUP_WORK_DIR%"
 if not exist "%BACKUP_WORK_DIR%\%CB_SHARE_DIR%" mkdir "%BACKUP_WORK_DIR%\%CB_SHARE_DIR%"
 if not exist "%BACKUP_WORK_DIR%\%CB_SHARE_PLUGINS_DIR%" mkdir "%BACKUP_WORK_DIR%\%CB_SHARE_PLUGINS_DIR%"
 if not exist "%BACKUP_WORK_DIR%\%CB_SHARE_TEMPLATES_DIR%" mkdir "%BACKUP_WORK_DIR%\%CB_SHARE_TEMPLATES_DIR%"
+if not exist "%BACKUP_WORK_DIR%\%CB_SHARE_IMAGES_DIR%" mkdir "%BACKUP_WORK_DIR%\%CB_SHARE_IMAGES_DIR%"
 
 copy /Y /B "%CB_INSTALL_DIR%\*.exe" "%BACKUP_WORK_DIR%"
 if exist "%BACKUP_WORK_DIR%\uninstall.exe" del "%BACKUP_WORK_DIR%\uninstall.exe"
@@ -69,6 +72,7 @@ copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_DIR%\%CB_COMPILER_FRM_FILE%" "%BACKUP_WOR
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_DIR%\%CB_DEBUGGER_FRM_FILE%" "%BACKUP_WORK_DIR%\%CB_SHARE_DIR%"
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_PLUGINS_DIR%\*.dll" "%BACKUP_WORK_DIR%\%CB_SHARE_PLUGINS_DIR%"
 copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_TEMPLATES_DIR%\%CB_CONFIG_FILE%" "%BACKUP_WORK_DIR%\%CB_SHARE_TEMPLATES_DIR%"
+copy /Y /B "%CB_INSTALL_DIR%\%CB_SHARE_IMAGES_DIR%\%CB_SPLASH_FILE%" "%BACKUP_WORK_DIR%\%CB_SHARE_IMAGES_DIR%"
 
 rem Compressing the backup file
 cd /D %BACKUP_WORK_DIR%

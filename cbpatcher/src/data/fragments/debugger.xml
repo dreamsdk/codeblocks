@@ -46,7 +46,7 @@
 						</LOADER_EXECUTABLE_PATH>
 						<LOADER_ARGUMENTS>
 							<str>
-								<![CDATA[-g -x &quot;$(DEBUGGEE)&quot;]]>
+								<![CDATA[-g -x "${DEBUGGEE}"]]>
 							</str>
 						</LOADER_ARGUMENTS>
 						<LOADER_WAITING_TIME int="10" />

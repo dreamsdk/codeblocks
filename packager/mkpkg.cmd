@@ -26,6 +26,7 @@ set CB_OUTPUT_HOME=..\codeblocks\src\output\
 set PACKAGE_DIR=%BASE_DIR%\.package
 set CB_SHARE_DIR=%PACKAGE_DIR%\share\CodeBlocks
 set CB_SHARE_COMPILERS_DIR=%CB_SHARE_DIR%\compilers
+set CB_SHARE_IMAGES_DIR=%CB_SHARE_DIR%\images
 set CB_SHARE_PLUGINS_DIR=%CB_SHARE_DIR%\plugins
 set CB_SHARE_TMPL_DIR=%CB_SHARE_DIR%\templates\wizard
 set SEVENZIP="C:\Program Files\7-Zip\7z.exe"
@@ -36,6 +37,7 @@ attrib +h %PACKAGE_DIR%
 if not exist %PACKAGE_DIR%\share mkdir %PACKAGE_DIR%\share
 if not exist %CB_SHARE_DIR% mkdir %CB_SHARE_DIR%
 if not exist %CB_SHARE_COMPILERS_DIR% mkdir %CB_SHARE_COMPILERS_DIR%
+if not exist %CB_SHARE_IMAGES_DIR% mkdir %CB_SHARE_IMAGES_DIR%
 if not exist %CB_SHARE_PLUGINS_DIR% mkdir %CB_SHARE_PLUGINS_DIR%
 if not exist %CB_SHARE_DIR%\templates mkdir %CB_SHARE_DIR%\templates
 if not exist %CB_SHARE_TMPL_DIR% mkdir %CB_SHARE_TMPL_DIR%
@@ -74,6 +76,10 @@ if exist %LIBINFO_DIR% (
   rmdir /S %LIBINFO_DIR% /Q
   mkdir %LIBINFO_DIR%
 )
+
+rem Splash file
+set SPLASH_FILE=share\CodeBlocks\images\splash_1312.png
+copy %SPLASH_FILE% %CB_SHARE_IMAGES_DIR%
 
 :mkpack
 cd %PACKAGE_DIR%

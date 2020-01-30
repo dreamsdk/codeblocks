@@ -1,4 +1,5 @@
 object frmMain: TfrmMain
+  Cursor = crHourGlass
   Left = 1021
   Height = 70
   Top = 552
@@ -11,7 +12,7 @@ object frmMain: TfrmMain
   OnClose = FormClose
   PopupMode = pmAuto
   Position = poScreenCenter
-  LCLVersion = '2.0.0.4'
+  LCLVersion = '2.0.6.0'
   object pnlSplashBack: TPanel
     Left = 0
     Height = 70
