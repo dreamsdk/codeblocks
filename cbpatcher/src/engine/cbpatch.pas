@@ -47,8 +47,11 @@ type
   { TCodeBlocksPatcher }
   TCodeBlocksPatcher = class(TObject)
   private
+{$IFNDEF LITE_VERSION}
     fDesignFileNameDebugger: TFileName;
     fDesignFileNameGlobalVariables: TFileName;
+    fCodeBlocksPatchFileName: TFileName;
+{$ENDIF}
     fDesignFileNameTools: TFileName;
     fFragmentFileNameDebugger: TFileName;
     fFragmentFileNameGlobalVariables: TFileName;
@@ -62,7 +65,6 @@ type
     fProcessBegin: TNotifyEvent;
     fCodeBlocksBackupRestoreFileName: TFileName;
     fCodeBlocksSplashFileName: TFileName;
-    fCodeBlocksPatchFileName: TFileName;
     fCodeBlocksBackupDirectory: TFileName;
     fCodeBlocksConfigurationFileNames: TFileList;
     fCodeBlocksAvailableConfigurationFileNames: TFileList;
@@ -433,6 +435,7 @@ begin
 end;
 
 function TCodeBlocksPatcher.InstallCodeBlocksPatch: Boolean;
+{$IFNDEF LITE_VERSION}
 const
   COMPILER_FILE = 'share\CodeBlocks\compilers\compiler_dc-gcc.xml';
   OPTIONS_FILE = 'share\CodeBlocks\compilers\options_dc-gcc.xml';
@@ -445,6 +448,10 @@ begin
     DREAMSDK_HOME_VARIABLE, HomeDirectory);
   Result :=  Result and PatchTextFile(CodeBlocksInstallationDirectory + OPTIONS_FILE,
     DREAMSDK_HOME_VARIABLE, HomeDirectory);
+{$ELSE}
+begin
+  Result := False;
+{$ENDIF}
 end;
 
 procedure TCodeBlocksPatcher.InjectDebugger(SourceXML,
@@ -1235,6 +1242,7 @@ begin
 end;
 
 procedure TCodeBlocksPatcher.ExtractEmbeddedFiles;
+{$IFNDEF LITE_VERSION}
 const
   FILE_BACKUP_RESTORE = 'codeblocks-backup-restore.cmd';
   FILE_SPLASH = 'codeblocks-splash.exe';
@@ -1278,8 +1286,6 @@ var
   end;
 
 begin
-{$IFNDEF LITE_VERSION}
-
   // Code::Blocks Backup/Restore
   fCodeBlocksBackupRestoreFileName :=
     ExtractEmbeddedFileToWorkingPath(EMBEDDED_BACKUP_RESTORE, FILE_BACKUP_RESTORE);
@@ -1306,7 +1312,8 @@ begin
     InitializeDataFiles;
     KillFile(DataFileName);
   end;
-
+{$ELSE}
+begin
 {$ENDIF}
 end;
 
