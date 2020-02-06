@@ -14,15 +14,8 @@ uses
   DOM,
   XMLRead,
   XMLWrite,
-  FSTools;
-
-const
-  FILENAMES_SEPARATOR = ';';
-
-  DEFAULT_CODEBLOCKS_DIR_64 = '%ProgramFiles(x86)%\CodeBlocks';
-  DEFAULT_CODEBLOCKS_DIR_32 = '%ProgramFiles%\CodeBlocks';
-  DEFAULT_CODEBLOCKS_CONFIGURATION_FILE = '%sCodeBlocks\default.conf';
-  DEFAULT_CODEBLOCKS_BACKUP_DIR = '%s\support\ide\codeblocks\';
+  FSTools,
+  Settings;
 
 type
   ECodeBlocksPatcher = class(Exception);
@@ -39,6 +32,7 @@ type
     const Message: string) of object;
   TTaskEndEvent = procedure(Sender: TObject; const Message: string;
     const Success: Boolean) of object;
+  TErrorEvent = procedure(Sender: TObject; const ErrorMessage: string) of object;
 
   TCodeBlocksBackupRestoreOperation = (cbBackup, cbRestore);
   TCodeBlocksSplashOperation = (soInstall, soUninstall, soReinstall, soClose);
@@ -51,7 +45,10 @@ type
     fDesignFileNameDebugger: TFileName;
     fDesignFileNameGlobalVariables: TFileName;
     fCodeBlocksPatchFileName: TFileName;
+    fError: TErrorEvent;
 {$ENDIF}
+    fSettings: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
+    fSourceDirectory: TFileName;
     fDesignFileNameTools: TFileName;
     fFragmentFileNameDebugger: TFileName;
     fFragmentFileNameGlobalVariables: TFileName;
@@ -59,35 +56,20 @@ type
     fFragmentFileNameToolsSeparator: TFileName;
     fNodeValueDebugger: string;
     fNodeValueGlobalVariables: string;
-    fCodeBlocksAvailableUsers: TStringList;
-    fCodeBlocksInstalledUsers: TStringList;
     fExecuteResult: Boolean;
     fProcessBegin: TNotifyEvent;
     fCodeBlocksBackupRestoreFileName: TFileName;
     fCodeBlocksSplashFileName: TFileName;
-    fCodeBlocksBackupDirectory: TFileName;
-    fCodeBlocksConfigurationFileNames: TFileList;
-    fCodeBlocksAvailableConfigurationFileNames: TFileList;
-    fCodeBlocksInstallationDirectory: TFileName;
-    fHomeDirectoryForDreamSDK: TFileName;
     fProcessEnd: TTerminateEvent;
     fOperation: TCodeBlocksPatcherOperation;
-    fSourceDirectory: TFileName;
     fProcessTaskBegin: TTaskBeginEvent;
     fProcessTaskEnd: TTaskEndEvent;
     fVisibleSplash: Boolean;
     procedure ExtractEmbeddedFiles;
     procedure FixTools(const CodeBlocksConfigurationFileName: TFileName);
     procedure FixDebugger(const CodeBlocksConfigurationFileName: TFileName);
-    function GetCodeBlocksAvailableUsers: TStringList;
-    function GetCodeBlocksInstalledUsers: TStringList;
-    function GetConfigurationFileName: TFileName;
-    function GetInstalled: Boolean;
-    function GetRegisteredString(const Section, Key: string): string;
     function GetGlobalVariablesActiveSet(XMLDocument: TXMLDocument): string;
     function GetReady: Boolean;
-    function GetFriendlyUserName(const UserName: string): string;
-    procedure RetrieveRegisteredParameters;
     procedure InjectDebugger(SourceXML, TargetXML: TXMLDocument);
     procedure InjectGlobalVariables(SourceXML, TargetXML: TXMLDocument);
     procedure InjectTools(SourceXML, TargetXML: TXMLDocument);
@@ -95,9 +77,6 @@ type
     procedure RemoveGlobalVariables(XML: TXMLDocument);
     procedure RemoveTools(XML: TXMLDocument);
     function IsCodeBlocksPatchInstalled: Boolean;
-    procedure SetCodeBlocksBackupDirectory(AValue: TFileName);
-    procedure SetCodeBlocksInstallationDirectory(AValue: TFileName);
-    procedure SetHomeDirectory(AValue: TFileName);
     procedure SetOperation(AValue: TCodeBlocksPatcherOperation);
     procedure FixSection(const CodeBlocksConfigurationFileName: TFileName;
       const SectionName, ItemName, ItemFormat: string; const StartIndex: Integer);
@@ -112,13 +91,13 @@ type
 
     procedure ExecuteTask(const StepMessage: string; TaskFunction: TTaskProc);
 
-    function InstallCodeBlocksPatch: Boolean;
-    function PatchCodeBlocksConfiguration: Boolean;
-    function UpdateConfigurationInstall: Boolean;
+    function TaskInstallCodeBlocksPatch: Boolean;
+    function TaskPatchCodeBlocksConfiguration: Boolean;
+    function TaskUpdateConfigurationInstall: Boolean;
 
-    function UninstallCodeBlocksPatch: Boolean;
-    function CleanCodeBlocksConfiguration: Boolean;
-    function UpdateConfigurationUninstall: Boolean;
+    function TaskUninstallCodeBlocksPatch: Boolean;
+    function TaskCleanCodeBlocksConfiguration: Boolean;
+    function TaskUpdateConfigurationUninstall: Boolean;
 
     function PatcherOperationToSplashOperation: TCodeBlocksSplashOperation;
   protected
@@ -134,34 +113,14 @@ type
     function RunCodeBlocksSplash(
       const Operation: TCodeBlocksSplashOperation): Boolean;
 
+    procedure LogError(const Message: string);
+
     {$IFDEF DEBUG}procedure IterateNodes(Node: TDOMNode);{$ENDIF}
   public
     constructor Create;
     destructor Destroy; override;
 
     function Execute: Boolean;
-
-    // Code::Blocks Configuration Files (default.conf)
-    property CodeBlocksConfigurationFileNames: TFileList
-      read fCodeBlocksConfigurationFileNames;
-
-    // Code::Blocks Available Users
-    property CodeBlocksAvailableUsers: TStringList
-      read GetCodeBlocksAvailableUsers;
-
-    // Code::Blocks Installed Users (if any)
-    property CodeBlocksInstalledUsers: TStringList
-      read GetCodeBlocksInstalledUsers;
-
-    // Code::Blocks Installation Directory
-    property CodeBlocksInstallationDirectory: TFileName
-      read fCodeBlocksInstallationDirectory
-      write SetCodeBlocksInstallationDirectory;
-
-    // Backup Directory for Code::Blocks files (in DreamSDK tree)
-    property CodeBlocksBackupDirectory: TFileName
-      read fCodeBlocksBackupDirectory
-      write SetCodeBlocksBackupDirectory;
 
     // Is the Patcher ready to execute?
     property Ready: Boolean read GetReady;
@@ -175,19 +134,13 @@ type
       read fVisibleSplash
       write fVisibleSplash;
 
-    property Installed: Boolean
-      read GetInstalled;
-
-    // DreamSDK Home
-    property HomeDirectory: TFileName
-      read fHomeDirectoryForDreamSDK
-      write SetHomeDirectory;
-
-    // DreamSDK Configuration File
-    property ConfigurationFileName: TFileName
-      read GetConfigurationFileName;
+    property Settings: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings
+      read fSettings;
 
     // Events
+    property OnError: TErrorEvent
+      read fError
+      write fError;
     property OnProcessBegin: TNotifyEvent
       read fProcessBegin
       write fProcessBegin;
@@ -202,10 +155,11 @@ type
       write fProcessEnd;
   end;
 
+function SourceKindToString(const SourceKind: TSourceKind): string;
+
 implementation
 
 uses
-  IniFiles,
   SysTools,
   RefBase,
   Version,
@@ -214,96 +168,33 @@ uses
 
 const
   DREAMSDK_HOME_VARIABLE = '{app}';
-
-  INI_SECTION_IDE = 'IDE';
-  INI_SECTION_SETUP = 'Setup';
-
-  INI_KEY_IDE_KIND = 'Kind';
-  INI_KEY_EXPORT_LIBRARY_INFORMATION_ENABLED = 'ExportLibraryInformation';
-  INI_KEY_EXPORT_LIBRARY_INFORMATION_PATH = 'ExportLibraryInformationPath';
-  INI_KEY_CONFIGURATION_FILENAMES = 'ConfigurationFileNames';
-  INI_KEY_INSTALLATION_PATH = 'InstallationPath';
-  INI_KEY_BACKUP_PATH = 'BackupPath';
-
   SEPARATOR_NAME = '---separator---';
 
-constructor TCodeBlocksPatcher.Create;
-
-  // Define this to debug this procedure
-  // {$DEFINE DEBUG_INITIALIZE_DEFAULTS}
-  procedure InitializeDefaults;
-  var
-    UsersAppData: TStringList;
-    i: Integer;
-    CodeBlocksConfigurationFileName: TFileName;
-
-  begin
-    // Code::Blocks Installation Directory
-    CodeBlocksInstallationDirectory := DEFAULT_CODEBLOCKS_DIR_32;
-    if IsWindows64 then
-      CodeBlocksInstallationDirectory := DEFAULT_CODEBLOCKS_DIR_64;
-
-    // Code::Blocks Configuration Files
-    UsersAppData := TStringList.Create;
-    try
-      GetAppDataListFromUsers(UsersAppData);
-
-      for i := 0 to UsersAppData.Count - 1 do
-      begin
-        CodeBlocksConfigurationFileName := Format(
-          DEFAULT_CODEBLOCKS_CONFIGURATION_FILE,
-          [ IncludeTrailingPathDelimiter(UsersAppData[i]) ]
-        );
-  {$IFDEF DEBUG}
-  {$IFDEF DEBUG_INITIALIZE_DEFAULTS}
-        Write(CodeBlocksConfigurationFileName, ' ... ');
-  {$ENDIF}
-  {$ENDIF}
-        if FileExists(CodeBlocksConfigurationFileName) then
-        begin
-  {$IFDEF DEBUG}
-  {$IFDEF DEBUG_INITIALIZE_DEFAULTS}
-          WriteLn('exist!');
-  {$ENDIF}
-  {$ENDIF}
-          CodeBlocksConfigurationFileNames.Add(CodeBlocksConfigurationFileName);
-          fCodeBlocksAvailableConfigurationFileNames.Add(CodeBlocksConfigurationFileName);
-        end
-  {$IFDEF DEBUG}
-  {$IFDEF DEBUG_INITIALIZE_DEFAULTS}
-        else
-          WriteLn('doesn''t exist!')
-  {$ENDIF}
-  {$ENDIF};
-      end;
-    finally
-      UsersAppData.Free;
-    end;
-
-    // Home Directory
-    HomeDirectory := GetInstallationBaseDirectory;
-
-    // Code::Blocks Backup Directory
-    CodeBlocksBackupDirectory := Format(DEFAULT_CODEBLOCKS_BACKUP_DIR,
-      [HomeDirectory]);
-  end;
-
+function SourceKindToString(const SourceKind: TSourceKind): string;
 begin
-  fCodeBlocksConfigurationFileNames := TFileList.Create;
-  fCodeBlocksAvailableConfigurationFileNames := TFileList.Create;
-  fCodeBlocksAvailableUsers := TStringList.Create;
-  fCodeBlocksInstalledUsers := TStringList.Create;
+  Result := EmptyStr;
+  case SourceKind of
+    skDebugger:
+      Result := 'Debugger';
+    skGlobalVariables:
+      Result := 'Global Variables';
+    skTools:
+      Result := 'Tools';
+  end;
+end;
+
+constructor TCodeBlocksPatcher.Create;
+begin
+  // Initializing settings
+  fSettings := TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings.Create;
+
   fOperation := pmUndefined;
-  InitializeDefaults;
   ExtractEmbeddedFiles;
 end;
 
 destructor TCodeBlocksPatcher.Destroy;
 begin
-  fCodeBlocksAvailableConfigurationFileNames.Free;
-  fCodeBlocksInstalledUsers.Free;
-  fCodeBlocksAvailableUsers.Free;
-  fCodeBlocksConfigurationFileNames.Free;
+  fSettings.Free;
 {$IFNDEF LITE_VERSION}
   Sleep(500);
   KillProcessByName(fCodeBlocksSplashFileName);
@@ -427,14 +318,14 @@ begin
   try
     Buffer.LoadFromFile(CodeBlocksConfigurationFileName);
     Buffer.Text := StringReplace(Buffer.Text, DREAMSDK_HOME_VARIABLE,
-      HomeDirectory, [rfReplaceAll]);
+      Settings.HomeDirectory, [rfReplaceAll]);
     Buffer.SaveToFile(CodeBlocksConfigurationFileName);
   finally
     Buffer.Free;
   end;
 end;
 
-function TCodeBlocksPatcher.InstallCodeBlocksPatch: Boolean;
+function TCodeBlocksPatcher.TaskInstallCodeBlocksPatch: Boolean;
 {$IFNDEF LITE_VERSION}
 const
   COMPILER_FILE = 'share\CodeBlocks\compilers\compiler_dc-gcc.xml';
@@ -443,11 +334,13 @@ const
 begin
   Result := BackupFiles;
   Result := Result and UncompressLzmaFile(fCodeBlocksPatchFileName,
-    CodeBlocksInstallationDirectory);
-  Result := Result and PatchTextFile(CodeBlocksInstallationDirectory + COMPILER_FILE,
-    DREAMSDK_HOME_VARIABLE, HomeDirectory);
-  Result :=  Result and PatchTextFile(CodeBlocksInstallationDirectory + OPTIONS_FILE,
-    DREAMSDK_HOME_VARIABLE, HomeDirectory);
+    Settings.InstallationDirectory);
+  Result := Result and PatchTextFile(Settings.InstallationDirectory
+    + COMPILER_FILE,
+    DREAMSDK_HOME_VARIABLE, Settings.HomeDirectory);
+  Result :=  Result and PatchTextFile(Settings.InstallationDirectory
+    + OPTIONS_FILE,
+    DREAMSDK_HOME_VARIABLE, Settings.HomeDirectory);
 {$ELSE}
 begin
   Result := False;
@@ -655,29 +548,7 @@ end;
 
 function TCodeBlocksPatcher.IsCodeBlocksPatchInstalled: Boolean;
 begin
-  Result := SameText(GetRegisteredString(INI_SECTION_IDE, INI_KEY_IDE_KIND), '1');
-end;
-
-procedure TCodeBlocksPatcher.SetCodeBlocksBackupDirectory(AValue: TFileName);
-begin
-  if fCodeBlocksBackupDirectory <> AValue then
-    fCodeBlocksBackupDirectory := IncludeTrailingPathDelimiter(
-      ParseInputFileSystemObject(AValue))
-end;
-
-procedure TCodeBlocksPatcher.SetCodeBlocksInstallationDirectory(
-  AValue: TFileName);
-begin
-  if fCodeBlocksInstallationDirectory <> AValue then
-    fCodeBlocksInstallationDirectory := IncludeTrailingPathDelimiter(
-      ParseInputFileSystemObject(AValue));
-end;
-
-procedure TCodeBlocksPatcher.SetHomeDirectory(AValue: TFileName);
-begin
-  if fHomeDirectoryForDreamSDK <> AValue then
-    fHomeDirectoryForDreamSDK := ExcludeTrailingPathDelimiter(
-      ParseInputFileSystemObject(AValue));
+  Result := Settings.Installed;
 end;
 
 procedure TCodeBlocksPatcher.SetOperation(AValue: TCodeBlocksPatcherOperation);
@@ -689,7 +560,7 @@ begin
     // When uninstalling, override supplied parameters with the proper one from
     // the DreamSDK configuration (if possible)
     if (Operation <> pmInstall) then
-      RetrieveRegisteredParameters;
+      Settings.LoadConfiguration;
   end;
 end;
 
@@ -709,16 +580,16 @@ end;
 
 procedure TCodeBlocksPatcher.DoPatchInstall;
 begin
-  ExecuteTask('Patching Code::Blocks installation directory', @InstallCodeBlocksPatch);
-  ExecuteTask('Patching Code::Blocks configuration file', @PatchCodeBlocksConfiguration);
-  ExecuteTask('Updating the DreamSDK configuration file', @UpdateConfigurationInstall);
+  ExecuteTask('Patching Code::Blocks installation directory', @TaskInstallCodeBlocksPatch);
+  ExecuteTask('Patching Code::Blocks configuration file', @TaskPatchCodeBlocksConfiguration);
+  ExecuteTask('Updating the DreamSDK configuration file', @TaskUpdateConfigurationInstall);
 end;
 
 procedure TCodeBlocksPatcher.DoPatchUninstall;
 begin
-  ExecuteTask('Restoring Code::Blocks installation directory', @UninstallCodeBlocksPatch);
-  ExecuteTask('Cleaning up Code::Blocks configuration file', @CleanCodeBlocksConfiguration);
-  ExecuteTask('Updating the DreamSDK configuration file', @UpdateConfigurationUninstall);
+  ExecuteTask('Restoring Code::Blocks installation directory', @TaskUninstallCodeBlocksPatch);
+  ExecuteTask('Cleaning up Code::Blocks configuration file', @TaskCleanCodeBlocksConfiguration);
+  ExecuteTask('Updating the DreamSDK configuration file', @TaskUpdateConfigurationUninstall);
 end;
 
 procedure TCodeBlocksPatcher.FixTools(
@@ -848,76 +719,6 @@ begin
   FixSection(CodeBlocksConfigurationFileName, 'gdb_debugger', 'conf', '%d', 1);
 end;
 
-function TCodeBlocksPatcher.GetCodeBlocksAvailableUsers: TStringList;
-var
-  i: Integer;
-  UsersDirectory: TFileName;
-  CurrentUserName: string;
-
-begin
-  fCodeBlocksAvailableUsers.Clear;
-  UsersDirectory := GetUsersDirectory;
-  for i := 0 to fCodeBlocksAvailableConfigurationFileNames.Count - 1 do
-  begin
-    CurrentUserName := ExtractStr(UsersDirectory, DirectorySeparator,
-      fCodeBlocksAvailableConfigurationFileNames[i]);
-    fCodeBlocksAvailableUsers.Add(GetFriendlyUserName(CurrentUserName));
-  end;
-  Result := fCodeBlocksAvailableUsers;
-end;
-
-function TCodeBlocksPatcher.GetCodeBlocksInstalledUsers: TStringList;
-var
-  i: Integer;
-  UserName: string;
-
-begin
-  fCodeBlocksInstalledUsers.Clear;
-  if Installed then
-    for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
-    begin
-      UserName := GetUserFromAppDataDirectory(CodeBlocksConfigurationFileNames[i]);
-      if not IsEmpty(UserName) then
-        UserName := GetFriendlyUserName(UserName)
-      else
-        UserName := Format('<%s>', [ExtractFileName(CodeBlocksConfigurationFileNames[i])]);
-      fCodeBlocksInstalledUsers.Add(UserName);
-    end;
-  Result := fCodeBlocksInstalledUsers;
-end;
-
-function TCodeBlocksPatcher.GetConfigurationFileName: TFileName;
-const
-  IDE_CONFIGURATION_FILE = 'msys\1.0\etc\dreamsdk\ide.conf';
-begin
-  Result := IncludeTrailingPathDelimiter(HomeDirectory)
-    + IDE_CONFIGURATION_FILE;
-end;
-
-function TCodeBlocksPatcher.GetInstalled: Boolean;
-begin
-  Result := IsCodeBlocksPatchInstalled;
-  if Result then
-    RetrieveRegisteredParameters;
-end;
-
-function TCodeBlocksPatcher.GetRegisteredString(const Section, Key: string): string;
-var
-  IniFile: TIniFile;
-
-begin
-  Result := EmptyStr;
-  if FileExists(ConfigurationFileName) then
-  begin
-    IniFile := TIniFile.Create(ConfigurationFileName);
-    try
-      Result := IniFile.ReadString(Section, Key, EmptyStr);
-    finally
-      IniFile.Free;
-    end;
-  end;
-end;
-
 function TCodeBlocksPatcher.GetGlobalVariablesActiveSet(
   XMLDocument: TXMLDocument): string;
 var
@@ -936,51 +737,16 @@ var
 
 begin
   Result := DirectoryExists(GetWorkingPath)
-    and DirectoryExists(HomeDirectory)
-    and DirectoryExists(CodeBlocksInstallationDirectory);
+    and DirectoryExists(Settings.HomeDirectory)
+    and DirectoryExists(Settings.InstallationDirectory);
 
-  for CodeBlocksConfigurationIndex := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
-    Result := Result and FileExists(CodeBlocksConfigurationFileNames[CodeBlocksConfigurationIndex]);
+  for CodeBlocksConfigurationIndex := 0 to
+    Settings.ConfigurationFileNames.Count - 1 do
+      Result := Result and FileExists(
+        Settings.ConfigurationFileNames[CodeBlocksConfigurationIndex]);
 
   if (Operation = pmUninstall) then
     Result := Result and IsCodeBlocksPatchInstalled;
-end;
-
-function TCodeBlocksPatcher.GetFriendlyUserName(const UserName: string): string;
-var
-  CurrentUserFullName: string;
-
-begin
-  Result := UserName;
-  CurrentUserFullName := GetUserFullNameFromUserName(UserName);
-  if not IsEmpty(CurrentUserFullName) then
-    Result := Format('%s (%s)', [CurrentUserFullName, UserName]);
-end;
-
-procedure TCodeBlocksPatcher.RetrieveRegisteredParameters;
-
-  function GetRegisteredCodeBlocksInstallationDirectory: TFileName;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH);
-  end;
-
-  function GetRegisteredCodeBlocksBackupDirectory: TFileName;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH);
-  end;
-
-  function GetRegisteredCodeBlocksConfigurationFileNames: string;
-  begin
-    Result := GetRegisteredString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES);
-  end;
-
-begin
-  CodeBlocksInstallationDirectory :=
-    GetRegisteredCodeBlocksInstallationDirectory;
-  CodeBlocksBackupDirectory :=
-    GetRegisteredCodeBlocksBackupDirectory;
-  CodeBlocksConfigurationFileNames.SetItems(
-    GetRegisteredCodeBlocksConfigurationFileNames, FILENAMES_SEPARATOR);
 end;
 
 function TCodeBlocksPatcher.Merge(
@@ -1095,65 +861,14 @@ end;
 
 function TCodeBlocksPatcher.UpdateConfiguration(
   const Operation: TCodeBlocksPatcherOperation): Boolean;
-const
-  IDE_EXPORT_LIB_INFO_DIR = 'share\CodeBlocks\templates\wizard\dc\libinfo\';
-
-var
-  ExportLibraryInformationPath,
-  InstallationPath,
-  BackupPath: TFileName;
-  IniFile: TIniFile;
-  Kind: Integer;
-  ExportLibraryInformation: Boolean;
-
 begin
   case Operation of
-
     pmInstall:
-      begin
-        Kind := 1; // Code::Blocks
-        ExportLibraryInformation := True;
-        ExportLibraryInformationPath := CodeBlocksInstallationDirectory
-          + IDE_EXPORT_LIB_INFO_DIR;
-        InstallationPath := CodeBlocksInstallationDirectory;
-        BackupPath := CodeBlocksBackupDirectory;
-
-        if not DirectoryExists(ExportLibraryInformationPath) then
-          ForceDirectories(ExportLibraryInformationPath);
-
-        SetDirectoryRights(ExportLibraryInformationPath, GetEveryoneName,
-          ACL_RIGHT_FULL);
-      end;
-
+      Settings.SaveInstall;
     pmUninstall:
-      begin
-        Kind := 0; // None
-        ExportLibraryInformation := False;
-        ExportLibraryInformationPath := EmptyStr;
-        InstallationPath := EmptyStr;
-        BackupPath := EmptyStr;
-      end;
-
+      Settings.SaveUninstall;
   end;
-
-  IniFile := TIniFile.Create(ConfigurationFileName);
-  try
-    IniFile.WriteInteger(INI_SECTION_IDE, INI_KEY_IDE_KIND, Kind);
-    IniFile.WriteBool(INI_SECTION_IDE,
-      INI_KEY_EXPORT_LIBRARY_INFORMATION_ENABLED, ExportLibraryInformation);
-    IniFile.WriteString(INI_SECTION_IDE,
-      INI_KEY_EXPORT_LIBRARY_INFORMATION_PATH, ExportLibraryInformationPath);
-
-    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_INSTALLATION_PATH,
-      InstallationPath);
-    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_BACKUP_PATH, BackupPath);
-    IniFile.WriteString(INI_SECTION_SETUP, INI_KEY_CONFIGURATION_FILENAMES,
-      CodeBlocksConfigurationFileNames.GetItems(FILENAMES_SEPARATOR));
-  finally
-    IniFile.Free;
-  end;
-
-  Result := FileExists(ConfigurationFileName);
+  Result := FileExists(Settings.RegistryFileName);
 end;
 
 procedure TCodeBlocksPatcher.ExecuteTask(const StepMessage: string;
@@ -1175,7 +890,7 @@ end;
 
 function TCodeBlocksPatcher.BackupFiles: Boolean;
 begin
-  Result := ForceDirectories(CodeBlocksBackupDirectory);
+  Result := ForceDirectories(Settings.BackupDirectory);
   Result := Result and RunCodeBlocksBackupRestore(cbBackup);
 end;
 
@@ -1183,7 +898,7 @@ function TCodeBlocksPatcher.RunCodeBlocksBackupRestore(
   const Operation: TCodeBlocksBackupRestoreOperation): Boolean;
 var
   Switch,
-  Buffer: String;
+  Buffer: string;
 
 begin
   Switch := '/B';
@@ -1193,11 +908,18 @@ begin
   Buffer := Run(Format('"%s" %s "%s" "%s"', [
     fCodeBlocksBackupRestoreFileName,
     Switch,
-    ExcludeTrailingPathDelimiter(CodeBlocksInstallationDirectory),
-    ExcludeTrailingPathDelimiter(CodeBlocksBackupDirectory)
+    ExcludeTrailingPathDelimiter(Settings.InstallationDirectory),
+    ExcludeTrailingPathDelimiter(Settings.BackupDirectory)
   ]));
 
+{$IFDEF DEBUG}
+  DebugLog('RunCodeBlocksBackupRestore: ' + Buffer);
+{$ENDIF}
+
   Result := (Pos('done!', LowerCase(Buffer)) > 0);
+
+  if not Result then
+    LogError(Buffer);
 end;
 
 function TCodeBlocksPatcher.RunCodeBlocksSplash(
@@ -1239,6 +961,12 @@ begin
 {$IFDEF DEBUG}
   DebugLog('  ' + BoolToStr(Result));
 {$ENDIF}
+end;
+
+procedure TCodeBlocksPatcher.LogError(const Message: string);
+begin
+  if Assigned(fError) then
+    fError(Self, Message);
 end;
 
 procedure TCodeBlocksPatcher.ExtractEmbeddedFiles;
@@ -1322,51 +1050,75 @@ begin
   Result := fSourceDirectory + 'package' + DirectorySeparator;
 end;
 
-function TCodeBlocksPatcher.PatchCodeBlocksConfiguration: Boolean;
+function TCodeBlocksPatcher.TaskPatchCodeBlocksConfiguration: Boolean;
+const
+  LOCAL_ERROR_MESSAGE = 'Unable to merge the source section "%s" in the file "%s"!';
+
 var
   i: Integer;
   CodeBlocksConfigurationFileName: TFileName;
 
+  procedure ProcessConfiguration(SourceKind: TSourceKind);
+  begin
+    Result := Result and Merge(CodeBlocksConfigurationFileName, SourceKind);
+    if not Result then
+      LogError(Format(LOCAL_ERROR_MESSAGE, [SourceKindToString(SourceKind),
+        CodeBlocksConfigurationFileName]));
+  end;
+
 begin
   Result := True;
-  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+  for i := 0 to Settings.ConfigurationFileNames.Count - 1 do
   begin
-    CodeBlocksConfigurationFileName := CodeBlocksConfigurationFileNames[i];
-    Result := Result and Merge(CodeBlocksConfigurationFileName, skDebugger);
-    Result := Result and Merge(CodeBlocksConfigurationFileName, skGlobalVariables);
-    Result := Result and Merge(CodeBlocksConfigurationFileName, skTools);
+    CodeBlocksConfigurationFileName := Settings.ConfigurationFileNames[i];
+    ProcessConfiguration(skDebugger);
+    ProcessConfiguration(skGlobalVariables);
+    ProcessConfiguration(skTools);
   end;
 end;
 
-function TCodeBlocksPatcher.UpdateConfigurationInstall: Boolean;
+function TCodeBlocksPatcher.TaskUpdateConfigurationInstall: Boolean;
 begin
   Result := UpdateConfiguration(pmInstall);
 end;
 
-function TCodeBlocksPatcher.UninstallCodeBlocksPatch: Boolean;
+function TCodeBlocksPatcher.TaskUninstallCodeBlocksPatch: Boolean;
 begin
   Result := False;
-  if DirectoryExists(CodeBlocksBackupDirectory) then
-    Result := RunCodeBlocksBackupRestore(cbRestore);
+  if DirectoryExists(Settings.BackupDirectory) then
+    Result := RunCodeBlocksBackupRestore(cbRestore)
+  else
+    LogError('Backup directory doesn''t exists!');
 end;
 
-function TCodeBlocksPatcher.CleanCodeBlocksConfiguration: Boolean;
+function TCodeBlocksPatcher.TaskCleanCodeBlocksConfiguration: Boolean;
+const
+  LOCAL_ERROR_MESSAGE = 'Unable to remove the section "%s" in the file "%s"!';
+
 var
   i: Integer;
   CodeBlocksConfigurationFileName: TFileName;
 
+  procedure ProcessConfiguration(SourceKind: TSourceKind);
+  begin
+    Result := Result and Cleanup(CodeBlocksConfigurationFileName, SourceKind);
+    if not Result then
+      LogError(Format(LOCAL_ERROR_MESSAGE, [SourceKindToString(SourceKind),
+        CodeBlocksConfigurationFileName]));
+  end;
+
 begin
   Result := True;
-  for i := 0 to CodeBlocksConfigurationFileNames.Count - 1 do
+  for i := 0 to Settings.ConfigurationFileNames.Count - 1 do
   begin
-    CodeBlocksConfigurationFileName := CodeBlocksConfigurationFileNames[i];
-    Result := Result and Cleanup(CodeBlocksConfigurationFileName, skDebugger);
-    Result := Result and Cleanup(CodeBlocksConfigurationFileName, skGlobalVariables);
-    Result := Result and Cleanup(CodeBlocksConfigurationFileName, skTools);
+    CodeBlocksConfigurationFileName := Settings.ConfigurationFileNames[i];
+    ProcessConfiguration(skDebugger);
+    ProcessConfiguration(skGlobalVariables);
+    ProcessConfiguration(skTools);
   end;
 end;
 
-function TCodeBlocksPatcher.UpdateConfigurationUninstall: Boolean;
+function TCodeBlocksPatcher.TaskUpdateConfigurationUninstall: Boolean;
 begin
   Result := UpdateConfiguration(pmUninstall);
 end;

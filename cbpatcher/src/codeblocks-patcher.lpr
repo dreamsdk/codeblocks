@@ -15,7 +15,8 @@ uses
   Version,
   SysTools,
   CBPatch,
-  XmlTools;
+  XmlTools,
+  Settings;
 
 const
   ERR_SUCCESS = 0;
@@ -33,12 +34,13 @@ const
 
 type
   TCodeBlocksPatcherCommandOperation = (coUnknown, coInstall, coUninstall,
-    coPrintCodeBlocksUsers, coPrintStatus, coReinstall, coInternalStatus);
+    coPrintCodeBlocksUsers, coPrintStatus, coReinstall);
   TCodeBlocksPatcherOperationSet = set of TCodeBlocksPatcherCommandOperation;
 
   { TCodeBlocksPatcherApplication }
   TCodeBlocksPatcherApplication = class(TCustomApplication)
   private
+    fErrorMessages: TStringList;
     fVerbose: Boolean;
     fProgramExitCode: Integer;
     fErrorTerminate: Boolean;
@@ -50,6 +52,7 @@ type
       TCodeBlocksPatcherOperation;
     procedure WriteHeader;
     procedure PrintParameters;
+    procedure OnPatcherError(Sender: TObject; const ErrorMessage: string);
     procedure OnPatcherProcessBegin(Sender: TObject);
     procedure OnPatcherProcessTaskBegin(Sender: TObject; const Message: string);
     procedure OnPatcherProcessTaskEnd(Sender: TObject; const Message: string;
@@ -145,19 +148,25 @@ begin
   if fVerbose then
   begin
     WriteLn('Parameters:');
-    with Patcher do
+    with Patcher.Settings do
     begin
-      PrintParam('Code::Blocks Installation Directory', CodeBlocksInstallationDirectory);
-      PrintParam('Code::Blocks Backup Directory', CodeBlocksBackupDirectory);
+      PrintParam('Code::Blocks Installation Directory', InstallationDirectory);
+      PrintParam('Code::Blocks Backup Directory', BackupDirectory);
       PrintParam('Code::Blocks Users List',
-        UsersFromFileListToScreen(CodeBlocksInstalledUsers), False);
+        UsersFromFileListToScreen(InstalledUsers), False);
       PrintParam('Code::Blocks Configuration Files',
-        FileListToScreen(CodeBlocksConfigurationFileNames), False);
+        FileListToScreen(ConfigurationFileNames), False);
       PrintParam('DreamSDK Home Directory', IncludeTrailingPathDelimiter(HomeDirectory));
-      PrintParam('DreamSDK Registry File', ConfigurationFileName);
+      PrintParam('DreamSDK Registry File', RegistryFileName);
     end;
     WriteLn;
   end;
+end;
+
+procedure TCodeBlocksPatcherApplication.OnPatcherError(Sender: TObject;
+  const ErrorMessage: string);
+begin
+  fErrorMessages.Add(ErrorMessage);
 end;
 
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessBegin(Sender: TObject);
@@ -168,13 +177,25 @@ end;
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessTaskBegin(Sender: TObject;
   const Message: string);
 begin
+  fErrorMessages.Clear;
   Write(Message, '... ');
 end;
 
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessTaskEnd(Sender: TObject;
   const Message: string; const Success: Boolean);
+var
+  i: Integer;
+  Line: string;
+
 begin
   WriteBool(Success);
+  if fErrorMessages.Count > 0 then
+    for i := 0 to fErrorMessages.Count - 1 do
+    begin
+      Line := Trim(fErrorMessages[i]);
+      if not IsEmpty(Line) then
+        WriteLn('  * ', Line);
+    end;
 end;
 
 procedure TCodeBlocksPatcherApplication.OnPatcherProcessEnd(
@@ -242,9 +263,7 @@ begin
   else if (Buffer = 'PRINT-STATUS') or (Buffer = 'STATUS') or (Buffer = 'S') then
     Result := coPrintStatus
   else if (Buffer = 'REINSTALL') or (Buffer = 'R') then
-    Result := coReinstall
-  else if (Buffer = 'INTERNAL-STATUS') then
-    Result := coInternalStatus; // Internal for DreamSDK Manager
+    Result := coReinstall;
 
   if Result <> coUnknown then
     fCommandOperationText := LowerCase(OperationValue);
@@ -263,30 +282,16 @@ var
 
   begin
     WriteLn('Code::Blocks Available User Profiles:');
-    for i := 0 to Patcher.CodeBlocksAvailableUsers.Count - 1 do
-      WriteLn('  * ', Patcher.CodeBlocksAvailableUsers[i]);
+    for i := 0 to Patcher.Settings.AvailableUsers.Count - 1 do
+      WriteLn('  * ', Patcher.Settings.AvailableUsers[i]);
   end;
 
   procedure DoPrintStatus;
   begin
-    if Patcher.Installed then
+    if Patcher.Settings.Installed then
       WriteLn('Patch is currently installed')
     else
       WriteLn('Patch is NOT currently installed');
-  end;
-
-  procedure DoPrintInternalStatus;
-  begin
-    with Patcher do
-    begin
-      WriteLn(
-        'IsPatchInstalled=', Installed, sLineBreak,
-        'AvailableUsers=', StringListToString(CodeBlocksAvailableUsers, FILENAMES_SEPARATOR), sLineBreak,
-        'InstallationDirectory=', CodeBlocksInstallationDirectory, sLineBreak,
-        'ConfigurationFileNames=', CodeBlocksConfigurationFileNames.GetItems(FILENAMES_SEPARATOR), sLineBreak,
-        'InstalledUsers=', StringListToString(CodeBlocksInstalledUsers, FILENAMES_SEPARATOR)
-      );
-    end;
   end;
 
 begin
@@ -343,14 +348,6 @@ begin
   // Display parameters
   PrintParameters;
 
-  // Internal for DreamSDK Manager
-  if (CommandOperation = coInternalStatus) then
-  begin
-    DoPrintInternalStatus;
-    Terminate(ERR_SUCCESS);
-    Exit;
-  end;
-
   // Check if the patch is already running
   if InstanceRunning then
   begin
@@ -366,7 +363,7 @@ begin
   end;
 
   // Check if the patch is already installed
-  if (Patcher.Installed) and (CommandOperation = coInstall) then
+  if (Patcher.Settings.Installed) and (CommandOperation = coInstall) then
   begin
     DoErrorTerminate(ERR_PATCH_ALREADY_INSTALLED,
       'Patch is already installed.');
@@ -374,7 +371,7 @@ begin
   end;
 
   // Check if the patch is already uninstalled
-  if (not Patcher.Installed) and (CommandOperation = coUninstall) then
+  if (not Patcher.Settings.Installed) and (CommandOperation = coUninstall) then
   begin
     DoErrorTerminate(ERR_PATCH_NOT_UNINSTALLABLE,
       'Patch is not installed, nothing to uninstall.');
@@ -382,7 +379,7 @@ begin
   end;
 
   // Check if the patch cannot be reinstalled
-  if (not Patcher.Installed) and (CommandOperation = coReinstall) then
+  if (not Patcher.Settings.Installed) and (CommandOperation = coReinstall) then
   begin
     DoErrorTerminate(ERR_PATCH_NOT_REINSTALLABLE,
       'Patch is not installed, nothing to reinstall.');
@@ -400,6 +397,7 @@ begin
   Patcher.VisibleSplash := HasOption('s', 'show-splash');
 
   // Events
+  Patcher.OnError := @OnPatcherError;
   Patcher.OnProcessBegin := @OnPatcherProcessBegin;
   Patcher.OnProcessTaskBegin := @OnPatcherProcessTaskBegin;
   Patcher.OnProcessTaskEnd := @OnPatcherProcessTaskEnd;
@@ -461,24 +459,24 @@ var
 begin
   Result := True;
   TempParam := EmptyStr;
-  with Patcher do
+  with Patcher.Settings do
   begin
     // Code::Blocks Installation Directory
     if GetParam([coInstall], 'i', 'install-dir', TempParam) then
-      CodeBlocksInstallationDirectory := TempParam;
+      InstallationDirectory := TempParam;
 
     // Code::Blocks Backup Directory
     if GetParam([coInstall], 'b', 'backup-dir', TempParam) then
-      CodeBlocksBackupDirectory := TempParam;
+      BackupDirectory := TempParam;
 
     // Code::Blocks Configuration File Names
     if GetParam([coInstall], 'c', 'config-files', TempParam) then
-      CodeBlocksConfigurationFileNames.SetItems(TempParam, FILENAMES_SEPARATOR);
+      ConfigurationFileNames.SetItems(TempParam, ArraySeparator);
 
     // DreamSDK Home Directory
-    if GetParam([coInstall, coUninstall, coReinstall,
-      coInternalStatus, coPrintStatus], 'm', 'home-dir', TempParam) then
-      HomeDirectory := TempParam;
+    if GetParam([coInstall, coUninstall, coReinstall, coPrintStatus],
+      'm', 'home-dir', TempParam) then
+        HomeDirectory := TempParam;
 
     Result := not fErrorTerminate;
   end;
@@ -489,12 +487,14 @@ begin
   inherited Create(AOwner);
   StopOnException := True;
   fCodeBlocksPatcher := TCodeBlocksPatcher.Create;
+  fErrorMessages := TStringList.Create;
   ProgramName := GetProgramName;
   fErrorTerminate := False;
 end;
 
 destructor TCodeBlocksPatcherApplication.Destroy;
 begin
+  fErrorMessages.Free;
   fCodeBlocksPatcher.Free;
   inherited Destroy;
 end;
@@ -504,8 +504,7 @@ var
   DefaultBackupDirectory: TFileName;
 
 begin
-  DefaultBackupDirectory := Format(DEFAULT_CODEBLOCKS_BACKUP_DIR, [
-    '%' + GetBaseEnvironmentVariableName + '%']);
+  DefaultBackupDirectory := GetDefaultCodeBlocksBackupDirectory;
 
   WriteLn('Usage:', sLineBreak,
     '  ', ProgramName, ' --operation=<install, uninstall, ...> [options]', sLineBreak,
@@ -587,7 +586,7 @@ var
 begin
   Application := TCodeBlocksPatcherApplication.Create(nil);
   try
-  Application.Title:='Code::Blocks Patcher';
+    Application.Title := 'Code::Blocks Patcher';
     Application.Run;
   finally
     Application.Free;
