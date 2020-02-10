@@ -31,10 +31,12 @@ const
   ERR_PATCH_NOT_REINSTALLABLE = 9;
   ERR_PATCH_RUNNING = 10;
   ERR_CODEBLOCKS_RUNNING = 11;
+  ERR_INVALID_CONFIGURATION_FILE_NAMES = 12;
+  ERR_REGISTRY_NOT_REFRESHED = 13;
 
 type
   TCodeBlocksPatcherCommandOperation = (coUnknown, coInstall, coUninstall,
-    coPrintCodeBlocksUsers, coPrintStatus, coReinstall);
+    coPrintCodeBlocksUsers, coPrintStatus, coReinstall, coInternalRefresh);
   TCodeBlocksPatcherOperationSet = set of TCodeBlocksPatcherCommandOperation;
 
   { TCodeBlocksPatcherApplication }
@@ -151,13 +153,14 @@ begin
     with Patcher.Settings do
     begin
       PrintParam('Code::Blocks Installation Directory', InstallationDirectory);
-      PrintParam('Code::Blocks Backup Directory', BackupDirectory);
-      PrintParam('Code::Blocks Users List',
-        UsersFromFileListToScreen(InstalledUsers), False);
       PrintParam('Code::Blocks Configuration Files',
         FileListToScreen(ConfigurationFileNames), False);
       PrintParam('DreamSDK Home Directory', IncludeTrailingPathDelimiter(HomeDirectory));
+      PrintParam('Code::Blocks Backup Directory', BackupDirectory);
       PrintParam('DreamSDK Registry File', RegistryFileName);
+      if Installed and (InstalledUsers.Count > 0) then
+        PrintParam('Code::Blocks Users List',
+          UsersFromFileListToScreen(InstalledUsers), False);
     end;
     WriteLn;
   end;
@@ -263,7 +266,9 @@ begin
   else if (Buffer = 'PRINT-STATUS') or (Buffer = 'STATUS') or (Buffer = 'S') then
     Result := coPrintStatus
   else if (Buffer = 'REINSTALL') or (Buffer = 'R') then
-    Result := coReinstall;
+    Result := coReinstall
+  else if (Buffer = 'INTERNAL-REFRESH') then
+    Result := coInternalRefresh; // for DreamSDK Manager only
 
   if Result <> coUnknown then
     fCommandOperationText := LowerCase(OperationValue);
@@ -393,6 +398,14 @@ begin
     Exit;
   end;
 
+  // Check C::B configuration files when installing
+  if (CommandOperation = coInstall) and (not Patcher.ConfigurationFilesNamesReady) then
+  begin
+    DoErrorTerminate(ERR_INVALID_CONFIGURATION_FILE_NAMES,
+      'Some supplied configuration file names were not found.');
+    Exit;
+  end;
+
   // Handle Splash
   Patcher.VisibleSplash := HasOption('s', 'show-splash');
 
@@ -409,7 +422,17 @@ begin
   else if (CommandOperation = coPrintCodeBlocksUsers) then
     DoPrintCodeBlocksConfigurationFiles
   else if (CommandOperation = coPrintStatus) then
-    DoPrintStatus;
+    DoPrintStatus
+  else if (CommandOperation = coInternalRefresh) then
+  begin
+    if Patcher.Settings.Refresh then
+      WriteLn('Registry refreshed!')
+    else
+    begin
+      DoErrorTerminate(ERR_REGISTRY_NOT_REFRESHED, 'Registry NOT refreshed!');
+      Exit;
+    end;
+  end;
 
   // stop program loop
   Terminate(fProgramExitCode);
@@ -474,7 +497,7 @@ begin
       ConfigurationFileNames.SetItems(TempParam, ArraySeparator);
 
     // DreamSDK Home Directory
-    if GetParam([coInstall, coUninstall, coReinstall, coPrintStatus],
+    if GetParam([coInstall, coUninstall, coReinstall, coPrintStatus, coInternalRefresh],
       'm', 'home-dir', TempParam) then
         HomeDirectory := TempParam;
 
@@ -534,9 +557,9 @@ begin
     sLineBreak,
     '  --config-files, -c : The Code::Blocks configuration files to patch.', sLineBreak,
     '                       It can be a single file or multiple files separated by', sLineBreak,
-    '                       the '';'' character. If not specified, it will try to', sLineBreak,
+    '                       the ''', ArraySeparator, ''' character. If not specified, it will try to', sLineBreak,
     '                       determine itself the patchable files (typically', sLineBreak,
-    '                       ''%AppData%\CodeBlocks\default.conf'' for each users', sLineBreak,
+    '                       ''%AppData%\CodeBlocks\default.conf'' for each user', sLineBreak,
     '                       on this system). You may use the --operation', sLineBreak,
     '                       ''print-codeblocks-users'' to list these patchable files.', sLineBreak,
     sLineBreak,

@@ -45,8 +45,8 @@ type
     fDesignFileNameDebugger: TFileName;
     fDesignFileNameGlobalVariables: TFileName;
     fCodeBlocksPatchFileName: TFileName;
-    fError: TErrorEvent;
 {$ENDIF}
+    fError: TErrorEvent;
     fSettings: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
     fSourceDirectory: TFileName;
     fDesignFileNameTools: TFileName;
@@ -68,6 +68,7 @@ type
     procedure ExtractEmbeddedFiles;
     procedure FixTools(const CodeBlocksConfigurationFileName: TFileName);
     procedure FixDebugger(const CodeBlocksConfigurationFileName: TFileName);
+    function GetConfigurationFilesNamesReady: Boolean;
     function GetGlobalVariablesActiveSet(XMLDocument: TXMLDocument): string;
     function GetReady: Boolean;
     procedure InjectDebugger(SourceXML, TargetXML: TXMLDocument);
@@ -124,6 +125,9 @@ type
 
     // Is the Patcher ready to execute?
     property Ready: Boolean read GetReady;
+
+    property ConfigurationFilesNamesReady: Boolean
+      read GetConfigurationFilesNamesReady;
 
     // Mode: Install or Uninstall
     property Operation: TCodeBlocksPatcherOperation
@@ -203,6 +207,9 @@ begin
 end;
 
 function TCodeBlocksPatcher.Execute: Boolean;
+var
+  SettingsCopy: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
+
 begin
 {$IFNDEF LITE_VERSION}
   fExecuteResult := False;
@@ -226,9 +233,18 @@ begin
         DoPatchUninstall;
       pmReinstall:
         begin
-          DoPatchUninstall;
-          Sleep(500);
-          DoPatchInstall;
+          SettingsCopy := TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings.Create;
+          try
+            SettingsCopy.Assign(Settings);
+            DoPatchUninstall;
+
+            Sleep(500);
+
+            Settings.Assign(SettingsCopy);
+            DoPatchInstall;
+          finally
+            SettingsCopy.Free;
+          end;
         end;
     end;
 
@@ -719,6 +735,18 @@ begin
   FixSection(CodeBlocksConfigurationFileName, 'gdb_debugger', 'conf', '%d', 1);
 end;
 
+function TCodeBlocksPatcher.GetConfigurationFilesNamesReady: Boolean;
+var
+  CodeBlocksConfigurationIndex: Integer;
+
+begin
+  Result := True;
+  for CodeBlocksConfigurationIndex := 0 to
+    Settings.ConfigurationFileNames.Count - 1 do
+      Result := Result and FileExists(
+        Settings.ConfigurationFileNames[CodeBlocksConfigurationIndex]);
+end;
+
 function TCodeBlocksPatcher.GetGlobalVariablesActiveSet(
   XMLDocument: TXMLDocument): string;
 var
@@ -732,18 +760,10 @@ begin
 end;
 
 function TCodeBlocksPatcher.GetReady: Boolean;
-var
-  CodeBlocksConfigurationIndex: Integer;
-
 begin
   Result := DirectoryExists(GetWorkingPath)
     and DirectoryExists(Settings.HomeDirectory)
     and DirectoryExists(Settings.InstallationDirectory);
-
-  for CodeBlocksConfigurationIndex := 0 to
-    Settings.ConfigurationFileNames.Count - 1 do
-      Result := Result and FileExists(
-        Settings.ConfigurationFileNames[CodeBlocksConfigurationIndex]);
 
   if (Operation = pmUninstall) then
     Result := Result and IsCodeBlocksPatchInstalled;
@@ -864,9 +884,9 @@ function TCodeBlocksPatcher.UpdateConfiguration(
 begin
   case Operation of
     pmInstall:
-      Settings.SaveInstall;
+      Settings.Save(True);
     pmUninstall:
-      Settings.SaveUninstall;
+      Settings.Save(False);
   end;
   Result := FileExists(Settings.RegistryFileName);
 end;
@@ -1071,9 +1091,12 @@ begin
   for i := 0 to Settings.ConfigurationFileNames.Count - 1 do
   begin
     CodeBlocksConfigurationFileName := Settings.ConfigurationFileNames[i];
-    ProcessConfiguration(skDebugger);
-    ProcessConfiguration(skGlobalVariables);
-    ProcessConfiguration(skTools);
+    if FileExists(CodeBlocksConfigurationFileName) then
+    begin
+      ProcessConfiguration(skDebugger);
+      ProcessConfiguration(skGlobalVariables);
+      ProcessConfiguration(skTools);
+    end;
   end;
 end;
 
@@ -1112,9 +1135,12 @@ begin
   for i := 0 to Settings.ConfigurationFileNames.Count - 1 do
   begin
     CodeBlocksConfigurationFileName := Settings.ConfigurationFileNames[i];
-    ProcessConfiguration(skDebugger);
-    ProcessConfiguration(skGlobalVariables);
-    ProcessConfiguration(skTools);
+    if FileExists(CodeBlocksConfigurationFileName) then
+    begin
+      ProcessConfiguration(skDebugger);
+      ProcessConfiguration(skGlobalVariables);
+      ProcessConfiguration(skTools);
+    end;
   end;
 end;
 
