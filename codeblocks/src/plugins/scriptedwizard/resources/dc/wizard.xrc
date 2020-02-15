@@ -13,8 +13,8 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxCheckBox" name="cbxUseVirtualCompactDisc">
-					<label>Use virtual CD-ROM (romdisk)</label>
-					<tooltip>Attach virtually a CD-ROM ISO that can be accessed through the /cd mount point.</tooltip>
+					<label>Use virtual CD-ROM (CDFS redirection)</label>
+					<tooltip>Virtually attach a CD-ROM ISO 9660 image that can be accessed through the /cd mount point.</tooltip>
 				</object>
 				<flag>wxALL|wxALIGN_LEFT</flag>
 				<border>5</border>

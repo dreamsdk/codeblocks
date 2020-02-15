@@ -207,8 +207,10 @@ begin
 end;
 
 function TCodeBlocksPatcher.Execute: Boolean;
+{$IFNDEF LITE_VERSION}
 var
   SettingsCopy: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
+{$ENDIF}
 
 begin
 {$IFNDEF LITE_VERSION}

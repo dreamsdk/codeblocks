@@ -53,6 +53,8 @@ copy wx*.dll %PACKAGE_DIR%
 rem Plugins
 copy share\CodeBlocks\compiler.zip %CB_SHARE_DIR%
 copy share\CodeBlocks\debugger.zip %CB_SHARE_DIR%
+copy share\CodeBlocks\resources.zip %CB_SHARE_DIR%
+copy share\CodeBlocks\start_here.zip %CB_SHARE_DIR%
 copy share\CodeBlocks\plugins\*.dll %CB_SHARE_PLUGINS_DIR%
 
 rem Compilers
