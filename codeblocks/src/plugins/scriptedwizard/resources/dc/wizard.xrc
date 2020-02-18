@@ -26,14 +26,14 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxStaticText" name="m_staticText2">
-					<label>Please select the libraries you want to use.</label>
+					<label>Please select the libraries you want to use.&#x0A;Use DreamSDK Manager to install new libraries.</label>
 				</object>
 				<flag>wxALL</flag>
 				<border>5</border>
 			</object>
 			<object class="sizeritem">
 				<object class="wxCheckListBox" name="lstLibraries">
-					<size>250,250</size>
+					<size>250,210</size>
 					<style>wxLB_SORT</style>
 				</object>
 				<flag>wxALL</flag>
