@@ -1090,8 +1090,20 @@ void DebuggerGDB::AddSourceDir(const wxString& dir)
     wxString filename = dir;
     Manager::Get()->GetMacrosManager()->ReplaceEnvVars(filename); // apply env vars
     Log(_("Adding source dir: ") + filename);
-    ConvertToGDBDirectory(filename, _T(""), false);
-    m_State.GetDriver()->AddDirectory(filename);
+
+    // Convert paths to 8.3 format
+    wxString filename83 = filename;
+    ConvertToGDBDirectory(filename83, _T(""), false);
+    m_State.GetDriver()->AddDirectory(filename83);
+
+    // Handle paths with spaces
+    // GDB supports spaces in directories so we must do that
+    // If not, the "break" cmd with spaces in filenames will NOT work...
+    if (filename.Contains(wxT(" ")))
+    {
+        ConvertToGDBFriendly(filename);
+        m_State.GetDriver()->AddDirectory(filename);
+    }
 }
 
 // static
