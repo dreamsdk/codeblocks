@@ -613,9 +613,20 @@ function JumpDownSort(array)
 
 // -----------------------------------------------------------------------------
 // Workaround: Force TARGET_OUTPUT_FILE recalculation (C::B bug!)
-function ForceSettingsRefresh(project) {
+// -----------------------------------------------------------------------------
+// Workaround: Force TARGET_OUTPUT_FILE recalculation (C::B bug!)
+function ForceSettingsRefresh(project)
+{
     local targetCurrent = project.GetActiveBuildTarget();
-    project.SetActiveBuildTarget(Wizard.GetReleaseName());
+	local isTargetCurrentDebug = (targetCurrent.Find(Wizard.GetReleaseName()) == -1);
+	if (isTargetCurrentDebug)
+	{
+		project.SetActiveBuildTarget(Wizard.GetReleaseName());
+	}
+	else
+	{
+		project.SetActiveBuildTarget(Wizard.GetDebugName());
+	}
     local fakeUnusedValue = ReplaceMacros(_T("$(TARGET_OUTPUT_FILE)"), true);
     project.SetActiveBuildTarget(targetCurrent);
 }
