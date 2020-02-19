@@ -613,8 +613,6 @@ function JumpDownSort(array)
 
 // -----------------------------------------------------------------------------
 // Workaround: Force TARGET_OUTPUT_FILE recalculation (C::B bug!)
-// -----------------------------------------------------------------------------
-// Workaround: Force TARGET_OUTPUT_FILE recalculation (C::B bug!)
 function ForceSettingsRefresh(project)
 {
     local targetCurrent = project.GetActiveBuildTarget();
