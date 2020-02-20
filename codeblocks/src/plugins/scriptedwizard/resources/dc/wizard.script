@@ -16,8 +16,6 @@ ProjectSettings <- {
 }
 FileSystemObjects <- {
     SoftwareDevelopmentKitHelperDir = _T("")
-    MakeRomdiskObjectFile = _T("")
-    MakeIsoImageFile = _T("")
     WizardBaseDir = _T("")
     WizardLibraryInformationDir = _T("")
     TemplateStaticFilesDir = _T("")
@@ -108,15 +106,13 @@ function SetupProject(project)
 	// Handle Romdisk
 	if (ProjectSettings.UseRomdisk)
     {
-        project.SetVar(_T("DREAMSDK_MKRDOBJ"), FileSystemObjects.MakeRomdiskObjectFile, false);
-        project.AddCommandsBeforeBuild(_T("\"$(DREAMSDK_MKRDOBJ)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\" \"$(TARGET_OUTPUT_FILE)\""));
+        project.AddCommandsBeforeBuild(_T("\"$(#DREAMSDK_MKRDOBJ)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\" \"$(TARGET_OUTPUT_FILE)\""));
     }
 
     // Handle CDFS Redirection
     if (ProjectSettings.UseVirtualCompactDisc)
     {
-        project.SetVar(_T("DREAMSDK_MKISOIMG"), FileSystemObjects.MakeIsoImageFile, false);
-        project.AddCommandsBeforeBuild(_T("\"$(DREAMSDK_MKISOIMG)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\""));
+        project.AddCommandsBeforeBuild(_T("\"$(#DREAMSDK_MKISOIMG)\" \"$(PROJECT_DIR)\" \"$(TARGET_OBJECT_DIR)\""));
     }
 
     // Workaround: Force $(TARGET_OUTPUT_FILE) recalculation (!)
@@ -276,14 +272,6 @@ function InitializeWizard()
         return false;
     }
 
-    // Compute Make Romdisk Object File utility
-    // This replace basically the genromfs/bin2o commands
-    FileSystemObjects.MakeRomdiskObjectFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("mkrdobj.cmd");
-
-    // Used when virtual CDFS redirection is enabled
-    // Generate CDFS Image utility
-    FileSystemObjects.MakeIsoImageFile = FileSystemObjects.SoftwareDevelopmentKitHelperDir + _T("mkisoimg.cmd");
-
     // Wizard Base Directory
     FileSystemObjects.WizardBaseDir = _T("dc") + wxFILE_SEP_PATH;
 
@@ -356,16 +344,7 @@ function HandleUserLibraries(project)
 // get the DreamSDK home folder for IDE helper scripts
 function GetSoftwareDevelopmentKitHelperDir()
 {
-    local dreamsdk = ReplaceMacros(_T("$(#DREAMSDK_HOME)"), true);
-
-    local result = dreamsdk + wxFILE_SEP_PATH +
-        _T("msys") + wxFILE_SEP_PATH +
-        _T("1.0") + wxFILE_SEP_PATH +
-        _T("opt") + wxFILE_SEP_PATH +
-        _T("dreamsdk") + wxFILE_SEP_PATH +
-        _T("ide") + wxFILE_SEP_PATH;
-
-    return result;
+    return ReplaceMacros(_T("$(#DREAMSDK_IDETOOLSPATH)"), true);
 }
 
 // -----------------------------------------------------------------------------
@@ -465,7 +444,7 @@ function InitializeTarget(target, isDebugTarget)
 }
 
 // -----------------------------------------------------------------------------
-// Setup the extensions
+// setup the extensions
 function SetupExtensions(project)
 {
     // Configure the debugger
@@ -489,7 +468,7 @@ function SetupExtensions(project)
 }
 
 // -----------------------------------------------------------------------------
-// Generate the project file unit entry
+// generate the project file unit entry
 function GenerateProjectFileUnit(radicalFileName, dotExt)
 {
     local fileEntry = radicalFileName + dotExt;
@@ -596,7 +575,7 @@ function HandleDirective(buffer, directive, enabled)
 }
 
 // -----------------------------------------------------------------------------
-// Sort an wxArrayString (or any array type) using the jump-down sort algorithm.
+// sort an wxArrayString (or any array type) using the jump-down sort algorithm.
 function JumpDownSort(array)
 {
     for(local i = array.GetCount() - 1; i > 0; i--)
@@ -612,7 +591,7 @@ function JumpDownSort(array)
 }
 
 // -----------------------------------------------------------------------------
-// Workaround: Force TARGET_OUTPUT_FILE recalculation (C::B bug!)
+// workaround: force TARGET_OUTPUT_FILE recalculation (C::B bug!)
 function ForceSettingsRefresh(project)
 {
     local targetCurrent = project.GetActiveBuildTarget();
