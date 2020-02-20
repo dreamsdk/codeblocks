@@ -6,7 +6,11 @@ rem System variables
 for /f "delims=:" %%i in ('cd') do set CURRENT_DRIVE=%%i
 set BASE_DIR=%~dp0
 set BASE_DIR=%BASE_DIR:~0,-1%
+
+rem Compression level
 set BACKUP_COMPRESSION_LEVEL=1
+if "%NUMBER_OF_PROCESSORS%"=="4" set BACKUP_COMPRESSION_LEVEL=5
+if "%NUMBER_OF_PROCESSORS%"=="8" set BACKUP_COMPRESSION_LEVEL=9
 
 rem Checking parameters
 if "%~1"=="" goto error_usage
