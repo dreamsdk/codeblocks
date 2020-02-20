@@ -2,8 +2,8 @@ gcc_mswudll\wxtiff_tif_predict.o: ../../src/tiff/tif_predict.c \
  ../../src/tiff/tiffiop.h ../../src/tiff/tiffconf.h \
  ../../src/tiff/tiffcomp.h C:/TDM-GCC-32/include/stdio.h \
  C:/TDM-GCC-32/include/_mingw.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h \
  C:/TDM-GCC-32/include/sys/types.h C:/TDM-GCC-32/include/fcntl.h \
  C:/TDM-GCC-32/include/io.h C:/TDM-GCC-32/include/string.h \
  ../../src/tiff/tiffio.h ../../src/tiff/tiff.h ../../src/tiff/tiffvers.h \
@@ -45,9 +45,9 @@ C:/TDM-GCC-32/include/stdio.h:
 
 C:/TDM-GCC-32/include/_mingw.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h:
 
 C:/TDM-GCC-32/include/sys/types.h:
 

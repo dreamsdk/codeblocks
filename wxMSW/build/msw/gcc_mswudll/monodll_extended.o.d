@@ -1,7 +1,7 @@
 gcc_mswudll\monodll_extended.o: ../../src/common/extended.c \
  C:/TDM-GCC-32/include/stdio.h C:/TDM-GCC-32/include/_mingw.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h \
  C:/TDM-GCC-32/include/sys/types.h C:/TDM-GCC-32/include/stdlib.h \
  C:/TDM-GCC-32/include/ctype.h C:/TDM-GCC-32/include/limits.h \
  C:/TDM-GCC-32/include/string.h ..\..\include/wx/defs.h \
@@ -13,7 +13,7 @@ gcc_mswudll\monodll_extended.o: ../../src/common/extended.c \
  ..\..\include/wx/dlimpexp.h ..\..\include/wx/debug.h \
  C:/TDM-GCC-32/include/assert.h ..\..\include/wx/wxchar.h \
  C:/TDM-GCC-32/include/wchar.h C:/TDM-GCC-32/include/wctype.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdint.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdint.h \
  C:/TDM-GCC-32/include/stdint.h C:/TDM-GCC-32/include/tchar.h \
  ..\..\include/wx/math.h C:/TDM-GCC-32/include/math.h
 
@@ -21,9 +21,9 @@ C:/TDM-GCC-32/include/stdio.h:
 
 C:/TDM-GCC-32/include/_mingw.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h:
 
 C:/TDM-GCC-32/include/sys/types.h:
 
@@ -69,7 +69,7 @@ C:/TDM-GCC-32/include/wchar.h:
 
 C:/TDM-GCC-32/include/wctype.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdint.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdint.h:
 
 C:/TDM-GCC-32/include/stdint.h:
 

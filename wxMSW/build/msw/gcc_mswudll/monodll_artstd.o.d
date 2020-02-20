@@ -9,11 +9,11 @@ gcc_mswudll\monodll_artstd.o: ../../src/common/artstd.cpp \
  ..\..\include/wx/debug.h C:/TDM-GCC-32/include/assert.h \
  C:/TDM-GCC-32/include/limits.h ..\..\include/wx/wxchar.h \
  C:/TDM-GCC-32/include/stdio.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h \
  C:/TDM-GCC-32/include/sys/types.h C:/TDM-GCC-32/include/wchar.h \
  C:/TDM-GCC-32/include/wctype.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdint.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdint.h \
  C:/TDM-GCC-32/include/stdint.h C:/TDM-GCC-32/include/string.h \
  C:/TDM-GCC-32/include/ctype.h C:/TDM-GCC-32/include/tchar.h \
  ..\..\include/wx/msw/winundef.h ..\..\include/wx/image.h \
@@ -21,57 +21,58 @@ gcc_mswudll\monodll_artstd.o: ../../src/common/artstd.cpp \
  ..\..\include/wx/string.h C:/TDM-GCC-32/include/stdlib.h \
  ..\..\include/wx/buffer.h ..\..\include/wx/strconv.h \
  ..\..\include/wx/fontenc.h ..\..\include/wx/beforestd.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/string \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++config.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/os_defines.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/cpu_defines.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stringfwd.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/memoryfwd.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/char_traits.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_algobase.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/functexcept.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/exception_defines.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/cpp_type_traits.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/type_traits.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/numeric_traits.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_pair.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/move.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/concept_check.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator_base_types.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator_base_funcs.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/debug/debug.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/ptr_traits.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/predefined_ops.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/postypes.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/cwchar \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/allocator.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++allocator.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/new_allocator.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/new \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/exception \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/atomic_lockfree_defines.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/localefwd.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++locale.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/clocale \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/string \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++config.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/os_defines.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/cpu_defines.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stringfwd.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/memoryfwd.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/char_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_algobase.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/functexcept.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/exception_defines.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/cpp_type_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/type_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/numeric_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_pair.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/move.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/concept_check.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator_base_types.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator_base_funcs.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/debug/debug.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/ptr_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/predefined_ops.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/postypes.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/cwchar \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/allocator.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++allocator.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/new_allocator.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/new \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/exception \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/atomic_lockfree_defines.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/localefwd.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++locale.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/clocale \
  C:/TDM-GCC-32/include/locale.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/iosfwd \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/cctype \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/ostream_insert.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/cxxabi_forced.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_function.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/backward/binders.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/range_access.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/basic_string.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/atomicity.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/gthr.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/gthr-default.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/iosfwd \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/cctype \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/ostream_insert.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/cxxabi_forced.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_function.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/backward/binders.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/range_access.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/basic_string.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/atomicity.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/gthr.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/gthr-default.h \
  C:/TDM-GCC-32/include/pthread.h C:/TDM-GCC-32/include/errno.h \
  C:/TDM-GCC-32/include/process.h C:/TDM-GCC-32/include/signal.h \
  C:/TDM-GCC-32/include/sys/timeb.h C:/TDM-GCC-32/include/pthread_compat.h \
  C:/TDM-GCC-32/include/pthread_unistd.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/atomic_word.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/basic_string.tcc \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/atomic_word.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/alloc_traits.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/basic_string.tcc \
  ..\..\include/wx/afterstd.h ..\..\include/wx/msgout.h \
  ..\..\include/wx/gdicmn.h ..\..\include/wx/list.h \
  ..\..\include/wx/hashmap.h ..\..\include/wx/math.h \
@@ -92,44 +93,30 @@ gcc_mswudll\monodll_artstd.o: ../../src/common/artstd.cpp \
  ..\..\include/wx/msw/bitmap.h ..\..\include/wx/msw/gdiimage.h \
  ..\..\include/wx/palette.h ..\..\include/wx/msw/palette.h \
  ..\..\include/wx/icon.h ..\..\include/wx/iconloc.h \
- ..\..\include/wx/msw/icon.h ../../src/common/../../art/htmsidep.xpm \
- ../../src/common/../../art/htmoptns.xpm \
- ../../src/common/../../art/htmbook.xpm \
- ../../src/common/../../art/htmfoldr.xpm \
- ../../src/common/../../art/htmpage.xpm \
- ../../src/common/../../art/missimg.xpm \
- ../../src/common/../../art/addbookm.xpm \
- ../../src/common/../../art/delbookm.xpm \
- ../../src/common/../../art/back.xpm \
- ../../src/common/../../art/forward.xpm ../../src/common/../../art/up.xpm \
- ../../src/common/../../art/down.xpm \
- ../../src/common/../../art/toparent.xpm \
- ../../src/common/../../art/fileopen.xpm \
- ../../src/common/../../art/print.xpm \
- ../../src/common/../../art/helpicon.xpm \
- ../../src/common/../../art/tipicon.xpm \
- ../../src/common/../../art/home.xpm \
- ../../src/common/../../art/repview.xpm \
- ../../src/common/../../art/listview.xpm \
- ../../src/common/../../art/new_dir.xpm \
- ../../src/common/../../art/harddisk.xpm \
- ../../src/common/../../art/cdrom.xpm \
- ../../src/common/../../art/floppy.xpm \
- ../../src/common/../../art/removable.xpm \
- ../../src/common/../../art/folder.xpm \
- ../../src/common/../../art/folder_open.xpm \
- ../../src/common/../../art/dir_up.xpm \
- ../../src/common/../../art/exefile.xpm \
- ../../src/common/../../art/deffile.xpm \
- ../../src/common/../../art/tick.xpm ../../src/common/../../art/cross.xpm \
- ../../src/common/../../art/filesave.xpm \
- ../../src/common/../../art/filesaveas.xpm \
- ../../src/common/../../art/copy.xpm ../../src/common/../../art/cut.xpm \
- ../../src/common/../../art/paste.xpm \
- ../../src/common/../../art/delete.xpm ../../src/common/../../art/new.xpm \
- ../../src/common/../../art/undo.xpm ../../src/common/../../art/redo.xpm \
- ../../src/common/../../art/quit.xpm ../../src/common/../../art/find.xpm \
- ../../src/common/../../art/findrepl.xpm
+ ..\..\include/wx/msw/icon.h D:/codeblocks/wxMSW/art/htmsidep.xpm \
+ D:/codeblocks/wxMSW/art/htmoptns.xpm D:/codeblocks/wxMSW/art/htmbook.xpm \
+ D:/codeblocks/wxMSW/art/htmfoldr.xpm D:/codeblocks/wxMSW/art/htmpage.xpm \
+ D:/codeblocks/wxMSW/art/missimg.xpm D:/codeblocks/wxMSW/art/addbookm.xpm \
+ D:/codeblocks/wxMSW/art/delbookm.xpm D:/codeblocks/wxMSW/art/back.xpm \
+ D:/codeblocks/wxMSW/art/forward.xpm D:/codeblocks/wxMSW/art/up.xpm \
+ D:/codeblocks/wxMSW/art/down.xpm D:/codeblocks/wxMSW/art/toparent.xpm \
+ D:/codeblocks/wxMSW/art/fileopen.xpm D:/codeblocks/wxMSW/art/print.xpm \
+ D:/codeblocks/wxMSW/art/helpicon.xpm D:/codeblocks/wxMSW/art/tipicon.xpm \
+ D:/codeblocks/wxMSW/art/home.xpm D:/codeblocks/wxMSW/art/repview.xpm \
+ D:/codeblocks/wxMSW/art/listview.xpm D:/codeblocks/wxMSW/art/new_dir.xpm \
+ D:/codeblocks/wxMSW/art/harddisk.xpm D:/codeblocks/wxMSW/art/cdrom.xpm \
+ D:/codeblocks/wxMSW/art/floppy.xpm D:/codeblocks/wxMSW/art/removable.xpm \
+ D:/codeblocks/wxMSW/art/folder.xpm \
+ D:/codeblocks/wxMSW/art/folder_open.xpm \
+ D:/codeblocks/wxMSW/art/dir_up.xpm D:/codeblocks/wxMSW/art/exefile.xpm \
+ D:/codeblocks/wxMSW/art/deffile.xpm D:/codeblocks/wxMSW/art/tick.xpm \
+ D:/codeblocks/wxMSW/art/cross.xpm D:/codeblocks/wxMSW/art/filesave.xpm \
+ D:/codeblocks/wxMSW/art/filesaveas.xpm D:/codeblocks/wxMSW/art/copy.xpm \
+ D:/codeblocks/wxMSW/art/cut.xpm D:/codeblocks/wxMSW/art/paste.xpm \
+ D:/codeblocks/wxMSW/art/delete.xpm D:/codeblocks/wxMSW/art/new.xpm \
+ D:/codeblocks/wxMSW/art/undo.xpm D:/codeblocks/wxMSW/art/redo.xpm \
+ D:/codeblocks/wxMSW/art/quit.xpm D:/codeblocks/wxMSW/art/find.xpm \
+ D:/codeblocks/wxMSW/art/findrepl.xpm
 
 ..\..\include/wx/wxprec.h:
 
@@ -169,9 +156,9 @@ C:/TDM-GCC-32/include/limits.h:
 
 C:/TDM-GCC-32/include/stdio.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h:
 
 C:/TDM-GCC-32/include/sys/types.h:
 
@@ -179,7 +166,7 @@ C:/TDM-GCC-32/include/wchar.h:
 
 C:/TDM-GCC-32/include/wctype.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdint.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdint.h:
 
 C:/TDM-GCC-32/include/stdint.h:
 
@@ -209,95 +196,95 @@ C:/TDM-GCC-32/include/stdlib.h:
 
 ..\..\include/wx/beforestd.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/string:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/string:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++config.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++config.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/os_defines.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/os_defines.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/cpu_defines.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/cpu_defines.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stringfwd.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stringfwd.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/memoryfwd.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/memoryfwd.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/char_traits.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/char_traits.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_algobase.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_algobase.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/functexcept.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/functexcept.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/exception_defines.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/exception_defines.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/cpp_type_traits.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/cpp_type_traits.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/type_traits.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/type_traits.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/numeric_traits.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/numeric_traits.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_pair.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_pair.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/move.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/move.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/concept_check.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/concept_check.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator_base_types.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator_base_types.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator_base_funcs.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator_base_funcs.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/debug/debug.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/debug/debug.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_iterator.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_iterator.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/ptr_traits.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/ptr_traits.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/predefined_ops.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/predefined_ops.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/postypes.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/postypes.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/cwchar:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/cwchar:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/allocator.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/allocator.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++allocator.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++allocator.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/new_allocator.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/new_allocator.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/new:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/new:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/exception:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/exception:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/atomic_lockfree_defines.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/atomic_lockfree_defines.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/localefwd.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/localefwd.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/c++locale.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/c++locale.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/clocale:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/clocale:
 
 C:/TDM-GCC-32/include/locale.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/iosfwd:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/iosfwd:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/cctype:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/cctype:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/ostream_insert.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/ostream_insert.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/cxxabi_forced.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/cxxabi_forced.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/stl_function.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/stl_function.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/backward/binders.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/backward/binders.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/range_access.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/range_access.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/basic_string.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/basic_string.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/ext/atomicity.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/atomicity.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/gthr.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/gthr.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/gthr-default.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/gthr-default.h:
 
 C:/TDM-GCC-32/include/pthread.h:
 
@@ -313,9 +300,11 @@ C:/TDM-GCC-32/include/pthread_compat.h:
 
 C:/TDM-GCC-32/include/pthread_unistd.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/mingw32/bits/atomic_word.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/mingw32/bits/atomic_word.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/c++/bits/basic_string.tcc:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/ext/alloc_traits.h:
+
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/c++/bits/basic_string.tcc:
 
 ..\..\include/wx/afterstd.h:
 
@@ -399,90 +388,90 @@ C:/TDM-GCC-32/include/io.h:
 
 ..\..\include/wx/msw/icon.h:
 
-../../src/common/../../art/htmsidep.xpm:
+D:/codeblocks/wxMSW/art/htmsidep.xpm:
 
-../../src/common/../../art/htmoptns.xpm:
+D:/codeblocks/wxMSW/art/htmoptns.xpm:
 
-../../src/common/../../art/htmbook.xpm:
+D:/codeblocks/wxMSW/art/htmbook.xpm:
 
-../../src/common/../../art/htmfoldr.xpm:
+D:/codeblocks/wxMSW/art/htmfoldr.xpm:
 
-../../src/common/../../art/htmpage.xpm:
+D:/codeblocks/wxMSW/art/htmpage.xpm:
 
-../../src/common/../../art/missimg.xpm:
+D:/codeblocks/wxMSW/art/missimg.xpm:
 
-../../src/common/../../art/addbookm.xpm:
+D:/codeblocks/wxMSW/art/addbookm.xpm:
 
-../../src/common/../../art/delbookm.xpm:
+D:/codeblocks/wxMSW/art/delbookm.xpm:
 
-../../src/common/../../art/back.xpm:
+D:/codeblocks/wxMSW/art/back.xpm:
 
-../../src/common/../../art/forward.xpm:
+D:/codeblocks/wxMSW/art/forward.xpm:
 
-../../src/common/../../art/up.xpm:
+D:/codeblocks/wxMSW/art/up.xpm:
 
-../../src/common/../../art/down.xpm:
+D:/codeblocks/wxMSW/art/down.xpm:
 
-../../src/common/../../art/toparent.xpm:
+D:/codeblocks/wxMSW/art/toparent.xpm:
 
-../../src/common/../../art/fileopen.xpm:
+D:/codeblocks/wxMSW/art/fileopen.xpm:
 
-../../src/common/../../art/print.xpm:
+D:/codeblocks/wxMSW/art/print.xpm:
 
-../../src/common/../../art/helpicon.xpm:
+D:/codeblocks/wxMSW/art/helpicon.xpm:
 
-../../src/common/../../art/tipicon.xpm:
+D:/codeblocks/wxMSW/art/tipicon.xpm:
 
-../../src/common/../../art/home.xpm:
+D:/codeblocks/wxMSW/art/home.xpm:
 
-../../src/common/../../art/repview.xpm:
+D:/codeblocks/wxMSW/art/repview.xpm:
 
-../../src/common/../../art/listview.xpm:
+D:/codeblocks/wxMSW/art/listview.xpm:
 
-../../src/common/../../art/new_dir.xpm:
+D:/codeblocks/wxMSW/art/new_dir.xpm:
 
-../../src/common/../../art/harddisk.xpm:
+D:/codeblocks/wxMSW/art/harddisk.xpm:
 
-../../src/common/../../art/cdrom.xpm:
+D:/codeblocks/wxMSW/art/cdrom.xpm:
 
-../../src/common/../../art/floppy.xpm:
+D:/codeblocks/wxMSW/art/floppy.xpm:
 
-../../src/common/../../art/removable.xpm:
+D:/codeblocks/wxMSW/art/removable.xpm:
 
-../../src/common/../../art/folder.xpm:
+D:/codeblocks/wxMSW/art/folder.xpm:
 
-../../src/common/../../art/folder_open.xpm:
+D:/codeblocks/wxMSW/art/folder_open.xpm:
 
-../../src/common/../../art/dir_up.xpm:
+D:/codeblocks/wxMSW/art/dir_up.xpm:
 
-../../src/common/../../art/exefile.xpm:
+D:/codeblocks/wxMSW/art/exefile.xpm:
 
-../../src/common/../../art/deffile.xpm:
+D:/codeblocks/wxMSW/art/deffile.xpm:
 
-../../src/common/../../art/tick.xpm:
+D:/codeblocks/wxMSW/art/tick.xpm:
 
-../../src/common/../../art/cross.xpm:
+D:/codeblocks/wxMSW/art/cross.xpm:
 
-../../src/common/../../art/filesave.xpm:
+D:/codeblocks/wxMSW/art/filesave.xpm:
 
-../../src/common/../../art/filesaveas.xpm:
+D:/codeblocks/wxMSW/art/filesaveas.xpm:
 
-../../src/common/../../art/copy.xpm:
+D:/codeblocks/wxMSW/art/copy.xpm:
 
-../../src/common/../../art/cut.xpm:
+D:/codeblocks/wxMSW/art/cut.xpm:
 
-../../src/common/../../art/paste.xpm:
+D:/codeblocks/wxMSW/art/paste.xpm:
 
-../../src/common/../../art/delete.xpm:
+D:/codeblocks/wxMSW/art/delete.xpm:
 
-../../src/common/../../art/new.xpm:
+D:/codeblocks/wxMSW/art/new.xpm:
 
-../../src/common/../../art/undo.xpm:
+D:/codeblocks/wxMSW/art/undo.xpm:
 
-../../src/common/../../art/redo.xpm:
+D:/codeblocks/wxMSW/art/redo.xpm:
 
-../../src/common/../../art/quit.xpm:
+D:/codeblocks/wxMSW/art/quit.xpm:
 
-../../src/common/../../art/find.xpm:
+D:/codeblocks/wxMSW/art/find.xpm:
 
-../../src/common/../../art/findrepl.xpm:
+D:/codeblocks/wxMSW/art/findrepl.xpm:

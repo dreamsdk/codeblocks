@@ -1,10 +1,10 @@
 gcc_mswudll\wxtiff_tif_win32.o: ../../src/tiff/tif_win32.c \
  C:/TDM-GCC-32/include/windows.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h \
  C:/TDM-GCC-32/include/windef.h C:/TDM-GCC-32/include/winnt.h \
  C:/TDM-GCC-32/include/winerror.h C:/TDM-GCC-32/include/string.h \
  C:/TDM-GCC-32/include/_mingw.h \
- C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h \
+ C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h \
  C:/TDM-GCC-32/include/basetsd.h C:/TDM-GCC-32/include/pshpack4.h \
  C:/TDM-GCC-32/include/poppack.h C:/TDM-GCC-32/include/wincon.h \
  C:/TDM-GCC-32/include/winbase.h C:/TDM-GCC-32/include/wingdi.h \
@@ -36,7 +36,7 @@ gcc_mswudll\wxtiff_tif_win32.o: ../../src/tiff/tif_win32.c \
 
 C:/TDM-GCC-32/include/windows.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stdarg.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stdarg.h:
 
 C:/TDM-GCC-32/include/windef.h:
 
@@ -48,7 +48,7 @@ C:/TDM-GCC-32/include/string.h:
 
 C:/TDM-GCC-32/include/_mingw.h:
 
-C:/TDM-GCC-32/lib/gcc/mingw32/4.9.2/include/stddef.h:
+C:/TDM-GCC-32/lib/gcc/mingw32/5.1.0/include/stddef.h:
 
 C:/TDM-GCC-32/include/basetsd.h:
 
