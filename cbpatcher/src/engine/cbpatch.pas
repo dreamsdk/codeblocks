@@ -55,7 +55,6 @@ type
     fFragmentFileNameTools: TFileName;
     fFragmentFileNameToolsSeparator: TFileName;
     fNodeValueDebugger: string;
-    fNodeValueGlobalVariables: string;
     fExecuteResult: Boolean;
     fProcessBegin: TNotifyEvent;
     fCodeBlocksBackupRestoreFileName: TFileName;
@@ -457,13 +456,26 @@ procedure TCodeBlocksPatcher.RemoveGlobalVariables(XML: TXMLDocument);
 var
   Node: TDOMNode;
   ActiveSet: string;
+  GlobalVariables: TStringList;
+  i: Integer;
 
 begin
   ActiveSet := GetGlobalVariablesActiveSet(XML);
-  Node := SelectSingleNode(Format('/gcv/sets/%s/%s',
-    [ActiveSet, fNodeValueGlobalVariables]), XML);
-  if Assigned(Node) then
-    DeleteNode(Node);
+  GlobalVariables := TStringList.Create;
+  try
+    GlobalVariables.LoadFromFile(fDesignFileNameGlobalVariables);
+    for i := 0 to GlobalVariables.Count - 1 do
+    begin
+      Node := SelectSingleNode(Format('/gcv/sets/%s/%s', [
+        ActiveSet,
+        GlobalVariables[i]
+      ]), XML);
+      if Assigned(Node) then
+        DeleteNode(Node);
+    end;
+  finally
+    GlobalVariables.Free;;
+  end;
 end;
 
 procedure TCodeBlocksPatcher.RemoveTools(XML: TXMLDocument);
@@ -1025,7 +1037,6 @@ var
     fDesignFileNameDebugger := DesignDirectory + 'debugger.dat';
     fNodeValueDebugger := LoadFileToString(fDesignFileNameDebugger);
     fDesignFileNameGlobalVariables := DesignDirectory + 'gcv.dat';
-    fNodeValueGlobalVariables := LoadFileToString(fDesignFileNameGlobalVariables);
     fDesignFileNameTools := DesignDirectory + 'tools.dat';
 
     // Fragments
