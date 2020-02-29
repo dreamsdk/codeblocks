@@ -47,7 +47,7 @@ type
     fCodeBlocksPatchFileName: TFileName;
 {$ENDIF}
     fError: TErrorEvent;
-    fSettings: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
+    fSettings: TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher;
     fSourceDirectory: TFileName;
     fDesignFileNameTools: TFileName;
     fFragmentFileNameDebugger: TFileName;
@@ -137,7 +137,7 @@ type
       read fVisibleSplash
       write fVisibleSplash;
 
-    property Settings: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings
+    property Settings: TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher
       read fSettings;
 
     // Events
@@ -189,7 +189,7 @@ end;
 constructor TCodeBlocksPatcher.Create;
 begin
   // Initializing settings
-  fSettings := TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings.Create;
+  fSettings := TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher.Create;
 
   fOperation := pmUndefined;
   ExtractEmbeddedFiles;
@@ -208,7 +208,7 @@ end;
 function TCodeBlocksPatcher.Execute: Boolean;
 {$IFNDEF LITE_VERSION}
 var
-  SettingsCopy: TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings;
+  SettingsCopy: TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher;
 {$ENDIF}
 
 begin
@@ -234,7 +234,7 @@ begin
         DoPatchUninstall;
       pmReinstall:
         begin
-          SettingsCopy := TDreamcastSoftwareDevelopmentCodeBlocksPatcherSettings.Create;
+          SettingsCopy := TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher.Create;
           try
             SettingsCopy.Assign(Settings);
             DoPatchUninstall;
