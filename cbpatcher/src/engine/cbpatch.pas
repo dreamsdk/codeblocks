@@ -2,8 +2,10 @@ unit CBPatch;
 
 {$mode objfpc}{$H+}
 
-{$IFNDEF LITE_VERSION}
-{$R embedded.rc}
+{$IFDEF LITE_VERSION}
+{$R lite.rc}
+{$ELSE}
+{$R full.rc}
 {$ENDIF}
 
 interface
@@ -42,10 +44,10 @@ type
   TCodeBlocksPatcher = class(TObject)
   private
 {$IFNDEF LITE_VERSION}
-    fDesignFileNameDebugger: TFileName;
-    fDesignFileNameGlobalVariables: TFileName;
     fCodeBlocksPatchFileName: TFileName;
 {$ENDIF}
+    fDesignFileNameDebugger: TFileName;
+    fDesignFileNameGlobalVariables: TFileName;
     fError: TErrorEvent;
     fSettings: TDreamcastSoftwareDevelopmentSettingsCodeBlocksPatcher;
     fSourceDirectory: TFileName;
@@ -121,6 +123,9 @@ type
     destructor Destroy; override;
 
     function Execute: Boolean;
+{$IFDEF HELPER}
+    procedure ResetProfiles;
+{$ENDIF}
 
     // Is the Patcher ready to execute?
     property Ready: Boolean read GetReady;
@@ -265,6 +270,13 @@ begin
     'Unable to execute the Patcher engine in Lite version mode.');
 {$ENDIF}
 end;
+
+{$IFDEF HELPER}
+procedure TCodeBlocksPatcher.ResetProfiles;
+begin
+  TaskCleanCodeBlocksConfiguration;
+end;
+{$ENDIF}
 
 procedure TCodeBlocksPatcher.FixSection(
   const CodeBlocksConfigurationFileName: TFileName; const SectionName, ItemName,
@@ -1004,19 +1016,22 @@ begin
 end;
 
 procedure TCodeBlocksPatcher.ExtractEmbeddedFiles;
-{$IFNDEF LITE_VERSION}
 const
+  FILE_CONFIG = 'codeblocks-patcher-data.zip';
+{$IFNDEF LITE_VERSION}
+  FILE_7ZIP = '7za.exe';
+  FILE_PACKAGE = 'codeblocks-17.12-dreamsdk-addon-bin.7z';
   FILE_BACKUP_RESTORE = 'codeblocks-backup-restore.cmd';
   FILE_SPLASH = 'codeblocks-splash.exe';
-  FILE_PACKAGE = 'codeblocks-17.12-dreamsdk-addon-bin.7z';
-  FILE_CONFIG = 'codeblocks-patcher-data.zip';
-  FILE_7ZIP = '7za.exe';
+{$ENDIF}
 
   DIRECTORY_SOURCE = 'data';
 
+{$IFNDEF LITE_VERSION}
   EMBEDDED_BACKUP_RESTORE = 'BACKUPRESTORE';
   EMBEDDED_SPLASH = 'SPLASH';
   EMBEDDED_PACKAGE = 'PACKAGE';
+{$ENDIF}
   EMBEDDED_CONFIG = 'CONFIG';
 
 var
@@ -1047,14 +1062,13 @@ var
   end;
 
 begin
+{$IFDEF LZMA_SUPPORT}
   // Code::Blocks Backup/Restore
   fCodeBlocksBackupRestoreFileName :=
     ExtractEmbeddedFileToWorkingPath(EMBEDDED_BACKUP_RESTORE, FILE_BACKUP_RESTORE);
 
   // 7-Zip for Code::Blocks Backup/Restore
-{$IFDEF LZMA_SUPPORT}
   ExtractEmbeddedFileToWorkingPath(EMBEDDED_7ZIP, FILE_7ZIP);
-{$ENDIF}
 
   // Code::Blocks Splash
   fCodeBlocksSplashFileName :=
@@ -1063,6 +1077,7 @@ begin
   // Code::Blocks Patch Data
   fCodeBlocksPatchFileName := ExtractEmbeddedFileToWorkingPath(
     EMBEDDED_PACKAGE, FILE_PACKAGE);
+{$ENDIF}
 
   // Code::Blocks Configuration Data
   fSourceDirectory := GetWorkingPath + DIRECTORY_SOURCE + DirectorySeparator;
@@ -1073,9 +1088,6 @@ begin
     InitializeDataFiles;
     KillFile(DataFileName);
   end;
-{$ELSE}
-begin
-{$ENDIF}
 end;
 
 function TCodeBlocksPatcher.GetSourcePackageDirectory: TFileName;
