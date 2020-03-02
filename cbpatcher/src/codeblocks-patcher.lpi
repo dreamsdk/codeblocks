@@ -25,7 +25,7 @@
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="2"/>
       <RevisionNr Value="1"/>
-      <BuildNr Value="751"/>
+      <BuildNr Value="774"/>
       <StringTable Comments="http://dreamsdk.org/" CompanyName="The DreamSDK Team" FileDescription="Code::Blocks Patcher for DreamSDK" InternalName="codeblocks-patcher" LegalCopyright="© Copyleft 2018-2020" LegalTrademarks="Code::Blocks is distributed under the GNU GPL3. 7-Zip Extra files are under the GNU LGPL license. Sega and Dreamcast are registered trademark of Sega Games Co., Ltd." OriginalFilename="codeblocks-patcher.exe" ProductName="DreamSDK" ProductVersion="3.0.4.2003"/>
     </VersionInfo>
     <BuildModes Count="2">
@@ -58,7 +58,9 @@
           <Other>
             <CustomOptions Value="-dRELEASE
 -dLZMA_SUPPORT
--dDISABLE_REFBASE_WARNING"/>
+-dDISABLE_REFBASE_WARNING
+-dDISABLE_REFBASE_HOME_DIR_OVERRIDE
+-dDISABLE_REFBASE_FAILSAFE"/>
           </Other>
         </CompilerOptions>
       </Item2>
@@ -152,7 +154,9 @@
       </Verbosity>
       <CustomOptions Value="-dDEBUG
 -dLZMA_SUPPORT
--dDISABLE_REFBASE_WARNING"/>
+-dDISABLE_REFBASE_WARNING
+-dDISABLE_REFBASE_HOME_DIR_OVERRIDE
+-dDISABLE_REFBASE_FAILSAFE"/>
     </Other>
   </CompilerOptions>
   <Debugging>

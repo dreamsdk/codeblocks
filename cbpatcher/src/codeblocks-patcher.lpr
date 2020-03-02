@@ -484,6 +484,11 @@ begin
   TempParam := EmptyStr;
   with Patcher.Settings do
   begin
+    // DreamSDK Home Directory
+    if GetParam([coInstall, coUninstall, coReinstall, coPrintStatus, coInternalRefresh],
+      'm', 'home-dir', TempParam) then
+        HomeDirectory := TempParam;
+
     // Code::Blocks Installation Directory
     if GetParam([coInstall], 'i', 'install-dir', TempParam) then
       InstallationDirectory := TempParam;
@@ -495,11 +500,6 @@ begin
     // Code::Blocks Configuration File Names
     if GetParam([coInstall], 'c', 'config-files', TempParam) then
       ConfigurationFileNames.SetItems(TempParam, ArraySeparator);
-
-    // DreamSDK Home Directory
-    if GetParam([coInstall, coUninstall, coReinstall, coPrintStatus, coInternalRefresh],
-      'm', 'home-dir', TempParam) then
-        HomeDirectory := TempParam;
 
     Result := not fErrorTerminate;
   end;
