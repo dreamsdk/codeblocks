@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: settings.h 67017 2011-02-25 09:37:28Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -28,8 +27,15 @@ enum wxSystemFont
     wxSYS_ANSI_VAR_FONT,
     wxSYS_SYSTEM_FONT,
     wxSYS_DEVICE_DEFAULT_FONT,
+
+    // don't use: this is here just to make the values of enum elements
+    // coincide with the corresponding MSW constants
     wxSYS_DEFAULT_PALETTE,
+
+    // don't use: MSDN says that this is a stock object provided only
+    // for compatibility with 16-bit Windows versions earlier than 3.0!
     wxSYS_SYSTEM_FIXED_FONT,
+
     wxSYS_DEFAULT_GUI_FONT,
 
     // this was just a temporary aberration, do not use it any more
@@ -43,8 +49,7 @@ enum wxSystemFont
 enum wxSystemColour
 {
     wxSYS_COLOUR_SCROLLBAR,
-    wxSYS_COLOUR_BACKGROUND,
-    wxSYS_COLOUR_DESKTOP = wxSYS_COLOUR_BACKGROUND,
+    wxSYS_COLOUR_DESKTOP,
     wxSYS_COLOUR_ACTIVECAPTION,
     wxSYS_COLOUR_INACTIVECAPTION,
     wxSYS_COLOUR_MENU,
@@ -59,16 +64,11 @@ enum wxSystemColour
     wxSYS_COLOUR_HIGHLIGHT,
     wxSYS_COLOUR_HIGHLIGHTTEXT,
     wxSYS_COLOUR_BTNFACE,
-    wxSYS_COLOUR_3DFACE = wxSYS_COLOUR_BTNFACE,
     wxSYS_COLOUR_BTNSHADOW,
-    wxSYS_COLOUR_3DSHADOW = wxSYS_COLOUR_BTNSHADOW,
     wxSYS_COLOUR_GRAYTEXT,
     wxSYS_COLOUR_BTNTEXT,
     wxSYS_COLOUR_INACTIVECAPTIONTEXT,
     wxSYS_COLOUR_BTNHIGHLIGHT,
-    wxSYS_COLOUR_BTNHILIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
-    wxSYS_COLOUR_3DHIGHLIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
-    wxSYS_COLOUR_3DHILIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
     wxSYS_COLOUR_3DDKSHADOW,
     wxSYS_COLOUR_3DLIGHT,
     wxSYS_COLOUR_INFOTEXT,
@@ -82,7 +82,16 @@ enum wxSystemColour
     wxSYS_COLOUR_LISTBOXTEXT,
     wxSYS_COLOUR_LISTBOXHIGHLIGHTTEXT,
 
-    wxSYS_COLOUR_MAX
+    wxSYS_COLOUR_MAX,
+
+    // synonyms
+    wxSYS_COLOUR_BACKGROUND = wxSYS_COLOUR_DESKTOP,
+    wxSYS_COLOUR_3DFACE = wxSYS_COLOUR_BTNFACE,
+    wxSYS_COLOUR_3DSHADOW = wxSYS_COLOUR_BTNSHADOW,
+    wxSYS_COLOUR_BTNHILIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
+    wxSYS_COLOUR_3DHIGHLIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
+    wxSYS_COLOUR_3DHILIGHT = wxSYS_COLOUR_BTNHIGHLIGHT,
+    wxSYS_COLOUR_FRAMEBK = wxSYS_COLOUR_BTNFACE
 };
 
 // possible values for wxSystemSettings::GetMetric() index parameter
@@ -127,7 +136,11 @@ enum wxSystemMetric
     wxSYS_NETWORK_PRESENT,
     wxSYS_PENWINDOWS_PRESENT,
     wxSYS_SHOW_SOUNDS,
-    wxSYS_SWAP_BUTTONS
+    wxSYS_SWAP_BUTTONS,
+    wxSYS_DCLICK_MSEC,
+    wxSYS_CARET_ON_MSEC,
+    wxSYS_CARET_OFF_MSEC,
+    wxSYS_CARET_TIMEOUT_MSEC
 };
 
 // possible values for wxSystemSettings::HasFeature() parameter
@@ -150,6 +163,39 @@ enum wxSystemScreenType
 };
 
 // ----------------------------------------------------------------------------
+// wxSystemAppearance: describes the global appearance used for the UI
+// ----------------------------------------------------------------------------
+
+class WXDLLIMPEXP_CORE wxSystemAppearance
+{
+public:
+    // Return the name if available or empty string otherwise.
+    wxString GetName() const;
+
+    // Return true if the current system there is explicitly recognized as
+    // being a dark theme or if the default window background is dark.
+    bool IsDark() const;
+
+    // Return true if the background is darker than foreground. This is used by
+    // IsDark() if there is no platform-specific way to determine whether a
+    // dark mode is being used.
+    bool IsUsingDarkBackground() const;
+
+private:
+    friend class wxSystemSettingsNative;
+
+    // Ctor is private, even though it's trivial, because objects of this type
+    // are only supposed to be created by wxSystemSettingsNative.
+    wxSystemAppearance() { }
+
+    // Currently this class doesn't have any internal state because the only
+    // available implementation doesn't need it. If we do need it later, we
+    // could add some "wxSystemAppearanceImpl* const m_impl" here, which we'd
+    // forward our public functions to (we'd also need to add the copy ctor and
+    // dtor to clone/free it).
+};
+
+// ----------------------------------------------------------------------------
 // wxSystemSettingsNative: defines the API for wxSystemSettings class
 // ----------------------------------------------------------------------------
 
@@ -160,7 +206,7 @@ enum wxSystemScreenType
 // files (i.e. this is not a real base class as we can't override its virtual
 // functions because it doesn't have any)
 
-class WXDLLEXPORT wxSystemSettingsNative
+class WXDLLIMPEXP_CORE wxSystemSettingsNative
 {
 public:
     // get a standard system colour
@@ -170,7 +216,10 @@ public:
     static wxFont GetFont(wxSystemFont index);
 
     // get a system-dependent metric
-    static int GetMetric(wxSystemMetric index, wxWindow * win = NULL);
+    static int GetMetric(wxSystemMetric index, const wxWindow* win = NULL);
+
+    // get the object describing the current system appearance
+    static wxSystemAppearance GetAppearance();
 
     // return true if the port has certain feature
     static bool HasFeature(wxSystemFeature index);
@@ -180,7 +229,7 @@ public:
 // include the declaration of the real platform-dependent class
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxSystemSettings : public wxSystemSettingsNative
+class WXDLLIMPEXP_CORE wxSystemSettings : public wxSystemSettingsNative
 {
 public:
 #ifdef __WXUNIVERSAL__
@@ -188,6 +237,10 @@ public:
     // system ones, otherwise wxSystemSettings is just the same as
     // wxSystemSettingsNative
     static wxColour GetColour(wxSystemColour index);
+
+    // some metrics are toolkit-dependent and provided by wxUniv, some are
+    // lowlevel
+    static int GetMetric(wxSystemMetric index, const wxWindow* win = NULL);
 #endif // __WXUNIVERSAL__
 
     // Get system screen design (desktop, pda, ..) used for
@@ -200,13 +253,6 @@ public:
     // Value
     static wxSystemScreenType ms_screen;
 
-#if WXWIN_COMPATIBILITY_2_4
-    // the backwards compatible versions of wxSystemSettingsNative functions,
-    // don't use these methods in the new code!
-    wxDEPRECATED(static wxColour GetSystemColour(int index));
-    wxDEPRECATED(static wxFont GetSystemFont(int index));
-    wxDEPRECATED(static int GetSystemMetric(int index));
-#endif
 };
 
 #endif

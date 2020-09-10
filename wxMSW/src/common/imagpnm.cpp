@@ -2,7 +2,6 @@
 // Name:        src/common/imagpnm.cpp
 // Purpose:     wxImage PNM handler
 // Author:      Sylvain Bougnoux
-// RCS-ID:      $Id: imagpnm.cpp 46311 2007-06-03 22:14:32Z VZ $
 // Copyright:   (c) Sylvain Bougnoux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -29,10 +28,11 @@
 // wxBMPHandler
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxPNMHandler,wxImageHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxPNMHandler,wxImageHandler);
 
 #if wxUSE_STREAMS
 
+static
 void Skip_Comment(wxInputStream &stream)
 {
     wxTextInputStream text_stream(stream);
@@ -69,7 +69,10 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
         case wxT('5'): // RAW Grey
         case wxT('6'): break;
         default:
-            if (verbose) wxLogError(_("PNM: File format is not recognized."));
+            if (verbose)
+            {
+                wxLogError(_("PNM: File format is not recognized."));
+            }
             return false;
     }
 
@@ -85,16 +88,19 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
     if (!ptr)
     {
         if (verbose)
+        {
            wxLogError( _("PNM: Couldn't allocate memory.") );
+        }
         return false;
     }
 
 
     if (c=='2') // Ascii GREY
     {
-        wxUint32 value, size=width*height;
+        wxUint32 size=width*height;
         for (wxUint32 i=0; i<size; ++i)
         {
+            wxUint32 value;
             value=text_stream.Read32();
             if ( maxval != 255 )
                 value = (255 * value)/maxval;
@@ -103,18 +109,22 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
             *ptr++=(unsigned char)value; // B
             if ( !buf_stream )
             {
-                if (verbose) wxLogError(_("PNM: File seems truncated."));
+                if (verbose)
+                {
+                    wxLogError(_("PNM: File seems truncated."));
+                }
                 return false;
             }
         }
     }
     if (c=='3') // Ascii RBG
     {
-        wxUint32 value, size=3*width*height;
+        wxUint32 size=3*width*height;
         for (wxUint32 i=0; i<size; ++i)
           {
             //this is very slow !!!
             //I wonder how we can make any better ?
+            wxUint32 value;
             value=text_stream.Read32();
             if ( maxval != 255 )
                 value = (255 * value)/maxval;
@@ -122,7 +132,10 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
 
             if ( !buf_stream )
               {
-                if (verbose) wxLogError(_("PNM: File seems truncated."));
+                if (verbose)
+                {
+                    wxLogError(_("PNM: File seems truncated."));
+                }
                 return false;
               }
           }
@@ -130,9 +143,9 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
     if (c=='5') // Raw GREY
     {
         wxUint32 size=width*height;
-        unsigned char value;
         for (wxUint32 i=0; i<size; ++i)
         {
+            unsigned char value;
             buf_stream.Read(&value,1);
             if ( maxval != 255 )
                 value = (255 * value)/maxval;
@@ -141,7 +154,10 @@ bool wxPNMHandler::LoadFile( wxImage *image, wxInputStream& stream, bool verbose
             *ptr++=value; // B
             if ( !buf_stream )
             {
-                if (verbose) wxLogError(_("PNM: File seems truncated."));
+                if (verbose)
+                {
+                    wxLogError(_("PNM: File seems truncated."));
+                }
                 return false;
             }
         }
@@ -180,6 +196,7 @@ bool wxPNMHandler::DoCanRead( wxInputStream& stream )
 {
     Skip_Comment(stream);
 
+    // it's ok to modify the stream position here
     if ( stream.GetC() == 'P' )
     {
         switch ( stream.GetC() )

@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     04.11.99
-// RCS-ID:      $Id: fontmap.h 49563 2007-10-31 20:46:21Z VZ $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -50,7 +49,7 @@ class WXDLLIMPEXP_FWD_CORE wxFontMapper;
 class WXDLLIMPEXP_BASE wxFontMapperBase
 {
 public:
-    // constructtor and such
+    // constructor and such
     // ---------------------
 
     // default ctor
@@ -122,7 +121,7 @@ public:
     void SetConfigPath(const wxString& prefix);
 
     // return default config path
-    static const wxChar *GetDefaultConfigPath();
+    static const wxString& GetDefaultConfigPath();
 #endif // wxUSE_CONFIG
 
 
@@ -170,7 +169,7 @@ private:
 
     friend class wxFontMapperPathChanger;
 
-    DECLARE_NO_COPY_CLASS(wxFontMapperBase)
+    wxDECLARE_NO_COPY_CLASS(wxFontMapperBase);
 };
 
 // ----------------------------------------------------------------------------
@@ -203,7 +202,7 @@ public:
     // returns the encoding for the given charset (in the form of RFC 2046) or
     // wxFONTENCODING_SYSTEM if couldn't decode it
     virtual wxFontEncoding CharsetToEncoding(const wxString& charset,
-                                             bool interactive = true);
+                                             bool interactive = true) wxOVERRIDE;
 
     // find an alternative for the given encoding (which is supposed to not be
     // available on this system). If successful, return true and fill info
@@ -243,7 +242,7 @@ public:
     static wxFontMapper *Get();
 
     // pseudo-RTTI since we aren't a wxObject.
-    virtual bool IsDummy() { return false; }
+    virtual bool IsDummy() wxOVERRIDE { return false; }
 
 protected:
     // GetAltForEncoding() helper: tests for the existence of the given
@@ -264,7 +263,7 @@ protected:
     wxWindow *m_windowParent;
 
 private:
-    DECLARE_NO_COPY_CLASS(wxFontMapper)
+    wxDECLARE_NO_COPY_CLASS(wxFontMapper);
 };
 
 #endif // wxUSE_GUI

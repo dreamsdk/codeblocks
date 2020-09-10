@@ -4,9 +4,8 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: treetest.h 43021 2006-11-04 11:26:51Z VZ $
 // Copyright:   (c) Julian Smart
-// Licence:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #define USE_GENERIC_TREECTRL 0
@@ -23,18 +22,21 @@
 class MyApp : public wxApp
 {
 public:
-    MyApp() { m_showImages = true; m_showButtons = false; }
+    MyApp() { m_showImages = true; m_showStates = true; m_showButtons = false; }
 
-    bool OnInit();
+    bool OnInit() wxOVERRIDE;
 
     void SetShowImages(bool show) { m_showImages = show; }
     bool ShowImages() const { return m_showImages; }
+
+    void SetShowStates(bool show) { m_showStates = show; }
+    bool ShowStates() const { return m_showStates; }
 
     void SetShowButtons(bool show) { m_showButtons = show; }
     bool ShowButtons() const { return m_showButtons; }
 
 private:
-    bool m_showImages, m_showButtons;
+    bool m_showImages, m_showStates, m_showButtons;
 };
 
 class MyTreeItemData : public wxTreeItemData
@@ -43,7 +45,7 @@ public:
     MyTreeItemData(const wxString& desc) : m_desc(desc) { }
 
     void ShowInfo(wxTreeCtrl *tree);
-    const wxChar *GetDesc() const { return m_desc.c_str(); }
+    wxString const& GetDesc() const { return m_desc; }
 
 private:
     wxString m_desc;
@@ -61,11 +63,11 @@ public:
         TreeCtrlIcon_FolderOpened
     };
 
-    MyTreeCtrl() { }
+    MyTreeCtrl() { m_alternateImages = false; m_alternateStates = false; }
     MyTreeCtrl(wxWindow *parent, const wxWindowID id,
                const wxPoint& pos, const wxSize& size,
                long style);
-    virtual ~MyTreeCtrl(){};
+    virtual ~MyTreeCtrl(){}
 
     void OnBeginDrag(wxTreeEvent& event);
     void OnBeginRDrag(wxTreeEvent& event);
@@ -85,34 +87,48 @@ public:
     void OnSelChanging(wxTreeEvent& event);
     void OnTreeKeyDown(wxTreeEvent& event);
     void OnItemActivated(wxTreeEvent& event);
+    void OnItemStateClick(wxTreeEvent& event);
     void OnItemRClick(wxTreeEvent& event);
 
     void OnRMouseDown(wxMouseEvent& event);
     void OnRMouseUp(wxMouseEvent& event);
     void OnRMouseDClick(wxMouseEvent& event);
 
+    wxTreeItemId GetLastTreeITem() const;
     void GetItemsRecursively(const wxTreeItemId& idParent,
                              wxTreeItemIdValue cookie = 0);
 
     void CreateImageList(int size = 16);
     void CreateButtonsImageList(int size = 11);
+    void CreateStateImageList(bool del = false);
 
     void AddTestItemsToTree(size_t numChildren, size_t depth);
 
     void DoSortChildren(const wxTreeItemId& item, bool reverse = false)
         { m_reverseSort = reverse; wxTreeCtrl::SortChildren(item); }
-    void DoEnsureVisible() { if (m_lastItem.IsOk()) EnsureVisible(m_lastItem); }
 
     void DoToggleIcon(const wxTreeItemId& item);
+    void DoToggleState(const wxTreeItemId& item);
 
     void ShowMenu(wxTreeItemId id, const wxPoint& pt);
 
     int ImageSize(void) const { return m_imageSize; }
 
-    void SetLastItem(wxTreeItemId id) { m_lastItem = id; }
+    void SetAlternateImages(bool show) { m_alternateImages = show; }
+    bool AlternateImages() const { return m_alternateImages; }
+
+    void SetAlternateStates(bool show) { m_alternateStates = show; }
+    bool AlternateStates() const { return m_alternateStates; }
+
+    void ResetBrokenStateImages()
+    {
+        const size_t count = GetStateImageList()->GetImageCount();
+        int state = count > 0 ? count - 1 : wxTREE_ITEMSTATE_NONE;
+        DoResetBrokenStateImages(GetRootItem(), 0, state);
+    }
 
 protected:
-    virtual int OnCompareItems(const wxTreeItemId& i1, const wxTreeItemId& i2);
+    virtual int OnCompareItems(const wxTreeItemId& i1, const wxTreeItemId& i2) wxOVERRIDE;
 
     // is this the test item which we use in several event handlers?
     bool IsTestItem(const wxTreeItemId& item)
@@ -122,24 +138,29 @@ protected:
     }
 
 private:
+    // Find the very last item in the tree.
     void AddItemsRecursively(const wxTreeItemId& idParent,
                              size_t nChildren,
                              size_t depth,
                              size_t folder);
 
-    void LogEvent(const wxChar *name, const wxTreeEvent& event);
+    void DoResetBrokenStateImages(const wxTreeItemId& idParent,
+                                  wxTreeItemIdValue cookie, int state);
+
+    void LogEvent(const wxString& name, const wxTreeEvent& event);
 
     int          m_imageSize;               // current size of images
     bool         m_reverseSort;             // flag for OnCompareItems
-    wxTreeItemId m_lastItem,                // for OnEnsureVisible()
-                 m_draggedItem;             // item being dragged right now
+    wxTreeItemId m_draggedItem;             // item being dragged right now
+    bool         m_alternateImages;
+    bool         m_alternateStates;
 
-    // NB: due to an ugly wxMSW hack you _must_ use DECLARE_DYNAMIC_CLASS()
+    // NB: due to an ugly wxMSW hack you _must_ use wxDECLARE_DYNAMIC_CLASS();
     //     if you want your overloaded OnCompareItems() to be called.
     //     OTOH, if you don't want it you may omit the next line - this will
     //     make default (alphabetical) sorting much faster under wxMSW.
-    DECLARE_DYNAMIC_CLASS(MyTreeCtrl)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(MyTreeCtrl);
+    wxDECLARE_EVENT_TABLE();
 };
 
 // Define a new frame type
@@ -153,6 +174,7 @@ public:
     // menu callbacks
     void OnQuit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void OnClearLog(wxCommandEvent& event);
 
     void OnTogButtons(wxCommandEvent& event)
         { TogStyle(event.GetId(), wxTR_HAS_BUTTONS); }
@@ -184,15 +206,23 @@ public:
     void OnSelect(wxCommandEvent& event);
     void OnUnselect(wxCommandEvent& event);
     void OnToggleSel(wxCommandEvent& event);
+    void OnSelectChildren(wxCommandEvent& event);
 #endif // NO_MULTIPLE_SELECTION
     void OnSelectRoot(wxCommandEvent& event);
+    void OnSetFocusedRoot(wxCommandEvent& event);
+    void OnClearFocused(wxCommandEvent& event);
     void OnDelete(wxCommandEvent& event);
     void OnDeleteChildren(wxCommandEvent& event);
     void OnDeleteAll(wxCommandEvent& event);
 
+    void OnFreezeThaw(wxCommandEvent& event);
     void OnRecreate(wxCommandEvent& event);
     void OnToggleButtons(wxCommandEvent& event);
     void OnToggleImages(wxCommandEvent& event);
+    void OnToggleStates(wxCommandEvent& event);
+    void OnToggleBell(wxCommandEvent& event);
+    void OnToggleAlternateImages(wxCommandEvent& event);
+    void OnToggleAlternateStates(wxCommandEvent& event);
     void OnSetImageSize(wxCommandEvent& event);
     void OnCollapseAndReset(wxCommandEvent& event);
 
@@ -200,6 +230,7 @@ public:
     void OnClearBold(wxCommandEvent& WXUNUSED(event)) { DoSetBold(false); }
 
     void OnEnsureVisible(wxCommandEvent& event);
+    void OnSetFocus(wxCommandEvent& event);
 
     void OnCount(wxCommandEvent& event);
     void OnCountRec(wxCommandEvent& event);
@@ -209,6 +240,7 @@ public:
     void OnSortRev(wxCommandEvent& WXUNUSED(event)) { DoSort(true); }
 
     void OnAddItem(wxCommandEvent& event);
+    void OnAddManyItems(wxCommandEvent& event);
     void OnInsertItem(wxCommandEvent& event);
 
     void OnIncIndent(wxCommandEvent& event);
@@ -218,6 +250,29 @@ public:
     void OnDecSpacing(wxCommandEvent& event);
 
     void OnToggleIcon(wxCommandEvent& event);
+    void OnToggleState(wxCommandEvent& event);
+
+    void OnShowFirstVisible(wxCommandEvent& WXUNUSED(event))
+        { DoShowFirstOrLast(&wxTreeCtrl::GetFirstVisibleItem, "first visible"); }
+#ifdef wxHAS_LAST_VISIBLE // we don't have it currently but may add later
+    void OnShowLastVisible(wxCommandEvent& WXUNUSED(event))
+        { DoShowFirstOrLast(&wxTreeCtrl::GetLastVisibleItem, "last visible"); }
+#endif // wxHAS_LAST_VISIBLE
+
+    void OnShowNextVisible(wxCommandEvent& WXUNUSED(event))
+        { DoShowRelativeItem(&wxTreeCtrl::GetNextVisible, "next visible"); }
+    void OnShowPrevVisible(wxCommandEvent& WXUNUSED(event))
+        { DoShowRelativeItem(&wxTreeCtrl::GetPrevVisible, "previous visible"); }
+
+    void OnShowParent(wxCommandEvent& WXUNUSED(event))
+        { DoShowRelativeItem(&wxTreeCtrl::GetItemParent, "parent"); }
+    void OnShowPrevSibling(wxCommandEvent& WXUNUSED(event))
+        { DoShowRelativeItem(&wxTreeCtrl::GetPrevSibling, "previous sibling"); }
+    void OnShowNextSibling(wxCommandEvent& WXUNUSED(event))
+        { DoShowRelativeItem(&wxTreeCtrl::GetNextSibling, "next sibling"); }
+
+    void OnScrollTo(wxCommandEvent& event);
+    void OnSelectLast(wxCommandEvent& event);
 
     void OnIdle(wxIdleEvent& event);
     void OnSize(wxSizeEvent& event);
@@ -232,6 +287,14 @@ private:
     void CreateTreeWithDefStyle();
     void CreateTree(long style);
 
+    // common parts of OnShowFirst/LastVisible() and OnShowNext/PrevVisible()
+    typedef wxTreeItemId (wxTreeCtrl::*TreeFunc0_t)() const;
+    void DoShowFirstOrLast(TreeFunc0_t pfn, const wxString& label);
+
+    typedef wxTreeItemId (wxTreeCtrl::*TreeFunc1_t)(const wxTreeItemId&) const;
+    void DoShowRelativeItem(TreeFunc1_t pfn, const wxString& label);
+
+
     wxPanel *m_panel;
     MyTreeCtrl *m_treeCtrl;
 #if wxUSE_LOG
@@ -240,7 +303,7 @@ private:
 
     void DoSetBold(bool bold = true);
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // menu and control ids
@@ -248,6 +311,7 @@ enum
 {
     TreeTest_Quit = wxID_EXIT,
     TreeTest_About = wxID_ABOUT,
+    TreeTest_ClearLog = wxID_CLEAR,
     TreeTest_TogButtons = wxID_HIGHEST,
     TreeTest_TogTwist,
     TreeTest_TogLines,
@@ -272,22 +336,42 @@ enum
     TreeTest_Delete,
     TreeTest_DeleteChildren,
     TreeTest_DeleteAll,
+    TreeTest_FreezeThaw,
     TreeTest_Recreate,
     TreeTest_ToggleImages,
+    TreeTest_ToggleStates,
+    TreeTest_ToggleBell,
+    TreeTest_ToggleAlternateImages,
+    TreeTest_ToggleAlternateStates,
     TreeTest_ToggleButtons,
     TreeTest_SetImageSize,
     TreeTest_ToggleSel,
     TreeTest_CollapseAndReset,
     TreeTest_EnsureVisible,
+    TreeTest_SetFocus,
     TreeTest_AddItem,
+    TreeTest_AddManyItems,
     TreeTest_InsertItem,
     TreeTest_IncIndent,
     TreeTest_DecIndent,
     TreeTest_IncSpacing,
     TreeTest_DecSpacing,
     TreeTest_ToggleIcon,
+    TreeTest_ToggleState,
     TreeTest_Select,
     TreeTest_Unselect,
     TreeTest_SelectRoot,
+    TreeTest_ClearFocused,
+    TreeTest_SetFocusedRoot,
+    TreeTest_SelectChildren,
+    TreeTest_ShowFirstVisible,
+    TreeTest_ShowLastVisible,
+    TreeTest_ShowNextVisible,
+    TreeTest_ShowPrevVisible,
+    TreeTest_ShowParent,
+    TreeTest_ShowPrevSibling,
+    TreeTest_ShowNextSibling,
+    TreeTest_ScrollTo,
+    TreeTest_SelectLast,
     TreeTest_Ctrl = 1000
 };

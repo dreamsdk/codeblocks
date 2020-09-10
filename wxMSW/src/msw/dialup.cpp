@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     07.07.99
-// RCS-ID:      $Id: dialup.cpp 52495 2008-03-14 14:18:24Z JS $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -39,35 +38,23 @@
 
 #include "wx/generic/choicdgg.h"
 
+#include "wx/msw/private.h"
+#include "wx/msw/private/hiddenwin.h"
+#include "wx/msw/private/event.h"
 #include "wx/dynlib.h"
 
-DEFINE_EVENT_TYPE(wxEVT_DIALUP_CONNECTED)
-DEFINE_EVENT_TYPE(wxEVT_DIALUP_DISCONNECTED)
+wxDEFINE_EVENT( wxEVT_DIALUP_CONNECTED, wxDialUpEvent );
+wxDEFINE_EVENT( wxEVT_DIALUP_DISCONNECTED, wxDialUpEvent );
 
-// Doesn't yet compile under VC++ 4, BC++, Watcom C++,
+// Doesn't yet compile under BC++
 // Wine: no wininet.h
 #if (!defined(__BORLANDC__) || (__BORLANDC__>=0x550)) && \
-    (!defined(__GNUWIN32__) || wxCHECK_W32API_VERSION(0, 5)) && \
-    !defined(__GNUWIN32_OLD__) && \
-    !defined(__WINE__) && \
-    (!defined(__VISUALC__) || (__VISUALC__ >= 1020))
+    !defined(__WINE__)
 
 #include <ras.h>
 #include <raserror.h>
 
 #include <wininet.h>
-
-// Not in VC++ 5
-#ifndef INTERNET_CONNECTION_LAN
-#define INTERNET_CONNECTION_LAN 2
-#endif
-#ifndef INTERNET_CONNECTION_PROXY
-#define INTERNET_CONNECTION_PROXY 4
-#endif
-
-// implemented in utils.cpp
-extern "C" WXDLLIMPEXP_BASE HWND
-wxCreateHiddenWindow(LPCTSTR *pclassname, LPCTSTR classname, WNDPROC wndproc);
 
 static const wxChar *
     wxMSWDIALUP_WNDCLASSNAME = wxT("_wxDialUpManager_Internal_Class");
@@ -111,7 +98,7 @@ static const wxChar *gs_classForDialUpWindow = NULL;
     typedef DWORD (APIENTRY * RASVALIDATEENTRYNAME)( LPCSTR, LPCSTR );
     typedef DWORD (APIENTRY * RASCONNECTIONNOTIFICATION)( HRASCONN, HANDLE, DWORD );
 
-    static const wxChar gs_funcSuffix = _T('A');
+    static const wxChar gs_funcSuffix = wxT('A');
 #else // Unicode
     typedef DWORD (APIENTRY * RASDIAL)( LPRASDIALEXTENSIONS, LPCWSTR, LPRASDIALPARAMSW, DWORD, LPVOID, LPHRASCONN );
     typedef DWORD (APIENTRY * RASENUMCONNECTIONS)( LPRASCONNW, LPDWORD, LPDWORD );
@@ -133,7 +120,7 @@ static const wxChar *gs_classForDialUpWindow = NULL;
     typedef DWORD (APIENTRY * RASVALIDATEENTRYNAME)( LPCWSTR, LPCWSTR );
     typedef DWORD (APIENTRY * RASCONNECTIONNOTIFICATION)( HRASCONN, HANDLE, DWORD );
 
-    static const wxChar gs_funcSuffix = _T('W');
+    static const wxChar gs_funcSuffix = wxT('W');
 #endif // ASCII/Unicode
 
 // structure passed to the secondary thread
@@ -142,8 +129,6 @@ struct WXDLLEXPORT wxRasThreadData
     wxRasThreadData()
     {
         hWnd = 0;
-        hEventRas =
-        hEventQuit = 0;
         dialUpManager = NULL;
     }
 
@@ -151,17 +136,11 @@ struct WXDLLEXPORT wxRasThreadData
     {
         if ( hWnd )
             DestroyWindow(hWnd);
-
-        if ( hEventQuit )
-            CloseHandle(hEventQuit);
-
-        if ( hEventRas )
-            CloseHandle(hEventRas);
     }
 
     HWND    hWnd;       // window to send notifications to
-    HANDLE  hEventRas,  // automatic event which RAS signals when status changes
-            hEventQuit; // manual event which we signal when we terminate
+    wxWinAPI::Event hEventRas,  // automatic event which RAS signals when status changes
+                    hEventQuit; // manual event which we signal when we terminate
 
     class WXDLLIMPEXP_FWD_CORE wxDialUpManagerMSW *dialUpManager;  // the owner
 };
@@ -178,23 +157,23 @@ public:
     virtual ~wxDialUpManagerMSW();
 
     // implement base class pure virtuals
-    virtual bool IsOk() const;
-    virtual size_t GetISPNames(wxArrayString& names) const;
+    virtual bool IsOk() const wxOVERRIDE;
+    virtual size_t GetISPNames(wxArrayString& names) const wxOVERRIDE;
     virtual bool Dial(const wxString& nameOfISP,
                       const wxString& username,
                       const wxString& password,
-                      bool async);
-    virtual bool IsDialing() const;
-    virtual bool CancelDialing();
-    virtual bool HangUp();
-    virtual bool IsAlwaysOnline() const;
-    virtual bool IsOnline() const;
-    virtual void SetOnlineStatus(bool isOnline = true);
-    virtual bool EnableAutoCheckOnlineStatus(size_t nSeconds);
-    virtual void DisableAutoCheckOnlineStatus();
-    virtual void SetWellKnownHost(const wxString& hostname, int port);
+                      bool async) wxOVERRIDE;
+    virtual bool IsDialing() const wxOVERRIDE;
+    virtual bool CancelDialing() wxOVERRIDE;
+    virtual bool HangUp() wxOVERRIDE;
+    virtual bool IsAlwaysOnline() const wxOVERRIDE;
+    virtual bool IsOnline() const wxOVERRIDE;
+    virtual void SetOnlineStatus(bool isOnline = true) wxOVERRIDE;
+    virtual bool EnableAutoCheckOnlineStatus(size_t nSeconds) wxOVERRIDE;
+    virtual void DisableAutoCheckOnlineStatus() wxOVERRIDE;
+    virtual void SetWellKnownHost(const wxString& hostname, int port) wxOVERRIDE;
     virtual void SetConnectCommand(const wxString& commandDial,
-                                   const wxString& commandHangup);
+                                   const wxString& commandHangup) wxOVERRIDE;
 
     // for RasTimer
     void CheckRasStatus();
@@ -232,12 +211,12 @@ private:
         RasTimer(wxDialUpManagerMSW *dialUpManager)
             { m_dialUpManager = dialUpManager; }
 
-        virtual void Notify() { m_dialUpManager->CheckRasStatus(); }
+        virtual void Notify() wxOVERRIDE { m_dialUpManager->CheckRasStatus(); }
 
     private:
         wxDialUpManagerMSW *m_dialUpManager;
 
-        DECLARE_NO_COPY_CLASS(RasTimer)
+        wxDECLARE_NO_COPY_CLASS(RasTimer);
     } m_timerStatusPolling;
 
     // thread handle for the thread sitting on connection change event
@@ -275,8 +254,6 @@ private:
     static RASRENAMEENTRY ms_pfnRasRenameEntry;
     static RASDELETEENTRY ms_pfnRasDeleteEntry;
     static RASVALIDATEENTRYNAME ms_pfnRasValidateEntryName;
-
-    // this function is not supported by Win95
     static RASCONNECTIONNOTIFICATION ms_pfnRasConnectionNotification;
 
     // if this flag is different from -1, it overrides IsOnline()
@@ -288,15 +265,15 @@ private:
     // this flag tells us whether a call to RasDial() is in progress
     static wxDialUpManagerMSW *ms_dialer;
 
-    DECLARE_NO_COPY_CLASS(wxDialUpManagerMSW)
+    wxDECLARE_NO_COPY_CLASS(wxDialUpManagerMSW);
 };
 
 // module to destroy helper window created by wxDialUpManagerMSW
 class wxDialUpManagerModule : public wxModule
 {
 public:
-    bool OnInit() { return true; }
-    void OnExit()
+    bool OnInit() wxOVERRIDE { return true; }
+    void OnExit() wxOVERRIDE
     {
         HWND hwnd = wxDialUpManagerMSW::GetRasWindow();
         if ( hwnd )
@@ -313,10 +290,10 @@ public:
     }
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxDialUpManagerModule)
+    wxDECLARE_DYNAMIC_CLASS(wxDialUpManagerModule);
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxDialUpManagerModule, wxModule)
+wxIMPLEMENT_DYNAMIC_CLASS(wxDialUpManagerModule, wxModule);
 
 // ----------------------------------------------------------------------------
 // private functions
@@ -384,7 +361,7 @@ wxDialUpManager *wxDialUpManager::Create()
 
 wxDialUpManagerMSW::wxDialUpManagerMSW()
                   : m_timerStatusPolling(this),
-                    m_dllRas(_T("RASAPI32"))
+                    m_dllRas(wxT("RASAPI32"))
 {
     // initialize our data
     m_autoCheckLevel = 0;
@@ -405,7 +382,7 @@ wxDialUpManagerMSW::wxDialUpManagerMSW()
 
         // get the function from rasapi32.dll and abort if it's not found
         #define RESOLVE_RAS_FUNCTION(type, name)                          \
-            ms_pfn##name = (type)m_dllRas.GetSymbol( wxString(_T(#name))  \
+            ms_pfn##name = (type)m_dllRas.GetSymbol( wxString(wxT(#name))  \
                                                      + gs_funcSuffix);    \
             if ( !ms_pfn##name )                                          \
             {                                                             \
@@ -416,7 +393,7 @@ wxDialUpManagerMSW::wxDialUpManagerMSW()
         // a variant of above macro which doesn't abort if the function is
         // not found in the DLL
         #define RESOLVE_OPTIONAL_RAS_FUNCTION(type, name)                 \
-            ms_pfn##name = (type)m_dllRas.GetSymbol( wxString(_T(#name))  \
+            ms_pfn##name = (type)m_dllRas.GetSymbol( wxString(wxT(#name))  \
                                                      + gs_funcSuffix);
 
         RESOLVE_RAS_FUNCTION(RASDIAL, RasDial);
@@ -452,12 +429,10 @@ wxDialUpManagerMSW::wxDialUpManagerMSW()
 exit:
         if ( funcName )
         {
-            static const wxChar *msg = wxTRANSLATE(
-"The version of remote access service (RAS) installed on this machine is too\
-old, please upgrade (the following required function is missing: %s)."
-                                                   );
-
-            wxLogError(wxGetTranslation(msg), funcName);
+            wxLogError(_("The version of remote access service (RAS) installed "
+                          "on this machine is too old, please upgrade (the "
+                          "following required function is missing: %s)."),
+                       funcName);
             m_dllRas.Unload();
             return;
         }
@@ -484,7 +459,7 @@ wxString wxDialUpManagerMSW::GetErrorString(DWORD error)
     {
         case ERROR_INVALID_PARAMETER:
             // this was a standard Win32 error probably
-            return wxString(wxSysErrorMsg(error));
+            return wxSysErrorMsgStr(error);
 
         default:
             {
@@ -566,7 +541,7 @@ HRASCONN wxDialUpManagerMSW::FindActiveConnection()
             // is used, for example, to select the connection to hang up and so
             // we may hang up the wrong connection here...
             wxLogWarning(_("Several active dialup connections found, choosing one randomly."));
-            // fall through
+            wxFALLTHROUGH;
 
         case 1:
             // exactly 1 connection, great
@@ -582,12 +557,10 @@ void wxDialUpManagerMSW::CleanUpThreadData()
 {
     if ( m_hThread )
     {
-        if ( !SetEvent(m_data->hEventQuit) )
+        if ( m_data->hEventQuit.Set() )
         {
-            wxLogLastError(_T("SetEvent(RasThreadQuit)"));
-        }
-        else // sent quit request to the background thread
-        {
+            // sent quit request to the background thread
+
             // the thread still needs m_data so we can't free it here, rather
             // let the thread do it itself
             m_data = NULL;
@@ -598,11 +571,7 @@ void wxDialUpManagerMSW::CleanUpThreadData()
         m_hThread = 0;
     }
 
-    if ( m_data )
-    {
-        delete m_data;
-        m_data = NULL;
-    }
+    wxDELETE(m_data);
 }
 
 // ----------------------------------------------------------------------------
@@ -809,7 +778,7 @@ bool wxDialUpManagerMSW::Dial(const wxString& nameOfISP,
 
     RASDIALPARAMS rasDialParams;
     rasDialParams.dwSize = sizeof(rasDialParams);
-    wxStrncpy(rasDialParams.szEntryName, entryName, RAS_MaxEntryName);
+    wxStrlcpy(rasDialParams.szEntryName, entryName.c_str(), RAS_MaxEntryName);
 
     // do we have the username and password?
     if ( !username || !password )
@@ -831,13 +800,12 @@ bool wxDialUpManagerMSW::Dial(const wxString& nameOfISP,
     }
     else
     {
-        wxStrncpy(rasDialParams.szUserName, username, UNLEN);
-        wxStrncpy(rasDialParams.szPassword, password, PWLEN);
+        wxStrlcpy(rasDialParams.szUserName, username.c_str(), UNLEN);
+        wxStrlcpy(rasDialParams.szPassword, password.c_str(), PWLEN);
     }
 
     // default values for other fields
     rasDialParams.szPhoneNumber[0] = '\0';
-    rasDialParams.szCallbackNumber[0] = '\0';
     rasDialParams.szCallbackNumber[0] = '\0';
 
     rasDialParams.szDomain[0] = '*';
@@ -884,9 +852,16 @@ bool wxDialUpManagerMSW::Dial(const wxString& nameOfISP,
     if ( dwRet != 0 )
     {
         // can't pass a wxWCharBuffer through ( ... )
-        wxLogError(_("Failed to %s dialup connection: %s"),
-                   wxString(async ? _("initiate") : _("establish")).c_str(),
-                   GetErrorString(dwRet).c_str());
+        if ( async )
+        {
+            wxLogError(_("Failed to initiate dialup connection: %s"),
+                       GetErrorString(dwRet).c_str());
+        }
+        else
+        {
+            wxLogError(_("Failed to establish dialup connection: %s"),
+                       GetErrorString(dwRet).c_str());
+        }
 
         // we should still call RasHangUp() if we got a non 0 connection
         if ( ms_hRasConnection )
@@ -979,14 +954,14 @@ bool wxDialUpManagerMSW::IsAlwaysOnline() const
     //     but we allow multiple instances of wxDialUpManagerMSW so
     //     we might as well use the ref counted version here too.
 
-    wxDynamicLibrary hDll(_T("WININET"));
+    wxDynamicLibrary hDll(wxT("WININET"));
     if ( hDll.IsLoaded() )
     {
         typedef BOOL (WINAPI *INTERNETGETCONNECTEDSTATE)(LPDWORD, DWORD);
         INTERNETGETCONNECTEDSTATE pfnInternetGetConnectedState;
 
         #define RESOLVE_FUNCTION(type, name) \
-            pfn##name = (type)hDll.GetSymbol(_T(#name))
+            pfn##name = (type)hDll.GetSymbol(wxT(#name))
 
         RESOLVE_FUNCTION(INTERNETGETCONNECTEDSTATE, InternetGetConnectedState);
 
@@ -1049,9 +1024,6 @@ bool wxDialUpManagerMSW::EnableAutoCheckOnlineStatus(size_t nSeconds)
 
     if ( ok )
     {
-        // we're running under NT 4.0, Windows 98 or later and can use
-        // RasConnectionNotification() to be notified by a secondary thread
-
         // first, see if we don't have this thread already running
         if ( m_hThread != 0 )
         {
@@ -1071,14 +1043,11 @@ bool wxDialUpManagerMSW::EnableAutoCheckOnlineStatus(size_t nSeconds)
     if ( ok )
     {
         // first create an event to wait on
-        m_data->hEventRas = ::CreateEvent
+        if ( !m_data->hEventRas.Create
                             (
-                             NULL,      // security attribute (default)
-                             FALSE,     // manual reset (no, it is automatic)
-                             FALSE,     // initial state (not signaled)
-                             NULL       // name (no)
-                            );
-        if ( !m_data->hEventRas )
+                             wxWinAPI::Event::AutomaticReset,
+                             wxWinAPI::Event::Nonsignaled
+                            ) )
         {
             wxLogLastError(wxT("CreateEvent(RasStatus)"));
 
@@ -1092,14 +1061,11 @@ bool wxDialUpManagerMSW::EnableAutoCheckOnlineStatus(size_t nSeconds)
         // here avoids problems with missing the event if wxDialUpManagerMSW
         // is created and destroyed immediately, before wxRasStatusWindowProc
         // starts waiting on the event
-        m_data->hEventQuit = ::CreateEvent
+        if ( !m_data->hEventQuit.Create
                              (
-                                NULL,   // default security
-                                TRUE,   // manual event
-                                FALSE,  // initially non signalled
-                                NULL    // nameless
-                             );
-        if ( !m_data->hEventQuit )
+                                wxWinAPI::Event::ManualReset,
+                                wxWinAPI::Event::Nonsignaled
+                             ) )
         {
             wxLogLastError(wxT("CreateEvent(RasThreadQuit)"));
 
@@ -1152,6 +1118,8 @@ bool wxDialUpManagerMSW::EnableAutoCheckOnlineStatus(size_t nSeconds)
             wxLogLastError(wxT("CreateThread(RasStatusThread)"));
 
             CleanUpThreadData();
+
+            ok = false;
         }
     }
 
@@ -1178,8 +1146,6 @@ bool wxDialUpManagerMSW::EnableAutoCheckOnlineStatus(size_t nSeconds)
         }
     }
 
-    // we're running under Windows 95 and have to poll ourselves
-    // (or, alternatively, the code above for NT/98 failed)
     m_timerStatusPolling.Stop();
     if ( nSeconds == 0 )
     {
@@ -1264,11 +1230,10 @@ static DWORD wxRasMonitorThread(wxRasThreadData *data)
                 break;
 
             default:
-                wxFAIL_MSG( _T("unexpected return of WaitForMultipleObjects()") );
-                // fall through
+                wxFAIL_MSG( wxT("unexpected return of WaitForMultipleObjects()") );
+                wxFALLTHROUGH;
 
             case WAIT_FAILED:
-#ifdef __WXDEBUG__
                 // using wxLogLastError() from here is dangerous: we risk to
                 // deadlock the main thread if wxLog sends output to GUI
                 DWORD err = GetLastError();
@@ -1277,9 +1242,8 @@ static DWORD wxRasMonitorThread(wxRasThreadData *data)
                 (
                     wxT("WaitForMultipleObjects(RasMonitor) failed: 0x%08lx (%s)"),
                     err,
-                    wxSysErrorMsg(err)
+                    wxSysErrorMsgStr(err)
                 );
-#endif // __WXDEBUG__
 
                 // no sense in continuing, who knows if the handles we're
                 // waiting for even exist yet...
@@ -1288,7 +1252,7 @@ static DWORD wxRasMonitorThread(wxRasThreadData *data)
     }
 
     // we don't need it any more now and if this thread ran, it is our
-    // responsability to free the data
+    // responsibility to free the data
     delete data;
 
     return 0;

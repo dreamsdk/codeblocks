@@ -9,14 +9,15 @@
  * See the file "license.terms" for information on usage and redistribution
  * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
  *
- * RCS: @(#) $Id: regc_locale.c 65053 2010-07-23 11:56:53Z VZ $
  *
  * wxWidgets:
  *  The Scriptics license can be found in the file COPYRIGHT. Modifications
- *  for wxWidgets are under the wxWidgets licence, see README for details.
+ *  for wxWidgets are under the wxWindows licence, see README for details.
  */
 
+#ifndef CONST
 #define CONST const
+#endif
 
 /* ASCII character-name table */
 
@@ -185,7 +186,7 @@ static crange alphaRangeTable[] = {
     {0xffc2, 0xffc7}, {0xffca, 0xffcf}, {0xffd2, 0xffd7}, {0xffda, 0xffdc}
 };
 
-#define NUM_ALPHA_RANGE (sizeof(alphaRangeTable)/sizeof(crange))
+const int NUM_ALPHA_RANGE = (sizeof(alphaRangeTable)/sizeof(crange));
 
 static chr alphaCharTable[] = {
     0x00aa, 0x00b5, 0x00ba, 0x02d0, 0x02d1, 0x02ee, 0x037a, 0x0386, 0x038c, 
@@ -203,7 +204,7 @@ static chr alphaCharTable[] = {
     0x309e, 0xfb1d, 0xfb3e, 0xfb40, 0xfb41, 0xfb43, 0xfb44, 0xfe74, 0xfffe
 };
 
-#define NUM_ALPHA_CHAR (sizeof(alphaCharTable)/sizeof(chr))
+const int NUM_ALPHA_CHAR = (sizeof(alphaCharTable)/sizeof(chr));
 
 /* Unicode: decimal digit characters */
 
@@ -215,7 +216,7 @@ static crange digitRangeTable[] = {
     {0x1369, 0x1371}, {0x17e0, 0x17e9}, {0x1810, 0x1819}, {0xff10, 0xff19}
 };
 
-#define NUM_DIGIT_RANGE (sizeof(digitRangeTable)/sizeof(crange))
+const int NUM_DIGIT_RANGE = (sizeof(digitRangeTable)/sizeof(crange));
 
 /* no singletons of digit characters */
 
@@ -231,7 +232,7 @@ static crange punctRangeTable[] = {
     {0xff05, 0xff0a}, {0xff0c, 0xff0f}, {0xff3b, 0xff3d}, {0xff61, 0xff65}
 };
 
-#define NUM_PUNCT_RANGE (sizeof(punctRangeTable)/sizeof(crange))
+const int NUM_PUNCT_RANGE = (sizeof(punctRangeTable)/sizeof(crange));
 
 static chr punctCharTable[] = {
     0x003a, 0x003b, 0x003f, 0x0040, 0x005f, 0x007b, 0x007d, 0x00a1, 0x00ab, 
@@ -243,7 +244,7 @@ static chr punctCharTable[] = {
     0xfe6a, 0xfe6b, 0xff1a, 0xff1b, 0xff1f, 0xff20, 0xff3f, 0xff5b, 0xff5d
 };
 
-#define NUM_PUNCT_CHAR (sizeof(punctCharTable)/sizeof(chr))
+const int NUM_PUNCT_CHAR = (sizeof(punctCharTable)/sizeof(chr));
 
 /* Unicode: white space characters */
 
@@ -251,13 +252,13 @@ static crange spaceRangeTable[] = {
     {0x0009, 0x000d}, {0x2000, 0x200b}
 };
 
-#define NUM_SPACE_RANGE (sizeof(spaceRangeTable)/sizeof(crange))
+const int NUM_SPACE_RANGE = (sizeof(spaceRangeTable)/sizeof(crange));
 
 static chr spaceCharTable[] = {
     0x0020, 0x00a0, 0x1680, 0x2028, 0x2029, 0x202f, 0x3000
 };
 
-#define NUM_SPACE_CHAR (sizeof(spaceCharTable)/sizeof(chr))
+const int NUM_SPACE_CHAR = (sizeof(spaceCharTable)/sizeof(chr));
 
 /* Unicode: lowercase characters */
 
@@ -272,7 +273,7 @@ static crange lowerRangeTable[] = {
     {0x1ff2, 0x1ff4}, {0xfb00, 0xfb06}, {0xfb13, 0xfb17}, {0xff41, 0xff5a}
 };
 
-#define NUM_LOWER_RANGE (sizeof(lowerRangeTable)/sizeof(crange))
+const int NUM_LOWER_RANGE = (sizeof(lowerRangeTable)/sizeof(crange));
 
 static chr lowerCharTable[] = {
     0x00aa, 0x00b5, 0x00ba, 0x0101, 0x0103, 0x0105, 0x0107, 0x0109, 0x010b, 
@@ -317,7 +318,7 @@ static chr lowerCharTable[] = {
     0x210f, 0x2113, 0x212f, 0x2134, 0x2139
 };
 
-#define NUM_LOWER_CHAR (sizeof(lowerCharTable)/sizeof(chr))
+const int NUM_LOWER_CHAR = (sizeof(lowerCharTable)/sizeof(chr));
 
 /* Unicode: uppercase characters */
 
@@ -332,7 +333,7 @@ static crange upperRangeTable[] = {
     {0x2119, 0x211d}, {0x212a, 0x212d}, {0xff21, 0xff3a}
 };
 
-#define NUM_UPPER_RANGE (sizeof(upperRangeTable)/sizeof(crange))
+const int NUM_UPPER_RANGE = (sizeof(upperRangeTable)/sizeof(crange));
 
 static chr upperCharTable[] = {
     0x0100, 0x0102, 0x0104, 0x0106, 0x0108, 0x010a, 0x010c, 0x010e, 0x0110, 
@@ -377,7 +378,7 @@ static chr upperCharTable[] = {
     0x2131, 0x2133
 };
 
-#define NUM_UPPER_CHAR (sizeof(upperCharTable)/sizeof(chr))
+const int NUM_UPPER_CHAR = (sizeof(upperCharTable)/sizeof(chr));
 
 /* Unicode: unicode print characters excluding space */
 
@@ -501,7 +502,7 @@ static crange graphRangeTable[] = {
     {0xfffc, 0xffff}
 };
 
-#define NUM_GRAPH_RANGE (sizeof(graphRangeTable)/sizeof(crange))
+const int NUM_GRAPH_RANGE = (sizeof(graphRangeTable)/sizeof(crange));
 
 static chr graphCharTable[] = {
     0x0374, 0x0375, 0x037a, 0x037e, 0x038c, 0x0488, 0x0489, 0x04c7, 0x04c8, 
@@ -520,7 +521,7 @@ static chr graphCharTable[] = {
     0x303e, 0x303f, 0xa4c6, 0xfb3e, 0xfb40, 0xfb41, 0xfb43, 0xfb44, 0xfe74
 };
 
-#define NUM_GRAPH_CHAR (sizeof(graphCharTable)/sizeof(chr))
+const int NUM_GRAPH_CHAR = (sizeof(graphCharTable)/sizeof(chr));
 
 /*
  *	End of auto-generated Unicode character ranges declarations.
@@ -634,9 +635,9 @@ static struct cclass {
  */
 
 #define Tcl_UniChar wxChar
-Tcl_UniChar Tcl_UniCharToUpper(int ch) { return wxToupper(ch); }
-Tcl_UniChar Tcl_UniCharToLower(int ch) { return wxTolower(ch); }
-Tcl_UniChar Tcl_UniCharToTitle(int ch) { return wxToupper(ch); }
+Tcl_UniChar Tcl_UniCharToUpper(int ch) { return wxCRT_ToupperNative(ch); }
+Tcl_UniChar Tcl_UniCharToLower(int ch) { return wxCRT_TolowerNative(ch); }
+Tcl_UniChar Tcl_UniCharToTitle(int ch) { return wxCRT_ToupperNative(ch); }
 
 #endif  /* !wxUSE_UNICODE */
 
@@ -703,7 +704,7 @@ element(v, startp, endp)
 
     /* search table */
     for (cn=cnames; cn->name!=NULL; cn++) {
-	if (wxStrlen_(cn->name)==len && wxStrncmp(cn->name, startp, len)==0) {
+	if (wxCRT_StrlenNative(cn->name)==len && wxCRT_StrncmpNative(cn->name, startp, len)==0) {
 	    break;			/* NOTE BREAK OUT */
 	}
     }
@@ -871,8 +872,8 @@ cclass(v, startp, endp, cases)
      * Remap lower and upper to alpha if the match is case insensitive.
      */
 
-    if (cases && len == 5 && (wxStrncmp(wxT("lower"), np, 5) == 0
-	    || wxStrncmp(wxT("upper"), np, 5) == 0)) {
+    if (cases && len == 5 && (wxCRT_StrncmpNative(wxT("lower"), np, 5) == 0
+	    || wxCRT_StrncmpNative(wxT("upper"), np, 5) == 0)) {
 	np = wxT("alpha");
     }
 
@@ -882,7 +883,7 @@ cclass(v, startp, endp, cases)
 
     index = -1;
     for (namePtr=classNames,i=0 ; *namePtr!=NULL ; namePtr++,i++) {
-	if ((wxStrlen_(*namePtr) == len) && (wxStrncmp(*namePtr, np, len) == 0)) {
+	if ((wxCRT_StrlenNative(*namePtr) == len) && (wxCRT_StrncmpNative(*namePtr, np, len) == 0)) {
 	    index = i;
 	    break;
 	}
@@ -1057,11 +1058,11 @@ int cases;                      /* case-independent? */
     /* find the name */
     len = endp - startp;
     np = startp;
-    if (cases && len == 5 && (wxStrncmp(wxT("lower"), np, 5) == 0 ||
-                                    wxStrncmp(wxT("upper"), np, 5) == 0))
+    if (cases && len == 5 && (wxCRT_StrncmpNative(wxT("lower"), np, 5) == 0 ||
+                                    wxCRT_StrncmpNative(wxT("upper"), np, 5) == 0))
             np = wxT("alpha");
     for (cc = cclasses; cc->name != NULL; cc++)
-            if (wxStrlen_(cc->name) == len && wxStrncmp(cc->name, np, len) == 0)
+            if (wxCRT_StrlenNative(cc->name) == len && wxCRT_StrncmpNative(cc->name, np, len) == 0)
                     break;          /* NOTE BREAK OUT */
     if (cc->name == NULL) {
             ERR(REG_ECTYPE);

@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     11.09.00
-// RCS-ID:      $Id: radiobox.cpp 39517 2006-06-01 20:52:09Z ABX $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -63,7 +62,7 @@ public:
     virtual bool ProcessEvent(wxEvent& event)
     {
         // we intercept the command events from radio buttons
-        if ( event.GetEventType() == wxEVT_COMMAND_RADIOBUTTON_SELECTED )
+        if ( event.GetEventType() == wxEVT_RADIOBUTTON )
         {
             m_radio->OnRadioButton(event);
         }
@@ -87,7 +86,7 @@ private:
 // implementation
 // ============================================================================
 
-IMPLEMENT_DYNAMIC_CLASS(wxRadioBox, wxControl)
+wxIMPLEMENT_DYNAMIC_CLASS(wxRadioBox, wxControl);
 
 // ----------------------------------------------------------------------------
 // wxRadioBox creation
@@ -141,28 +140,8 @@ bool wxRadioBox::Create(wxWindow *parent,
                         const wxValidator& wxVALIDATOR_PARAM(val),
                         const wxString& name)
 {
-    // for compatibility with the other ports which don't handle (yet?)
-    // wxRA_LEFTTORIGHT and wxRA_TOPTOBOTTOM flags, we add them ourselves if
-    // not specified
-    if ( !(style & (wxRA_LEFTTORIGHT | wxRA_TOPTOBOTTOM)) )
-    {
-        // horizontal radiobox use left to right layout
-        if ( style & wxRA_HORIZONTAL )
-        {
-            style |= wxRA_LEFTTORIGHT;
-        }
-        else if ( style & wxRA_VERTICAL )
-        {
-            style |= wxRA_TOPTOBOTTOM;
-        }
-        else
-        {
-            wxFAIL_MSG( _T("you must specify wxRA_XXX style!") );
-
-            // use default
-            style = wxRA_HORIZONTAL | wxRA_LEFTTORIGHT;
-        }
-    }
+    if ( !(style & (wxRA_SPECIFY_ROWS | wxRA_SPECIFY_COLS)) )
+        style |= wxRA_SPECIFY_COLS;
 
     if ( !wxStaticBox::Create(parent, id, title, pos, size, style, name) )
         return false;
@@ -239,7 +218,7 @@ void wxRadioBox::Append(int count, const wxString *choices)
 
 void wxRadioBox::SetSelection(int n)
 {
-    wxCHECK_RET( IsValid(n), _T("invalid index in wxRadioBox::SetSelection") );
+    wxCHECK_RET( IsValid(n), wxT("invalid index in wxRadioBox::SetSelection") );
 
     m_selection = n;
 
@@ -259,9 +238,9 @@ int wxRadioBox::GetSelection() const
 
 void wxRadioBox::SendRadioEvent()
 {
-    wxCHECK_RET( m_selection != -1, _T("no active radio button") );
+    wxCHECK_RET( m_selection != -1, wxT("no active radio button") );
 
-    wxCommandEvent event(wxEVT_COMMAND_RADIOBOX_SELECTED, GetId());
+    wxCommandEvent event(wxEVT_RADIOBOX, GetId());
     InitCommandEvent(event);
     event.SetInt(m_selection);
     event.SetString(GetString(m_selection));
@@ -272,7 +251,7 @@ void wxRadioBox::SendRadioEvent()
 void wxRadioBox::OnRadioButton(wxEvent& event)
 {
     int n = m_buttons.Index((wxRadioButton *)event.GetEventObject());
-    wxCHECK_RET( n != wxNOT_FOUND, _T("click from alien radio button") );
+    wxCHECK_RET( n != wxNOT_FOUND, wxT("click from alien radio button") );
 
     m_selection = n;
 
@@ -286,42 +265,42 @@ void wxRadioBox::OnRadioButton(wxEvent& event)
 wxString wxRadioBox::GetString(unsigned int n) const
 {
     wxCHECK_MSG( IsValid(n), wxEmptyString,
-                 _T("invalid index in wxRadioBox::GetString") );
+                 wxT("invalid index in wxRadioBox::GetString") );
 
     return m_buttons[n]->GetLabel();
 }
 
 void wxRadioBox::SetString(unsigned int n, const wxString& label)
 {
-    wxCHECK_RET( IsValid(n), _T("invalid index in wxRadioBox::SetString") );
+    wxCHECK_RET( IsValid(n), wxT("invalid index in wxRadioBox::SetString") );
 
     m_buttons[n]->SetLabel(label);
 }
 
 bool wxRadioBox::Enable(unsigned int n, bool enable)
 {
-    wxCHECK_MSG( IsValid(n), false, _T("invalid index in wxRadioBox::Enable") );
+    wxCHECK_MSG( IsValid(n), false, wxT("invalid index in wxRadioBox::Enable") );
 
     return m_buttons[n]->Enable(enable);
 }
 
 bool wxRadioBox::IsItemEnabled(unsigned int n) const
 {
-    wxCHECK_MSG( IsValid(n), false, _T("invalid index in wxRadioBox::IsItemEnabled") );
+    wxCHECK_MSG( IsValid(n), false, wxT("invalid index in wxRadioBox::IsItemEnabled") );
 
     return m_buttons[n]->IsEnabled();
 }
 
 bool wxRadioBox::Show(unsigned int n, bool show)
 {
-    wxCHECK_MSG( IsValid(n), false, _T("invalid index in wxRadioBox::Show") );
+    wxCHECK_MSG( IsValid(n), false, wxT("invalid index in wxRadioBox::Show") );
 
     return m_buttons[n]->Show(show);
 }
 
 bool wxRadioBox::IsItemShown(unsigned int n) const
 {
-    wxCHECK_MSG( IsValid(n), false, _T("invalid index in wxRadioBox::IsItemShown") );
+    wxCHECK_MSG( IsValid(n), false, wxT("invalid index in wxRadioBox::IsItemShown") );
 
     return m_buttons[n]->IsShown();
 }
@@ -448,7 +427,7 @@ void wxRadioBox::DoMoveWindow(int x0, int y0, int width, int height)
     {
         m_buttons[n]->SetSize(x, y, sizeBtn.x, sizeBtn.y);
 
-        if ( GetWindowStyle() & wxRA_TOPTOBOTTOM )
+        if ( GetWindowStyle() & wxRA_SPECIFY_ROWS )
         {
             // from top to bottom
             if ( (n + 1) % GetRowCount() )
@@ -463,7 +442,7 @@ void wxRadioBox::DoMoveWindow(int x0, int y0, int width, int height)
                 y = y0;
             }
         }
-        else // wxRA_LEFTTORIGHT: mirror the code above
+        else // wxRA_SPECIFY_COLS: mirror the code above
         {
             // from left to right
             if ( (n + 1) % GetColumnCount() )

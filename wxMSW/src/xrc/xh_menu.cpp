@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for menus and menubars
 // Author:      Vaclav Slavik
 // Created:     2000/03/05
-// RCS-ID:      $Id: xh_menu.cpp 63466 2010-02-11 12:47:17Z VS $
 // Copyright:   (c) 2000 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -21,10 +20,11 @@
 
 #ifndef WX_PRECOMP
     #include "wx/frame.h"
+    #include "wx/log.h"
     #include "wx/menu.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxMenuXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxMenuXmlHandler, wxXmlResourceHandler);
 
 wxMenuXmlHandler::wxMenuXmlHandler() :
         wxXmlResourceHandler(), m_insideMenu(false)
@@ -78,26 +78,51 @@ wxObject *wxMenuXmlHandler::DoCreateResource()
         {
             int id = GetID();
             wxString label = GetText(wxT("label"));
+#if wxUSE_ACCEL
             wxString accel = GetText(wxT("accel"), false);
-            wxString fullLabel = label;
-            if (!accel.empty())
-                fullLabel << wxT("\t") << accel;
+#endif // wxUSE_ACCEL
 
             wxItemKind kind = wxITEM_NORMAL;
             if (GetBool(wxT("radio")))
                 kind = wxITEM_RADIO;
             if (GetBool(wxT("checkable")))
             {
-                wxASSERT_MSG( kind == wxITEM_NORMAL, _T("can't have both checkable and radion button at once") );
+                if ( kind != wxITEM_NORMAL )
+                {
+                    ReportParamError
+                    (
+                        "checkable",
+                        "menu item can't have both <radio> and <checkable> properties"
+                    );
+                }
+
                 kind = wxITEM_CHECK;
             }
 
-            wxMenuItem *mitem = new wxMenuItem(p_menu, id, fullLabel,
+            wxMenuItem *mitem = new wxMenuItem(p_menu, id, label,
                                                GetText(wxT("help")), kind);
+#if wxUSE_ACCEL
+            if (!accel.empty())
+            {
+                wxAcceleratorEntry entry;
+                if (entry.FromString(accel))
+                    mitem->SetAccel(&entry);
+            }
+#endif // wxUSE_ACCEL
 
-#if (!defined(__WXMSW__) && !defined(__WXPM__)) || wxUSE_OWNER_DRAWN
+#if !defined(__WXMSW__) || wxUSE_OWNER_DRAWN
             if (HasParam(wxT("bitmap")))
-                mitem->SetBitmap(GetBitmap(wxT("bitmap"), wxART_MENU));
+            {
+                // currently only wxMSW has support for using different checked
+                // and unchecked bitmaps for menu items
+#ifdef __WXMSW__
+                if (HasParam(wxT("bitmap2")))
+                    mitem->SetBitmaps(GetBitmap(wxT("bitmap2"), wxART_MENU),
+                                      GetBitmap(wxT("bitmap"), wxART_MENU));
+                else
+#endif // __WXMSW__
+                    mitem->SetBitmap(GetBitmap(wxT("bitmap"), wxART_MENU));
+            }
 #endif
             p_menu->Append(mitem);
             mitem->Enable(GetBool(wxT("enabled"), true));
@@ -120,7 +145,7 @@ bool wxMenuXmlHandler::CanHandle(wxXmlNode *node)
            );
 }
 
-IMPLEMENT_DYNAMIC_CLASS(wxMenuBarXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxMenuBarXmlHandler, wxXmlResourceHandler);
 
 wxMenuBarXmlHandler::wxMenuBarXmlHandler() : wxXmlResourceHandler()
 {
@@ -133,7 +158,7 @@ wxObject *wxMenuBarXmlHandler::DoCreateResource()
 
     const int style = GetStyle();
     wxASSERT_MSG(!style || !m_instance,
-                 wxT("cannot use <style> with pre-created menubar"));
+                 "cannot use <style> with pre-created menubar");
 
     if ( m_instance )
         menubar = wxDynamicCast(m_instance, wxMenuBar);

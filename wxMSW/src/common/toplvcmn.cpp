@@ -3,7 +3,6 @@
 // Purpose:     common (for all platforms) wxTopLevelWindow functions
 // Author:      Julian Smart, Vadim Zeitlin
 // Created:     01/02/97
-// Id:          $Id: toplvcmn.cpp 53617 2008-05-17 12:56:18Z VZ $
 // Copyright:   (c) 1998 Robert Roebling and Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -32,20 +31,22 @@
 
 #include "wx/display.h"
 
+#include "wx/private/tlwgeom.h"
+
 // ----------------------------------------------------------------------------
 // event table
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(wxTopLevelWindowBase, wxWindow)
+wxBEGIN_EVENT_TABLE(wxTopLevelWindowBase, wxWindow)
     EVT_CLOSE(wxTopLevelWindowBase::OnCloseWindow)
     EVT_SIZE(wxTopLevelWindowBase::OnSize)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // implementation
 // ============================================================================
 
-IMPLEMENT_ABSTRACT_CLASS(wxTopLevelWindow, wxWindow)
+wxIMPLEMENT_ABSTRACT_CLASS(wxTopLevelWindow, wxWindow);
 
 // ----------------------------------------------------------------------------
 // construction/destruction
@@ -55,8 +56,6 @@ wxTopLevelWindowBase::wxTopLevelWindowBase()
 {
     // Unlike windows, top level windows are created hidden by default.
     m_isShown = false;
-    m_winDefault = NULL;
-    m_winTmpDefault = NULL;
 }
 
 wxTopLevelWindowBase::~wxTopLevelWindowBase()
@@ -67,6 +66,34 @@ wxTopLevelWindowBase::~wxTopLevelWindowBase()
 
     wxTopLevelWindows.DeleteObject(this);
 
+    // delete any our top level children which are still pending for deletion
+    // immediately: this could happen if a child (e.g. a temporary dialog
+    // created with this window as parent) was Destroy()'d) while this window
+    // was deleted directly (with delete, or maybe just because it was created
+    // on the stack) immediately afterwards and before the child TLW was really
+    // destroyed -- not destroying it now would leave it alive with a dangling
+    // parent pointer and result in a crash later
+    for ( wxObjectList::iterator i = wxPendingDelete.begin();
+          i != wxPendingDelete.end();
+          )
+    {
+        wxWindow * const win = wxDynamicCast(*i, wxWindow);
+        if ( win && wxGetTopLevelParent(win->GetParent()) == this )
+        {
+            wxPendingDelete.erase(i);
+
+            delete win;
+
+            // deleting it invalidated the list (and not only one node because
+            // it could have resulted in deletion of other objects to)
+            i = wxPendingDelete.begin();
+        }
+        else
+        {
+            ++i;
+        }
+    }
+
     if ( IsLastBeforeExit() )
     {
         // no other (important) windows left, quit the app
@@ -76,17 +103,21 @@ wxTopLevelWindowBase::~wxTopLevelWindowBase()
 
 bool wxTopLevelWindowBase::Destroy()
 {
+    // We can't delay the destruction if our parent is being already destroyed
+    // as we will be deleted anyhow during its destruction and the pointer
+    // stored in wxPendingDelete would become invalid, so just delete ourselves
+    // immediately in this case.
+    wxWindow* parent = GetParent();
+    if ( (parent && parent->IsBeingDeleted()) || !GetHandle() )
+    {
+        return wxNonOwnedWindow::Destroy();
+    }
+
     // delayed destruction: the frame will be deleted during the next idle
     // loop iteration
     if ( !wxPendingDelete.Member(this) )
         wxPendingDelete.Append(this);
 
-#ifdef __WXMAC__
-    // on mac we know that objects will always be deleted after this event
-    // has been handled, using Hide we avoid erratic redraws during window
-    // tear down
-    Hide();
-#else // !__WXMAC__
     // normally we want to hide the window immediately so that it doesn't get
     // stuck on the screen while it's being destroyed, however we shouldn't
     // hide the last visible window as then we might not get any idle events
@@ -98,7 +129,7 @@ bool wxTopLevelWindowBase::Destroy()
           i != end;
           ++i )
     {
-        wxTopLevelWindow * const win = wx_static_cast(wxTopLevelWindow *, *i);
+        wxTopLevelWindow * const win = static_cast<wxTopLevelWindow *>(*i);
         if ( win != this && win->IsShown() )
         {
             // there remains at least one other visible TLW, we can hide this
@@ -108,7 +139,6 @@ bool wxTopLevelWindowBase::Destroy()
             break;
         }
     }
-#endif // __WXMAC__/!__WXMAC__
 
     return true;
 }
@@ -120,13 +150,21 @@ bool wxTopLevelWindowBase::IsLastBeforeExit() const
     if ( !wxTheApp || !wxTheApp->GetExitOnFrameDelete() )
         return false;
 
+    // second, never terminate the application after closing a child TLW
+    // because this would close its parent unexpectedly -- notice that this
+    // check is not redundant with the loop below, as the parent might return
+    // false from its ShouldPreventAppExit() -- except if the child is being
+    // deleted as part of the parent destruction
+    if ( GetParent() && !GetParent()->IsBeingDeleted() )
+        return false;
+
     wxWindowList::const_iterator i;
     const wxWindowList::const_iterator end = wxTopLevelWindows.end();
 
     // then decide whether we should exit at all
     for ( i = wxTopLevelWindows.begin(); i != end; ++i )
     {
-        wxTopLevelWindow * const win = wx_static_cast(wxTopLevelWindow *, *i);
+        wxTopLevelWindow * const win = static_cast<wxTopLevelWindow *>(*i);
         if ( win->ShouldPreventAppExit() )
         {
             // there remains at least one important TLW, don't exit
@@ -138,7 +176,7 @@ bool wxTopLevelWindowBase::IsLastBeforeExit() const
     for ( i = wxTopLevelWindows.begin(); i != end; ++i )
     {
         // don't close twice the windows which are already marked for deletion
-        wxTopLevelWindow * const win = wx_static_cast(wxTopLevelWindow *, *i);
+        wxTopLevelWindow * const win = static_cast<wxTopLevelWindow *>(*i);
         if ( !wxPendingDelete.Member(win) && !win->Close() )
         {
             // one of the windows refused to close, don't exit
@@ -160,29 +198,12 @@ bool wxTopLevelWindowBase::IsLastBeforeExit() const
 
 void wxTopLevelWindowBase::SetMinSize(const wxSize& minSize)
 {
-    SetSizeHints( minSize.x, minSize.y, GetMaxWidth(), GetMaxHeight() );    
+    SetSizeHints(minSize, GetMaxSize());
 }
 
 void wxTopLevelWindowBase::SetMaxSize(const wxSize& maxSize)
 {
-    SetSizeHints( GetMinWidth(), GetMinHeight(), maxSize.x, maxSize.y );
-}
-
-// set the min/max size of the window
-void wxTopLevelWindowBase::DoSetSizeHints(int minW, int minH,
-                                  int maxW, int maxH,
-                                  int WXUNUSED(incW), int WXUNUSED(incH))
-{
-    // setting min width greater than max width leads to infinite loops under
-    // X11 and generally doesn't make any sense, so don't allow it
-    wxCHECK_RET( (minW == wxDefaultCoord || maxW == wxDefaultCoord || minW <= maxW) &&
-                    (minH == wxDefaultCoord || maxH == wxDefaultCoord || minH <= maxH),
-                 _T("min width/height must be less than max width/height!") );
-
-    m_minWidth = minW;
-    m_maxWidth = maxW;
-    m_minHeight = minH;
-    m_maxHeight = maxH;
+    SetSizeHints(GetMinSize(), maxSize);
 }
 
 void wxTopLevelWindowBase::GetRectForTopLevelChildren(int *x, int *y, int *w, int *h)
@@ -195,7 +216,7 @@ void wxTopLevelWindowBase::GetRectForTopLevelChildren(int *x, int *y, int *w, in
 wxSize wxTopLevelWindowBase::GetDefaultSize()
 {
     wxSize size = wxGetClientDisplayRect().GetSize();
-
+#ifndef __WXOSX_IPHONE__
     // create proportionally bigger windows on small screens
     if ( size.x >= 1024 )
         size.x = 400;
@@ -211,7 +232,7 @@ wxSize wxTopLevelWindowBase::GetDefaultSize()
         size.y *= 2;
         size.y /= 3;
     }
-
+#endif
     return size;
 }
 
@@ -219,14 +240,16 @@ void wxTopLevelWindowBase::DoCentre(int dir)
 {
     // on some platforms centering top level windows is impossible
     // because they are always maximized by guidelines or limitations
-    if(IsAlwaysMaximized())
+    //
+    // and centering a maximized window doesn't make sense as its position
+    // can't change
+    if ( IsAlwaysMaximized() || IsMaximized() )
         return;
 
     // we need the display rect anyhow so store it first: notice that we should
     // be centered on the same display as our parent window, the display of
     // this window itself is not really defined yet
-    int nDisplay = wxDisplay::GetFromWindow(GetParent() ? GetParent() : this);
-    wxDisplay dpy(nDisplay == wxNOT_FOUND ? 0 : nDisplay);
+    wxDisplay dpy(GetParent() ? GetParent() : this);
     const wxRect rectDisplay(dpy.GetClientArea());
 
     // what should we centre this window on?
@@ -241,24 +264,18 @@ void wxTopLevelWindowBase::DoCentre(int dir)
         // parent frame under Mac but could happen elsewhere too if the frame
         // was hidden/moved away for some reason), don't use it as otherwise
         // this window wouldn't be visible at all
-        if ( !rectDisplay.Contains(rectParent.GetTopLeft()) &&
-                !rectParent.Contains(rectParent.GetBottomRight()) )
+        if ( !rectParent.Intersects(rectDisplay) )
         {
-            // this is enough to make IsEmpty() test below pass
-            rectParent.width = 0;
+            // just centre on screen then
+            rectParent = rectDisplay;
         }
     }
-
-    if ( rectParent.IsEmpty() )
+    else
     {
-        // we were explicitely asked to centre this window on the entire screen
+        // we were explicitly asked to centre this window on the entire screen
         // or if we have no parent anyhow and so can't centre on it
         rectParent = rectDisplay;
     }
-
-    // centering maximized window on screen is no-op
-    if((rectParent == rectDisplay) && IsMaximized())
-        return;
 
     if ( !(dir & wxBOTH) )
         dir |= wxBOTH; // if neither is specified, center in both directions
@@ -295,6 +312,28 @@ void wxTopLevelWindowBase::DoCentre(int dir)
 }
 
 // ----------------------------------------------------------------------------
+// Saving/restoring geometry
+// ----------------------------------------------------------------------------
+
+bool wxTopLevelWindowBase::SaveGeometry(const GeometrySerializer& ser) const
+{
+    wxTLWGeometry geom;
+    if ( !geom.GetFrom(static_cast<const wxTopLevelWindow*>(this)) )
+        return false;
+
+    return geom.Save(ser);
+}
+
+bool wxTopLevelWindowBase::RestoreToGeometry(GeometrySerializer& ser)
+{
+    wxTLWGeometry geom;
+    if ( !geom.Restore(ser) )
+        return false;
+
+    return geom.ApplyTo(static_cast<wxTopLevelWindow*>(this));
+}
+
+// ----------------------------------------------------------------------------
 // wxTopLevelWindow size management: we exclude the areas taken by
 // menu/status/toolbars from the client area, so the client area is what's
 // really available for the frame contents
@@ -327,30 +366,74 @@ void wxTopLevelWindowBase::DoClientToScreen(int *x, int *y) const
 
 bool wxTopLevelWindowBase::IsAlwaysMaximized() const
 {
-#if defined(__SMARTPHONE__) || defined(__POCKETPC__)
-    return true;
-#else
     return false;
-#endif
+}
+
+// ----------------------------------------------------------------------------
+// icons
+// ----------------------------------------------------------------------------
+
+wxIcon wxTopLevelWindowBase::GetIcon() const
+{
+    return m_icons.IsEmpty() ? wxIcon() : m_icons.GetIcon( -1 );
+}
+
+void wxTopLevelWindowBase::SetIcon(const wxIcon& icon)
+{
+    // passing wxNullIcon to SetIcon() is possible (it means that we shouldn't
+    // have any icon), but adding an invalid icon to wxIconBundle is not
+    wxIconBundle icons;
+    if ( icon.IsOk() )
+        icons.AddIcon(icon);
+
+    SetIcons(icons);
 }
 
 // ----------------------------------------------------------------------------
 // event handlers
 // ----------------------------------------------------------------------------
 
+bool wxTopLevelWindowBase::IsTopNavigationDomain(NavigationKind kind) const
+{
+    // This switch only exists to generate a compiler warning and force us to
+    // revisit this code if any new kinds of navigation are added in the
+    // future, but for now we block of them by default (some derived classes
+    // relax this however).
+    switch ( kind )
+    {
+        case Navigation_Tab:
+        case Navigation_Accel:
+            break;
+    }
+
+    return true;
+}
+
 // default resizing behaviour - if only ONE subwindow, resize to fill the
 // whole client area
-void wxTopLevelWindowBase::DoLayout()
+bool wxTopLevelWindowBase::Layout()
 {
-    // if we're using constraints or sizers - do use them
-    if ( GetAutoLayout() )
+    // We are called during the window destruction several times, e.g. as
+    // wxFrame tries to adjust to its tool/status bars disappearing. But
+    // actually doing the layout is pretty useless in this case as the window
+    // will disappear anyhow -- so just don't bother.
+    if ( IsBeingDeleted() )
+        return false;
+
+
+    // if we're using sizers or constraints - do use them
+    if ( GetSizer()
+#if wxUSE_CONSTRAINTS
+                    || GetConstraints()
+#endif
+                                        )
     {
-        Layout();
+        return wxNonOwnedWindow::Layout();
     }
     else
     {
         // do we have _exactly_ one child?
-        wxWindow *child = (wxWindow *)NULL;
+        wxWindow *child = NULL;
         for ( wxWindowList::compatibility_iterator node = GetChildren().GetFirst();
               node;
               node = node->GetNext() )
@@ -364,7 +447,7 @@ void wxTopLevelWindowBase::DoLayout()
             {
                 if ( child )
                 {
-                    return;     // it's our second subwindow - nothing to do
+                    return false; // it's our second subwindow - nothing to do
                 }
 
                 child = win;
@@ -379,8 +462,12 @@ void wxTopLevelWindowBase::DoLayout()
             DoGetClientSize(&clientW, &clientH);
 
             child->SetSize(0, 0, clientW, clientH);
+
+            return true;
         }
     }
+
+    return false;
 }
 
 // The default implementation for the close window event.
@@ -417,15 +504,4 @@ void wxTopLevelWindowBase::RequestUserAttention(int WXUNUSED(flags))
 {
     // it's probably better than do nothing, isn't it?
     Raise();
-}
-
-void wxTopLevelWindowBase::RemoveChild(wxWindowBase *child)
-{
-    if ( child == m_winDefault )
-        m_winDefault = NULL;
-
-    if ( child == m_winTmpDefault )
-        m_winTmpDefault = NULL;
-
-    wxWindow::RemoveChild(child);
 }

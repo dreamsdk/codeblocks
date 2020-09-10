@@ -4,7 +4,6 @@
 // Notes:       Based on htmlhelp.cpp, implementing a monolithic
 //              HTML Help controller class,  by Vaclav Slavik
 // Author:      Harm van der Heijden and Vaclav Slavik
-// RCS-ID:      $Id: helpfrm.cpp 56234 2008-10-11 20:18:19Z VS $
 // Copyright:   (c) Harm van der Heijden and Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -19,7 +18,7 @@
 
 #if wxUSE_WXHTML_HELP
 
-#ifndef WXPRECOMP
+#ifndef WX_PRECOMP
     #include "wx/object.h"
     #include "wx/dynarray.h"
     #include "wx/intl.h"
@@ -40,7 +39,7 @@
     #include "wx/toolbar.h"
     #include "wx/choicdlg.h"
     #include "wx/filedlg.h"
-#endif // WXPRECOMP
+#endif // WX_PRECOMP
 
 #include "wx/html/helpfrm.h"
 #include "wx/html/helpctrl.h"
@@ -56,24 +55,26 @@
 #include "wx/artprov.h"
 #include "wx/spinctrl.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxHtmlHelpFrame, wxFrame)
+wxIMPLEMENT_DYNAMIC_CLASS(wxHtmlHelpFrame, wxFrame);
 
-BEGIN_EVENT_TABLE(wxHtmlHelpFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(wxHtmlHelpFrame, wxFrame)
     EVT_ACTIVATE(wxHtmlHelpFrame::OnActivate)
     EVT_CLOSE(wxHtmlHelpFrame::OnCloseWindow)
-#ifdef __WXMAC__
-    EVT_MENU(wxID_CLOSE, wxHtmlHelpFrame::OnClose)
-    EVT_MENU(wxID_ABOUT, wxHtmlHelpFrame::OnAbout)
-    EVT_MENU(wxID_HELP_CONTENTS, wxHtmlHelpFrame::OnAbout)
-#endif
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 wxHtmlHelpFrame::wxHtmlHelpFrame(wxWindow* parent, wxWindowID id, const wxString& title,
-                                 int style, wxHtmlHelpData* data,
-                                 wxConfigBase *config, const wxString& rootpath)
+                                 int style, wxHtmlHelpData* data
+#if wxUSE_CONFIG
+                                 , wxConfigBase *config, const wxString& rootpath
+#endif // wxUSE_CONFIG
+                                 )
 {
     Init(data);
-    Create(parent, id, title, style, config, rootpath);
+    Create(parent, id, title, style
+#if wxUSE_CONFIG
+        , config, rootpath
+#endif // wxUSE_CONFIG
+        );
 }
 
 void wxHtmlHelpFrame::Init(wxHtmlHelpData* data)
@@ -81,19 +82,32 @@ void wxHtmlHelpFrame::Init(wxHtmlHelpData* data)
     // Simply pass the pointer on to the help window
     m_Data = data;
     m_HtmlHelpWin = NULL;
-    m_helpController = (wxHtmlHelpController*) NULL;
+    m_helpController = NULL;
+    m_shouldPreventAppExit = false;
+}
+
+void wxHtmlHelpFrame::SetController(wxHtmlHelpController* controller)
+{
+    m_helpController = controller;
+    if ( m_HtmlHelpWin )
+        m_HtmlHelpWin->SetController(controller);
 }
 
 // Create: builds the GUI components.
 bool wxHtmlHelpFrame::Create(wxWindow* parent, wxWindowID id,
-                             const wxString& WXUNUSED(title), int style,
-                             wxConfigBase *config, const wxString& rootpath)
+                             const wxString& WXUNUSED(title), int style
+#if wxUSE_CONFIG
+                             , wxConfigBase *config, const wxString& rootpath
+#endif // wxUSE_CONFIG
+                             )
 {
     m_HtmlHelpWin = new wxHtmlHelpWindow(m_Data);
     m_HtmlHelpWin->SetController(m_helpController);
-    if ( config)
+#if wxUSE_CONFIG
+    if ( config )
         m_HtmlHelpWin->UseConfig(config, rootpath);
-    
+#endif // wxUSE_CONFIG
+
     wxFrame::Create(parent, id, _("Help"),
                     wxPoint(m_HtmlHelpWin->GetCfgData().x, m_HtmlHelpWin->GetCfgData().y),
                     wxSize(m_HtmlHelpWin->GetCfgData().w, m_HtmlHelpWin->GetCfgData().h),
@@ -106,28 +120,7 @@ bool wxHtmlHelpFrame::Create(wxWindow* parent, wxWindowID id,
 
     GetPosition(& (m_HtmlHelpWin->GetCfgData().x), & (m_HtmlHelpWin->GetCfgData()).y);
 
-    SetIcon(wxArtProvider::GetIcon(wxART_HELP, wxART_FRAME_ICON));
-
-    // On the Mac, each modeless frame must have a menubar.
-    // TODO: add more menu items, and perhaps add a style to show
-    // the menubar: compulsory on the Mac, optional elsewhere.
-#ifdef __WXMAC__
-    wxMenuBar* menuBar = new wxMenuBar;
-
-    wxMenu* fileMenu = new wxMenu;
-    fileMenu->Append(wxID_HTML_OPENFILE, _("&Open..."));
-    fileMenu->AppendSeparator();
-    fileMenu->Append(wxID_CLOSE, _("&Close"));
-
-    wxMenu* helpMenu = new wxMenu;
-    helpMenu->Append(wxID_ABOUT, _("&About..."));
-    // Ensures we don't get an empty help menu
-    helpMenu->Append(wxID_HELP_CONTENTS, _("&About..."));
-
-    menuBar->Append(fileMenu,_("&File"));
-    menuBar->Append(helpMenu,_("&Help"));
-    SetMenuBar(menuBar);
-#endif
+    SetIcons(wxArtProvider::GetIconBundle(wxART_HELP, wxART_FRAME_ICON));
 
     m_HtmlHelpWin->GetHtmlWindow()->SetRelatedFrame(this, m_TitleFormat);
 #if wxUSE_STATUSBAR
@@ -184,7 +177,7 @@ void wxHtmlHelpFrame::OnCloseWindow(wxCloseEvent& evt)
     if (m_HtmlHelpWin->GetSplitterWindow() && m_HtmlHelpWin->GetCfgData().navig_on)
         m_HtmlHelpWin->GetCfgData().sashpos = m_HtmlHelpWin->GetSplitterWindow()->GetSashPosition();
 
-    if (m_helpController && m_helpController->IsKindOf(CLASSINFO(wxHtmlHelpController)))
+    if (m_helpController && wxDynamicCast(m_helpController, wxHtmlHelpController))
     {
         ((wxHtmlHelpController*) m_helpController)->OnCloseFrame(evt);
     }
@@ -218,24 +211,18 @@ void wxHtmlHelpFrame::AddGrabIfNeeded()
 #endif // __WXGTK__
 }
 
+#if wxUSE_CONFIG
 // For compatibility
 void wxHtmlHelpFrame::UseConfig(wxConfigBase *config, const wxString& rootPath)
 {
     if (m_HtmlHelpWin)
         m_HtmlHelpWin->UseConfig(config, rootPath);
 }
+#endif // wxUSE_CONFIG
 
-#ifdef __WXMAC__
-void wxHtmlHelpFrame::OnClose(wxCommandEvent& event)
+void wxHtmlHelpFrame::SetShouldPreventAppExit(bool enable)
 {
-    Close(true);
+    m_shouldPreventAppExit = enable;
 }
-
-void wxHtmlHelpFrame::OnAbout(wxCommandEvent& event)
-{
-    wxMessageBox(wxT("wxWidgets HTML Help Viewer (c) 1998-2006, Vaclav Slavik et al"), wxT("HelpView"),
-        wxICON_INFORMATION|wxOK, this);
-}
-#endif
 
 #endif // wxUSE_WXHTML_HELP

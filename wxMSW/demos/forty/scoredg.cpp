@@ -4,7 +4,6 @@
 // Author:      Chris Breeze
 // Modified by:
 // Created:     21/07/97
-// RCS-ID:      $Id: scoredg.cpp 42816 2006-10-31 08:50:17Z RD $
 // Copyright:   (c) 1993-1998 Chris Breeze
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -48,9 +47,9 @@ ScoreCanvas::ScoreCanvas(wxWindow* parent, ScoreFile* scoreFile, const wxPoint& 
 {
     SetBackgroundColour(*wxWHITE);
 #ifdef __WXGTK__
-    m_font = wxTheFontList->FindOrCreateFont(12, wxROMAN, wxNORMAL, wxNORMAL);
+    m_font = wxTheFontList->FindOrCreateFont(wxFontInfo(12).Family(wxFONTFAMILY_ROMAN));
 #else
-    m_font = wxTheFontList->FindOrCreateFont(10, wxSWISS, wxNORMAL, wxNORMAL);
+    m_font = wxTheFontList->FindOrCreateFont(wxFontInfo(10).Family(wxFONTFAMILY_SWISS));
 #endif
 
     wxArrayString players;
@@ -93,7 +92,7 @@ void ScoreCanvas::OnDraw(wxDC& dc)
     // get the line spacing for the current font
     int lineSpacing;
     {
-        long w, h;
+        wxCoord w, h;
         dc.GetTextExtent(wxT("Testing"), &w, &h);
         lineSpacing = (int)h;
     }
@@ -126,9 +125,9 @@ void ScoreCanvas::OnDraw(wxDC& dc)
 }
 #endif
 
-BEGIN_EVENT_TABLE(ScoreDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(ScoreDialog, wxDialog)
     EVT_CLOSE(ScoreDialog::OnCloseWindow)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 ScoreDialog::ScoreDialog(wxWindow* parent, ScoreFile* file) :
     wxDialog(parent, wxID_ANY, _("Scores"),
@@ -156,18 +155,18 @@ ScoreDialog::ScoreDialog(wxWindow* parent, ScoreFile* file) :
             average = (2 * score + games) / (2 * games);
         }
         list->SetCellValue(i,0,players[i]);
-        string_value.Printf( _T("%u"), wins );
+        string_value.Printf( wxT("%u"), wins );
         list->SetCellValue(i,1,string_value);
-        string_value.Printf( _T("%u"), games );
+        string_value.Printf( wxT("%u"), games );
         list->SetCellValue(i,2,string_value);
-        string_value.Printf( _T("%u"), average );
+        string_value.Printf( wxT("%u"), average );
         list->SetCellValue(i,3,string_value);
     }
-    list->SetColLabelValue(0, _T("Players"));
-    list->SetColLabelValue(1, _T("Wins"));
-    list->SetColLabelValue(2, _T("Games"));
-    list->SetColLabelValue(3, _T("Score"));
-    list->SetEditable(false);
+    list->SetColLabelValue(0, wxT("Players"));
+    list->SetColLabelValue(1, wxT("Wins"));
+    list->SetColLabelValue(2, wxT("Games"));
+    list->SetColLabelValue(3, wxT("Score"));
+    list->EnableEditing(false);
     list->AutoSizeColumns();
     list->AutoSizeRows();
     list->SetRowLabelSize(0);

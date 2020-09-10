@@ -3,7 +3,6 @@
 // Purpose:     XML resource handler for wxCalendarCtrl
 // Author:      Brian Gavin
 // Created:     2000/09/09
-// RCS-ID:      $Id: xh_cald.h 41590 2006-10-03 14:53:40Z VZ $
 // Copyright:   (c) 2000 Brian Gavin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,12 +16,12 @@
 
 class WXDLLIMPEXP_XRC wxCalendarCtrlXmlHandler : public wxXmlResourceHandler
 {
-    DECLARE_DYNAMIC_CLASS(wxCalendarCtrlXmlHandler)
+    wxDECLARE_DYNAMIC_CLASS(wxCalendarCtrlXmlHandler);
 
 public:
     wxCalendarCtrlXmlHandler();
-    virtual wxObject *DoCreateResource();
-    virtual bool CanHandle(wxXmlNode *node);
+    virtual wxObject *DoCreateResource() wxOVERRIDE;
+    virtual bool CanHandle(wxXmlNode *node) wxOVERRIDE;
 };
 
 #endif // wxUSE_XRC && wxUSE_CALENDARCTRL

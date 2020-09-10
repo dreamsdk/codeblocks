@@ -2,7 +2,7 @@
 #                                                                            *
 # Make file for VMS                                                          *
 # Author : J.Jansen (joukj@hrem.nano.tudelft.nl)                             *
-# Date : 9 November 2006                                                     *
+# Date : 8 July 2019                                                         *
 #                                                                            *
 #*****************************************************************************
 .first
@@ -54,7 +54,12 @@ OBJECTS=xh_bmp.obj,xh_bmpbt.obj,xh_bttn.obj,xh_cald.obj,xh_chckb.obj,\
 	xh_choicbk.obj,xh_dirpicker.obj,xh_hyperlink.obj,xh_filepicker.obj,\
 	xh_fontpicker.obj,xh_clrpicker.obj,xh_odcombo.obj,xh_mdi.obj,\
 	xh_grid.obj,xh_datectrl.obj,xh_treebk.obj,xh_bmpcbox.obj,\
-	xh_animatctrl.obj,xh_htmllbox.obj,xh_collpane.obj
+	xh_animatctrl.obj,xh_htmllbox.obj,xh_collpane.obj,xh_srchctrl.obj,\
+	xh_propdlg.obj,xh_comboctrl.obj,xmladv.obj,xh_editlbox.obj,\
+	xh_filectrl.obj,xh_cmdlinkbn.obj,xh_toolbk.obj,xh_bannerwindow.obj,\
+	xh_timectrl.obj,xmlreshandler.obj,xh_ribbon.obj,xh_auitoolb.obj,\
+	xh_aui.obj,xh_simplebook.obj,xh_activityindicator.obj,\
+	xh_dataview.obj,xh_infobar.obj
 
 SOURCES =xh_bmp.cpp,xh_bmpbt.cpp,xh_bttn.cpp,xh_cald.cpp,xh_chckb.cpp,\
 	xh_chckl.cpp,xh_choic.cpp,xh_combo.cpp,xh_dlg.cpp,xh_frame.cpp,\
@@ -67,7 +72,12 @@ SOURCES =xh_bmp.cpp,xh_bmpbt.cpp,xh_bttn.cpp,xh_cald.cpp,xh_chckb.cpp,\
 	xh_choicbk.cpp,xh_dirpicker.cpp,xh_hyperlink.cpp,xh_filepicker.cpp,\
 	xh_fontpicker.cpp,xh_clrpicker.cpp,xh_odcombo.cpp,xh_mdi.cpp,\
 	xh_grid.cpp,xh_datectrl.cpp,xh_treebk.cpp,xh_bmpcbox.cpp,\
-	xh_animatctrl.cpp,xh_htmllbox.cpp,xh_collpane.cpp
+	xh_animatctrl.cpp,xh_htmllbox.cpp,xh_collpane.cpp,xh_srchctrl.cpp,\
+	xh_propdlg.cpp,xh_comboctrl.cpp,xmladv.cpp,xh_editlbox.cpp,\
+	xh_filectrl.cpp,xh_cmdlinkbn.cpp,xh_toolbk.cpp,xh_bannerwindow.cpp,\
+	xh_timectrl.cpp,xmlreshandler.cpp,xh_ribbon.cpp,xh_auitoolb.cpp,\
+	xh_aui.cpp,xh_simplebook.cpp,xh_activityindicator.cpp,\
+	xh_dataview.cpp,xh_infobar.cpp
   
 all : $(SOURCES)
 	$(MMS)$(MMSQUALIFIERS) $(OBJECTS)
@@ -87,6 +97,8 @@ all : $(SOURCES)
 .endif
 .endif
 
+$(OBJECTS) : [--.include.wx]setup.h
+
 xh_bmp.obj : xh_bmp.cpp
 xh_bmpbt.obj : xh_bmpbt.cpp
 xh_bttn.obj : xh_bttn.cpp
@@ -95,6 +107,7 @@ xh_chckb.obj : xh_chckb.cpp
 xh_chckl.obj : xh_chckl.cpp
 xh_choic.obj : xh_choic.cpp
 xh_combo.obj : xh_combo.cpp
+xh_comboctrl.obj : xh_comboctrl.cpp
 xh_dlg.obj : xh_dlg.cpp
 xh_frame.obj : xh_frame.cpp
 xh_gauge.obj : xh_gauge.cpp
@@ -130,6 +143,7 @@ xh_listbk.obj : xh_listbk.cpp
 xh_choicbk.obj : xh_choicbk.cpp
 xh_dirpicker.obj : xh_dirpicker.cpp
 xh_hyperlink.obj : xh_hyperlink.cpp
+xh_infobar.obj : xh_infobar.cpp
 xh_filepicker.obj : xh_filepicker.cpp
 xh_fontpicker.obj : xh_fontpicker.cpp
 xh_clrpicker.obj : xh_clrpicker.cpp
@@ -142,3 +156,19 @@ xh_bmpcbox.obj : xh_bmpcbox.cpp
 xh_animatctrl.obj : xh_animatctrl.cpp
 xh_htmllbox.obj : xh_htmllbox.cpp
 xh_collpane.obj : xh_collpane.cpp
+xh_srchctrl.obj : xh_srchctrl.cpp
+xh_propdlg.obj : xh_propdlg.cpp
+xmladv.obj : xmladv.cpp
+xh_editlbox.obj : xh_editlbox.cpp
+xh_filectrl.obj : xh_filectrl.cpp
+xh_cmdlinkbn.obj : xh_cmdlinkbn.cpp
+xh_toolbk.obj : xh_toolbk.cpp
+xh_bannerwindow.obj : xh_bannerwindow.cpp
+xh_timectrl.obj : xh_timectrl.cpp
+xmlreshandler.obj : xmlreshandler.cpp
+xh_ribbon.obj : xh_ribbon.cpp
+xh_auitoolb.obj : xh_auitoolb.cpp
+xh_aui.obj : xh_aui.cpp
+xh_simplebook.obj : xh_simplebook.cpp
+xh_activityindicator.obj : xh_activityindicator.cpp
+xh_dataview.obj : xh_dataview.cpp

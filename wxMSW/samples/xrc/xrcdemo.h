@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
-// Name:        xmldemo.cpp
+// Name:        xmldemo.h
 // Purpose:     XML resources sample: Main application file
 // Author:      Robert O'Connor (rob@medicalmnemonics.com), Vaclav Slavik
-// RCS-ID:      $Id: xrcdemo.h 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Robert O'Connor and Vaclav Slavik
 // Licence:     wxWindows licence
 //-----------------------------------------------------------------------------
@@ -35,7 +34,7 @@ public:
     // for the app initialization (doing it here and not in the ctor
     // allows to have an error return: if OnInit() returns false, the
     // application terminates)
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 
 };
 

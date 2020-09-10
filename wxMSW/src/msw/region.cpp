@@ -4,7 +4,6 @@
 // Author:    Vadim Zeitlin
 // Modified by:
 // Created:   Fri Oct 24 10:46:34 MET 1997
-// RCS-ID:    $Id: region.cpp 41429 2006-09-25 11:47:23Z VZ $
 // Copyright: (c) 1997-2002 wxWidgets team
 // Licence:   wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -32,8 +31,8 @@
 
 #include "wx/msw/private.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxRegion, wxGDIObject)
-IMPLEMENT_DYNAMIC_CLASS(wxRegionIterator, wxObject)
+wxIMPLEMENT_DYNAMIC_CLASS(wxRegion, wxGDIObject);
+wxIMPLEMENT_DYNAMIC_CLASS(wxRegionIterator, wxObject);
 
 // ----------------------------------------------------------------------------
 // wxRegionRefData implementation
@@ -49,17 +48,11 @@ public:
 
     wxRegionRefData(const wxRegionRefData& data) : wxGDIRefData()
     {
-#if defined(__WIN32__) && !defined(__WXMICROWIN__) && !defined(__WXWINCE__)
         DWORD noBytes = ::GetRegionData(data.m_region, 0, NULL);
         RGNDATA *rgnData = (RGNDATA*) new char[noBytes];
         ::GetRegionData(data.m_region, noBytes, rgnData);
         m_region = ::ExtCreateRegion(NULL, noBytes, rgnData);
         delete[] (char*) rgnData;
-#else
-        RECT rect;
-        ::GetRgnBox(data.m_region, &rect);
-        m_region = ::CreateRectRgnIndirect(&rect);
-#endif
     }
 
     virtual ~wxRegionRefData()
@@ -72,7 +65,7 @@ public:
 
 private:
 // Cannot use
-//  DECLARE_NO_COPY_CLASS(wxRegionRefData)
+//  wxDECLARE_NO_COPY_CLASS(wxRegionRefData);
 // because copy constructor is explicitly declared above;
 // but no copy assignment operator is defined, so declare
 // it private to prevent the compiler from defining it:
@@ -92,7 +85,7 @@ private:
 
 wxRegion::wxRegion()
 {
-    m_refData = (wxRegionRefData *)NULL;
+    m_refData = NULL;
 }
 
 wxRegion::wxRegion(WXHRGN hRegion)
@@ -101,33 +94,44 @@ wxRegion::wxRegion(WXHRGN hRegion)
     M_REGION = (HRGN) hRegion;
 }
 
+static HRGN CreateRectRgnMSW(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
+{
+    // (x,y) has to represent the left-top corner of the region
+    // so if size values are negative we need to recalculate
+    // parameters of the region to get (x,y) at this corner.
+    if ( w < 0 )
+    {
+        w = -w;
+        x -= (w - 1);
+    }
+    if ( h < 0 )
+    {
+        h = -h;
+        y -= (h - 1);
+    }
+    return ::CreateRectRgn(x, y, x + w, y + h);
+}
+
 wxRegion::wxRegion(wxCoord x, wxCoord y, wxCoord w, wxCoord h)
 {
     m_refData = new wxRegionRefData;
-    M_REGION = ::CreateRectRgn(x, y, x + w, y + h);
+    M_REGION = CreateRectRgnMSW(x, y, w, h);
 }
 
 wxRegion::wxRegion(const wxPoint& topLeft, const wxPoint& bottomRight)
 {
     m_refData = new wxRegionRefData;
-    M_REGION = ::CreateRectRgn(topLeft.x, topLeft.y, bottomRight.x, bottomRight.y);
+    M_REGION = CreateRectRgnMSW(topLeft.x, topLeft.y, bottomRight.x-topLeft.x, bottomRight.y-topLeft.y);
 }
 
 wxRegion::wxRegion(const wxRect& rect)
 {
     m_refData = new wxRegionRefData;
-    M_REGION = ::CreateRectRgn(rect.x, rect.y, rect.x + rect.width, rect.y + rect.height);
+    M_REGION = CreateRectRgnMSW(rect.x, rect.y, rect.width, rect.height);
 }
 
-wxRegion::wxRegion(size_t n, const wxPoint *points, int fillStyle)
+wxRegion::wxRegion(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle)
 {
-#if defined(__WXMICROWIN__) || defined(__WXWINCE__)
-    wxUnusedVar(n);
-    wxUnusedVar(points);
-    wxUnusedVar(fillStyle);
-    m_refData = NULL;
-    M_REGION = NULL;
-#else
     m_refData = new wxRegionRefData;
     M_REGION = ::CreatePolygonRgn
                (
@@ -135,7 +139,6 @@ wxRegion::wxRegion(size_t n, const wxPoint *points, int fillStyle)
                     n,
                     fillStyle == wxODDEVEN_RULE ? ALTERNATE : WINDING
                );
-#endif
 }
 
 wxRegion::~wxRegion()
@@ -143,12 +146,12 @@ wxRegion::~wxRegion()
     // m_refData unrefed in ~wxObject
 }
 
-wxObjectRefData *wxRegion::CreateRefData() const
+wxGDIRefData *wxRegion::CreateGDIRefData() const
 {
     return new wxRegionRefData;
 }
 
-wxObjectRefData *wxRegion::CloneRefData(const wxObjectRefData *data) const
+wxGDIRefData *wxRegion::CloneGDIRefData(const wxGDIRefData *data) const
 {
     return new wxRegionRefData(*(wxRegionRefData *)data);
 }
@@ -165,7 +168,7 @@ void wxRegion::Clear()
 
 bool wxRegion::DoOffset(wxCoord x, wxCoord y)
 {
-    wxCHECK_MSG( M_REGION, false, _T("invalid wxRegion") );
+    wxCHECK_MSG( GetHrgn(), false, wxT("invalid wxRegion") );
 
     if ( !x && !y )
     {
@@ -177,7 +180,7 @@ bool wxRegion::DoOffset(wxCoord x, wxCoord y)
 
     if ( ::OffsetRgn(GetHrgn(), x, y) == ERROR )
     {
-        wxLogLastError(_T("OffsetRgn"));
+        wxLogLastError(wxT("OffsetRgn"));
 
         return false;
     }
@@ -202,8 +205,8 @@ bool wxRegion::DoCombine(const wxRegion& rgn, wxRegionOp op)
                 break;
 
             default:
-                wxFAIL_MSG( _T("unknown region operation") );
-                // fall through
+                wxFAIL_MSG( wxT("unknown region operation") );
+                wxFALLTHROUGH;
 
             case wxRGN_AND:
             case wxRGN_DIFF:
@@ -235,8 +238,8 @@ bool wxRegion::DoCombine(const wxRegion& rgn, wxRegionOp op)
                 break;
 
             default:
-                wxFAIL_MSG( _T("unknown region operation") );
-                // fall through
+                wxFAIL_MSG( wxT("unknown region operation") );
+                wxFALLTHROUGH;
 
             case wxRGN_COPY:
                 mode = RGN_COPY;
@@ -245,7 +248,7 @@ bool wxRegion::DoCombine(const wxRegion& rgn, wxRegionOp op)
 
         if ( ::CombineRgn(M_REGION, M_REGION, M_REGION_OF(rgn), mode) == ERROR )
         {
-            wxLogLastError(_T("CombineRgn"));
+            wxLogLastError(wxT("CombineRgn"));
 
             return false;
         }
@@ -356,6 +359,9 @@ wxRegionIterator::wxRegionIterator(const wxRegion& region)
 
 wxRegionIterator& wxRegionIterator::operator=(const wxRegionIterator& ri)
 {
+    if (this == &ri)
+        return *this;
+
     delete [] m_rects;
 
     m_current = ri.m_current;
@@ -384,12 +390,7 @@ void wxRegionIterator::Reset(const wxRegion& region)
     m_current = 0;
     m_region = region;
 
-    if (m_rects)
-    {
-        delete[] m_rects;
-
-        m_rects = NULL;
-    }
+    wxDELETEA(m_rects);
 
     if (m_region.Empty())
         m_numRects = 0;
@@ -441,28 +442,28 @@ wxRegionIterator wxRegionIterator::operator ++ (int)
 
 wxCoord wxRegionIterator::GetX() const
 {
-    wxCHECK_MSG( m_current < m_numRects, 0, _T("invalid wxRegionIterator") );
+    wxCHECK_MSG( m_current < m_numRects, 0, wxT("invalid wxRegionIterator") );
 
     return m_rects[m_current].x;
 }
 
 wxCoord wxRegionIterator::GetY() const
 {
-    wxCHECK_MSG( m_current < m_numRects, 0, _T("invalid wxRegionIterator") );
+    wxCHECK_MSG( m_current < m_numRects, 0, wxT("invalid wxRegionIterator") );
 
     return m_rects[m_current].y;
 }
 
 wxCoord wxRegionIterator::GetW() const
 {
-    wxCHECK_MSG( m_current < m_numRects, 0, _T("invalid wxRegionIterator") );
+    wxCHECK_MSG( m_current < m_numRects, 0, wxT("invalid wxRegionIterator") );
 
     return m_rects[m_current].width;
 }
 
 wxCoord wxRegionIterator::GetH() const
 {
-    wxCHECK_MSG( m_current < m_numRects, 0, _T("invalid wxRegionIterator") );
+    wxCHECK_MSG( m_current < m_numRects, 0, wxT("invalid wxRegionIterator") );
 
     return m_rects[m_current].height;
 }

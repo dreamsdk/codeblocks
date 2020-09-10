@@ -2,7 +2,6 @@
 // Name:        src/html/m_image.cpp
 // Purpose:     wxHtml module for displaying images
 // Author:      Vaclav Slavik
-// RCS-ID:      $Id: m_image.cpp 52997 2008-04-03 18:55:46Z VS $
 // Copyright:   (c) 1999 Vaclav Slavik, Joel Lucsy
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,15 +14,18 @@
 
 #if wxUSE_HTML && wxUSE_STREAMS
 
-#ifndef WXPRECOMP
+#ifndef WX_PRECOMP
+    #include "wx/app.h"
     #include "wx/dynarray.h"
     #include "wx/dc.h"
+    #include "wx/dcprint.h"
     #include "wx/scrolwin.h"
     #include "wx/timer.h"
     #include "wx/dcmemory.h"
     #include "wx/log.h"
     #include "wx/math.h"
     #include "wx/image.h"
+    #include "wx/wxcrtvararg.h"
 #endif
 
 #include "wx/html/forcelnk.h"
@@ -61,14 +63,14 @@ class wxHtmlImageMapAreaCell : public wxHtmlCell
         int radius;
     public:
         wxHtmlImageMapAreaCell( celltype t, wxString &coords, double pixel_scale = 1.0);
-        virtual wxHtmlLinkInfo *GetLink( int x = 0, int y = 0 ) const;
+        virtual wxHtmlLinkInfo *GetLink( int x = 0, int y = 0 ) const wxOVERRIDE;
         void Draw(wxDC& WXUNUSED(dc),
                   int WXUNUSED(x), int WXUNUSED(y),
                   int WXUNUSED(view_y1), int WXUNUSED(view_y2),
-                  wxHtmlRenderingInfo& WXUNUSED(info)) {}
+                  wxHtmlRenderingInfo& WXUNUSED(info)) wxOVERRIDE {}
 
 
-    DECLARE_NO_COPY_CLASS(wxHtmlImageMapAreaCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlImageMapAreaCell);
 };
 
 
@@ -94,6 +96,7 @@ wxHtmlLinkInfo *wxHtmlImageMapAreaCell::GetLink( int x, int y ) const
     switch (type)
     {
         case RECT:
+            if ( coords.GetCount() == 4 )
             {
                 int l, t, r, b;
 
@@ -105,9 +108,10 @@ wxHtmlLinkInfo *wxHtmlImageMapAreaCell::GetLink( int x, int y ) const
                 {
                     return m_Link;
                 }
-                break;
             }
+            break;
         case CIRCLE:
+            if ( coords.GetCount() == 3 )
             {
                 int l, t, r;
                 double  d;
@@ -123,88 +127,86 @@ wxHtmlLinkInfo *wxHtmlImageMapAreaCell::GetLink( int x, int y ) const
             }
             break;
         case POLY:
-            {
-                if (coords.GetCount() >= 6)
-                {
-                    int intersects = 0;
-                    int wherex = x;
-                    int wherey = y;
-                    int totalv = coords.GetCount() / 2;
-                    int totalc = totalv * 2;
-                    int xval = coords[totalc - 2];
-                    int yval = coords[totalc - 1];
-                    int end = totalc;
-                    int pointer = 1;
+             if (coords.GetCount() >= 6)
+             {
+                 int intersects = 0;
+                 int wherex = x;
+                 int wherey = y;
+                 int totalv = coords.GetCount() / 2;
+                 int totalc = totalv * 2;
+                 int xval = coords[totalc - 2];
+                 int yval = coords[totalc - 1];
+                 int end = totalc;
+                 int pointer = 1;
 
-                    if ((yval >= wherey) != (coords[pointer] >= wherey))
-                    {
-                        if ((xval >= wherex) == (coords[0] >= wherex))
-                        {
-                            intersects += (xval >= wherex) ? 1 : 0;
-                        }
-                        else
-                        {
-                            intersects += ((xval - (yval - wherey) *
-                                            (coords[0] - xval) /
-                                            (coords[pointer] - yval)) >= wherex) ? 1 : 0;
-                        }
-                    }
+                 if ((yval >= wherey) != (coords[pointer] >= wherey))
+                 {
+                     if ((xval >= wherex) == (coords[0] >= wherex))
+                     {
+                         intersects += (xval >= wherex) ? 1 : 0;
+                     }
+                     else
+                     {
+                         intersects += ((xval - (yval - wherey) *
+                                         (coords[0] - xval) /
+                                         (coords[pointer] - yval)) >= wherex) ? 1 : 0;
+                     }
+                 }
 
-                    while (pointer < end)
-                    {
-                        yval = coords[pointer];
-                        pointer += 2;
-                        if (yval >= wherey)
-                        {
-                            while ((pointer < end) && (coords[pointer] >= wherey))
-                            {
-                                pointer += 2;
-                            }
-                            if (pointer >= end)
-                            {
-                                break;
-                            }
-                            if ((coords[pointer - 3] >= wherex) ==
-                                    (coords[pointer - 1] >= wherex)) {
-                                intersects += (coords[pointer - 3] >= wherex) ? 1 : 0;
-                            }
-                            else
-                            {
-                                intersects +=
-                                    ((coords[pointer - 3] - (coords[pointer - 2] - wherey) *
-                                      (coords[pointer - 1] - coords[pointer - 3]) /
-                                      (coords[pointer] - coords[pointer - 2])) >= wherex) ? 1 : 0;
-                            }
-                        }
-                        else
-                        {
-                            while ((pointer < end) && (coords[pointer] < wherey))
-                            {
-                                pointer += 2;
-                            }
-                            if (pointer >= end)
-                            {
-                                break;
-                            }
-                            if ((coords[pointer - 3] >= wherex) ==
-                                    (coords[pointer - 1] >= wherex))
-                            {
-                                intersects += (coords[pointer - 3] >= wherex) ? 1 : 0;
-                            }
-                            else
-                            {
-                                intersects +=
-                                    ((coords[pointer - 3] - (coords[pointer - 2] - wherey) *
-                                      (coords[pointer - 1] - coords[pointer - 3]) /
-                                      (coords[pointer] - coords[pointer - 2])) >= wherex) ? 1 : 0;
-                            }
-                        }
-                    }
-                    if ((intersects & 1) != 0)
-                    {
-                        return m_Link;
-                    }
-                }
+                 while (pointer < end)
+                 {
+                     yval = coords[pointer];
+                     pointer += 2;
+                     if (yval >= wherey)
+                     {
+                         while ((pointer < end) && (coords[pointer] >= wherey))
+                         {
+                             pointer += 2;
+                         }
+                         if (pointer >= end)
+                         {
+                             break;
+                         }
+                         if ((coords[pointer - 3] >= wherex) ==
+                                 (coords[pointer - 1] >= wherex)) {
+                             intersects += (coords[pointer - 3] >= wherex) ? 1 : 0;
+                         }
+                         else
+                         {
+                             intersects +=
+                                 ((coords[pointer - 3] - (coords[pointer - 2] - wherey) *
+                                   (coords[pointer - 1] - coords[pointer - 3]) /
+                                   (coords[pointer] - coords[pointer - 2])) >= wherex) ? 1 : 0;
+                         }
+                     }
+                     else
+                     {
+                         while ((pointer < end) && (coords[pointer] < wherey))
+                         {
+                             pointer += 2;
+                         }
+                         if (pointer >= end)
+                         {
+                             break;
+                         }
+                         if ((coords[pointer - 3] >= wherex) ==
+                                 (coords[pointer - 1] >= wherex))
+                         {
+                             intersects += (coords[pointer - 3] >= wherex) ? 1 : 0;
+                         }
+                         else
+                         {
+                             intersects +=
+                                 ((coords[pointer - 3] - (coords[pointer - 2] - wherey) *
+                                   (coords[pointer - 1] - coords[pointer - 3]) /
+                                   (coords[pointer] - coords[pointer - 2])) >= wherex) ? 1 : 0;
+                         }
+                     }
+                 }
+                 if ((intersects & 1) != 0)
+                 {
+                     return m_Link;
+                 }
             }
             break;
     }
@@ -239,20 +241,20 @@ class wxHtmlImageMapCell : public wxHtmlCell
     protected:
         wxString m_Name;
     public:
-        virtual wxHtmlLinkInfo *GetLink( int x = 0, int y = 0 ) const;
-        virtual const wxHtmlCell *Find( int cond, const void *param ) const;
+        virtual wxHtmlLinkInfo *GetLink( int x = 0, int y = 0 ) const wxOVERRIDE;
+        virtual const wxHtmlCell *Find( int cond, const void *param ) const wxOVERRIDE;
         void Draw(wxDC& WXUNUSED(dc),
                   int WXUNUSED(x), int WXUNUSED(y),
                   int WXUNUSED(view_y1), int WXUNUSED(view_y2),
-                  wxHtmlRenderingInfo& WXUNUSED(info)) {}
+                  wxHtmlRenderingInfo& WXUNUSED(info)) wxOVERRIDE {}
 
-    DECLARE_NO_COPY_CLASS(wxHtmlImageMapCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlImageMapCell);
 };
 
 
 wxHtmlImageMapCell::wxHtmlImageMapCell( wxString &name )
+    : m_Name(name)
 {
-    m_Name = name ;
 }
 
 wxHtmlLinkInfo *wxHtmlImageMapCell::GetLink( int x, int y ) const
@@ -286,23 +288,40 @@ class wxHtmlImageCell : public wxHtmlCell
 {
 public:
     wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
-                    wxFSFile *input, int w = wxDefaultCoord, int h = wxDefaultCoord,
+                    wxFSFile *input, double scaleHDPI = 1.0,
+                    int w = wxDefaultCoord, bool wpercent = false,
+                    int h = wxDefaultCoord, bool hpresent = false,
                     double scale = 1.0, int align = wxHTML_ALIGN_BOTTOM,
                     const wxString& mapname = wxEmptyString);
     virtual ~wxHtmlImageCell();
     void Draw(wxDC& dc, int x, int y, int view_y1, int view_y2,
-              wxHtmlRenderingInfo& info);
-    virtual wxHtmlLinkInfo *GetLink(int x = 0, int y = 0) const;
+              wxHtmlRenderingInfo& info) wxOVERRIDE;
+    virtual wxHtmlLinkInfo *GetLink(int x = 0, int y = 0) const wxOVERRIDE;
 
-    void SetImage(const wxImage& img);
+    void SetImage(const wxImage& img, double scaleHDPI = 1.0);
+
+    // If "alt" text is set, it will be used when converting this cell to text.
+    void SetAlt(const wxString& alt);
+    virtual wxString ConvertToText(wxHtmlSelection *sel) const wxOVERRIDE;
+
 #if wxUSE_GIF && wxUSE_TIMER
     void AdvanceAnimation(wxTimer *timer);
-    virtual void Layout(int w);
 #endif
+
+    virtual void Layout(int w) wxOVERRIDE;
+
+    virtual wxString GetDescription() const wxOVERRIDE
+    {
+        return wxString::Format("wxHtmlImageCell with bitmap of size %d*%d",
+                                m_bmpW, m_bmpH);
+    }
 
 private:
     wxBitmap           *m_bitmap;
+    int                 m_align;
     int                 m_bmpW, m_bmpH;
+    bool                m_bmpWpercent:1;
+    bool                m_bmpHpresent:1;
     bool                m_showFrame:1;
     wxHtmlWindowInterface *m_windowIface;
 #if wxUSE_GIF && wxUSE_TIMER
@@ -314,8 +333,9 @@ private:
     double              m_scale;
     wxHtmlImageMapCell *m_imageMap;
     wxString            m_mapName;
+    wxString            m_alt;
 
-    DECLARE_NO_COPY_CLASS(wxHtmlImageCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlImageCell);
 };
 
 #if wxUSE_GIF && wxUSE_TIMER
@@ -323,7 +343,7 @@ class wxGIFTimer : public wxTimer
 {
     public:
         wxGIFTimer(wxHtmlImageCell *cell) : m_cell(cell) {}
-        virtual void Notify()
+        virtual void Notify() wxOVERRIDE
         {
             m_cell->AdvanceAnimation(this);
         }
@@ -331,7 +351,7 @@ class wxGIFTimer : public wxTimer
     private:
         wxHtmlImageCell *m_cell;
 
-    DECLARE_NO_COPY_CLASS(wxGIFTimer)
+    wxDECLARE_NO_COPY_CLASS(wxGIFTimer);
 };
 #endif
 
@@ -342,18 +362,21 @@ class wxGIFTimer : public wxTimer
 
 
 wxHtmlImageCell::wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
-                                 wxFSFile *input,
-                                 int w, int h, double scale, int align,
+                                 wxFSFile *input, double scaleHDPI,
+                                 int w, bool wpercent, int h, bool hpresent, double scale, int align,
                                  const wxString& mapname) : wxHtmlCell()
+    , m_mapName(mapname)
 {
     m_windowIface = windowIface;
     m_scale = scale;
     m_showFrame = false;
     m_bitmap = NULL;
-    m_bmpW = w;
-    m_bmpH = h;
+    m_bmpW   = w;
+    m_bmpH   = h;
+    m_align  = align;
+    m_bmpWpercent = wpercent;
+    m_bmpHpresent = hpresent;
     m_imageMap = NULL;
-    m_mapName = mapname;
     SetCanLiveOnPagebreak(false);
 #if wxUSE_GIF && wxUSE_TIMER
     m_gifDecoder = NULL;
@@ -408,8 +431,8 @@ wxHtmlImageCell::wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
 #endif // wxUSE_GIF && wxUSE_TIMER
                 {
                     wxImage image(*s, wxBITMAP_TYPE_ANY);
-                    if ( image.Ok() )
-                        SetImage(image);
+                    if ( image.IsOk() )
+                        SetImage(image, scaleHDPI);
                 }
             }
         }
@@ -432,28 +455,12 @@ wxHtmlImageCell::wxHtmlImageCell(wxHtmlWindowInterface *windowIface,
     }
     //else: ignore the 0-sized images used sometimes on the Web pages
 
-    m_Width = (int)(scale * (double)m_bmpW);
-    m_Height = (int)(scale * (double)m_bmpH);
-
-    switch (align)
-    {
-        case wxHTML_ALIGN_TOP :
-            m_Descent = m_Height;
-            break;
-        case wxHTML_ALIGN_CENTER :
-            m_Descent = m_Height / 2;
-            break;
-        case wxHTML_ALIGN_BOTTOM :
-        default :
-            m_Descent = 0;
-            break;
-    }
  }
 
-void wxHtmlImageCell::SetImage(const wxImage& img)
+void wxHtmlImageCell::SetImage(const wxImage& img, double scaleHDPI)
 {
 #if !defined(__WXMSW__) || wxUSE_WXDIB
-    if ( img.Ok() )
+    if ( img.IsOk() )
     {
         delete m_bitmap;
 
@@ -461,24 +468,26 @@ void wxHtmlImageCell::SetImage(const wxImage& img)
         ww = img.GetWidth();
         hh = img.GetHeight();
 
-        if ( m_bmpW == wxDefaultCoord )
-            m_bmpW = ww;
-        if ( m_bmpH == wxDefaultCoord )
-            m_bmpH = hh;
+        if ( m_bmpW == wxDefaultCoord)
+            m_bmpW = ww / scaleHDPI;
+        if ( m_bmpH == wxDefaultCoord)
+            m_bmpH = hh / scaleHDPI;
 
-        // Only scale the bitmap at the rendering stage,
-        // so we don't lose quality twice
-/*
-        if ((m_bmpW != ww) || (m_bmpH != hh))
-        {
-            wxImage img2 = img.Scale(m_bmpW, m_bmpH);
-            m_bitmap = new wxBitmap(img2);
-        }
-        else
-*/
-            m_bitmap = new wxBitmap(img);
+        // On a Mac retina screen, we might have found a @2x version of the image,
+        // so specify this scale factor.
+        m_bitmap = new wxBitmap(img, -1, scaleHDPI);
     }
 #endif
+}
+
+void wxHtmlImageCell::SetAlt(const wxString& alt)
+{
+    m_alt = alt;
+}
+
+wxString wxHtmlImageCell::ConvertToText(wxHtmlSelection* WXUNUSED(sel)) const
+{
+    return m_alt;
 }
 
 #if wxUSE_GIF && wxUSE_TIMER
@@ -530,14 +539,44 @@ void wxHtmlImageCell::AdvanceAnimation(wxTimer *timer)
         delay = 1;
     timer->Start(delay, true);
 }
+#endif
 
 void wxHtmlImageCell::Layout(int w)
 {
-    wxHtmlCell::Layout(w);
-    m_physX = m_physY = wxDefaultCoord;
-}
+    if (m_bmpWpercent)
+    {
 
+        m_Width = w*m_bmpW/100;
+
+        if (!m_bmpHpresent && m_bitmap != NULL)
+            m_Height = m_bitmap->GetScaledHeight()*m_Width/m_bitmap->GetScaledWidth();
+        else
+            m_Height = static_cast<int>(m_scale*m_bmpH);
+    } else
+    {
+        m_Width  = static_cast<int>(m_scale*m_bmpW);
+        m_Height = static_cast<int>(m_scale*m_bmpH);
+    }
+
+    switch (m_align)
+    {
+        case wxHTML_ALIGN_TOP :
+            m_Descent = m_Height;
+            break;
+        case wxHTML_ALIGN_CENTER :
+            m_Descent = m_Height / 2;
+            break;
+        case wxHTML_ALIGN_BOTTOM :
+        default :
+            m_Descent = 0;
+            break;
+    }
+
+    wxHtmlCell::Layout(w);
+#if wxUSE_GIF && wxUSE_TIMER
+    m_physX = m_physY = wxDefaultCoord;
 #endif
+}
 
 wxHtmlImageCell::~wxHtmlImageCell()
 {
@@ -566,17 +605,38 @@ void wxHtmlImageCell::Draw(wxDC& dc, int x, int y,
         // and height, so we only do the scaling once.
         double imageScaleX = 1.0;
         double imageScaleY = 1.0;
-        if (m_bmpW != m_bitmap->GetWidth())
-            imageScaleX = (double) m_bmpW / (double) m_bitmap->GetWidth();
-        if (m_bmpH != m_bitmap->GetHeight())
-            imageScaleY = (double) m_bmpH / (double) m_bitmap->GetHeight();
+
+        // Optimisation for Windows: WIN32 scaling for window DCs is very poor,
+        // so unless we're using a printer DC, do the scaling ourselves.
+#if defined(__WXMSW__) && wxUSE_IMAGE
+        if (m_Width >= 0 && m_Width != m_bitmap->GetWidth()
+    #if wxUSE_PRINTING_ARCHITECTURE
+            && !dc.IsKindOf(CLASSINFO(wxPrinterDC))
+    #endif
+           )
+        {
+            wxImage image(m_bitmap->ConvertToImage());
+            if (image.HasMask())
+            {
+                // Convert the mask to an alpha channel or scaling won't work correctly
+                image.InitAlpha();
+            }
+            image.Rescale(m_Width, m_Height, wxIMAGE_QUALITY_HIGH);
+            (*m_bitmap) = wxBitmap(image);
+        }
+#endif 
+
+        if (m_Width != m_bitmap->GetScaledWidth())
+            imageScaleX = (double) m_Width / (double) m_bitmap->GetScaledWidth();
+        if (m_Height != m_bitmap->GetScaledHeight())
+            imageScaleY = (double) m_Height / (double) m_bitmap->GetScaledHeight();
 
         double us_x, us_y;
         dc.GetUserScale(&us_x, &us_y);
-        dc.SetUserScale(us_x * m_scale * imageScaleX, us_y * m_scale * imageScaleY);
+        dc.SetUserScale(us_x * imageScaleX, us_y * imageScaleY);
 
-        dc.DrawBitmap(*m_bitmap, (int) ((x + m_PosX) / (m_scale*imageScaleX)),
-                                 (int) ((y + m_PosY) / (m_scale*imageScaleY)), true);
+        dc.DrawBitmap(*m_bitmap, (int) ((x + m_PosX) / (imageScaleX)),
+                                 (int) ((y + m_PosY) / (imageScaleY)), true);
         dc.SetUserScale(us_x, us_y);
     }
 }
@@ -624,45 +684,82 @@ TAG_HANDLER_BEGIN(IMG, "IMG,MAP,AREA")
     {
         if (tag.GetName() == wxT("IMG"))
         {
-            if (tag.HasParam(wxT("SRC")))
+            wxString tmp;
+            if (tag.GetParamAsString(wxT("SRC"), &tmp))
             {
                 int w = wxDefaultCoord, h = wxDefaultCoord;
+                bool wpercent = false;
+                bool hpresent = false;
                 int al;
-                wxFSFile *str;
-                wxString tmp = tag.GetParam(wxT("SRC"));
-                wxString mn = wxEmptyString;
+                wxFSFile *str = NULL;
+                wxString mn;
+                double scaleHDPI = 1.0;
 
-                str = m_WParser->OpenURL(wxHTML_URL_IMAGE, tmp);
-
-                if (tag.HasParam(wxT("WIDTH")))
-                    tag.GetParamAsInt(wxT("WIDTH"), &w);
-                if (tag.HasParam(wxT("HEIGHT")))
-                    tag.GetParamAsInt(wxT("HEIGHT"), &h);
-                al = wxHTML_ALIGN_BOTTOM;
-                if (tag.HasParam(wxT("ALIGN")))
+#if defined(__WXOSX_COCOA__)
+                // Try to find a 2x resolution image with @2x appended before the file extension.
+                wxWindow* win = m_WParser->GetWindowInterface() ? m_WParser->GetWindowInterface()->GetHTMLWindow() : NULL;
+                if (!win && wxTheApp)
+                    win = wxTheApp->GetTopWindow();
+                if (win && win->GetContentScaleFactor() > 1.0)
                 {
-                    wxString alstr = tag.GetParam(wxT("ALIGN"));
+                    if (tmp.Find('.') != wxNOT_FOUND)
+                    {
+                        wxString ext = tmp.AfterLast('.');
+                        wxString rest = tmp.BeforeLast('.');
+                        wxString hiDPIFilename = rest + "@2x." + ext;
+                        str = m_WParser->OpenURL(wxHTML_URL_IMAGE, hiDPIFilename);
+                        if (str)
+                        {
+                            scaleHDPI = 2.0;
+                        }
+                    }
+                }                    
+#endif
+                if (!str)
+                    str = m_WParser->OpenURL(wxHTML_URL_IMAGE, tmp);
+
+                if (tag.GetParamAsIntOrPercent(wxT("WIDTH"), &w, wpercent))
+                {
+                    if (wpercent)
+                    {
+                        if (w < 0)
+                            w = 0;
+                        else if (w > 100)
+                            w = 100;
+                    }
+                }
+
+                if (tag.GetParamAsInt(wxT("HEIGHT"), &h))
+                {
+                    hpresent = true;
+                }
+
+                al = wxHTML_ALIGN_BOTTOM;
+                wxString alstr;
+                if (tag.GetParamAsString(wxT("ALIGN"), &alstr))
+                {
                     alstr.MakeUpper();  // for the case alignment was in ".."
                     if (alstr == wxT("TEXTTOP"))
                         al = wxHTML_ALIGN_TOP;
                     else if ((alstr == wxT("CENTER")) || (alstr == wxT("ABSCENTER")))
                         al = wxHTML_ALIGN_CENTER;
                 }
-                if (tag.HasParam(wxT("USEMAP")))
+                if (tag.GetParamAsString(wxT("USEMAP"), &mn))
                 {
-                    mn = tag.GetParam( wxT("USEMAP") );
-                    if (mn.GetChar(0) == wxT('#'))
+                    if ( !mn.empty() && *mn.begin() == '#' )
                     {
                         mn = mn.Mid( 1 );
                     }
                 }
                 wxHtmlImageCell *cel = new wxHtmlImageCell(
                                           m_WParser->GetWindowInterface(),
-                                          str, w, h,
+                                          str, scaleHDPI, w, wpercent, h, hpresent,
                                           m_WParser->GetPixelScale(),
                                           al, mn);
                 m_WParser->ApplyStateToCell(cel);
+                m_WParser->StopCollapsingSpaces();
                 cel->SetId(tag.GetParam(wxT("id"))); // may be empty
+                cel->SetAlt(tag.GetParam(wxT("alt")));
                 m_WParser->GetContainer()->InsertCell(cel);
                 if (str)
                     delete str;
@@ -672,9 +769,9 @@ TAG_HANDLER_BEGIN(IMG, "IMG,MAP,AREA")
         {
             m_WParser->CloseContainer();
             m_WParser->OpenContainer();
-            if (tag.HasParam(wxT("NAME")))
+            wxString tmp;
+            if (tag.GetParamAsString(wxT("NAME"), &tmp))
             {
-                wxString tmp = tag.GetParam(wxT("NAME"));
                 wxHtmlImageMapCell *cel = new wxHtmlImageMapCell( tmp );
                 m_WParser->GetContainer()->InsertCell( cel );
             }
@@ -684,16 +781,12 @@ TAG_HANDLER_BEGIN(IMG, "IMG,MAP,AREA")
         }
         if (tag.GetName() == wxT("AREA"))
         {
-            if (tag.HasParam(wxT("SHAPE")))
+            wxString tmp;
+            if (tag.GetParamAsString(wxT("SHAPE"), &tmp))
             {
-                wxString tmp = tag.GetParam(wxT("SHAPE"));
-                wxString coords = wxEmptyString;
+                wxString coords = tag.GetParam(wxT("COORDS"));
                 tmp.MakeUpper();
                 wxHtmlImageMapAreaCell *cel = NULL;
-                if (tag.HasParam(wxT("COORDS")))
-                {
-                    coords = tag.GetParam(wxT("COORDS"));
-                }
                 if (tmp == wxT("POLY"))
                 {
                     cel = new wxHtmlImageMapAreaCell( wxHtmlImageMapAreaCell::POLY, coords, m_WParser->GetPixelScale() );
@@ -706,13 +799,9 @@ TAG_HANDLER_BEGIN(IMG, "IMG,MAP,AREA")
                 {
                     cel = new wxHtmlImageMapAreaCell( wxHtmlImageMapAreaCell::RECT, coords, m_WParser->GetPixelScale() );
                 }
-                if (cel != NULL && tag.HasParam(wxT("HREF")))
-                {
-                    wxString target;
-                    if (tag.HasParam(wxT("TARGET")))
-                        target = tag.GetParam(wxT("TARGET"));
-                    cel->SetLink(wxHtmlLinkInfo(tag.GetParam(wxT("HREF")), target));
-                }
+                wxString href;
+                if (cel != NULL && tag.GetParamAsString(wxT("HREF"), &href))
+                    cel->SetLink(wxHtmlLinkInfo(href, tag.GetParam(wxT("TARGET"))));
                 if (cel != NULL)
                     m_WParser->GetContainer()->InsertCell( cel );
             }

@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: spinbutt.cpp 42816 2006-10-31 08:50:17Z RD $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -33,8 +32,6 @@
 
 #include "wx/spinbutt.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxSpinEvent, wxNotifyEvent)
-
 #include "wx/msw/private.h"
 
 #ifndef UDM_SETRANGE32
@@ -53,66 +50,6 @@ IMPLEMENT_DYNAMIC_CLASS(wxSpinEvent, wxNotifyEvent)
 // ----------------------------------------------------------------------------
 // wxWin macros
 // ----------------------------------------------------------------------------
-
-
-#if wxUSE_EXTENDED_RTTI
-WX_DEFINE_FLAGS( wxSpinButtonStyle )
-
-wxBEGIN_FLAGS( wxSpinButtonStyle )
-    // new style border flags, we put them first to
-    // use them for streaming out
-    wxFLAGS_MEMBER(wxBORDER_SIMPLE)
-    wxFLAGS_MEMBER(wxBORDER_SUNKEN)
-    wxFLAGS_MEMBER(wxBORDER_DOUBLE)
-    wxFLAGS_MEMBER(wxBORDER_RAISED)
-    wxFLAGS_MEMBER(wxBORDER_STATIC)
-    wxFLAGS_MEMBER(wxBORDER_NONE)
-
-    // old style border flags
-    wxFLAGS_MEMBER(wxSIMPLE_BORDER)
-    wxFLAGS_MEMBER(wxSUNKEN_BORDER)
-    wxFLAGS_MEMBER(wxDOUBLE_BORDER)
-    wxFLAGS_MEMBER(wxRAISED_BORDER)
-    wxFLAGS_MEMBER(wxSTATIC_BORDER)
-    wxFLAGS_MEMBER(wxBORDER)
-
-    // standard window styles
-    wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
-    wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-    wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
-    wxFLAGS_MEMBER(wxWANTS_CHARS)
-    wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
-    wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
-    wxFLAGS_MEMBER(wxVSCROLL)
-    wxFLAGS_MEMBER(wxHSCROLL)
-
-    wxFLAGS_MEMBER(wxSP_HORIZONTAL)
-    wxFLAGS_MEMBER(wxSP_VERTICAL)
-    wxFLAGS_MEMBER(wxSP_ARROW_KEYS)
-    wxFLAGS_MEMBER(wxSP_WRAP)
-
-wxEND_FLAGS( wxSpinButtonStyle )
-
-IMPLEMENT_DYNAMIC_CLASS_XTI(wxSpinButton, wxControl,"wx/spinbut.h")
-
-wxBEGIN_PROPERTIES_TABLE(wxSpinButton)
-    wxEVENT_RANGE_PROPERTY( Spin , wxEVT_SCROLL_TOP , wxEVT_SCROLL_CHANGED , wxSpinEvent )
-
-    wxPROPERTY( Value , int , SetValue, GetValue, 0 , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxPROPERTY( Min , int , SetMin, GetMin, 0 , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxPROPERTY( Max , int , SetMax, GetMax, 0 , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxPROPERTY_FLAGS( WindowStyle , wxSpinButtonStyle , long , SetWindowStyleFlag , GetWindowStyleFlag , EMPTY_MACROVALUE , 0 /*flags*/ , wxT("Helpstring") , wxT("group")) // style
-wxEND_PROPERTIES_TABLE()
-
-wxBEGIN_HANDLERS_TABLE(wxSpinButton)
-wxEND_HANDLERS_TABLE()
-
-wxCONSTRUCTOR_5( wxSpinButton , wxWindow* , Parent , wxWindowID , Id , wxPoint , Position , wxSize , Size , long , WindowStyle )
-#else
-IMPLEMENT_DYNAMIC_CLASS(wxSpinButton, wxControl)
-#endif
-
-
 
 // ----------------------------------------------------------------------------
 // wxSpinButton
@@ -142,11 +79,11 @@ bool wxSpinButton::Create(wxWindow *parent,
     // get the right size for the control
     if ( width <= 0 || height <= 0 )
     {
-        wxSize size = DoGetBestSize();
+        wxSize bestSize = DoGetBestSize();
         if ( width <= 0 )
-            width = size.x;
+            width = bestSize.x;
         if ( height <= 0 )
-            height = size.y;
+            height = bestSize.y;
     }
 
     if ( x < 0 )
@@ -157,7 +94,8 @@ bool wxSpinButton::Create(wxWindow *parent,
     // translate the styles
     DWORD wstyle = WS_VISIBLE | WS_CHILD | WS_TABSTOP | /*  WS_CLIPSIBLINGS | */
                    UDS_NOTHOUSANDS | // never useful, sometimes harmful
-                   UDS_SETBUDDYINT;  // it doesn't harm if we don't have buddy
+                   UDS_ALIGNRIGHT  | // these styles are effectively used only
+                   UDS_SETBUDDYINT;  //  by wxSpinCtrl but do no harm otherwise
 
     if ( m_windowStyle & wxCLIP_SIBLINGS )
         wstyle |= WS_CLIPSIBLINGS;
@@ -210,7 +148,17 @@ wxSpinButton::~wxSpinButton()
 
 wxSize wxSpinButton::DoGetBestSize() const
 {
-    return GetBestSpinnerSize( (GetWindowStyle() & wxSP_VERTICAL) != 0 );
+    const bool vert = HasFlag(wxSP_VERTICAL);
+
+    wxSize bestSize(wxGetSystemMetrics(vert ? SM_CXVSCROLL : SM_CXHSCROLL, m_parent),
+                    wxGetSystemMetrics(vert ? SM_CYVSCROLL : SM_CYHSCROLL, m_parent));
+
+    if ( vert )
+        bestSize.y *= 2;
+    else
+        bestSize.x *= 2;
+
+    return bestSize;
 }
 
 // ----------------------------------------------------------------------------
@@ -221,17 +169,12 @@ int wxSpinButton::GetValue() const
 {
     int n;
 #ifdef UDM_GETPOS32
-    if ( wxApp::GetComCtl32Version() >= 580 )
-    {
-        // use the full 32 bit range if available
-        n = ::SendMessage(GetHwnd(), UDM_GETPOS32, 0, 0);
-    }
-    else
+    // use the full 32 bit range if available
+    n = ::SendMessage(GetHwnd(), UDM_GETPOS32, 0, 0);
+#else
+    // we're limited to 16 bit
+    n = (short)LOWORD(::SendMessage(GetHwnd(), UDM_GETPOS, 0, 0));
 #endif // UDM_GETPOS32
-    {
-        // we're limited to 16 bit
-        n = (short)LOWORD(::SendMessage(GetHwnd(), UDM_GETPOS, 0, 0));
-    }
 
     if (n < m_min) n = m_min;
     if (n > m_max) n = m_max;
@@ -244,20 +187,15 @@ void wxSpinButton::SetValue(int val)
     // wxSpinButtonBase::SetValue(val); -- no, it is pure virtual
 
 #ifdef UDM_SETPOS32
-    if ( wxApp::GetComCtl32Version() >= 580 )
-    {
-        // use the full 32 bit range if available
-        ::SendMessage(GetHwnd(), UDM_SETPOS32, 0, val);
-    }
-    else // we're limited to 16 bit
+    // use the full 32 bit range if available
+    ::SendMessage(GetHwnd(), UDM_SETPOS32, 0, val);
+#else
+    ::SendMessage(GetHwnd(), UDM_SETPOS, 0, MAKELONG((short) val, 0));
 #endif // UDM_SETPOS32
-    {
-        ::SendMessage(GetHwnd(), UDM_SETPOS, 0, MAKELONG((short) val, 0));
-    }
 }
 
 void wxSpinButton::NormalizeValue()
-{ 
+{
     SetValue( GetValue() );
 }
 
@@ -268,17 +206,13 @@ void wxSpinButton::SetRange(int minVal, int maxVal)
     wxSpinButtonBase::SetRange(minVal, maxVal);
 
 #ifdef UDM_SETRANGE32
-    if ( wxApp::GetComCtl32Version() >= 471 )
-    {
-        // use the full 32 bit range if available
-        ::SendMessage(GetHwnd(), UDM_SETRANGE32, minVal, maxVal);
-    }
-    else // we're limited to 16 bit
+    // use the full 32 bit range if available
+    ::SendMessage(GetHwnd(), UDM_SETRANGE32, minVal, maxVal);
+#else
+    // we're limited to 16 bit
+    ::SendMessage(GetHwnd(), UDM_SETRANGE, 0,
+                  (LPARAM) MAKELONG((short)maxVal, (short)minVal));
 #endif // UDM_SETRANGE32
-    {
-        ::SendMessage(GetHwnd(), UDM_SETRANGE, 0,
-                      (LPARAM) MAKELONG((short)maxVal, (short)minVal));
-    }
 
     // the current value might be out of the new range, force it to be in it
     NormalizeValue();
@@ -294,7 +228,7 @@ void wxSpinButton::SetRange(int minVal, int maxVal)
 }
 
 bool wxSpinButton::MSWOnScroll(int WXUNUSED(orientation), WXWORD wParam,
-                               WXWORD pos, WXHWND control)
+                               WXWORD WXUNUSED(pos), WXHWND control)
 {
     wxCHECK_MSG( control, false, wxT("scrolling what?") );
 
@@ -305,26 +239,46 @@ bool wxSpinButton::MSWOnScroll(int WXUNUSED(orientation), WXWORD wParam,
     }
 
     wxSpinEvent event(wxEVT_SCROLL_THUMBTRACK, m_windowId);
-    event.SetPosition((short)pos);    // cast is important for negative values!
+    // We can't use 16 bit position provided in this message for spin buttons
+    // using 32 bit range.
+    event.SetPosition(GetValue());
     event.SetEventObject(this);
 
-    return GetEventHandler()->ProcessEvent(event);
+    return HandleWindowEvent(event);
 }
 
 bool wxSpinButton::MSWOnNotify(int WXUNUSED(idCtrl), WXLPARAM lParam, WXLPARAM *result)
 {
     NM_UPDOWN *lpnmud = (NM_UPDOWN *)lParam;
 
-    if (lpnmud->hdr.hwndFrom != GetHwnd()) // make sure it is the right control
+    if ( lpnmud->hdr.hwndFrom != GetHwnd() || // make sure it is the right control
+         lpnmud->hdr.code != UDN_DELTAPOS )   // and the right notification 
         return false;
+
+    int newVal = lpnmud->iPos + lpnmud->iDelta;
+    if ( newVal < m_min )
+    {
+        newVal = HasFlag(wxSP_WRAP) ? m_max : m_min;
+    }
+    else if ( newVal > m_max )
+    {
+        newVal = HasFlag(wxSP_WRAP) ? m_min : m_max;
+    }
+
+    // Don't send an event if the value hasn't actually changed (for compatibility with wxGTK and wxOSX).
+    if ( newVal == lpnmud->iPos )
+    {
+        *result = 1;
+        return true;
+    }
 
     wxSpinEvent event(lpnmud->iDelta > 0 ? wxEVT_SCROLL_LINEUP
                                          : wxEVT_SCROLL_LINEDOWN,
                       m_windowId);
-    event.SetPosition(lpnmud->iPos + lpnmud->iDelta);
+    event.SetPosition(newVal);
     event.SetEventObject(this);
 
-    bool processed = GetEventHandler()->ProcessEvent(event);
+    bool processed = HandleWindowEvent(event);
 
     *result = event.IsAllowed() ? 0 : 1;
 

@@ -4,9 +4,8 @@
 // Author:      Francesco Montorsi
 // Modified by:
 // Created:     07.07.2006 (based on wxToolkitInfo)
-// RCS-ID:      $Id: platinfo.h 41807 2006-10-09 15:58:56Z VZ $
 // Copyright:   (c) 2006 Francesco Montorsi
-// License:     wxWindows license
+// Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_PLATINFO_H_
@@ -15,7 +14,7 @@
 #include "wx/string.h"
 
 // ----------------------------------------------------------------------------
-// wxPlatformInfo
+// wxPlatformInfo enums & structs
 // ----------------------------------------------------------------------------
 
 // VERY IMPORTANT: when changing these enum values, also change the relative
@@ -31,10 +30,10 @@ enum wxOperatingSystemId
     wxOS_MAC_OSX_DARWIN = 1 << 1,     // Apple Mac OS X with Unix paths
     wxOS_MAC = wxOS_MAC_OS|wxOS_MAC_OSX_DARWIN,
 
-    wxOS_WINDOWS_9X     = 1 << 2,     // Windows 9x family (95/98/ME)
-    wxOS_WINDOWS_NT     = 1 << 3,     // Windows NT family (NT/2000/XP)
-    wxOS_WINDOWS_MICRO  = 1 << 4,     // MicroWindows
-    wxOS_WINDOWS_CE     = 1 << 5,     // Windows CE (Window Mobile)
+    wxOS_WINDOWS_9X     = 1 << 2,     // obsolete
+    wxOS_WINDOWS_NT     = 1 << 3,     // obsolete
+    wxOS_WINDOWS_MICRO  = 1 << 4,     // obsolete
+    wxOS_WINDOWS_CE     = 1 << 5,     // obsolete
     wxOS_WINDOWS = wxOS_WINDOWS_9X      |
                    wxOS_WINDOWS_NT      |
                    wxOS_WINDOWS_MICRO   |
@@ -57,8 +56,8 @@ enum wxOperatingSystemId
 
     // 1<<13 and 1<<14 available for other Unix flavours
 
-    wxOS_DOS            = 1 << 15,      // Microsoft DOS
-    wxOS_OS2            = 1 << 16       // OS/2
+    wxOS_DOS            = 1 << 15,      // obsolete
+    wxOS_OS2            = 1 << 16       // obsolete
 };
 
 // list of wxWidgets ports - some of them can be used with more than
@@ -71,16 +70,16 @@ enum wxPortId
 
     wxPORT_MSW      = 1 << 1,       // wxMSW, native toolkit is Windows API
     wxPORT_MOTIF    = 1 << 2,       // wxMotif, using [Open]Motif or Lesstif
-    wxPORT_GTK      = 1 << 3,       // wxGTK, using GTK+ 1.x, 2.x, GPE or Maemo
-    wxPORT_MGL      = 1 << 4,       // wxMGL, using wxUniversal
+    wxPORT_GTK      = 1 << 3,       // wxGTK, using GTK+ 1.x, 2.x, 3.x
+    wxPORT_DFB      = 1 << 4,       // wxDFB, using wxUniversal
     wxPORT_X11      = 1 << 5,       // wxX11, using wxUniversal
-    wxPORT_PM       = 1 << 6,       // wxOS2, using OS/2 Presentation Manager
-    wxPORT_OS2      = wxPORT_PM,    // wxOS2, using OS/2 Presentation Manager
-    wxPORT_MAC      = 1 << 7,       // wxMac, using Carbon or Classic Mac API
+    wxPORT_PM       = 1 << 6,       // obsolete
+    wxPORT_OS2      = wxPORT_PM,    // obsolete
+    wxPORT_MAC      = 1 << 7,       // wxOSX (former wxMac), using Cocoa or iPhone API
+    wxPORT_OSX      = wxPORT_MAC,   // wxOSX, using Cocoa or iPhone API
     wxPORT_COCOA    = 1 << 8,       // wxCocoa, using Cocoa NextStep/Mac API
-    wxPORT_WINCE    = 1 << 9,       // wxWinCE, toolkit is WinCE SDK API
-    wxPORT_PALMOS   = 1 << 10,      // wxPalmOS, toolkit is PalmOS API
-    wxPORT_DFB      = 1 << 11       // wxDFB, using wxUniversal
+    wxPORT_WINCE    = 1 << 9,       // obsolete
+    wxPORT_QT       = 1 << 10       // wxQT, using Qt 5+
 };
 
 // architecture of the operating system
@@ -108,6 +107,31 @@ enum wxEndianness
 
     wxENDIAN_MAX
 };
+
+// information about a linux distro returned by the lsb_release utility
+struct wxLinuxDistributionInfo
+{
+    wxString Id;
+    wxString Release;
+    wxString CodeName;
+    wxString Description;
+
+    bool operator==(const wxLinuxDistributionInfo& ldi) const
+    {
+        return Id == ldi.Id &&
+               Release == ldi.Release &&
+               CodeName == ldi.CodeName &&
+               Description == ldi.Description;
+    }
+
+    bool operator!=(const wxLinuxDistributionInfo& ldi) const
+    { return !(*this == ldi); }
+};
+
+
+// ----------------------------------------------------------------------------
+// wxPlatformInfo
+// ----------------------------------------------------------------------------
 
 // Information about the toolkit that the app is running under and some basic
 // platform and architecture info
@@ -156,6 +180,7 @@ public:
     static wxString GetArchName(wxArchitecture arch);
     static wxString GetEndiannessName(wxEndianness end);
 
+
     // getters
     // -----------------
 
@@ -163,27 +188,27 @@ public:
         { return m_osVersionMajor; }
     int GetOSMinorVersion() const
         { return m_osVersionMinor; }
+    int GetOSMicroVersion() const
+        { return m_osVersionMicro; }
 
     // return true if the OS version >= major.minor
-    bool CheckOSVersion(int major, int minor) const
-    {
-        return DoCheckVersion(GetOSMajorVersion(),
-                              GetOSMinorVersion(),
-                              major,
-                              minor);
-    }
+    bool CheckOSVersion(int major, int minor, int micro = 0) const;
 
     int GetToolkitMajorVersion() const
         { return m_tkVersionMajor; }
     int GetToolkitMinorVersion() const
         { return m_tkVersionMinor; }
+    int GetToolkitMicroVersion() const
+        { return m_tkVersionMicro; }
 
-    bool CheckToolkitVersion(int major, int minor) const
+    bool CheckToolkitVersion(int major, int minor, int micro = 0) const
     {
         return DoCheckVersion(GetToolkitMajorVersion(),
                               GetToolkitMinorVersion(),
+                              GetToolkitMicroVersion(),
                               major,
-                              minor);
+                              minor,
+                              micro);
     }
 
     bool IsUsingUniversalWidgets() const
@@ -191,6 +216,8 @@ public:
 
     wxOperatingSystemId GetOperatingSystemId() const
         { return m_os; }
+    wxLinuxDistributionInfo GetLinuxDistributionInfo() const
+        { return m_ldi; }
     wxPortId GetPortId() const
         { return m_port; }
     wxArchitecture GetArchitecture() const
@@ -214,17 +241,38 @@ public:
         { return GetArchName(m_arch); }
     wxString GetEndiannessName() const
         { return GetEndiannessName(m_endian); }
+    wxString GetOperatingSystemDescription() const
+        { return m_osDesc; }
+    wxString GetDesktopEnvironment() const
+        { return m_desktopEnv; }
+
+    static wxString GetOperatingSystemDirectory();
+        // doesn't make sense to store inside wxPlatformInfo the OS directory,
+        // thus this function is static; note that this function simply calls
+        // wxGetOSDirectory() and is here just to make it easier for the user to
+        // find it that feature (global functions can be difficult to find in the docs)
 
     // setters
     // -----------------
 
-    void SetOSVersion(int major, int minor)
-        { m_osVersionMajor=major; m_osVersionMinor=minor; }
-    void SetToolkitVersion(int major, int minor)
-        { m_tkVersionMajor=major; m_tkVersionMinor=minor; }
+    void SetOSVersion(int major, int minor, int micro = 0)
+    {
+        m_osVersionMajor = major;
+        m_osVersionMinor = minor;
+        m_osVersionMicro = micro;
+    }
+
+    void SetToolkitVersion(int major, int minor, int micro = 0)
+    {
+        m_tkVersionMajor = major;
+        m_tkVersionMinor = minor;
+        m_tkVersionMicro = micro;
+    }
 
     void SetOperatingSystemId(wxOperatingSystemId n)
         { m_os = n; }
+    void SetOperatingSystemDescription(const wxString& desc)
+        { m_osDesc = desc; }
     void SetPortId(wxPortId n)
         { m_port = n; }
     void SetArchitecture(wxArchitecture n)
@@ -232,24 +280,41 @@ public:
     void SetEndianness(wxEndianness n)
         { m_endian = n; }
 
+    void SetDesktopEnvironment(const wxString& de)
+        { m_desktopEnv = de; }
+    void SetLinuxDistributionInfo(const wxLinuxDistributionInfo& di)
+        { m_ldi = di; }
+
+
     // miscellaneous
     // -----------------
 
     bool IsOk() const
     {
         return m_osVersionMajor != -1 && m_osVersionMinor != -1 &&
+               m_osVersionMicro != -1 &&
                m_os != wxOS_UNKNOWN &&
+               !m_osDesc.IsEmpty() &&
                m_tkVersionMajor != -1 && m_tkVersionMinor != -1 &&
+               m_tkVersionMicro != -1 &&
                m_port != wxPORT_UNKNOWN &&
-               m_arch != wxARCH_INVALID && m_endian != wxENDIAN_INVALID;
+               m_arch != wxARCH_INVALID &&
+               m_endian != wxENDIAN_INVALID;
+
+               // do not check linux-specific info; it's ok to have them empty
     }
 
 
 protected:
-    static bool DoCheckVersion(int majorCur, int minorCur, int major, int minor)
+    static bool DoCheckVersion(int majorCur, int minorCur, int microCur,
+                               int major, int minor, int micro)
     {
-        return majorCur > major || (majorCur == major && minorCur >= minor);
+        return majorCur > major
+            || (majorCur == major && minorCur > minor)
+            || (majorCur == major && minorCur == minor && microCur >= micro);
     }
+
+    bool m_initializedForCurrentPlatform;
 
     void InitForCurrentPlatform();
 
@@ -260,10 +325,21 @@ protected:
     // Version of the OS; valid if m_os != wxOS_UNKNOWN
     // (-1 means not initialized yet).
     int m_osVersionMajor,
-        m_osVersionMinor;
+        m_osVersionMinor,
+        m_osVersionMicro;
 
     // Operating system ID.
     wxOperatingSystemId m_os;
+
+    // Operating system description.
+    wxString m_osDesc;
+
+
+    // linux-specific
+    // -----------------
+
+    wxString m_desktopEnv;
+    wxLinuxDistributionInfo m_ldi;
 
 
     // toolkit
@@ -271,7 +347,7 @@ protected:
 
     // Version of the underlying toolkit
     // (-1 means not initialized yet; zero means no toolkit).
-    int m_tkVersionMajor, m_tkVersionMinor;
+    int m_tkVersionMajor, m_tkVersionMinor, m_tkVersionMicro;
 
     // name of the wxWidgets port
     wxPortId m_port;
@@ -283,7 +359,7 @@ protected:
     // others
     // -----------------
 
-    // architecture of the OS
+    // architecture of the OS/machine
     wxArchitecture m_arch;
 
     // endianness of the machine
@@ -291,23 +367,5 @@ protected:
 };
 
 
-#if WXWIN_COMPATIBILITY_2_6
-    #define wxUNKNOWN_PLATFORM      wxOS_UNKNOWN
-    #define wxUnix                  wxOS_UNIX
-    #define wxWin95                 wxOS_WINDOWS_9X
-    #define wxWIN95                 wxOS_WINDOWS_9X
-    #define wxWINDOWS_NT            wxOS_WINDOWS_NT
-    #define wxMSW                   wxOS_WINDOWS
-    #define wxWinCE                 wxOS_WINDOWS_CE
-    #define wxWIN32S                wxOS_WINDOWS_9X
-
-    #define wxPalmOS                wxPORT_PALMOS
-    #define wxOS2                   wxPORT_OS2
-    #define wxMGL                   wxPORT_MGL
-    #define wxCocoa                 wxPORT_MAC
-    #define wxMac                   wxPORT_MAC
-    #define wxMotif                 wxPORT_MOTIF
-    #define wxGTK                   wxPORT_GTK
-#endif // WXWIN_COMPATIBILITY_2_6
 
 #endif // _WX_PLATINFO_H_

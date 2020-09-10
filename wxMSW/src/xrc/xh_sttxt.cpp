@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxStaticText
 // Author:      Bob Mitchell
 // Created:     2000/03/21
-// RCS-ID:      $Id: xh_sttxt.cpp 52398 2008-03-09 03:27:15Z RD $
 // Copyright:   (c) 2000 Bob Mitchell and Verant Interactive
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -23,7 +22,7 @@
    #include "wx/stattext.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxStaticTextXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxStaticTextXmlHandler, wxXmlResourceHandler);
 
 wxStaticTextXmlHandler::wxStaticTextXmlHandler()
 : wxXmlResourceHandler()
@@ -31,7 +30,13 @@ wxStaticTextXmlHandler::wxStaticTextXmlHandler()
     XRC_ADD_STYLE(wxST_NO_AUTORESIZE);
     XRC_ADD_STYLE(wxALIGN_LEFT);
     XRC_ADD_STYLE(wxALIGN_RIGHT);
+    XRC_ADD_STYLE(wxALIGN_CENTER);
     XRC_ADD_STYLE(wxALIGN_CENTRE);
+    XRC_ADD_STYLE(wxALIGN_CENTER_HORIZONTAL);
+    XRC_ADD_STYLE(wxALIGN_CENTRE_HORIZONTAL);
+    XRC_ADD_STYLE(wxST_ELLIPSIZE_START);
+    XRC_ADD_STYLE(wxST_ELLIPSIZE_MIDDLE);
+    XRC_ADD_STYLE(wxST_ELLIPSIZE_END);
     AddWindowStyles();
 }
 
@@ -48,7 +53,7 @@ wxObject *wxStaticTextXmlHandler::DoCreateResource()
 
     SetupWindow(text);
 
-    long wrap = GetLong(wxT("wrap"), -1);
+    long wrap = GetDimension(wxT("wrap"), -1);
     if (wrap != -1)
         text->Wrap(wrap);
 

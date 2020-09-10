@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     25.08.00
-// RCS-ID:      $Id: statbmp.h 37066 2006-01-23 03:27:34Z MR $
 // Copyright:   (c) 2000 Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -20,12 +19,20 @@
 #include "wx/bitmap.h"
 #include "wx/icon.h"
 
-extern WXDLLEXPORT_DATA(const wxChar) wxStaticBitmapNameStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxStaticBitmapNameStr[];
 
 // a control showing an icon or a bitmap
-class WXDLLEXPORT wxStaticBitmapBase : public wxControl
+class WXDLLIMPEXP_CORE wxStaticBitmapBase : public wxControl
 {
 public:
+    enum ScaleMode
+    {
+        Scale_None,
+        Scale_Fill,
+        Scale_AspectFit,
+        Scale_AspectFill
+    };
+
     wxStaticBitmapBase() { }
     virtual ~wxStaticBitmapBase();
 
@@ -39,15 +46,20 @@ public:
         // should)
         return wxIcon();
     }
+    virtual void SetScaleMode(ScaleMode WXUNUSED(scaleMode)) { }
+    virtual ScaleMode GetScaleMode() const { return Scale_None; }
 
-    // overriden base class virtuals
-    virtual bool AcceptsFocus() const { return false; }
-    virtual bool HasTransparentBackground() { return true; }
+    // overridden base class virtuals
+    virtual bool AcceptsFocus() const wxOVERRIDE { return false; }
+    virtual bool HasTransparentBackground() wxOVERRIDE { return true; }
 
 protected:
-    virtual wxSize DoGetBestSize() const;
+    // choose the default border for this window
+    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
 
-    DECLARE_NO_COPY_CLASS(wxStaticBitmapBase)
+    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+
+    wxDECLARE_NO_COPY_CLASS(wxStaticBitmapBase);
 };
 
 #if defined(__WXUNIVERSAL__)
@@ -61,11 +73,9 @@ protected:
 #elif defined(__WXGTK__)
     #include "wx/gtk1/statbmp.h"
 #elif defined(__WXMAC__)
-    #include "wx/mac/statbmp.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/statbmp.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/statbmp.h"
+    #include "wx/osx/statbmp.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/statbmp.h"
 #endif
 
 #endif // wxUSE_STATBMP

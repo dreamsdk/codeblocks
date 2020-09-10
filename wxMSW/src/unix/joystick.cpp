@@ -4,7 +4,6 @@
 // Author:      Ported to Linux by Guilhem Lavaux
 // Modified by:
 // Created:     05/23/98
-// RCS-ID:      $Id: joystick.cpp 40530 2006-08-09 11:18:24Z MW $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -19,7 +18,10 @@
 #ifndef WX_PRECOMP
     #include "wx/event.h"
     #include "wx/window.h"
+    #include "wx/log.h"
 #endif //WX_PRECOMP
+
+#include "wx/thread.h"
 
 #include <linux/joystick.h>
 #include <sys/types.h>
@@ -44,11 +46,13 @@ enum {
     wxJS_AXIS_V,
 
     wxJS_AXIS_MAX = 32767,
-    wxJS_AXIS_MIN = -32767
+    wxJS_AXIS_MIN = -32767,
+    wxJS_MAX_AXES = 15,
+    wxJS_MAX_BUTTONS = sizeof(int) * 8
 };
 
 
-IMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject)
+wxIMPLEMENT_DYNAMIC_CLASS(wxJoystick, wxObject);
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -59,16 +63,18 @@ class wxJoystickThread : public wxThread
 {
 public:
     wxJoystickThread(int device, int joystick);
-    void* Entry();
+    void* Entry() wxOVERRIDE;
 
 private:
+    void      SendEvent(wxEventType type, long ts, int change = 0);
     int       m_device;
     int       m_joystick;
     wxPoint   m_lastposition;
-    int       m_axe[15];
+    int       m_axe[wxJS_MAX_AXES];
     int       m_buttons;
     wxWindow* m_catchwin;
     int       m_polling;
+    int       m_threshold;
 
     friend class wxJoystick;
 };
@@ -80,12 +86,24 @@ wxJoystickThread::wxJoystickThread(int device, int joystick)
       m_lastposition(wxDefaultPosition),
       m_buttons(0),
       m_catchwin(NULL),
-      m_polling(0)
+      m_polling(0),
+      m_threshold(0)
 {
-    for (int i=0; i<15; i++)
-        m_axe[i] = 0;
+    memset(m_axe, 0, sizeof(m_axe));
 }
 
+void wxJoystickThread::SendEvent(wxEventType type, long ts, int change)
+{
+    wxJoystickEvent jwx_event(type, m_buttons, m_joystick, change);
+
+    jwx_event.SetTimestamp(ts);
+    jwx_event.SetPosition(m_lastposition);
+    jwx_event.SetZPosition(m_axe[wxJS_AXIS_Z]);
+    jwx_event.SetEventObject(m_catchwin);
+
+    if (m_catchwin)
+        m_catchwin->GetEventHandler()->AddPendingEvent(jwx_event);
+}
 
 void* wxJoystickThread::Entry()
 {
@@ -111,14 +129,20 @@ void* wxJoystickThread::Entry()
         if (wxFD_ISSET(m_device, &read_fds))
         {
             memset(&j_evt, 0, sizeof(j_evt));
-            read(m_device, &j_evt, sizeof(j_evt));
+            if ( read(m_device, &j_evt, sizeof(j_evt)) == -1 )
+            {
+                // We can hardly do anything other than ignoring the error and
+                // hope that we read the next event successfully.
+                continue;
+            }
 
             //printf("time: %d\t value: %d\t type: %d\t number: %d\n",
             //       j_evt.time, j_evt.value, j_evt.type, j_evt.number);
 
-            wxJoystickEvent jwx_event;
-
-            if (j_evt.type & JS_EVENT_AXIS)
+            if ((j_evt.type & JS_EVENT_AXIS) && (j_evt.number < wxJS_MAX_AXES))
+            {
+                if (   (m_axe[j_evt.number] + m_threshold < j_evt.value)
+                    || (m_axe[j_evt.number] - m_threshold > j_evt.value) )
             {
                 m_axe[j_evt.number] = j_evt.value;
 
@@ -126,52 +150,40 @@ void* wxJoystickThread::Entry()
                 {
                     case wxJS_AXIS_X:
                         m_lastposition.x = j_evt.value;
-                        jwx_event.SetEventType(wxEVT_JOY_MOVE);
+                        SendEvent(wxEVT_JOY_MOVE, j_evt.time);
                         break;
                     case wxJS_AXIS_Y:
                         m_lastposition.y = j_evt.value;
-                        jwx_event.SetEventType(wxEVT_JOY_MOVE);
+                        SendEvent(wxEVT_JOY_MOVE, j_evt.time);
                         break;
                     case wxJS_AXIS_Z:
-                        jwx_event.SetEventType(wxEVT_JOY_ZMOVE);
+                        SendEvent(wxEVT_JOY_ZMOVE, j_evt.time);
                         break;
                     default:
-                        jwx_event.SetEventType(wxEVT_JOY_MOVE);
+                        SendEvent(wxEVT_JOY_MOVE, j_evt.time);
                         // TODO: There should be a way to indicate that the event
                         //       is for some other axes.
                         break;
                 }
             }
+            }
 
-            if (j_evt.type & JS_EVENT_BUTTON)
+            if ( (j_evt.type & JS_EVENT_BUTTON) && (j_evt.number < wxJS_MAX_BUTTONS) )
             {
                 if (j_evt.value)
                 {
                     m_buttons |= (1 << j_evt.number);
-                    jwx_event.SetEventType(wxEVT_JOY_BUTTON_DOWN);
+                    SendEvent(wxEVT_JOY_BUTTON_DOWN, j_evt.time, 1 << j_evt.number);
                 }
                 else
                 {
                     m_buttons &= ~(1 << j_evt.number);
-                    jwx_event.SetEventType(wxEVT_JOY_BUTTON_UP);
+                    SendEvent(wxEVT_JOY_BUTTON_UP, j_evt.time, 1 << j_evt.number);
                 }
-
-                jwx_event.SetButtonChange(j_evt.number);
-
-                jwx_event.SetTimestamp(j_evt.time);
-                jwx_event.SetJoystick(m_joystick);
-                jwx_event.SetButtonState(m_buttons);
-                jwx_event.SetPosition(m_lastposition);
-                jwx_event.SetZPosition(m_axe[3]);
-                jwx_event.SetEventObject(m_catchwin);
-
-                if (m_catchwin)
-                    m_catchwin->AddPendingEvent(jwx_event);
             }
         }
     }
 
-    close(m_device);
     return NULL;
 }
 
@@ -210,7 +222,8 @@ wxJoystick::~wxJoystick()
     ReleaseCapture();
     if (m_thread)
         m_thread->Delete();  // It's detached so it will delete itself
-    m_device = -1;
+    if (m_device != -1)
+        close(m_device);
 }
 
 
@@ -225,6 +238,13 @@ wxPoint wxJoystick::GetPosition() const
     return pos;
 }
 
+int wxJoystick::GetPosition(unsigned axis) const
+{
+    if (m_thread && (axis < wxJS_MAX_AXES))
+        return m_thread->m_axe[axis];
+    return 0;
+}
+
 int wxJoystick::GetZPosition() const
 {
     if (m_thread)
@@ -237,6 +257,13 @@ int wxJoystick::GetButtonState() const
     if (m_thread)
         return m_thread->m_buttons;
     return 0;
+}
+
+bool wxJoystick::GetButtonState(unsigned id) const
+{
+    if (m_thread && (id < wxJS_MAX_BUTTONS))
+        return (m_thread->m_buttons & (1u << id)) != 0;
+    return false;
 }
 
 int wxJoystick::GetPOVPosition() const
@@ -272,11 +299,15 @@ int wxJoystick::GetVPosition() const
 
 int wxJoystick::GetMovementThreshold() const
 {
+    if (m_thread)
+        return m_thread->m_threshold;
     return 0;
 }
 
 void wxJoystick::SetMovementThreshold(int threshold)
 {
+    if (m_thread)
+        m_thread->m_threshold = threshold;
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -370,6 +401,9 @@ int wxJoystick::GetNumberButtons() const
     if (m_device != -1)
         ioctl(m_device, JSIOCGBUTTONS, &nb);
 
+    if ((int)nb > wxJS_MAX_BUTTONS)
+        nb = wxJS_MAX_BUTTONS;
+
     return nb;
 }
 
@@ -380,17 +414,20 @@ int wxJoystick::GetNumberAxes() const
     if (m_device != -1)
         ioctl(m_device, JSIOCGAXES, &nb);
 
+    if ((int)nb > wxJS_MAX_AXES)
+        nb = wxJS_MAX_AXES;
+
     return nb;
 }
 
 int wxJoystick::GetMaxButtons() const
 {
-    return 15; // internal
+    return wxJS_MAX_BUTTONS; // internal
 }
 
 int wxJoystick::GetMaxAxes() const
 {
-    return 15; // internal
+    return wxJS_MAX_AXES; // internal
 }
 
 int wxJoystick::GetPollingMin() const

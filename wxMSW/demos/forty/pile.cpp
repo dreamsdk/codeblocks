@@ -4,7 +4,6 @@
 // Author:      Chris Breeze
 // Modified by:
 // Created:     21/07/97
-// RCS-ID:      $Id: pile.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) 1993-1998 Chris Breeze
 // Licence:     wxWindows licence
 //---------------------------------------------------------------------------
@@ -156,13 +155,14 @@ Card* Pile::RemoveTopCard()
 //+-------------------------------------------------------------+
 Card* Pile::RemoveTopCard(wxDC& dc, int xOffset, int yOffset)
 {
-    int topX, topY, x, y;
+    int topX, topY;
 
     GetTopCardPos(topX, topY);
     Card* card = RemoveTopCard();
 
     if (card)
     {
+        int x, y;
         card->Erase(dc, topX - xOffset, topY - yOffset);
         GetTopCardPos(x, y);
         if (m_topCard < 0)

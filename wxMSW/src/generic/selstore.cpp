@@ -1,11 +1,10 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Name:        generic/selstore.cpp
+// Name:        src/generic/selstore.cpp
 // Purpose:     wxSelectionStore implementation
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     08.06.03 (extracted from src/generic/listctrl.cpp)
-// RCS-ID:      $Id: selstore.cpp 27853 2004-06-17 16:22:36Z ABX $
-// Copyright:   (c) 2000-2003 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2000-2003 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -29,11 +28,13 @@
 // wxSelectionStore
 // ============================================================================
 
+const unsigned wxSelectionStore::NO_SELECTION = static_cast<unsigned>(-1);
+
 // ----------------------------------------------------------------------------
 // tests
 // ----------------------------------------------------------------------------
 
-bool wxSelectionStore::IsSelected(size_t item) const
+bool wxSelectionStore::IsSelected(unsigned item) const
 {
     bool isSel = m_itemsSel.Index(item) != wxNOT_FOUND;
 
@@ -46,7 +47,7 @@ bool wxSelectionStore::IsSelected(size_t item) const
 // Select*()
 // ----------------------------------------------------------------------------
 
-bool wxSelectionStore::SelectItem(size_t item, bool select)
+bool wxSelectionStore::SelectItem(unsigned item, bool select)
 {
     // search for the item ourselves as like this we get the index where to
     // insert it later if needed, so we do only one search in the array instead
@@ -75,16 +76,16 @@ bool wxSelectionStore::SelectItem(size_t item, bool select)
     return false;
 }
 
-bool wxSelectionStore::SelectRange(size_t itemFrom, size_t itemTo,
+bool wxSelectionStore::SelectRange(unsigned itemFrom, unsigned itemTo,
                                    bool select,
                                    wxArrayInt *itemsChanged)
 {
     // 100 is hardcoded but it shouldn't matter much: the important thing is
     // that we don't refresh everything when really few (e.g. 1 or 2) items
     // change state
-    static const size_t MANY_ITEMS = 100;
+    static const unsigned MANY_ITEMS = 100;
 
-    wxASSERT_MSG( itemFrom <= itemTo, _T("should be in order") );
+    wxASSERT_MSG( itemFrom <= itemTo, wxT("should be in order") );
 
     // are we going to have more [un]selected items than the other ones?
     if ( itemTo - itemFrom > m_count/2 )
@@ -102,7 +103,7 @@ bool wxSelectionStore::SelectRange(size_t itemFrom, size_t itemTo,
             // TODO: it should be possible to optimize the searches a bit
             //       knowing the possible range
 
-            size_t item;
+            unsigned item;
             for ( item = 0; item < itemFrom; item++ )
             {
                 if ( selOld.Index(item) == wxNOT_FOUND )
@@ -166,7 +167,7 @@ bool wxSelectionStore::SelectRange(size_t itemFrom, size_t itemTo,
         }
 
         // just add the items to the selection
-        for ( size_t item = itemFrom; item <= itemTo; item++ )
+        for ( unsigned item = itemFrom; item <= itemTo; item++ )
         {
             if ( SelectItem(item, select) && itemsChanged )
             {
@@ -191,7 +192,32 @@ bool wxSelectionStore::SelectRange(size_t itemFrom, size_t itemTo,
 // callbacks
 // ----------------------------------------------------------------------------
 
-void wxSelectionStore::OnItemDelete(size_t item)
+void wxSelectionStore::OnItemsInserted(unsigned item, unsigned numItems)
+{
+    const size_t count = m_itemsSel.GetCount();
+
+    size_t idx = m_itemsSel.IndexForInsert(item);
+
+    for ( size_t i = idx; i < count; i++ )
+    {
+        m_itemsSel[i] += numItems;
+    }
+
+    if ( m_defaultState )
+    {
+        // All newly inserted items are not selected, so if the default state
+        // is to be selected, we need to manually add them to the deselected
+        // items indices.
+        for ( unsigned n = item; n < item + numItems; n++ )
+        {
+            m_itemsSel.AddAt(item, idx++);
+        }
+    }
+
+    m_count += numItems;
+}
+
+void wxSelectionStore::OnItemDelete(unsigned item)
 {
     size_t count = m_itemsSel.GetCount(),
            i = m_itemsSel.IndexForInsert(item);
@@ -208,9 +234,100 @@ void wxSelectionStore::OnItemDelete(size_t item)
     while ( i < count )
     {
         // all following elements must be greater than the one we deleted
-        wxASSERT_MSG( m_itemsSel[i] > item, _T("logic error") );
+        wxASSERT_MSG( m_itemsSel[i] > item, wxT("logic error") );
 
         m_itemsSel[i++]--;
     }
+
+    m_count--;
 }
 
+bool wxSelectionStore::OnItemsDeleted(unsigned item, unsigned numItems)
+{
+    bool anyDeletedInSelItems = false,
+         allDeletedInSelItems = true;
+
+    size_t i = m_itemsSel.IndexForInsert(item);
+
+    const unsigned firstAfterDeleted = item + numItems;
+    while ( i < m_itemsSel.size() )
+    {
+        if ( m_itemsSel[i] < firstAfterDeleted )
+        {
+            // This item is going to be deleted, so remove it from the
+            // selected indices entirely. Notice that we do not update i here
+            // as it now refers to the next element.
+            m_itemsSel.RemoveAt(i);
+
+            anyDeletedInSelItems = true;
+        }
+        else
+        {
+            // This item remains, just update its index.
+            m_itemsSel[i++] -= numItems;
+
+            allDeletedInSelItems = false;
+        }
+    }
+
+    m_count -= numItems;
+
+    return m_defaultState ? allDeletedInSelItems : anyDeletedInSelItems;
+}
+
+
+void wxSelectionStore::SetItemCount(unsigned count)
+{
+    // forget about all items whose indices are now invalid if the size
+    // decreased
+    if ( count < m_count )
+    {
+        for ( size_t i = m_itemsSel.GetCount(); i > 0; i-- )
+        {
+            if ( m_itemsSel[i - 1] >= count )
+                m_itemsSel.RemoveAt(i - 1);
+        }
+    }
+
+    // remember the new number of items
+    m_count = count;
+}
+
+// ----------------------------------------------------------------------------
+// Iteration
+// ----------------------------------------------------------------------------
+
+unsigned wxSelectionStore::GetFirstSelectedItem(IterationState& cookie) const
+{
+    cookie = 0;
+
+    return GetNextSelectedItem(cookie);
+}
+
+unsigned wxSelectionStore::GetNextSelectedItem(IterationState& cookie) const
+{
+    if ( m_defaultState )
+    {
+        // We have no choice but to iterate over all items in this case. It
+        // shouldn't be that bad in practice because (almost) all items are
+        // supposed to be selected if m_defaultState == true anyhow.
+        for ( unsigned item = cookie; ; item++ )
+        {
+            if ( item >= m_count )
+                return NO_SELECTION;
+
+            if ( IsSelected(item) )
+            {
+                cookie = item + 1;
+                return item;
+            }
+        }
+    }
+    else // Simple case when we directly have the selected items.
+    {
+        if ( cookie >= m_itemsSel.size() )
+            return NO_SELECTION;
+
+        return m_itemsSel[cookie++];
+    }
+}

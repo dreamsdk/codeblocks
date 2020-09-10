@@ -1,7 +1,14 @@
 <?xml version="1.0" ?>
-<!-- $Id: config.bkl 64986 2010-07-16 11:39:06Z VZ $ -->
 
 <makefile>
+
+    <set var="IS_MSVC_PRJ">
+        $(FORMAT in ['msvc6prj','msvs2003prj','msvs2005prj','msvs2008prj'])
+    </set>
+    <set var="IS_MSVC">
+        $(IS_MSVC_PRJ=='1' or FORMAT=='msvc')
+    </set>
+
 
     <set var="BUILDING_LIB" overwrite="0">0</set>
 
@@ -37,35 +44,69 @@
         </description>
     </option>
 
-    <option name="WXUNIV">
-        <values>0,1</values>
-        <values-description>,Universal</values-description>
-        <default-value>0</default-value>
-        <description>
-            Build wxUniversal instead of native port?
-        </description>
-    </option>
+    <if cond="FORMAT!='autoconf'">
+        <option name="TOOLKIT">
+            <values>MSW,GTK</values>
+            <values-description>,GTK+</values-description>
+            <default-value>MSW</default-value>
+            <description>
+                Used toolkit
+            </description>
+        </option>
 
-    <option name="UNICODE">
-        <values>0,1</values>
-        <values-description>,Unicode</values-description>
-        <default-value>0</default-value>
-        <description>
-            Compile Unicode build of wxWidgets?
-        </description>
-    </option>
+        <if cond="FORMAT not in ['autoconf','msvc6prj','msvs2003prj','msvs2005prj','msvs2008prj']">
+            <option name="TOOLKIT_VERSION">
+                <values>,2</values>
+                <values-description>,2</values-description>
+                <default-value></default-value>
+                <description>
+                    GTK+ toolkit version
+                </description>
+            </option>
+        </if>
 
-    <if cond="FORMAT!='autoconf' and FORMAT!='watcom'">
-        <option name="MSLU">
+        <!-- We must make TOOLKIT a constant under Windows -->
+        <if cond="FORMAT in ['borland','mingw','msvc','watcom', 'msvc6prj', 'msvs2003prj', 'msvs2005prj', 'msvs2008prj']">
+            <set var="TOOLKIT">MSW</set>
+        </if>
+    </if>
+
+    <!--
+        Don't include wxUniversal configurations in project files, they
+        confuse people who don't know what "Universal" means and double the
+        number of configurations. If you do need to build wxUniversal, either
+        use the make files or comment out the 3 lines below and rerun
+        bakefile_gen to regenerate the projects with them.
+     -->
+    <if cond="IS_MSVC_PRJ=='1'">
+        <set var="WXUNIV">0</set>
+    </if>
+    <if cond="IS_MSVC_PRJ=='0'">
+        <option name="WXUNIV">
             <values>0,1</values>
+            <values-description>,Universal</values-description>
             <default-value>0</default-value>
             <description>
-                Use MSLU library when building Unicode version.
+                Build wxUniversal instead of native port?
             </description>
         </option>
     </if>
-    <if cond="FORMAT=='autoconf' or FORMAT=='watcom'">
-        <set var="MSLU">0</set>
+
+    <!-- don't include ANSI configuration in project files, it's going to be
+         eventually removed anyway and it only doubles the number of build
+         configs in projects: -->
+    <if cond="IS_MSVC_PRJ=='1'">
+        <set var="UNICODE">1</set>
+    </if>
+    <if cond="IS_MSVC_PRJ=='0'">
+        <option name="UNICODE">
+            <values>0,1</values>
+            <values-description>,Unicode</values-description>
+            <default-value>1</default-value>
+            <description>
+                Compile Unicode build of wxWidgets?
+            </description>
+        </option>
     </if>
 
     <option name="BUILD">
@@ -87,7 +128,8 @@ your environment is set up appropriately with the correct compiler in the
 PATH. Rather it affects some options passed to some of the common build
 utilities such as the resource compiler and the linker.
 
-Accepted values: AMD64, IA64.
+Accepted values: IA64, X64, ARM64
+(AMD64 accepted as synonym for X64 but should not be used any more).
             </description>
         </option>
     </if>
@@ -95,14 +137,16 @@ Accepted values: AMD64, IA64.
         <set var="TARGET_CPU"/>
     </if>
 
-    <!-- FIXME: restore this once bakefile is fixed to not use
-                /Gm /GZ (incompatible with /O2) w/ debug-info -->
+    <!--
+        For MSVC enable debug information in all builds: it is needed to be
+        able to debug the crash dumps produced by wxDebugReport and as it
+        generates it in separate PDB files it doesn't cost us much to enable it
+        (except for disk space...).
+     -->
     <set var="DEBUG_INFO_DEFAULT">
-        <if cond="FORMAT in ['msvc','msvc6prj','msevc4prj','msvs2005prj']">1</if>
-        <if cond="FORMAT not in ['msvc','msvc6prj','msevc4prj','msvs2005prj']">default</if>
+        <if cond="IS_MSVC=='1'">1</if>
+        <if cond="IS_MSVC=='0'">default</if>
     </set>
-    -->
-    <set var="DEBUG_INFO_DEFAULT">default</set>
 
     <option name="DEBUG_INFO">
         <values>0,1,default</values>
@@ -116,10 +160,11 @@ and not included if BUILD=release.
 
     <option name="DEBUG_FLAG">
         <values>0,1,default</values>
-        <default-value>default</default-value>
+        <default-value>1</default-value>
         <description>
-Should __WXDEBUG__ be defined? The default value "default" means that it will
-be defined if BUILD=debug and not defined if BUILD=release.
+Value of wxDEBUG_LEVEL. The default value is the same as 1 and means that all
+but expensive assert checks are enabled, use 0 to completely remove debugging
+code.
         </description>
     </option>
 
@@ -128,8 +173,8 @@ be defined if BUILD=debug and not defined if BUILD=release.
             <values>0,1,default</values>
             <default-value>default</default-value>
             <description>
-Should link against debug RTL (msvcrtd.dll) or release (msvcrt.dll)?
-Acts according to BUILD by default.
+Link against debug (e.g. msvcrtd.dll) or release (msvcrt.dll) RTL?
+Default is to use debug CRT if and only if BUILD==debug.
             </description>
         </option>
     </if>
@@ -181,6 +226,14 @@ Acts according to BUILD by default.
         </description>
     </option>
 
+    <option name="USE_WEBVIEW">
+        <values>0,1</values>
+        <default-value>1</default-value>
+        <description>
+            Build wxWebView library (USE_GUI must be 1)?
+        </description>
+    </option>
+
     <option name="USE_MEDIA">
         <values>0,1</values>
         <default-value>1</default-value>
@@ -205,6 +258,22 @@ Acts according to BUILD by default.
         </description>
     </option>
 
+    <option name="USE_RIBBON">
+        <values>0,1</values>
+        <default-value>1</default-value>
+        <description>
+            Build wxRibbon library (USE_GUI must be 1)?
+        </description>
+    </option>
+
+    <option name="USE_PROPGRID">
+        <values>0,1</values>
+        <default-value>1</default-value>
+        <description>
+            Build wxPropertyGrid library (USE_GUI must be 1)?
+        </description>
+    </option>
+
     <option name="USE_RICHTEXT">
         <values>0,1</values>
         <default-value>1</default-value>
@@ -213,26 +282,26 @@ Acts according to BUILD by default.
         </description>
     </option>
 
+    <option name="USE_STC">
+        <values>0,1</values>
+        <default-value>1</default-value>
+        <description>
+            Build wxStyledTextCtrl library (USE_GUI must be 1)?
+        </description>
+    </option>
+
     <option name="USE_OPENGL">
         <values>0,1</values>
-        <default-value>0</default-value>
+        <default-value>1</default-value>
         <description>
             Build OpenGL canvas library (USE_GUI must be 1)?
         </description>
     </option>
 
-    <option name="USE_ODBC">
-        <values>0,1</values>
-        <default-value>0</default-value>
-        <description>
-            Build ODBC database classes (USE_GUI must be 1)?
-        </description>
-    </option>
-
     <!-- currently only VC++ can compile wxDebugReport which is in QA lib -->
     <set var="USE_QA_DEFAULT">
-        <if cond="FORMAT in ['msvc','msvc6prj','msvs2005prj']">1</if>
-        <if cond="FORMAT not in ['msvc','msvc6prj','msvs2005prj']">0</if>
+        <if cond="FORMAT in ['msvc','msvc6prj','msvs2003prj','msvs2005prj','msvs2008prj']">1</if>
+        <if cond="FORMAT not in ['msvc','msvc6prj','msvs2003prj','msvs2005prj','msvs2008prj']">0</if>
     </set>
     <option name="USE_QA">
         <values>0,1</values>
@@ -274,16 +343,6 @@ Acts according to BUILD by default.
         </description>
     </option>
 
-    <if cond="FORMAT!='autoconf'">
-        <option name="USE_GDIPLUS">
-            <values>0,1</values>
-            <default-value>0</default-value>
-            <description>
-                Link with gdiplus.lib? (Needed for wxGraphicsContext, will also set wxUSE_GRAPHICS_CONTEXT)
-            </description>
-	</option>
-    </if>
-
     <option name="OFFICIAL_BUILD">
         <values>0,1</values>
         <default-value>0</default-value>
@@ -315,30 +374,11 @@ compiled .lib files and setup.h under the lib/ toplevel directory.
         </description>
     </option>
 
-    <!-- unit tests support: -->
-    <option name="CPPUNIT_CFLAGS">
-        <default-value></default-value>
-        <description>
-Compiler flags needed to compile test suite in tests directory. If you want
-to run the tests, set it so that the compiler can find CppUnit headers.
-        </description>
-    </option>
-
-    <option name="CPPUNIT_LIBS">
-        <default-value></default-value>
-        <description>
-Linker flags needed to link test suite in tests directory. If you want
-to run the tests, include CppUnit library here.
-        </description>
-    </option>
-
-
     <!-- ================================================================== -->
     <!--                             Autoconf                               -->
     <!-- ================================================================== -->
 
     <if cond="FORMAT=='autoconf'">
-        <option name="DEREZ"/>
         <option name="TOOLKIT"/>
         <option name="TOOLKIT_LOWERCASE"/>
         <option name="TOOLKIT_VERSION"/>
@@ -348,20 +388,24 @@ to run the tests, include CppUnit library here.
         <option name="EXTRALIBS_XML"/>
         <option name="EXTRALIBS_HTML"/>
         <option name="EXTRALIBS_MEDIA"/>
-        <option name="EXTRALIBS_ODBC"/>
         <option name="EXTRALIBS_GUI"/>
         <option name="EXTRALIBS_OPENGL"/>
         <option name="EXTRALIBS_SDL"/>
-        <option name="EXTRALIBS_GNOMEPRINT"/>
+        <option name="EXTRALIBS_WEBVIEW"/>
+        <option name="CXXWARNINGS"/>
         <option name="HOST_SUFFIX"/>
+        <option name="DYLIB_RPATH_INSTALL"/>
+        <option name="DYLIB_RPATH_POSTLINK"/>
         <option name="SAMPLES_RPATH_FLAG"/>
-        <option name="SAMPLES_RPATH_POSTLINK"/>
+        <option name="SAMPLES_CXXFLAGS"/>
+        <option name="USE_WEBVIEW_WEBKIT2"/>
 
+        <!-- see configure.in; it's required by some samples on Mac OS X -->
         <option name="HEADER_PAD_OPTION"/>
 
         <set var="TOP_SRCDIR">$(top_srcdir)/</set>
         <set var="RUNTIME_LIBS">dynamic</set>
-        <set var="WXTOPDIR"/> <!-- to be overriden on bakefile cmd line -->
+        <set var="WXTOPDIR"/> <!-- to be overridden on bakefile cmd line -->
 
         <option name="WITH_PLUGIN_SDL">
             <values>0,1</values>
@@ -372,7 +416,7 @@ to run the tests, include CppUnit library here.
 
 
     <!-- ================================================================== -->
-    <!--                     windows/dos/os2 compilers                      -->
+    <!--                     windows/dos compilers                          -->
     <!-- ================================================================== -->
 
     <if cond="FORMAT!='autoconf'">
@@ -386,23 +430,38 @@ it if SHARED=1 unless you know what you are doing.
             </description>
         </option>
 
-        <set var="WXTOPDIR"/> <!-- to be overriden on bakefile cmd line -->
+        <set var="WXTOPDIR"/> <!-- to be overridden on bakefile cmd line -->
+
+        <set var="WIN32_TOOLKIT">
+            <if cond="TOOLKIT=='MSW'">MSW</if>
+            <if cond="TOOLKIT=='GTK'">GTK</if>
+        </set>
+        <set var="WIN32_TOOLKIT_LOWERCASE">
+            <if cond="TOOLKIT=='MSW'">msw</if>
+            <if cond="TOOLKIT=='GTK'">gtk</if>
+        </set>
 
         <set var="TOOLKIT" overwrite="0">
-            <if cond="FORMAT=='msevc4prj'">WINCE</if>
-            <if cond="FORMAT!='msevc4prj' and PLATFORM_WIN32=='1'">MSW</if>
-            <if cond="PLATFORM_MSDOS=='1'">MGL</if>
-            <if cond="PLATFORM_OS2=='1'">PM</if>
+            <if cond="FORMAT=='msvs2005prj' and MSVS_PLATFORMS=='win32,win64'">$(WIN32_TOOLKIT)</if>
+            <if cond="FORMAT=='msvs2008prj' and MSVS_PLATFORMS=='win32,win64'">$(WIN32_TOOLKIT)</if>
+            <if cond="FORMAT not in ['msvs2005prj','msvs2008prj'] and PLATFORM_WIN32=='1'">$(WIN32_TOOLKIT)</if>
         </set>
-        <set var="TOOLKIT_LOWERCASE">$(TOOLKIT.lower())</set>
-        <set var="TOOLKIT_VERSION"/>
+        <set var="TOOLKIT_LOWERCASE">
+            <if cond="FORMAT=='msvs2005prj' and MSVS_PLATFORMS=='win32,win64'">$(WIN32_TOOLKIT_LOWERCASE)</if>
+            <if cond="FORMAT=='msvs2008prj' and MSVS_PLATFORMS=='win32,win64'">$(WIN32_TOOLKIT_LOWERCASE)</if>
+            <if cond="FORMAT not in ['msvs2005prj','msvs2008prj'] and PLATFORM_WIN32=='1'">$(WIN32_TOOLKIT_LOWERCASE)</if>
+        </set>
+        <if cond="FORMAT in ['msvc6prj','msvs2003prj','msvs2005prj','msvs2008prj']">
+            <set var="TOOLKIT_VERSION">
+                <if cond="PLATFORM_WIN32=='1' and TOOLKIT=='GTK'">2</if>
+            </set>
+        </if>
         <set var="HOST_SUFFIX"/>
         <set var="EXTRACFLAGS"/>
         <set var="EXTRALIBS"/>
         <set var="EXTRALIBS_XML"/>
         <set var="EXTRALIBS_HTML"/>
         <set var="EXTRALIBS_MEDIA"/>
-        <set var="EXTRALIBS_ODBC"/>
         <set var="EXTRALIBS_GUI"/>
         <set var="EXTRALIBS_OPENGL">
             <if cond="COMPILER=='wat' and TOOLKIT=='MSW'">opengl32.lib glu32.lib</if>
@@ -410,7 +469,7 @@ it if SHARED=1 unless you know what you are doing.
             <if cond="COMPILER=='gcc'">-lopengl32 -lglu32</if>
         </set>
         <set var="EXTRALIBS_SDL"/>
-        <set var="EXTRALIBS_GNOMEPRINT"/>
+        <set var="EXTRALIBS_WEBVIEW"/>
 
         <set var="WITH_PLUGIN_SDL">0</set>
 
@@ -430,16 +489,17 @@ Set the version of your Mingw installation here.
     "2.95" ... for Mingw 1.1 or any of the older versions
             </description>
         </option>
+        <option name="WINDRES">
+            <default-value>windres --use-temp-file</default-value>
+            <description>
+Windows resource compiler to use, possibly including extra options.
+For example, add "-F pe-i386" here if using 64 bit windres for 32 bit build.
+            </description>
+        </option>
         <set var="GCCFLAGS">
             <if cond="GCC_VERSION=='2.95'">-fvtable-thunks</if>
         </set>
         <set var="EXTRACFLAGS">$(GCCFLAGS) -DHAVE_W32API_H</set>
-    </if>
-
-    <if cond="FORMAT=='cbuilderx'">
-        <set var="EXTRACFLAGS">
-            <if cond="COMPILER=='gcc'">-DHAVE_W32API_H</if>
-        </set>
     </if>
 
 
@@ -451,12 +511,15 @@ Set the version of your Mingw installation here.
         <set var="RUNTIME_LIBS">dynamic</set>
         <set var="OFFICIAL_BUILD">0</set>
         <set var="USE_AUI">1</set>
+        <set var="USE_RIBBON">1</set>
+        <set var="USE_PROPGRID">1</set>
         <set var="USE_RICHTEXT">1</set>
+        <set var="USE_STC">1</set>
         <set var="USE_HTML">1</set>
+        <set var="USE_WEBVIEW">1</set>
         <set var="USE_MEDIA">1</set>
         <set var="USE_XRC">1</set>
         <set var="USE_OPENGL">1</set>
-        <set var="USE_ODBC">1</set>
         <set var="USE_QA">1</set>
         <set var="MONOLITHIC">0</set>
         <set var="USE_GUI">1</set>
@@ -464,23 +527,8 @@ Set the version of your Mingw installation here.
         <set var="USE_RTTI">1</set>
         <set var="USE_THREADS">1</set>
         <set var="USE_CAIRO">0</set>
-        <if cond="FORMAT!='autoconf'"><set var="USE_GDIPLUS">0</set></if>
         <set var="DEBUG_INFO">$(DEBUG_INFO_DEFAULT)</set>
         <set var="DEBUG_FLAG">default</set>
-        <set var="MSLU">0</set>
-    </if>
-
-
-    <!-- FIXME:
-         C++BuilderX supports only wxMSW, monolithic (sic!) static build
-         and the project can't be put into build/msw and store objects in
-         build/msw/something. This *must* be fixed! -->
-    <if cond="FORMAT=='cbuilderx'">
-        <set var="WXUNIV">0</set>
-        <set var="MONOLITHIC">1</set>
-        <set var="SRCDIR">.</set>
-        <set var="TOP_SRCDIR">$(SRCDIR)/$(WXTOPDIR)</set>
-        <set var="SHARED">0</set>
     </if>
 
 
@@ -491,29 +539,10 @@ Set the version of your Mingw installation here.
         <set var="BUILD">debug</set>
         <set var="SHARED">0</set>
         <set var="WXUNIV">0</set>
-        <set var="UNICODE">0</set>
+        <set var="UNICODE">1</set>
         <!-- Free version does not distribute OpenGL,
              in commercial distribution better use dmars_smake format -->
         <set var="USE_OPENGL">0</set>
-    </if>
-
-    <!-- No need for wxUniv on embedded devices (yet): -->
-    <if cond="FORMAT=='msevc4prj'">
-        <set var="WXUNIV">0</set>
-        <set var="UNICODE">1</set>
-        <!-- Uploading debug reports from PDAs seems impractical -->
-        <set var="USE_QA">0</set>
-        <set var="MONOLITHIC">1</set> <!-- sic! -->
-        <!-- RTTI and exceptions need separate cccrtti.lib with eVC4 -->
-        <set var="USE_RTTI">0</set>
-        <set var="USE_EXCEPTIONS">0</set>
-    </if>
-
-    <!-- Need for wxUniv within wxMGL: -->
-    <if cond="FORMAT!='autoconf' and TOOLKIT=='MGL'">
-        <set var="WXUNIV">1</set>
-        <set var="USE_THREADS">0</set>
-        <set var="RUNTIME_LIBS">static</set>
     </if>
 
 </makefile>

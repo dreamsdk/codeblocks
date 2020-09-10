@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     28/2/2000
-// RCS-ID:      $Id: dragimag.cpp 41803 2006-10-09 15:15:13Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -36,24 +35,24 @@
 
 #include "dragimag.h"
 
-#if defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXMAC__) || defined(__WXMGL__) || defined(__WXX11__)
-#include "mondrian.xpm"
-#include "dragicon.xpm"
+#ifndef wxHAS_IMAGES_IN_RESOURCES
+    #include "../sample.xpm"
+    #include "dragicon.xpm"
 #endif
 
 // main program
 
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // MyCanvas
 
-IMPLEMENT_CLASS(MyCanvas, wxScrolledWindow)
+wxIMPLEMENT_CLASS(MyCanvas, wxScrolledWindow);
 
-BEGIN_EVENT_TABLE(MyCanvas, wxScrolledWindow)
+wxBEGIN_EVENT_TABLE(MyCanvas, wxScrolledWindow)
   EVT_PAINT(MyCanvas::OnPaint)
   EVT_ERASE_BACKGROUND(MyCanvas::OnEraseBackground)
   EVT_MOUSE_EVENTS(MyCanvas::OnMouseEvent)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyCanvas::MyCanvas( wxWindow *parent, wxWindowID id,
                     const wxPoint &pos, const wxSize &size )
@@ -87,7 +86,7 @@ void MyCanvas::OnPaint( wxPaintEvent &WXUNUSED(event) )
 
 void MyCanvas::OnEraseBackground(wxEraseEvent& event)
 {
-    if (wxGetApp().GetBackgroundBitmap().Ok())
+    if (wxGetApp().GetBackgroundBitmap().IsOk())
     {
         wxSize sz = GetClientSize();
         wxRect rect(0, 0, sz.x, sz.y);
@@ -135,15 +134,14 @@ void MyCanvas::OnMouseEvent(wxMouseEvent& event)
 
         m_dragImage->Hide();
         m_dragImage->EndDrag();
-        delete m_dragImage;
-        m_dragImage = NULL;
+        wxDELETE(m_dragImage);
 
         m_draggedShape->SetShow(true);
 
         m_currentlyHighlighted = (DragShape*) NULL;
 
         m_draggedShape = (DragShape*) NULL;
-        
+
         Refresh(true);
     }
     else if (event.Dragging() && m_dragMode != TEST_DRAG_NONE)
@@ -180,7 +178,7 @@ void MyCanvas::OnMouseEvent(wxMouseEvent& event)
                 }
                 case SHAPE_DRAG_TEXT:
                 {
-                    m_dragImage = new MyDragImage(this, wxString(_T("Dragging some test text")), wxCursor(wxCURSOR_HAND));
+                    m_dragImage = new MyDragImage(this, wxString("Dragging some test text"), wxCursor(wxCURSOR_HAND));
                     break;
                 }
                 case SHAPE_DRAG_ICON:
@@ -203,8 +201,7 @@ void MyCanvas::OnMouseEvent(wxMouseEvent& event)
 
             if (!m_dragImage->BeginDrag(beginDragHotSpot, this, fullScreen))
             {
-                delete m_dragImage;
-                m_dragImage = (wxDragImage*) NULL;
+                wxDELETE(m_dragImage);
                 m_dragMode = TEST_DRAG_NONE;
 
             } else
@@ -232,7 +229,7 @@ void MyCanvas::OnMouseEvent(wxMouseEvent& event)
 
             if (mustUnhighlightOld || mustHighlightNew)
                 m_dragImage->Hide();
-            
+
             // Now with the drag image switched off, we can change the window contents.
             if (mustUnhighlightOld)
                 m_currentlyHighlighted = (DragShape*) NULL;
@@ -308,26 +305,26 @@ DragShape* MyCanvas::FindShape(const wxPoint& pt) const
 }
 
 // MyFrame
-IMPLEMENT_DYNAMIC_CLASS( MyFrame, wxFrame )
+wxIMPLEMENT_DYNAMIC_CLASS(MyFrame, wxFrame);
 
-BEGIN_EVENT_TABLE(MyFrame,wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame,wxFrame)
   EVT_MENU    (wxID_ABOUT, MyFrame::OnAbout)
   EVT_MENU    (wxID_EXIT,  MyFrame::OnQuit)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyFrame::MyFrame()
-: wxFrame( (wxFrame *)NULL, wxID_ANY, _T("wxDragImage sample"),
+: wxFrame( (wxFrame *)NULL, wxID_ANY, "wxDragImage sample",
           wxPoint(20,20), wxSize(470,360) )
 {
     wxMenu *file_menu = new wxMenu();
-    file_menu->Append( wxID_ABOUT, _T("&About..."));
-    file_menu->AppendCheckItem( TEST_USE_SCREEN, _T("&Use whole screen for dragging"), _T("Use whole screen"));
-    file_menu->Append( wxID_EXIT, _T("E&xit"));
+    file_menu->Append( wxID_ABOUT, "&About");
+    file_menu->AppendCheckItem( TEST_USE_SCREEN, "&Use whole screen for dragging", "Use whole screen");
+    file_menu->Append( wxID_EXIT, "E&xit");
 
     wxMenuBar *menu_bar = new wxMenuBar();
-    menu_bar->Append(file_menu, _T("&File"));
+    menu_bar->Append(file_menu, "&File");
 
-    SetIcon(wxICON(mondrian));
+    SetIcon(wxICON(sample));
     SetMenuBar( menu_bar );
 
 #if wxUSE_STATUSBAR
@@ -346,9 +343,9 @@ void MyFrame::OnQuit( wxCommandEvent &WXUNUSED(event) )
 
 void MyFrame::OnAbout( wxCommandEvent &WXUNUSED(event) )
 {
-    (void)wxMessageBox( _T("wxDragImage demo\n")
-        _T("Julian Smart (c) 2000"),
-        _T("About wxDragImage Demo"),
+    (void)wxMessageBox( "wxDragImage demo\n"
+        "Julian Smart (c) 2000",
+        "About wxDragImage Demo",
         wxICON_INFORMATION | wxOK );
 }
 
@@ -356,9 +353,9 @@ void MyFrame::OnAbout( wxCommandEvent &WXUNUSED(event) )
 // MyApp
 //-----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(MyApp, wxApp)
+wxBEGIN_EVENT_TABLE(MyApp, wxApp)
     EVT_MENU(TEST_USE_SCREEN, MyApp::OnUseScreen)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 MyApp::MyApp()
 {
@@ -368,29 +365,29 @@ MyApp::MyApp()
 
 bool MyApp::OnInit()
 {
+    if ( !wxApp::OnInit() )
+        return false;
+
 #if wxUSE_LIBPNG
     wxImage::AddHandler( new wxPNGHandler );
 #endif
 
     wxImage image;
-    if (image.LoadFile(_T("backgrnd.png"), wxBITMAP_TYPE_PNG))
+    if (image.LoadFile("backgrnd.png", wxBITMAP_TYPE_PNG))
     {
         m_background = wxBitmap(image);
     }
 
     MyFrame *frame = new MyFrame();
 
-    wxString rootName(_T("shape0"));
+    wxString rootName("shape0");
 
-    int i;
-    for (i = 1; i < 4; i++)
+    for (int i = 1; i < 4; i++)
     {
-        wxString filename;
-        filename.Printf(wxT("%s%d.png"), (const wxChar*)rootName, i);
     /* For some reason under wxX11, the 2nd LoadFile in this loop fails, with
        a BadMatch inside CreateFromImage (inside ConvertToBitmap). This happens even if you copy
        the first file over the second file. */
-        if (image.LoadFile(filename, wxBITMAP_TYPE_PNG))
+        if (image.LoadFile(wxString::Format("%s%d.png", rootName, i), wxBITMAP_TYPE_PNG))
         {
             DragShape* newShape = new DragShape(wxBitmap(image));
             newShape->SetPosition(wxPoint(i*50, i*50));
@@ -470,14 +467,14 @@ bool DragShape::HitTest(const wxPoint& pt) const
 
 bool DragShape::Draw(wxDC& dc, bool highlight)
 {
-    if (m_bitmap.Ok())
+    if (m_bitmap.IsOk())
     {
         wxMemoryDC memDC;
         memDC.SelectObject(m_bitmap);
 
         dc.Blit(m_pos.x, m_pos.y, m_bitmap.GetWidth(), m_bitmap.GetHeight(),
             & memDC, 0, 0, wxCOPY, true);
-            
+
         if (highlight)
         {
             dc.SetPen(*wxWHITE_PEN);
@@ -500,7 +497,7 @@ bool MyDragImage::UpdateBackingFromWindow(wxDC& WXUNUSED(windowDC), wxMemoryDC& 
 {
     destDC.SetClippingRegion(destRect);
 
-    if (wxGetApp().GetBackgroundBitmap().Ok())
+    if (wxGetApp().GetBackgroundBitmap().IsOk())
         wxGetApp().TileBitmap(destRect, destDC, wxGetApp().GetBackgroundBitmap());
 
     m_canvas->DrawShapes(destDC);

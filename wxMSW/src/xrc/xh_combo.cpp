@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxComboBox
 // Author:      Bob Mitchell
 // Created:     2000/03/21
-// RCS-ID:      $Id: xh_combo.cpp 56715 2008-11-09 12:40:07Z VZ $
 // Copyright:   (c) 2000 Bob Mitchell and Verant Interactive
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -22,10 +21,12 @@
 #ifndef WX_PRECOMP
     #include "wx/intl.h"
     #include "wx/combobox.h"
-    #include "wx/textctrl.h" // for wxTE_PROCESS_ENTER
+    #include "wx/textctrl.h"    // for wxTE_PROCESS_ENTER
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxComboBoxXmlHandler, wxXmlResourceHandler)
+#include "wx/xml/xml.h"
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxComboBoxXmlHandler, wxXmlResourceHandler);
 
 wxComboBoxXmlHandler::wxComboBoxXmlHandler()
                      :wxXmlResourceHandler()
@@ -66,6 +67,10 @@ wxObject *wxComboBoxXmlHandler::DoCreateResource()
 
         SetupWindow(control);
 
+        const wxString hint = GetText(wxS("hint"));
+        if ( !hint.empty() )
+            control->SetHint(hint);
+
         strList.Clear();    // dump the strings
 
         return control;
@@ -76,10 +81,7 @@ wxObject *wxComboBoxXmlHandler::DoCreateResource()
         // handle <item>Label</item>
 
         // add to the list
-        wxString str = GetNodeContent(m_node);
-        if (m_resource->GetFlags() & wxXRC_USE_LOCALE)
-            str = wxGetTranslation(str, m_resource->GetDomain());
-        strList.Add(str);
+        strList.Add(GetNodeText(m_node, wxXRC_TEXT_NO_ESCAPE));
 
         return NULL;
     }

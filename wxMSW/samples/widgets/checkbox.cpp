@@ -4,9 +4,8 @@
 // Purpose:     Part of the widgets sample showing wxCheckBox
 // Author:      Dimitri Schoolwerth, Vadim Zeitlin
 // Created:     27 Sep 2003
-// Id:          $Id: checkbox.cpp 43755 2006-12-03 13:43:44Z VZ $
 // Copyright:   (c) 2003 wxWindows team
-// License:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // ============================================================================
@@ -74,13 +73,12 @@ class CheckBoxWidgetsPage : public WidgetsPage
 {
 public:
     CheckBoxWidgetsPage(WidgetsBookCtrl *book, wxImageList *imaglist);
-    virtual ~CheckBoxWidgetsPage(){};
 
-    virtual wxControl *GetWidget() const { return m_checkbox; }
-    virtual void RecreateWidget() { CreateCheckbox(); }
+    virtual wxWindow *GetWidget() const wxOVERRIDE { return m_checkbox; }
+    virtual void RecreateWidget() wxOVERRIDE { CreateCheckbox(); }
 
     // lazy creation of the content
-    virtual void CreateContent();
+    virtual void CreateContent() wxOVERRIDE;
 
 protected:
     // event handlers
@@ -112,7 +110,7 @@ protected:
     // the controls
     // ------------
 
-    // the contols to choose the checkbox style
+    // the controls to choose the checkbox style
     wxCheckBox *m_chkRight;
     wxRadioBox *m_radioKind;
 
@@ -124,7 +122,7 @@ protected:
     wxTextCtrl *m_textLabel;
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
     DECLARE_WIDGETS_PAGE(CheckBoxWidgetsPage)
 };
 
@@ -132,7 +130,7 @@ private:
 // event tables
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(CheckBoxWidgetsPage, WidgetsPage)
+wxBEGIN_EVENT_TABLE(CheckBoxWidgetsPage, WidgetsPage)
     EVT_CHECKBOX(CheckboxPage_Checkbox, CheckBoxWidgetsPage::OnCheckBox)
 
     EVT_BUTTON(CheckboxPage_Reset, CheckBoxWidgetsPage::OnButtonReset)
@@ -145,7 +143,7 @@ BEGIN_EVENT_TABLE(CheckBoxWidgetsPage, WidgetsPage)
 
     EVT_RADIOBOX(wxID_ANY, CheckBoxWidgetsPage::OnStyleChange)
     EVT_CHECKBOX(CheckboxPage_ChkRight, CheckBoxWidgetsPage::OnStyleChange)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -157,7 +155,7 @@ END_EVENT_TABLE()
     #define FAMILY_CTRLS NATIVE_CTRLS
 #endif
 
-IMPLEMENT_WIDGETS_PAGE(CheckBoxWidgetsPage, wxT("CheckBox"), FAMILY_CTRLS );
+IMPLEMENT_WIDGETS_PAGE(CheckBoxWidgetsPage, "CheckBox", FAMILY_CTRLS );
 
 CheckBoxWidgetsPage::CheckBoxWidgetsPage(WidgetsBookCtrl *book,
                                          wxImageList *imaglist)
@@ -170,14 +168,14 @@ void CheckBoxWidgetsPage::CreateContent()
     wxSizer *sizerTop = new wxBoxSizer(wxHORIZONTAL);
 
     // left pane
-    wxStaticBox *box = new wxStaticBox(this, wxID_ANY, _T("&Set style"));
+    wxStaticBox *box = new wxStaticBox(this, wxID_ANY, "&Set style");
 
     wxSizer *sizerLeft = new wxStaticBoxSizer(box, wxVERTICAL);
 
     m_chkRight = CreateCheckBoxAndAddToSizer
                  (
                     sizerLeft,
-                    _T("&Right aligned"),
+                    "&Right aligned",
                     CheckboxPage_ChkRight
                  );
 
@@ -185,39 +183,39 @@ void CheckBoxWidgetsPage::CreateContent()
 
     static const wxString kinds[] =
     {
-        _T("usual &2-state checkbox"),
-        _T("&3rd state settable by program"),
-        _T("&user-settable 3rd state"),
+        "usual &2-state checkbox",
+        "&3rd state settable by program",
+        "&user-settable 3rd state",
     };
 
-    m_radioKind = new wxRadioBox(this, wxID_ANY, _T("&Kind"),
+    m_radioKind = new wxRadioBox(this, wxID_ANY, "&Kind",
                                  wxDefaultPosition, wxDefaultSize,
                                  WXSIZEOF(kinds), kinds,
                                  1);
     sizerLeft->Add(m_radioKind, 0, wxGROW | wxALL, 5);
-    wxButton *btn = new wxButton(this, CheckboxPage_Reset, _T("&Reset"));
+    wxButton *btn = new wxButton(this, CheckboxPage_Reset, "&Reset");
     sizerLeft->Add(btn, 0, wxALIGN_CENTRE_HORIZONTAL | wxALL, 15);
 
     // middle pane
-    wxStaticBox *box2 = new wxStaticBox(this, wxID_ANY, _T("&Operations"));
+    wxStaticBox *box2 = new wxStaticBox(this, wxID_ANY, "&Operations");
     wxSizer *sizerMiddle = new wxStaticBoxSizer(box2, wxVERTICAL);
 
     sizerMiddle->Add(CreateSizerWithTextAndButton(CheckboxPage_ChangeLabel,
-                                                     _T("Change label"),
+                                                     "Change label",
                                                      wxID_ANY,
                                                      &m_textLabel),
                      0, wxALL | wxGROW, 5);
-    sizerMiddle->Add(new wxButton(this, CheckboxPage_Check, _T("&Check it")),
+    sizerMiddle->Add(new wxButton(this, CheckboxPage_Check, "&Check it"),
                      0, wxALL | wxGROW, 5);
-    sizerMiddle->Add(new wxButton(this, CheckboxPage_Uncheck, _T("&Uncheck it")),
+    sizerMiddle->Add(new wxButton(this, CheckboxPage_Uncheck, "&Uncheck it"),
                      0, wxALL | wxGROW, 5);
     sizerMiddle->Add(new wxButton(this, CheckboxPage_PartCheck,
-                                  _T("Put in &3rd state")),
+                                  "Put in &3rd state"),
                      0, wxALL | wxGROW, 5);
 
     // right pane
     wxSizer *sizerRight = new wxBoxSizer(wxHORIZONTAL);
-    m_checkbox = new wxCheckBox(this, CheckboxPage_Checkbox, _T("&Check me!"));
+    m_checkbox = new wxCheckBox(this, CheckboxPage_Checkbox, "&Check me!");
     sizerRight->Add(0, 0, 1, wxCENTRE);
     sizerRight->Add(m_checkbox, 1, wxCENTRE);
     sizerRight->Add(0, 0, 1, wxCENTRE);
@@ -253,15 +251,15 @@ void CheckBoxWidgetsPage::CreateCheckbox()
 
     delete m_checkbox;
 
-    int flags = ms_defaultFlags;
+    int flags = GetAttrs().m_defaultFlags;
     if ( m_chkRight->IsChecked() )
         flags |= wxALIGN_RIGHT;
 
     switch ( m_radioKind->GetSelection() )
     {
         default:
-            wxFAIL_MSG(_T("unexpected radiobox selection"));
-            // fall through
+            wxFAIL_MSG("unexpected radiobox selection");
+            wxFALLTHROUGH;
 
         case CheckboxKind_2State:
             flags |= wxCHK_2STATE;
@@ -269,7 +267,7 @@ void CheckBoxWidgetsPage::CreateCheckbox()
 
         case CheckboxKind_3StateUser:
             flags |= wxCHK_ALLOW_3RD_STATE_FOR_USER;
-            // fall through
+            wxFALLTHROUGH;
 
         case CheckboxKind_3State:
             flags |= wxCHK_3STATE;
@@ -309,8 +307,8 @@ void CheckBoxWidgetsPage::OnButtonChangeLabel(wxCommandEvent& WXUNUSED(event))
 
 void CheckBoxWidgetsPage::OnCheckBox(wxCommandEvent& event)
 {
-    wxLogMessage(_T("Test checkbox %schecked (value = %d)."),
-                 event.IsChecked() ? _T("") : _T("un"),
+    wxLogMessage("Test checkbox %schecked (value = %d).",
+                 event.IsChecked() ? "" : "un",
                  (int)m_checkbox->Get3StateValue());
 }
 

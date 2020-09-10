@@ -4,7 +4,6 @@
 // Author:      Jaakko Salli
 // Modified by:
 // Created:     Apr-30-2006
-// RCS-ID:      $Id: odcombo.cpp 64259 2010-05-09 10:48:37Z JMS $
 // Copyright:   (c) 2005 Jaakko Salli
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -33,6 +32,7 @@
     #include "wx/dcclient.h"
     #include "wx/settings.h"
     #include "wx/dialog.h"
+    #include "wx/textctrl.h"
 #endif
 
 #include "wx/combo.h"
@@ -50,11 +50,12 @@
 // ----------------------------------------------------------------------------
 
 
-BEGIN_EVENT_TABLE(wxVListBoxComboPopup, wxVListBox)
+wxBEGIN_EVENT_TABLE(wxVListBoxComboPopup, wxVListBox)
     EVT_MOTION(wxVListBoxComboPopup::OnMouseMove)
     EVT_KEY_DOWN(wxVListBoxComboPopup::OnKey)
+    EVT_CHAR(wxVListBoxComboPopup::OnChar)
     EVT_LEFT_UP(wxVListBoxComboPopup::OnLeftClick)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 void wxVListBoxComboPopup::Init()
@@ -67,7 +68,7 @@ void wxVListBoxComboPopup::Init()
     m_value = -1;
     m_itemHover = -1;
     m_clientDataItemsType = wxClientData_None;
-    m_partialCompletionString = wxEmptyString;
+    m_partialCompletionString.clear();
 }
 
 bool wxVListBoxComboPopup::Create(wxWindow* parent)
@@ -84,7 +85,7 @@ bool wxVListBoxComboPopup::Create(wxWindow* parent)
     wxVListBox::SetItemCount(m_strings.GetCount());
 
     // TODO: Move this to SetFont
-    m_itemHeight = GetCharHeight() + 0;
+    m_itemHeight = m_combo->GetCharHeight();
 
     return true;
 }
@@ -94,16 +95,17 @@ wxVListBoxComboPopup::~wxVListBoxComboPopup()
     Clear();
 }
 
-#ifdef __WXMSW__
-
 void wxVListBoxComboPopup::SetFocus()
 {
     // Suppress SetFocus() warning by simply not calling it. This combo popup
     // has already been designed with the assumption that SetFocus() may not
     // do anything useful, so it really doesn't need to be called.
+#ifdef __WXMSW__
+    //
+#else
+    wxVListBox::SetFocus();
+#endif
 }
-
-#endif // __WXMSW__
 
 bool wxVListBoxComboPopup::LazyCreate()
 {
@@ -160,7 +162,7 @@ wxCoord wxVListBoxComboPopup::OnMeasureItem(size_t n) const
 {
     wxOwnerDrawnComboBox* combo = (wxOwnerDrawnComboBox*) m_combo;
 
-    wxASSERT_MSG( combo->IsKindOf(CLASSINFO(wxOwnerDrawnComboBox)),
+    wxASSERT_MSG( wxDynamicCast(combo, wxOwnerDrawnComboBox),
                   wxT("you must subclass wxVListBoxComboPopup for drawing and measuring methods") );
 
     wxCoord h = combo->OnMeasureItem(n);
@@ -173,7 +175,7 @@ wxCoord wxVListBoxComboPopup::OnMeasureItemWidth(size_t n) const
 {
     wxOwnerDrawnComboBox* combo = (wxOwnerDrawnComboBox*) m_combo;
 
-    wxASSERT_MSG( combo->IsKindOf(CLASSINFO(wxOwnerDrawnComboBox)),
+    wxASSERT_MSG( wxDynamicCast(combo, wxOwnerDrawnComboBox),
                   wxT("you must subclass wxVListBoxComboPopup for drawing and measuring methods") );
 
     return combo->OnMeasureItemWidth(n);
@@ -186,7 +188,7 @@ void wxVListBoxComboPopup::OnDrawBg( wxDC& dc,
 {
     wxOwnerDrawnComboBox* combo = (wxOwnerDrawnComboBox*) m_combo;
 
-    wxASSERT_MSG( combo->IsKindOf(CLASSINFO(wxOwnerDrawnComboBox)),
+    wxASSERT_MSG( wxDynamicCast(combo, wxOwnerDrawnComboBox),
                   wxT("you must subclass wxVListBoxComboPopup for drawing and measuring methods") );
 
     if ( IsCurrent((size_t)item) && !(flags & wxODCB_PAINTING_CONTROL) )
@@ -205,7 +207,7 @@ void wxVListBoxComboPopup::OnDrawItem( wxDC& dc, const wxRect& rect, int item, i
 {
     wxOwnerDrawnComboBox* combo = (wxOwnerDrawnComboBox*) m_combo;
 
-    wxASSERT_MSG( combo->IsKindOf(CLASSINFO(wxOwnerDrawnComboBox)),
+    wxASSERT_MSG( wxDynamicCast(combo, wxOwnerDrawnComboBox),
                   wxT("you must subclass wxVListBoxComboPopup for drawing and measuring methods") );
 
     combo->OnDrawItem(dc,rect,item,flags);
@@ -217,32 +219,35 @@ void wxVListBoxComboPopup::DismissWithEvent()
 
     int selection = wxVListBox::GetSelection();
 
-    Dismiss();
-
-    wxString valStr;
     if ( selection != wxNOT_FOUND )
-        valStr = m_strings[selection];
+        m_stringValue = m_strings[selection];
     else
-        valStr = wxEmptyString;
+        m_stringValue.clear();
 
     m_value = selection;
 
-    if ( valStr != m_combo->GetValue() )
-        m_combo->SetValueWithEvent(valStr);
+    Dismiss();
 
     SendComboBoxEvent(selection);
 }
 
 void wxVListBoxComboPopup::SendComboBoxEvent( int selection )
 {
-    wxCommandEvent evt(wxEVT_COMMAND_COMBOBOX_SELECTED,m_combo->GetId());
+    // TODO: wxVListBox should be refactored to inherit from wxItemContainer
+    //       and then we would be able to just call SendSelectionChangedEvent()
+    //       (which, itself, should be moved down to wxItemContainer from
+    //       wxControlWithItemsBase) instead of duplicating its code.
+
+    wxCommandEvent evt(wxEVT_COMBOBOX,m_combo->GetId());
 
     evt.SetEventObject(m_combo);
 
     evt.SetInt(selection);
+    if ( selection != wxNOT_FOUND )
+        evt.SetString(m_strings[selection]);
 
     // Set client data, if any
-    if ( selection >= 0 && (int)m_clientDatas.GetCount() > selection )
+    if ( selection >= 0 && (int)m_clientDatas.size() > selection )
     {
         void* clientData = m_clientDatas[selection];
         if ( m_clientDataItemsType == wxClientData_Object )
@@ -255,7 +260,7 @@ void wxVListBoxComboPopup::SendComboBoxEvent( int selection )
 }
 
 // returns true if key was consumed
-bool wxVListBoxComboPopup::HandleKey( int keycode, bool saturate, wxChar unicode )
+bool wxVListBoxComboPopup::HandleKey( int keycode, bool saturate, wxChar keychar )
 {
     const int itemCount = GetCount();
 
@@ -267,47 +272,47 @@ bool wxVListBoxComboPopup::HandleKey( int keycode, bool saturate, wxChar unicode
     int value = m_value;
     int comboStyle = m_combo->GetWindowStyle();
 
-    // this is the character equivalent of the code
-    wxChar keychar = 0;
-    if ( keycode < WXK_START )
+    if ( keychar > 0 )
     {
-#if wxUSE_UNICODE
-        if ( unicode > 0 )
-        {
-            if ( wxIsprint(unicode) )
-                keychar = unicode;
-        }
-        else
-#else
-        wxUnusedVar(unicode);
-#endif
-        if ( wxIsprint(keycode) )
-        {
-            keychar = (wxChar) keycode;
-        }
+        // we have character equivalent of the keycode; filter out these that
+        // are not printable characters
+        if ( !wxIsprint(keychar) )
+            keychar = 0;
     }
 
-    if ( keycode == WXK_DOWN || keycode == WXK_RIGHT )
+    const bool readOnly = (comboStyle & wxCB_READONLY) != 0;
+
+    if ( keycode == WXK_DOWN || keycode == WXK_NUMPAD_DOWN || ( keycode == WXK_RIGHT && readOnly ) )
     {
         value++;
         StopPartialCompletion();
     }
-    else if ( keycode == WXK_UP || keycode == WXK_LEFT )
+    else if ( keycode == WXK_UP || keycode == WXK_NUMPAD_UP || ( keycode == WXK_LEFT && readOnly ) )
     {
         value--;
         StopPartialCompletion();
     }
-    else if ( keycode == WXK_PAGEDOWN )
+    else if ( keycode == WXK_PAGEDOWN || keycode == WXK_NUMPAD_PAGEDOWN )
     {
         value+=10;
         StopPartialCompletion();
     }
-    else if ( keycode == WXK_PAGEUP )
+    else if ( keycode == WXK_PAGEUP || keycode == WXK_NUMPAD_PAGEUP )
     {
         value-=10;
         StopPartialCompletion();
     }
-    else if ( keychar && (comboStyle & wxCB_READONLY) )
+    else if ( ( keycode == WXK_HOME || keycode == WXK_NUMPAD_HOME ) && readOnly )
+    {
+        value=0;
+        StopPartialCompletion();
+    }
+    else if ( ( keycode == WXK_END || keycode == WXK_NUMPAD_END ) && readOnly )
+    {
+        value=itemCount-1;
+        StopPartialCompletion();
+    }
+    else if ( keychar && readOnly )
     {
         // Try partial completion
 
@@ -370,10 +375,14 @@ bool wxVListBoxComboPopup::HandleKey( int keycode, bool saturate, wxChar unicode
         // (good for consistency)
         return true;
 
-    m_value = value;
-
     if ( value >= 0 )
-        m_combo->SetValue(m_strings[value]);
+        m_combo->ChangeValue(m_strings[value]);
+
+    // The m_combo->SetValue() call above sets m_value to the index of this
+    // string. But if there are more identical string, the index is of the
+    // first occurrence, which may be wrong, so set the index explicitly here,
+    // _after_ the SetValue() call.
+    m_value = value;
 
     SendComboBoxEvent(m_value);
 
@@ -383,7 +392,7 @@ bool wxVListBoxComboPopup::HandleKey( int keycode, bool saturate, wxChar unicode
 // stop partial completion
 void wxVListBoxComboPopup::StopPartialCompletion()
 {
-    m_partialCompletionString = wxEmptyString;
+    m_partialCompletionString.clear();
 #if wxUSE_TIMER
     m_partialCompletionTimer.Stop();
 #endif // wxUSE_TIMER
@@ -401,13 +410,21 @@ void wxVListBoxComboPopup::OnComboDoubleClick()
 void wxVListBoxComboPopup::OnComboKeyEvent( wxKeyEvent& event )
 {
     // Saturated key movement on
-    if ( !HandleKey(event.GetKeyCode(),true,
+    if ( !HandleKey(event.GetKeyCode(), true) )
+        event.Skip();
+}
+
+void wxVListBoxComboPopup::OnComboCharEvent( wxKeyEvent& event )
+{
+    // unlike in OnComboKeyEvent, wxEVT_CHAR contains meaningful
+    // printable character information, so pass it
 #if wxUSE_UNICODE
-        event.GetUnicodeKey()
+    const wxChar charcode = event.GetUnicodeKey();
 #else
-        0
+    const wxChar charcode = (wxChar)event.GetKeyCode();
 #endif
-        ) )
+
+    if ( !HandleKey(event.GetKeyCode(), true, charcode) )
         event.Skip();
 }
 
@@ -432,7 +449,7 @@ void wxVListBoxComboPopup::OnMouseMove(wxMouseEvent& event)
     const size_t lineMax = GetVisibleEnd();
     for ( size_t line = GetVisibleBegin(); line < lineMax; line++ )
     {
-        y -= OnGetLineHeight(line);
+        y -= OnGetRowHeight(line);
         if ( y < 0 )
         {
             // Only change selection if item is fully visible
@@ -472,32 +489,50 @@ void wxVListBoxComboPopup::OnKey(wxKeyEvent& event)
     }
     else
     {
-        int comboStyle = m_combo->GetWindowStyle();
-        int keycode = event.GetKeyCode();
-        // Process partial completion key codes here, but not the arrow keys as the base class will do that for us
-        if ((comboStyle & wxCB_READONLY) &&
-            (keycode >= WXK_SPACE) && (keycode <=255) && (keycode != WXK_DELETE) && wxIsprint(keycode))
-        {
-            OnComboKeyEvent(event);
-            SetSelection(m_value); // ensure the highlight bar moves
-        }
-        else
-            event.Skip();
+        // completion is handled in OnChar() below
+        event.Skip();
     }
+}
+
+void wxVListBoxComboPopup::OnChar(wxKeyEvent& event)
+{
+    if ( m_combo->GetWindowStyle() & wxCB_READONLY )
+    {
+        // Process partial completion key codes here, but not the arrow keys as
+        // the base class will do that for us
+#if wxUSE_UNICODE
+        const wxChar charcode = event.GetUnicodeKey();
+#else
+        const wxChar charcode = (wxChar)event.GetKeyCode();
+#endif
+        if ( wxIsprint(charcode) )
+        {
+            OnComboCharEvent(event);
+            SetSelection(m_value); // ensure the highlight bar moves
+            return; // don't skip the event
+        }
+    }
+
+    event.Skip();
 }
 
 void wxVListBoxComboPopup::Insert( const wxString& item, int pos )
 {
     // Need to change selection?
-    wxString strValue;
-    if ( !(m_combo->GetWindowStyle() & wxCB_READONLY) &&
-         m_combo->GetValue() == item )
+    if ( m_combo->GetValue() == item )
     {
-        m_value = pos;
+        m_value = wxMin(m_value, pos);
+    }
+    else if ( pos <= m_value )
+    {
+        m_value++;
     }
 
     m_strings.Insert(item,pos);
-    m_widths.Insert(-1,pos);
+    if ( (int)m_clientDatas.size() >= pos )
+        m_clientDatas.insert(m_clientDatas.begin()+pos, NULL);
+
+    m_widths.insert(m_widths.begin()+pos, -1);
     m_widthsDirty = true;
 
     if ( IsCreated() )
@@ -512,12 +547,10 @@ int wxVListBoxComboPopup::Append(const wxString& item)
     {
         // Find position
         // TODO: Could be optimized with binary search
-        wxArrayString strings = m_strings;
-        unsigned int i;
-
-        for ( i=0; i<strings.GetCount(); i++ )
+        const wxArrayString& strings = m_strings;
+        for ( size_t i=0; i<strings.GetCount(); i++ )
         {
-            if ( item.CmpNoCase(strings.Item(i)) < 0 )
+            if ( item.CmpNoCase(strings.Item(i)) <= 0 )
             {
                 pos = (int)i;
                 break;
@@ -535,7 +568,7 @@ void wxVListBoxComboPopup::Clear()
     wxASSERT(m_combo);
 
     m_strings.Empty();
-    m_widths.Empty();
+    m_widths.clear();
 
     m_widestWidth = 0;
     m_widestItem = -1;
@@ -552,12 +585,12 @@ void wxVListBoxComboPopup::ClearClientDatas()
 {
     if ( m_clientDataItemsType == wxClientData_Object )
     {
-        size_t i;
-        for ( i=0; i<m_clientDatas.GetCount(); i++ )
-            delete (wxClientData*) m_clientDatas[i];
+        for ( wxVector<void*>::iterator it = m_clientDatas.begin(); it != m_clientDatas.end(); ++it )
+            delete (wxClientData*) *it;
     }
 
-    m_clientDatas.Empty();
+    m_clientDatas.clear();
+    m_clientDataItemsType = wxClientData_None;
 }
 
 void wxVListBoxComboPopup::SetItemClientData( unsigned int n,
@@ -567,7 +600,6 @@ void wxVListBoxComboPopup::SetItemClientData( unsigned int n,
     // It should be sufficient to update this variable only here
     m_clientDataItemsType = clientDataItemsType;
 
-    m_clientDatas.SetCount(n+1,NULL);
     m_clientDatas[n] = clientData;
 
     ItemWidthChanged(n);
@@ -575,25 +607,22 @@ void wxVListBoxComboPopup::SetItemClientData( unsigned int n,
 
 void* wxVListBoxComboPopup::GetItemClientData(unsigned int n) const
 {
-    if ( m_clientDatas.GetCount() > n )
-        return m_clientDatas[n];
-
-    return NULL;
+    return n < m_clientDatas.size() ? m_clientDatas[n] : NULL;
 }
 
 void wxVListBoxComboPopup::Delete( unsigned int item )
 {
     // Remove client data, if set
-    if ( m_clientDatas.GetCount() )
+    if ( !m_clientDatas.empty() )
     {
         if ( m_clientDataItemsType == wxClientData_Object )
             delete (wxClientData*) m_clientDatas[item];
 
-        m_clientDatas.RemoveAt(item);
+        m_clientDatas.erase(m_clientDatas.begin()+item);
     }
 
     m_strings.RemoveAt(item);
-    m_widths.RemoveAt(item);
+    m_widths.erase(m_widths.begin()+item);
 
     if ( (int)item == m_widestItem )
         m_findWidest = true;
@@ -615,6 +644,16 @@ int wxVListBoxComboPopup::FindString(const wxString& s, bool bCase) const
     return m_strings.Index(s, bCase);
 }
 
+bool wxVListBoxComboPopup::FindItem(const wxString& item, wxString* trueItem)
+{
+    int idx = m_strings.Index(item, false);
+    if ( idx == wxNOT_FOUND )
+        return false;
+    if ( trueItem != NULL )
+        *trueItem = m_strings[idx];
+    return true;
+}
+
 unsigned int wxVListBoxComboPopup::GetCount() const
 {
     return m_strings.GetCount();
@@ -633,9 +672,7 @@ void wxVListBoxComboPopup::SetString( int item, const wxString& str )
 
 wxString wxVListBoxComboPopup::GetStringValue() const
 {
-    if ( m_value >= 0 )
-        return m_strings[m_value];
-    return wxEmptyString;
+    return m_stringValue;
 }
 
 void wxVListBoxComboPopup::SetSelection( int item )
@@ -644,6 +681,11 @@ void wxVListBoxComboPopup::SetSelection( int item )
                  wxT("invalid index in wxVListBoxComboPopup::SetSelection") );
 
     m_value = item;
+
+    if ( item >= 0 )
+        m_stringValue = m_strings[item];
+    else
+        m_stringValue.clear();
 
     if ( IsCreated() )
         wxVListBox::SetSelection(item);
@@ -658,10 +700,12 @@ void wxVListBoxComboPopup::SetStringValue( const wxString& value )
 {
     int index = m_strings.Index(value);
 
+    m_stringValue = value;
+
     if ( index >= 0 && index < (int)wxVListBox::GetItemCount() )
     {
-        m_value = index;
         wxVListBox::SetSelection(index);
+        m_value = index;
     }
 }
 
@@ -672,18 +716,19 @@ void wxVListBoxComboPopup::CalcWidths()
     // Measure items with dirty width.
     if ( m_widthsDirty )
     {
-        unsigned int i;
-        unsigned int n = m_widths.GetCount();
+        unsigned int n = m_widths.size();
         int dirtyHandled = 0;
-        wxArrayInt& widths = m_widths;
+        wxVector<int>& widths = m_widths;
 
         // I think using wxDC::GetTextExtent is faster than
         // wxWindow::GetTextExtent (assuming same dc is used
         // for all calls, as we do here).
         wxClientDC dc(m_combo);
+        if ( !m_useFont.IsOk() )
+            m_useFont = m_combo->GetFont();
         dc.SetFont(m_useFont);
 
-        for ( i=0; i<n; i++ )
+        for ( unsigned int i=0; i<n; i++ )
         {
             if ( widths[i] < 0 )
             {
@@ -731,13 +776,12 @@ void wxVListBoxComboPopup::CalcWidths()
 
     if ( doFindWidest )
     {
-        unsigned int i;
-        unsigned int n = m_widths.GetCount();
+        unsigned int n = m_widths.size();
 
         int bestWidth = -1;
         int bestIndex = -1;
 
-        for ( i=0; i<n; i++ )
+        for ( unsigned int i=0; i<n; i++ )
         {
             int w = m_widths[i];
             if ( w > bestWidth )
@@ -770,8 +814,8 @@ wxSize wxVListBoxComboPopup::GetAdjustedSize( int minWidth, int prefHeight, int 
 
         int totalHeight = GetTotalHeight(); // + 3;
 
+        // Take borders into account on Mac or scrollbars always appear
 #if defined(__WXMAC__)
-        // Take borders into account, or there will be scrollbars even for one or two items.
         totalHeight += 2;
 #endif
         if ( height >= totalHeight )
@@ -793,7 +837,7 @@ wxSize wxVListBoxComboPopup::GetAdjustedSize( int minWidth, int prefHeight, int 
     CalcWidths();
 
     // Take scrollbar into account in width calculations
-    int widestWidth = m_widestWidth + wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+    int widestWidth = m_widestWidth + wxSystemSettings::GetMetric(wxSYS_VSCROLL_X, this);
     return wxSize(minWidth > widestWidth ? minWidth : widestWidth,
                   height+2);
 }
@@ -801,17 +845,15 @@ wxSize wxVListBoxComboPopup::GetAdjustedSize( int minWidth, int prefHeight, int 
 //void wxVListBoxComboPopup::Populate( int n, const wxString choices[] )
 void wxVListBoxComboPopup::Populate( const wxArrayString& choices )
 {
-    int i;
-
     int n = choices.GetCount();
 
-    for ( i=0; i<n; i++ )
+    for ( int i=0; i<n; i++ )
     {
         const wxString& item = choices.Item(i);
         m_strings.Add(item);
     }
 
-    m_widths.SetCount(n,-1);
+    m_widths.resize(n,-1);
     m_widthsDirty = true;
 
     if ( IsCreated() )
@@ -823,7 +865,7 @@ void wxVListBoxComboPopup::Populate( const wxArrayString& choices )
 
     // Find initial selection
     wxString strValue = m_combo->GetValue();
-    if ( strValue.length() )
+    if ( !strValue.empty() )
         m_value = m_strings.Index(strValue);
 }
 
@@ -832,11 +874,8 @@ void wxVListBoxComboPopup::Populate( const wxArrayString& choices )
 // ----------------------------------------------------------------------------
 
 
-BEGIN_EVENT_TABLE(wxOwnerDrawnComboBox, wxComboCtrl)
-END_EVENT_TABLE()
-
-
-IMPLEMENT_DYNAMIC_CLASS2(wxOwnerDrawnComboBox, wxComboCtrl, wxControlWithItems)
+wxBEGIN_EVENT_TABLE(wxOwnerDrawnComboBox, wxComboCtrl)
+wxEND_EVENT_TABLE()
 
 void wxOwnerDrawnComboBox::Init()
 {
@@ -863,7 +902,6 @@ wxOwnerDrawnComboBox::wxOwnerDrawnComboBox(wxWindow *parent,
                                            long style,
                                            const wxValidator& validator,
                                            const wxString& name)
-    : wxComboCtrl()
 {
     Init();
 
@@ -907,8 +945,7 @@ bool wxOwnerDrawnComboBox::Create(wxWindow *parent,
         return false;
     }
 
-    int i;
-    for ( i=0; i<n; i++ )
+    for ( int i=0; i<n; i++ )
         m_initChs.Add(choices[i]);
 
     return true;
@@ -943,21 +980,29 @@ void wxOwnerDrawnComboBox::DoSetPopupControl(wxComboPopup* popup)
 // wxOwnerDrawnComboBox item manipulation methods
 // ----------------------------------------------------------------------------
 
-void wxOwnerDrawnComboBox::Clear()
+void wxOwnerDrawnComboBox::DoClear()
 {
     EnsurePopupControl();
 
     GetVListBoxComboPopup()->Clear();
 
-    SetValue(wxEmptyString);
+    // There is no text entry when using wxCB_READONLY style, so test for it.
+    if ( GetTextCtrl() )
+        wxTextEntry::Clear();
 }
 
-void wxOwnerDrawnComboBox::Delete(unsigned int n)
+void wxOwnerDrawnComboBox::Clear()
 {
-    wxCHECK_RET( IsValid(n), _T("invalid index in wxOwnerDrawnComboBox::Delete") );
+    DoClear();
+    SetClientDataType(wxClientData_None);
+}
+
+void wxOwnerDrawnComboBox::DoDeleteOneItem(unsigned int n)
+{
+    wxCHECK_RET( IsValid(n), wxT("invalid index in wxOwnerDrawnComboBox::Delete") );
 
     if ( GetSelection() == (int) n )
-        SetValue(wxEmptyString);
+        ChangeValue(wxEmptyString);
 
     GetVListBoxComboPopup()->Delete(n);
 }
@@ -972,7 +1017,7 @@ unsigned int wxOwnerDrawnComboBox::GetCount() const
 
 wxString wxOwnerDrawnComboBox::GetString(unsigned int n) const
 {
-    wxCHECK_MSG( IsValid(n), wxEmptyString, _T("invalid index in wxOwnerDrawnComboBox::GetString") );
+    wxCHECK_MSG( IsValid(n), wxEmptyString, wxT("invalid index in wxOwnerDrawnComboBox::GetString") );
 
     if ( !m_popupInterface )
         return m_initChs.Item(n);
@@ -984,7 +1029,7 @@ void wxOwnerDrawnComboBox::SetString(unsigned int n, const wxString& s)
 {
     EnsurePopupControl();
 
-    wxCHECK_RET( IsValid(n), _T("invalid index in wxOwnerDrawnComboBox::SetString") );
+    wxCHECK_RET( IsValid(n), wxT("invalid index in wxOwnerDrawnComboBox::SetString") );
 
     GetVListBoxComboPopup()->SetString(n,s);
 }
@@ -1001,7 +1046,7 @@ void wxOwnerDrawnComboBox::Select(int n)
 {
     EnsurePopupControl();
 
-    wxCHECK_RET( (n == wxNOT_FOUND) || IsValid(n), _T("invalid index in wxOwnerDrawnComboBox::Select") );
+    wxCHECK_RET( (n == wxNOT_FOUND) || IsValid(n), wxT("invalid index in wxOwnerDrawnComboBox::Select") );
 
     GetVListBoxComboPopup()->SetSelection(n);
 
@@ -1011,7 +1056,7 @@ void wxOwnerDrawnComboBox::Select(int n)
 
     // Refresh text portion in control
     if ( m_text )
-        m_text->SetValue( str );
+        m_text->ChangeValue( str );
     else
         m_valueString = str;
 
@@ -1026,31 +1071,50 @@ int wxOwnerDrawnComboBox::GetSelection() const
     return GetVListBoxComboPopup()->GetSelection();
 }
 
-int wxOwnerDrawnComboBox::DoAppend(const wxString& item)
+void wxOwnerDrawnComboBox::GetSelection(long *from, long *to) const
 {
-    EnsurePopupControl();
-    wxASSERT(m_popupInterface);
-
-    return GetVListBoxComboPopup()->Append(item);
+    wxComboCtrl::GetSelection(from, to);
 }
 
-int wxOwnerDrawnComboBox::DoInsert(const wxString& item, unsigned int pos)
+int wxOwnerDrawnComboBox::DoInsertItems(const wxArrayStringsAdapter& items,
+                                        unsigned int pos,
+                                        void **clientData,
+                                        wxClientDataType type)
 {
     EnsurePopupControl();
 
-    wxCHECK_MSG(!(GetWindowStyle() & wxCB_SORT), -1, wxT("can't insert into sorted list"));
-    wxCHECK_MSG(IsValidInsert(pos), -1, wxT("invalid index"));
+    const unsigned int count = items.GetCount();
 
-    GetVListBoxComboPopup()->Insert(item,pos);
+    if ( HasFlag(wxCB_SORT) )
+    {
+        int n = pos;
 
-    return pos;
+        for ( unsigned int i = 0; i < count; ++i )
+        {
+            n = GetVListBoxComboPopup()->Append(items[i]);
+            AssignNewItemClientData(n, clientData, i, type);
+        }
+
+        return n;
+    }
+    else
+    {
+        for ( unsigned int i = 0; i < count; ++i, ++pos )
+        {
+            GetVListBoxComboPopup()->Insert(items[i], pos);
+            AssignNewItemClientData(pos, clientData, i, type);
+        }
+
+        return pos - 1;
+    }
 }
 
 void wxOwnerDrawnComboBox::DoSetItemClientData(unsigned int n, void* clientData)
 {
     EnsurePopupControl();
 
-    GetVListBoxComboPopup()->SetItemClientData(n,clientData,m_clientDataItemsType);
+    GetVListBoxComboPopup()->SetItemClientData(n, clientData,
+                                               GetClientDataType());
 }
 
 void* wxOwnerDrawnComboBox::DoGetItemClientData(unsigned int n) const
@@ -1059,16 +1123,6 @@ void* wxOwnerDrawnComboBox::DoGetItemClientData(unsigned int n) const
         return NULL;
 
     return GetVListBoxComboPopup()->GetItemClientData(n);
-}
-
-void wxOwnerDrawnComboBox::DoSetItemClientObject(unsigned int n, wxClientData* clientData)
-{
-    DoSetItemClientData(n, (void*) clientData);
-}
-
-wxClientData* wxOwnerDrawnComboBox::DoGetItemClientObject(unsigned int n) const
-{
-    return (wxClientData*) DoGetItemClientData(n);
 }
 
 // ----------------------------------------------------------------------------
@@ -1082,8 +1136,21 @@ void wxOwnerDrawnComboBox::OnDrawItem( wxDC& dc,
 {
     if ( flags & wxODCB_PAINTING_CONTROL )
     {
-        dc.DrawText( GetValue(),
-                     rect.x + GetTextIndent(),
+        wxString text;
+
+        if ( !ShouldUseHintText() )
+        {
+            text = GetValue();
+        }
+        else
+        {
+            text = GetHint();
+            wxColour col = wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
+            dc.SetTextForeground(col);
+        }
+
+        dc.DrawText( text,
+                     rect.x + GetMargins().x,
                      (rect.height-dc.GetCharHeight())/2 + rect.y );
     }
     else
@@ -1100,6 +1167,18 @@ wxCoord wxOwnerDrawnComboBox::OnMeasureItem( size_t WXUNUSED(item) ) const
 wxCoord wxOwnerDrawnComboBox::OnMeasureItemWidth( size_t WXUNUSED(item) ) const
 {
     return -1;
+}
+
+wxSize wxOwnerDrawnComboBox::DoGetBestSize() const
+{
+    if ( GetCount() == 0 )
+        return wxComboCtrlBase::DoGetBestSize();
+
+    wxOwnerDrawnComboBox* odc = const_cast<wxOwnerDrawnComboBox*>(this);
+    // TODO: this class may also have GetHightestItemHeight() and
+    // GetHightestItem() methods, and so set the whole (edit part + arrow)
+    // control's height according with this max height, not only max width.
+    return GetSizeFromTextSize(odc->GetWidestItemWidth());
 }
 
 void wxOwnerDrawnComboBox::OnDrawBackground(wxDC& dc,

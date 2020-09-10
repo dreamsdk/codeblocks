@@ -4,9 +4,8 @@
 // Author:      Vaclav Slavik
 // Modified by:
 // Created:     2002/04/05
-// RCS-ID:      $Id: artbrows.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Vaclav Slavik
-// Licence:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx/wx.h".
@@ -29,17 +28,17 @@
 #include "artbrows.h"
 
 #define ART_CLIENT(id) \
-    choice->Append(_T(#id), (void*)id);
+    choice->Append(#id, (void*)id);
 #define ART_ICON(id) \
     { \
         int ind; \
         wxIcon icon = wxArtProvider::GetIcon(id, client, size); \
-        if ( icon.Ok() ) \
+        if ( icon.IsOk() ) \
             ind = images->Add(icon); \
         else \
             ind = 0; \
-        list->InsertItem(index, _T(#id), ind); \
-        list->SetItemData(index, (long)id); \
+        list->InsertItem(index, #id, ind); \
+        list->SetItemPtrData(index, wxPtrToUInt(id)); \
         index++; \
     }
 
@@ -50,12 +49,13 @@
 static void FillClients(wxChoice *choice)
 {
     ART_CLIENT(wxART_OTHER)
+    ART_CLIENT(wxART_BUTTON)
     ART_CLIENT(wxART_TOOLBAR)
     ART_CLIENT(wxART_MENU)
     ART_CLIENT(wxART_FRAME_ICON)
     ART_CLIENT(wxART_CMN_DIALOG)
     ART_CLIENT(wxART_HELP_BROWSER)
-    ART_CLIENT(wxART_MESSAGE_BOX)
+    ART_CLIENT(wxART_MESSAGE_BOX) // Keep this last, it's the initial shown one
 }
 
 static void FillBitmaps(wxImageList *images, wxListCtrl *list,
@@ -79,7 +79,8 @@ static void FillBitmaps(wxImageList *images, wxListCtrl *list,
     ART_ICON(wxART_GO_DOWN)
     ART_ICON(wxART_GO_TO_PARENT)
     ART_ICON(wxART_GO_HOME)
-    ART_ICON(wxART_FILE_OPEN)
+    ART_ICON(wxART_GOTO_FIRST)
+    ART_ICON(wxART_GOTO_LAST)
     ART_ICON(wxART_PRINT)
     ART_ICON(wxART_HELP)
     ART_ICON(wxART_TIP)
@@ -87,23 +88,35 @@ static void FillBitmaps(wxImageList *images, wxListCtrl *list,
     ART_ICON(wxART_LIST_VIEW)
     ART_ICON(wxART_NEW_DIR)
     ART_ICON(wxART_FOLDER)
+    ART_ICON(wxART_FOLDER_OPEN);
     ART_ICON(wxART_GO_DIR_UP)
     ART_ICON(wxART_EXECUTABLE_FILE)
     ART_ICON(wxART_NORMAL_FILE)
     ART_ICON(wxART_TICK_MARK)
     ART_ICON(wxART_CROSS_MARK)
     ART_ICON(wxART_MISSING_IMAGE)
+    ART_ICON(wxART_NEW);
+    ART_ICON(wxART_FILE_OPEN)
     ART_ICON(wxART_FILE_SAVE)
     ART_ICON(wxART_FILE_SAVE_AS)
+    ART_ICON(wxART_DELETE);
     ART_ICON(wxART_COPY)
     ART_ICON(wxART_CUT)
     ART_ICON(wxART_PASTE)
     ART_ICON(wxART_UNDO)
     ART_ICON(wxART_REDO)
+    ART_ICON(wxART_PLUS)
+    ART_ICON(wxART_MINUS)
+    ART_ICON(wxART_CLOSE)
     ART_ICON(wxART_QUIT)
     ART_ICON(wxART_FIND)
     ART_ICON(wxART_FIND_AND_REPLACE)
-
+    ART_ICON(wxART_EDIT)
+    ART_ICON(wxART_FULL_SCREEN)
+    ART_ICON(wxART_HARDDISK)
+    ART_ICON(wxART_FLOPPY)
+    ART_ICON(wxART_CDROM)
+    ART_ICON(wxART_REMOVABLE)
 }
 
 
@@ -113,16 +126,24 @@ static void FillBitmaps(wxImageList *images, wxListCtrl *list,
 
 #include "null.xpm"
 
-BEGIN_EVENT_TABLE(wxArtBrowserDialog, wxDialog)
+const int SIZE_CHOICE_ID = ::wxNewId();
+
+// Bitmap sizes that can be chosen in the size selection wxChoice.
+static const int bitmapSizes[] = { -1, 16, 32, 64, 128, 256, 0 };
+
+wxBEGIN_EVENT_TABLE(wxArtBrowserDialog, wxDialog)
     EVT_LIST_ITEM_SELECTED(wxID_ANY, wxArtBrowserDialog::OnSelectItem)
+    EVT_CHOICE(SIZE_CHOICE_ID, wxArtBrowserDialog::OnChangeSize)
     EVT_CHOICE(wxID_ANY, wxArtBrowserDialog::OnChooseClient)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 wxArtBrowserDialog::wxArtBrowserDialog(wxWindow *parent)
-    : wxDialog(parent, wxID_ANY, _T("Art resources browser"),
+    : wxDialog(parent, wxID_ANY, "Art resources browser",
                wxDefaultPosition, wxDefaultSize,
                wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
 {
+    m_currentArtId = wxART_ERROR;
+
     wxSizer *sizer = new wxBoxSizer(wxVERTICAL);
     wxSizer *subsizer;
 
@@ -130,7 +151,7 @@ wxArtBrowserDialog::wxArtBrowserDialog(wxWindow *parent)
     FillClients(choice);
 
     subsizer = new wxBoxSizer(wxHORIZONTAL);
-    subsizer->Add(new wxStaticText(this, wxID_ANY, _T("Client:")), 0, wxALIGN_CENTER_VERTICAL);
+    subsizer->Add(new wxStaticText(this, wxID_ANY, "Client:"), 0, wxALIGN_CENTER_VERTICAL);
     subsizer->Add(choice, 1, wxLEFT, 5);
     sizer->Add(subsizer, 0, wxALL | wxEXPAND, 10);
 
@@ -138,29 +159,47 @@ wxArtBrowserDialog::wxArtBrowserDialog(wxWindow *parent)
 
     m_list = new wxListCtrl(this, wxID_ANY, wxDefaultPosition, wxSize(250, 300),
                             wxLC_REPORT | wxSUNKEN_BORDER);
-    m_list->InsertColumn(0, _T("wxArtID"));
-    subsizer->Add(m_list, 1, wxEXPAND | wxRIGHT, 10);
+    m_list->AppendColumn("wxArtID");
+    subsizer->Add(m_list, 0, wxEXPAND | wxRIGHT, 10);
 
     wxSizer *subsub = new wxBoxSizer(wxVERTICAL);
-    m_text = new wxStaticText(this, wxID_ANY, wxT("Size: 333x333"));
-    subsub->Add(m_text);
+
+    m_sizes = new wxChoice( this, SIZE_CHOICE_ID );
+    for ( const int* p = bitmapSizes; *p; ++p )
+    {
+      if ( *p == -1 )
+        m_sizes->Append( "Default" );
+      else
+        m_sizes->Append( wxString::Format("%d x %d", *p, *p ) );
+    }
+    m_sizes->SetSelection(0);
+    subsub->Add(m_sizes, 0, wxALL, 4);
+
+    m_text = new wxStaticText(this, wxID_ANY, "Size: 333x333");
+    subsub->Add(m_text, 0, wxALL, 4);
 
     m_canvas = new wxStaticBitmap(this, wxID_ANY, wxBitmap(null_xpm));
     subsub->Add(m_canvas);
-    subsub->Add(100, 100);
-    subsizer->Add(subsub);
+    subsub->Add(256, 256);
+    subsizer->Add(subsub, 1, wxLEFT, 4 );
 
     sizer->Add(subsizer, 1, wxEXPAND | wxLEFT|wxRIGHT, 10);
 
-    wxButton *ok = new wxButton(this, wxID_OK, _T("Close"));
+    wxButton *ok = new wxButton(this, wxID_OK, "Close");
     ok->SetDefault();
     sizer->Add(ok, 0, wxALIGN_RIGHT | wxALL, 10);
 
-    SetSizer(sizer);
-    sizer->Fit(this);
+    SetSizerAndFit(sizer);
 
-    choice->SetSelection(6/*wxART_MESSAGE_BOX*/);
+    choice->SetSelection(choice->GetCount() - 1);
     SetArtClient(wxART_MESSAGE_BOX);
+}
+
+
+wxSize wxArtBrowserDialog::GetSelectedBitmapSize() const
+{
+  const int size = bitmapSizes[m_sizes->GetSelection()];
+  return wxSize(size, size);
 }
 
 
@@ -183,18 +222,24 @@ void wxArtBrowserDialog::SetArtClient(const wxArtClient& client)
     m_list->SetItemState(sel, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
 
     m_client = client;
-    SetArtBitmap((const wxChar*)m_list->GetItemData(sel), m_client);
+    SetArtBitmap((const char*)m_list->GetItemData(sel), m_client);
 }
 
 void wxArtBrowserDialog::OnSelectItem(wxListEvent &event)
 {
-    const wxChar *data = (const wxChar*)event.GetData();
-    SetArtBitmap(data, m_client, wxDefaultSize);
+    const char *data = (const char*)event.GetData();
+    m_currentArtId = wxString( data );
+    SetArtBitmap(data, m_client, GetSelectedBitmapSize());
+}
+
+void wxArtBrowserDialog::OnChangeSize(wxCommandEvent& WXUNUSED(event))
+{
+    SetArtBitmap(m_currentArtId, m_client, GetSelectedBitmapSize() );
 }
 
 void wxArtBrowserDialog::OnChooseClient(wxCommandEvent &event)
 {
-    const wxChar *data = (const wxChar*)event.GetClientData();
+    const char *data = (const char*)event.GetClientData();
     SetArtClient(data);
 }
 
@@ -203,6 +248,6 @@ void wxArtBrowserDialog::SetArtBitmap(const wxArtID& id, const wxArtClient& clie
     wxBitmap bmp = wxArtProvider::GetBitmap(id, client, size);
     m_canvas->SetSize(bmp.GetWidth(), bmp.GetHeight());
     m_canvas->SetBitmap(bmp);
-    m_text->SetLabel(wxString::Format(wxT("Size: %d x %d"), bmp.GetWidth(), bmp.GetHeight()));
+    m_text->SetLabel(wxString::Format("Size: %d x %d", bmp.GetWidth(), bmp.GetHeight()));
     Refresh();
 }

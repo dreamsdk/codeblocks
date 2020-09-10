@@ -3,7 +3,6 @@
 // Purpose:     Archive file system
 // Author:      Vaclav Slavik, Mike Wetherell
 // Copyright:   (c) 1999 Vaclav Slavik, (c) 2006 Mike Wetherell
-// CVS-ID:      $Id: fs_arc.h 42713 2006-10-30 11:56:12Z ABX $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -27,10 +26,10 @@ class WXDLLIMPEXP_BASE wxArchiveFSHandler : public wxFileSystemHandler
 {
 public:
     wxArchiveFSHandler();
-    virtual bool CanOpen(const wxString& location);
-    virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location);
-    virtual wxString FindFirst(const wxString& spec, int flags = 0);
-    virtual wxString FindNext();
+    virtual bool CanOpen(const wxString& location) wxOVERRIDE;
+    virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location) wxOVERRIDE;
+    virtual wxString FindFirst(const wxString& spec, int flags = 0) wxOVERRIDE;
+    virtual wxString FindNext() wxOVERRIDE;
     void Cleanup();
     virtual ~wxArchiveFSHandler();
 
@@ -47,8 +46,8 @@ private:
 
     wxString DoFind();
 
-    DECLARE_NO_COPY_CLASS(wxArchiveFSHandler)
-    DECLARE_DYNAMIC_CLASS(wxArchiveFSHandler)
+    wxDECLARE_NO_COPY_CLASS(wxArchiveFSHandler);
+    wxDECLARE_DYNAMIC_CLASS(wxArchiveFSHandler);
 };
 
 #endif // wxUSE_FS_ARCHIVE

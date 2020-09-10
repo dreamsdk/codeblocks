@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        src/generic/tabg.cpp
-// Purpose:     Generic tabbed dialogs
+// Purpose:     Generic tabbed dialogs; used by wxMotif's wxNotebook
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: tabg.cpp 39745 2006-06-15 17:58:49Z ABX $
 // Copyright:   (c)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,8 +14,6 @@
 #ifdef __BORLANDC__
     #pragma hdrstop
 #endif
-
-#if wxUSE_TAB_DIALOG
 
 #ifndef WX_PRECOMP
     #include "wx/settings.h"
@@ -29,7 +26,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "wx/tab.h"
+#include "wx/generic/tabg.h"
 #include "wx/listimpl.cpp"
 
 WX_DEFINE_LIST(wxTabLayerList)
@@ -38,9 +35,9 @@ WX_DEFINE_LIST(wxTabLayerList)
 // defined: use new, rounded tab implementation (doesn't colour in tabs)
 // #define wxUSE_NEW_METHOD
 
-IMPLEMENT_DYNAMIC_CLASS(wxTabControl, wxObject)
+wxIMPLEMENT_DYNAMIC_CLASS(wxTabControl, wxObject);
 
-// IMPLEMENT_DYNAMIC_CLASS(wxTabLayer, wxList)
+// wxIMPLEMENT_DYNAMIC_CLASS(wxTabLayer, wxList);
 
 wxTabControl::wxTabControl(wxTabView *v)
 {
@@ -85,7 +82,8 @@ void wxTabControl::OnDraw(wxDC& dc, bool lastInRow)
   // Draw grey background
   if (m_view->GetTabStyle() & wxTAB_STYLE_COLOUR_INTERIOR)
   {
-    dc.SetBrush(*m_view->GetBackgroundBrush());
+    if(m_view->GetBackgroundBrush())
+      dc.SetBrush(*m_view->GetBackgroundBrush());
 
     // Add 1 because the pen is transparent. Under Motif, may be different.
 #ifdef __WXMOTIF__
@@ -205,8 +203,8 @@ void wxTabControl::OnDraw(wxDC& dc, bool lastInRow)
 
   wxColour col(m_view->GetTextColour());
   dc.SetTextForeground(col);
-  dc.SetBackgroundMode(wxTRANSPARENT);
-  long textWidth, textHeight;
+  dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
+  wxCoord textWidth, textHeight;
   dc.GetTextExtent(GetLabel(), &textWidth, &textHeight);
 
   int textX = (int)(tabX + (GetWidth() - textWidth)/2.0);
@@ -476,7 +474,7 @@ void wxTabControl::OnDraw(wxDC& dc, bool lastInRow)
 
     wxColour col(m_view->GetTextColour());
     dc.SetTextForeground(col);
-    dc.SetBackgroundMode(wxTRANSPARENT);
+    dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
     long textWidth, textHeight;
     dc.GetTextExtent(GetLabel(), &textWidth, &textHeight);
 
@@ -503,7 +501,7 @@ bool wxTabControl::HitTest(int x, int y) const
     return false;
 }
 
-IMPLEMENT_DYNAMIC_CLASS(wxTabView, wxObject)
+wxIMPLEMENT_DYNAMIC_CLASS(wxTabView, wxObject);
 
 wxTabView::wxTabView(long style)
 {
@@ -523,14 +521,14 @@ wxTabView::wxTabView(long style)
   m_tabViewRect.x = 300;
   m_highlightColour = *wxWHITE;
   m_shadowColour = wxColour(128, 128, 128);
-  m_backgroundColour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+  // m_backgroundColour = wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
   m_textColour = *wxBLACK;
   m_highlightPen = wxWHITE_PEN;
   m_shadowPen = wxGREY_PEN;
-  SetBackgroundColour(m_backgroundColour);
+  // SetBackgroundColour(m_backgroundColour);
   m_tabFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
   m_tabSelectedFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-  m_window = (wxWindow *) NULL;
+  m_window = NULL;
 }
 
 wxTabView::~wxTabView()
@@ -580,7 +578,7 @@ wxTabControl *wxTabView::AddTab(int id, const wxString& label, wxTabControl *exi
   tabControl->SetRowPosition(tabLayer->GetCount());
   tabControl->SetColPosition(layer);
 
-  wxTabControl *lastTab = (wxTabControl *) NULL;
+  wxTabControl *lastTab = NULL;
   if (lastTabNode)
     lastTab = (wxTabControl *)lastTabNode->GetData();
 
@@ -730,7 +728,7 @@ void wxTabView::LayoutTabs(void)
     layerNode = nextLayerNode;
   }
 
-  wxTabControl *lastTab = (wxTabControl *) NULL;
+  wxTabControl *lastTab = NULL;
 
   wxTabLayer *currentLayer = new wxTabLayer;
   m_layers.Append(currentLayer);
@@ -752,7 +750,7 @@ void wxTabView::LayoutTabs(void)
      {
        currentLayer = new wxTabLayer;
        m_layers.Append(currentLayer);
-       lastTab = (wxTabControl *) NULL;
+       lastTab = NULL;
      }
     }
 
@@ -797,7 +795,8 @@ void wxTabView::Draw(wxDC& dc)
     if (GetTabStyle() & wxTAB_STYLE_COLOUR_INTERIOR)
     {
         dc.SetPen(*wxTRANSPARENT_PEN);
-        dc.SetBrush(*GetBackgroundBrush());
+        if(GetBackgroundBrush())
+            dc.SetBrush(*GetBackgroundBrush());
 
         // Add 1 because the pen is transparent. Under Motif, may be different.
         dc.DrawRectangle(
@@ -881,7 +880,7 @@ bool wxTabView::OnEvent(wxMouseEvent& event)
   wxCoord x, y;
   event.GetPosition(&x, &y);
 
-  wxTabControl *hitControl = (wxTabControl *) NULL;
+  wxTabControl *hitControl = NULL;
 
   wxTabLayerList::compatibility_iterator node = m_layers.GetFirst();
   while (node)
@@ -1009,20 +1008,20 @@ void wxTabView::OnTabActivate(int /*activateId*/, int /*deactivateId*/)
 void wxTabView::SetHighlightColour(const wxColour& col)
 {
   m_highlightColour = col;
-  m_highlightPen = wxThePenList->FindOrCreatePen(col, 1, wxSOLID);
+  m_highlightPen = wxThePenList->FindOrCreatePen(col);
 }
 
 void wxTabView::SetShadowColour(const wxColour& col)
 {
   m_shadowColour = col;
-  m_shadowPen = wxThePenList->FindOrCreatePen(col, 1, wxSOLID);
+  m_shadowPen = wxThePenList->FindOrCreatePen(col);
 }
 
 void wxTabView::SetBackgroundColour(const wxColour& col)
 {
   m_backgroundColour = col;
-  m_backgroundPen = wxThePenList->FindOrCreatePen(col, 1, wxSOLID);
-  m_backgroundBrush = wxTheBrushList->FindOrCreateBrush(col, wxSOLID);
+  m_backgroundPen = wxThePenList->FindOrCreatePen(col);
+  m_backgroundBrush = wxTheBrushList->FindOrCreateBrush(col);
 }
 
 // this may be called with sel = zero (which doesn't match any page)
@@ -1081,7 +1080,7 @@ wxTabControl *wxTabView::FindTabControlForId(int id) const
     }
     node1 = node1->GetNext();
   }
-  return (wxTabControl *) NULL;
+  return NULL;
 }
 
 // Find tab control for layer, position (starting from zero)
@@ -1089,11 +1088,11 @@ wxTabControl *wxTabView::FindTabControlForPosition(int layer, int position) cons
 {
   wxTabLayerList::compatibility_iterator node1 = m_layers.Item(layer);
   if (!node1)
-    return (wxTabControl *) NULL;
+    return NULL;
   wxTabLayer *tabLayer = (wxTabLayer *)node1->GetData();
   wxList::compatibility_iterator node2 = tabLayer->Item(position);
   if (!node2)
-    return (wxTabControl *) NULL;
+    return NULL;
   return (wxTabControl *)node2->GetData();
 }
 
@@ -1136,13 +1135,13 @@ int wxTabView::CalculateTabWidth(int noTabs, bool adjustView)
  * wxTabbedDialog
  */
 
-IMPLEMENT_CLASS(wxTabbedDialog, wxDialog)
+wxIMPLEMENT_CLASS(wxTabbedDialog, wxDialog);
 
-BEGIN_EVENT_TABLE(wxTabbedDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(wxTabbedDialog, wxDialog)
     EVT_CLOSE(wxTabbedDialog::OnCloseWindow)
     EVT_MOUSE_EVENTS(wxTabbedDialog::OnMouseEvent)
     EVT_PAINT(wxTabbedDialog::OnPaint)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 wxTabbedDialog::wxTabbedDialog(wxWindow *parent, wxWindowID id,
     const wxString& title,
@@ -1150,7 +1149,7 @@ wxTabbedDialog::wxTabbedDialog(wxWindow *parent, wxWindowID id,
     long windowStyle, const wxString& name):
    wxDialog(parent, id, title, pos, size, windowStyle, name)
 {
-  m_tabView = (wxTabView *) NULL;
+  m_tabView = NULL;
 }
 
 wxTabbedDialog::~wxTabbedDialog(void)
@@ -1181,18 +1180,18 @@ void wxTabbedDialog::OnPaint(wxPaintEvent& WXUNUSED(event) )
  * wxTabbedPanel
  */
 
-IMPLEMENT_CLASS(wxTabbedPanel, wxPanel)
+wxIMPLEMENT_CLASS(wxTabbedPanel, wxPanel);
 
-BEGIN_EVENT_TABLE(wxTabbedPanel, wxPanel)
+wxBEGIN_EVENT_TABLE(wxTabbedPanel, wxPanel)
     EVT_MOUSE_EVENTS(wxTabbedPanel::OnMouseEvent)
     EVT_PAINT(wxTabbedPanel::OnPaint)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 wxTabbedPanel::wxTabbedPanel(wxWindow *parent, wxWindowID id, const wxPoint& pos,
    const wxSize& size, long windowStyle, const wxString& name):
    wxPanel(parent, id, pos, size, windowStyle, name)
 {
-  m_tabView = (wxTabView *) NULL;
+  m_tabView = NULL;
 }
 
 wxTabbedPanel::~wxTabbedPanel(void)
@@ -1217,17 +1216,17 @@ void wxTabbedPanel::OnPaint(wxPaintEvent& WXUNUSED(event) )
  * wxPanelTabView
  */
 
-IMPLEMENT_CLASS(wxPanelTabView, wxTabView)
+wxIMPLEMENT_CLASS(wxPanelTabView, wxTabView);
 
 wxPanelTabView::wxPanelTabView(wxPanel *pan, long style)
     : wxTabView(style)
 {
   m_panel = pan;
-  m_currentWindow = (wxWindow *) NULL;
+  m_currentWindow = NULL;
 
-  if (m_panel->IsKindOf(CLASSINFO(wxTabbedDialog)))
+  if (m_panel->IsKindOf(wxCLASSINFO(wxTabbedDialog)))
     ((wxTabbedDialog *)m_panel)->SetTabView(this);
-  else if (m_panel->IsKindOf(CLASSINFO(wxTabbedPanel)))
+  else if (m_panel->IsKindOf(wxCLASSINFO(wxTabbedPanel)))
     ((wxTabbedPanel *)m_panel)->SetTabView(this);
 
   SetWindow(m_panel);
@@ -1287,4 +1286,3 @@ void wxPanelTabView::ShowWindowForTab(int id)
   newWindow->Refresh();
 }
 
-#endif // wxUSE_TAB_DIALOG

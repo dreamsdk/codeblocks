@@ -4,8 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2005-01-09
-// RCS-ID:      $Id: datectrl.h 42207 2006-10-21 16:29:33Z VZ $
-// Copyright:   (c) 2005 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2005 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -43,28 +42,28 @@ public:
                 const wxValidator& validator = wxDefaultValidator,
                 const wxString& name = wxDatePickerCtrlNameStr);
 
-    // set/get the date
-    virtual void SetValue(const wxDateTime& dt);
-    virtual wxDateTime GetValue() const;
+    // Override this one to add date-specific (and time-ignoring) checks.
+    virtual void SetValue(const wxDateTime& dt) wxOVERRIDE;
+    virtual wxDateTime GetValue() const wxOVERRIDE;
 
-    // set/get the allowed valid range for the dates, if either/both of them
-    // are invalid, there is no corresponding limit and if neither is set
-    // GetRange() returns false
-    virtual void SetRange(const wxDateTime& dt1, const wxDateTime& dt2);
-    virtual bool GetRange(wxDateTime *dt1, wxDateTime *dt2) const;
+    // Implement the base class pure virtuals.
+    virtual void SetRange(const wxDateTime& dt1, const wxDateTime& dt2) wxOVERRIDE;
+    virtual bool GetRange(wxDateTime *dt1, wxDateTime *dt2) const wxOVERRIDE;
 
-    virtual WXDWORD MSWGetStyle(long style, WXDWORD *exstyle) const;
-
-    virtual bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result);
+    // Override MSW-specific functions used during control creation.
+    virtual WXDWORD MSWGetStyle(long style, WXDWORD *exstyle) const wxOVERRIDE;
 
 protected:
-    virtual wxSize DoGetBestSize() const;
+#if wxUSE_INTL
+    virtual wxLocaleInfo MSWGetFormat() const wxOVERRIDE;
+#endif // wxUSE_INTL
+    virtual bool MSWAllowsNone() const wxOVERRIDE { return HasFlag(wxDP_ALLOWNONE); }
+    virtual bool MSWOnDateTimeChange(const tagNMDATETIMECHANGE& dtch) wxOVERRIDE;
 
-    // the date currently shown by the control, may be invalid
-    wxDateTime m_date;
+private:
+    wxDateTime MSWGetControlValue() const;
 
-
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxDatePickerCtrl)
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxDatePickerCtrl);
 };
 
 #endif // _WX_MSW_DATECTRL_H_

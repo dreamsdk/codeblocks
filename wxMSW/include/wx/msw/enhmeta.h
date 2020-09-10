@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     13.01.00
-// RCS-ID:      $Id: enhmeta.h 60850 2009-06-01 10:16:13Z JS $
 // Copyright:   (c) 2000 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,25 +11,27 @@
 #ifndef _WX_MSW_ENHMETA_H_
 #define _WX_MSW_ENHMETA_H_
 
-#include "wx/dc.h"
+#include "wx/defs.h"
 
-#if wxUSE_DRAG_AND_DROP
+#if wxUSE_ENH_METAFILE
+
+#include "wx/dc.h"
+#include "wx/gdiobj.h"
+
+#if wxUSE_DATAOBJ
     #include "wx/dataobj.h"
 #endif
-
-// Change this to 1 if you set wxUSE_HIGH_QUALITY_PREVIEW_IN_WXMSW to 1 in prntbase.cpp
-#define wxUSE_ENH_METAFILE_FROM_DC 0
 
 // ----------------------------------------------------------------------------
 // wxEnhMetaFile: encapsulation of Win32 HENHMETAFILE
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxEnhMetaFile : public wxObject
+class WXDLLIMPEXP_CORE wxEnhMetaFile : public wxGDIObject
 {
 public:
     wxEnhMetaFile(const wxString& file = wxEmptyString) : m_filename(file)
         { Init(); }
-    wxEnhMetaFile(const wxEnhMetaFile& metafile) : wxObject()
+    wxEnhMetaFile(const wxEnhMetaFile& metafile) : wxGDIObject()
         { Init(); Assign(metafile); }
     wxEnhMetaFile& operator=(const wxEnhMetaFile& metafile)
         { Free(); Assign(metafile); return *this; }
@@ -39,11 +40,10 @@ public:
         { Free(); }
 
     // display the picture stored in the metafile on the given DC
-    bool Play(wxDC *dc, wxRect *rectBound = (wxRect *)NULL);
+    bool Play(wxDC *dc, wxRect *rectBound = NULL);
 
     // accessors
-    bool Ok() const { return IsOk(); }
-    bool IsOk() const { return m_hMF != 0; }
+    virtual bool IsOk() const wxOVERRIDE { return m_hMF != 0; }
 
     wxSize GetSize() const;
     int GetWidth() const { return GetSize().x; }
@@ -56,27 +56,40 @@ public:
     // this method
     bool SetClipboard(int width = 0, int height = 0);
 
+    // Detach the HENHMETAFILE from this object, i.e. don't delete the handle
+    // in the dtor -- the caller is now responsible for doing this, e.g. using
+    // Free() method below.
+    WXHANDLE Detach() { WXHANDLE h = m_hMF; m_hMF = 0; return h; }
+
+    // Destroy the given HENHMETAFILE object.
+    static void Free(WXHANDLE handle);
+
     // implementation
     WXHANDLE GetHENHMETAFILE() const { return m_hMF; }
     void SetHENHMETAFILE(WXHANDLE hMF) { Free(); m_hMF = hMF; }
 
 protected:
     void Init();
-    void Free();
+    void Free() { Free(m_hMF); }
     void Assign(const wxEnhMetaFile& mf);
+
+    // we don't use these functions (but probably should) but have to implement
+    // them as they're pure virtual in the base class
+    virtual wxGDIRefData *CreateGDIRefData() const wxOVERRIDE;
+    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
 
 private:
     wxString m_filename;
     WXHANDLE m_hMF;
 
-    DECLARE_DYNAMIC_CLASS(wxEnhMetaFile)
+    wxDECLARE_DYNAMIC_CLASS(wxEnhMetaFile);
 };
 
 // ----------------------------------------------------------------------------
 // wxEnhMetaFileDC: allows to create a wxEnhMetaFile
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxEnhMetaFileDC : public wxDC
+class WXDLLIMPEXP_CORE wxEnhMetaFileDC : public wxDC
 {
 public:
     // the ctor parameters specify the filename (empty for memory metafiles),
@@ -85,32 +98,22 @@ public:
                     int width = 0, int height = 0,
                     const wxString& description = wxEmptyString);
 
-#if wxUSE_ENH_METAFILE_FROM_DC
     // as above, but takes reference DC as first argument to take resolution,
     // size, font metrics etc. from
+    explicit
     wxEnhMetaFileDC(const wxDC& referenceDC,
                     const wxString& filename = wxEmptyString,
                     int width = 0, int height = 0,
                     const wxString& description = wxEmptyString);
-#endif
-
-    virtual ~wxEnhMetaFileDC();
 
     // obtain a pointer to the new metafile (caller should delete it)
     wxEnhMetaFile *Close();
 
-protected:
-    virtual void DoGetSize(int *width, int *height) const;
-
 private:
-    // size passed to ctor and returned by DoGetSize()
-    int m_width,
-        m_height;
-
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxEnhMetaFileDC)
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxEnhMetaFileDC);
 };
 
-#if wxUSE_DRAG_AND_DROP
+#if wxUSE_DATAOBJ
 
 // ----------------------------------------------------------------------------
 // wxEnhMetaFileDataObject is a specialization of wxDataObject for enh metafile
@@ -118,7 +121,7 @@ private:
 
 // notice that we want to support both CF_METAFILEPICT and CF_ENHMETAFILE and
 // so we derive from wxDataObject and not from wxDataObjectSimple
-class WXDLLEXPORT wxEnhMetaFileDataObject : public wxDataObject
+class WXDLLIMPEXP_CORE wxEnhMetaFileDataObject : public wxDataObject
 {
 public:
     // ctors
@@ -134,18 +137,18 @@ public:
         { return m_metafile; }
 
     // implement base class pure virtuals
-    virtual wxDataFormat GetPreferredFormat(Direction dir) const;
-    virtual size_t GetFormatCount(Direction dir) const;
-    virtual void GetAllFormats(wxDataFormat *formats, Direction dir) const;
-    virtual size_t GetDataSize(const wxDataFormat& format) const;
-    virtual bool GetDataHere(const wxDataFormat& format, void *buf) const;
+    virtual wxDataFormat GetPreferredFormat(Direction dir) const wxOVERRIDE;
+    virtual size_t GetFormatCount(Direction dir) const wxOVERRIDE;
+    virtual void GetAllFormats(wxDataFormat *formats, Direction dir) const wxOVERRIDE;
+    virtual size_t GetDataSize(const wxDataFormat& format) const wxOVERRIDE;
+    virtual bool GetDataHere(const wxDataFormat& format, void *buf) const wxOVERRIDE;
     virtual bool SetData(const wxDataFormat& format, size_t len,
-                         const void *buf);
+                         const void *buf) wxOVERRIDE;
 
 protected:
     wxEnhMetaFile m_metafile;
 
-    DECLARE_NO_COPY_CLASS(wxEnhMetaFileDataObject)
+    wxDECLARE_NO_COPY_CLASS(wxEnhMetaFileDataObject);
 };
 
 
@@ -156,7 +159,7 @@ protected:
 // CF_ENHMETAFILE
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxEnhMetaFileSimpleDataObject : public wxDataObjectSimple
+class WXDLLIMPEXP_CORE wxEnhMetaFileSimpleDataObject : public wxDataObjectSimple
 {
 public:
     // ctors
@@ -172,25 +175,27 @@ public:
         { return m_metafile; }
 
     // implement base class pure virtuals
-    virtual size_t GetDataSize() const;
-    virtual bool GetDataHere(void *buf) const;
-    virtual bool SetData(size_t len, const void *buf);
+    virtual size_t GetDataSize() const wxOVERRIDE;
+    virtual bool GetDataHere(void *buf) const wxOVERRIDE;
+    virtual bool SetData(size_t len, const void *buf) wxOVERRIDE;
 
-    virtual size_t GetDataSize(const wxDataFormat& WXUNUSED(format)) const
+    virtual size_t GetDataSize(const wxDataFormat& WXUNUSED(format)) const wxOVERRIDE
         { return GetDataSize(); }
     virtual bool GetDataHere(const wxDataFormat& WXUNUSED(format),
-                             void *buf) const
+                             void *buf) const wxOVERRIDE
         { return GetDataHere(buf); }
     virtual bool SetData(const wxDataFormat& WXUNUSED(format),
-                         size_t len, const void *buf)
+                         size_t len, const void *buf) wxOVERRIDE
         { return SetData(len, buf); }
 
 protected:
     wxEnhMetaFile m_metafile;
 
-    DECLARE_NO_COPY_CLASS(wxEnhMetaFileSimpleDataObject)
+    wxDECLARE_NO_COPY_CLASS(wxEnhMetaFileSimpleDataObject);
 };
 
-#endif // wxUSE_DRAG_AND_DROP
+#endif // wxUSE_DATAOBJ
+
+#endif // wxUSE_ENH_METAFILE
 
 #endif // _WX_MSW_ENHMETA_H_

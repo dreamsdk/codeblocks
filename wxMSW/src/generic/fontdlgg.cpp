@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: fontdlgg.cpp 39627 2006-06-08 06:57:39Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -20,6 +19,7 @@
 
 #ifndef WX_PRECOMP
     #include <stdio.h>
+    #include "wx/crt.h"
     #include "wx/utils.h"
     #include "wx/dialog.h"
     #include "wx/listbox.h"
@@ -31,7 +31,6 @@
     #include "wx/checkbox.h"
     #include "wx/intl.h"
     #include "wx/settings.h"
-    #include "wx/cmndata.h"
     #include "wx/sizer.h"
 #endif
 
@@ -58,12 +57,12 @@ public:
 
 private:
     void OnPaint(wxPaintEvent& event);
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
-BEGIN_EVENT_TABLE(wxFontPreviewer, wxWindow)
+wxBEGIN_EVENT_TABLE(wxFontPreviewer, wxWindow)
     EVT_PAINT(wxFontPreviewer::OnPaint)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 void wxFontPreviewer::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
@@ -76,27 +75,118 @@ void wxFontPreviewer::OnPaint(wxPaintEvent& WXUNUSED(event))
     dc.SetBrush(*wxWHITE_BRUSH);
     dc.DrawRectangle(0, 0, size.x, size.y);
 
-    if ( font.Ok() )
+    if ( font.IsOk() )
     {
         dc.SetFont(font);
-        // Calculate vertical centre
-        long w = 0, h = 0;
-        dc.GetTextExtent( wxT("X"), &w, &h);
         dc.SetTextForeground(GetForegroundColour());
         dc.SetClippingRegion(2, 2, size.x-4, size.y-4);
         dc.DrawText(_("ABCDEFGabcdefg12345"),
-                     10, size.y/2 - h/2);
+                     10, (size.y - dc.GetTextExtent(wxT("X")).y)/2);
         dc.DestroyClippingRegion();
     }
+}
+
+//-----------------------------------------------------------------------------
+// helper functions
+//-----------------------------------------------------------------------------
+
+static const wxChar *wxFontWeightIntToString(int weight)
+{
+    switch (weight)
+    {
+        case wxFONTWEIGHT_LIGHT:
+            return wxT("Light");
+        case wxFONTWEIGHT_BOLD:
+            return wxT("Bold");
+        case wxFONTWEIGHT_NORMAL:
+        default:
+            return wxT("Normal");
+    }
+}
+
+static const wxChar *wxFontStyleIntToString(int style)
+{
+    switch (style)
+    {
+        case wxFONTSTYLE_ITALIC:
+            return wxT("Italic");
+        case wxFONTSTYLE_SLANT:
+            return wxT("Slant");
+        case wxFONTSTYLE_NORMAL:
+            default:
+            return wxT("Normal");
+    }
+}
+
+static const wxChar *wxFontFamilyIntToString(int family)
+{
+    switch (family)
+    {
+        case wxFONTFAMILY_ROMAN:
+            return wxT("Roman");
+        case wxFONTFAMILY_DECORATIVE:
+            return wxT("Decorative");
+        case wxFONTFAMILY_MODERN:
+            return wxT("Modern");
+        case wxFONTFAMILY_SCRIPT:
+            return wxT("Script");
+        case wxFONTFAMILY_TELETYPE:
+            return wxT("Teletype");
+        case wxFONTFAMILY_SWISS:
+        default:
+            return wxT("Swiss");
+    }
+}
+
+static wxFontFamily wxFontFamilyStringToInt(const wxString& family)
+{
+    if (family.empty())
+        return wxFONTFAMILY_SWISS;
+
+    if (wxStrcmp(family, wxT("Roman")) == 0)
+        return wxFONTFAMILY_ROMAN;
+    else if (wxStrcmp(family, wxT("Decorative")) == 0)
+        return wxFONTFAMILY_DECORATIVE;
+    else if (wxStrcmp(family, wxT("Modern")) == 0)
+        return wxFONTFAMILY_MODERN;
+    else if (wxStrcmp(family, wxT("Script")) == 0)
+        return wxFONTFAMILY_SCRIPT;
+    else if (wxStrcmp(family, wxT("Teletype")) == 0)
+        return wxFONTFAMILY_TELETYPE;
+    else return wxFONTFAMILY_SWISS;
+}
+
+static wxFontStyle wxFontStyleStringToInt(const wxString& style)
+{
+    if (style.empty())
+        return wxFONTSTYLE_NORMAL;
+    if (wxStrcmp(style, wxT("Italic")) == 0)
+        return wxFONTSTYLE_ITALIC;
+    else if (wxStrcmp(style, wxT("Slant")) == 0)
+        return wxFONTSTYLE_SLANT;
+    else
+        return wxFONTSTYLE_NORMAL;
+}
+
+static wxFontWeight wxFontWeightStringToInt(const wxString& weight)
+{
+    if (weight.empty())
+        return wxFONTWEIGHT_NORMAL;
+    if (wxStrcmp(weight, wxT("Bold")) == 0)
+        return wxFONTWEIGHT_BOLD;
+    else if (wxStrcmp(weight, wxT("Light")) == 0)
+        return wxFONTWEIGHT_LIGHT;
+    else
+        return wxFONTWEIGHT_NORMAL;
 }
 
 //-----------------------------------------------------------------------------
 // wxGenericFontDialog
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxGenericFontDialog, wxDialog)
+wxIMPLEMENT_DYNAMIC_CLASS(wxGenericFontDialog, wxDialog);
 
-BEGIN_EVENT_TABLE(wxGenericFontDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(wxGenericFontDialog, wxDialog)
     EVT_CHECKBOX(wxID_FONT_UNDERLINE, wxGenericFontDialog::OnChangeFont)
     EVT_CHOICE(wxID_FONT_STYLE, wxGenericFontDialog::OnChangeFont)
     EVT_CHOICE(wxID_FONT_WEIGHT, wxGenericFontDialog::OnChangeFont)
@@ -109,7 +199,7 @@ BEGIN_EVENT_TABLE(wxGenericFontDialog, wxDialog)
     EVT_CHOICE(wxID_FONT_SIZE, wxGenericFontDialog::OnChangeFont)
 #endif
     EVT_CLOSE(wxGenericFontDialog::OnCloseWindow)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 #define NUM_COLS 48
@@ -143,7 +233,7 @@ static wxString wxColourDialogNames[NUM_COLS]={wxT("ORANGE"),
                     wxT("FIREBRICK"),
                     wxT("CORAL"),
                     wxT("FOREST GREEN"),
-                    wxT("AQUARAMINE"),
+                    wxT("AQUAMARINE"),
                     wxT("BLUE"),
                     wxT("NAVY"),
                     wxT("THISTLE"),
@@ -190,8 +280,11 @@ void wxGenericFontDialog::OnCloseWindow(wxCloseEvent& WXUNUSED(event))
 
 bool wxGenericFontDialog::DoCreate(wxWindow *parent)
 {
-    if ( !wxDialog::Create( parent , wxID_ANY , _T("Choose Font") , wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE,
-        _T("fontdialog") ) )
+    parent = GetParentForModalDialog(parent, 0);
+
+    if ( !wxDialog::Create( parent , wxID_ANY , wxT("Choose Font") ,
+                            wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE,
+        wxT("fontdialog") ) )
     {
         wxFAIL_MSG( wxT("wxFontDialog creation failed") );
         return false;
@@ -276,98 +369,98 @@ void wxGenericFontDialog::CreateWidgets()
     wxBoxSizer* itemBoxSizer5 = new wxBoxSizer(wxVERTICAL);
     itemGridSizer4->Add(itemBoxSizer5, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW, 5);
     wxStaticText* itemStaticText6 = new wxStaticText( this, wxID_STATIC, _("&Font family:"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemBoxSizer5->Add(itemStaticText6, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+    itemBoxSizer5->Add(itemStaticText6, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    wxChoice* itemChoice7 = new wxChoice( this, wxID_FONT_FAMILY, wxDefaultPosition, wxDefaultSize, 5, families, 0 );
-    itemChoice7->SetHelpText(_("The font family."));
+    m_familyChoice = new wxChoice( this, wxID_FONT_FAMILY, wxDefaultPosition, wxDefaultSize, 5, families, 0 );
+    m_familyChoice->SetHelpText(_("The font family."));
     if (ShowToolTips())
-        itemChoice7->SetToolTip(_("The font family."));
-    itemBoxSizer5->Add(itemChoice7, 0, wxALIGN_LEFT|wxALL, 5);
+        m_familyChoice->SetToolTip(_("The font family."));
+    itemBoxSizer5->Add(m_familyChoice, 0, wxALIGN_LEFT|wxALL, 5);
 
     wxBoxSizer* itemBoxSizer8 = new wxBoxSizer(wxVERTICAL);
     itemGridSizer4->Add(itemBoxSizer8, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW, 5);
     wxStaticText* itemStaticText9 = new wxStaticText( this, wxID_STATIC, _("&Style:"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemBoxSizer8->Add(itemStaticText9, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+    itemBoxSizer8->Add(itemStaticText9, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    wxChoice* itemChoice10 = new wxChoice( this, wxID_FONT_STYLE, wxDefaultPosition, wxDefaultSize, 3, styles, 0 );
-    itemChoice10->SetHelpText(_("The font style."));
+    m_styleChoice = new wxChoice( this, wxID_FONT_STYLE, wxDefaultPosition, wxDefaultSize, 3, styles, 0 );
+    m_styleChoice->SetHelpText(_("The font style."));
     if (ShowToolTips())
-        itemChoice10->SetToolTip(_("The font style."));
-    itemBoxSizer8->Add(itemChoice10, 0, wxALIGN_LEFT|wxALL, 5);
+        m_styleChoice->SetToolTip(_("The font style."));
+    itemBoxSizer8->Add(m_styleChoice, 0, wxALIGN_LEFT|wxALL, 5);
 
     wxBoxSizer* itemBoxSizer11 = new wxBoxSizer(wxVERTICAL);
     itemGridSizer4->Add(itemBoxSizer11, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW, 5);
     wxStaticText* itemStaticText12 = new wxStaticText( this, wxID_STATIC, _("&Weight:"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemBoxSizer11->Add(itemStaticText12, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+    itemBoxSizer11->Add(itemStaticText12, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    wxChoice* itemChoice13 = new wxChoice( this, wxID_FONT_WEIGHT, wxDefaultPosition, wxDefaultSize, 3, weights, 0 );
-    itemChoice13->SetHelpText(_("The font weight."));
+    m_weightChoice = new wxChoice( this, wxID_FONT_WEIGHT, wxDefaultPosition, wxDefaultSize, 3, weights, 0 );
+    m_weightChoice->SetHelpText(_("The font weight."));
     if (ShowToolTips())
-        itemChoice13->SetToolTip(_("The font weight."));
-    itemBoxSizer11->Add(itemChoice13, 0, wxALIGN_LEFT|wxALL, 5);
+        m_weightChoice->SetToolTip(_("The font weight."));
+    itemBoxSizer11->Add(m_weightChoice, 0, wxALIGN_LEFT|wxALL, 5);
 
     wxBoxSizer* itemBoxSizer14 = new wxBoxSizer(wxVERTICAL);
     itemGridSizer4->Add(itemBoxSizer14, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW, 5);
+    m_colourChoice = NULL;
     if (m_fontData.GetEnableEffects())
     {
         wxStaticText* itemStaticText15 = new wxStaticText( this, wxID_STATIC, _("C&olour:"), wxDefaultPosition, wxDefaultSize, 0 );
-        itemBoxSizer14->Add(itemStaticText15, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+        itemBoxSizer14->Add(itemStaticText15, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
         wxSize colourSize = wxDefaultSize;
         if (is_pda)
             colourSize.x = 100;
 
-        wxChoice* itemChoice16 = new wxChoice( this, wxID_FONT_COLOUR, wxDefaultPosition, colourSize, NUM_COLS, wxColourDialogNames, 0 );
-        itemChoice16->SetHelpText(_("The font colour."));
+        m_colourChoice = new wxChoice( this, wxID_FONT_COLOUR, wxDefaultPosition, colourSize, NUM_COLS, wxColourDialogNames, 0 );
+        m_colourChoice->SetHelpText(_("The font colour."));
         if (ShowToolTips())
-            itemChoice16->SetToolTip(_("The font colour."));
-        itemBoxSizer14->Add(itemChoice16, 0, wxALIGN_LEFT|wxALL, 5);
+            m_colourChoice->SetToolTip(_("The font colour."));
+        itemBoxSizer14->Add(m_colourChoice, 0, wxALIGN_LEFT|wxALL, 5);
     }
 
     wxBoxSizer* itemBoxSizer17 = new wxBoxSizer(wxVERTICAL);
     itemGridSizer4->Add(itemBoxSizer17, 0, wxALIGN_CENTER_HORIZONTAL|wxGROW, 5);
     wxStaticText* itemStaticText18 = new wxStaticText( this, wxID_STATIC, _("&Point size:"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemBoxSizer17->Add(itemStaticText18, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+    itemBoxSizer17->Add(itemStaticText18, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
 #if USE_SPINCTRL_FOR_POINT_SIZE
-    wxSpinCtrl* spinCtrl = new wxSpinCtrl(this, wxID_FONT_SIZE, wxT("12"), wxDefaultPosition, wxSize(80, wxDefaultCoord), wxSP_ARROW_KEYS, 1, 500, 12);
-    spinCtrl->SetHelpText(_("The font point size."));
+    m_pointSizeSpin = new wxSpinCtrl(this, wxID_FONT_SIZE, wxT("12"), wxDefaultPosition, wxSize(80, wxDefaultCoord), wxSP_ARROW_KEYS, 1, 500, 12);
+    m_pointSizeSpin->SetHelpText(_("The font point size."));
     if (ShowToolTips())
-        spinCtrl->SetToolTip(_("The font point size."));
-
-    itemBoxSizer17->Add(spinCtrl, 0, wxALIGN_LEFT|wxALL, 5);
+        m_pointSizeSpin->SetToolTip(_("The font point size."));
+    itemBoxSizer17->Add(m_pointSizeSpin, 0, wxALIGN_LEFT|wxALL, 5);
 #else
-    wxChoice* itemChoice19 = new wxChoice( this, wxID_FONT_SIZE, wxDefaultPosition, wxDefaultSize, 40, pointSizes, 0 );
-    itemChoice19->SetHelpText(_("The font point size."));
+    m_pointSizeChoice = new wxChoice( this, wxID_FONT_SIZE, wxDefaultPosition, wxDefaultSize, 40, pointSizes, 0 );
+    m_pointSizeChoice->SetHelpText(_("The font point size."));
     if (ShowToolTips())
-        itemChoice19->SetToolTip(_("The font point size."));
-    itemBoxSizer17->Add(itemChoice19, 0, wxALIGN_LEFT|wxALL, 5);
+        m_pointSizeChoice->SetToolTip(_("The font point size."));
+    itemBoxSizer17->Add(m_pointSizeChoice, 0, wxALIGN_LEFT|wxALL, 5);
 #endif
 
+    m_underLineCheckBox = NULL;
     if (m_fontData.GetEnableEffects())
     {
         wxBoxSizer* itemBoxSizer20 = new wxBoxSizer(wxVERTICAL);
         itemGridSizer4->Add(itemBoxSizer20, 0, wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
-        wxCheckBox* itemCheckBox21 = new wxCheckBox( this, wxID_FONT_UNDERLINE, _("&Underline"), wxDefaultPosition, wxDefaultSize, 0 );
-        itemCheckBox21->SetValue(false);
-        itemCheckBox21->SetHelpText(_("Whether the font is underlined."));
+        m_underLineCheckBox = new wxCheckBox( this, wxID_FONT_UNDERLINE, _("&Underline"), wxDefaultPosition, wxDefaultSize, 0 );
+        m_underLineCheckBox->SetValue(false);
+        m_underLineCheckBox->SetHelpText(_("Whether the font is underlined."));
         if (ShowToolTips())
-            itemCheckBox21->SetToolTip(_("Whether the font is underlined."));
-        itemBoxSizer20->Add(itemCheckBox21, 0, wxALIGN_LEFT|wxALL, 5);
+            m_underLineCheckBox->SetToolTip(_("Whether the font is underlined."));
+        itemBoxSizer20->Add(m_underLineCheckBox, 0, wxALIGN_LEFT|wxALL, 5);
     }
 
     if (!is_pda)
         itemBoxSizer3->Add(5, 5, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
 
     wxStaticText* itemStaticText23 = new wxStaticText( this, wxID_STATIC, _("Preview:"), wxDefaultPosition, wxDefaultSize, 0 );
-    itemBoxSizer3->Add(itemStaticText23, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP|wxADJUST_MINSIZE, 5);
+    itemBoxSizer3->Add(itemStaticText23, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP, 5);
 
-    wxFontPreviewer* itemWindow24 = new wxFontPreviewer( this );
-    m_previewer = itemWindow24;
-    itemWindow24->SetHelpText(_("Shows the font preview."));
+    m_previewer = new wxFontPreviewer( this );
+    m_previewer->SetHelpText(_("Shows the font preview."));
     if (ShowToolTips())
-        itemWindow24->SetToolTip(_("Shows the font preview."));
-    itemBoxSizer3->Add(itemWindow24, 1, wxGROW|wxALL, 5);
+        m_previewer->SetToolTip(_("Shows the font preview."));
+    itemBoxSizer3->Add(m_previewer, 1, wxGROW|wxALL, 5);
 
     wxBoxSizer* itemBoxSizer25 = new wxBoxSizer(wxHORIZONTAL);
     itemBoxSizer3->Add(itemBoxSizer25, 0, wxGROW, 5);
@@ -399,12 +492,6 @@ void wxGenericFontDialog::CreateWidgets()
     itemBoxSizer25->Add(itemButton28, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5);
 #endif
 
-    m_familyChoice = (wxChoice*) FindWindow(wxID_FONT_FAMILY);
-    m_styleChoice = (wxChoice*) FindWindow(wxID_FONT_STYLE);
-    m_weightChoice = (wxChoice*) FindWindow(wxID_FONT_WEIGHT);
-    m_colourChoice = (wxChoice*) FindWindow(wxID_FONT_COLOUR);
-    m_underLineCheckBox = (wxCheckBox*) FindWindow(wxID_FONT_UNDERLINE);
-
     m_familyChoice->SetStringSelection( wxFontFamilyIntToString(m_dialogFont.GetFamily()) );
     m_styleChoice->SetStringSelection(wxFontStyleIntToString(m_dialogFont.GetStyle()));
     m_weightChoice->SetStringSelection(wxFontWeightIntToString(m_dialogFont.GetWeight()));
@@ -412,10 +499,10 @@ void wxGenericFontDialog::CreateWidgets()
     if (m_colourChoice)
     {
         wxString name(wxTheColourDatabase->FindName(m_fontData.GetColour()));
-        if (name.length())
-            m_colourChoice->SetStringSelection(name);
-        else
+        if ( name.empty() )
             m_colourChoice->SetStringSelection(wxT("BLACK"));
+        else
+            m_colourChoice->SetStringSelection(name);
     }
 
     if (m_underLineCheckBox)
@@ -424,9 +511,8 @@ void wxGenericFontDialog::CreateWidgets()
     }
 
 #if USE_SPINCTRL_FOR_POINT_SIZE
-    spinCtrl->SetValue(m_dialogFont.GetPointSize());
+    m_pointSizeSpin->SetValue(m_dialogFont.GetPointSize());
 #else
-    m_pointSizeChoice = (wxChoice*) FindWindow(wxID_FONT_SIZE);
     m_pointSizeChoice->SetSelection(m_dialogFont.GetPointSize()-1);
 #endif
 
@@ -450,13 +536,13 @@ void wxGenericFontDialog::CreateWidgets()
 
 void wxGenericFontDialog::InitializeFont()
 {
-    int fontFamily = wxSWISS;
-    int fontWeight = wxNORMAL;
-    int fontStyle = wxNORMAL;
+    wxFontFamily fontFamily = wxFONTFAMILY_SWISS;
+    wxFontWeight fontWeight = wxFONTWEIGHT_NORMAL;
+    wxFontStyle fontStyle = wxFONTSTYLE_NORMAL;
     int fontSize = 12;
     bool fontUnderline = false;
 
-    if (m_fontData.m_initialFont.Ok())
+    if (m_fontData.m_initialFont.IsOk())
     {
         fontFamily = m_fontData.m_initialFont.GetFamily();
         fontWeight = m_fontData.m_initialFont.GetWeight();
@@ -481,12 +567,11 @@ void wxGenericFontDialog::DoChangeFont()
 {
     if (!m_useEvents) return;
 
-    int fontFamily = wxFontFamilyStringToInt(WXSTRINGCAST m_familyChoice->GetStringSelection());
-    int fontWeight = wxFontWeightStringToInt(WXSTRINGCAST m_weightChoice->GetStringSelection());
-    int fontStyle = wxFontStyleStringToInt(WXSTRINGCAST m_styleChoice->GetStringSelection());
+    wxFontFamily fontFamily = wxFontFamilyStringToInt(m_familyChoice->GetStringSelection());
+    wxFontWeight fontWeight = wxFontWeightStringToInt(m_weightChoice->GetStringSelection());
+    wxFontStyle fontStyle = wxFontStyleStringToInt(m_styleChoice->GetStringSelection());
 #if USE_SPINCTRL_FOR_POINT_SIZE
-    wxSpinCtrl* fontSizeCtrl = wxDynamicCast(FindWindow(wxID_FONT_SIZE), wxSpinCtrl);
-    int fontSize = fontSizeCtrl->GetValue();
+    int fontSize = m_pointSizeSpin->GetValue();
 #else
     int fontSize = wxAtoi(m_pointSizeChoice->GetStringSelection());
 #endif
@@ -508,7 +593,7 @@ void wxGenericFontDialog::DoChangeFont()
         if ( !m_colourChoice->GetStringSelection().empty() )
         {
             wxColour col = wxTheColourDatabase->Find(m_colourChoice->GetStringSelection());
-            if (col.Ok())
+            if (col.IsOk())
             {
                 m_fontData.m_fontColour = col;
             }
@@ -516,7 +601,7 @@ void wxGenericFontDialog::DoChangeFont()
     }
     // Update color here so that we can also use the color originally passed in
     // (EnableEffects may be false)
-    if (m_fontData.m_fontColour.Ok())
+    if (m_fontData.m_fontColour.IsOk())
         m_previewer->SetForegroundColour(m_fontData.m_fontColour);
 
     m_previewer->Refresh();
@@ -528,96 +613,6 @@ void wxGenericFontDialog::OnChangeSize(wxSpinEvent& WXUNUSED(event))
     DoChangeFont();
 }
 #endif
-
-const wxChar *wxFontWeightIntToString(int weight)
-{
-    switch (weight)
-    {
-        case wxLIGHT:
-            return wxT("Light");
-        case wxBOLD:
-            return wxT("Bold");
-        case wxNORMAL:
-        default:
-            return wxT("Normal");
-    }
-}
-
-const wxChar *wxFontStyleIntToString(int style)
-{
-    switch (style)
-    {
-        case wxITALIC:
-            return wxT("Italic");
-        case wxSLANT:
-            return wxT("Slant");
-        case wxNORMAL:
-            default:
-            return wxT("Normal");
-    }
-}
-
-const wxChar *wxFontFamilyIntToString(int family)
-{
-    switch (family)
-    {
-        case wxROMAN:
-            return wxT("Roman");
-        case wxDECORATIVE:
-            return wxT("Decorative");
-        case wxMODERN:
-            return wxT("Modern");
-        case wxSCRIPT:
-            return wxT("Script");
-        case wxTELETYPE:
-            return wxT("Teletype");
-        case wxSWISS:
-        default:
-            return wxT("Swiss");
-    }
-}
-
-int wxFontFamilyStringToInt(wxChar *family)
-{
-    if (!family)
-        return wxSWISS;
-
-    if (wxStrcmp(family, wxT("Roman")) == 0)
-        return wxROMAN;
-    else if (wxStrcmp(family, wxT("Decorative")) == 0)
-        return wxDECORATIVE;
-    else if (wxStrcmp(family, wxT("Modern")) == 0)
-        return wxMODERN;
-    else if (wxStrcmp(family, wxT("Script")) == 0)
-        return wxSCRIPT;
-    else if (wxStrcmp(family, wxT("Teletype")) == 0)
-        return wxTELETYPE;
-    else return wxSWISS;
-}
-
-int wxFontStyleStringToInt(wxChar *style)
-{
-    if (!style)
-        return wxNORMAL;
-    if (wxStrcmp(style, wxT("Italic")) == 0)
-        return wxITALIC;
-    else if (wxStrcmp(style, wxT("Slant")) == 0)
-        return wxSLANT;
-    else
-        return wxNORMAL;
-}
-
-int wxFontWeightStringToInt(wxChar *weight)
-{
-    if (!weight)
-        return wxNORMAL;
-    if (wxStrcmp(weight, wxT("Bold")) == 0)
-        return wxBOLD;
-    else if (wxStrcmp(weight, wxT("Light")) == 0)
-        return wxLIGHT;
-    else
-        return wxNORMAL;
-}
 
 #endif
     // wxUSE_FONTDLG

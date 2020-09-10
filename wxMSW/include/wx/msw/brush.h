@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: brush.h 53135 2008-04-12 02:31:04Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -12,49 +11,50 @@
 #ifndef _WX_BRUSH_H_
 #define _WX_BRUSH_H_
 
-#include "wx/gdicmn.h"
-#include "wx/gdiobj.h"
-#include "wx/bitmap.h"
-
 class WXDLLIMPEXP_FWD_CORE wxBrush;
+class WXDLLIMPEXP_FWD_CORE wxColour;
+class WXDLLIMPEXP_FWD_CORE wxBitmap;
 
 // ----------------------------------------------------------------------------
 // wxBrush
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxBrush : public wxBrushBase
+class WXDLLIMPEXP_CORE wxBrush : public wxBrushBase
 {
 public:
     wxBrush();
-    wxBrush(const wxColour& col, int style = wxSOLID);
+    wxBrush(const wxColour& col, wxBrushStyle style = wxBRUSHSTYLE_SOLID);
     wxBrush(const wxBitmap& stipple);
     virtual ~wxBrush();
 
-    virtual void SetColour(const wxColour& col);
-    virtual void SetColour(unsigned char r, unsigned char g, unsigned char b);
-    virtual void SetStyle(int style);
-    virtual void SetStipple(const wxBitmap& stipple);
+    virtual void SetColour(const wxColour& col) wxOVERRIDE;
+    virtual void SetColour(unsigned char r, unsigned char g, unsigned char b) wxOVERRIDE;
+    virtual void SetStyle(wxBrushStyle style) wxOVERRIDE;
+    virtual void SetStipple(const wxBitmap& stipple) wxOVERRIDE;
 
     bool operator==(const wxBrush& brush) const;
     bool operator!=(const wxBrush& brush) const { return !(*this == brush); }
 
-    wxColour GetColour() const;
-    virtual int GetStyle() const;
-    wxBitmap *GetStipple() const;
+    wxColour GetColour() const wxOVERRIDE;
+    wxBrushStyle GetStyle() const wxOVERRIDE;
+    wxBitmap *GetStipple() const wxOVERRIDE;
 
-    bool Ok() const { return IsOk(); }
-    bool IsOk() const { return m_refData != NULL; }
+
+    wxDEPRECATED_MSG("use wxBRUSHSTYLE_XXX constants")
+    wxBrush(const wxColour& col, int style);
+
+    wxDEPRECATED_MSG("use wxBRUSHSTYLE_XXX constants")
+    void SetStyle(int style) { SetStyle((wxBrushStyle)style); }
 
     // return the HBRUSH for this brush
-    virtual WXHANDLE GetResourceHandle() const;
+    virtual WXHANDLE GetResourceHandle() const wxOVERRIDE;
 
 protected:
-    virtual wxObjectRefData *CreateRefData() const;
-    virtual wxObjectRefData *CloneRefData(const wxObjectRefData *data) const;
+    virtual wxGDIRefData *CreateGDIRefData() const wxOVERRIDE;
+    virtual wxGDIRefData *CloneGDIRefData(const wxGDIRefData *data) const wxOVERRIDE;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxBrush)
+    wxDECLARE_DYNAMIC_CLASS(wxBrush);
 };
 
-#endif
-    // _WX_BRUSH_H_
+#endif // _WX_BRUSH_H_

@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     20.09.01
-// RCS-ID:      $Id: toplevel.h 50999 2008-01-03 01:13:44Z VZ $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,11 +11,13 @@
 #ifndef _WX_MSW_TOPLEVEL_H_
 #define _WX_MSW_TOPLEVEL_H_
 
+#include "wx/weakref.h"
+
 // ----------------------------------------------------------------------------
 // wxTopLevelWindowMSW
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxTopLevelWindowMSW : public wxTopLevelWindowBase
+class WXDLLIMPEXP_CORE wxTopLevelWindowMSW : public wxTopLevelWindowBase
 {
 public:
     // constructors and such
@@ -46,67 +47,80 @@ public:
     virtual ~wxTopLevelWindowMSW();
 
     // implement base class pure virtuals
-    virtual void SetTitle( const wxString& title);
-    virtual wxString GetTitle() const;
-    virtual void Maximize(bool maximize = true);
-    virtual bool IsMaximized() const;
-    virtual void Iconize(bool iconize = true);
-    virtual bool IsIconized() const;
-    virtual void SetIcon(const wxIcon& icon);
-    virtual void SetIcons(const wxIconBundle& icons );
-    virtual void Restore();
-    
-    virtual void SetLayoutDirection(wxLayoutDirection dir);
+    virtual void SetTitle( const wxString& title) wxOVERRIDE;
+    virtual wxString GetTitle() const wxOVERRIDE;
+    virtual void Maximize(bool maximize = true) wxOVERRIDE;
+    virtual bool IsMaximized() const wxOVERRIDE;
+    virtual void Iconize(bool iconize = true) wxOVERRIDE;
+    virtual bool IsIconized() const wxOVERRIDE;
+    virtual void SetIcons(const wxIconBundle& icons ) wxOVERRIDE;
+    virtual void Restore() wxOVERRIDE;
 
-#ifndef __WXWINCE__
-    virtual bool SetShape(const wxRegion& region);
-#endif // __WXWINCE__
-    virtual void RequestUserAttention(int flags = wxUSER_ATTENTION_INFO);
+    virtual void SetLayoutDirection(wxLayoutDirection dir) wxOVERRIDE;
 
-    virtual bool Show(bool show = true);
+    virtual void RequestUserAttention(int flags = wxUSER_ATTENTION_INFO) wxOVERRIDE;
 
-    virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL);
-    virtual bool IsFullScreen() const { return m_fsIsShowing; }
+    virtual bool Show(bool show = true) wxOVERRIDE;
+    virtual void Raise() wxOVERRIDE;
+
+    virtual void ShowWithoutActivating() wxOVERRIDE;
+    virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) wxOVERRIDE;
+    virtual bool IsFullScreen() const wxOVERRIDE { return m_fsIsShowing; }
 
     // wxMSW only: EnableCloseButton(false) may be used to remove the "Close"
     // button from the title bar
-    virtual bool EnableCloseButton(bool enable = true);
+    virtual bool EnableCloseButton(bool enable = true) wxOVERRIDE;
+    virtual bool EnableMaximizeButton(bool enable = true) wxOVERRIDE;
+    virtual bool EnableMinimizeButton(bool enable = true) wxOVERRIDE;
 
     // Set window transparency if the platform supports it
-    virtual bool SetTransparent(wxByte alpha);
-    virtual bool CanSetTransparent();
+    virtual bool SetTransparent(wxByte alpha) wxOVERRIDE;
+    virtual bool CanSetTransparent() wxOVERRIDE;
 
-    
+
+    // MSW-specific methods
+    // --------------------
+
+    // Return the menu representing the "system" menu of the window. You can
+    // call wxMenu::AppendWhatever() methods on it but removing items from it
+    // is in general not a good idea.
+    //
+    // The pointer returned by this method belongs to the window and will be
+    // deleted when the window itself is, do not delete it yourself. May return
+    // NULL if getting the system menu failed.
+    wxMenu *MSWGetSystemMenu() const;
+
+    // Enable or disable the close button of the specified window.
+    static bool MSWEnableCloseButton(WXHWND hwnd, bool enable = true);
+
+
     // implementation from now on
     // --------------------------
 
     // event handlers
     void OnActivate(wxActivateEvent& event);
 
-    // called by wxWindow whenever it gets focus
-    void SetLastFocus(wxWindow *win) { m_winLastFocused = win; }
-    wxWindow *GetLastFocus() const { return m_winLastFocused; }
-
-#if defined(__SMARTPHONE__) && defined(__WXWINCE__)
-    virtual void SetLeftMenu(int id = wxID_ANY, const wxString& label = wxEmptyString, wxMenu *subMenu = NULL);
-    virtual void SetRightMenu(int id = wxID_ANY, const wxString& label = wxEmptyString, wxMenu *subMenu = NULL);
-    bool HandleCommand(WXWORD id, WXWORD cmd, WXHWND control);
-    virtual bool MSWShouldPreProcessMessage(WXMSG* pMsg);
-#endif // __SMARTPHONE__ && __WXWINCE__
-
-#if defined(__SMARTPHONE__) || defined(__POCKETPC__)
-    // Soft Input Panel (SIP) change notification
-    virtual bool HandleSettingChange(WXWPARAM wParam, WXLPARAM lParam);
-#endif
+    // called from wxWidgets code itself only when the pending focus, i.e. the
+    // element which should get focus when this TLW is activated again, changes
+    virtual void WXDoUpdatePendingFocus(wxWindow* win) wxOVERRIDE
+    {
+        m_winLastFocused = win;
+    }
 
     // translate wxWidgets flags to Windows ones
-    virtual WXDWORD MSWGetStyle(long flags, WXDWORD *exstyle) const;
+    virtual WXDWORD MSWGetStyle(long flags, WXDWORD *exstyle) const wxOVERRIDE;
 
     // choose the right parent to use with CreateWindow()
-    virtual WXHWND MSWGetParent() const;
+    virtual WXHWND MSWGetParent() const wxOVERRIDE;
 
     // window proc for the frames
-    WXLRESULT MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lParam);
+    WXLRESULT MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE;
+
+    // returns true if the platform should explicitly apply a theme border
+    virtual bool CanApplyThemeBorder() const wxOVERRIDE { return false; }
+
+    // This function is only for internal use.
+    void MSWSetShowCommand(WXUINT showCmd) { m_showCmd = showCmd; }
 
 protected:
     // common part of all ctors
@@ -124,15 +138,41 @@ protected:
                       const wxPoint& pos,
                       const wxSize& size);
 
-    // common part of Iconize(), Maximize() and Restore()
+    // Just a wrapper around MSW ShowWindow().
     void DoShowWindow(int nShowCmd);
 
-    // is the window currently iconized?
-    bool m_iconized;
+    // Return true if the window is iconized at MSW level, ignoring m_showCmd.
+    bool MSWIsIconized() const;
 
-    // should the frame be maximized when it will be shown? set by Maximize()
-    // when it is called while the frame is hidden
-    bool m_maximizeOnShow;
+    // override those to return the normal window coordinates even when the
+    // window is minimized
+    virtual void DoGetPosition(int *x, int *y) const wxOVERRIDE;
+    virtual void DoGetSize(int *width, int *height) const wxOVERRIDE;
+
+    // Top level windows have different freeze semantics on Windows
+    virtual void DoFreeze() wxOVERRIDE;
+    virtual void DoThaw() wxOVERRIDE;
+
+    // helper of SetIcons(): calls gets the icon with the size specified by the
+    // given system metrics (SM_C{X|Y}[SM]ICON) from the bundle and sets it
+    // using WM_SETICON with the specified wParam (ICOM_SMALL or ICON_BIG);
+    // returns true if the icon was set
+    bool DoSelectAndSetIcon(const wxIconBundle& icons, int smX, int smY, int i);
+
+    // override wxWindow virtual method to use CW_USEDEFAULT if necessary
+    virtual void MSWGetCreateWindowCoords(const wxPoint& pos,
+                                          const wxSize& size,
+                                          int& x, int& y,
+                                          int& w, int& h) const wxOVERRIDE;
+
+    // WM_DPICHANGED handler.
+    bool HandleDPIChange(const wxSize& newDPI, const wxRect& newRect);
+
+    // This field contains the show command to use when showing the window the
+    // next time and also indicates whether the window should be considered
+    // being iconized or maximized (which may be different from whether it's
+    // actually iconized or maximized at MSW level).
+    WXUINT m_showCmd;
 
     // Data to save/restore when calling ShowFullScreen
     long                  m_fsStyle; // Passed to ShowFullScreen
@@ -141,57 +181,34 @@ protected:
     bool                  m_fsIsMaximized;
     bool                  m_fsIsShowing;
 
-    // the last focused child: we restore focus to it on activation
-    wxWindow             *m_winLastFocused;
+    // Save the current focus to m_winLastFocused if we're not iconized (the
+    // focus is always NULL when we're iconized).
+    void DoSaveLastFocus();
 
-#if defined(__SMARTPHONE__) && defined(__WXWINCE__)
-    class ButtonMenu
-    {
-    public:
-        ButtonMenu();
-        ~ButtonMenu();
+    // Restore focus to m_winLastFocused if possible and needed.
+    void DoRestoreLastFocus();
 
-        void SetButton(int id = wxID_ANY,
-                       const wxString& label  = wxEmptyString,
-                       wxMenu *subMenu = NULL);
-
-        bool IsAssigned() const {return m_assigned;}
-        bool IsMenu() const {return m_menu!=NULL;}
-
-        int GetId() const {return m_id;}
-        wxMenu* GetMenu() const {return m_menu;}
-        wxString GetLabel() {return m_label;}
-
-        static wxMenu *DuplicateMenu(wxMenu *menu);
-
-    protected:
-        int      m_id;
-        wxString m_label;
-        wxMenu  *m_menu;
-        bool     m_assigned;
-    };
-
-    ButtonMenu               m_LeftButton;
-    ButtonMenu               m_RightButton;
-    HWND                     m_MenuBarHWND;
-
-    void ReloadButton(ButtonMenu& button, UINT menuID);
-    void ReloadAllButtons();
-#endif // __SMARTPHONE__ && __WXWINCE__
+    // The last focused child: we remember it when we're deactivated and
+    // restore focus to it when we're activated (this is done here) or restored
+    // from iconic state (done by wxFrame).
+    wxWindowRef m_winLastFocused;
 
 private:
-    // helper of SetIcons(): calls gets the icon with the size specified by the
-    // given system metrics (SM_C{X|Y}[SM]ICON) from the bundle and sets it
-    // using WM_SETICON with the specified wParam (ICOM_SMALL or ICON_BIG)
-    void DoSelectAndSetIcon(const wxIconBundle& icons, int smX, int smY, int i);
+    // Keep track of the DPI used in this window. So when per-monitor dpi
+    // awareness is enabled, both old and new DPI are known for
+    // wxDPIChangedEvent and wxWindow::MSWUpdateOnDPIChange.
+    wxSize m_activeDPI;
 
+    // This window supports handling per-monitor DPI awareness when the
+    // application manifest contains <dpiAwareness>PerMonitorV2</dpiAwareness>.
+    bool m_perMonitorDPIaware;
 
-#if defined(__SMARTPHONE__) || defined(__POCKETPC__)
-    void* m_activateInfo;
-#endif
+    // The system menu: initially NULL but can be set (once) by
+    // MSWGetSystemMenu(). Owned by this window.
+    wxMenu *m_menuSystem;
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_NO_COPY_CLASS(wxTopLevelWindowMSW)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_NO_COPY_CLASS(wxTopLevelWindowMSW);
 };
 
 #endif // _WX_MSW_TOPLEVEL_H_

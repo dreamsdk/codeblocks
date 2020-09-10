@@ -4,7 +4,6 @@
 // Author:      Julian Smart (extracted from docview.h by VZ)
 // Modified by:
 // Created:     05.11.00
-// RCS-ID:      $Id: cmdproc.cpp 65725 2010-10-02 13:05:08Z TIK $
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,6 +27,7 @@
     #include "wx/intl.h"
     #include "wx/string.h"
     #include "wx/menu.h"
+    #include "wx/accel.h"
 #endif //WX_PRECOMP
 
 #include "wx/cmdproc.h"
@@ -36,17 +36,17 @@
 // implementation
 // ============================================================================
 
-IMPLEMENT_CLASS(wxCommand, wxObject)
-IMPLEMENT_DYNAMIC_CLASS(wxCommandProcessor, wxObject)
+wxIMPLEMENT_CLASS(wxCommand, wxObject);
+wxIMPLEMENT_DYNAMIC_CLASS(wxCommandProcessor, wxObject);
 
 // ----------------------------------------------------------------------------
 // wxCommand
 // ----------------------------------------------------------------------------
 
 wxCommand::wxCommand(bool canUndoIt, const wxString& name)
+    : m_commandName(name)
 {
     m_canUndo = canUndoIt;
-    m_commandName = name;
 }
 
 // ----------------------------------------------------------------------------
@@ -54,16 +54,15 @@ wxCommand::wxCommand(bool canUndoIt, const wxString& name)
 // ----------------------------------------------------------------------------
 
 wxCommandProcessor::wxCommandProcessor(int maxCommands)
+#if wxUSE_ACCEL
+    : m_undoAccelerator('\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Z').ToString())
+    , m_redoAccelerator('\t' + wxAcceleratorEntry(wxACCEL_CTRL, 'Y').ToString())
+#endif // wxUSE_ACCEL
 {
     m_maxNoCommands = maxCommands;
 #if wxUSE_MENUS
-    m_commandEditMenu = (wxMenu *) NULL;
+    m_commandEditMenu = NULL;
 #endif // wxUSE_MENUS
-    m_undoAccelerator = wxT("\tCtrl+Z");
-    m_redoAccelerator = wxT("\tCtrl+Y");
-
-    m_lastSavedCommand =
-    m_currentCommand = wxList::compatibility_iterator();
 }
 
 wxCommandProcessor::~wxCommandProcessor()
@@ -86,7 +85,7 @@ bool wxCommandProcessor::UndoCommand(wxCommand& cmd)
 // storeIt is false.
 bool wxCommandProcessor::Submit(wxCommand *command, bool storeIt)
 {
-    wxCHECK_MSG( command, false, _T("no command in wxCommandProcessor::Submit") );
+    wxCHECK_MSG( command, false, wxT("no command in wxCommandProcessor::Submit") );
 
     if ( !DoCommand(*command) )
     {
@@ -106,7 +105,7 @@ bool wxCommandProcessor::Submit(wxCommand *command, bool storeIt)
 
 void wxCommandProcessor::Store(wxCommand *command)
 {
-    wxCHECK_RET( command, _T("no command in wxCommandProcessor::Store") );
+    wxCHECK_RET( command, wxT("no command in wxCommandProcessor::Store") );
 
     // Correct a bug: we must chop off the current 'branch'
     // so that we're at the end of the command list.
@@ -118,12 +117,13 @@ void wxCommandProcessor::Store(wxCommand *command)
         while (node)
         {
             wxList::compatibility_iterator next = node->GetNext();
-            delete (wxCommand *)node->GetData();
-            m_commands.Erase(node);
 
             // Make sure m_lastSavedCommand won't point to freed memory
-            if ( m_lastSavedCommand == node )
+            if ( m_lastSavedCommand && m_lastSavedCommand == node )
                 m_lastSavedCommand = wxList::compatibility_iterator();
+
+            delete (wxCommand *)node->GetData();
+            m_commands.Erase(node);
 
             node = next;
         }
@@ -132,13 +132,14 @@ void wxCommandProcessor::Store(wxCommand *command)
     if ( (int)m_commands.GetCount() == m_maxNoCommands )
     {
         wxList::compatibility_iterator firstNode = m_commands.GetFirst();
+
+        // Make sure m_lastSavedCommand won't point to freed memory
+        if ( m_lastSavedCommand && m_lastSavedCommand == firstNode )
+            m_lastSavedCommand = wxList::compatibility_iterator();
+
         wxCommand *firstCommand = (wxCommand *)firstNode->GetData();
         delete firstCommand;
         m_commands.Erase(firstNode);
-
-        // Make sure m_lastSavedCommand won't point to freed memory
-        if ( m_lastSavedCommand == firstNode )
-            m_lastSavedCommand = wxList::compatibility_iterator();
     }
 
     m_commands.Append(command);
@@ -164,11 +165,11 @@ bool wxCommandProcessor::Undo()
 
 bool wxCommandProcessor::Redo()
 {
-    wxCommand *redoCommand = (wxCommand *) NULL;
+    wxCommand *redoCommand = NULL;
     wxList::compatibility_iterator redoNode
-#if !wxUSE_STL
+#if !wxUSE_STD_CONTAINERS
         = NULL          // just to avoid warnings
-#endif // !wxUSE_STL
+#endif // !wxUSE_STD_CONTAINERS
         ;
 
     if ( m_currentCommand )
@@ -322,4 +323,26 @@ void wxCommandProcessor::ClearCommands()
     m_lastSavedCommand = wxList::compatibility_iterator();
 }
 
+bool wxCommandProcessor::IsDirty() const
+{
+    if ( !m_lastSavedCommand )
+    {
+        // We have never been saved, so we are dirty if and only if we have any
+        // commands at all.
+        //
+        // NB: The ugly "!!" test is needed to avoid warnings both from MSVC in
+        //     non-STL build and g++ in STL build.
+        return !!m_currentCommand;
+    }
+
+    if ( !m_currentCommand )
+    {
+        // This only happens if all commands were undone after saving the
+        // document: we're dirty then.
+        return true;
+    }
+
+    // Finally if both iterators are valid, we may just compare them.
+    return m_currentCommand != m_lastSavedCommand;
+}
 

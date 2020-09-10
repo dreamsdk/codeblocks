@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: printwin.cpp 42522 2006-10-27 13:07:40Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -39,30 +38,32 @@
     #include "wx/intl.h"
     #include "wx/log.h"
     #include "wx/dcprint.h"
+    #include "wx/dcmemory.h"
+    #include "wx/image.h"
 #endif
 
+#include "wx/msw/dib.h"
+#include "wx/msw/dcmemory.h"
 #include "wx/msw/printwin.h"
-#include "wx/msw/printdlg.h"	// RJL used Windows dialog?s
+#include "wx/msw/printdlg.h"
 #include "wx/msw/private.h"
+#include "wx/msw/dcprint.h"
+#include "wx/msw/enhmeta.h"
 
 #include <stdlib.h>
-
-#ifndef __WIN32__
-    #include <print.h>
-#endif
 
 // ---------------------------------------------------------------------------
 // private functions
 // ---------------------------------------------------------------------------
 
-LONG APIENTRY _EXPORT wxAbortProc(HDC hPr, int Code);
+BOOL CALLBACK wxAbortProc(HDC hdc, int error);
 
 // ---------------------------------------------------------------------------
 // wxWin macros
 // ---------------------------------------------------------------------------
 
-    IMPLEMENT_DYNAMIC_CLASS(wxWindowsPrinter, wxPrinterBase)
-    IMPLEMENT_CLASS(wxWindowsPrintPreview, wxPrintPreviewBase)
+    wxIMPLEMENT_DYNAMIC_CLASS(wxWindowsPrinter, wxPrinterBase);
+    wxIMPLEMENT_CLASS(wxWindowsPrintPreview, wxPrintPreviewBase);
 
 // ===========================================================================
 // implementation
@@ -75,16 +76,6 @@ LONG APIENTRY _EXPORT wxAbortProc(HDC hPr, int Code);
 wxWindowsPrinter::wxWindowsPrinter(wxPrintDialogData *data)
                 : wxPrinterBase(data)
 {
-    m_lpAbortProc = (WXFARPROC) MakeProcInstance((FARPROC) wxAbortProc, wxGetInstance());
-}
-
-wxWindowsPrinter::~wxWindowsPrinter()
-{
-    // avoids warning about statement with no effect (FreeProcInstance
-    // doesn't do anything under Win32)
-#if !defined(__WIN32__) && !defined(__NT__)
-    FreeProcInstance((FARPROC) m_lpAbortProc);
-#endif
 }
 
 bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt)
@@ -97,8 +88,6 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
         sm_lastError = wxPRINTER_ERROR;
         return false;
     }
-
-    printout->SetIsPreview(false);
 
     if (m_printDialogData.GetMinPage() < 1)
         m_printDialogData.SetMinPage(1);
@@ -119,39 +108,19 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
     }
 
     // May have pressed cancel.
-    if (!dc || !dc->Ok())
+    if (!dc || !dc->IsOk())
     {
         if (dc) delete dc;
         return false;
     }
 
-    HDC hdc = ::GetDC(NULL);
-    int logPPIScreenX = ::GetDeviceCaps(hdc, LOGPIXELSX);
-    int logPPIScreenY = ::GetDeviceCaps(hdc, LOGPIXELSY);
-    ::ReleaseDC(NULL, hdc);
-
-    int logPPIPrinterX = ::GetDeviceCaps((HDC) dc->GetHDC(), LOGPIXELSX);
-    int logPPIPrinterY = ::GetDeviceCaps((HDC) dc->GetHDC(), LOGPIXELSY);
-    if (logPPIPrinterX == 0 || logPPIPrinterY == 0)
+    // Set printout parameters
+    if (!printout->SetUp(*dc))
     {
         delete dc;
         sm_lastError = wxPRINTER_ERROR;
         return false;
     }
-
-    printout->SetPPIScreen(logPPIScreenX, logPPIScreenY);
-    printout->SetPPIPrinter(logPPIPrinterX, logPPIPrinterY);
-
-    // Set printout parameters
-    printout->SetDC(dc);
-
-    int w, h;
-    dc->GetSize(&w, &h);
-    printout->SetPageSizePixels((int)w, (int)h);
-    printout->SetPaperRectPixels(dc->GetPaperRect());
-
-    dc->GetSizeMM(&w, &h);
-    printout->SetPageSizeMM((int)w, (int)h);
 
     // Create an abort window
     wxBusyCursor busyCursor;
@@ -174,27 +143,10 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
     m_printDialogData.SetMinPage(minPage);
     m_printDialogData.SetMaxPage(maxPage);
 
-    wxWindow *win = CreateAbortWindow(parent, printout);
+    wxPrintAbortDialog *win = CreateAbortWindow(parent, printout);
     wxYield();
 
-#if defined(__WATCOMC__) || defined(__BORLANDC__) || defined(__GNUWIN32__) || defined(__SALFORDC__) || !defined(__WIN32__)
-#ifdef STRICT
-    ::SetAbortProc((HDC) dc->GetHDC(), (ABORTPROC) m_lpAbortProc);
-#else
-    ::SetAbortProc((HDC) dc->GetHDC(), (FARPROC) m_lpAbortProc);
-#endif
-#else
-    ::SetAbortProc((HDC) dc->GetHDC(), (int (_stdcall *)
-        // cast it to right type only if required
-        // FIXME it's really cdecl and we're casting it to stdcall - either there is
-        //       something I don't understand or it will crash at first usage
-#ifdef STRICT
-        (HDC, int)
-#else
-        ()
-#endif
-        )m_lpAbortProc);
-#endif
+    ::SetAbortProc(GetHdcOf(*dc), wxAbortProc);
 
     if (!win)
     {
@@ -214,16 +166,21 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
 
     int minPageNum = minPage, maxPageNum = maxPage;
 
-    if ( !m_printDialogData.GetAllPages() )
+    if ( !(m_printDialogData.GetAllPages() || m_printDialogData.GetSelection()) )
     {
         minPageNum = m_printDialogData.GetFromPage();
         maxPageNum = m_printDialogData.GetToPage();
     }
 
-    int copyCount;
-    for ( copyCount = 1;
-          copyCount <= m_printDialogData.GetNoCopies();
-          copyCount++ )
+    // The dc we get from the PrintDialog will do multiple copies without help
+    // if the device supports it. Loop only if we have created a dc from our
+    // own m_printDialogData or the device does not support multiple copies.
+    // m_printDialogData.GetPrintData().GetNoCopies() is set from device
+    // devMode in printdlg.cpp/wxWindowsPrintDialog::ConvertFromNative()
+    const int maxCopyCount = !prompt ||
+                             !m_printDialogData.GetPrintData().GetNoCopies()
+                             ? m_printDialogData.GetNoCopies() : 1;
+    for ( int copyCount = 1; copyCount <= maxCopyCount; copyCount++ )
     {
         if ( !printout->OnBeginDocument(minPageNum, maxPageNum) )
         {
@@ -243,6 +200,10 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
               pn <= maxPageNum && printout->HasPage(pn);
               pn++ )
         {
+            win->SetProgress(pn - minPageNum + 1,
+                             maxPageNum - minPageNum + 1,
+                             copyCount, maxCopyCount);
+
             if ( sm_abortIt )
             {
                 sm_lastError = wxPRINTER_CANCELLED;
@@ -268,8 +229,7 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
     if (sm_abortWindow)
     {
         sm_abortWindow->Show(false);
-        delete sm_abortWindow;
-        sm_abortWindow = NULL;
+        wxDELETE(sm_abortWindow);
     }
 
     delete dc;
@@ -279,7 +239,7 @@ bool wxWindowsPrinter::Print(wxWindow *parent, wxPrintout *printout, bool prompt
 
 wxDC *wxWindowsPrinter::PrintDialog(wxWindow *parent)
 {
-    wxDC *dc = (wxPrinterDC*) NULL;
+    wxDC *dc = NULL;
 
     wxWindowsPrintDialog dialog(parent, & m_printDialogData);
     int ret = dialog.ShowModal();
@@ -368,19 +328,20 @@ void wxWindowsPrintPreview::DetermineScaling()
     int logPPIPrinterX;
     int logPPIPrinterY;
 
-	wxRect paperRect;
+    wxRect paperRect;
 
-    if ( printerDC.Ok() )
+    if ( printerDC.IsOk() )
     {
-        HDC dc = GetHdcOf(printerDC);
-        printerWidthMM = ::GetDeviceCaps(dc, HORZSIZE);
-        printerHeightMM = ::GetDeviceCaps(dc, VERTSIZE);
-        printerXRes = ::GetDeviceCaps(dc, HORZRES);
-        printerYRes = ::GetDeviceCaps(dc, VERTRES);
-        logPPIPrinterX = ::GetDeviceCaps(dc, LOGPIXELSX);
-        logPPIPrinterY = ::GetDeviceCaps(dc, LOGPIXELSY);
+        wxPrinterDCImpl *impl = (wxPrinterDCImpl*) printerDC.GetImpl();
+        HDC hdc = GetHdcOf(*impl);
+        printerWidthMM = ::GetDeviceCaps(hdc, HORZSIZE);
+        printerHeightMM = ::GetDeviceCaps(hdc, VERTSIZE);
+        printerXRes = ::GetDeviceCaps(hdc, HORZRES);
+        printerYRes = ::GetDeviceCaps(hdc, VERTRES);
+        logPPIPrinterX = ::GetDeviceCaps(hdc, LOGPIXELSX);
+        logPPIPrinterY = ::GetDeviceCaps(hdc, LOGPIXELSY);
 
-		paperRect = printerDC.GetPaperRect();
+        paperRect = printerDC.GetPaperRect();
 
         if ( logPPIPrinterX == 0 ||
                 logPPIPrinterY == 0 ||
@@ -400,7 +361,7 @@ void wxWindowsPrintPreview::DetermineScaling()
         logPPIPrinterX = 600;
         logPPIPrinterY = 600;
 
-		paperRect = wxRect(0, 0, printerXRes, printerYRes);
+        paperRect = wxRect(0, 0, printerXRes, printerYRes);
         m_isOk = false;
     }
     m_pageWidth = printerXRes;
@@ -415,15 +376,55 @@ void wxWindowsPrintPreview::DetermineScaling()
     m_previewScaleY = float(logPPIScreenY) / logPPIPrinterY;
 }
 
-/****************************************************************************
+#if wxUSE_ENH_METAFILE
+bool wxWindowsPrintPreview::RenderPageIntoBitmap(wxBitmap& bmp, int pageNum)
+{
+    // The preview, as implemented in wxPrintPreviewBase (and as used prior to
+    // wx3) is inexact: it uses screen DC, which has much lower resolution and
+    // has other properties different from printer DC, so the preview is not
+    // quite right.
+    //
+    // To make matters worse, if the application depends heavily on
+    // GetTextExtent() or does text layout itself, the output in preview and on
+    // paper can be very different. In particular, wxHtmlEasyPrinting is
+    // affected and the preview can be easily off by several pages.
+    //
+    // To fix this, we render the preview into high-resolution enhanced
+    // metafile with properties identical to the printer DC. This guarantees
+    // metrics correctness while still being fast.
 
-  FUNCTION: wxAbortProc()
 
-    PURPOSE:  Processes messages for the Abort Dialog box
+    // print the preview into a metafile:
+    wxPrinterDC printerDC(m_printDialogData.GetPrintData());
+    wxEnhMetaFileDC metaDC(printerDC,
+                           wxEmptyString,
+                           printerDC.GetSize().x, printerDC.GetSize().y);
 
-****************************************************************************/
+    if ( !RenderPageIntoDC(metaDC, pageNum) )
+        return false;
 
-LONG APIENTRY _EXPORT wxAbortProc(HDC WXUNUSED(hPr), int WXUNUSED(Code))
+    wxEnhMetaFile *metafile = metaDC.Close();
+    if ( !metafile )
+        return false;
+
+    // now render the metafile:
+    wxMemoryDC bmpDC;
+    bmpDC.SelectObject(bmp);
+    bmpDC.Clear();
+
+    wxRect outRect(0, 0, bmp.GetWidth(), bmp.GetHeight());
+    metafile->Play(&bmpDC, &outRect);
+
+
+    delete metafile;
+
+    // TODO: we should keep the metafile and reuse it when changing zoom level
+
+    return true;
+}
+#endif // wxUSE_ENH_METAFILE
+
+BOOL CALLBACK wxAbortProc(HDC WXUNUSED(hdc), int WXUNUSED(error))
 {
     MSG msg;
 

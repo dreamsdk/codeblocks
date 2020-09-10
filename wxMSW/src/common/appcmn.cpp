@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        src/common/appcmn.cpp
-// Purpose:     wxAppConsole and wxAppBase methods common to all platforms
+// Purpose:     wxAppBase methods common to all platforms
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     18.10.99
-// RCS-ID:      $Id: appcmn.cpp 47229 2007-07-08 05:31:32Z PC $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -32,29 +31,16 @@
     #include "wx/msgdlg.h"
     #include "wx/confbase.h"
     #include "wx/utils.h"
+    #include "wx/wxcrtvararg.h"
 #endif
 
 #include "wx/apptrait.h"
 #include "wx/cmdline.h"
-#include "wx/evtloop.h"
 #include "wx/msgout.h"
+#include "wx/richmsgdlg.h"
 #include "wx/thread.h"
 #include "wx/vidmode.h"
-#include "wx/ptr_scpd.h"
-
-#ifdef __WXDEBUG__
-    #if wxUSE_STACKWALKER
-        #include "wx/stackwalk.h"
-    #endif // wxUSE_STACKWALKER
-#endif // __WXDEBUG__
-
-#if defined(__WXMSW__)
-    #include  "wx/msw/private.h"  // includes windows.h for LOGFONT
-#endif
-
-#if defined(__WXMAC__)
-    #include "wx/mac/private.h"
-#endif
+#include "wx/evtloop.h"
 
 #if wxUSE_FONTMAP
     #include "wx/fontmap.h"
@@ -63,15 +49,6 @@
 // DLL options compatibility check:
 #include "wx/build.h"
 WX_CHECK_BUILD_OPTIONS("wxCore")
-
-WXDLLIMPEXP_DATA_CORE(wxList) wxPendingDelete;
-
-// ----------------------------------------------------------------------------
-// wxEventLoopPtr
-// ----------------------------------------------------------------------------
-
-// this defines wxEventLoopPtr
-wxDEFINE_TIED_SCOPED_PTR_TYPE(wxEventLoop)
 
 // ============================================================================
 // wxAppBase implementation
@@ -83,14 +60,12 @@ wxDEFINE_TIED_SCOPED_PTR_TYPE(wxEventLoop)
 
 wxAppBase::wxAppBase()
 {
-    m_topWindow = (wxWindow *)NULL;
-    
+    m_topWindow = NULL;
+
     m_useBestVisual = false;
     m_forceTrueColour = false;
-    
-    m_isActive = true;
 
-    m_mainLoop = NULL;
+    m_isActive = true;
 
     // We don't want to exit the app if the user code shows a dialog from its
     // OnInit() -- but this is what would happen if we set m_exitOnFrameDelete
@@ -109,16 +84,37 @@ wxAppBase::wxAppBase()
 
 bool wxAppBase::Initialize(int& argcOrig, wxChar **argvOrig)
 {
+#ifdef __DARWIN__
+    // Mac OS X passes a process serial number command line argument when
+    // the application is launched from the Finder. This argument must be
+    // removed from the command line arguments before being handled by the
+    // application (otherwise applications would need to handle it)
+    //
+    // Notice that this has to be done for all ports that can be used under OS
+    // X (e.g. wxGTK) and not just wxOSX itself, hence this code is here and
+    // not in a port-specific file.
+    if ( argcOrig > 1 )
+    {
+        static const wxChar *ARG_PSN = wxT("-psn_");
+        if ( wxStrncmp(argvOrig[1], ARG_PSN, wxStrlen(ARG_PSN)) == 0 )
+        {
+            // remove this argument
+            --argcOrig;
+            memmove(argvOrig + 1, argvOrig + 2, argcOrig * sizeof(wxChar*));
+        }
+    }
+#endif // __DARWIN__
+
     if ( !wxAppConsole::Initialize(argcOrig, argvOrig) )
         return false;
-
-#if wxUSE_THREADS
-    wxPendingEventsLocker = new wxCriticalSection;
-#endif
 
     wxInitializeStockLists();
 
     wxBitmap::InitStandardHandlers();
+
+    // for compatibility call the old initialization function too
+    if ( !OnInitGui() )
+        return false;
 
     return true;
 }
@@ -132,19 +128,28 @@ wxAppBase::~wxAppBase()
     // this destructor is required for Darwin
 }
 
-void wxAppBase::CleanUp()
+void wxAppBase::DeleteAllTLWs()
 {
-    // clean up all the pending objects
-    DeletePendingObjects();
-
-    // and any remaining TLWs (they remove themselves from wxTopLevelWindows
-    // when destroyed, so iterate until none are left)
+    // TLWs remove themselves from wxTopLevelWindows when destroyed, so iterate
+    // until none are left.
     while ( !wxTopLevelWindows.empty() )
     {
         // do not use Destroy() here as it only puts the TLW in pending list
         // but we want to delete them now
         delete wxTopLevelWindows.GetFirst()->GetData();
     }
+}
+
+void wxAppBase::CleanUp()
+{
+    // Clean up any still pending objects. Normally there shouldn't any as we
+    // already do this in OnExit(), but this could happen if the user code has
+    // somehow managed to create more of them since then or just forgot to call
+    // the base class OnExit().
+    DeletePendingObjects();
+
+    // and any remaining TLWs
+    DeleteAllTLWs();
 
     // undo everything we did in Initialize() above
     wxBitmap::CleanUpHandlers();
@@ -153,21 +158,9 @@ void wxAppBase::CleanUp()
 
     wxDeleteStockLists();
 
-    delete wxTheColourDatabase;
-    wxTheColourDatabase = NULL;
+    wxDELETE(wxTheColourDatabase);
 
-    delete wxPendingEvents;
-    wxPendingEvents = NULL;
-
-#if wxUSE_THREADS
-    delete wxPendingEventsLocker;
-    wxPendingEventsLocker = NULL;
-
-    #if wxUSE_VALIDATORS
-        // If we don't do the following, we get an apparent memory leak.
-        ((wxEvtHandler&) wxDefaultValidator).ClearEventLocker();
-    #endif // wxUSE_VALIDATORS
-#endif // wxUSE_THREADS
+    wxAppConsole::CleanUp();
 }
 
 // ----------------------------------------------------------------------------
@@ -177,8 +170,25 @@ void wxAppBase::CleanUp()
 wxWindow* wxAppBase::GetTopWindow() const
 {
     wxWindow* window = m_topWindow;
-    if (window == NULL && wxTopLevelWindows.GetCount() > 0)
-        window = wxTopLevelWindows.GetFirst()->GetData();
+
+    // If there is no top window or it is about to be destroyed,
+    // we need to search for the first TLW which is not pending delete
+    if ( !window || wxPendingDelete.Member(window) )
+    {
+        window = NULL;
+        wxWindowList::compatibility_iterator node = wxTopLevelWindows.GetFirst();
+        while ( node )
+        {
+            wxWindow* win = node->GetData();
+            if ( !wxPendingDelete.Member(win) )
+            {
+                window = win;
+                break;
+            }
+            node = node->GetNext();
+        }
+    }
+
     return window;
 }
 
@@ -211,8 +221,12 @@ wxLayoutDirection wxAppBase::GetLayoutDirection() const
 // GUI-specific command line options handling
 // ----------------------------------------------------------------------------
 
-#define OPTION_THEME   _T("theme")
-#define OPTION_MODE    _T("mode")
+#ifdef __WXUNIVERSAL__
+#define OPTION_THEME   "theme"
+#endif
+#if defined(__WXDFB__)
+#define OPTION_MODE    "mode"
+#endif
 
 void wxAppBase::OnInitCmdLine(wxCmdLineParser& parser)
 {
@@ -225,7 +239,7 @@ void wxAppBase::OnInitCmdLine(wxCmdLineParser& parser)
 #ifdef __WXUNIVERSAL__
         {
             wxCMD_LINE_OPTION,
-            wxEmptyString,
+            NULL,
             OPTION_THEME,
             gettext_noop("specify the theme to use"),
             wxCMD_LINE_VAL_STRING,
@@ -233,29 +247,22 @@ void wxAppBase::OnInitCmdLine(wxCmdLineParser& parser)
         },
 #endif // __WXUNIVERSAL__
 
-#if defined(__WXMGL__)
-        // VS: this is not specific to wxMGL, all fullscreen (framebuffer) ports
+#if defined(__WXDFB__)
+        // VS: this is not specific to wxDFB, all fullscreen (framebuffer) ports
         //     should provide this option. That's why it is in common/appcmn.cpp
-        //     and not mgl/app.cpp
+        //     and not dfb/app.cpp
         {
             wxCMD_LINE_OPTION,
-            wxEmptyString,
+            NULL,
             OPTION_MODE,
             gettext_noop("specify display mode to use (e.g. 640x480-16)"),
             wxCMD_LINE_VAL_STRING,
             0x0
         },
-#endif // __WXMGL__
+#endif // __WXDFB__
 
         // terminator
-        {
-            wxCMD_LINE_NONE,
-            wxEmptyString,
-            wxEmptyString,
-            wxEmptyString,
-            wxCMD_LINE_VAL_NONE,
-            0x0
-        }
+        wxCMD_LINE_DESC_END
     };
 
     parser.SetDesc(cmdLineGUIDesc);
@@ -280,12 +287,12 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
     }
 #endif // __WXUNIVERSAL__
 
-#if defined(__WXMGL__)
+#if defined(__WXDFB__)
     wxString modeDesc;
     if ( parser.Found(OPTION_MODE, &modeDesc) )
     {
         unsigned w, h, bpp;
-        if ( wxSscanf(modeDesc.c_str(), _T("%ux%u-%u"), &w, &h, &bpp) != 3 )
+        if ( wxSscanf(modeDesc.c_str(), wxT("%ux%u-%u"), &w, &h, &bpp) != 3 )
         {
             wxLogError(_("Invalid display mode specification '%s'."), modeDesc.c_str());
             return false;
@@ -294,51 +301,12 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
         if ( !SetDisplayMode(wxVideoMode(w, h, bpp)) )
             return false;
     }
-#endif // __WXMGL__
+#endif // __WXDFB__
 
     return wxAppConsole::OnCmdLineParsed(parser);
 }
 
 #endif // wxUSE_CMDLINE_PARSER
-
-// ----------------------------------------------------------------------------
-// main event loop implementation
-// ----------------------------------------------------------------------------
-
-int wxAppBase::MainLoop()
-{
-    wxEventLoopTiedPtr mainLoop(&m_mainLoop, new wxEventLoop);
-
-    return m_mainLoop->Run();
-}
-
-void wxAppBase::ExitMainLoop()
-{
-    // we should exit from the main event loop, not just any currently active
-    // (e.g. modal dialog) event loop
-    if ( m_mainLoop && m_mainLoop->IsRunning() )
-    {
-        m_mainLoop->Exit(0);
-    }
-}
-
-bool wxAppBase::Pending()
-{
-    // use the currently active message loop here, not m_mainLoop, because if
-    // we're showing a modal dialog (with its own event loop) currently the
-    // main event loop is not running anyhow
-    wxEventLoop * const loop = wxEventLoop::GetActive();
-
-    return loop && loop->Pending();
-}
-
-bool wxAppBase::Dispatch()
-{
-    // see comment in Pending()
-    wxEventLoop * const loop = wxEventLoop::GetActive();
-
-    return loop && loop->Dispatch();
-}
 
 // ----------------------------------------------------------------------------
 // OnXXX() hooks
@@ -364,7 +332,7 @@ int wxAppBase::OnRun()
     }
     //else: it has been changed, assume the user knows what he is doing
 
-    return MainLoop();
+    return wxAppConsole::OnRun();
 }
 
 int wxAppBase::OnExit()
@@ -374,11 +342,6 @@ int wxAppBase::OnExit()
 #endif // __WXUNIVERSAL__
 
     return wxAppConsole::OnExit();
-}
-
-void wxAppBase::Exit()
-{
-    ExitMainLoop();
 }
 
 wxAppTraits *wxAppBase::CreateTraits()
@@ -403,115 +366,52 @@ void wxAppBase::SetActive(bool active, wxWindow * WXUNUSED(lastFocus))
     (void)ProcessEvent(event);
 }
 
+bool wxAppBase::SafeYield(wxWindow *win, bool onlyIfNeeded)
+{
+    wxWindowDisabler wd(win);
+
+    wxEventLoopBase * const loop = wxEventLoopBase::GetActive();
+
+    return loop && loop->Yield(onlyIfNeeded);
+}
+
+bool wxAppBase::SafeYieldFor(wxWindow *win, long eventsToProcess)
+{
+    wxWindowDisabler wd(win);
+
+    wxEventLoopBase * const loop = wxEventLoopBase::GetActive();
+
+    return loop && loop->YieldFor(eventsToProcess);
+}
+
+
 // ----------------------------------------------------------------------------
 // idle handling
 // ----------------------------------------------------------------------------
 
-void wxAppBase::DeletePendingObjects()
-{
-    wxList::compatibility_iterator node = wxPendingDelete.GetFirst();
-    while (node)
-    {
-        wxObject *obj = node->GetData();
-
-        // remove it from the list first so that if we get back here somehow
-        // during the object deletion (e.g. wxYield called from its dtor) we
-        // wouldn't try to delete it the second time
-        if ( wxPendingDelete.Member(obj) )
-            wxPendingDelete.Erase(node);
-
-        delete obj;
-
-        // Deleting one object may have deleted other pending
-        // objects, so start from beginning of list again.
-        node = wxPendingDelete.GetFirst();
-    }
-}
-
 // Returns true if more time is needed.
 bool wxAppBase::ProcessIdle()
 {
-    // process pending wx events before sending idle events
-    ProcessPendingEvents();
-
+    // call the base class version first to send the idle event to wxTheApp
+    // itself
+    bool needMore = wxAppConsoleBase::ProcessIdle();
     wxIdleEvent event;
-    bool needMore = false;
     wxWindowList::compatibility_iterator node = wxTopLevelWindows.GetFirst();
     while (node)
     {
         wxWindow* win = node->GetData();
-        if (SendIdleEvents(win, event))
+
+        // Don't send idle events to the windows that are about to be destroyed
+        // anyhow, this is wasteful and unexpected.
+        if ( !wxPendingDelete.Member(win) && win->SendIdleEvents(event) )
             needMore = true;
         node = node->GetNext();
     }
-
-    event.SetEventObject(this);
-    (void) ProcessEvent(event);
-    if (event.MoreRequested())
-        needMore = true;
-
-    // 'Garbage' collection of windows deleted with Close().
-    DeletePendingObjects();
-
-#if wxUSE_LOG
-    // flush the logged messages if any
-    wxLog::FlushActive();
-#endif
 
     wxUpdateUIEvent::ResetUpdateTime();
 
     return needMore;
 }
-
-// Send idle event to window and all subwindows
-bool wxAppBase::SendIdleEvents(wxWindow* win, wxIdleEvent& event)
-{
-    bool needMore = false;
-
-    win->OnInternalIdle();
-
-    if (wxIdleEvent::CanSend(win))
-    {
-        event.SetEventObject(win);
-        win->GetEventHandler()->ProcessEvent(event);
-
-        if (event.MoreRequested())
-            needMore = true;
-    }
-    wxWindowList::compatibility_iterator node = win->GetChildren().GetFirst();
-    while ( node )
-    {
-        wxWindow *child = node->GetData();
-        if (SendIdleEvents(child, event))
-            needMore = true;
-
-        node = node->GetNext();
-    }
-
-    return needMore;
-}
-
-void wxAppBase::OnIdle(wxIdleEvent& WXUNUSED(event))
-{
-}
-
-// ----------------------------------------------------------------------------
-// exceptions support
-// ----------------------------------------------------------------------------
-
-#if wxUSE_EXCEPTIONS
-
-bool wxAppBase::OnExceptionInMainLoop()
-{
-    throw;
-
-    // some compilers are too stupid to know that we never return after throw
-#if defined(__DMC__) || (defined(_MSC_VER) && _MSC_VER < 1200)
-    return false;
-#endif
-}
-
-#endif // wxUSE_EXCEPTIONS
 
 // ----------------------------------------------------------------------------
 // wxGUIAppTraitsBase
@@ -522,7 +422,11 @@ bool wxAppBase::OnExceptionInMainLoop()
 wxLog *wxGUIAppTraitsBase::CreateLogTarget()
 {
 #if wxUSE_LOGGUI
+#ifndef __WXOSX_IPHONE__
     return new wxLogGui;
+#else
+    return new wxLogStderr;
+#endif
 #else
     // we must have something!
     return new wxLogStderr;
@@ -537,15 +441,18 @@ wxMessageOutput *wxGUIAppTraitsBase::CreateMessageOutput()
     // is (according to common practice):
     //     - console apps: to stderr (on any platform)
     //     - GUI apps: stderr on Unix platforms (!)
-    //                 message box under Windows and others
+    //                 stderr if available and message box otherwise on others
+    //                 (currently stderr only Windows if app running from console)
 #ifdef __UNIX__
     return new wxMessageOutputStderr;
 #else // !__UNIX__
     // wxMessageOutputMessageBox doesn't work under Motif
     #ifdef __WXMOTIF__
         return new wxMessageOutputLog;
+    #elif wxUSE_MSGDLG
+        return new wxMessageOutputBest(wxMSGOUT_PREFER_STDERR);
     #else
-        return new wxMessageOutputMessageBox;
+        return new wxMessageOutputStderr;
     #endif
 #endif // __UNIX__/!__UNIX__
 }
@@ -565,76 +472,101 @@ wxRendererNative *wxGUIAppTraitsBase::CreateRenderer()
     return NULL;
 }
 
-#ifdef __WXDEBUG__
-
 bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
 {
-#if defined(__WXMSW__) || !wxUSE_MSGDLG
-    // under MSW we prefer to use the base class version using ::MessageBox()
-    // even if wxMessageBox() is available because it has less chances to
-    // double fault our app than our wxMessageBox()
-    return wxAppTraitsBase::ShowAssertDialog(msg);
-#else // wxUSE_MSGDLG
-    wxString msgDlg = msg;
+#if wxDEBUG_LEVEL
+    // If possible, show the assert using a dialog allowing to hide the stack
+    // trace by default to avoid frightening people unnecessarily.
+    //
+    // Otherwise, show the assert using a basic message box, but under MSW
+    // we prefer to use the base class version using ::MessageBox() even if
+    // wxMessageBox() is available because it has less chances to double
+    // fault our app than our wxMessageBox()
+    //
+    // Notice that under DFB the message dialog is not always functional right
+    // now and, finally, we can't use wxMessageBox() if it wasn't compiled in.
+#if wxUSE_RICHMSGDLG || \
+    (wxUSE_MSGDLG && !defined(__WXMSW__) && !defined(__WXDFB__))
+
+    // we can't (safely) show the GUI dialog from another thread, only do it
+    // for the asserts in the main thread
+    if ( wxIsMainThread() )
+    {
+        // Note that this and the other messages here are intentionally not
+        // translated -- they are for developpers only.
+        static const wxStringCharType* caption = wxS("wxWidgets Debug Alert");
+
+        wxString msgDlg = wxS("A debugging check in this application ")
+                          wxS("has failed.\n\n") + msg;
+
+        // "No" button means to continue execution, so it should be the default
+        // action as leaving the "Yes" button the default one would mean that
+        // accidentally pressing Space or Enter would trap and kill the program.
+        const int flags = wxYES_NO | wxNO_DEFAULT | wxICON_STOP;
 
 #if wxUSE_STACKWALKER
-    // on Unix stack frame generation may take some time, depending on the
-    // size of the executable mainly... warn the user that we are working
-    wxFprintf(stderr, wxT("[Debug] Generating a stack trace... please wait"));
-    fflush(stderr);
-
-    const wxString stackTrace = GetAssertStackTrace();
-    if ( !stackTrace.empty() )
-        msgDlg << _T("\n\nCall stack:\n") << stackTrace;
+        const wxString stackTrace = GetAssertStackTrace();
 #endif // wxUSE_STACKWALKER
 
-    // this message is intentionally not translated -- it is for
-    // developpers only
-    msgDlg += wxT("\nDo you want to stop the program?\n")
-              wxT("You can also choose [Cancel] to suppress ")
-              wxT("further warnings.");
+#if wxUSE_RICHMSGDLG
+        wxRichMessageDialog dlg(NULL, msgDlg, caption, flags);
 
-#ifdef __WXMAC__
-    // in order to avoid reentrancy problems, use the lowest alert API available
-    CFOptionFlags exitButton;
-    wxMacCFStringHolder cfText(msgDlg);
-    OSStatus err = CFUserNotificationDisplayAlert(
-            0, kAlertStopAlert, NULL, NULL, NULL, CFSTR("wxWidgets Debug Alert"), cfText,
-            CFSTR("Yes"), CFSTR("No"), CFSTR("Cancel"), &exitButton );
-    if ( err == noErr )
-    {
-        switch( exitButton )
+        dlg.SetYesNoLabels("Stop", "Continue");
+
+        dlg.ShowCheckBox("Don't show this dialog again");
+
+#if wxUSE_STACKWALKER
+        if ( !stackTrace.empty() )
+            dlg.ShowDetailedText(stackTrace);
+#endif // wxUSE_STACKWALKER
+#else // !wxUSE_RICHMSGDLG
+#if wxUSE_STACKWALKER
+        if ( !stackTrace.empty() )
+            msgDlg << wxT("\n\nCall stack:\n") << stackTrace;
+#endif // wxUSE_STACKWALKER
+
+        msgDlg += wxT("\nDo you want to stop the program?\n")
+                  wxT("You can also choose [Cancel] to suppress ")
+                  wxT("further warnings.");
+
+        wxMessageDialog dlg(NULL, msg, caption, flags);
+#endif // wxUSE_RICHMSGDLG/!wxUSE_RICHMSGDLG
+
+        switch ( dlg.ShowModal() )
         {
-            case 0 : // yes
-                wxTrap();
+            case wxID_YES:
+                // See the comment about using the same variable in
+                // DoShowAssertDialog().
+                wxTrapInAssert = true;
                 break;
-            case 2 : // cancel
-                // no more asserts
+
+            case wxID_CANCEL:
+                // This button is used with the plain message dialog only to
+                // indicate that no more assert dialogs should be shown, as
+                // there is no other way to do it with it.
                 return true;
-            case 1 : // no -> nothing to do
-                break ;
+
+            case wxID_NO:
+#if wxUSE_RICHMSGDLG
+                if ( dlg.IsCheckBoxChecked() )
+                {
+                    // With this dialog, the checkbox is used to indicate that
+                    // the subsequent asserts should be skipped.
+                    return true;
+                }
+#endif // wxUSE_RICHMSGDLG
+
+                // Nothing to do otherwise.
+                break;
         }
-    }
-#else
-    switch ( wxMessageBox(msgDlg, wxT("wxWidgets Debug Alert"),
-                          wxYES_NO | wxCANCEL | wxICON_STOP ) )
-    {
-        case wxYES:
-            wxTrap();
-            break;
 
-        case wxCANCEL:
-            // no more asserts
-            return true;
-
-        //case wxNO: nothing to do
+        return false;
     }
-#endif
-    return false;
-#endif // !wxUSE_MSGDLG/wxUSE_MSGDLG
+#endif // wxUSE_RICHMSGDLG || wxUSE_MSGDLG
+#endif // wxDEBUG_LEVEL
+
+    return wxAppTraitsBase::ShowAssertDialog(msg);
 }
-
-#endif // __WXDEBUG__
 
 bool wxGUIAppTraitsBase::HasStderr()
 {
@@ -647,45 +579,3 @@ bool wxGUIAppTraitsBase::HasStderr()
 #endif
 }
 
-void wxGUIAppTraitsBase::ScheduleForDestroy(wxObject *object)
-{
-    if ( !wxPendingDelete.Member(object) )
-        wxPendingDelete.Append(object);
-}
-
-void wxGUIAppTraitsBase::RemoveFromPendingDelete(wxObject *object)
-{
-    wxPendingDelete.DeleteObject(object);
-}
-
-#if wxUSE_SOCKETS
-
-#if defined(__WINDOWS__)
-    #include "wx/msw/gsockmsw.h"
-#elif defined(__UNIX__) || defined(__DARWIN__) || defined(__OS2__)
-    #include "wx/unix/gsockunx.h"
-#elif defined(__WXMAC__)
-    #include <MacHeaders.c>
-    #define OTUNIXERRORS 1
-    #include <OpenTransport.h>
-    #include <OpenTransportProviders.h>
-    #include <OpenTptInternet.h>
-
-    #include "wx/mac/gsockmac.h"
-#else
-    #error "Must include correct GSocket header here"
-#endif
-
-GSocketGUIFunctionsTable* wxGUIAppTraitsBase::GetSocketGUIFunctionsTable()
-{
-#if defined(__WXMAC__) && !defined(__DARWIN__)
-    // NB: wxMac CFM does not have any GUI-specific functions in gsocket.c and
-    //     so it doesn't need this table at all
-    return NULL;
-#else // !__WXMAC__ || __DARWIN__
-    static GSocketGUIFunctionsTableConcrete table;
-    return &table;
-#endif // !__WXMAC__ || __DARWIN__
-}
-
-#endif

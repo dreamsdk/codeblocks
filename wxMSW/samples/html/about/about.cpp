@@ -1,6 +1,11 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        test.cpp
-// Purpose:     wxHtml testing example
+// Name:        about.cpp
+// Purpose:     wxHtml sample: about dialog test
+// Author:      ?
+// Modified by:
+// Created:     ?
+// Copyright:   (c) wxWidgets team
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx/wx.h".
@@ -21,6 +26,11 @@
 #include "wx/wxhtml.h"
 #include "wx/statline.h"
 
+#ifndef wxHAS_IMAGES_IN_RESOURCES
+    #include "../../sample.xpm"
+#endif
+
+
 // ----------------------------------------------------------------------------
 // private classes
 // ----------------------------------------------------------------------------
@@ -36,7 +46,7 @@ public:
     // this one is called on application startup and is a good place for the app
     // initialization (doing it here and not in the ctor allows to have an error
     // return: if OnInit() returns false, the application terminates)
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 // Define a new frame type: this is going to be our main frame
@@ -52,7 +62,7 @@ public:
 
 private:
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -62,17 +72,17 @@ private:
 // the event tables connect the wxWidgets events with the functions (event
 // handlers) which process them. It can be also done at run-time, but for the
 // simple menu events like this the static method is much simpler.
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
    EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
    EVT_MENU(wxID_EXIT,  MyFrame::OnQuit)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // Create a new application object: this macro will allow wxWidgets to create
 // the application object during program execution (it's better than using a
 // static object for many reasons) and also declares the accessor function
 // wxGetApp() which will return the reference of the right type (i.e. MyApp and
 // not wxApp)
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // ============================================================================
 // implementation
@@ -85,6 +95,9 @@ IMPLEMENT_APP(MyApp)
 // `Main program' equivalent: the program execution "starts" here
 bool MyApp::OnInit()
 {
+    if ( !wxApp::OnInit() )
+        return false;
+
     // we use a PNG image in our HTML page
     wxImage::AddHandler(new wxPNGHandler);
 
@@ -106,6 +119,8 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title)
        : wxFrame((wxFrame *)NULL, wxID_ANY, title)
 {
+    SetIcon(wxICON(sample));
+
     // create a menu bar
     wxMenu *menuFile = new wxMenu;
 
@@ -139,9 +154,9 @@ void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 
     html = new wxHtmlWindow(&dlg, wxID_ANY, wxDefaultPosition, wxSize(380, 160), wxHW_SCROLLBAR_NEVER);
     html -> SetBorders(0);
-    html -> LoadPage(wxT("data/about.htm"));
-    html -> SetSize(html -> GetInternalRepresentation() -> GetWidth(),
-                    html -> GetInternalRepresentation() -> GetHeight());
+    html -> LoadPage("data/about.htm");
+    html -> SetInitialSize(wxSize(html -> GetInternalRepresentation() -> GetWidth(),
+                                  html -> GetInternalRepresentation() -> GetHeight()));
 
     topsizer -> Add(html, 1, wxALL, 10);
 

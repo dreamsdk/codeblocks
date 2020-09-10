@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: dde.cpp 40943 2006-08-31 19:31:43Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -35,6 +34,8 @@
 
 #include "wx/dde.h"
 #include "wx/intl.h"
+#include "wx/buffer.h"
+#include "wx/strconv.h"
 
 #include "wx/msw/private.h"
 
@@ -44,12 +45,6 @@
 // ----------------------------------------------------------------------------
 // macros and constants
 // ----------------------------------------------------------------------------
-
-#ifdef __WIN32__
-    #define _EXPORT
-#else
-    #define _EXPORT _export
-#endif
 
 #if wxUSE_UNICODE
     #define DDE_CP      CP_WINUNICODE
@@ -70,14 +65,15 @@ static wxDDEConnection *DDEFindConnection(HCONV hConv);
 static void DDEDeleteConnection(HCONV hConv);
 static wxDDEServer *DDEFindServer(const wxString& s);
 
-extern "C" HDDEDATA EXPENTRY _EXPORT _DDECallback(WORD wType,
-                                                  WORD wFmt,
-                                                  HCONV hConv,
-                                                  HSZ hsz1,
-                                                  HSZ hsz2,
-                                                  HDDEDATA hData,
-                                                  DWORD lData1,
-                                                  DWORD lData2);
+extern "C" HDDEDATA EXPENTRY
+_DDECallback(UINT wType,
+             UINT wFmt,
+             HCONV hConv,
+             HSZ hsz1,
+             HSZ hsz2,
+             HDDEDATA hData,
+             ULONG_PTR lData1,
+             ULONG_PTR lData2);
 
 // Add topic name to atom table before using in conversations
 static HSZ DDEAddAtom(const wxString& string);
@@ -124,21 +120,21 @@ class wxDDEModule : public wxModule
 {
 public:
     wxDDEModule() {}
-    bool OnInit() { return true; }
-    void OnExit() { wxDDECleanUp(); }
+    bool OnInit() wxOVERRIDE { return true; }
+    void OnExit() wxOVERRIDE { wxDDECleanUp(); }
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxDDEModule)
+    wxDECLARE_DYNAMIC_CLASS(wxDDEModule);
 };
 
 // ----------------------------------------------------------------------------
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxDDEServer, wxServerBase)
-IMPLEMENT_DYNAMIC_CLASS(wxDDEClient, wxClientBase)
-IMPLEMENT_CLASS(wxDDEConnection, wxConnectionBase)
-IMPLEMENT_DYNAMIC_CLASS(wxDDEModule, wxModule)
+wxIMPLEMENT_DYNAMIC_CLASS(wxDDEServer, wxServerBase);
+wxIMPLEMENT_DYNAMIC_CLASS(wxDDEClient, wxClientBase);
+wxIMPLEMENT_DYNAMIC_CLASS(wxDDEConnection, wxConnectionBase);
+wxIMPLEMENT_DYNAMIC_CLASS(wxDDEModule, wxModule);
 
 // ============================================================================
 // implementation
@@ -153,12 +149,10 @@ extern void wxDDEInitialize()
     if ( !DDEInitialized )
     {
         // Should insert filter flags
-        PFNCALLBACK callback = (PFNCALLBACK)
-            MakeProcInstance((FARPROC)_DDECallback, wxGetInstance());
-        UINT rc = DdeInitialize(&DDEIdInst, callback, APPCLASS_STANDARD, 0L);
+        UINT rc = DdeInitialize(&DDEIdInst, _DDECallback, APPCLASS_STANDARD, 0L);
         if ( rc != DMLERR_NO_ERROR )
         {
-            DDELogError(_T("Failed to initialize DDE"), rc);
+            DDELogError(wxT("Failed to initialize DDE"), rc);
         }
         else
         {
@@ -172,7 +166,7 @@ void wxDDECleanUp()
     // deleting them later won't work as DDE won't be initialized any more
     wxASSERT_MSG( wxDDEServerObjects.empty() &&
                     wxDDEClientObjects.empty(),
-                    _T("all DDE objects should be deleted by now") );
+                    wxT("all DDE objects should be deleted by now") );
 
     wxAtomTable.clear();
 
@@ -325,7 +319,6 @@ wxDDEServer::~wxDDEServer()
     {
         wxDDEConnection *connection = node->GetData();
         wxDDEConnectionList::compatibility_iterator next = node->GetNext();
-        connection->SetConnected(false);
         connection->OnDisconnect(); // May delete the node implicitly
         node = next;
     }
@@ -416,7 +409,7 @@ wxConnectionBase *wxDDEClient::MakeConnection(const wxString& WXUNUSED(host),
 
     if ( !hszServer )
     {
-        return (wxConnectionBase*) NULL;
+        return NULL;
     }
 
 
@@ -425,7 +418,7 @@ wxConnectionBase *wxDDEClient::MakeConnection(const wxString& WXUNUSED(host),
     if ( !hszTopic )
     {
         DDEFreeString(hszServer);
-        return (wxConnectionBase*) NULL;
+        return NULL;
     }
 
 
@@ -455,7 +448,7 @@ wxConnectionBase *wxDDEClient::MakeConnection(const wxString& WXUNUSED(host),
         }
     }
 
-    return (wxConnectionBase*) NULL;
+    return NULL;
 }
 
 wxConnectionBase *wxDDEClient::OnMakeConnection()
@@ -498,7 +491,7 @@ bool wxDDEClient::DeleteConnection(WXHCONV conv)
 // wxDDEConnection
 // ----------------------------------------------------------------------------
 
-wxDDEConnection::wxDDEConnection(wxChar *buffer, int size)
+wxDDEConnection::wxDDEConnection(void *buffer, size_t size)
      : wxConnectionBase(buffer, size)
 {
     m_client = NULL;
@@ -537,7 +530,7 @@ bool wxDDEConnection::Disconnect()
     bool ok = DdeDisconnect(GetHConv()) != 0;
     if ( !ok )
     {
-        DDELogError(_T("Failed to disconnect from DDE server gracefully"));
+        DDELogError(wxT("Failed to disconnect from DDE server gracefully"));
     }
 
     SetConnected( false );  // so we don't try and disconnect again
@@ -545,34 +538,119 @@ bool wxDDEConnection::Disconnect()
     return ok;
 }
 
-bool wxDDEConnection::Execute(const wxChar *data, int size, wxIPCFormat WXUNUSED(format))
+bool
+wxDDEConnection::DoExecute(const void *data, size_t size, wxIPCFormat format)
 {
-    DWORD result;
-    if (size < 0)
+    wxCHECK_MSG( format == wxIPC_TEXT ||
+                 format == wxIPC_UTF8TEXT ||
+                 format == wxIPC_UNICODETEXT,
+                 false,
+                 wxT("wxDDEServer::Execute() supports only text data") );
+
+    wxMemoryBuffer buffer;
+    LPBYTE realData = NULL;
+    size_t realSize = 0;
+    wxMBConv *conv = NULL;
+
+    // Windows only supports either ANSI or UTF-16 format depending on the
+    // build, so we need to convert the data if it doesn't use it already
+#if wxUSE_UNICODE
+    if ( format == wxIPC_TEXT )
     {
-        size = (wxStrlen(data) + 1) * sizeof(wxChar);    // includes final NUL
+        conv = &wxConvLibc;
+    }
+    else if ( format == wxIPC_UTF8TEXT )
+    {
+        conv = &wxConvUTF8;
+    }
+    else // no conversion necessary for wxIPC_UNICODETEXT
+    {
+        realData = (LPBYTE)data;
+        realSize = size;
     }
 
-    bool ok = DdeClientTransaction((LPBYTE)data,
-                                    size,
-                                    GetHConv(),
-                                    NULL,
-// If the transaction specified by the wType parameter does not pass data or is XTYP_EXECUTE,
-// wFmt should be zero.
-                                    0,
-                                    XTYP_EXECUTE,
-                                    DDE_TIMEOUT,
-                                    &result) != 0;
+    if ( conv )
+    {
+        const char * const text = (const char *)data;
+        const size_t len = size;
+
+        realSize = conv->ToWChar(NULL, 0, text, len);
+        if ( realSize == wxCONV_FAILED )
+            return false;
+
+        realData = (LPBYTE)buffer.GetWriteBuf(realSize*sizeof(wchar_t));
+        if ( !realData )
+            return false;
+
+        realSize = conv->ToWChar((wchar_t *)realData, realSize, text, len);
+        if ( realSize == wxCONV_FAILED )
+            return false;
+
+        // We need to pass the size of the buffer to DdeClientTransaction() and
+        // not the length of the string.
+        realSize *= sizeof(wchar_t);
+    }
+#else // !wxUSE_UNICODE
+    if ( format == wxIPC_UNICODETEXT )
+    {
+        conv = &wxConvLibc;
+    }
+    else if ( format == wxIPC_UTF8TEXT )
+    {
+        // we could implement this in theory but it's not obvious how to pass
+        // the format information and, basically, why bother -- just use
+        // Unicode build
+        wxFAIL_MSG( wxT("UTF-8 text not supported in ANSI build") );
+
+        return false;
+    }
+    else // don't convert wxIPC_TEXT
+    {
+        realData = (LPBYTE)data;
+        realSize = size;
+    }
+
+    if ( conv )
+    {
+        const wchar_t * const wtext = (const wchar_t *)data;
+        const size_t len = size/sizeof(wchar_t);
+
+        realSize = conv->FromWChar(NULL, 0, wtext, len);
+        if ( realSize == wxCONV_FAILED )
+            return false;
+
+        realData = (LPBYTE)buffer.GetWriteBuf(realSize);
+        if ( !realData )
+            return false;
+
+        realSize = conv->FromWChar((char*)realData, realSize, wtext, len);
+        if ( realSize == wxCONV_FAILED )
+            return false;
+    }
+#endif // wxUSE_UNICODE/!wxUSE_UNICODE
+
+    DWORD result;
+    bool ok = DdeClientTransaction(realData,
+                                   realSize,
+                                   GetHConv(),
+                                   NULL,
+                                   // MSDN: if the transaction specified by
+                                   // the wType parameter does not pass data
+                                   // or is XTYP_EXECUTE, wFmt should be zero.
+                                   0,
+                                   XTYP_EXECUTE,
+                                   DDE_TIMEOUT,
+                                   &result) != 0;
 
     if ( !ok )
     {
-        DDELogError(_T("DDE execute request failed"));
+        DDELogError(wxT("DDE execute request failed"));
     }
 
     return ok;
 }
 
-wxChar *wxDDEConnection::Request(const wxString& item, int *size, wxIPCFormat format)
+const void *wxDDEConnection::Request(const wxString& item, size_t *size, wxIPCFormat format)
 {
     DWORD result;
 
@@ -586,33 +664,29 @@ wxChar *wxDDEConnection::Request(const wxString& item, int *size, wxIPCFormat fo
                                                   &result);
     if ( !returned_data )
     {
-        DDELogError(_T("DDE data request failed"));
+        DDELogError(wxT("DDE data request failed"));
 
         return NULL;
     }
 
     DWORD len = DdeGetData(returned_data, NULL, 0, 0);
 
-    wxChar *data = GetBufferAtLeast( len );
+    void *data = GetBufferAtLeast(len);
     wxASSERT_MSG(data != NULL,
-                 _T("Buffer too small in wxDDEConnection::Request") );
+                 wxT("Buffer too small in wxDDEConnection::Request") );
     (void) DdeGetData(returned_data, (LPBYTE)data, len, 0);
 
     (void) DdeFreeDataHandle(returned_data);
 
     if (size)
-        *size = (int)len;
+        *size = (size_t)len;
 
     return data;
 }
 
-bool wxDDEConnection::Poke(const wxString& item, wxChar *data, int size, wxIPCFormat format)
+bool wxDDEConnection::DoPoke(const wxString& item, const void *data, size_t size, wxIPCFormat format)
 {
     DWORD result;
-    if (size < 0)
-    {
-        size = (wxStrlen(data) + 1) * sizeof(wxChar);    // includes final NUL
-    }
 
     HSZ item_atom = DDEGetAtom(item);
     bool ok = DdeClientTransaction((LPBYTE)data,
@@ -668,23 +742,71 @@ bool wxDDEConnection::StopAdvise(const wxString& item)
     return ok;
 }
 
-// Calls that SERVER can make
-bool wxDDEConnection::Advise(const wxString& item,
-                             wxChar *data,
-                             int size,
-                             wxIPCFormat format)
+// Small helper function converting the data from the format used by the given
+// conversion to UTF-8.
+static
+wxCharBuffer ConvertToUTF8(const wxMBConv& conv, const void* data, size_t size)
 {
-    if (size < 0)
-    {
-        size = (wxStrlen(data) + 1) * sizeof(wxChar);    // includes final NUL
-    }
+    return wxConvUTF8.cWC2MB(conv.cMB2WC((const char*)data, size, NULL));
+}
 
+// Calls that SERVER can make
+bool wxDDEConnection::DoAdvise(const wxString& item,
+                               const void *data,
+                               size_t size,
+                               wxIPCFormat format)
+{
     HSZ item_atom = DDEGetAtom(item);
     HSZ topic_atom = DDEGetAtom(m_topicName);
-    m_sendingData = data;  // mrf: potential for scope problems here?
-    m_dataSize = size;
-    // wxIPC_PRIVATE does not succeed, so use text instead
-    m_dataType = format == wxIPC_PRIVATE ? wxIPC_TEXT : format;
+
+    // Define the buffer which, if it's used at all, needs to stay alive until
+    // after DdePostAdvise() call which uses it.
+    wxCharBuffer buf;
+
+    // As we always use CF_TEXT for XTYP_ADVSTART, we have to use wxIPC_TEXT
+    // here, even if a different format was specified for this value. Of
+    // course, this can only be done for just a few of the formats, so check
+    // that we have one of them here.
+    switch ( format )
+    {
+        case wxIPC_TEXT:
+        case wxIPC_OEMTEXT:
+        case wxIPC_UTF8TEXT:
+        case wxIPC_PRIVATE:
+            // Use the data directly.
+            m_sendingData = data;
+            m_dataSize = size;
+            break;
+
+        case wxIPC_UTF16TEXT:
+        case wxIPC_UTF32TEXT:
+            // We need to convert the data to UTF-8 as UTF-16 or 32 would
+            // appear as mojibake in the client when received as CF_TEXT.
+            buf = format == wxIPC_UTF16TEXT
+                    ? ConvertToUTF8(wxMBConvUTF16(), data, size)
+                    : ConvertToUTF8(wxMBConvUTF32(), data, size);
+
+            m_sendingData = buf.data();
+            m_dataSize = buf.length();
+            break;
+
+        case wxIPC_INVALID:
+        case wxIPC_BITMAP:
+        case wxIPC_METAFILE:
+        case wxIPC_SYLK:
+        case wxIPC_DIF:
+        case wxIPC_TIFF:
+        case wxIPC_DIB:
+        case wxIPC_PALETTE:
+        case wxIPC_PENDATA:
+        case wxIPC_RIFF:
+        case wxIPC_WAVE:
+        case wxIPC_ENHMETAFILE:
+        case wxIPC_FILENAME:
+        case wxIPC_LOCALE:
+            wxFAIL_MSG( "Unsupported IPC format for Advise()" );
+            return false;
+    }
 
     bool ok = DdePostAdvise(DDEIdInst, topic_atom, item_atom) != 0;
     if ( !ok )
@@ -695,27 +817,21 @@ bool wxDDEConnection::Advise(const wxString& item,
     return ok;
 }
 
-bool wxDDEConnection::OnDisconnect()
-{
-    delete this;
-    return true;
-}
-
 // ----------------------------------------------------------------------------
 // _DDECallback
 // ----------------------------------------------------------------------------
 
 #define DDERETURN HDDEDATA
 
-HDDEDATA EXPENTRY _EXPORT
-_DDECallback(WORD wType,
-             WORD wFmt,
+HDDEDATA EXPENTRY
+_DDECallback(UINT wType,
+             UINT wFmt,
              HCONV hConv,
              HSZ hsz1,
              HSZ hsz2,
              HDDEDATA hData,
-             DWORD WXUNUSED(lData1),
-             DWORD WXUNUSED(lData2))
+             ULONG_PTR WXUNUSED(lData1),
+             ULONG_PTR WXUNUSED(lData2))
 {
     switch (wType)
     {
@@ -775,19 +891,27 @@ _DDECallback(WORD wType,
                 {
                     DWORD len = DdeGetData(hData, NULL, 0, 0);
 
-                    wxChar *data = connection->GetBufferAtLeast( len );
+                    void *data = connection->GetBufferAtLeast(len);
                     wxASSERT_MSG(data != NULL,
-                                 _T("Buffer too small in _DDECallback (XTYP_EXECUTE)") );
+                                 wxT("Buffer too small in _DDECallback (XTYP_EXECUTE)") );
 
                     DdeGetData(hData, (LPBYTE)data, len, 0);
 
                     DdeFreeDataHandle(hData);
 
-// XTYP_EXECUTE cannot be used for arbitrary data, but only for text
+                    // XTYP_EXECUTE can be used for text only and the text is
+                    // always in ANSI format for ANSI build and Unicode format
+                    // in Unicode build
+                    #if wxUSE_UNICODE
+                        wFmt = wxIPC_UNICODETEXT;
+                    #else
+                        wFmt = wxIPC_TEXT;
+                    #endif
+
                     if ( connection->OnExecute(connection->m_topicName,
                                                data,
                                                (int)len,
-                                               wxIPC_TEXT ) )
+                                               (wxIPCFormat)wFmt) )
                     {
                         return (DDERETURN)(DWORD)DDE_FACK;
                     }
@@ -804,15 +928,28 @@ _DDECallback(WORD wType,
                 {
                     wxString item_name = DDEStringFromAtom(hsz2);
 
-                    int user_size = -1;
-                    wxChar *data = connection->OnRequest(connection->m_topicName,
-                                                       item_name,
-                                                       &user_size,
-                                                       (wxIPCFormat) wFmt);
+                    size_t user_size = wxNO_LEN;
+                    const void *data = connection->OnRequest(connection->m_topicName,
+                                                             item_name,
+                                                             &user_size,
+                                                             (wxIPCFormat)wFmt);
                     if (data)
                     {
-                        if (user_size < 0)
-                            user_size = (wxStrlen((wxChar*)data) + 1) * sizeof(wxChar);    // includes final NUL
+                        if (user_size == wxNO_LEN)
+                        {
+                            switch (wFmt)
+                            {
+                                case wxIPC_TEXT:
+                                case wxIPC_UTF8TEXT:
+                                    user_size = strlen((const char*)data) + 1;  // includes final NUL
+                                    break;
+                                case wxIPC_UNICODETEXT:
+                                    user_size = (wcslen((const wchar_t*)data) + 1) * sizeof(wchar_t);  // includes final NUL
+                                    break;
+                                default:
+                                    user_size = 0;
+                            }
+                        }
 
                         HDDEDATA handle = DdeCreateDataHandle(DDEIdInst,
                                                               (LPBYTE)data,
@@ -837,9 +974,9 @@ _DDECallback(WORD wType,
 
                     DWORD len = DdeGetData(hData, NULL, 0, 0);
 
-                    wxChar *data = connection->GetBufferAtLeast( len );
+                    void *data = connection->GetBufferAtLeast(len);
                     wxASSERT_MSG(data != NULL,
-                                 _T("Buffer too small in _DDECallback (XTYP_POKE)") );
+                                 wxT("Buffer too small in _DDECallback (XTYP_POKE)") );
 
                     DdeGetData(hData, (LPBYTE)data, len, 0);
 
@@ -902,7 +1039,7 @@ _DDECallback(WORD wType,
                                         connection->m_dataSize,
                                         0,
                                         hsz2,
-                                        connection->m_dataType,
+                                        wFmt,
                                         0
                                     );
 
@@ -924,18 +1061,34 @@ _DDECallback(WORD wType,
 
                     DWORD len = DdeGetData(hData, NULL, 0, 0);
 
-                    wxChar *data = connection->GetBufferAtLeast( len );
+                    char* const data = (char *)connection->GetBufferAtLeast(len);
                     wxASSERT_MSG(data != NULL,
-                                 _T("Buffer too small in _DDECallback (XTYP_ADVDATA)") );
+                                 wxT("Buffer too small in _DDECallback (XTYP_ADVDATA)") );
 
                     DdeGetData(hData, (LPBYTE)data, len, 0);
 
                     DdeFreeDataHandle(hData);
+
+                    // We always get data in CF_TEXT format, but it could
+                    // actually be UTF-8, so try recovering the original format
+                    // if possible.
+                    if ( wFmt != CF_TEXT )
+                    {
+                        wxLogDebug("Unexpected format %02x in XTYP_ADVDATA", wFmt);
+                        return (DDERETURN)DDE_FNOTPROCESSED;
+                    }
+
+                    wxIPCFormat format;
+                    if ( wxConvUTF8.ToWChar(NULL, 0, data, len) != wxCONV_FAILED )
+                        format = wxIPC_UTF8TEXT;
+                    else
+                        format = wxIPC_TEXT;
+
                     if ( connection->OnAdvise(connection->m_topicName,
                                               item_name,
                                               data,
                                               (int)len,
-                                              (wxIPCFormat) wFmt) )
+                                              format) )
                     {
                         return (DDERETURN)(DWORD)DDE_FACK;
                     }
@@ -976,9 +1129,9 @@ The returned handle has to be freed by the caller (using
 */
 static HSZ DDEAtomFromString(const wxString& s)
 {
-    wxASSERT_MSG( DDEIdInst, _T("DDE not initialized") );
+    wxASSERT_MSG( DDEIdInst, wxT("DDE not initialized") );
 
-    HSZ hsz = DdeCreateStringHandle(DDEIdInst, (wxChar*) s.c_str(), DDE_CP);
+    HSZ hsz = DdeCreateStringHandle(DDEIdInst, wxMSW_CONV_LPTSTR(s), DDE_CP);
     if ( !hsz )
     {
         DDELogError(_("Failed to create DDE string"));
@@ -1018,7 +1171,7 @@ static void DDELogError(const wxString& s, UINT error)
         error = DdeGetLastError(DDEIdInst);
     }
 
-    wxLogError(s + _T(": ") + DDEGetErrorMsg(error));
+    wxLogError(s + wxT(": ") + DDEGetErrorMsg(error));
 }
 
 static wxString DDEGetErrorMsg(UINT error)

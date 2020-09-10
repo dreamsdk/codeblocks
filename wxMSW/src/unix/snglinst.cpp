@@ -5,9 +5,8 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     09.06.01
-// RCS-ID:      $Id: snglinst.cpp 55833 2008-09-24 13:47:41Z VZ $
 // Copyright:   (c) 2001 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
-// License:     wxWindows licence
+// Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 // ============================================================================
@@ -293,7 +292,13 @@ bool wxSingleInstanceCheckerImpl::Create(const wxString& name)
                 }
                 else
                 {
-                    wxLogMessage(_("Deleted stale lock file '%s'."),
+                    // This may be important to know if something goes
+                    // mysteriously wrong, but as the user can't really do
+                    // anything about here (the most typical reason for this
+                    // message is that the previous instance of the program
+                    // crashed), don't show it by default, i.e. unless the
+                    // program is running with --verbose command line option.
+                    wxLogInfo(_("Deleted stale lock file '%s'."),
                                  name.c_str());
 
                     // retry now
@@ -348,10 +353,10 @@ bool wxSingleInstanceChecker::Create(const wxString& name,
                                      const wxString& path)
 {
     wxASSERT_MSG( !m_impl,
-                  _T("calling wxSingleInstanceChecker::Create() twice?") );
+                  wxT("calling wxSingleInstanceChecker::Create() twice?") );
 
     // must have the file name to create a lock file
-    wxASSERT_MSG( !name.empty(), _T("lock file name can't be empty") );
+    wxASSERT_MSG( !name.empty(), wxT("lock file name can't be empty") );
 
     m_impl = new wxSingleInstanceCheckerImpl;
 
@@ -361,9 +366,9 @@ bool wxSingleInstanceChecker::Create(const wxString& name,
         fullname = wxGetHomeDir();
     }
 
-    if ( fullname.Last() != _T('/') )
+    if ( fullname.Last() != wxT('/') )
     {
-        fullname += _T('/');
+        fullname += wxT('/');
     }
 
     fullname << name;
@@ -371,9 +376,9 @@ bool wxSingleInstanceChecker::Create(const wxString& name,
     return m_impl->Create(fullname);
 }
 
-bool wxSingleInstanceChecker::IsAnotherRunning() const
+bool wxSingleInstanceChecker::DoIsAnotherRunning() const
 {
-    wxCHECK_MSG( m_impl, false, _T("must call Create() first") );
+    wxCHECK_MSG( m_impl, false, wxT("must call Create() first") );
 
     const pid_t lockerPid = m_impl->GetLockerPID();
 

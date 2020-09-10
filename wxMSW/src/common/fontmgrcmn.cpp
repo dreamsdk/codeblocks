@@ -3,7 +3,6 @@
 // Purpose:     font management for ports that don't have their own
 // Author:      Vaclav Slavik
 // Created:     2006-11-18
-// RCS-ID:      $Id: fontmgrcmn.cpp 54757 2008-07-21 17:34:48Z VZ $
 // Copyright:   (c) 2001-2002 SciTech Software, Inc. (www.scitechsoft.com)
 //              (c) 2006 REA Elektronik GmbH
 // Licence:     wxWindows licence
@@ -69,7 +68,7 @@ void wxFontFaceBase::Release()
 
 wxFontInstance *wxFontFaceBase::GetFontInstance(float ptSize, bool aa)
 {
-    wxASSERT_MSG( m_refCnt > 0, _T("font library not loaded!") );
+    wxASSERT_MSG( m_refCnt > 0, wxT("font library not loaded!") );
 
     for ( wxFontInstanceList::const_iterator i = m_instances->begin();
           i != m_instances->end(); ++i )
@@ -103,7 +102,7 @@ wxFontFace *wxFontBundleBase::GetFace(FaceType type) const
 {
     wxFontFace *f = m_faces[type];
 
-    wxCHECK_MSG( f, NULL, _T("no such face in font bundle") );
+    wxCHECK_MSG( f, NULL, wxT("no such face in font bundle") );
 
     f->Acquire();
 
@@ -113,18 +112,20 @@ wxFontFace *wxFontBundleBase::GetFace(FaceType type) const
 wxFontFace *
 wxFontBundleBase::GetFaceForFont(const wxFontMgrFontRefData& font) const
 {
-    wxASSERT_MSG( font.GetFaceName().empty() || font.GetFaceName() == GetName(),
-                  _T("calling GetFaceForFont for incompatible font") );
+    wxASSERT_MSG( font.GetFaceName().empty() ||
+                  GetName().CmpNoCase(font.GetFaceName()) == 0,
+                  wxT("calling GetFaceForFont for incompatible font") );
 
     int type = FaceType_Regular;
 
-    if ( font.GetWeight() == wxBOLD )
+    if ( font.GetNumericWeight() >= wxFONTWEIGHT_BOLD )
         type |= FaceType_Bold;
 
-    // FIXME -- this should read "if ( font->GetStyle() == wxITALIC )",
-    // but since MGL neither DFB supports slant, we try to display it with
-    // italic face (better than nothing...)
-    if ( font.GetStyle() == wxITALIC || font.GetStyle() == wxSLANT )
+    // FIXME -- this should read "if ( font->GetStyle() == wxFONTSTYLE_ITALIC )",
+    // but since DFB doesn't support slant, we try to display it with italic
+    // face (better than nothing...)
+    if ( font.GetStyle() == wxFONTSTYLE_ITALIC
+            || font.GetStyle() == wxFONTSTYLE_SLANT )
     {
         if ( HasFace((FaceType)(type | FaceType_Italic)) )
             type |= FaceType_Italic;
@@ -132,13 +133,15 @@ wxFontBundleBase::GetFaceForFont(const wxFontMgrFontRefData& font) const
 
     if ( !HasFace((FaceType)type) )
     {
+        // if we can't get the exact font requested, substitute it with
+        // some other variant:
         for (int i = 0; i < FaceType_Max; i++)
         {
             if ( HasFace((FaceType)i) )
                 return GetFace((FaceType)i);
         }
 
-        wxFAIL_MSG( _T("no face") );
+        wxFAIL_MSG( wxT("no face") );
         return NULL;
     }
 
@@ -222,31 +225,25 @@ void wxFontsManagerBase::AddBundle(wxFontBundle *bundle)
 // ----------------------------------------------------------------------------
 
 wxFontMgrFontRefData::wxFontMgrFontRefData(int size,
-                                           int family,
-                                           int style,
+                                           wxFontFamily family,
+                                           wxFontStyle style,
                                            int weight,
                                            bool underlined,
                                            const wxString& faceName,
                                            wxFontEncoding encoding)
 {
-    if ( family == wxDEFAULT )
-        family = wxSWISS;
-    if ( style == wxDEFAULT )
-        style = wxNORMAL;
-    if ( weight == wxDEFAULT )
-        weight = wxNORMAL;
+    if ( family == wxFONTFAMILY_DEFAULT )
+        family = wxFONTFAMILY_SWISS;
     if ( size == wxDEFAULT )
         size = 12;
 
     m_info.family = (wxFontFamily)family;
     m_info.faceName = faceName;
     m_info.style = (wxFontStyle)style;
-    m_info.weight = (wxFontWeight)weight;
+    m_info.weight = weight;
     m_info.pointSize = size;
     m_info.underlined = underlined;
     m_info.encoding = encoding;
-
-    m_noAA = false;
 
     m_fontFace = NULL;
     m_fontBundle = NULL;
@@ -254,10 +251,8 @@ wxFontMgrFontRefData::wxFontMgrFontRefData(int size,
 }
 
 wxFontMgrFontRefData::wxFontMgrFontRefData(const wxFontMgrFontRefData& data)
+    : m_info(data.m_info)
 {
-    m_info = data.m_info;
-    m_noAA = data.m_noAA;
-
     m_fontFace = data.m_fontFace;
     m_fontBundle = data.m_fontBundle;
     m_fontValid = data.m_fontValid;
@@ -282,30 +277,30 @@ wxFontMgrFontRefData::GetFontInstance(float scale, bool antialiased) const
 {
     wxConstCast(this, wxFontMgrFontRefData)->EnsureValidFont();
     return m_fontFace->GetFontInstance(m_info.pointSize * scale,
-                                       antialiased && !m_noAA);
+                                       antialiased);
 }
 
-void wxFontMgrFontRefData::SetPointSize(int pointSize)
+void wxFontMgrFontRefData::SetFractionalPointSize(float pointSize)
 {
     m_info.pointSize = pointSize;
     m_fontValid = false;
 }
 
-void wxFontMgrFontRefData::SetFamily(int family)
+void wxFontMgrFontRefData::SetFamily(wxFontFamily family)
 {
-    m_info.family = (wxFontFamily)family;
+    m_info.family = family;
     m_fontValid = false;
 }
 
-void wxFontMgrFontRefData::SetStyle(int style)
+void wxFontMgrFontRefData::SetStyle(wxFontStyle style)
 {
-    m_info.style = (wxFontStyle)style;
+    m_info.style = style;
     m_fontValid = false;
 }
 
-void wxFontMgrFontRefData::SetWeight(int weight)
+void wxFontMgrFontRefData::SetNumericWeight(int weight)
 {
-    m_info.weight = (wxFontWeight)weight;
+    m_info.weight = weight;
     m_fontValid = false;
 }
 
@@ -326,12 +321,6 @@ void wxFontMgrFontRefData::SetEncoding(wxFontEncoding encoding)
     m_info.encoding = encoding;
     m_fontValid = false;
 }
-
-void wxFontMgrFontRefData::SetNoAntiAliasing(bool no)
-{
-    m_noAA = no;
-}
-
 
 void wxFontMgrFontRefData::EnsureValidFont()
 {

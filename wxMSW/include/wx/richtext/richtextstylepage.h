@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        wx/richtext/richtextstylepage.h
-// Purpose:
+// Purpose:     Declares the rich text formatting dialog style page.
 // Author:      Julian Smart
 // Modified by:
 // Created:     10/5/2006 11:34:55 AM
-// RCS-ID:      $Id: richtextstylepage.h 42678 2006-10-29 22:01:06Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -12,13 +11,15 @@
 #ifndef _RICHTEXTSTYLEPAGE_H_
 #define _RICHTEXTSTYLEPAGE_H_
 
+#include "wx/richtext/richtextdialogpage.h"
+
 /*!
  * Control identifiers
  */
 
 ////@begin control identifiers
 #define SYMBOL_WXRICHTEXTSTYLEPAGE_STYLE wxRESIZE_BORDER|wxTAB_TRAVERSAL
-#define SYMBOL_WXRICHTEXTSTYLEPAGE_TITLE _("wxRichTextStylePage")
+#define SYMBOL_WXRICHTEXTSTYLEPAGE_TITLE wxEmptyString
 #define SYMBOL_WXRICHTEXTSTYLEPAGE_IDNAME ID_RICHTEXTSTYLEPAGE
 #define SYMBOL_WXRICHTEXTSTYLEPAGE_SIZE wxSize(400, 300)
 #define SYMBOL_WXRICHTEXTSTYLEPAGE_POSITION wxDefaultPosition
@@ -28,10 +29,11 @@
  * wxRichTextStylePage class declaration
  */
 
-class wxRichTextStylePage: public wxPanel
+class WXDLLIMPEXP_RICHTEXT wxRichTextStylePage: public wxRichTextDialogPage
 {
-    DECLARE_DYNAMIC_CLASS( wxRichTextStylePage )
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(wxRichTextStylePage);
+    wxDECLARE_EVENT_TABLE();
+    DECLARE_HELP_PROVISION()
 
 public:
     /// Constructors
@@ -48,11 +50,15 @@ public:
     void CreateControls();
 
     /// Transfer data from/to window
-    virtual bool TransferDataFromWindow();
-    virtual bool TransferDataToWindow();
+    virtual bool TransferDataFromWindow() wxOVERRIDE;
+    virtual bool TransferDataToWindow() wxOVERRIDE;
 
     /// Gets the attributes associated with the main formatting dialog
-    wxTextAttrEx* GetAttributes();
+    wxRichTextAttr* GetAttributes();
+
+    /// Determines whether the style name can be edited
+    bool GetNameIsEditable() const { return m_nameIsEditable; }
+    void SetNameIsEditable(bool editable) { m_nameIsEditable = editable; }
 
 ////@begin wxRichTextStylePage event handler declarations
 
@@ -85,6 +91,8 @@ public:
         ID_RICHTEXTSTYLEPAGE_NEXT_STYLE = 10406
     };
 ////@end wxRichTextStylePage member variables
+
+    bool m_nameIsEditable;
 };
 
 #endif

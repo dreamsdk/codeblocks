@@ -2,7 +2,6 @@
 // Name:        src/html/m_list.cpp
 // Purpose:     wxHtml module for lists
 // Author:      Vaclav Slavik
-// RCS-ID:      $Id: m_list.cpp 38788 2006-04-18 08:11:26Z ABX $
 // Copyright:   (c) 1999 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,7 +14,7 @@
 
 #if wxUSE_HTML && wxUSE_STREAMS
 
-#ifndef WXPRECOMP
+#ifndef WX_PRECOMP
     #include "wx/brush.h"
     #include "wx/dc.h"
 #endif
@@ -39,12 +38,12 @@ class wxHtmlListmarkCell : public wxHtmlCell
     public:
         wxHtmlListmarkCell(wxDC *dc, const wxColour& clr);
         void Draw(wxDC& dc, int x, int y, int view_y1, int view_y2,
-                  wxHtmlRenderingInfo& info);
+                  wxHtmlRenderingInfo& info) wxOVERRIDE;
 
-    DECLARE_NO_COPY_CLASS(wxHtmlListmarkCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlListmarkCell);
 };
 
-wxHtmlListmarkCell::wxHtmlListmarkCell(wxDC* dc, const wxColour& clr) : wxHtmlCell(), m_Brush(clr, wxSOLID)
+wxHtmlListmarkCell::wxHtmlListmarkCell(wxDC* dc, const wxColour& clr) : wxHtmlCell(), m_Brush(clr, wxBRUSHSTYLE_SOLID)
 {
     m_Width =  dc->GetCharHeight();
     m_Height = dc->GetCharHeight();
@@ -91,9 +90,9 @@ class wxHtmlListCell : public wxHtmlContainerCell
         wxHtmlListCell(wxHtmlContainerCell *parent);
         virtual ~wxHtmlListCell();
         void AddRow(wxHtmlContainerCell *mark, wxHtmlContainerCell *cont);
-        virtual void Layout(int w);
+        virtual void Layout(int w) wxOVERRIDE;
 
-    DECLARE_NO_COPY_CLASS(wxHtmlListCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlListCell);
 };
 
 wxHtmlListCell::wxHtmlListCell(wxHtmlContainerCell *parent) : wxHtmlContainerCell(parent)
@@ -206,7 +205,7 @@ class wxHtmlListcontentCell : public wxHtmlContainerCell
 {
 public:
     wxHtmlListcontentCell(wxHtmlContainerCell *p) : wxHtmlContainerCell(p) {}
-    virtual void Layout(int w) {
+    virtual void Layout(int w) wxOVERRIDE {
         // Reset top indentation, fixes <li><p>
         SetIndent(0, wxHTML_INDENT_TOP);
         wxHtmlContainerCell::Layout(w);

@@ -9,20 +9,23 @@
 //              beware, inelegant code!
 // Author:      Julian Smart
 // Created:     12/12/98
-// RCS-ID:      $Id: wxpoem.h 41020 2006-09-05 20:47:48Z VZ $
 // Copyright:   (c) 1998 Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
+
+#ifndef _WXPOEM_H_
+#define _WXPOEM_H_
+
 
 // Define a new application
 class MyApp: public wxApp
 {
 public:
-    bool OnInit();
-    int OnExit();
+    bool OnInit() wxOVERRIDE;
+    int OnExit() wxOVERRIDE;
 };
 
-DECLARE_APP(MyApp)
+wxDECLARE_APP(MyApp);
 
 // Define a new canvas which can receive some events
 class MyCanvas: public wxWindow
@@ -38,7 +41,7 @@ public:
 private:
     wxMenu *m_popupMenu;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // Define a new frame
@@ -46,7 +49,8 @@ class MainWindow: public wxFrame
 {
 public:
     MyCanvas *canvas;
-    MainWindow(wxFrame *frame, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style);
+    MainWindow(wxFrame *frame, wxWindowID id, const wxString& title,
+               const wxPoint& pos, const wxSize& size, long style);
     virtual ~MainWindow();
 
     void OnCloseWindow(wxCloseEvent& event);
@@ -90,7 +94,7 @@ private:
     // Icons
     wxIcon *m_corners[4];
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // Menu items
@@ -107,3 +111,5 @@ enum
     POEM_SEARCH        = wxID_FIND,
     POEM_MINIMIZE      = wxID_ICONIZE_FRAME
 };
+
+#endif      // _WXPOEM_H_

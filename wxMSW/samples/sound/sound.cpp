@@ -4,7 +4,6 @@
 // Author:      Vaclav Slavik
 // Modified by:
 // Created:     2004/01/29
-// RCS-ID:      $Id: sound.cpp 62181 2009-09-28 08:12:24Z JS $
 // Copyright:   (c) 2004 Vaclav Salvik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -35,12 +34,12 @@
 // resources
 // ----------------------------------------------------------------------------
 
-// the application icon (under Windows and OS/2 it is in resources)
-#if defined(__WXGTK__) || defined(__WXMOTIF__) || defined(__WXMAC__) || defined(__WXMGL__) || defined(__WXX11__)
+// the application icon (under Windows it is in resources)
+#ifndef wxHAS_IMAGES_IN_RESOURCES
     #include "../sample.xpm"
 #endif
 
-#define WAV_FILE _T("doggrowl.wav")
+#define WAV_FILE "doggrowl.wav"
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -49,7 +48,7 @@
 class MyApp : public wxApp
 {
 public:
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 
@@ -73,6 +72,7 @@ public:
     void OnPlayAsyncOnStack(wxCommandEvent& event);
     void OnPlayLoop(wxCommandEvent& event);
     void OnStop(wxCommandEvent& event);
+    void OnPlayBell(wxCommandEvent& event);
 
     void OnAbout(wxCommandEvent& event);
 
@@ -81,6 +81,7 @@ public:
 
 private:
     bool CreateSound(wxSound& snd) const;
+    wxSound* TryCreateSound() const;
 
     wxSound*    m_sound;
     wxString    m_soundFile;
@@ -92,7 +93,7 @@ private:
     wxTextCtrl* m_tc;
 
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -114,6 +115,7 @@ enum
     Sound_PlayAsyncOnStack,
     Sound_PlayLoop,
     Sound_Stop,
+    Sound_PlayBell,
 
     Sound_Quit = wxID_EXIT,
     Sound_About = wxID_ABOUT
@@ -126,7 +128,7 @@ enum
 // the event tables connect the wxWidgets events with the functions (event
 // handlers) which process them. It can be also done at run-time, but for the
 // simple menu events like this the static method is much simpler.
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Sound_SelectFile,       MyFrame::OnSelectFile)
 #ifdef __WXMSW__
     EVT_MENU(Sound_SelectResource,   MyFrame::OnSelectResource)
@@ -139,14 +141,15 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Sound_PlayAsyncOnStack, MyFrame::OnPlayAsyncOnStack)
     EVT_MENU(Sound_PlayLoop,         MyFrame::OnPlayLoop)
     EVT_MENU(Sound_Stop,             MyFrame::OnStop)
-END_EVENT_TABLE()
+    EVT_MENU(Sound_PlayBell,         MyFrame::OnPlayBell)
+wxEND_EVENT_TABLE()
 
 // Create a new application object: this macro will allow wxWidgets to create
 // the application object during program execution (it's better than using a
 // static object for many reasons) and also implements the accessor function
 // wxGetApp() which will return the reference of the right type (i.e. MyApp and
 // not wxApp)
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // ============================================================================
 // implementation
@@ -159,8 +162,11 @@ IMPLEMENT_APP(MyApp)
 // 'Main program' equivalent: the program execution "starts" here
 bool MyApp::OnInit()
 {
+    if ( !wxApp::OnInit() )
+        return false;
+
     // create the main application window
-    MyFrame *frame = new MyFrame(_T("wxWidgets Sound Sample"));
+    MyFrame *frame = new MyFrame("wxWidgets Sound Sample");
 
     // and show it (the frames, unlike simple controls, are not shown when
     // created initially)
@@ -188,29 +194,32 @@ MyFrame::MyFrame(const wxString& title)
     SetIcon(wxICON(sample));
 
     wxMenu *menuFile = new wxMenu;
-    menuFile->Append(Sound_SelectFile, _T("Select WAV &file...\tCtrl-O"), _T("Select a new wav file to play"));
+    menuFile->Append(Sound_SelectFile, "Select WAV &file...\tCtrl-O", "Select a new wav file to play");
 #ifdef __WXMSW__
-    menuFile->Append(Sound_SelectResource, _T("Select WAV &resource...\tCtrl-R"), _T("Select a new resource to play"));
+    menuFile->Append(Sound_SelectResource, "Select WAV &resource...\tCtrl-R", "Select a new resource to play");
+    menuFile->Append(Sound_SelectMemory, "Select WAV &data\tCtrl-M", "Choose to play from memory buffer");
 #endif // __WXMSW__
-    menuFile->Append(Sound_SelectMemory, _T("Select WAV &data\tCtrl-M"), _T("Choose to play from memory buffer"));
-    menuFile->Append(Sound_Quit, _T("E&xit\tAlt-X"), _T("Quit this program"));
+
+    menuFile->Append(Sound_Quit, "E&xit\tAlt-X", "Quit this program");
 
     wxMenu *playMenu = new wxMenu;
-    playMenu->Append(Sound_PlaySync, _T("Play sound &synchronously\tCtrl-S"));
-    playMenu->Append(Sound_PlayAsync, _T("Play sound &asynchronously\tCtrl-A"));
-    playMenu->Append(Sound_PlayAsyncOnStack, _T("Play sound asynchronously (&object on stack)\tCtrl-K"));
-    playMenu->Append(Sound_PlayLoop, _T("&Loop sound\tCtrl-L"));
+    playMenu->Append(Sound_PlaySync, "Play sound &synchronously\tCtrl-S");
+    playMenu->Append(Sound_PlayAsync, "Play sound &asynchronously\tCtrl-A");
+    playMenu->Append(Sound_PlayAsyncOnStack, "Play sound asynchronously (&object on stack)\tCtrl-K");
+    playMenu->Append(Sound_PlayLoop, "&Loop sound\tCtrl-L");
     playMenu->AppendSeparator();
-    playMenu->Append(Sound_Stop, _T("&Stop playing\tCtrl-T"));
+    playMenu->Append(Sound_Stop, "&Stop playing\tCtrl-T");
+    playMenu->AppendSeparator();
+    playMenu->Append(Sound_PlayBell, "Play system bell");
 
     wxMenu *helpMenu = new wxMenu;
-    helpMenu->Append(Sound_About, _T("&About...\tF1"), _T("Show about dialog"));
+    helpMenu->Append(Sound_About, "&About\tF1", "Show about dialog");
 
     // now append the freshly created menu to the menu bar...
     wxMenuBar *menuBar = new wxMenuBar();
-    menuBar->Append(menuFile, _T("&File"));
-    menuBar->Append(playMenu, _T("&Play"));
-    menuBar->Append(helpMenu, _T("&Help"));
+    menuBar->Append(menuFile, "&File");
+    menuBar->Append(playMenu, "&Play");
+    menuBar->Append(helpMenu, "&Help");
 
     // ... and attach this menu bar to the frame
     SetMenuBar(menuBar);
@@ -224,6 +233,7 @@ MyFrame::MyFrame(const wxString& title)
 
 bool MyFrame::CreateSound(wxSound& snd) const
 {
+#ifdef __WXMSW__
     if ( m_useMemory )
     {
         // this is the dump of cuckoo.wav
@@ -957,7 +967,6 @@ bool MyFrame::CreateSound(wxSound& snd) const
         return snd.Create(sizeof(data), data);
     }
 
-#ifdef __WXMSW__
     if ( !m_soundRes.empty() )
     {
         return snd.Create(m_soundRes, true);
@@ -967,11 +976,22 @@ bool MyFrame::CreateSound(wxSound& snd) const
     return snd.Create(m_soundFile);
 }
 
+wxSound* MyFrame::TryCreateSound() const
+{
+    wxSound* const sound = new wxSound;
+    if ( !CreateSound(*sound) )
+    {
+        delete sound;
+        return NULL;
+    }
+
+    return sound;
+}
 
 void MyFrame::NotifyUsingFile(const wxString& name)
 {
     wxString msg;
-    msg << _T("Using sound file: ") << name << _T("\n");
+    msg << "Using sound file: " << name << "\n";
     m_tc->AppendText(msg);
 }
 
@@ -982,9 +1002,15 @@ void MyFrame::NotifyUsingFile(const wxString& name)
 void MyFrame::OnSelectFile(wxCommandEvent& WXUNUSED(event))
 {
 #if wxUSE_FILEDLG
-    wxFileDialog dlg(this, _T("Choose a sound file"),
+    wxFileDialog dlg(this, "Choose a sound file",
                      wxEmptyString, wxEmptyString,
-                     _T("WAV files (*.wav)|*.wav"), wxFD_OPEN|wxFD_CHANGE_DIR);
+                     wxString::Format
+                     (
+                         "WAV files (*.wav)|*.wav|All files (%s)|%s",
+                         wxFileSelectorDefaultWildcardStr,
+                         wxFileSelectorDefaultWildcardStr
+                     ),
+                     wxFD_OPEN|wxFD_CHANGE_DIR);
     if ( dlg.ShowModal() == wxID_OK )
     {
         m_soundFile = dlg.GetPath();
@@ -993,8 +1019,7 @@ void MyFrame::OnSelectFile(wxCommandEvent& WXUNUSED(event))
 #endif // __WXMSW__
         m_useMemory = false;
 
-        delete m_sound;
-        m_sound = NULL;
+        wxDELETE(m_sound);
         NotifyUsingFile(m_soundFile);
     }
 #endif // wxUSE_FILEDLG
@@ -1006,9 +1031,9 @@ void MyFrame::OnSelectResource(wxCommandEvent& WXUNUSED(event))
 {
     m_soundRes = wxGetTextFromUser
                  (
-                    _T("Enter resource name:"),
-                    _T("wxWidgets Sound Sample"),
-                    _T("FromResource"),
+                    "Enter resource name:",
+                    "wxWidgets Sound Sample",
+                    "FromResource",
                     this
                  );
     if ( m_soundRes.empty() )
@@ -1017,10 +1042,9 @@ void MyFrame::OnSelectResource(wxCommandEvent& WXUNUSED(event))
     m_soundFile.clear();
     m_useMemory = false;
 
-    delete m_sound;
-    m_sound = NULL;
+    wxDELETE(m_sound);
 
-    NotifyUsingFile(_T("Windows WAV resource"));
+    NotifyUsingFile("Windows WAV resource");
 }
 
 #endif // __WXMSW__
@@ -1029,7 +1053,7 @@ void MyFrame::OnSelectMemory(wxCommandEvent& WXUNUSED(event))
 {
     m_useMemory = true;
 
-    NotifyUsingFile(_T("embedded sound fragment"));
+    NotifyUsingFile("embedded sound fragment");
 }
 
 void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
@@ -1042,12 +1066,9 @@ void MyFrame::OnPlaySync(wxCommandEvent& WXUNUSED(event))
 {
     wxBusyCursor busy;
     if ( !m_sound )
-    {
-        m_sound = new wxSound;
-        CreateSound(*m_sound);
-    }
+        m_sound = TryCreateSound();
 
-    if (m_sound->IsOk())
+    if (m_sound)
         m_sound->Play(wxSOUND_SYNC);
 }
 
@@ -1055,12 +1076,9 @@ void MyFrame::OnPlayAsync(wxCommandEvent& WXUNUSED(event))
 {
     wxBusyCursor busy;
     if ( !m_sound )
-    {
-        m_sound = new wxSound;
-        CreateSound(*m_sound);
-    }
+        m_sound = TryCreateSound();
 
-    if (m_sound->IsOk())
+    if (m_sound)
         m_sound->Play(wxSOUND_ASYNC);
 }
 
@@ -1077,22 +1095,24 @@ void MyFrame::OnPlayLoop(wxCommandEvent& WXUNUSED(event))
 {
     wxBusyCursor busy;
     if ( !m_sound )
-    {
-        m_sound = new wxSound;
-        CreateSound(*m_sound);
-    }
+        m_sound = TryCreateSound();
 
     if (m_sound->IsOk())
         m_sound->Play(wxSOUND_ASYNC | wxSOUND_LOOP);
 }
 
+void MyFrame::OnPlayBell(wxCommandEvent& WXUNUSED(event))
+{
+    wxBell();
+}
+
 void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
     wxString msg;
-    msg.Printf( _T("This is the About dialog of the sound sample.\n")
-                _T("Welcome to %s"), wxVERSION_STRING);
+    msg.Printf( "This is the About dialog of the sound sample.\n"
+                "Welcome to %s", wxVERSION_STRING);
 
-    wxMessageBox(msg, _T("About"), wxOK | wxICON_INFORMATION, this);
+    wxMessageBox(msg, "About", wxOK | wxICON_INFORMATION, this);
 }
 
 void MyFrame::OnStop(wxCommandEvent& WXUNUSED(event))

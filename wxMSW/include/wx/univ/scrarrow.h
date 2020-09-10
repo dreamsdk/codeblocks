@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     22.01.01
-// RCS-ID:      $Id: scrarrow.h 42715 2006-10-30 12:24:13Z VS $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,6 +11,7 @@
 #ifndef _WX_UNIV_SCRARROW_H_
 #define _WX_UNIV_SCRARROW_H_
 
+#if wxUSE_SCROLLBAR
 // ----------------------------------------------------------------------------
 // wxScrollArrows is not a control but just a class containing the common
 // functionality of scroll arrows, whether part of scrollbars, spin ctrls or
@@ -23,17 +23,17 @@
 // to derive from the wxControlWithArrows interface and implement its methods.
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxControlWithArrows;
-class WXDLLEXPORT wxDC;
-class WXDLLEXPORT wxMouseEvent;
-class WXDLLEXPORT wxRect;
-class WXDLLEXPORT wxRenderer;
+class WXDLLIMPEXP_FWD_CORE wxControlWithArrows;
+class WXDLLIMPEXP_FWD_CORE wxDC;
+class WXDLLIMPEXP_FWD_CORE wxMouseEvent;
+class WXDLLIMPEXP_FWD_CORE wxRect;
+class WXDLLIMPEXP_FWD_CORE wxRenderer;
 
 // ----------------------------------------------------------------------------
 // wxScrollArrows: an abstraction of scrollbar arrow
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxScrollArrows
+class WXDLLIMPEXP_CORE wxScrollArrows
 {
 public:
     enum Arrow
@@ -79,7 +79,7 @@ private:
 // wxControlWithArrows: interface implemented by controls using wxScrollArrows
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxControlWithArrows
+class WXDLLIMPEXP_CORE wxControlWithArrows
 {
 public:
     virtual ~wxControlWithArrows() {}
@@ -108,5 +108,6 @@ public:
     // false to stop it
     virtual bool OnArrow(wxScrollArrows::Arrow arrow) = 0;
 };
+#endif // wxUSE_SCROLLBAR
 
 #endif // _WX_UNIV_SCRARROW_H_

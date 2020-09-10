@@ -1,7 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        printimg.cpp
-// Purpose:     wxHtmlEasyPrinting testing example
-// Licence:     wxWindows Licence
+// Name:        printing.cpp
+// Purpose:     wxHtml sample: wxHtmlEasyPrinting test
+// Author:      Vaclav Slavik
+// Copyright:   (c) 1998-2009 wxWidgets team
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -22,6 +24,10 @@
 #include "wx/html/htmlwin.h"
 #include "wx/html/htmprint.h"
 
+#ifndef wxHAS_IMAGES_IN_RESOURCES
+    #include "../../sample.xpm"
+#endif
+
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -30,46 +36,47 @@
 // Define a new application type, each program should derive a class from wxApp
 class MyApp : public wxApp
 {
-    public:
-        // override base class virtuals
-        // ----------------------------
+public:
+    // override base class virtuals
+    // ----------------------------
 
-        // this one is called on application startup and is a good place for the app
-        // initialization (doing it here and not in the ctor allows to have an error
-        // return: if OnInit() returns false, the application terminates)
+    // this one is called on application startup and is a good place for the app
+    // initialization (doing it here and not in the ctor allows to have an error
+    // return: if OnInit() returns false, the application terminates)
 
-        virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 // Define a new frame type: this is going to be our main frame
 class MyFrame : public wxFrame
 {
-    public:
-        // ctor and dtor
+public:
+    // ctor and dtor
 
-        MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
-        virtual ~MyFrame();
+    MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size);
+    virtual ~MyFrame();
 
-        // event handlers (these functions should _not_ be virtual)
-        void OnQuit(wxCommandEvent& event);
-        void OnAbout(wxCommandEvent& event);
+    // event handlers (these functions should _not_ be virtual)
+    void OnQuit(wxCommandEvent& event);
+    void OnAbout(wxCommandEvent& event);
 
-        void OnPageSetup(wxCommandEvent& event);
-        void OnPrint(wxCommandEvent& event);
-        void OnPreview(wxCommandEvent& event);
-        void OnOpen(wxCommandEvent& event);
-        
-        void OnPrintSmall(wxCommandEvent& event);
-        void OnPrintNormal(wxCommandEvent& event);
-        void OnPrintHuge(wxCommandEvent& event);
+    void OnPageSetup(wxCommandEvent& event);
+    void OnPrint(wxCommandEvent& event);
+    void OnPreview(wxCommandEvent& event);
+    void OnOpen(wxCommandEvent& event);
+
+    void OnPrintSmall(wxCommandEvent& event);
+    void OnPrintNormal(wxCommandEvent& event);
+    void OnPrintHuge(wxCommandEvent& event);
 
 
-    private:
-        wxHtmlWindow *m_Html;
-        wxHtmlEasyPrinting *m_Prn;
-        wxString m_Name;
-        // any class wishing to process wxWidgets events must use this macro
-        DECLARE_EVENT_TABLE()
+private:
+    wxHtmlWindow *m_Html;
+    wxHtmlEasyPrinting *m_Prn;
+    wxString m_Name;
+
+    // any class wishing to process wxWidgets events must use this macro
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -98,7 +105,7 @@ enum
 // the event tables connect the wxWidgets events with the functions (event
 // handlers) which process them. It can be also done at run-time, but for the
 // simple menu events like this the static method is much simpler.
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Minimal_Quit, MyFrame::OnQuit)
     EVT_MENU(wxID_ABOUT, MyFrame::OnAbout)
     EVT_MENU(Minimal_Print, MyFrame::OnPrint)
@@ -108,14 +115,14 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(Minimal_PrintSmall, MyFrame::OnPrintSmall)
     EVT_MENU(Minimal_PrintNormal, MyFrame::OnPrintNormal)
     EVT_MENU(Minimal_PrintHuge, MyFrame::OnPrintHuge)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // Create a new application object: this macro will allow wxWidgets to create
 // the application object during program execution (it's better than using a
 // static object for many reasons) and also declares the accessor function
 // wxGetApp() which will return the reference of the right type (i.e. MyApp and
 // not wxApp)
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // ============================================================================
 // implementation
@@ -128,6 +135,9 @@ IMPLEMENT_APP(MyApp)
 
 bool MyApp::OnInit()
 {
+    if ( !wxApp::OnInit() )
+        return false;
+
 #if wxUSE_LIBPNG
     wxImage::AddHandler(new wxPNGHandler);
 #endif
@@ -141,11 +151,8 @@ bool MyApp::OnInit()
     MyFrame *frame = new MyFrame(_("Printing test"),
         wxDefaultPosition, wxSize(640, 480));
 
-    // Show it and tell the application that it's our main window
-    // @@@ what does it do exactly, in fact? is it necessary here?
+    // Show it
     frame->Show(true);
-    SetTopWindow(frame);
-
 
     // success: wxApp::OnRun() will be called which will enter the main message
     // loop and the application will run. If we returned false here, the
@@ -162,27 +169,29 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
         : wxFrame((wxFrame *)NULL, wxID_ANY, title, pos, size)
 {
+    SetIcon(wxICON(sample));
+
     // create a menu bar
     wxMenu *menuFile = new wxMenu;
     menuFile->Append(Minimal_Open, _("Open...\tCtrl-O"));
     menuFile->AppendSeparator();
-    menuFile->Append(Minimal_PageSetup, _("Page Setup"));
-    menuFile->Append(Minimal_Print, _("Print..."));
-    menuFile->Append(Minimal_Preview, _("Preview..."));
+    menuFile->Append(Minimal_PageSetup, _("Page &Setup"));
+    menuFile->Append(Minimal_Preview, _("Print pre&view..."));
+    menuFile->Append(Minimal_Print, _("Print...\tCtrl-P"));
     menuFile->AppendSeparator();
     menuFile->Append(wxID_ABOUT, _("&About"));
     menuFile->AppendSeparator();
     menuFile->Append(Minimal_Quit, _("&Exit"));
 
-    wxMenu *testFile = new wxMenu;
-    testFile->Append(Minimal_PrintSmall, _("Small Printer Fonts"));
-    testFile->Append(Minimal_PrintNormal, _("Normal Printer Fonts"));
-    testFile->Append(Minimal_PrintHuge, _("Huge Printer Fonts"));
-    
+    wxMenu *menuFonts = new wxMenu;
+    menuFonts->AppendRadioItem(Minimal_PrintSmall, _("&Small Printer Fonts"));
+    menuFonts->AppendRadioItem(Minimal_PrintNormal, _("&Normal Printer Fonts"));
+    menuFonts->AppendRadioItem(Minimal_PrintHuge, _("&Huge Printer Fonts"));
+
     // now append the freshly created menu to the menu bar...
     wxMenuBar *menuBar = new wxMenuBar;
     menuBar->Append(menuFile, _("&File"));
-    menuBar->Append(testFile, _("&Test"));
+    menuBar->Append(menuFonts, _("F&onts"));
 
     // ... and attach this menu bar to the frame
     SetMenuBar(menuBar);
@@ -196,22 +205,21 @@ MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size)
 #if wxUSE_STATUSBAR
     m_Html -> SetRelatedStatusBar(0);
 #endif // wxUSE_STATUSBAR
-    m_Name = wxT("test.htm");
+    m_Name = "test.htm";
     m_Html -> LoadPage(m_Name);
-    
+
     m_Prn = new wxHtmlEasyPrinting(_("Easy Printing Demo"), this);
-    m_Prn -> SetHeader(m_Name + wxT("(@PAGENUM@/@PAGESCNT@)<hr>"), wxPAGE_ALL);
+    m_Prn -> SetHeader(m_Name + "(@PAGENUM@/@PAGESCNT@)<hr>", wxPAGE_ALL);
 
     // To specify where the AFM files are kept on Unix,
     // you may wish to do something like this
-    // m_Prn->GetPrintData()->SetFontMetricPath(wxT("/home/julians/afm"));
+    // m_Prn->GetPrintData()->SetFontMetricPath("/home/julians/afm");
 }
 
 // frame destructor
 MyFrame::~MyFrame()
 {
-    delete m_Prn;
-    m_Prn = (wxHtmlEasyPrinting *) NULL;
+    wxDELETE(m_Prn);
 }
 
 
@@ -250,14 +258,14 @@ void MyFrame::OnPreview(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::OnOpen(wxCommandEvent& WXUNUSED(event))
 {
-    wxFileDialog dialog(this, _("Open HTML page"), wxT(""), wxT(""), wxT("*.htm"), 0);
+    wxFileDialog dialog(this, _("Open HTML page"), "", "", "*.htm", 0);
 
     if (dialog.ShowModal() == wxID_OK)
     {
         m_Name = dialog.GetPath();
         m_Html -> LoadPage(m_Name);
-        m_Prn -> SetHeader(m_Name + wxT("(@PAGENUM@/@PAGESCNT@)<hr>"), wxPAGE_ALL);
-    } 
+        m_Prn -> SetHeader(m_Name + "(@PAGENUM@/@PAGESCNT@)<hr>", wxPAGE_ALL);
+    }
 }
 
 

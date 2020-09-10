@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        process.cpp
+// Name:        src/common/process.cpp
 // Purpose:     Process termination classes
 // Author:      Guilhem Lavaux
 // Modified by: Vadim Zeitlin to check error codes, added Detach() method
 // Created:     24/06/98
-// RCS-ID:      $Id: process.cpp 42702 2006-10-30 09:03:18Z JS $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -30,10 +29,10 @@
 // event tables and such
 // ----------------------------------------------------------------------------
 
-DEFINE_EVENT_TYPE(wxEVT_END_PROCESS)
+wxDEFINE_EVENT( wxEVT_END_PROCESS, wxProcessEvent );
 
-IMPLEMENT_DYNAMIC_CLASS(wxProcess, wxEvtHandler)
-IMPLEMENT_DYNAMIC_CLASS(wxProcessEvent, wxEvent)
+wxIMPLEMENT_DYNAMIC_CLASS(wxProcess, wxEvtHandler);
+wxIMPLEMENT_DYNAMIC_CLASS(wxProcessEvent, wxEvent);
 
 // ============================================================================
 // wxProcess implementation
@@ -50,6 +49,7 @@ void wxProcess::Init(wxEvtHandler *parent, int id, int flags)
 
     m_id         = id;
     m_pid        = 0;
+    m_priority   = wxPRIORITY_DEFAULT;
     m_redirect   = (flags & wxPROCESS_REDIRECT) != 0;
 
 #if wxUSE_STREAMS
@@ -102,7 +102,13 @@ void wxProcess::OnTerminate(int pid, int status)
 
 void wxProcess::Detach()
 {
-    SetNextHandler(NULL);
+    // we just detach from the next handler of the chain (i.e. our "parent" -- see ctor)
+    // not also from the previous handler like wxEvtHandler::Unlink() would do:
+
+    if (m_nextHandler)
+        m_nextHandler->SetPreviousHandler(m_previousHandler);
+
+    m_nextHandler = NULL;
 }
 
 // ----------------------------------------------------------------------------
@@ -162,11 +168,30 @@ bool wxProcess::Exists(int pid)
         default:
         case wxKILL_ERROR:
         case wxKILL_BAD_SIGNAL:
-            wxFAIL_MSG( _T("unexpected wxProcess::Kill() return code") );
-            // fall through
+            wxFAIL_MSG( wxT("unexpected wxProcess::Kill() return code") );
+            wxFALLTHROUGH;
 
         case wxKILL_NO_PROCESS:
             return false;
     }
 }
 
+bool wxProcess::Activate() const
+{
+#ifdef __WINDOWS__
+    // This function is defined in src/msw/utils.cpp.
+    extern bool wxMSWActivatePID(long pid);
+
+    return wxMSWActivatePID(m_pid);
+#else
+    return false;
+#endif
+}
+
+void wxProcess::SetPriority(unsigned priority)
+{
+    wxCHECK_RET( priority <= wxPRIORITY_MAX,
+                 wxS("Invalid process priority value.") );
+
+    m_priority = priority;
+}

@@ -2,7 +2,6 @@
 // Name:        src/common/settcmn.cpp
 // Purpose:     common (to all ports) wxWindow functions
 // Author:      Robert Roebling
-// RCS-ID:      $Id: settcmn.cpp 39310 2006-05-24 07:16:32Z ABX $
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -68,21 +67,35 @@ void wxSystemSettings::SetScreenType( wxSystemScreenType screen )
     ms_screen = screen;
 }
 
-#if WXWIN_COMPATIBILITY_2_4
+// ----------------------------------------------------------------------------
+// Trivial wxSystemAppearance implementation
+// ----------------------------------------------------------------------------
 
-wxColour wxSystemSettings::GetSystemColour(int index)
+#if !defined(__WXOSX__)
+
+wxString wxSystemAppearance::GetName() const
 {
-    return GetColour((wxSystemColour)index);
+    return wxString();
 }
 
-wxFont wxSystemSettings::GetSystemFont(int index)
+bool wxSystemAppearance::IsDark() const
 {
-    return GetFont((wxSystemFont)index);
+    return IsUsingDarkBackground();
 }
 
-int wxSystemSettings::GetSystemMetric(int index)
+#endif // !__WXOSX__
+
+bool wxSystemAppearance::IsUsingDarkBackground() const
 {
-    return GetMetric((wxSystemMetric)index);
+    const wxColour bg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    const wxColour fg = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+
+    // The threshold here is rather arbitrary, but it seems that using just
+    // inequality would be wrong as it could result in false positivies.
+    return fg.GetLuminance() - bg.GetLuminance() > 0.2;
 }
 
-#endif // WXWIN_COMPATIBILITY_2_4
+wxSystemAppearance wxSystemSettingsNative::GetAppearance()
+{
+    return wxSystemAppearance();
+}

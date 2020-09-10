@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxCheckBox
 // Author:      Bob Mitchell
 // Created:     2000/03/21
-// RCS-ID:      $Id: xh_chckb.cpp 39428 2006-05-29 08:13:19Z ABX $
 // Copyright:   (c) 2000 Bob Mitchell and Verant Interactive
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -23,7 +22,7 @@
     #include "wx/checkbox.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxCheckBoxXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxCheckBoxXmlHandler, wxXmlResourceHandler);
 
 wxCheckBoxXmlHandler::wxCheckBoxXmlHandler()
 : wxXmlResourceHandler()

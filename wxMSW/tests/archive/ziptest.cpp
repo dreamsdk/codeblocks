@@ -2,7 +2,6 @@
 // Name:        tests/archive/ziptest.cpp
 // Purpose:     Test the zip classes
 // Author:      Mike Wetherell
-// RCS-ID:      $Id: ziptest.cpp 36429 2005-12-18 13:58:55Z MW $
 // Copyright:   (c) 2004 Mike Wetherell
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,7 +22,6 @@
 #include "wx/zipstrm.h"
 
 using std::string;
-using std::auto_ptr;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,19 +42,19 @@ public:
     { }
 
 protected:
-    void OnCreateArchive(wxZipOutputStream& zip);
-    
-    void OnArchiveExtracted(wxZipInputStream& zip, int expectedTotal);
-    
+    void OnCreateArchive(wxZipOutputStream& zip) wxOVERRIDE;
+
+    void OnArchiveExtracted(wxZipInputStream& zip, int expectedTotal) wxOVERRIDE;
+
     void OnCreateEntry(wxZipOutputStream& zip,
                        TestEntry& testEntry,
-                       wxZipEntry *entry);
-    
+                       wxZipEntry *entry) wxOVERRIDE;
+
     void OnEntryExtracted(wxZipEntry& entry,
                           const TestEntry& testEntry,
-                          wxZipInputStream *arc);
+                          wxZipInputStream *arc) wxOVERRIDE;
 
-    void OnSetNotifier(EntryT& entry);
+    void OnSetNotifier(EntryT& entry) wxOVERRIDE;
 
     int m_count;
     wxString m_comment;
@@ -64,7 +62,7 @@ protected:
 
 void ZipTestCase::OnCreateArchive(wxZipOutputStream& zip)
 {
-    m_comment << _T("Comment for test ") << m_id;
+    m_comment << wxT("Comment for test ") << m_id;
     zip.SetComment(m_comment);
 }
 
@@ -84,7 +82,7 @@ void ZipTestCase::OnCreateEntry(wxZipOutputStream& zip,
         switch ((m_id + m_count) % 5) {
             case 0:
             {
-                wxString comment = _T("Comment for ") + entry->GetName();
+                wxString comment = wxT("Comment for ") + entry->GetName();
                 entry->SetComment(comment);
                 // lowercase the expected result, and the notifier should do
                 // the same for the zip entries when ModifyArchive() runs
@@ -110,7 +108,7 @@ void ZipTestCase::OnEntryExtracted(wxZipEntry& entry,
 {
     // provide some context for the error message so that we know which
     // iteration of the loop we were on
-    wxString name = _T(" '") + entry.GetName() + _T("'");
+    wxString name = wxT(" '") + entry.GetName() + wxT("'");
     string error_entry(name.mb_str());
     string error_context(" failed for entry" + error_entry);
 
@@ -125,9 +123,11 @@ void ZipTestCase::OnEntryExtracted(wxZipEntry& entry,
     CPPUNIT_ASSERT_MESSAGE("IsText" + error_context,
                            entry.IsText() == testEntry.IsText());
 
-    CPPUNIT_ASSERT_MESSAGE("Extra/LocalExtra mismatch for entry" + error_entry,
-        (entry.GetExtraLen() != 0 && entry.GetLocalExtraLen() != 0) ||
-        (entry.GetExtraLen() == 0 && entry.GetLocalExtraLen() == 0));
+    INFO("Extra/LocalExtra mismatch for entry" + error_entry);
+    if ( entry.GetExtraLen() )
+        CHECK( entry.GetLocalExtraLen() != 0 );
+    else
+        CHECK( entry.GetLocalExtraLen() == 0 );
 }
 
 // check the notifier mechanism by using it to fold the entry comments to
@@ -136,7 +136,7 @@ void ZipTestCase::OnEntryExtracted(wxZipEntry& entry,
 class ZipNotifier : public wxZipNotifier
 {
 public:
-    void OnEntryUpdated(wxZipEntry& entry);
+    void OnEntryUpdated(wxZipEntry& entry) wxOVERRIDE;
 };
 
 void ZipNotifier::OnEntryUpdated(wxZipEntry& entry)
@@ -166,7 +166,7 @@ public:
     { }
 
 protected:
-    void runTest();
+    void runTest() wxOVERRIDE;
     int m_options;
     int m_id;
 };
@@ -175,19 +175,19 @@ void ZipPipeTestCase::runTest()
 {
     TestOutputStream out(m_options);
 
-    wxString testdata = _T("test data to pipe through zip");
-    wxString cmd = _T("echo ") + testdata + _T(" | zip -q - -");
+    wxString testdata = wxT("test data to pipe through zip");
+    wxString cmd = wxT("echo ") + testdata + wxT(" | zip -q - -");
 
     {
         PFileInputStream in(cmd);
-        if (in.Ok())
+        if (in.IsOk())
             out.Write(in);
     }
 
     TestInputStream in(out, m_id % ((m_options & PipeIn) ? 4 : 3));
     wxZipInputStream zip(in);
 
-    auto_ptr<wxZipEntry> entry(zip.GetNextEntry());
+    wxScopedPtr<wxZipEntry> entry(zip.GetNextEntry());
     CPPUNIT_ASSERT(entry.get() != NULL);
 
     if ((m_options & PipeIn) == 0)
@@ -206,44 +206,26 @@ void ZipPipeTestCase::runTest()
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// Zip suite 
+// Zip suite
 
 class ziptest : public ArchiveTestSuite
 {
 public:
     ziptest();
-    static CppUnit::Test *suite() { return (new ziptest)->makeSuite(); }
+
+    void runTest() wxOVERRIDE { DoRunTest(); }
 
 protected:
-    ArchiveTestSuite *makeSuite();
-
     CppUnit::Test *makeTest(string descr, int options,
                             bool genericInterface, const wxString& archiver,
-                            const wxString& unarchiver);
+                            const wxString& unarchiver) wxOVERRIDE;
 };
 
 ziptest::ziptest()
   : ArchiveTestSuite("zip")
 {
-    AddArchiver(_T("zip -qr %s *"));
-    AddUnArchiver(_T("unzip -q %s"));
-}
-
-ArchiveTestSuite *ziptest::makeSuite()
-{
-    ArchiveTestSuite::makeSuite();
-
-#ifndef WXARC_NO_POPEN 
-    // if have popen then can check the piped output of 'zip - -'
-    if (IsInPath(_T("zip")))
-        for (int options = 0; options <= PipeIn; options += PipeIn) {
-            string name = Description(_T("ZipPipeTestCase"), options,
-                                      false, _T(""), _T("zip -q - -"));
-            addTest(new ZipPipeTestCase(name, options));
-        }
-#endif
-
-    return this;
+    AddArchiver(wxT("zip -qr %s *"));
+    AddUnArchiver(wxT("unzip -q %s"));
 }
 
 CppUnit::Test *ziptest::makeTest(
@@ -258,15 +240,16 @@ CppUnit::Test *ziptest::makeTest(
         return NULL;
 
     if (genericInterface)
+    {
         return new ArchiveTestCase<wxArchiveClassFactory>(
                             descr, new wxZipClassFactory,
                             options, archiver, unarchiver);
-    else
-        return new ZipTestCase(descr, options, archiver, unarchiver);
+    }
+
+    return new ZipTestCase(descr, options, archiver, unarchiver);
 }
 
 CPPUNIT_TEST_SUITE_REGISTRATION(ziptest);
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ziptest, "archive");
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(ziptest, "archive/zip");
 
 #endif // wxUSE_STREAMS && wxUSE_ZIPSTREAM

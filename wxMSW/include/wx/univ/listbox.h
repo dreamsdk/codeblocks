@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     30.08.00
-// RCS-ID:      $Id: listbox.h 61872 2009-09-09 22:37:05Z VZ $
 // Copyright:   (c) 2000 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,7 +47,7 @@
 // wxListBox: a list of selectable items
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxListBox : public wxListBoxBase, public wxScrollHelper
+class WXDLLIMPEXP_CORE wxListBox : public wxListBoxBase, public wxScrollHelper
 {
 public:
     // ctors and such
@@ -96,39 +95,40 @@ public:
                 const wxString& name = wxListBoxNameStr);
 
     // implement the listbox interface defined by wxListBoxBase
-    virtual void Clear();
-    virtual void Delete(unsigned int n);
+    virtual void DoClear() wxOVERRIDE;
+    virtual void DoDeleteOneItem(unsigned int n) wxOVERRIDE;
 
-    virtual unsigned int GetCount() const
-        { return (unsigned int)m_strings->GetCount(); }
-    virtual wxString GetString(unsigned int n) const
-        { return m_strings->Item(n); }
-    virtual void SetString(unsigned int n, const wxString& s);
-    virtual int FindString(const wxString& s, bool bCase = false) const
-        { return m_strings->Index(s, bCase); }
+    virtual unsigned int GetCount() const wxOVERRIDE;
+    virtual wxString GetString(unsigned int n) const wxOVERRIDE;
+    virtual void SetString(unsigned int n, const wxString& s) wxOVERRIDE;
+    virtual int FindString(const wxString& s, bool bCase = false) const wxOVERRIDE;
 
-    virtual bool IsSelected(int n) const
+    virtual bool IsSelected(int n) const wxOVERRIDE
         { return m_selections.Index(n) != wxNOT_FOUND; }
-    virtual int GetSelection() const;
-    virtual int GetSelections(wxArrayInt& aSelections) const;
+    virtual int GetSelection() const wxOVERRIDE;
+    virtual int GetSelections(wxArrayInt& aSelections) const wxOVERRIDE;
 
 protected:
-    virtual void DoSetSelection(int n, bool select);
-    virtual int DoAppendOnly(const wxString& item);
-    virtual int DoAppend(const wxString& item);
-    virtual void DoInsertItems(const wxArrayString& items, unsigned int pos);
-    virtual void DoSetItems(const wxArrayString& items, void **clientData);
+    virtual void DoSetSelection(int n, bool select) wxOVERRIDE;
 
-    virtual void DoSetFirstItem(int n);
+    virtual int DoInsertItems(const wxArrayStringsAdapter& items,
+                              unsigned int pos,
+                              void **clientData,
+                              wxClientDataType type) wxOVERRIDE;
 
-    virtual void DoSetItemClientData(unsigned int n, void* clientData);
-    virtual void* DoGetItemClientData(unsigned int n) const;
-    virtual void DoSetItemClientObject(unsigned int n, wxClientData* clientData);
-    virtual wxClientData* DoGetItemClientObject(unsigned int n) const;
+    virtual int DoListHitTest(const wxPoint& point) const wxOVERRIDE;
+
+    // universal wxComboBox implementation internally uses wxListBox
+    friend class WXDLLIMPEXP_FWD_CORE wxComboBox;
+
+    virtual void DoSetFirstItem(int n) wxOVERRIDE;
+
+    virtual void DoSetItemClientData(unsigned int n, void* clientData) wxOVERRIDE;
+    virtual void* DoGetItemClientData(unsigned int n) const wxOVERRIDE;
 
 public:
     // override some more base class methods
-    virtual bool SetFont(const wxFont& font);
+    virtual bool SetFont(const wxFont& font) wxOVERRIDE;
 
     // the wxUniversal-specific methods
     // --------------------------------
@@ -156,7 +156,7 @@ public:
     void SelectAndNotify(int item);
 
     // ensure that the given item is visible by scrolling it into view
-    virtual void EnsureVisible(int n);
+    virtual void EnsureVisible(int n) wxOVERRIDE;
 
     // find the first item [strictly] after the current one which starts with
     // the given string and make it the current one, return true if the current
@@ -181,35 +181,37 @@ public:
     // override the wxControl virtual methods
     virtual bool PerformAction(const wxControlAction& action,
                                long numArg = 0l,
-                               const wxString& strArg = wxEmptyString);
+                               const wxString& strArg = wxEmptyString) wxOVERRIDE;
 
     static wxInputHandler *GetStdInputHandler(wxInputHandler *handlerDef);
-    virtual wxInputHandler *DoGetStdInputHandler(wxInputHandler *handlerDef)
+    virtual wxInputHandler *DoGetStdInputHandler(wxInputHandler *handlerDef) wxOVERRIDE
     {
         return GetStdInputHandler(handlerDef);
     }
 
     // idle processing
-    virtual void OnInternalIdle();
+    virtual void OnInternalIdle() wxOVERRIDE;
 
 protected:
     // geometry
-    virtual wxSize DoGetBestClientSize() const;
+    virtual wxSize DoGetBestClientSize() const wxOVERRIDE;
     virtual void DoSetSize(int x, int y,
                            int width, int height,
-                           int sizeFlags = wxSIZE_AUTO);
+                           int sizeFlags = wxSIZE_AUTO) wxOVERRIDE;
 
-    virtual void DoDraw(wxControlRenderer *renderer);
-    virtual wxBorder GetDefaultBorder() const;
+    virtual void DoDraw(wxControlRenderer *renderer) wxOVERRIDE;
+    virtual wxBorder GetDefaultBorder() const wxOVERRIDE;
+
+    // special hook for wxCheckListBox which allows it to update its internal
+    // data when a new item is inserted into the listbox
+    virtual void OnItemInserted(unsigned int WXUNUSED(pos)) { }
+
 
     // common part of all ctors
     void Init();
 
     // event handlers
     void OnSize(wxSizeEvent& event);
-
-    // common part of Clear() and DoSetItems(): clears everything
-    virtual void DoClear();
 
     // refresh the given item(s) or everything
     void RefreshItems(int from, int count);
@@ -245,7 +247,11 @@ protected:
 
     // the array containing all items (it is sorted if the listbox has
     // wxLB_SORT style)
-    wxArrayString* m_strings;
+    union
+    {
+        wxArrayString *unsorted;
+        wxSortedArrayString *sorted;
+    } m_strings;
 
     // this array contains the indices of the selected items (for the single
     // selection listboxes only the first element of it is used and contains
@@ -254,6 +260,10 @@ protected:
 
     // and this one the client data (either void or wxClientData)
     wxArrayPtrVoid m_itemsClientData;
+
+    // this is hold the input handler type. the input handler is different
+    // between ListBox and its subclass--CheckListbox
+    wxString m_inputHandlerType;
 
     // the current item
     int m_current;
@@ -293,8 +303,8 @@ private:
     // by not extending the selection but by choosing it directly
     int m_selAnchor;
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_DYNAMIC_CLASS(wxListBox)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_DYNAMIC_CLASS(wxListBox);
 };
 
 #endif // _WX_UNIV_LISTBOX_H_

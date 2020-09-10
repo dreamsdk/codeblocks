@@ -4,7 +4,6 @@
 // Author:      Julian Smart, Vaclav Slavik
 // Modified by:
 // Created:     25/10/98
-// RCS-ID:      $Id: sound.h 42115 2006-10-19 13:09:48Z VZ $
 // Copyright:   (c) Julian Smart, Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -22,12 +21,12 @@
 // wxSound: simple audio playback class
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_ADV wxSoundBackend;
-class WXDLLIMPEXP_ADV wxSound;
-class WXDLLIMPEXP_BASE wxDynamicLibrary;
+class WXDLLIMPEXP_FWD_CORE wxSoundBackend;
+class WXDLLIMPEXP_FWD_CORE wxSound;
+class WXDLLIMPEXP_FWD_BASE wxDynamicLibrary;
 
 /// Sound data, as loaded from .wav file:
-class WXDLLIMPEXP_ADV wxSoundData
+class WXDLLIMPEXP_CORE wxSoundData
 {
 public:
     wxSoundData() : m_refCnt(1) {}
@@ -55,18 +54,18 @@ private:
 
 
 /// Simple sound class:
-class WXDLLIMPEXP_ADV wxSound : public wxSoundBase
+class WXDLLIMPEXP_CORE wxSound : public wxSoundBase
 {
 public:
     wxSound();
     wxSound(const wxString& fileName, bool isResource = false);
-    wxSound(int size, const wxByte* data);
+    wxSound(size_t size, const void* data);
     virtual ~wxSound();
 
     // Create from resource or file
     bool Create(const wxString& fileName, bool isResource = false);
     // Create from data
-    bool Create(int size, const wxByte* data);
+    bool Create(size_t size, const void* data);
 
     bool IsOk() const { return m_data != NULL; }
 
@@ -80,11 +79,11 @@ public:
     static void UnloadBackend();
 
 protected:
-    bool DoPlay(unsigned flags) const;
+    bool DoPlay(unsigned flags) const wxOVERRIDE;
 
     static void EnsureBackend();
     void Free();
-    bool LoadWAV(const wxUint8 *data, size_t length, bool copyData);
+    bool LoadWAV(const void* data, size_t length, bool copyData);
 
     static wxSoundBackend *ms_backend;
 #if wxUSE_LIBSDL && wxUSE_PLUGINS
@@ -117,7 +116,7 @@ struct wxSoundPlaybackStatus
 };
 
 // Audio backend interface
-class WXDLLIMPEXP_ADV wxSoundBackend
+class WXDLLIMPEXP_CORE wxSoundBackend
 {
 public:
     virtual ~wxSoundBackend() {}

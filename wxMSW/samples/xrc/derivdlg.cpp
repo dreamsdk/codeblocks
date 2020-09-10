@@ -2,7 +2,6 @@
 // Name:        derivdlg.cpp
 // Purpose:     XML resources sample: A derived dialog
 // Author:      Robert O'Connor (rob@medicalmnemonics.com), Vaclav Slavik
-// RCS-ID:      $Id: derivdlg.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Robert O'Connor and Vaclav Slavik
 // Licence:     wxWindows licence
 //-----------------------------------------------------------------------------
@@ -40,12 +39,12 @@
 // Event table: connect the events to the handler functions to process them
 //-----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(PreferencesDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(PreferencesDialog, wxDialog)
     EVT_BUTTON( XRCID( "my_button" ), PreferencesDialog::OnMyButtonClicked )
     EVT_UPDATE_UI(XRCID( "my_checkbox" ), PreferencesDialog::OnUpdateUIMyCheckbox )
     // Note that the ID here isn't a XRCID, it is one of the standard wx ID's.
     EVT_BUTTON( wxID_OK, PreferencesDialog::OnOK )
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 //-----------------------------------------------------------------------------
 // Public members
@@ -53,7 +52,7 @@ END_EVENT_TABLE()
 // Constructor (Notice how small and easy it is)
 PreferencesDialog::PreferencesDialog(wxWindow* parent)
 {
-    wxXmlResource::Get()->LoadDialog(this, parent, wxT("derived_dialog"));
+    wxXmlResource::Get()->LoadDialog(this, parent, "derived_dialog");
 }
 
 //-----------------------------------------------------------------------------

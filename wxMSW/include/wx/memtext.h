@@ -27,25 +27,25 @@ public:
     wxMemoryText(const wxString& name) : wxTextBuffer(name) { }
 
 protected:
-    virtual bool OnExists() const
+    virtual bool OnExists() const wxOVERRIDE
         { return false; }
 
     virtual bool OnOpen(const wxString & WXUNUSED(strBufferName),
-                        wxTextBufferOpenMode WXUNUSED(OpenMode))
+                        wxTextBufferOpenMode WXUNUSED(OpenMode)) wxOVERRIDE
         { return true; }
 
-    virtual bool OnClose()
+    virtual bool OnClose() wxOVERRIDE
         { return true; }
 
-    virtual bool OnRead(const wxMBConv& WXUNUSED(conv))
+    virtual bool OnRead(const wxMBConv& WXUNUSED(conv)) wxOVERRIDE
         { return true; }
 
     virtual bool OnWrite(wxTextFileType WXUNUSED(typeNew),
-                         const wxMBConv& WXUNUSED(conv) = wxConvUTF8)
+                         const wxMBConv& WXUNUSED(conv) = wxMBConvUTF8()) wxOVERRIDE
         { return true; }
 
 private:
-    DECLARE_NO_COPY_CLASS(wxMemoryText)
+    wxDECLARE_NO_COPY_CLASS(wxMemoryText);
 };
 
 #endif // wxUSE_TEXTBUFFER

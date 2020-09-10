@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2006-01-29
-// RCS-ID:      $Id: toolbkg.cpp 44271 2007-01-21 00:52:05Z VZ $
 // Copyright:   (c) 2006 Julian Smart
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -33,29 +32,19 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// various wxWidgets macros
-// ----------------------------------------------------------------------------
-
-// check that the page index is valid
-#define IS_VALID_PAGE(nPage) ((nPage) < GetPageCount())
-
-// ----------------------------------------------------------------------------
 // event table
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxToolbook, wxBookCtrlBase)
-IMPLEMENT_DYNAMIC_CLASS(wxToolbookEvent, wxNotifyEvent)
+wxIMPLEMENT_DYNAMIC_CLASS(wxToolbook, wxBookCtrlBase);
 
-#if !WXWIN_COMPATIBILITY_EVENT_TYPES
-const wxEventType wxEVT_COMMAND_TOOLBOOK_PAGE_CHANGING = wxNewEventType();
-const wxEventType wxEVT_COMMAND_TOOLBOOK_PAGE_CHANGED = wxNewEventType();
-#endif
+wxDEFINE_EVENT( wxEVT_TOOLBOOK_PAGE_CHANGING, wxBookCtrlEvent );
+wxDEFINE_EVENT( wxEVT_TOOLBOOK_PAGE_CHANGED,  wxBookCtrlEvent );
 
-BEGIN_EVENT_TABLE(wxToolbook, wxBookCtrlBase)
+wxBEGIN_EVENT_TABLE(wxToolbook, wxBookCtrlBase)
     EVT_SIZE(wxToolbook::OnSize)
-    EVT_TOOL_RANGE(1, 50, wxToolbook::OnToolSelected)
+    EVT_TOOL(wxID_ANY, wxToolbook::OnToolSelected)
     EVT_IDLE(wxToolbook::OnIdle)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // wxToolbook implementation
@@ -67,7 +56,6 @@ END_EVENT_TABLE()
 
 void wxToolbook::Init()
 {
-    m_selection = wxNOT_FOUND;
     m_needsRealizing = false;
 }
 
@@ -89,14 +77,19 @@ bool wxToolbook::Create(wxWindow *parent,
                             wxDefaultValidator, name) )
         return false;
 
-    int orient = wxTB_HORIZONTAL;
-    if ( (style & (wxBK_LEFT | wxBK_RIGHT)) != 0)
-        orient = wxTB_VERTICAL;
+    int tbFlags = wxTB_TEXT | wxTB_FLAT | wxBORDER_NONE;
+    if ( (style & (wxBK_LEFT | wxBK_RIGHT)) != 0 )
+        tbFlags |= wxTB_VERTICAL;
+    else
+        tbFlags |= wxTB_HORIZONTAL;
+
+    if ( style & wxTBK_HORZ_LAYOUT )
+        tbFlags |= wxTB_HORZ_LAYOUT;
 
     // TODO: make more configurable
 
 #if defined(__WXMAC__) && wxUSE_TOOLBAR && wxUSE_BMPBUTTON
-    if (style & wxBK_BUTTONBAR)
+    if (style & wxTBK_BUTTONBAR)
     {
         m_bookctrl = new wxButtonToolBar
                  (
@@ -104,7 +97,7 @@ bool wxToolbook::Create(wxWindow *parent,
                     wxID_ANY,
                     wxDefaultPosition,
                     wxDefaultSize,
-                    orient|wxTB_TEXT|wxTB_FLAT|wxNO_BORDER
+                    tbFlags
                  );
     }
     else
@@ -116,7 +109,7 @@ bool wxToolbook::Create(wxWindow *parent,
                     wxID_ANY,
                     wxDefaultPosition,
                     wxDefaultSize,
-                    orient|wxTB_TEXT|wxTB_FLAT|wxTB_NODIVIDER|wxNO_BORDER
+                    tbFlags | wxTB_NODIVIDER
                  );
     }
 
@@ -127,28 +120,6 @@ bool wxToolbook::Create(wxWindow *parent,
 // wxToolbook geometry management
 // ----------------------------------------------------------------------------
 
-wxSize wxToolbook::GetControllerSize() const
-{
-    const wxSize sizeClient = GetClientSize(),
-                 sizeBorder = m_bookctrl->GetSize() - m_bookctrl->GetClientSize(),
-                 sizeToolBar = GetToolBar()->GetSize() + sizeBorder;
-
-    wxSize size;
-
-    if ( IsVertical() )
-    {
-        size.x = sizeClient.x;
-        size.y = sizeToolBar.y;
-    }
-    else // left/right aligned
-    {
-        size.x = sizeToolBar.x;
-        size.y = sizeClient.y;
-    }
-
-    return size;
-}
-
 void wxToolbook::OnSize(wxSizeEvent& event)
 {
     if (m_needsRealizing)
@@ -157,32 +128,14 @@ void wxToolbook::OnSize(wxSizeEvent& event)
     wxBookCtrlBase::OnSize(event);
 }
 
-wxSize wxToolbook::CalcSizeFromPage(const wxSize& sizePage) const
-{
-    // we need to add the size of the list control and the border between
-    const wxSize sizeToolBar = GetControllerSize();
-
-    wxSize size = sizePage;
-    if ( IsVertical() )
-    {
-        size.y += sizeToolBar.y + GetInternalBorder();
-    }
-    else // left/right aligned
-    {
-        size.x += sizeToolBar.x + GetInternalBorder();
-    }
-
-    return size;
-}
-
 // ----------------------------------------------------------------------------
 // accessing the pages
 // ----------------------------------------------------------------------------
 
 bool wxToolbook::SetPageText(size_t n, const wxString& strText)
 {
-    // Assume tool ids start from 1
-    wxToolBarToolBase* tool = GetToolBar()->FindById(n + 1);
+    int toolId = PageToToolId(n);
+    wxToolBarToolBase* tool = GetToolBar()->FindById(toolId);
     if (tool)
     {
         tool->SetLabel(strText);
@@ -194,7 +147,8 @@ bool wxToolbook::SetPageText(size_t n, const wxString& strText)
 
 wxString wxToolbook::GetPageText(size_t n) const
 {
-    wxToolBarToolBase* tool = GetToolBar()->FindById(n + 1);
+    int toolId = PageToToolId(n);
+    wxToolBarToolBase* tool = GetToolBar()->FindById(toolId);
     if (tool)
         return tool->GetLabel();
     else
@@ -203,7 +157,7 @@ wxString wxToolbook::GetPageText(size_t n) const
 
 int wxToolbook::GetPageImage(size_t WXUNUSED(n)) const
 {
-    wxFAIL_MSG( _T("wxToolbook::GetPageImage() not implemented") );
+    wxFAIL_MSG( wxT("wxToolbook::GetPageImage() not implemented") );
 
     return wxNOT_FOUND;
 }
@@ -214,16 +168,12 @@ bool wxToolbook::SetPageImage(size_t n, int imageId)
     if (!GetImageList())
         return false;
 
-    wxToolBarToolBase* tool = GetToolBar()->FindById(n + 1);
-    if (tool)
-    {
-        // Find the image list index for this tool
-        wxBitmap bitmap = GetImageList()->GetBitmap(imageId);
-        tool->SetNormalBitmap(bitmap);
-        return true;
-    }
-    else
-        return false;
+    int toolId = PageToToolId(n);
+    wxBitmap bmp = GetImageList()->GetBitmap(imageId);
+    GetToolBar()->SetToolNormalBitmap(toolId, bmp);
+    GetToolBar()->SetToolDisabledBitmap(toolId, bmp.ConvertToDisabled());
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -239,25 +189,20 @@ void wxToolbook::SetImageList(wxImageList *imageList)
 // selection
 // ----------------------------------------------------------------------------
 
-int wxToolbook::GetSelection() const
+wxBookCtrlEvent* wxToolbook::CreatePageChangingEvent() const
 {
-    return m_selection;
+    return new wxBookCtrlEvent(wxEVT_TOOLBOOK_PAGE_CHANGING, m_windowId);
 }
 
-wxBookCtrlBaseEvent* wxToolbook::CreatePageChangingEvent() const
+void wxToolbook::MakeChangedEvent(wxBookCtrlEvent &event)
 {
-    return new wxToolbookEvent(wxEVT_COMMAND_TOOLBOOK_PAGE_CHANGING, m_windowId);
-}
-
-void wxToolbook::MakeChangedEvent(wxBookCtrlBaseEvent &event)
-{
-    event.SetEventType(wxEVT_COMMAND_TOOLBOOK_PAGE_CHANGED);
+    event.SetEventType(wxEVT_TOOLBOOK_PAGE_CHANGED);
 }
 
 void wxToolbook::UpdateSelectedPage(size_t newsel)
 {
-    m_selection = newsel;
-    GetToolBar()->ToggleTool(newsel + 1, true);
+    int toolId = PageToToolId(newsel);
+    GetToolBar()->ToggleTool(toolId, true);
 }
 
 // Not part of the wxBookctrl API, but must be called in OnIdle or
@@ -266,23 +211,20 @@ void wxToolbook::Realize()
 {
     if (m_needsRealizing)
     {
+        m_needsRealizing = false;
+
         GetToolBar()->SetToolBitmapSize(m_maxBitmapSize);
 
-        int remap = wxSystemOptions::GetOptionInt(wxT("msw.remap"));
-        wxSystemOptions::SetOption(wxT("msw.remap"), 0);
         GetToolBar()->Realize();
-        wxSystemOptions::SetOption(wxT("msw.remap"), remap);
     }
 
-    m_needsRealizing = false;
-
-    if (m_selection == -1)
+    if (m_selection == wxNOT_FOUND)
         m_selection = 0;
 
     if (GetPageCount() > 0)
     {
         int sel = m_selection;
-        m_selection = -1;
+        m_selection = wxNOT_FOUND;
         SetSelection(sel);
     }
 
@@ -363,16 +305,30 @@ bool wxToolbook::InsertPage(size_t n,
     m_maxBitmapSize.x = wxMax(bitmap.GetWidth(), m_maxBitmapSize.x);
     m_maxBitmapSize.y = wxMax(bitmap.GetHeight(), m_maxBitmapSize.y);
 
+    int toolId = page->GetId();
     GetToolBar()->SetToolBitmapSize(m_maxBitmapSize);
-    GetToolBar()->AddRadioTool(n + 1, text, bitmap, wxNullBitmap, text);
+    GetToolBar()->InsertTool(n, toolId, text, bitmap, bitmap.ConvertToDisabled(), wxITEM_RADIO);
 
-    if (bSelect)
+    // fix current selection
+    if (m_selection == wxNOT_FOUND)
     {
-        GetToolBar()->ToggleTool(n, true);
+        DoShowPage(page, true);
         m_selection = n;
     }
+    else if ((size_t) m_selection >= n)
+    {
+        DoShowPage(page, false);
+        m_selection++;
+    }
     else
-        page->Hide();
+    {
+        DoShowPage(page, false);
+    }
+
+    if ( bSelect )
+    {
+        SetSelection(n);
+    }
 
     InvalidateBestSize();
     return true;
@@ -380,28 +336,14 @@ bool wxToolbook::InsertPage(size_t n,
 
 wxWindow *wxToolbook::DoRemovePage(size_t page)
 {
-    const size_t page_count = GetPageCount();
+    int toolId = PageToToolId(page);
     wxWindow *win = wxBookCtrlBase::DoRemovePage(page);
 
     if ( win )
     {
-        GetToolBar()->DeleteTool(page + 1);
+        GetToolBar()->DeleteTool(toolId);
 
-        if (m_selection >= (int)page)
-        {
-            // force new sel valid if possible
-            int sel = m_selection - 1;
-            if (page_count == 1)
-                sel = wxNOT_FOUND;
-            else if ((page_count == 2) || (sel == -1))
-                sel = 0;
-
-            // force sel invalid if deleting current page - don't try to hide it
-            m_selection = (m_selection == (int)page) ? wxNOT_FOUND : m_selection - 1;
-
-            if ((sel != wxNOT_FOUND) && (sel != m_selection))
-                SetSelection(sel);
-        }
+        DoSetSelectionAfterRemoval(page);
     }
 
     return win;
@@ -414,15 +356,60 @@ bool wxToolbook::DeleteAllPages()
     return wxBookCtrlBase::DeleteAllPages();
 }
 
+bool wxToolbook::EnablePage(size_t page, bool enable)
+{
+    int toolId = PageToToolId(page);
+    GetToolBar()->EnableTool(toolId, enable);
+    if (!enable && GetSelection() == (int)page)
+    {
+        AdvanceSelection();
+    }
+    return true;
+}
+
+bool wxToolbook::EnablePage(wxWindow *page, bool enable)
+{
+    const int pageIndex = FindPage(page);
+    if (pageIndex == wxNOT_FOUND)
+    {
+        return false;
+    }
+    return EnablePage(pageIndex, enable);
+}
+
+int wxToolbook::PageToToolId(size_t page) const
+{
+    wxCHECK_MSG(page < GetPageCount(), wxID_NONE, "Invalid page number");
+    return GetPage(page)->GetId();
+}
+
+int wxToolbook::ToolIdToPage(int toolId) const
+{
+    for (size_t i = 0; i < m_pages.size(); i++)
+    {
+        if (m_pages[i]->GetId() == toolId)
+        {
+            return (int) i;
+        }
+    }
+    return wxNOT_FOUND;
+}
+
 // ----------------------------------------------------------------------------
 // wxToolbook events
 // ----------------------------------------------------------------------------
 
 void wxToolbook::OnToolSelected(wxCommandEvent& event)
 {
-    const int selNew = event.GetId() - 1;
+    // find page for the tool
+    int page = ToolIdToPage(event.GetId());
+    if (page == wxNOT_FOUND)
+    {
+        // this happens only of page id has changed afterwards
+        return;
+    }
 
-    if ( selNew == m_selection )
+    if (page == m_selection )
     {
         // this event can only come from our own Select(m_selection) below
         // which we call when the page change is vetoed, so we should simply
@@ -430,10 +417,10 @@ void wxToolbook::OnToolSelected(wxCommandEvent& event)
         return;
     }
 
-    SetSelection(selNew);
+    SetSelection(page);
 
     // change wasn't allowed, return to previous state
-    if (m_selection != selNew)
+    if (m_selection != page)
     {
         GetToolBar()->ToggleTool(m_selection, false);
     }

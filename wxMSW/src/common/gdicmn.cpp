@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: gdicmn.cpp 50022 2007-11-17 14:24:18Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,6 +16,8 @@
 #endif
 
 #include "wx/gdicmn.h"
+
+#include "wx/display.h"
 #include "wx/gdiobj.h"
 
 #ifndef WX_PRECOMP
@@ -25,15 +26,17 @@
     #include "wx/brush.h"
     #include "wx/palette.h"
     #include "wx/icon.h"
+    #include "wx/iconbndl.h"
     #include "wx/cursor.h"
     #include "wx/settings.h"
     #include "wx/bitmap.h"
     #include "wx/colour.h"
     #include "wx/font.h"
+    #include "wx/math.h"
 #endif
 
 
-IMPLEMENT_DYNAMIC_CLASS(wxGDIObject, wxObject)
+wxIMPLEMENT_ABSTRACT_CLASS(wxGDIObject, wxObject);
 
 
 WXDLLIMPEXP_DATA_CORE(wxBrushList*) wxTheBrushList;
@@ -52,9 +55,14 @@ WXDLLIMPEXP_DATA_CORE(wxPen)     wxNullPen;
 #if wxUSE_PALETTE
 WXDLLIMPEXP_DATA_CORE(wxPalette) wxNullPalette;
 #endif
+WXDLLIMPEXP_DATA_CORE(wxIconBundle) wxNullIconBundle;
 
 const wxSize wxDefaultSize(wxDefaultCoord, wxDefaultCoord);
 const wxPoint wxDefaultPosition(wxDefaultCoord, wxDefaultCoord);
+
+#include "wx/listimpl.cpp"
+WX_DEFINE_LIST(wxPointList)
+
 
 #if wxUSE_EXTENDED_RTTI
 
@@ -106,23 +114,6 @@ wxRect::wxRect(const wxPoint& point1, const wxPoint& point2)
         y = point2.y;
     }
     height++;
-}
-
-bool wxRect::operator==(const wxRect& rect) const
-{
-    return ((x == rect.x) &&
-            (y == rect.y) &&
-            (width == rect.width) &&
-            (height == rect.height));
-}
-
-wxRect wxRect::operator+(const wxRect& rect) const
-{
-    int x1 = wxMin(this->x, rect.x);
-    int y1 = wxMin(this->y, rect.y);
-    int y2 = wxMax(y+height, rect.height+rect.y);
-    int x2 = wxMax(x+width, rect.width+rect.x);
-    return wxRect(x1, y1, x2-x1, y2-y1);
 }
 
 wxRect& wxRect::Union(const wxRect& rect)
@@ -230,6 +221,43 @@ bool wxRect::Intersects(const wxRect& rect) const
     return r.width != 0;
 }
 
+wxRect& wxRect::operator+=(const wxRect& rect)
+{
+    *this = *this + rect;
+    return *this;
+}
+
+
+wxRect& wxRect::operator*=(const wxRect& rect)
+{
+    *this = *this * rect;
+    return *this;
+}
+
+
+wxRect operator+(const wxRect& r1, const wxRect& r2)
+{
+    int x1 = wxMin(r1.x, r2.x);
+    int y1 = wxMin(r1.y, r2.y);
+    int y2 = wxMax(r1.y+r1.height, r2.height+r2.y);
+    int x2 = wxMax(r1.x+r1.width, r2.width+r2.x);
+    return wxRect(x1, y1, x2-x1, y2-y1);
+}
+
+wxRect operator*(const wxRect& r1, const wxRect& r2)
+{
+    int x1 = wxMax(r1.x, r2.x);
+    int y1 = wxMax(r1.y, r2.y);
+    int y2 = wxMin(r1.y+r1.height, r2.height+r2.y);
+    int x2 = wxMin(r1.x+r1.width, r2.width+r2.x);
+    return wxRect(x1, y1, x2-x1, y2-y1);
+}
+
+wxRealPoint::wxRealPoint(const wxPoint& pt)
+ : x(pt.x), y(pt.y)
+{
+}
+
 // ============================================================================
 // wxColourDatabase
 // ============================================================================
@@ -252,10 +280,6 @@ wxColourDatabase::~wxColourDatabase ()
 
         delete m_map;
     }
-
-#ifdef __WXPM__
-    delete [] m_palTable;
-#endif
 }
 
 // Colour database stuff
@@ -307,7 +331,7 @@ void wxColourDatabase::Initialize()
         {wxT("LIGHT GREY"), 192, 192, 192},
         {wxT("LIGHT STEEL BLUE"), 143, 143, 188},
         {wxT("LIME GREEN"), 50, 204, 50},
-        {wxT("LIGHT MAGENTA"), 255, 0, 255},
+        {wxT("LIGHT MAGENTA"), 255, 119, 255},
         {wxT("MAGENTA"), 255, 0, 255},
         {wxT("MAROON"), 142, 35, 107},
         {wxT("MEDIUM AQUAMARINE"), 50, 204, 153},
@@ -356,16 +380,6 @@ void wxColourDatabase::Initialize()
         const wxColourDesc& cc = wxColourTable[n];
         (*m_map)[cc.name] = new wxColour(cc.r, cc.g, cc.b);
     }
-
-#ifdef __WXPM__
-    m_palTable = new long[n];
-    for ( n = 0; n < WXSIZEOF(wxColourTable); n++ )
-    {
-        const wxColourDesc& cc = wxColourTable[n];
-        m_palTable[n] = OS2RGB(cc.r,cc.g,cc.b);
-    }
-    m_nSize = n;
-#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -383,7 +397,7 @@ void wxColourDatabase::AddColour(const wxString& name, const wxColour& colour)
 
     // ... and we also allow both grey/gray
     wxString colNameAlt = colName;
-    if ( !colNameAlt.Replace(_T("GRAY"), _T("GREY")) )
+    if ( !colNameAlt.Replace(wxT("GRAY"), wxT("GREY")) )
     {
         // but in this case it is not necessary so avoid extra search below
         colNameAlt.clear();
@@ -411,7 +425,7 @@ wxColour wxColourDatabase::Find(const wxString& colour) const
     wxString colName = colour;
     colName.MakeUpper();
     wxString colNameAlt = colName;
-    if ( !colNameAlt.Replace(_T("GRAY"), _T("GREY")) )
+    if ( !colNameAlt.Replace(wxT("GRAY"), wxT("GREY")) )
         colNameAlt.clear();
 
     wxStringToColourHashMap::iterator it = m_map->find(colName);
@@ -444,41 +458,6 @@ wxString wxColourDatabase::FindName(const wxColour& colour) const
     return wxEmptyString;
 }
 
-// ----------------------------------------------------------------------------
-// deprecated wxColourDatabase methods
-// ----------------------------------------------------------------------------
-
-#if WXWIN_COMPATIBILITY_2_6
-wxColour *wxColourDatabase::FindColour(const wxString& name)
-{
-    // This function is deprecated, use Find() instead.
-    // Formerly this function sometimes would return a deletable pointer and
-    // sometimes a non-deletable one (when returning a colour from the database).
-    // Trying to delete the latter anyway results in problems, so probably
-    // nobody ever freed the pointers. Currently it always returns a new
-    // instance, which means there will be memory leaks.
-    wxLogDebug(wxT("wxColourDataBase::FindColour():")
-        wxT(" Please use wxColourDataBase::Find() instead"));
-
-    // using a static variable here is not the most elegant solution but unless
-    // we want to make wxStringToColourHashMap public (i.e. move it to the
-    // header) so that we could have a member function returning
-    // wxStringToColourHashMap::iterator, there is really no good way to do it
-    // otherwise
-    //
-    // and knowing that this function is going to disappear in the next release
-    // anyhow I don't want to waste time on this
-
-    static wxColour s_col;
-
-    s_col = Find(name);
-    if ( !s_col.Ok() )
-        return NULL;
-
-    return new wxColour(s_col);
-}
-#endif // WXWIN_COMPATIBILITY_2_6
-
 // ============================================================================
 // stock objects
 // ============================================================================
@@ -499,47 +478,49 @@ void wxStockGDI::DeleteAll()
 {
     for (unsigned i = 0; i < ITEMCOUNT; i++)
     {
-        delete ms_stockObject[i];
-        ms_stockObject[i] = NULL;
+        wxDELETE(ms_stockObject[i]);
     }
 }
 
 const wxBrush* wxStockGDI::GetBrush(Item item)
 {
-    wxBrush* brush = wx_static_cast(wxBrush*, ms_stockObject[item]);
+    wxBrush* brush = static_cast<wxBrush*>(ms_stockObject[item]);
     if (brush == NULL)
     {
         switch (item)
         {
         case BRUSH_BLACK:
-            brush = new wxBrush(*GetColour(COLOUR_BLACK), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_BLACK), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_BLUE:
-            brush = new wxBrush(*GetColour(COLOUR_BLUE), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_BLUE), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_CYAN:
-            brush = new wxBrush(*GetColour(COLOUR_CYAN), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_CYAN), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_GREEN:
-            brush = new wxBrush(*GetColour(COLOUR_GREEN), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_GREEN), wxBRUSHSTYLE_SOLID);
+            break;
+        case BRUSH_YELLOW:
+            brush = new wxBrush(*GetColour(COLOUR_YELLOW), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_GREY:
-            brush = new wxBrush(wxColour(wxT("GREY")), wxSOLID);
+            brush = new wxBrush(wxColour(wxT("GREY")), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_LIGHTGREY:
-            brush = new wxBrush(*GetColour(COLOUR_LIGHTGREY), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_LIGHTGREY), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_MEDIUMGREY:
-            brush = new wxBrush(wxColour(wxT("MEDIUM GREY")), wxSOLID);
+            brush = new wxBrush(wxColour(wxT("MEDIUM GREY")), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_RED:
-            brush = new wxBrush(*GetColour(COLOUR_RED), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_RED), wxBRUSHSTYLE_SOLID);
             break;
         case BRUSH_TRANSPARENT:
-            brush = new wxBrush(*GetColour(COLOUR_BLACK), wxTRANSPARENT);
+            brush = new wxBrush(*GetColour(COLOUR_BLACK), wxBRUSHSTYLE_TRANSPARENT);
             break;
         case BRUSH_WHITE:
-            brush = new wxBrush(*GetColour(COLOUR_WHITE), wxSOLID);
+            brush = new wxBrush(*GetColour(COLOUR_WHITE), wxBRUSHSTYLE_SOLID);
             break;
         default:
             wxFAIL;
@@ -551,7 +532,7 @@ const wxBrush* wxStockGDI::GetBrush(Item item)
 
 const wxColour* wxStockGDI::GetColour(Item item)
 {
-    wxColour* colour = wx_static_cast(wxColour*, ms_stockObject[item]);
+    wxColour* colour = static_cast<wxColour*>(ms_stockObject[item]);
     if (colour == NULL)
     {
         switch (item)
@@ -563,13 +544,16 @@ const wxColour* wxStockGDI::GetColour(Item item)
             colour = new wxColour(0, 0, 255);
             break;
         case COLOUR_CYAN:
-            colour = new wxColour(wxT("CYAN"));
+            colour = new wxColour(0, 255, 255);
             break;
         case COLOUR_GREEN:
             colour = new wxColour(0, 255, 0);
             break;
+        case COLOUR_YELLOW:
+            colour = new wxColour(255, 255, 0);
+            break;
         case COLOUR_LIGHTGREY:
-            colour = new wxColour(wxT("LIGHT GREY"));
+            colour = new wxColour(192, 192, 192);
             break;
         case COLOUR_RED:
             colour = new wxColour(255, 0, 0);
@@ -587,7 +571,7 @@ const wxColour* wxStockGDI::GetColour(Item item)
 
 const wxCursor* wxStockGDI::GetCursor(Item item)
 {
-    wxCursor* cursor = wx_static_cast(wxCursor*, ms_stockObject[item]);
+    wxCursor* cursor = static_cast<wxCursor*>(ms_stockObject[item]);
     if (cursor == NULL)
     {
         switch (item)
@@ -611,22 +595,36 @@ const wxCursor* wxStockGDI::GetCursor(Item item)
 
 const wxFont* wxStockGDI::GetFont(Item item)
 {
-    wxFont* font = wx_static_cast(wxFont*, ms_stockObject[item]);
+    wxFont* font = static_cast<wxFont*>(ms_stockObject[item]);
     if (font == NULL)
     {
         switch (item)
         {
         case FONT_ITALIC:
-            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize(), wxROMAN, wxITALIC, wxNORMAL);
+            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize(),
+                              wxFONTFAMILY_ROMAN, wxFONTSTYLE_ITALIC, wxFONTWEIGHT_NORMAL);
             break;
         case FONT_NORMAL:
             font = new wxFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
             break;
         case FONT_SMALL:
-            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize() - 2, wxSWISS, wxNORMAL, wxNORMAL);
+            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize()
+                    // Using the font 2 points smaller than the normal one
+                    // results in font so small as to be unreadable under MSW.
+                    // We might want to actually use -1 under the other
+                    // platforms too but for now be conservative and keep -2
+                    // there for compatibility with the old behaviour as the
+                    // small font seems to be readable enough there as it is.
+#ifdef __WXMSW__
+                    - 1,
+#else
+                    - 2,
+#endif
+                    wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
             break;
         case FONT_SWISS:
-            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize(), wxSWISS, wxNORMAL, wxNORMAL);
+            font = new wxFont(GetFont(FONT_NORMAL)->GetPointSize(),
+                              wxFONTFAMILY_SWISS, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
             break;
         default:
             wxFAIL;
@@ -638,40 +636,46 @@ const wxFont* wxStockGDI::GetFont(Item item)
 
 const wxPen* wxStockGDI::GetPen(Item item)
 {
-    wxPen* pen = wx_static_cast(wxPen*, ms_stockObject[item]);
+    wxPen* pen = static_cast<wxPen*>(ms_stockObject[item]);
     if (pen == NULL)
     {
         switch (item)
         {
         case PEN_BLACK:
-            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_BLACKDASHED:
-            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxSHORT_DASH);
+            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxPENSTYLE_SHORT_DASH);
+            break;
+        case PEN_BLUE:
+            pen = new wxPen(*GetColour(COLOUR_BLUE), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_CYAN:
-            pen = new wxPen(*GetColour(COLOUR_CYAN), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_CYAN), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_GREEN:
-            pen = new wxPen(*GetColour(COLOUR_GREEN), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_GREEN), 1, wxPENSTYLE_SOLID);
+            break;
+        case PEN_YELLOW:
+            pen = new wxPen(*GetColour(COLOUR_YELLOW), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_GREY:
-            pen = new wxPen(wxColour(wxT("GREY")), 1, wxSOLID);
+            pen = new wxPen(wxColour(wxT("GREY")), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_LIGHTGREY:
-            pen = new wxPen(*GetColour(COLOUR_LIGHTGREY), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_LIGHTGREY), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_MEDIUMGREY:
-            pen = new wxPen(wxColour(wxT("MEDIUM GREY")), 1, wxSOLID);
+            pen = new wxPen(wxColour(wxT("MEDIUM GREY")), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_RED:
-            pen = new wxPen(*GetColour(COLOUR_RED), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_RED), 1, wxPENSTYLE_SOLID);
             break;
         case PEN_TRANSPARENT:
-            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxTRANSPARENT);
+            pen = new wxPen(*GetColour(COLOUR_BLACK), 1, wxPENSTYLE_TRANSPARENT);
             break;
         case PEN_WHITE:
-            pen = new wxPen(*GetColour(COLOUR_WHITE), 1, wxSOLID);
+            pen = new wxPen(*GetColour(COLOUR_WHITE), 1, wxPENSTYLE_SOLID);
             break;
         default:
             wxFAIL;
@@ -695,6 +699,8 @@ void wxDeleteStockLists()
     wxDELETE(wxTheBrushList);
     wxDELETE(wxThePenList);
     wxDELETE(wxTheFontList);
+
+    // wxTheColourDatabase is cleaned up by wxAppBase::CleanUp()
 }
 
 // ============================================================================
@@ -709,11 +715,11 @@ wxGDIObjListBase::~wxGDIObjListBase()
 {
     for (wxList::compatibility_iterator node = list.GetFirst(); node; node = node->GetNext())
     {
-        delete wx_static_cast(wxObject*, node->GetData());
+        delete static_cast<wxObject*>(node->GetData());
     }
 }
 
-wxPen *wxPenList::FindOrCreatePen (const wxColour& colour, int width, int style)
+wxPen *wxPenList::FindOrCreatePen (const wxColour& colour, int width, wxPenStyle style)
 {
     for ( wxList::compatibility_iterator node = list.GetFirst();
           node;
@@ -728,7 +734,7 @@ wxPen *wxPenList::FindOrCreatePen (const wxColour& colour, int width, int style)
 
     wxPen* pen = NULL;
     wxPen penTmp(colour, width, style);
-    if (penTmp.Ok())
+    if (penTmp.IsOk())
     {
         pen = new wxPen(penTmp);
         list.Append(pen);
@@ -737,20 +743,20 @@ wxPen *wxPenList::FindOrCreatePen (const wxColour& colour, int width, int style)
     return pen;
 }
 
-wxBrush *wxBrushList::FindOrCreateBrush (const wxColour& colour, int style)
+wxBrush *wxBrushList::FindOrCreateBrush (const wxColour& colour, wxBrushStyle style)
 {
     for ( wxList::compatibility_iterator node = list.GetFirst();
           node;
           node = node->GetNext() )
     {
         wxBrush * const brush = (wxBrush *) node->GetData ();
-        if ( brush->GetStyle () == style && brush->GetColour() == colour )
+        if ( brush->GetStyle() == style && brush->GetColour() == colour )
             return brush;
     }
 
     wxBrush* brush = NULL;
     wxBrush brushTmp(colour, style);
-    if (brushTmp.Ok())
+    if (brushTmp.IsOk())
     {
         brush = new wxBrush(brushTmp);
         list.Append(brush);
@@ -760,13 +766,36 @@ wxBrush *wxBrushList::FindOrCreateBrush (const wxColour& colour, int style)
 }
 
 wxFont *wxFontList::FindOrCreateFont(int pointSize,
-                                     int family,
-                                     int style,
-                                     int weight,
+                                     wxFontFamily family,
+                                     wxFontStyle style,
+                                     wxFontWeight weight,
                                      bool underline,
                                      const wxString& facename,
                                      wxFontEncoding encoding)
 {
+    // In all ports but wxOSX, the effective family of a font created using
+    // wxFONTFAMILY_DEFAULT is wxFONTFAMILY_SWISS so this is what we need to
+    // use for comparison.
+    //
+    // In wxOSX the original wxFONTFAMILY_DEFAULT seems to be kept and it uses
+    // a different font than wxFONTFAMILY_SWISS anyhow so we just preserve it.
+#ifndef __WXOSX__
+    if ( family == wxFONTFAMILY_DEFAULT )
+        family = wxFONTFAMILY_SWISS;
+#endif // !__WXOSX__
+
+    // In wxMSW, creating a font with wxFONTSTYLE_SLANT creates the same font
+    // as wxFONTSTYLE_ITALIC and its GetStyle() returns the latter, so we must
+    // account for it here. Notice that wxOSX also uses the same native font
+    // for these styles, but wxFont::GetStyle() in it still returns different
+    // values depending on how the font was created, so there is inconsistency
+    // between ports here which it would be nice to fix in one way or another
+    // (wxGTK supports both as separate styles, so it doesn't suffer from it).
+ #ifdef __WXMSW__
+    if ( style == wxFONTSTYLE_SLANT )
+        style = wxFONTSTYLE_ITALIC;
+ #endif // __WXMSW__
+
     wxFont *font;
     wxList::compatibility_iterator node;
     for (node = list.GetFirst(); node; node = node->GetNext())
@@ -778,31 +807,18 @@ wxFont *wxFontList::FindOrCreateFont(int pointSize,
              font->GetWeight () == weight &&
              font->GetUnderlined () == underline )
         {
-            int fontFamily = font->GetFamily();
-
-#if defined(__WXGTK__)
-            // under GTK the default family is wxSWISS, so looking for a font
-            // with wxDEFAULT family should return a wxSWISS one instead of
-            // creating a new one
-            bool same = (fontFamily == family) ||
-                        (fontFamily == wxSWISS && family == wxDEFAULT);
-#else // !GTK
-            // VZ: but why elsewhere do we require an exact match? mystery...
-            bool same = fontFamily == family;
-#endif // GTK/!GTK
-
             // empty facename matches anything at all: this is bad because
             // depending on which fonts are already created, we might get back
             // a different font if we create it with empty facename, but it is
             // still better than never matching anything in the cache at all
             // in this case
-            if ( same && !facename.empty() )
-            {
-                const wxString& fontFace = font->GetFaceName();
+            bool same;
+            const wxString fontFaceName(font->GetFaceName());
 
-                // empty facename matches everything
-                same = !fontFace || fontFace == facename;
-            }
+            if (facename.empty() || fontFaceName.empty())
+                same = font->GetFamily() == family;
+            else
+                same = fontFaceName == facename;
 
             if ( same && (encoding != wxFONTENCODING_DEFAULT) )
             {
@@ -820,7 +836,7 @@ wxFont *wxFontList::FindOrCreateFont(int pointSize,
     // font not found, create the new one
     font = NULL;
     wxFont fontTmp(pointSize, family, style, weight, underline, facename, encoding);
-    if (fontTmp.Ok())
+    if (fontTmp.IsOk())
     {
         font = new wxFont(fontTmp);
         list.Append(font);
@@ -829,34 +845,73 @@ wxFont *wxFontList::FindOrCreateFont(int pointSize,
     return font;
 }
 
-#if WXWIN_COMPATIBILITY_2_6
-void wxBrushList::AddBrush(wxBrush*) { }
-void wxBrushList::RemoveBrush(wxBrush*) { }
-void wxFontList::AddFont(wxFont*) { }
-void wxFontList::RemoveFont(wxFont*) { }
-void wxPenList::AddPen(wxPen*) { }
-void wxPenList::RemovePen(wxPen*) { }
-#endif
+int wxDisplayDepth()
+{
+    return wxDisplay().GetDepth();
+}
+
+bool wxColourDisplay()
+{
+    // If GetDepth() returns 0, meaning unknown, we assume it's a colour
+    // display, hence the use of "!=" rather than ">" here.
+    return wxDisplay().GetDepth() != 1;
+}
+
+void wxDisplaySize(int *width, int *height)
+{
+    const wxSize size = wxGetDisplaySize();
+    if ( width )
+        *width = size.x;
+    if ( height )
+        *height = size.y;
+}
 
 wxSize wxGetDisplaySize()
 {
-    int x, y;
-    wxDisplaySize(& x, & y);
-    return wxSize(x, y);
+    return wxDisplay().GetGeometry().GetSize();
+}
+
+void wxClientDisplayRect(int *x, int *y, int *width, int *height)
+{
+    const wxRect rect = wxGetClientDisplayRect();
+    if ( x )
+        *x = rect.x;
+    if ( y )
+        *y = rect.y;
+    if ( width )
+        *width = rect.width;
+    if ( height )
+        *height = rect.height;
 }
 
 wxRect wxGetClientDisplayRect()
 {
-    int x, y, width, height;
-    wxClientDisplayRect(&x, &y, &width, &height);  // call plat-specific version
-    return wxRect(x, y, width, height);
+    return wxDisplay().GetClientArea();
+}
+
+void wxDisplaySizeMM(int *width, int *height)
+{
+    const wxSize size = wxGetDisplaySizeMM();
+    if ( width )
+        *width = size.x;
+    if ( height )
+        *height = size.y;
 }
 
 wxSize wxGetDisplaySizeMM()
 {
-    int x, y;
-    wxDisplaySizeMM(& x, & y);
-    return wxSize(x, y);
+    const wxSize ppi = wxGetDisplayPPI();
+    if ( !ppi.x || !ppi.y )
+        return wxSize(0, 0);
+
+    const wxSize pixels = wxGetDisplaySize();
+    return wxSize(wxRound(pixels.x * inches2mm / ppi.x),
+                  wxRound(pixels.y * inches2mm / ppi.y));
+}
+
+wxSize wxGetDisplayPPI()
+{
+    return wxDisplay().GetPPI();
 }
 
 wxResourceCache::~wxResourceCache ()

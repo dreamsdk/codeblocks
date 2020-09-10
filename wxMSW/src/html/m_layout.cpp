@@ -2,7 +2,6 @@
 // Name:        src/html/m_layout.cpp
 // Purpose:     wxHtml module for basic paragraphs/layout handling
 // Author:      Vaclav Slavik
-// RCS-ID:      $Id: m_layout.cpp 55881 2008-09-25 17:19:30Z VS $
 // Copyright:   (c) 1999 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,7 +14,7 @@
 
 #if wxUSE_HTML && wxUSE_STREAMS
 
-#ifndef WXPRECOMP
+#ifndef WX_PRECOMP
     #include "wx/image.h"
 #endif
 
@@ -26,11 +25,7 @@
 
 FORCE_LINK_ME(m_layout)
 
-#ifdef __WXWINCE__
-    #include "wx/msw/wince/missing.h"       // for bsearch()
-#else
-    #include <stdlib.h>                     // bsearch()
-#endif
+#include <stdlib.h>                     // bsearch()
 
 //-----------------------------------------------------------------------------
 // wxHtmlPageBreakCell
@@ -70,68 +65,30 @@ class wxHtmlPageBreakCell : public wxHtmlCell
 public:
     wxHtmlPageBreakCell() {}
 
-    bool AdjustPagebreak(int* pagebreak,
-                         wxArrayInt& known_pagebreaks) const;
+    bool AdjustPagebreak(int* pagebreak, int pageHeight) const wxOVERRIDE;
 
     void Draw(wxDC& WXUNUSED(dc),
               int WXUNUSED(x), int WXUNUSED(y),
               int WXUNUSED(view_y1), int WXUNUSED(view_y2),
-              wxHtmlRenderingInfo& WXUNUSED(info)) {}
+              wxHtmlRenderingInfo& WXUNUSED(info)) wxOVERRIDE {}
 
 private:
-    DECLARE_NO_COPY_CLASS(wxHtmlPageBreakCell)
+    wxDECLARE_NO_COPY_CLASS(wxHtmlPageBreakCell);
 };
 
-// Comparison routine for bsearch into an int* array of pagebreaks.
-extern "C" int wxCMPFUNC_CONV wxInteger_compare(void const* i0, void const* i1)
+bool
+wxHtmlPageBreakCell::AdjustPagebreak(int* pagebreak, int pageHeight) const
 {
-    return *(int*)i0 - *(int*)i1;
-}
-
-bool wxHtmlPageBreakCell::AdjustPagebreak(int* pagebreak, wxArrayInt& known_pagebreaks) const
-{
-    // When we are counting pages, 'known_pagebreaks' is non-NULL.
-    // That's the only time we change 'pagebreak'. Otherwise, pages
-    // were already counted, 'known_pagebreaks' is NULL, and we don't
-    // do anything except return false.
-    //
-    // We also simply return false if the 'pagebreak' argument is
-    // less than (vertically above) or the same as the current
-    // vertical position. Otherwise we'd be setting a pagebreak above
-    // the current cell, which is incorrect, or duplicating a
-    // pagebreak that has already been set.
-    if( known_pagebreaks.Count() == 0 || *pagebreak <= m_PosY)
-    {
-        return false;
-    }
-
-    // m_PosY is only the vertical offset from the parent. The pagebreak
-    // required here is the total page offset, so m_PosY must be added
-    // to the parent's offset and height.
-    int total_height = m_PosY;
-    for ( wxHtmlCell *parent = GetParent(); parent; parent = parent->GetParent() )
-    {
-        total_height += parent->GetPosY();
-    }
-
-
-    // Search the array of pagebreaks to see whether we've already set
-    // a pagebreak here. The standard bsearch() function is appropriate
-    // because the array of pagebreaks through known_pagebreaks[number_of_pages]
-    // is known to be sorted in strictly increasing order. '1 + number_of_pages'
-    // is used as a bsearch() argument because the array contains a leading
-    // zero plus one element for each page.
-    int where = known_pagebreaks.Index( total_height);
-    // Add a pagebreak only if there isn't one already set here.
-    if( wxNOT_FOUND != where)
-    {
-        return false;
-    }
-    else
+    // Request a page break at the position of this cell if it's on the current
+    // page. Note that it's important not to do it unconditionally or we could
+    // end up in an infinite number of page breaks at this cell position.
+    if ( m_PosY < *pagebreak && m_PosY > *pagebreak - pageHeight )
     {
         *pagebreak = m_PosY;
         return true;
     }
+
+    return false;
 }
 
 
@@ -219,15 +176,45 @@ TAG_HANDLER_BEGIN(DIV, "DIV")
 
     TAG_HANDLER_PROC(tag)
     {
-        if(tag.HasParam(wxT("STYLE")))
+        wxString style;
+        if(tag.GetParamAsString(wxT("STYLE"), &style))
         {
-            if(tag.GetParam(wxT("STYLE")).IsSameAs(wxT("PAGE-BREAK-BEFORE:ALWAYS"), false))
+            if(style.IsSameAs(wxT("PAGE-BREAK-BEFORE:ALWAYS"), false))
             {
                 m_WParser->CloseContainer();
                 m_WParser->OpenContainer()->InsertCell(new wxHtmlPageBreakCell);
                 m_WParser->CloseContainer();
                 m_WParser->OpenContainer();
                 return false;
+            }
+            else if(style.IsSameAs(wxT("PAGE-BREAK-INSIDE:AVOID"), false))
+            {
+                // As usual, reuse the current container if it's empty.
+                wxHtmlContainerCell *c = m_WParser->GetContainer();
+                if (c->GetFirstChild() != NULL)
+                {
+                    // If not, open a new one.
+                    m_WParser->CloseContainer();
+                    c = m_WParser->OpenContainer();
+                }
+
+                // Force this container to live entirely on the same page.
+                c->SetCanLiveOnPagebreak(false);
+
+                // Use a nested container so that nested tags that close and
+                // reopen a container again close this one, but still remain
+                // inside the outer "unbreakable" container.
+                m_WParser->OpenContainer();
+
+                ParseInner(tag);
+
+                // Close both the inner and the outer containers and reopen the
+                // new current one.
+                m_WParser->CloseContainer();
+                m_WParser->CloseContainer();
+                m_WParser->OpenContainer();
+
+                return true;
             }
             else
             {
@@ -294,10 +281,8 @@ TAG_HANDLER_BEGIN(TITLE, "TITLE")
         wxHtmlWindowInterface *winIface = m_WParser->GetWindowInterface();
         if (winIface)
         {
-            wxString title = m_WParser->GetSource()->Mid(
-                                    tag.GetBeginPos(),
-                                    tag.GetEndPos1()-tag.GetBeginPos());
-#if !wxUSE_UNICODE && wxUSE_WCHAR_T
+            wxString title(tag.GetBeginIter(), tag.GetEndIter1());
+#if !wxUSE_UNICODE
             const wxFontEncoding enc = m_WParser->GetInputEncoding();
             if ( enc != wxFONTENCODING_DEFAULT )
             {
@@ -339,23 +324,18 @@ TAG_HANDLER_BEGIN(BODY, "BODY")
         if ( !winIface )
             return false;
 
-        if (tag.HasParam(wxT("BACKGROUND")))
+        wxString bg;
+        if (tag.GetParamAsString(wxT("BACKGROUND"), &bg))
         {
-            wxFSFile *fileBgImage = m_WParser->OpenURL
-                                               (
-                                                wxHTML_URL_IMAGE,
-                                                tag.GetParam(wxT("BACKGROUND"))
-                                               );
+            wxFSFile *fileBgImage = m_WParser->OpenURL(wxHTML_URL_IMAGE, bg);
             if ( fileBgImage )
             {
                 wxInputStream *is = fileBgImage->GetStream();
                 if ( is )
                 {
-#if !defined(__WXMSW__) || wxUSE_WXDIB
                     wxImage image(*is);
-                    if ( image.Ok() )
+                    if ( image.IsOk() )
                         winIface->SetHTMLBackgroundImage(image);
-#endif
                 }
 
                 delete fileBgImage;
@@ -365,7 +345,7 @@ TAG_HANDLER_BEGIN(BODY, "BODY")
         if (tag.GetParamAsColour(wxT("BGCOLOR"), &clr))
         {
             m_WParser->GetContainer()->InsertCell(
-                new wxHtmlColourCell(clr, wxHTML_CLR_BACKGROUND));
+                new wxHtmlColourCell(clr, wxHTML_CLR_TRANSPARENT_BACKGROUND));
             winIface->SetHTMLBackgroundColour(clr);
         }
 
@@ -419,7 +399,7 @@ TAG_HANDLER_BEGIN(SUBSUP, "SUB,SUP")
 
         m_WParser->SetScriptMode(issub ? wxHTML_SCRIPT_SUB : wxHTML_SCRIPT_SUP);
         m_WParser->SetScriptBaseline(
-                oldbase + c ? c->GetScriptBaseline() : 0);
+                oldbase + (c ? c->GetScriptBaseline() : 0));
 
         // select smaller font
         m_WParser->SetFontSize(m_WParser->GetFontSize()-2);

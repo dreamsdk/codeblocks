@@ -3,7 +3,6 @@
 // Purpose:     XML resource handler for wxColourPickerCtrl
 // Author:      Francesco Montorsi
 // Created:     2006-04-17
-// RCS-ID:      $Id: xh_clrpicker.cpp 40103 2006-07-15 15:34:34Z VS $
 // Copyright:   (c) 2006 Francesco Montorsi
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -20,7 +19,7 @@
 #include "wx/xrc/xh_clrpicker.h"
 #include "wx/clrpicker.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrlXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxColourPickerCtrlXmlHandler, wxXmlResourceHandler);
 
 wxColourPickerCtrlXmlHandler::wxColourPickerCtrlXmlHandler() : wxXmlResourceHandler()
 {
@@ -38,7 +37,7 @@ wxObject *wxColourPickerCtrlXmlHandler::DoCreateResource()
                   GetID(),
                   GetColour(wxT("value"), *wxBLACK),
                   GetPosition(), GetSize(),
-                  GetStyle(_T("style"), wxCLRP_DEFAULT_STYLE),
+                  GetStyle(wxT("style"), wxCLRP_DEFAULT_STYLE),
                   wxDefaultValidator,
                   GetName());
 

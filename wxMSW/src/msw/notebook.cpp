@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     11.06.98
-// RCS-ID:      $Id: notebook.cpp 59897 2009-03-27 22:37:22Z VZ $
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,12 +29,14 @@
     #include "wx/dcclient.h"
     #include "wx/dcmemory.h"
     #include "wx/control.h"
+    #include "wx/panel.h"
 #endif  // WX_PRECOMP
 
 #include "wx/imaglist.h"
 #include "wx/sysopt.h"
 
 #include "wx/msw/private.h"
+#include "wx/msw/dc.h"
 
 #include <windowsx.h>
 #include "wx/msw/winundef.h"
@@ -54,12 +55,7 @@
 // you can set USE_NOTEBOOK_ANTIFLICKER to 0 for desktop Windows versions too
 // to disable code whih results in flicker-less notebook redrawing at the
 // expense of some extra GDI resource consumption
-#ifdef __WXWINCE__
-    // notebooks are never resized under CE anyhow
-    #define USE_NOTEBOOK_ANTIFLICKER    0
-#else
-    #define USE_NOTEBOOK_ANTIFLICKER    1
-#endif
+#define USE_NOTEBOOK_ANTIFLICKER    1
 
 // ----------------------------------------------------------------------------
 // constants
@@ -85,15 +81,13 @@
 #if USE_NOTEBOOK_ANTIFLICKER
 
 // the pointer to standard spin button wnd proc
-static WXFARPROC gs_wndprocNotebookSpinBtn = (WXFARPROC)NULL;
+static WXWNDPROC gs_wndprocNotebookSpinBtn = NULL;
 
 // the pointer to standard tab control wnd proc
-static WXFARPROC gs_wndprocNotebook = (WXFARPROC)NULL;
+static WXWNDPROC gs_wndprocNotebook = NULL;
 
-LRESULT APIENTRY _EXPORT wxNotebookWndProc(HWND hwnd,
-                                           UINT message,
-                                           WPARAM wParam,
-                                           LPARAM lParam);
+LRESULT APIENTRY
+wxNotebookWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif // USE_NOTEBOOK_ANTIFLICKER
 
@@ -115,15 +109,7 @@ static bool HasTroubleWithNonTopTabs()
 // event table
 // ----------------------------------------------------------------------------
 
-#include "wx/listimpl.cpp"
-
-WX_DEFINE_LIST( wxNotebookPageInfoList )
-
-DEFINE_EVENT_TYPE(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED)
-DEFINE_EVENT_TYPE(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGING)
-
-BEGIN_EVENT_TABLE(wxNotebook, wxControl)
-    EVT_NOTEBOOK_PAGE_CHANGED(wxID_ANY, wxNotebook::OnSelChange)
+wxBEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
     EVT_SIZE(wxNotebook::OnSize)
     EVT_NAVIGATION_KEY(wxNotebook::OnNavigationKey)
 
@@ -131,91 +117,7 @@ BEGIN_EVENT_TABLE(wxNotebook, wxControl)
     EVT_ERASE_BACKGROUND(wxNotebook::OnEraseBackground)
     EVT_PAINT(wxNotebook::OnPaint)
 #endif // USE_NOTEBOOK_ANTIFLICKER
-END_EVENT_TABLE()
-
-#if wxUSE_EXTENDED_RTTI
-WX_DEFINE_FLAGS( wxNotebookStyle )
-
-wxBEGIN_FLAGS( wxNotebookStyle )
-    // new style border flags, we put them first to
-    // use them for streaming out
-    wxFLAGS_MEMBER(wxBORDER_SIMPLE)
-    wxFLAGS_MEMBER(wxBORDER_SUNKEN)
-    wxFLAGS_MEMBER(wxBORDER_DOUBLE)
-    wxFLAGS_MEMBER(wxBORDER_RAISED)
-    wxFLAGS_MEMBER(wxBORDER_STATIC)
-    wxFLAGS_MEMBER(wxBORDER_NONE)
-
-    // old style border flags
-    wxFLAGS_MEMBER(wxSIMPLE_BORDER)
-    wxFLAGS_MEMBER(wxSUNKEN_BORDER)
-    wxFLAGS_MEMBER(wxDOUBLE_BORDER)
-    wxFLAGS_MEMBER(wxRAISED_BORDER)
-    wxFLAGS_MEMBER(wxSTATIC_BORDER)
-    wxFLAGS_MEMBER(wxBORDER)
-
-    // standard window styles
-    wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
-    wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-    wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
-    wxFLAGS_MEMBER(wxWANTS_CHARS)
-    wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
-    wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
-    wxFLAGS_MEMBER(wxVSCROLL)
-    wxFLAGS_MEMBER(wxHSCROLL)
-
-    wxFLAGS_MEMBER(wxNB_FIXEDWIDTH)
-    wxFLAGS_MEMBER(wxBK_DEFAULT)
-    wxFLAGS_MEMBER(wxBK_TOP)
-    wxFLAGS_MEMBER(wxBK_LEFT)
-    wxFLAGS_MEMBER(wxBK_RIGHT)
-    wxFLAGS_MEMBER(wxBK_BOTTOM)
-    wxFLAGS_MEMBER(wxNB_NOPAGETHEME)
-    wxFLAGS_MEMBER(wxNB_FLAT)
-
-wxEND_FLAGS( wxNotebookStyle )
-
-IMPLEMENT_DYNAMIC_CLASS_XTI(wxNotebook, wxBookCtrlBase,"wx/notebook.h")
-IMPLEMENT_DYNAMIC_CLASS_XTI(wxNotebookPageInfo, wxObject , "wx/notebook.h" )
-
-wxCOLLECTION_TYPE_INFO( wxNotebookPageInfo * , wxNotebookPageInfoList ) ;
-
-template<> void wxCollectionToVariantArray( wxNotebookPageInfoList const &theList, wxxVariantArray &value)
-{
-    wxListCollectionToVariantArray<wxNotebookPageInfoList::compatibility_iterator>( theList , value ) ;
-}
-
-wxBEGIN_PROPERTIES_TABLE(wxNotebook)
-    wxEVENT_PROPERTY( PageChanging , wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGING , wxNotebookEvent )
-    wxEVENT_PROPERTY( PageChanged , wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED , wxNotebookEvent )
-
-    wxPROPERTY_COLLECTION( PageInfos , wxNotebookPageInfoList , wxNotebookPageInfo* , AddPageInfo , GetPageInfos , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxPROPERTY_FLAGS( WindowStyle , wxNotebookStyle , long , SetWindowStyleFlag , GetWindowStyleFlag , EMPTY_MACROVALUE , 0 /*flags*/ , wxT("Helpstring") , wxT("group")) // style
-wxEND_PROPERTIES_TABLE()
-
-wxBEGIN_HANDLERS_TABLE(wxNotebook)
-wxEND_HANDLERS_TABLE()
-
-wxCONSTRUCTOR_5( wxNotebook , wxWindow* , Parent , wxWindowID , Id , wxPoint , Position , wxSize , Size , long , WindowStyle)
-
-
-wxBEGIN_PROPERTIES_TABLE(wxNotebookPageInfo)
-    wxREADONLY_PROPERTY( Page , wxNotebookPage* , GetPage , EMPTY_MACROVALUE , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxREADONLY_PROPERTY( Text , wxString , GetText , wxString() , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-    wxREADONLY_PROPERTY( Selected , bool , GetSelected , false, 0 /*flags*/ , wxT("Helpstring") , wxT("group") )
-    wxREADONLY_PROPERTY( ImageId , int , GetImageId , -1 , 0 /*flags*/ , wxT("Helpstring") , wxT("group"))
-wxEND_PROPERTIES_TABLE()
-
-wxBEGIN_HANDLERS_TABLE(wxNotebookPageInfo)
-wxEND_HANDLERS_TABLE()
-
-wxCONSTRUCTOR_4( wxNotebookPageInfo , wxNotebookPage* , Page , wxString , Text , bool , Selected , int , ImageId )
-
-#else
-IMPLEMENT_DYNAMIC_CLASS(wxNotebook, wxBookCtrlBase)
-IMPLEMENT_DYNAMIC_CLASS(wxNotebookPageInfo, wxObject )
-#endif
-IMPLEMENT_DYNAMIC_CLASS(wxNotebookEvent, wxNotifyEvent)
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -225,25 +127,9 @@ IMPLEMENT_DYNAMIC_CLASS(wxNotebookEvent, wxNotifyEvent)
 // wxNotebook construction
 // ----------------------------------------------------------------------------
 
-const wxNotebookPageInfoList& wxNotebook::GetPageInfos() const
-{
-    wxNotebookPageInfoList* list = const_cast< wxNotebookPageInfoList* >( &m_pageInfos ) ;
-    WX_CLEAR_LIST( wxNotebookPageInfoList , *list ) ;
-    for( size_t i = 0 ; i < GetPageCount() ; ++i )
-    {
-        wxNotebookPageInfo *info = new wxNotebookPageInfo() ;
-        info->Create( const_cast<wxNotebook*>(this)->GetPage(i) , GetPageText(i) , GetSelection() == int(i) , GetPageImage(i) ) ;
-        list->Append( info ) ;
-    }
-    return m_pageInfos ;
-}
-
 // common part of all ctors
 void wxNotebook::Init()
 {
-    m_imageList = NULL;
-    m_nSelection = wxNOT_FOUND;
-
 #if wxUSE_UXTHEME
     m_hbrBackground = NULL;
 #endif // wxUSE_UXTHEME
@@ -282,19 +168,8 @@ bool wxNotebook::Create(wxWindow *parent,
 {
     if ( (style & wxBK_ALIGN_MASK) == wxBK_DEFAULT )
     {
-#if defined(__POCKETPC__)
-        style |= wxBK_BOTTOM | wxNB_FLAT;
-#else
         style |= wxBK_TOP;
-#endif
     }
-
-#ifdef __WXWINCE__
-    // Not sure why, but without this style, there is no border
-    // around the notebook tabs.
-    if (style & wxNB_FLAT)
-        style |= wxBORDER_SUNKEN;
-#endif
 
 #if !wxUSE_UXTHEME
     // ComCtl32 notebook tabs simply don't work unless they're on top if we
@@ -327,8 +202,7 @@ bool wxNotebook::Create(wxWindow *parent,
 
             if ( ::GetClassInfo(NULL, WC_TABCONTROL, &wc) )
             {
-                gs_wndprocNotebook =
-                    wx_reinterpret_cast(WXFARPROC, wc.lpfnWndProc);
+                gs_wndprocNotebook = wc.lpfnWndProc;
                 wc.lpszClassName = wxT("_wx_SysTabCtl32");
                 wc.style &= ~(CS_HREDRAW | CS_VREDRAW);
                 wc.hInstance = wxGetInstance();
@@ -337,7 +211,7 @@ bool wxNotebook::Create(wxWindow *parent,
             }
             else
             {
-                wxLogLastError(_T("GetClassInfoEx(SysTabCtl32)"));
+                wxLogLastError(wxT("GetClassInfoEx(SysTabCtl32)"));
             }
         }
 
@@ -359,6 +233,13 @@ bool wxNotebook::Create(wxWindow *parent,
     if ( !MSWCreateControl(className, wxEmptyString, pos, size) )
         return false;
 
+    // Inherit parent attributes and, unlike the default, also inherit the
+    // parent background colour in order to blend in with its background if
+    // it's set to a non-default value.
+    InheritAttributes();
+    if ( parent->InheritsBackgroundColour() && !UseBgCol() )
+        SetBackgroundColour(parent->GetBackgroundColour());
+
 #if wxUSE_UXTHEME
     if ( HasFlag(wxNB_NOPAGETHEME) ||
             wxSystemOptions::IsFalse(wxT("msw.notebook.themed-background")) )
@@ -378,9 +259,9 @@ bool wxNotebook::Create(wxWindow *parent,
             (style & (wxBK_BOTTOM | wxBK_LEFT | wxBK_RIGHT)) )
     {
         // check if we use themes at all -- if we don't, we're still okay
-        if ( wxUxThemeEngine::GetIfActive() )
+        if ( wxUxThemeIsActive() )
         {
-            wxUxThemeEngine::GetIfActive()->SetWindowTheme(GetHwnd(), L"", L"");
+            ::SetWindowTheme(GetHwnd(), L"", L"");
 
             // correct the background color for the new non-themed control
             SetBackgroundColour(GetThemeBackgroundColour());
@@ -388,18 +269,6 @@ bool wxNotebook::Create(wxWindow *parent,
     }
 #endif // wxUSE_UXTHEME
 
-    // Undocumented hack to get flat notebook style
-    // In fact, we should probably only do this in some
-    // curcumstances, i.e. if we know we will have a border
-    // at the bottom (the tab control doesn't draw it itself)
-#if defined(__POCKETPC__) || defined(__SMARTPHONE__)
-    if (HasFlag(wxNB_FLAT))
-    {
-        SendMessage(GetHwnd(), CCM_SETVERSION, COMCTL32_VERSION, 0);
-        if (!m_hasBgCol)
-            SetBackgroundColour(*wxWHITE);
-    }
-#endif
     return true;
 }
 
@@ -421,13 +290,6 @@ WXDWORD wxNotebook::MSWGetStyle(long style, WXDWORD *exstyle) const
     else if ( style & wxBK_RIGHT )
         tabStyle |= TCS_VERTICAL | TCS_RIGHT;
 
-    if ( exstyle )
-    {
-        // note that we never want to have the default WS_EX_CLIENTEDGE style
-        // as it looks too ugly for the notebooks
-        *exstyle &= ~WS_EX_CLIENTEDGE;
-    }
-
     return tabStyle;
 }
 
@@ -446,9 +308,9 @@ wxNotebook::~wxNotebook()
 size_t wxNotebook::GetPageCount() const
 {
     // consistency check
-    wxASSERT( (int)m_pages.Count() == TabCtrl_GetItemCount(GetHwnd()) );
+    wxASSERT( (int)m_pages.size() == TabCtrl_GetItemCount(GetHwnd()) );
 
-    return m_pages.Count();
+    return m_pages.size();
 }
 
 int wxNotebook::GetRowCount() const
@@ -460,56 +322,67 @@ int wxNotebook::SetSelection(size_t nPage)
 {
     wxCHECK_MSG( IS_VALID_PAGE(nPage), wxNOT_FOUND, wxT("notebook page out of range") );
 
-    if ( m_nSelection == wxNOT_FOUND || nPage != (size_t)m_nSelection )
+    if ( m_selection == wxNOT_FOUND || nPage != (size_t)m_selection )
     {
         if ( SendPageChangingEvent(nPage) )
         {
             // program allows the page change
-            SendPageChangedEvent(m_nSelection, nPage);
+            const int selectionOld = m_selection;
 
-            TabCtrl_SetCurSel(GetHwnd(), nPage);
+            UpdateSelection(nPage);
+
+            (void)TabCtrl_SetCurSel(GetHwnd(), nPage);
+
+            SendPageChangedEvent(selectionOld, nPage);
         }
     }
 
-    return m_nSelection;
+    return m_selection;
 }
 
 void wxNotebook::UpdateSelection(int selNew)
 {
-    if ( m_nSelection != wxNOT_FOUND )
-        m_pages[m_nSelection]->Show(false);
+    if ( m_selection != wxNOT_FOUND )
+        m_pages[m_selection]->Show(false);
 
     if ( selNew != wxNOT_FOUND )
     {
         wxNotebookPage *pPage = m_pages[selNew];
         pPage->Show(true);
+
+        // In addition to showing the page, we also want to give focus to it to
+        // make it possible to work with it from keyboard easily. However there
+        // are two exceptions: first, don't touch the focus at all if the
+        // notebook itself is not currently shown.
+        if ( ::IsWindowVisible(GetHwnd()) )
+        {
+            // And second, don't give focus away if the tab control itself has
+            // it, as this is how the native property sheets behave: if you
+            // explicitly click on the tab label giving it focus, it will
+            // remain after switching to another page. But if the focus was
+            // inside the notebook page, it switches to the new page.
+            if ( !HasFocus() )
+                pPage->SetFocus();
+        }
     }
 
-    // Changing the page should give the focus to it but, as per bug report
-    // http://sf.net/tracker/index.php?func=detail&aid=1150659&group_id=9863&atid=109863,
-    // we should not set the focus to it directly since it erroneously
-    // selects radio buttons and breaks keyboard handling for a notebook's
-    // scroll buttons. So give focus to the notebook and not the page.
-
-    // but don't do this is the notebook is hidden
-    if ( ::IsWindowVisible(GetHwnd()) )
-        SetFocus();
-
-    m_nSelection = selNew;
+    m_selection = selNew;
 }
 
 int wxNotebook::ChangeSelection(size_t nPage)
 {
     wxCHECK_MSG( IS_VALID_PAGE(nPage), wxNOT_FOUND, wxT("notebook page out of range") );
 
-    if ( m_nSelection == wxNOT_FOUND || nPage != (size_t)m_nSelection )
+    const int selOld = m_selection;
+
+    if ( m_selection == wxNOT_FOUND || nPage != (size_t)m_selection )
     {
-        TabCtrl_SetCurSel(GetHwnd(), nPage);
+        (void)TabCtrl_SetCurSel(GetHwnd(), nPage);
 
         UpdateSelection(nPage);
     }
 
-    return m_nSelection;
+    return selOld;
 }
 
 bool wxNotebook::SetPageText(size_t nPage, const wxString& strText)
@@ -518,7 +391,7 @@ bool wxNotebook::SetPageText(size_t nPage, const wxString& strText)
 
     TC_ITEM tcItem;
     tcItem.mask = TCIF_TEXT;
-    tcItem.pszText = (wxChar *)strText.c_str();
+    tcItem.pszText = wxMSW_CONV_LPTSTR(strText);
 
     if ( !HasFlag(wxNB_MULTILINE) )
         return TabCtrl_SetItem(GetHwnd(), nPage, &tcItem) != 0;
@@ -530,7 +403,7 @@ bool wxNotebook::SetPageText(size_t nPage, const wxString& strText)
     if ( ret && rows != GetRowCount() )
     {
         const wxRect r = GetPageSize();
-        const size_t count = m_pages.Count();
+        const size_t count = m_pages.size();
         for ( size_t page = 0; page < count; page++ )
             m_pages[page]->SetSize(r);
     }
@@ -606,7 +479,7 @@ wxRect wxNotebook::GetPageSize() const
     // The value of 20 is chosen arbitrarily but seems to work
     if ( rc.right > 20 && rc.bottom > 20 )
     {
-        TabCtrl_AdjustRect(GetHwnd(), false, &rc);
+        (void)TabCtrl_AdjustRect(GetHwnd(), false, &rc);
 
         wxCopyRECTToRect(rc, r);
     }
@@ -623,7 +496,7 @@ void wxNotebook::SetPageSize(const wxSize& size)
     rc.right = size.x;
     rc.bottom = size.y;
 
-    TabCtrl_AdjustRect(GetHwnd(), true, &rc);
+    (void)TabCtrl_AdjustRect(GetHwnd(), true, &rc);
 
     // and now set it
     SetSize(rc.right - rc.left, rc.bottom - rc.top);
@@ -650,9 +523,11 @@ wxSize wxNotebook::CalcSizeFromPage(const wxSize& sizePage) const
     if ( GetPageCount() > 0 )
     {
         RECT rect;
-        TabCtrl_GetItemRect(GetHwnd(), 0, &rect);
-        tabSize.x = rect.right - rect.left;
-        tabSize.y = rect.bottom - rect.top;
+        if ( TabCtrl_GetItemRect(GetHwnd(), 0, &rect) )
+        {
+            tabSize.x = rect.right - rect.left;
+            tabSize.y = rect.bottom - rect.top;
+        }
     }
 
     const int rows = GetRowCount();
@@ -675,7 +550,7 @@ wxSize wxNotebook::CalcSizeFromPage(const wxSize& sizePage) const
 
 void wxNotebook::AdjustPageSize(wxNotebookPage *page)
 {
-    wxCHECK_RET( page, _T("NULL page in wxNotebook::AdjustPageSize") );
+    wxCHECK_RET( page, wxT("NULL page in wxNotebook::AdjustPageSize") );
 
     const wxRect r = GetPageSize();
     if ( !r.IsEmpty() )
@@ -695,12 +570,17 @@ wxNotebookPage *wxNotebook::DoRemovePage(size_t nPage)
     if ( !pageRemoved )
         return NULL;
 
-    TabCtrl_DeleteItem(GetHwnd(), nPage);
+    // hide the removed page to maintain the invariant that only the
+    // selected page is visible and others are hidden:
+    pageRemoved->Show(false);
 
-    if ( m_pages.IsEmpty() )
+    if ( !TabCtrl_DeleteItem(GetHwnd(), nPage) )
+        wxLogLastError(wxS("TabCtrl_DeleteItem()"));
+
+    if ( m_pages.empty() )
     {
         // no selection any more, the notebook becamse empty
-        m_nSelection = wxNOT_FOUND;
+        m_selection = wxNOT_FOUND;
     }
     else // notebook still not empty
     {
@@ -711,22 +591,22 @@ wxNotebookPage *wxNotebook::DoRemovePage(size_t nPage)
             // Because it could be that the slection index changed
             // we need to update it.
             // Note: this does not mean the selection it self changed.
-            m_nSelection = selNew;
-            m_pages[m_nSelection]->Refresh();
+            m_selection = selNew;
+            m_pages[m_selection]->Refresh();
         }
-        else if (int(nPage) == m_nSelection)
+        else if (int(nPage) == m_selection)
         {
             // The selection was deleted.
 
             // Determine new selection.
-            if (m_nSelection == int(GetPageCount()))
-                selNew = m_nSelection - 1;
+            if (m_selection == int(GetPageCount()))
+                selNew = m_selection - 1;
             else
-                selNew = m_nSelection;
+                selNew = m_selection;
 
-            // m_nSelection must be always valid so reset it before calling
+            // m_selection must be always valid so reset it before calling
             // SetSelection()
-            m_nSelection = wxNOT_FOUND;
+            m_selection = wxNOT_FOUND;
             SetSelection(selNew);
         }
         else
@@ -741,18 +621,11 @@ wxNotebookPage *wxNotebook::DoRemovePage(size_t nPage)
 // remove all pages
 bool wxNotebook::DeleteAllPages()
 {
-    size_t nPageCount = GetPageCount();
-    size_t nPage;
-    for ( nPage = 0; nPage < nPageCount; nPage++ )
-        delete m_pages[nPage];
+    wxBookCtrlBase::DeleteAllPages();
 
-    m_pages.Clear();
+    if ( !TabCtrl_DeleteAllItems(GetHwnd()) )
+        wxLogLastError(wxS("TabCtrl_DeleteAllItems()"));
 
-    TabCtrl_DeleteAllItems(GetHwnd());
-
-    m_nSelection = wxNOT_FOUND;
-
-    InvalidateBestSize();
     return true;
 }
 
@@ -763,12 +636,12 @@ bool wxNotebook::InsertPage(size_t nPage,
                             bool bSelect,
                             int imageId)
 {
-    wxCHECK_MSG( pPage != NULL, false, _T("NULL page in wxNotebook::InsertPage") );
+    wxCHECK_MSG( pPage != NULL, false, wxT("NULL page in wxNotebook::InsertPage") );
     wxCHECK_MSG( IS_VALID_PAGE(nPage) || nPage == GetPageCount(), false,
-                 _T("invalid index in wxNotebook::InsertPage") );
+                 wxT("invalid index in wxNotebook::InsertPage") );
 
     wxASSERT_MSG( pPage->GetParent() == this,
-                    _T("notebook pages must have notebook as parent") );
+                    wxT("notebook pages must have notebook as parent") );
 
     // add a new tab to the control
     // ----------------------------
@@ -788,16 +661,11 @@ bool wxNotebook::InsertPage(size_t nPage,
     if ( !strText.empty() )
     {
         tcItem.mask |= TCIF_TEXT;
-        tcItem.pszText = (wxChar *)strText.c_str(); // const_cast
+        tcItem.pszText = wxMSW_CONV_LPTSTR(strText);
     }
 
     // hide the page: unless it is selected, it shouldn't be shown (and if it
     // is selected it will be shown later)
-    HWND hwnd = GetWinHwnd(pPage);
-    SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_VISIBLE);
-
-    // this updates internal flag too -- otherwise it would get out of sync
-    // with the real state
     pPage->Show(false);
 
 
@@ -824,15 +692,23 @@ bool wxNotebook::InsertPage(size_t nPage,
     }
 
     // succeeded: save the pointer to the page
-    m_pages.Insert(pPage, nPage);
+    m_pages.insert(m_pages.begin() + nPage, pPage);
 
     // we may need to adjust the size again if the notebook size changed:
     // normally this only happens for the first page we add (the tabs which
     // hadn't been there before are now shown) but for a multiline notebook it
     // can happen for any page at all as a new row could have been started
-    if ( m_pages.GetCount() == 1 || HasFlag(wxNB_MULTILINE) )
+    if ( m_pages.size() == 1 || HasFlag(wxNB_MULTILINE) )
     {
         AdjustPageSize(pPage);
+
+        // Additionally, force the layout of the notebook itself by posting a
+        // size event to it. If we don't do it, notebooks with pages on the
+        // left or the right side may fail to account for the fact that they
+        // are now big enough to fit all all of their pages on one row and
+        // still reserve space for the second row of tabs, see #1792.
+        const wxSize s = GetSize();
+        ::PostMessage(GetHwnd(), WM_SIZE, SIZE_RESTORED, MAKELPARAM(s.x, s.y));
     }
 
     // now deal with the selection
@@ -840,22 +716,13 @@ bool wxNotebook::InsertPage(size_t nPage,
 
     // if the inserted page is before the selected one, we must update the
     // index of the selected page
-    if ( int(nPage) <= m_nSelection )
+    if ( int(nPage) <= m_selection )
     {
         // one extra page added
-        m_nSelection++;
+        m_selection++;
     }
 
-    // some page should be selected: either this one or the first one if there
-    // is still no selection
-    int selNew = wxNOT_FOUND;
-    if ( bSelect )
-        selNew = nPage;
-    else if ( m_nSelection == wxNOT_FOUND )
-        selNew = 0;
-
-    if ( selNew != wxNOT_FOUND )
-        SetSelection(selNew);
+    DoSetSelectionAfterInsertion(nPage, bSelect);
 
     InvalidateBestSize();
 
@@ -874,15 +741,18 @@ int wxNotebook::HitTest(const wxPoint& pt, long *flags) const
         *flags = 0;
 
         if ((hitTestInfo.flags & TCHT_NOWHERE) == TCHT_NOWHERE)
+        {
+            wxASSERT( item == wxNOT_FOUND );
             *flags |= wxBK_HITTEST_NOWHERE;
-        if ((hitTestInfo.flags & TCHT_ONITEM) == TCHT_ONITEM)
+            if ( GetPageSize().Contains(pt) )
+                *flags |= wxBK_HITTEST_ONPAGE;
+        }
+        else if ((hitTestInfo.flags & TCHT_ONITEM) == TCHT_ONITEM)
             *flags |= wxBK_HITTEST_ONITEM;
-        if ((hitTestInfo.flags & TCHT_ONITEMICON) == TCHT_ONITEMICON)
+        else if ((hitTestInfo.flags & TCHT_ONITEMICON) == TCHT_ONITEMICON)
             *flags |= wxBK_HITTEST_ONICON;
-        if ((hitTestInfo.flags & TCHT_ONITEMLABEL) == TCHT_ONITEMLABEL)
+        else if ((hitTestInfo.flags & TCHT_ONITEMLABEL) == TCHT_ONITEMLABEL)
             *flags |= wxBK_HITTEST_ONLABEL;
-        if ( item == wxNOT_FOUND && GetPageSize().Contains(pt) )
-            *flags |= wxBK_HITTEST_ONPAGE;
     }
 
     return item;
@@ -895,10 +765,8 @@ int wxNotebook::HitTest(const wxPoint& pt, long *flags) const
 #if USE_NOTEBOOK_ANTIFLICKER
 
 // wnd proc for the spin button
-LRESULT APIENTRY _EXPORT wxNotebookSpinBtnWndProc(HWND hwnd,
-                                                  UINT message,
-                                                  WPARAM wParam,
-                                                  LPARAM lParam)
+LRESULT APIENTRY
+wxNotebookSpinBtnWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     if ( message == WM_ERASEBKGND )
         return 0;
@@ -907,10 +775,8 @@ LRESULT APIENTRY _EXPORT wxNotebookSpinBtnWndProc(HWND hwnd,
                             hwnd, message, wParam, lParam);
 }
 
-LRESULT APIENTRY _EXPORT wxNotebookWndProc(HWND hwnd,
-                                           UINT message,
-                                           WPARAM wParam,
-                                           LPARAM lParam)
+LRESULT APIENTRY
+wxNotebookWndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     return ::CallWindowProc(CASTWNDPROC gs_wndprocNotebook,
                             hwnd, message, wParam, lParam);
@@ -933,22 +799,73 @@ void wxNotebook::OnPaint(wxPaintEvent& WXUNUSED(event))
     const wxLayoutDirection dir = dc.GetLayoutDirection();
     memdc.SetLayoutDirection(dir);
 
-    // if there is no special brush just use the solid background colour
-#if wxUSE_UXTHEME
-    HBRUSH hbr = (HBRUSH)m_hbrBackground;
-#else
-    HBRUSH hbr = 0;
-#endif
-    wxBrush brush;
-    if ( !hbr )
+    const HDC hdc = GetHdcOf(memdc);
+
+    // The drawing logic of the native tab control is absolutely impenetrable
+    // but observation shows that in the current Windows versions (XP and 7),
+    // the tab control always erases its entire background in its window proc
+    // when the tabs are top-aligned but does not do it when the tabs are in
+    // any other position.
+    //
+    // This means that we can't rely on our background colour being used for
+    // the blank area in the tab row because this doesn't work in the default
+    // top-aligned case, hence the hack with ExtFloodFill() below. But it also
+    // means that we still do need to erase the DC to account for the other
+    // cases.
+    //
+    // Moreover, just in case some very old or very new (or even future,
+    // although it seems unlikely that this is ever going to change by now)
+    // version of Windows didn't do it like this, do both things in all cases
+    // instead of optimizing away the one of them which doesn't do anything for
+    // the effectively used tab orientation -- better safe than fast.
+
+    // Notice that we use our own background here, not the background used for
+    // the pages, because the tab row background must blend with the parent and
+    // so the background colour inherited from it (if any) must be used.
+    AutoHBRUSH hbr(wxColourToRGB(GetBackgroundColour()));
+
+    ::FillRect(hdc, &rc, hbr);
+
+    MSWDefWindowProc(WM_PAINT, (WPARAM)hdc, 0);
+
+    // At least for the top-aligned tabs, our background colour was overwritten
+    // and so we now replace the default background with our colour. This is
+    // horribly inefficient, of course, but seems to be the only way to do it.
+    if ( UseBgCol() )
     {
-        brush = wxBrush(GetBackgroundColour());
-        hbr = GetHbrushOf(brush);
+        SelectInHDC selectBrush(hdc, hbr);
+
+        // Find the point which must contain the default background colour:
+        // this is a hack, of course, but using this point "close" to the
+        // corner seems to work fine in practice.
+        int x = 0,
+            y = 0;
+
+        switch ( GetWindowStyle() & wxBK_ALIGN_MASK )
+        {
+            case wxBK_TOP:
+                x = rc.right - 2;
+                y = 2;
+                break;
+
+            case wxBK_BOTTOM:
+                x = rc.right - 2;
+                y = rc.bottom - 2;
+                break;
+
+            case wxBK_LEFT:
+                x = 2;
+                y = rc.bottom - 2;
+                break;
+
+            case wxBK_RIGHT:
+                x = 2;
+                y = rc.bottom - 2;
+                break;
+        }
+
+        ::ExtFloodFill(hdc, x, y, ::GetSysColor(COLOR_BTNFACE), FLOODFILLSURFACE);
     }
-
-    ::FillRect(GetHdcOf(memdc), &rc, hbr);
-
-    MSWDefWindowProc(WM_PAINT, (WPARAM)memdc.GetHDC(), 0);
 
     // For some reason in RTL mode, source offset has to be -1, otherwise the
     // right border (physical) remains unpainted.
@@ -972,7 +889,6 @@ void wxNotebook::OnSize(wxSizeEvent& event)
         event.Skip();
         return;
     }
-#ifndef __WXWINCE__
     else
     {
         // Without this, we can sometimes get droppings at the edges
@@ -995,7 +911,6 @@ void wxNotebook::OnSize(wxSizeEvent& event)
         rect = wxRect(0, 0, 4, sz.y);
         RefreshRect(rect);
     }
-#endif // !__WXWINCE__
 
     // fit all the notebook pages to the tab control's display area
 
@@ -1039,11 +954,11 @@ void wxNotebook::OnSize(wxSizeEvent& event)
     UpdateBgBrush();
 #endif // wxUSE_UXTHEME
 
-    TabCtrl_AdjustRect(GetHwnd(), false, &rc);
+    (void)TabCtrl_AdjustRect(GetHwnd(), false, &rc);
 
     int width = rc.right - rc.left,
         height = rc.bottom - rc.top;
-    size_t nCount = m_pages.Count();
+    size_t nCount = m_pages.size();
     for ( size_t nPage = 0; nPage < nCount; nPage++ ) {
         wxNotebookPage *pPage = m_pages[nPage];
         pPage->SetSize(rc.left, rc.top, width, height);
@@ -1080,7 +995,7 @@ void wxNotebook::OnSize(wxSizeEvent& event)
             {
                 // subclass the spin button to override WM_ERASEBKGND
                 if ( !gs_wndprocNotebookSpinBtn )
-                    gs_wndprocNotebookSpinBtn = (WXFARPROC)wxGetWindowProc(child);
+                    gs_wndprocNotebookSpinBtn = wxGetWindowProc(child);
 
                 wxSetWindowProc(child, wxNotebookSpinBtnWndProc);
                 m_hasSubclassedUpdown = true;
@@ -1090,18 +1005,6 @@ void wxNotebook::OnSize(wxSizeEvent& event)
     }
 #endif // USE_NOTEBOOK_ANTIFLICKER
 
-    event.Skip();
-}
-
-void wxNotebook::OnSelChange(wxNotebookEvent& event)
-{
-    // is it our tab control?
-    if ( event.GetEventObject() == this )
-    {
-        UpdateSelection(event.GetSelection());
-    }
-
-    // we want to give others a chance to process this message as well
     event.Skip();
 }
 
@@ -1135,20 +1038,30 @@ void wxNotebook::OnNavigationKey(wxNavigationKeyEvent& event)
         // the wxObject* casts are required to avoid MinGW GCC 2.95.3 ICE
         const bool isFromParent = event.GetEventObject() == (wxObject*) parent;
         const bool isFromSelf = event.GetEventObject() == (wxObject*) this;
+        const bool isForward = event.GetDirection();
 
-        if ( isFromParent || isFromSelf )
+        if ( isFromSelf && !isForward )
+        {
+            // focus is currently on notebook tab and should leave
+            // it backwards (Shift-TAB)
+            event.SetCurrentFocus(this);
+            parent->HandleWindowEvent(event);
+        }
+        else if ( isFromParent || isFromSelf )
         {
             // no, it doesn't come from child, case (b) or (c): forward to a
-            // page but only if direction is backwards (TAB) or from ourselves,
-            if ( m_nSelection != wxNOT_FOUND &&
+            // page but only if entering notebook page (i.e. direction is
+            // backwards (Shift-TAB) comething from out-of-notebook, or
+            // direction is forward (TAB) from ourselves),
+            if ( m_selection != wxNOT_FOUND &&
                     (!event.GetDirection() || isFromSelf) )
             {
                 // so that the page knows that the event comes from it's parent
                 // and is being propagated downwards
                 event.SetEventObject(this);
 
-                wxWindow *page = m_pages[m_nSelection];
-                if ( !page->GetEventHandler()->ProcessEvent(event) )
+                wxWindow *page = m_pages[m_selection];
+                if ( !page->HandleWindowEvent(event) )
                 {
                     page->SetFocus();
                 }
@@ -1165,14 +1078,14 @@ void wxNotebook::OnNavigationKey(wxNavigationKeyEvent& event)
             // if the direction is forwards. Otherwise set the focus to the
             // notebook itself. The notebook is always the 'first' control of a
             // page.
-            if ( !event.GetDirection() )
+            if ( !isForward )
             {
                 SetFocus();
             }
             else if ( parent )
             {
                 event.SetCurrentFocus(this);
-                parent->GetEventHandler()->ProcessEvent(event);
+                parent->HandleWindowEvent(event);
             }
         }
     }
@@ -1180,15 +1093,77 @@ void wxNotebook::OnNavigationKey(wxNavigationKeyEvent& event)
 
 #if wxUSE_UXTHEME
 
-bool wxNotebook::DoDrawBackground(WXHDC hDC, wxWindow *child)
+WXHBRUSH wxNotebook::QueryBgBitmap()
 {
-    wxUxThemeHandle theme(child ? child : this, L"TAB");
-    if ( !theme )
-        return false;
+    RECT rc;
+    ::GetClientRect(GetHwnd(), &rc);
+    if ( ::IsRectEmpty(&rc) )
+        return 0;
 
-    // get the notebook client rect (we're not interested in drawing tabs
-    // themselves)
-    wxRect r = GetPageSize();
+    wxUxThemeHandle theme(this, L"TAB");
+    if ( !theme )
+        return 0;
+
+    WindowHDC hDC(GetHwnd());
+
+    RECT rcBg;
+    ::GetThemeBackgroundContentRect(theme,
+                                    (HDC) hDC,
+                                    9, /* TABP_PANE */
+                                    0,
+                                    &rc,
+                                    &rcBg);
+
+    m_bgBrushAdj = wxPoint(rcBg.left, rcBg.top);
+    ::OffsetRect(&rcBg, -rcBg.left, -rcBg.top);
+
+    ::GetThemeBackgroundExtent
+                            (
+                                theme,
+                                (HDC) hDC,
+                                9 /* TABP_PANE */,
+                                0,
+                                &rcBg,
+                                &rc
+                            );
+
+    MemoryHDC hDCMem(hDC);
+    CompatibleBitmap hBmp(hDC, rcBg.right, rcBg.bottom);
+
+    {
+        SelectInHDC selectBmp(hDCMem, hBmp);
+        ::DrawThemeBackground
+                                (
+                                    theme,
+                                    hDCMem,
+                                    9 /* TABP_PANE */,
+                                    0,
+                                    &rc,
+                                    NULL
+                                );
+    } // deselect bitmap from the memory HDC before using it
+
+    return (WXHBRUSH)::CreatePatternBrush(hBmp);
+}
+
+void wxNotebook::UpdateBgBrush()
+{
+    if ( m_hbrBackground )
+        ::DeleteObject((HBRUSH)m_hbrBackground);
+
+    if ( !m_hasBgCol && wxUxThemeIsActive() )
+    {
+        m_hbrBackground = QueryBgBitmap();
+    }
+    else // no themes or we've got user-defined solid colour
+    {
+        m_hbrBackground = NULL;
+    }
+}
+
+bool wxNotebook::MSWPrintChild(WXHDC hDC, wxWindow *child)
+{
+    const wxRect r = GetPageSize();
     if ( r.IsEmpty() )
         return false;
 
@@ -1199,112 +1174,44 @@ bool wxNotebook::DoDrawBackground(WXHDC hDC, wxWindow *child)
     if ( child )
         ::MapWindowPoints(GetHwnd(), GetHwndOf(child), (POINT *)&rc, 2);
 
-    // we have the content area (page size), but we need to draw all of the
-    // background for it to be aligned correctly
-    wxUxThemeEngine::Get()->GetThemeBackgroundExtent
-                            (
-                                theme,
-                                (HDC) hDC,
-                                9 /* TABP_PANE */,
-                                0,
-                                &rc,
-                                &rc
-                            );
-    wxUxThemeEngine::Get()->DrawThemeBackground
-                            (
-                                theme,
-                                (HDC) hDC,
-                                9 /* TABP_PANE */,
-                                0,
-                                &rc,
-                                NULL
-                            );
-
-    return true;
-}
-
-WXHBRUSH wxNotebook::QueryBgBitmap()
-{
-    wxRect r = GetPageSize();
-    if ( r.IsEmpty() )
-        return 0;
-
-    WindowHDC hDC(GetHwnd());
-    MemoryHDC hDCMem(hDC);
-    CompatibleBitmap hBmp(hDC, r.x + r.width, r.y + r.height);
-
-    SelectInHDC selectBmp(hDCMem, hBmp);
-
-    if ( !DoDrawBackground((WXHDC)(HDC)hDCMem) )
-        return 0;
-
-    return (WXHBRUSH)::CreatePatternBrush(hBmp);
-}
-
-void wxNotebook::UpdateBgBrush()
-{
-    if ( m_hbrBackground )
-        ::DeleteObject((HBRUSH)m_hbrBackground);
-
-    if ( !m_hasBgCol && wxUxThemeEngine::GetIfActive() )
-    {
-        m_hbrBackground = QueryBgBitmap();
-    }
-    else // no themes or we've got user-defined solid colour
-    {
-        m_hbrBackground = NULL;
-    }
-}
-
-WXHBRUSH wxNotebook::MSWGetBgBrushForChild(WXHDC hDC, WXHWND hWnd)
-{
-    if ( m_hbrBackground )
-    {
-        // before drawing with the background brush, we need to position it
-        // correctly
-        RECT rc;
-        ::GetWindowRect((HWND)hWnd, &rc);
-
-        ::MapWindowPoints(NULL, GetHwnd(), (POINT *)&rc, 1);
-
-        if ( !::SetBrushOrgEx((HDC)hDC, -rc.left, -rc.top, NULL) )
-        {
-            wxLogLastError(_T("SetBrushOrgEx(notebook bg brush)"));
-        }
-
-        return m_hbrBackground;
-    }
-
-    return wxNotebookBase::MSWGetBgBrushForChild(hDC, hWnd);
-}
-
-bool wxNotebook::MSWPrintChild(WXHDC hDC, wxWindow *child)
-{
-    // solid background colour overrides themed background drawing
-    if ( !UseBgCol() && DoDrawBackground(hDC, child) )
-        return true;
-
     // If we're using a solid colour (for example if we've switched off
     // theming for this notebook), paint it
     if (UseBgCol())
     {
-        wxRect r = GetPageSize();
-        if ( r.IsEmpty() )
-            return false;
-
-        RECT rc;
-        wxCopyRectToRECT(r, rc);
-
-        // map rect to the coords of the window we're drawing in
-        if ( child )
-            ::MapWindowPoints(GetHwnd(), GetHwndOf(child), (POINT *)&rc, 2);
-
         wxBrush brush(GetBackgroundColour());
         HBRUSH hbr = GetHbrushOf(brush);
 
         ::FillRect((HDC) hDC, &rc, hbr);
 
         return true;
+    }
+    else // No solid background colour, try to use themed background.
+    {
+        wxUxThemeHandle theme(child, L"TAB");
+        if ( theme )
+        {
+            // we have the content area (page size), but we need to draw all of the
+            // background for it to be aligned correctly
+            ::GetThemeBackgroundExtent
+                                    (
+                                        theme,
+                                        (HDC) hDC,
+                                        9 /* TABP_PANE */,
+                                        0,
+                                        &rc,
+                                        &rc
+                                    );
+            ::DrawThemeBackground
+                                    (
+                                        theme,
+                                        (HDC) hDC,
+                                        9 /* TABP_PANE */,
+                                        0,
+                                        &rc,
+                                        NULL
+                                    );
+            return true;
+        }
     }
 
     return wxNotebookBase::MSWPrintChild(hDC, child);
@@ -1316,7 +1223,7 @@ bool wxNotebook::MSWPrintChild(WXHDC hDC, wxWindow *child)
 wxColour wxNotebook::GetThemeBackgroundColour() const
 {
 #if wxUSE_UXTHEME
-    if (wxUxThemeEngine::Get())
+    if (wxUxThemeIsActive())
     {
         wxUxThemeHandle hTheme((wxNotebook*) this, L"TAB");
         if (hTheme)
@@ -1325,7 +1232,7 @@ wxColour wxNotebook::GetThemeBackgroundColour() const
             // See PlatformSDK\Include\Tmschema.h for values.
             // JACS: can also use 9 (TABP_PANE)
             COLORREF themeColor;
-            bool success = (S_OK == wxUxThemeEngine::Get()->GetThemeColor(
+            bool success = (S_OK == ::GetThemeColor(
                                         hTheme,
                                         10 /* TABP_BODY */,
                                         1 /* NORMAL */,
@@ -1345,7 +1252,7 @@ wxColour wxNotebook::GetThemeBackgroundColour() const
             */
             if (themeColor == 1)
             {
-                wxUxThemeEngine::Get()->GetThemeColor(
+                ::GetThemeColor(
                                             hTheme,
                                             10 /* TABP_BODY */,
                                             1 /* NORMAL */,
@@ -1364,10 +1271,10 @@ wxColour wxNotebook::GetThemeBackgroundColour() const
             {
                 WCHAR szwThemeFile[1024];
                 WCHAR szwThemeColor[256];
-                if (S_OK == wxUxThemeEngine::Get()->GetCurrentThemeName(szwThemeFile, 1024, szwThemeColor, 256, NULL, 0))
+                if (S_OK == ::GetCurrentThemeName(szwThemeFile, 1024, szwThemeColor, 256, NULL, 0))
                 {
-                    wxString themeFile(szwThemeFile), themeColor(szwThemeColor);
-                    if (themeFile.Find(wxT("Aero")) != -1 && themeColor == wxT("NormalColor"))
+                    wxString themeFile(szwThemeFile);
+                    if (themeFile.Find(wxT("Aero")) != -1 && wxString(szwThemeColor) == wxT("NormalColor"))
                         s_AeroStatus = 1;
                     else
                         s_AeroStatus = 0;
@@ -1425,16 +1332,16 @@ bool wxNotebook::MSWOnScroll(int orientation, WXWORD nSBCode,
 
 bool wxNotebook::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result)
 {
-  wxNotebookEvent event(wxEVT_NULL, m_windowId);
+  wxBookCtrlEvent event(wxEVT_NULL, m_windowId);
 
   NMHDR* hdr = (NMHDR *)lParam;
   switch ( hdr->code ) {
     case TCN_SELCHANGE:
-      event.SetEventType(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED);
+      event.SetEventType(wxEVT_NOTEBOOK_PAGE_CHANGED);
       break;
 
     case TCN_SELCHANGING:
-      event.SetEventType(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGING);
+      event.SetEventType(wxEVT_NOTEBOOK_PAGE_CHANGING);
       break;
 
     default:
@@ -1442,11 +1349,16 @@ bool wxNotebook::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM* result)
   }
 
   event.SetSelection(TabCtrl_GetCurSel(GetHwnd()));
-  event.SetOldSelection(m_nSelection);
+  event.SetOldSelection(m_selection);
   event.SetEventObject(this);
   event.SetInt(idCtrl);
 
-  bool processed = GetEventHandler()->ProcessEvent(event);
+  // Change the selection before generating the event as its handler should
+  // already see the new page selected.
+  if ( hdr->code == TCN_SELCHANGE )
+      UpdateSelection(event.GetSelection());
+
+  bool processed = HandleWindowEvent(event);
   *result = !event.IsAllowed();
   return processed;
 }

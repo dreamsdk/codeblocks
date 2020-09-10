@@ -4,7 +4,6 @@
 // Author:      Jaakko Salli
 // Modified by:
 // Created:     Apr-30-2006
-// RCS-ID:      $Id: combo.h 61872 2009-09-09 22:37:05Z VZ $
 // Copyright:   (c) Jaakko Salli
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -16,6 +15,8 @@
 
 // Only define generic if native doesn't have all the features
 #if !defined(wxCOMBOCONTROL_FULLY_FEATURED)
+
+#include "wx/containr.h"
 
 // ----------------------------------------------------------------------------
 // Generic wxComboCtrl
@@ -31,13 +32,14 @@
 
 #endif
 
-extern WXDLLIMPEXP_DATA_CORE(const wxChar) wxComboBoxNameStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxComboBoxNameStr[];
 
-class WXDLLEXPORT wxGenericComboCtrl : public wxComboCtrlBase
+class WXDLLIMPEXP_CORE wxGenericComboCtrl
+    : public wxNavigationEnabled<wxComboCtrlBase>
 {
 public:
     // ctors and such
-    wxGenericComboCtrl() : wxComboCtrlBase() { Init(); }
+    wxGenericComboCtrl() { Init(); }
 
     wxGenericComboCtrl(wxWindow *parent,
                        wxWindowID id = wxID_ANY,
@@ -47,7 +49,6 @@ public:
                        long style = 0,
                        const wxValidator& validator = wxDefaultValidator,
                        const wxString& name = wxComboBoxNameStr)
-        : wxComboCtrlBase()
     {
         Init();
 
@@ -67,7 +68,7 @@ public:
 
     void SetCustomPaintWidth( int width );
 
-    virtual bool IsKeyPopupToggle(const wxKeyEvent& event) const;
+    virtual bool IsKeyPopupToggle(const wxKeyEvent& event) const wxOVERRIDE;
 
     static int GetFeatures() { return wxComboCtrlFeatures::All; }
 
@@ -80,8 +81,25 @@ public:
 
 protected:
 
+    // Dummies for platform-specific wxTextEntry implementations
+#if defined(__WXUNIVERSAL__)
+    // Looks like there's nothing we need to override here
+#elif defined(__WXMOTIF__)
+    virtual WXWidget GetTextWidget() const { return NULL; }
+#elif defined(__WXGTK__)
+#if defined(__WXGTK20__)
+    virtual GtkEditable *GetEditable() const wxOVERRIDE { return NULL; }
+    virtual GtkEntry *GetEntry() const wxOVERRIDE { return NULL; }
+#endif
+#elif defined(__WXMAC__)
+    // Looks like there's nothing we need to override here
+#endif
+
+    // For better transparent background rendering
+    virtual bool HasTransparentBackground() wxOVERRIDE;
+
     // Mandatory virtuals
-    virtual void OnResize();
+    virtual void OnResize() wxOVERRIDE;
 
     // Event handlers
     void OnPaintEvent( wxPaintEvent& event );
@@ -90,9 +108,9 @@ protected:
 private:
     void Init();
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
-    DECLARE_DYNAMIC_CLASS(wxGenericComboCtrl)
+    wxDECLARE_DYNAMIC_CLASS(wxGenericComboCtrl);
 };
 
 
@@ -101,7 +119,7 @@ private:
 // If native wxComboCtrl was not defined, then prepare a simple
 // front-end so that wxRTTI works as expected.
 
-class WXDLLEXPORT wxComboCtrl : public wxGenericComboCtrl
+class WXDLLIMPEXP_CORE wxComboCtrl : public wxGenericComboCtrl
 {
 public:
     wxComboCtrl() : wxGenericComboCtrl() {}
@@ -124,7 +142,7 @@ public:
 protected:
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxComboCtrl)
+    wxDECLARE_DYNAMIC_CLASS(wxComboCtrl);
 };
 
 #endif // _WX_COMBOCONTROL_H_

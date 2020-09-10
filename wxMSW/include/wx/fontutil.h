@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     05.11.99
-// RCS-ID:      $Id: fontutil.h 49563 2007-10-31 20:46:21Z VZ $
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -26,7 +25,16 @@
     #include "wx/msw/wrapwin.h"
 #endif
 
+#if defined(__WXQT__)
+    #include <QtGui/QFont>
+#endif
+
+#if defined(__WXOSX__)
+#include "wx/osx/core/cfref.h"
+#endif
+
 class WXDLLIMPEXP_FWD_BASE wxArrayString;
+class WXDLLIMPEXP_FWD_CORE wxWindow;
 struct WXDLLIMPEXP_FWD_CORE wxNativeEncodingInfo;
 
 #if defined(_WX_X_FONTLIKE)
@@ -65,11 +73,17 @@ enum wxXLFDField
 // functions, the user code can only get the objects of this type from
 // somewhere and pass it somewhere else (possibly save them somewhere using
 // ToString() and restore them using FromString())
-class WXDLLEXPORT wxNativeFontInfo
+
+class WXDLLIMPEXP_CORE wxNativeFontInfo
 {
 public:
 #if wxUSE_PANGO
     PangoFontDescription *description;
+
+    // Pango font description doesn't have these attributes, so we store them
+    // separately and handle them ourselves in {To,From}String() methods.
+    bool m_underlined;
+    bool m_strikethrough;
 #elif defined(_WX_X_FONTLIKE)
     // the members can't be accessed directly as we only parse the
     // xFontName on demand
@@ -105,12 +119,88 @@ public:
     // set the XFLD
     void SetXFontName(const wxString& xFontName);
 #elif defined(__WXMSW__)
+    // Preserve compatibility in the semi-public (i.e. private, but still
+    // unfortunately used by some existing code outside of the library) API
+    // by allowing to create wxNativeFontInfo from just LOGFONT, but ensure
+    // that we always specify the window, to use the correct DPI, when creating
+    // fonts inside the library itself.
+    wxNativeFontInfo(const LOGFONT& lf_, const wxWindow* win
+#ifndef WXBUILDING
+        = NULL
+#endif
+    );
+
+    // MSW-specific: get point size from LOGFONT height using specified DPI,
+    // or screen DPI when 0.
+    static float GetPointSizeAtPPI(int lfHeight, int ppi = 0);
+
+    // MSW-specific: get the height value in pixels using LOGFONT convention
+    // (i.e. negative) corresponding to the given size in points and DPI.
+    static int GetLogFontHeightAtPPI(float size, int ppi);
+
     LOGFONT      lf;
-#elif defined(__WXPM__)
-    // OS/2 native structures that define a font
-    FATTRS       fa;
-    FONTMETRICS  fm;
-    FACENAMEDESC fn;
+
+    // MSW only has limited support for fractional point sizes and we need to
+    // store the fractional point size separately if it was initially specified
+    // as we can't losslessly recover it from LOGFONT later.
+    float        pointSize;
+#elif defined(__WXOSX__)
+public:
+    wxNativeFontInfo(const wxNativeFontInfo& info) { Init(info); }
+
+    ~wxNativeFontInfo() { Free(); }
+
+    wxNativeFontInfo& operator=(const wxNativeFontInfo& info)
+    {
+        if (this != &info)
+        {
+            Free();
+            Init(info);
+        }
+        return *this;
+    }
+
+    void InitFromFont(CTFontRef font);
+    void InitFromFontDescriptor(CTFontDescriptorRef font);
+    void Init(const wxNativeFontInfo& info);
+
+    void Free();
+
+    // not all style attributes like condensed etc, are exposed in the public API methods
+    // for best fidelity PostScript names are useful, they are also used in the toString/fromString methods
+    wxString GetPostScriptName() const;
+    bool SetPostScriptName(const wxString& postScriptName);
+
+    static CGFloat GetCTWeight( CTFontRef font );
+    static CGFloat GetCTWeight( CTFontDescriptorRef font );
+    static CGFloat GetCTSlant( CTFontDescriptorRef font );
+
+    CTFontDescriptorRef GetCTFontDescriptor() const;
+    
+    void RealizeResource() const;
+private:
+    // attributes for regenerating a CTFontDescriptor, stay close to native values
+    // for better roundtrip fidelity
+    CGFloat       m_ctWeight;
+    wxFontStyle   m_style;
+    CGFloat       m_ctSize;
+    wxFontFamily  m_family;
+
+    wxString      m_familyName;
+    wxString      m_postScriptName;
+
+    // native font description
+    wxCFRef<CTFontDescriptorRef> m_descriptor;
+    void          CreateCTFontDescriptor();
+
+    // these attributes are not part of a CTFont
+    bool          m_underlined;
+    bool          m_strikethrough;
+    wxFontEncoding m_encoding;
+
+public :
+#elif defined(__WXQT__)
+    QFont m_qtFont;
 #else // other platforms
     //
     //  This is a generic implementation that should work on all ports
@@ -118,11 +208,12 @@ public:
     //
     #define wxNO_NATIVE_FONTINFO
 
-    int           pointSize;
+    float         pointSize;
     wxFontFamily  family;
     wxFontStyle   style;
-    wxFontWeight  weight;
+    int           weight;
     bool          underlined;
+    bool          strikethrough;
     wxString      faceName;
     wxFontEncoding encoding;
 #endif // platforms
@@ -141,8 +232,11 @@ public:
 
     wxNativeFontInfo& operator=(const wxNativeFontInfo& info)
     {
-        Free();
-        Init(info);
+        if (this != &info)
+        {
+            Free();
+            Init(info);
+        }
         return *this;
     }
 #endif // wxUSE_PANGO
@@ -153,17 +247,21 @@ public:
     // init with the parameters of the given font
     void InitFromFont(const wxFont& font)
     {
+#if wxUSE_PANGO || defined(__WXOSX__)
+        Init(*font.GetNativeFontInfo());
+#else
         // translate all font parameters
         SetStyle((wxFontStyle)font.GetStyle());
-        SetWeight((wxFontWeight)font.GetWeight());
+        SetNumericWeight(font.GetNumericWeight());
         SetUnderlined(font.GetUnderlined());
+        SetStrikethrough(font.GetStrikethrough());
 #if defined(__WXMSW__)
         if ( font.IsUsingSizeInPixels() )
             SetPixelSize(font.GetPixelSize());
         else
-            SetPointSize(font.GetPointSize());
+            SetFractionalPointSize(font.GetFractionalPointSize());
 #else
-        SetPointSize(font.GetPointSize());
+        SetFractionalPointSize(font.GetFractionalPointSize());
 #endif
 
         // set the family/facename
@@ -177,26 +275,44 @@ public:
         // deal with encoding now (it may override the font family and facename
         // so do it after setting them)
         SetEncoding(font.GetEncoding());
+#endif // !wxUSE_PANGO
     }
 
     // accessors and modifiers for the font elements
     int GetPointSize() const;
+    float GetFractionalPointSize() const;
     wxSize GetPixelSize() const;
     wxFontStyle GetStyle() const;
     wxFontWeight GetWeight() const;
+    int GetNumericWeight() const;
     bool GetUnderlined() const;
+    bool GetStrikethrough() const;
     wxString GetFaceName() const;
     wxFontFamily GetFamily() const;
     wxFontEncoding GetEncoding() const;
 
     void SetPointSize(int pointsize);
+    void SetFractionalPointSize(float pointsize);
     void SetPixelSize(const wxSize& pixelSize);
     void SetStyle(wxFontStyle style);
+    void SetNumericWeight(int weight);
     void SetWeight(wxFontWeight weight);
     void SetUnderlined(bool underlined);
+    void SetStrikethrough(bool strikethrough);
     bool SetFaceName(const wxString& facename);
     void SetFamily(wxFontFamily family);
     void SetEncoding(wxFontEncoding encoding);
+
+    // Helper used in many ports: use the normal font size if the input is
+    // negative, as we handle -1 as meaning this for compatibility.
+    void SetSizeOrDefault(float size)
+    {
+        SetFractionalPointSize
+        (
+            size < 0 ? wxNORMAL_FONT->GetFractionalPointSize()
+                     : size
+        );
+    }
 
     // sets the first facename in the given array which is found
     // to be valid. If no valid facename is given, sets the
@@ -224,12 +340,12 @@ public:
 // translate a wxFontEncoding into native encoding parameter (defined above),
 // returning true if an (exact) macth could be found, false otherwise (without
 // attempting any substitutions)
-extern bool wxGetNativeFontEncoding(wxFontEncoding encoding,
-                                    wxNativeEncodingInfo *info);
+WXDLLIMPEXP_CORE bool wxGetNativeFontEncoding(wxFontEncoding encoding,
+                                              wxNativeEncodingInfo *info);
 
 // test for the existence of the font described by this facename/encoding,
 // return true if such font(s) exist, false otherwise
-extern bool wxTestFontEncoding(const wxNativeEncodingInfo& info);
+WXDLLIMPEXP_CORE bool wxTestFontEncoding(const wxNativeEncodingInfo& info);
 
 // ----------------------------------------------------------------------------
 // font-related functions (X and GTK)

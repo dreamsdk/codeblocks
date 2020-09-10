@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: dcscreen.cpp 39123 2006-05-09 13:55:29Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -16,7 +15,7 @@
     #pragma hdrstop
 #endif
 
-#include "wx/dcscreen.h"
+#include "wx/msw/dcscreen.h"
 
 #ifndef WX_PRECOMP
    #include "wx/string.h"
@@ -25,14 +24,24 @@
 
 #include "wx/msw/private.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxScreenDC, wxDC)
+wxIMPLEMENT_ABSTRACT_CLASS(wxScreenDCImpl, wxMSWDCImpl);
 
-// Create a DC representing the whole screen
-wxScreenDC::wxScreenDC()
+// Create a DC representing the whole virtual screen (all monitors)
+wxScreenDCImpl::wxScreenDCImpl( wxScreenDC *owner ) :
+    wxMSWDCImpl( owner )
 {
     m_hDC = (WXHDC) ::GetDC((HWND) NULL);
 
     // the background mode is only used for text background and is set in
     // DrawText() to OPAQUE as required, otherwise always TRANSPARENT
     ::SetBkMode( GetHdc(), TRANSPARENT );
+}
+
+// Return the size of the whole virtual screen (all monitors)
+void wxScreenDCImpl::DoGetSize(int *width, int *height) const
+{
+    if ( width )
+        *width = ::GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    if ( height )
+        *height = ::GetSystemMetrics(SM_CYVIRTUALSCREEN);
 }

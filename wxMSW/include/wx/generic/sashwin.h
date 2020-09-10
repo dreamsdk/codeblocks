@@ -1,12 +1,11 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        sashwin.h
+// Name:        wx/generic/sashwin.h
 // Purpose:     wxSashWindow implementation. A sash window has an optional
 //              sash on each edge, allowing it to be dragged. An event
 //              is generated when the sash is released.
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: sashwin.h 41020 2006-09-05 20:47:48Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -36,20 +35,14 @@ enum wxSashEdgePosition {
  * wxSashEdge represents one of the four edges of a window.
  */
 
-class WXDLLIMPEXP_ADV wxSashEdge
+class WXDLLIMPEXP_CORE wxSashEdge
 {
 public:
     wxSashEdge()
     { m_show = false;
-#if WXWIN_COMPATIBILITY_2_6
-      m_border = false;
-#endif
       m_margin = 0; }
 
     bool    m_show;     // Is the sash showing?
-#if WXWIN_COMPATIBILITY_2_6
-    bool    m_border;   // Do we draw a border?
-#endif
     int     m_margin;   // The margin size
 };
 
@@ -70,7 +63,7 @@ public:
  * of wxSashWindow.
  */
 
-class WXDLLIMPEXP_ADV wxSashWindow: public wxWindow
+class WXDLLIMPEXP_CORE wxSashWindow: public wxWindow
 {
 public:
     // Default constructor
@@ -97,16 +90,6 @@ public:
 
     // Get whether there's a sash in this position
     bool GetSashVisible(wxSashEdgePosition edge) const { return m_sashes[edge].m_show; }
-
-#if WXWIN_COMPATIBILITY_2_6
-    // Set whether there's a border in this position
-    // This value is unused in wxSashWindow.
-    void SetSashBorder(wxSashEdgePosition edge, bool border) { m_sashes[edge].m_border = border; }
-
-    // Get whether there's a border in this position
-    // This value is unused in wxSashWindow.
-    bool HasBorder(wxSashEdgePosition edge) const { return m_sashes[edge].m_border; }
-#endif
 
     // Get border size
     int GetEdgeMargin(wxSashEdgePosition edge) const { return m_sashes[edge].m_margin; }
@@ -198,15 +181,14 @@ private:
     wxCursor*   m_currentCursor;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxSashWindow)
-    DECLARE_EVENT_TABLE()
-    DECLARE_NO_COPY_CLASS(wxSashWindow)
+    wxDECLARE_DYNAMIC_CLASS(wxSashWindow);
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_NO_COPY_CLASS(wxSashWindow);
 };
 
-BEGIN_DECLARE_EVENT_TYPES()
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_ADV,
-                                wxEVT_SASH_DRAGGED, wxEVT_FIRST + 1200)
-END_DECLARE_EVENT_TYPES()
+class WXDLLIMPEXP_FWD_CORE wxSashEvent;
+
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_SASH_DRAGGED, wxSashEvent );
 
 enum wxSashDragStatus
 {
@@ -214,7 +196,7 @@ enum wxSashDragStatus
     wxSASH_STATUS_OUT_OF_RANGE
 };
 
-class WXDLLIMPEXP_ADV wxSashEvent: public wxCommandEvent
+class WXDLLIMPEXP_CORE wxSashEvent: public wxCommandEvent
 {
 public:
     wxSashEvent(int id = 0, wxSashEdgePosition edge = wxSASH_NONE)
@@ -223,6 +205,12 @@ public:
         m_id = id;
         m_edge = edge;
     }
+
+    wxSashEvent(const wxSashEvent& event)
+        : wxCommandEvent(event),
+          m_edge(event.m_edge),
+          m_dragRect(event.m_dragRect),
+          m_dragStatus(event.m_dragStatus) { }
 
     void SetEdge(wxSashEdgePosition edge) { m_edge = edge; }
     wxSashEdgePosition GetEdge() const { return m_edge; }
@@ -236,19 +224,21 @@ public:
     void SetDragStatus(wxSashDragStatus status) { m_dragStatus = status; }
     wxSashDragStatus GetDragStatus() const { return m_dragStatus; }
 
+    virtual wxEvent *Clone() const wxOVERRIDE { return new wxSashEvent(*this); }
+
 private:
     wxSashEdgePosition  m_edge;
     wxRect              m_dragRect;
     wxSashDragStatus    m_dragStatus;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxSashEvent)
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxSashEvent);
 };
 
 typedef void (wxEvtHandler::*wxSashEventFunction)(wxSashEvent&);
 
 #define wxSashEventHandler(func) \
-    (wxObjectEventFunction)(wxEventFunction)wxStaticCastEvent(wxSashEventFunction, &func)
+    wxEVENT_HANDLER_CAST(wxSashEventFunction, func)
 
 #define EVT_SASH_DRAGGED(id, fn) \
     wx__DECLARE_EVT1(wxEVT_SASH_DRAGGED, id, wxSashEventHandler(fn))

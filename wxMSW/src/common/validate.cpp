@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: validate.cpp 39656 2006-06-09 21:21:53Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,9 +23,9 @@
     #include "wx/window.h"
 #endif
 
-const wxValidator wxDefaultValidator;
+wxIMPLEMENT_DYNAMIC_CLASS(wxValidator, wxEvtHandler);
 
-IMPLEMENT_DYNAMIC_CLASS(wxValidator, wxEvtHandler)
+const wxValidator wxDefaultValidator;
 
 // VZ: personally, I think true would be more appropriate - these bells are
 //     _annoying_
@@ -34,12 +33,11 @@ bool wxValidator::ms_isSilent = false;
 
 wxValidator::wxValidator()
 {
-  m_validatorWindow = (wxWindow *) NULL;
+  m_validatorWindow = NULL;
 }
 
 wxValidator::~wxValidator()
 {
 }
 
-#endif
-  // wxUSE_VALIDATORS
+#endif // wxUSE_VALIDATORS

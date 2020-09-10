@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        sound.cpp
+// Name:        src/msw/sound.cpp
 // Purpose:     wxSound
 // Author:      Julian Smart
 // Modified by: 2005-07-29: Vadim Zeitlin: redesign
 // Created:     04/01/98
-// RCS-ID:      $Id: sound.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -58,19 +57,19 @@ class wxSoundDataMemory : public wxSoundData
 {
 public:
     // we copy the data
-    wxSoundDataMemory(int size, const wxByte *buf);
+    wxSoundDataMemory(size_t size, const void* buf);
 
     void *GetPtr() const { return m_waveDataPtr; }
 
-    virtual bool IsOk() const { return GetPtr() != NULL; }
-    virtual DWORD GetSoundFlag() const { return SND_MEMORY; }
-    virtual LPCTSTR GetSoundData() const { return (LPCTSTR)GetPtr(); }
+    virtual bool IsOk() const wxOVERRIDE { return GetPtr() != NULL; }
+    virtual DWORD GetSoundFlag() const wxOVERRIDE { return SND_MEMORY; }
+    virtual LPCTSTR GetSoundData() const wxOVERRIDE { return (LPCTSTR)GetPtr(); }
 
 private:
     GlobalPtr m_waveData;
     GlobalPtrLock m_waveDataPtr;
 
-    DECLARE_NO_COPY_CLASS(wxSoundDataMemory)
+    wxDECLARE_NO_COPY_CLASS(wxSoundDataMemory);
 };
 
 // class for sound files and resources
@@ -79,18 +78,18 @@ class wxSoundDataFile : public wxSoundData
 public:
     wxSoundDataFile(const wxString& filename, bool isResource);
 
-    virtual bool IsOk() const { return !m_name.empty(); }
-    virtual DWORD GetSoundFlag() const
+    virtual bool IsOk() const wxOVERRIDE { return !m_name.empty(); }
+    virtual DWORD GetSoundFlag() const wxOVERRIDE
     {
         return m_isResource ? SND_RESOURCE : SND_FILENAME;
     }
-    virtual LPCTSTR GetSoundData() const { return m_name.c_str(); }
+    virtual LPCTSTR GetSoundData() const wxOVERRIDE { return m_name.c_str(); }
 
 private:
     const wxString m_name;
     const bool m_isResource;
 
-    DECLARE_NO_COPY_CLASS(wxSoundDataFile)
+    wxDECLARE_NO_COPY_CLASS(wxSoundDataFile);
 };
 
 // ============================================================================
@@ -101,7 +100,7 @@ private:
 // wxSoundData-derived classes
 // ----------------------------------------------------------------------------
 
-wxSoundDataMemory::wxSoundDataMemory(int size, const wxByte *buf)
+wxSoundDataMemory::wxSoundDataMemory(size_t size, const void* buf)
                  : m_waveData(size),
                    m_waveDataPtr(m_waveData)
 {
@@ -131,7 +130,7 @@ wxSound::wxSound(const wxString& filename, bool isResource)
     Create(filename, isResource);
 }
 
-wxSound::wxSound(int size, const wxByte *data)
+wxSound::wxSound(size_t size, const void* data)
 {
     Init();
     Create(size, data);
@@ -144,11 +143,7 @@ wxSound::~wxSound()
 
 void wxSound::Free()
 {
-    if ( m_data )
-    {
-        delete m_data;
-        m_data = NULL;
-    }
+    wxDELETE(m_data);
 }
 
 bool wxSound::CheckCreatedOk()
@@ -168,7 +163,7 @@ bool wxSound::Create(const wxString& filename, bool isResource)
     return CheckCreatedOk();
 }
 
-bool wxSound::Create(int size, const wxByte* data)
+bool wxSound::Create(size_t size, const void* data)
 {
     Free();
 

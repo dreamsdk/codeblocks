@@ -3,7 +3,6 @@
 // Purpose:     HTTP and FTP file system
 // Author:      Vaclav Slavik
 // Copyright:   (c) 1999 Vaclav Slavik
-// RCS-ID:      $Id: fs_inet.cpp 41033 2006-09-06 13:49:42Z RR $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -20,7 +19,7 @@
 
 #if wxUSE_FILESYSTEM && wxUSE_FS_INET
 
-#ifndef WXPRECOMP
+#ifndef WX_PRECOMP
     #include "wx/module.h"
 #endif
 
@@ -106,8 +105,6 @@ wxFSFile* wxInternetFSHandler::OpenFile(wxFileSystem& WXUNUSED(fs),
     if (url.GetError() == wxURL_NOERR)
     {
         wxInputStream *s = url.GetInputStream();
-        wxString content = url.GetProtocol().GetContentType();
-        if (content == wxEmptyString) content = GetMimeTypeFromExt(location);
         if (s)
         {
             wxString tmpfile =
@@ -119,9 +116,16 @@ wxFSFile* wxInternetFSHandler::OpenFile(wxFileSystem& WXUNUSED(fs),
             }
             delete s;
 
+            // Content-Type header, as defined by the RFC 2045, has the form of
+            // "type/subtype" optionally followed by (multiple) "; parameter"
+            // and we need just the MIME type here.
+            const wxString& content = url.GetProtocol().GetContentType();
+            wxString mimetype = content.BeforeFirst(';');
+            mimetype.Trim();
+
             return new wxFSFile(new wxTemporaryFileInputStream(tmpfile),
                                 right,
-                                content,
+                                mimetype,
                                 GetAnchor(location)
 #if wxUSE_DATETIME
                                 , wxDateTime::Now()
@@ -130,14 +134,14 @@ wxFSFile* wxInternetFSHandler::OpenFile(wxFileSystem& WXUNUSED(fs),
         }
     }
 
-    return (wxFSFile*) NULL; // incorrect URL
+    return NULL; // incorrect URL
 #endif
 }
 
 
 class wxFileSystemInternetModule : public wxModule
 {
-    DECLARE_DYNAMIC_CLASS(wxFileSystemInternetModule)
+    wxDECLARE_DYNAMIC_CLASS(wxFileSystemInternetModule);
 
     public:
         wxFileSystemInternetModule() :
@@ -146,14 +150,14 @@ class wxFileSystemInternetModule : public wxModule
         {
         }
 
-        virtual bool OnInit()
+        virtual bool OnInit() wxOVERRIDE
         {
             m_handler = new wxInternetFSHandler;
             wxFileSystem::AddHandler(m_handler);
             return true;
         }
 
-        virtual void OnExit() 
+        virtual void OnExit() wxOVERRIDE
         {
             delete wxFileSystem::RemoveHandler(m_handler);
         }
@@ -162,6 +166,6 @@ class wxFileSystemInternetModule : public wxModule
         wxFileSystemHandler* m_handler;
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxFileSystemInternetModule, wxModule)
+wxIMPLEMENT_DYNAMIC_CLASS(wxFileSystemInternetModule, wxModule);
 
 #endif // wxUSE_FILESYSTEM && wxUSE_FS_INET

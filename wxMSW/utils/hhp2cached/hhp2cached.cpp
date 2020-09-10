@@ -26,14 +26,14 @@ public:
     virtual bool OnInit();
 };
 
-IMPLEMENT_APP(MyApp);
+wxIMPLEMENT_APP(MyApp);
 
 bool MyApp::OnInit()
 {
     for (int i = 1; i < argc; i++)
     {
         wxHtmlHelpData data;
-        wxPrintf(_T("Processing %s...\n"), argv[i]);
+        wxPrintf(wxT("Processing %s...\n"), argv[i]);
         data.SetTempDir(wxPathOnly(argv[i]));
         data.AddBook(argv[i]);
     }

@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     17/09/98
-// RCS-ID:      $Id: notebook.cpp 50855 2007-12-20 10:51:33Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,20 +48,14 @@
 // event table
 // ----------------------------------------------------------------------------
 
-DEFINE_EVENT_TYPE(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED)
-DEFINE_EVENT_TYPE(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGING)
-
-BEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
+wxBEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
     EVT_NOTEBOOK_PAGE_CHANGED(wxID_ANY, wxNotebook::OnSelChange)
     EVT_SIZE(wxNotebook::OnSize)
     EVT_PAINT(wxNotebook::OnPaint)
     EVT_MOUSE_EVENTS(wxNotebook::OnMouseEvent)
     EVT_SET_FOCUS(wxNotebook::OnSetFocus)
     EVT_NAVIGATION_KEY(wxNotebook::OnNavigationKey)
-END_EVENT_TABLE()
-
-IMPLEMENT_DYNAMIC_CLASS(wxNotebook, wxBookCtrlBase)
-IMPLEMENT_DYNAMIC_CLASS(wxNotebookEvent, wxCommandEvent)
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // implementation
@@ -81,7 +74,7 @@ WX_DECLARE_HASH_MAP(wxNotebookPage*, int, wxPointerHash, wxPointerEqual,
 // This reuses wxTabView to draw the tabs.
 class WXDLLEXPORT wxNotebookTabView: public wxTabView
 {
-DECLARE_DYNAMIC_CLASS(wxNotebookTabView)
+    wxDECLARE_DYNAMIC_CLASS(wxNotebookTabView);
 public:
     wxNotebookTabView(wxNotebook* notebook, long style = wxTAB_STYLE_DRAW_BOX | wxTAB_STYLE_COLOUR_INTERIOR);
     virtual ~wxNotebookTabView(void);
@@ -106,7 +99,7 @@ private:
 
 static int GetPageId(wxTabView *tabview, wxNotebookPage *page)
 {
-    return wx_static_cast(wxNotebookTabView*, tabview)->GetId(page);
+    return static_cast<wxNotebookTabView*>(tabview)->GetId(page);
 }
 
 // ----------------------------------------------------------------------------
@@ -116,8 +109,8 @@ static int GetPageId(wxTabView *tabview, wxNotebookPage *page)
 // common part of all ctors
 void wxNotebook::Init()
 {
-    m_tabView = (wxNotebookTabView*) NULL;
-    m_nSelection = -1;
+    m_tabView = NULL;
+    m_selection = -1;
 }
 
 // default for dynamic class
@@ -157,8 +150,6 @@ bool wxNotebook::Create(wxWindow *parent,
 
     if (!wxControl::Create(parent, id, pos, size, style|wxNO_BORDER, wxDefaultValidator, name))
         return false;
-
-    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE));
 
     SetTabView(new wxNotebookTabView(this));
 
@@ -280,31 +271,31 @@ bool wxNotebook::DeletePage(size_t nPage)
 {
     wxCHECK( IS_VALID_PAGE(nPage), false );
 
-    if (m_nSelection != -1)
+    if (m_selection != -1)
     {
-        m_pages[m_nSelection]->Show(false);
-        m_pages[m_nSelection]->Lower();
+        m_pages[m_selection]->Show(false);
+        m_pages[m_selection]->Lower();
     }
 
     wxNotebookPage* pPage = GetPage(nPage);
 
     m_tabView->RemoveTab(GetPageId(m_tabView, pPage));
 
-    m_pages.Remove(pPage);
+    m_pages.erase(m_pages.begin() + nPage);
     delete pPage;
 
-    if (m_pages.GetCount() == 0)
+    if (m_pages.empty())
     {
-        m_nSelection = -1;
+        m_selection = -1;
         m_tabView->SetTabSelection(-1, false);
     }
-    else if (m_nSelection > -1)
+    else if (m_selection > -1)
     {
-        m_nSelection = -1;
+        m_selection = -1;
 
         m_tabView->SetTabSelection(GetPageId(m_tabView, GetPage(0)), false);
 
-        if (m_nSelection != 0)
+        if (m_selection != 0)
             ChangePage(-1, 0);
     }
 
@@ -339,20 +330,20 @@ wxWindow* wxNotebook::DoRemovePage(size_t nPage)
 
     m_tabView->RemoveTab(GetPageId(m_tabView, pPage));
 
-    m_pages.Remove(pPage);
+    m_pages.erase(m_pages.begin() + nPage);
 
-    if (m_pages.GetCount() == 0)
+    if (m_pages.empty())
     {
-      m_nSelection = -1;
+      m_selection = -1;
       m_tabView->SetTabSelection(-1, true);
     }
-    else if (m_nSelection > -1)
+    else if (m_selection > -1)
     {
       // Only change the selection if the page we
       // deleted was the selection.
-      if (nPage == (size_t)m_nSelection)
+      if (nPage == (size_t)m_selection)
       {
-         m_nSelection = -1;
+         m_selection = -1;
          // Select the first tab. Generates a ChangePage.
          m_tabView->SetTabSelection(0, true);
       }
@@ -361,8 +352,8 @@ wxWindow* wxNotebook::DoRemovePage(size_t nPage)
         // We must adjust which tab we think is selected.
         // If greater than the page we deleted, it must be moved down
         // a notch.
-        if (size_t(m_nSelection) > nPage)
-          m_nSelection -- ;
+        if (size_t(m_selection) > nPage)
+          m_selection -- ;
       }
     }
 
@@ -401,7 +392,7 @@ bool wxNotebook::DeleteAllPages()
     for ( nPage = 0; nPage < nPageCount; nPage++ )
         delete m_pages[nPage];
 
-    m_pages.Clear();
+    m_pages.clear();
 
     return true;
 }
@@ -422,7 +413,7 @@ bool wxNotebook::InsertPage(size_t nPage,
       pPage->Show(false);
 
     // save the pointer to the page
-    m_pages.Insert(pPage, nPage);
+    m_pages.insert(m_pages.begin() + nPage, pPage);
 
     if (bSelect)
     {
@@ -433,7 +424,7 @@ bool wxNotebook::InsertPage(size_t nPage,
 
     // some page must be selected: either this one or the first one if there is
     // still no selection
-    if ( m_nSelection == -1 )
+    if ( m_selection == -1 )
       ChangePage(-1, 0);
 
     RefreshLayout(false);
@@ -531,7 +522,7 @@ bool wxNotebook::RefreshLayout(bool force)
 
         // fit the notebook page to the tab control's display area
 
-        size_t nCount = m_pages.Count();
+        size_t nCount = m_pages.size();
         for ( size_t nPage = 0; nPage < nCount; nPage++ ) {
             wxNotebookPage *pPage = m_pages[nPage];
             wxRect clientRect = GetAvailableClientSize();
@@ -547,12 +538,12 @@ bool wxNotebook::RefreshLayout(bool force)
     return true;
 }
 
-void wxNotebook::OnSelChange(wxNotebookEvent& event)
+void wxNotebook::OnSelChange(wxBookCtrlEvent& event)
 {
     // is it our tab control?
     if ( event.GetEventObject() == this )
     {
-        if (event.GetSelection() != m_nSelection)
+        if (event.GetSelection() != m_selection)
           ChangePage(event.GetOldSelection(), event.GetSelection());
     }
 
@@ -563,23 +554,25 @@ void wxNotebook::OnSelChange(wxNotebookEvent& event)
 void wxNotebook::OnSetFocus(wxFocusEvent& event)
 {
     // set focus to the currently selected page if any
-    if ( m_nSelection != -1 )
-        m_pages[m_nSelection]->SetFocus();
+    if ( m_selection != -1 )
+        m_pages[m_selection]->SetFocus();
 
     event.Skip();
 }
 
 void wxNotebook::OnNavigationKey(wxNavigationKeyEvent& event)
 {
-    if ( event.IsWindowChange() ) {
+    if ( event.IsWindowChange() )
+    {
         // change pages
         AdvanceSelection(event.GetDirection());
     }
     else {
         // pass to the parent
-        if ( GetParent() ) {
+        if ( GetParent() )
+        {
             event.SetCurrentFocus(this);
-            GetParent()->ProcessEvent(event);
+            GetParent()->ProcessWindowEvent(event);
         }
     }
 }
@@ -632,7 +625,7 @@ void wxNotebook::ChangePage(int nOldSel, int nSel)
     pPage->Raise();
     pPage->SetFocus();
 
-    m_nSelection = nSel;
+    m_selection = nSel;
 }
 
 void wxNotebook::OnMouseEvent(wxMouseEvent& event)
@@ -680,7 +673,7 @@ wxRect wxNotebook::GetAvailableClientSize()
  * wxNotebookTabView
  */
 
-IMPLEMENT_CLASS(wxNotebookTabView, wxTabView)
+wxIMPLEMENT_CLASS(wxNotebookTabView, wxTabView);
 
 wxNotebookTabView::wxNotebookTabView(wxNotebook *notebook, long style)
     : wxTabView(style), m_nextid(1)
@@ -715,7 +708,7 @@ void wxNotebookTabView::OnTabActivate(int activateId, int deactivateId)
   if (!m_notebook)
     return;
 
-  wxNotebookEvent event(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, m_notebook->GetId());
+  wxBookCtrlEvent event(wxEVT_NOTEBOOK_PAGE_CHANGED, m_notebook->GetId());
 
   // Translate from wxTabView's ids (which aren't position-dependent)
   // to wxNotebook's (which are).
@@ -738,7 +731,7 @@ bool wxNotebookTabView::OnTabPreActivate(int activateId, int deactivateId)
 
   if (m_notebook)
   {
-    wxNotebookEvent event(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGING, m_notebook->GetId());
+    wxBookCtrlEvent event(wxEVT_NOTEBOOK_PAGE_CHANGING, m_notebook->GetId());
 
     // Translate from wxTabView's ids (which aren't position-dependent)
     // to wxNotebook's (which are).

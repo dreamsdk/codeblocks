@@ -4,7 +4,6 @@
 // Author:      Jaakko Salli
 // Modified by:
 // Created:     Apr-30-2006
-// RCS-ID:      $Id: combo.h 64412 2010-05-27 15:11:58Z JMS $
 // Copyright:   (c) Jaakko Salli
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,6 +44,9 @@
 #include "wx/control.h"
 #include "wx/renderer.h" // this is needed for wxCONTROL_XXX flags
 #include "wx/bitmap.h" // wxBitmap used by-value
+#include "wx/textentry.h"
+#include "wx/time.h" // needed for wxMilliClock_t
+#include "wx/compositewin.h" // wxComboCtrlBase declaration
 
 class WXDLLIMPEXP_FWD_CORE wxTextCtrl;
 class WXDLLIMPEXP_FWD_CORE wxComboPopup;
@@ -86,8 +88,8 @@ enum
     wxCC_IFLAG_CREATED              = 0x0100,
     // Internal use: really put button outside
     wxCC_IFLAG_BUTTON_OUTSIDE       = 0x0200,
-    // Internal use: SetTextIndent has been called
-    wxCC_IFLAG_INDENT_SET           = 0x0400,
+    // Internal use: SetMargins has been successfully called
+    wxCC_IFLAG_LEFT_MARGIN_SET      = 0x0400,
     // Internal use: Set wxTAB_TRAVERSAL to parent when popup is dismissed
     wxCC_IFLAG_PARENT_TAB_TRAVERSAL = 0x0800,
     // Internal use: Secondary popup window type should be used (if available).
@@ -119,7 +121,8 @@ struct wxComboCtrlFeatures
         BitmapButton        = 0x0002, // Button may be replaced with bitmap
         ButtonSpacing       = 0x0004, // Button can have spacing from the edge
                                       // of the control
-        TextIndent          = 0x0008, // SetTextIndent can be used
+        TextIndent          = 0x0008, // SetMargins can be used to control
+                                      // left margin.
         PaintControl        = 0x0010, // Combo control itself can be custom painted
         PaintWritable       = 0x0020, // A variable-width area in front of writable
                                       // combo control's textctrl can be custom
@@ -138,12 +141,14 @@ struct wxComboCtrlFeatures
 };
 
 
-class WXDLLEXPORT wxComboCtrlBase : public wxControl
+class WXDLLIMPEXP_CORE wxComboCtrlBase : public wxCompositeWindow<wxControl>,
+                                         public wxTextEntry
 {
     friend class wxComboPopup;
+    friend class wxComboPopupEvtHandler;
 public:
     // ctors and such
-    wxComboCtrlBase() : wxControl() { Init(); }
+    wxComboCtrlBase() : wxCompositeWindow<wxControl>(), wxTextEntry() { Init(); }
 
     bool Create(wxWindow *parent,
                 wxWindowID id,
@@ -156,9 +161,19 @@ public:
 
     virtual ~wxComboCtrlBase();
 
-    // show/hide popup window
+    // Show/hide popup window (wxComboBox-compatible methods)
+    virtual void Popup();
+    virtual void Dismiss()
+    {
+        HidePopup(true);
+    }
+
+    // Show/hide popup window.
+    // TODO: Maybe deprecate in favor of Popup()/Dismiss().
+    //       However, these functions are still called internally
+    //       so it is not straightforward.
     virtual void ShowPopup();
-    virtual void HidePopup();
+    virtual void HidePopup(bool generateEvent=false);
 
     // Override for totally custom combo action
     virtual void OnButtonClick();
@@ -191,29 +206,59 @@ public:
     wxWindow *GetButton() const { return m_btn; }
 
     // forward these methods to all subcontrols
-    virtual bool Enable(bool enable = true);
-    virtual bool Show(bool show = true);
-    virtual bool SetFont(const wxFont& font);
-#if wxUSE_VALIDATORS
-    virtual void SetValidator(const wxValidator &validator);
-    virtual wxValidator *GetValidator();
-#endif // wxUSE_VALIDATORS
+    virtual bool Enable(bool enable = true) wxOVERRIDE;
+    virtual bool Show(bool show = true) wxOVERRIDE;
+    virtual bool SetFont(const wxFont& font) wxOVERRIDE;
 
-    // wxTextCtrl methods - for readonly combo they should return
-    // without errors.
-    virtual wxString GetValue() const;
-    virtual void SetValue(const wxString& value);
-    virtual void Copy();
-    virtual void Cut();
-    virtual void Paste();
-    virtual void SetInsertionPoint(long pos);
-    virtual void SetInsertionPointEnd();
-    virtual long GetInsertionPoint() const;
-    virtual long GetLastPosition() const;
-    virtual void Replace(long from, long to, const wxString& value);
-    virtual void Remove(long from, long to);
-    virtual void SetSelection(long from, long to);
-    virtual void Undo();
+    //
+    // wxTextEntry methods
+    //
+    // NB: We basically need to override all of them because there is
+    //     no guarantee how platform-specific wxTextEntry is implemented.
+    //
+    virtual void SetValue(const wxString& value) wxOVERRIDE
+        { wxTextEntryBase::SetValue(value); }
+    virtual void ChangeValue(const wxString& value) wxOVERRIDE
+        { wxTextEntryBase::ChangeValue(value); }
+
+    virtual void WriteText(const wxString& text) wxOVERRIDE;
+    virtual void AppendText(const wxString& text) wxOVERRIDE
+        { wxTextEntryBase::AppendText(text); }
+
+    virtual wxString GetValue() const wxOVERRIDE
+        { return wxTextEntryBase::GetValue(); }
+
+    virtual wxString GetRange(long from, long to) const wxOVERRIDE
+        { return wxTextEntryBase::GetRange(from, to); }
+
+    // Replace() and DoSetValue() need to be fully re-implemented since
+    // EventSuppressor utility class does not work with the way
+    // wxComboCtrl is implemented.
+    virtual void Replace(long from, long to, const wxString& value) wxOVERRIDE;
+
+    virtual void Remove(long from, long to) wxOVERRIDE;
+
+    virtual void Copy() wxOVERRIDE;
+    virtual void Cut() wxOVERRIDE;
+    virtual void Paste() wxOVERRIDE;
+
+    virtual void Undo() wxOVERRIDE;
+    virtual void Redo() wxOVERRIDE;
+    virtual bool CanUndo() const wxOVERRIDE;
+    virtual bool CanRedo() const wxOVERRIDE;
+
+    virtual void SetInsertionPoint(long pos) wxOVERRIDE;
+    virtual long GetInsertionPoint() const wxOVERRIDE;
+    virtual long GetLastPosition() const wxOVERRIDE;
+
+    virtual void SetSelection(long from, long to) wxOVERRIDE;
+    virtual void GetSelection(long *from, long *to) const wxOVERRIDE;
+
+    virtual bool IsEditable() const wxOVERRIDE;
+    virtual void SetEditable(bool editable) wxOVERRIDE;
+
+    virtual bool SetHint(const wxString& hint) wxOVERRIDE;
+    virtual wxString GetHint() const wxOVERRIDE;
 
     // This method sets the text without affecting list selection
     // (ie. wxComboPopup::SetStringValue doesn't get called).
@@ -221,7 +266,13 @@ public:
 
     // This method sets value and also optionally sends EVT_TEXT
     // (needed by combo popups)
-    void SetValueWithEvent(const wxString& value, bool withEvent = true);
+    wxDEPRECATED( void SetValueWithEvent(const wxString& value,
+                                         bool withEvent = true) );
+
+    // Changes value of the control as if user had done it by selecting an
+    // item from a combo box drop-down list. Needs to be public so that
+    // derived popup classes can call it.
+    void SetValueByUser(const wxString& value);
 
     //
     // Popup customization methods
@@ -277,7 +328,7 @@ public:
     //   side: wxLEFT or wxRIGHT, indicates on which side the button will be placed.
     //   spacingX: empty space on sides of the button. Default is 0.
     // Remarks:
-    //   There is no spacingY - the button will be centered vertically.
+    //   There is no spacingY - the button will be centred vertically.
     void SetButtonPosition( int width = -1,
                             int height = -1,
                             int side = wxRIGHT,
@@ -303,19 +354,18 @@ public:
                            const wxBitmap& bmpHover = wxNullBitmap,
                            const wxBitmap& bmpDisabled = wxNullBitmap );
 
+#if WXWIN_COMPATIBILITY_2_8
     //
     // This will set the space in pixels between left edge of the control and the
     // text, regardless whether control is read-only (ie. no wxTextCtrl) or not.
     // Platform-specific default can be set with value-1.
     // Remarks
     // * This method may do nothing on some native implementations.
-    void SetTextIndent( int indent );
+    wxDEPRECATED( void SetTextIndent( int indent ) );
 
     // Returns actual indentation in pixels.
-    wxCoord GetTextIndent() const
-    {
-        return m_absIndent;
-    }
+    wxDEPRECATED( wxCoord GetTextIndent() const );
+#endif
 
     // Returns area covered by the text field.
     const wxRect& GetTextRect() const
@@ -348,7 +398,7 @@ public:
     }
 
     //
-    // Utilies needed by the popups or native implementations
+    // Utilities needed by the popups or native implementations
     //
 
     // Returns true if given key combination should toggle the popup.
@@ -386,20 +436,27 @@ public:
     const wxBitmap& GetBitmapHover() const { return m_bmpHover; }
     const wxBitmap& GetBitmapDisabled() const { return m_bmpDisabled; }
 
+    // Set custom style flags for embedded wxTextCtrl. Usually must be used
+    // with two-step creation, before Create() call.
+    void SetTextCtrlStyle( int style );
+
     // Return internal flags
     wxUint32 GetInternalFlags() const { return m_iFlags; }
 
     // Return true if Create has finished
     bool IsCreated() const { return m_iFlags & wxCC_IFLAG_CREATED ? true : false; }
 
+    // Need to override to return text area background colour
+    wxColour GetBackgroundColour() const;
+
     // common code to be called on popup hide/dismiss
-    void OnPopupDismiss();
+    void OnPopupDismiss(bool generateEvent);
 
     // PopupShown states
     enum
     {
         Hidden       = 0,
-        //Closing      = 1,
+        Closing      = 1,
         Animating    = 2,
         Visible      = 3
     };
@@ -411,7 +468,24 @@ public:
     // Set value returned by GetMainWindowOfCompositeControl
     void SetCtrlMainWnd( wxWindow* wnd ) { m_mainCtrlWnd = wnd; }
 
+    // This is public so we can access it from wxComboCtrlTextCtrl
+    virtual wxWindow *GetMainWindowOfCompositeControl() wxOVERRIDE
+        { return m_mainCtrlWnd; }
+
+    // also set the embedded wxTextCtrl colours
+    virtual bool SetBackgroundColour(const wxColour& colour) wxOVERRIDE;
+
 protected:
+
+    // Returns true if hint text should be drawn in the control
+    bool ShouldUseHintText(int flags = 0) const
+    {
+        return ( !m_text &&
+                 !(flags & wxCONTROL_ISSUBMENU) &&
+                 !m_valueString.length() &&
+                 m_hintText.length() &&
+                 !ShouldDrawFocus() );
+    }
 
     //
     // Override these for customization purposes
@@ -420,7 +494,8 @@ protected:
     // called from wxSizeEvent handler
     virtual void OnResize() = 0;
 
-    // Return native text identation (for pure text, not textctrl)
+    // Return native text indentation
+    // (i.e. text margin, for pure text, not textctrl)
     virtual wxCoord GetNativeTextIndent() const;
 
     // Called in syscolourchanged handler and base create
@@ -428,20 +503,25 @@ protected:
 
     // Creates wxTextCtrl.
     //   extraStyle: Extra style parameters
-    void CreateTextCtrl( int extraStyle, const wxValidator& validator );
+    void CreateTextCtrl( int extraStyle );
+
+    // Called when text was changed programmatically
+    // (e.g. from WriteText())
+    void OnSetValue(const wxString& value);
 
     // Installs standard input handler to combo (and optionally to the textctrl)
     void InstallInputHandlers();
 
-    // flags for DrawButton()
+    // Flags for DrawButton
     enum
     {
-        Draw_PaintBg = 1,
-        Draw_BitmapOnly  = 2
+        Button_PaintBackground             = 0x0001, // Paints control background below the button
+        Button_BitmapOnly                  = 0x0002  // Only paints the bitmap
     };
 
     // Draws dropbutton. Using wxRenderer or bitmaps, as appropriate.
-    void DrawButton( wxDC& dc, const wxRect& rect, int flags = Draw_PaintBg );
+    // Flags are defined above.
+    virtual void DrawButton( wxDC& dc, const wxRect& rect, int flags = Button_PaintBackground );
 
     // Call if cursor is on button area or mouse is captured for the button.
     //bool HandleButtonMouseEvent( wxMouseEvent& event, bool isInside );
@@ -465,12 +545,15 @@ protected:
     void DestroyPopup();
 
     // override the base class virtuals involved in geometry calculations
-    virtual wxSize DoGetBestSize() const;
+    // The common version only sets a default width, so the derived classes
+    // should override it and set the height and change the width as needed.
+    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual wxSize DoGetSizeFromTextSize(int xlen, int ylen = -1) const wxOVERRIDE;
 
     // NULL popup can be used to indicate default in a derived class
     virtual void DoSetPopupControl(wxComboPopup* popup);
 
-    // ensures there is atleast the default popup
+    // ensures there is at least the default popup
     void EnsurePopupControl();
 
     // Recalculates button and textctrl areas. Called when size or button setup change.
@@ -478,9 +561,10 @@ protected:
     //             just recalculate.
     void CalculateAreas( int btnWidth = 0 );
 
-    // Standard textctrl positioning routine. Just give it platform-dependant
+    // Standard textctrl positioning routine. Just give it platform-dependent
     // textctrl coordinate adjustment.
-    void PositionTextCtrl( int textCtrlXAdjust, int textCtrlYAdjust );
+    virtual void PositionTextCtrl( int textCtrlXAdjust = 0,
+                                   int textCtrlYAdjust = 0);
 
     // event handlers
     void OnSizeEvent( wxSizeEvent& event );
@@ -489,6 +573,7 @@ protected:
     void OnTextCtrlEvent(wxCommandEvent& event);
     void OnSysColourChanged(wxSysColourChangedEvent& event);
     void OnKeyEvent(wxKeyEvent& event);
+    void OnCharEvent(wxKeyEvent& event);
 
     // Set customization flags (directs how wxComboCtrlBase helpers behave)
     void Customize( wxUint32 flags ) { m_iFlags |= flags; }
@@ -513,15 +598,22 @@ protected:
     // Flags are same as for DoShowPopup.
     virtual bool AnimateShow( const wxRect& rect, int flags );
 
-#if wxUSE_TOOLTIPS
-    virtual void DoSetToolTip( wxToolTip *tip );
-#endif
+    // protected wxTextEntry methods
+    virtual void DoSetValue(const wxString& value, int flags) wxOVERRIDE;
+    virtual wxString DoGetValue() const wxOVERRIDE;
+    virtual wxWindow *GetEditableWindow() wxOVERRIDE { return this; }
 
-    virtual wxWindow *GetMainWindowOfCompositeControl()
-        { return m_mainCtrlWnd; }
+    // margins functions
+    virtual bool DoSetMargins(const wxPoint& pt) wxOVERRIDE;
+    virtual wxPoint DoGetMargins() const wxOVERRIDE;
+
+    virtual wxWindowList GetCompositeWindowParts() const wxOVERRIDE;
 
     // This is used when m_text is hidden (readonly).
     wxString                m_valueString;
+
+    // This is used when control is unfocused and m_valueString is empty
+    wxString                m_hintText;
 
     // the text control and button we show all the time
     wxTextCtrl*             m_text;
@@ -543,7 +635,7 @@ protected:
     wxEvtHandler*           m_toplevEvtHandler;
 
     // this is for the control in popup
-    wxEvtHandler*           m_popupExtraHandler;
+    wxEvtHandler*           m_popupEvtHandler;
 
     // this is for the popup window
     wxEvtHandler*           m_popupWinEvtHandler;
@@ -551,10 +643,10 @@ protected:
     // main (ie. topmost) window of a composite control (default = this)
     wxWindow*               m_mainCtrlWnd;
 
-    // used to prevent immediate re-popupping incase closed popup
+    // used to prevent immediate re-popupping in case closed popup
     // by clicking on the combo control (needed because of inconsistent
     // transient implementation across platforms).
-    wxLongLong              m_timeCanAcceptClick;
+    wxMilliClock_t          m_timeCanAcceptClick;
 
     // how much popup should expand to the left/right of the control
     wxCoord                 m_extLeft;
@@ -571,8 +663,8 @@ protected:
     // selection indicator.
     wxCoord                 m_widthCustomPaint;
 
-    // absolute text indentation, in pixels
-    wxCoord                 m_absIndent;
+    // left margin, in pixels
+    wxCoord                 m_marginLeft;
 
     // side on which the popup is aligned
     int                     m_anchorSide;
@@ -583,6 +675,9 @@ protected:
     // The button and textctrl click/paint areas
     wxRect                  m_tcArea;
     wxRect                  m_btnArea;
+
+    // Colour of the text area, in case m_text is NULL
+    wxColour                m_tcBgCol;
 
     // current button state (uses renderer flags)
     int                     m_btnState;
@@ -605,18 +700,24 @@ protected:
     // area used by the button
     wxSize                  m_btnSize;
 
-    // platform-dependant customization and other flags
+    // platform-dependent customization and other flags
     wxUint32                m_iFlags;
+
+    // custom style for m_text
+    int                     m_textCtrlStyle;
 
     // draw blank button background under bitmap?
     bool                    m_blankButtonBg;
 
-    // is the popup window currenty shown?
+    // is the popup window currently shown?
     wxByte                  m_popupWinState;
 
     // should the focus be reset to the textctrl in idle time?
     bool                    m_resetFocus;
-    
+
+    // is the text-area background colour overridden?
+    bool                    m_hasTcBgCol;
+
 private:
     void Init();
 
@@ -625,9 +726,9 @@ private:
     // Is popup window wxPopupTransientWindow, wxPopupWindow or wxDialog?
     wxByte                  m_popupWinType;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
-    DECLARE_ABSTRACT_CLASS(wxComboCtrlBase)
+    wxDECLARE_ABSTRACT_CLASS(wxComboCtrlBase);
 };
 
 
@@ -643,14 +744,16 @@ enum
     wxCP_IFLAG_CREATED      = 0x0001 // Set by wxComboCtrlBase after Create is called
 };
 
+class WXDLLIMPEXP_FWD_CORE wxComboCtrl;
 
-class WXDLLEXPORT wxComboPopup
+
+class WXDLLIMPEXP_CORE wxComboPopup
 {
     friend class wxComboCtrlBase;
 public:
     wxComboPopup()
     {
-        m_combo = (wxComboCtrlBase*) NULL;
+        m_combo = NULL;
         m_iFlags = 0;
     }
 
@@ -665,6 +768,13 @@ public:
     // Create the popup child control.
     // Return true for success.
     virtual bool Create(wxWindow* parent) = 0;
+
+    // Calls Destroy() for the popup control (i.e. one returned by
+    // GetControl()) and makes sure that 'this' is deleted at the end.
+    // Default implementation works for both cases where popup control
+    // class is multiple inherited or created on heap as a separate
+    // object.
+    virtual void DestroyPopup();
 
     // We must have an associated control which is subclassed by the combobox.
     virtual wxWindow *GetControl() = 0;
@@ -682,13 +792,24 @@ public:
     // Gets displayed string representation of the value.
     virtual wxString GetStringValue() const = 0;
 
+    // Called to check if the popup - when an item container - actually
+    // has matching item. Case-sensitivity checking etc. is up to the
+    // implementation. If the found item matched the string, but is
+    // different, it should be written back to pItem. Default implementation
+    // always return true and does not alter trueItem.
+    virtual bool FindItem(const wxString& item, wxString* trueItem=NULL);
+
     // This is called to custom paint in the combo control itself (ie. not the popup).
     // Default implementation draws value as string.
     virtual void PaintComboControl( wxDC& dc, const wxRect& rect );
 
-    // Receives key events from the parent wxComboCtrl.
+    // Receives wxEVT_KEY_DOWN key events from the parent wxComboCtrl.
     // Events not handled should be skipped, as usual.
     virtual void OnComboKeyEvent( wxKeyEvent& event );
+
+    // Receives wxEVT_CHAR key events from the parent wxComboCtrl.
+    // Events not handled should be skipped, as usual.
+    virtual void OnComboCharEvent( wxKeyEvent& event );
 
     // Implement if you need to support special action when user
     // double-clicks on the parent wxComboCtrl.
@@ -708,7 +829,7 @@ public:
     virtual bool LazyCreate();
 
     //
-    // Utilies
+    // Utilities
     //
 
     // Hides the popup
@@ -719,6 +840,9 @@ public:
     {
         return (m_iFlags & wxCP_IFLAG_CREATED) ? true : false;
     }
+
+    // Returns pointer to the associated parent wxComboCtrl.
+    wxComboCtrl* GetComboCtrl() const;
 
     // Default PaintComboControl behaviour
     static void DefaultPaintComboControl( wxComboCtrlBase* combo,

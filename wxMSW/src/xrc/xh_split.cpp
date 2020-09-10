@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxSplitterWindow
 // Author:      panga@freemail.hu, Vaclav Slavik
 // Created:     2003/01/26
-// RCS-ID:      $Id: xh_split.cpp 47263 2007-07-09 14:31:09Z JS $
 // Copyright:   (c) 2003 panga@freemail.hu, Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -25,16 +24,15 @@
 
 #include "wx/splitter.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxSplitterWindowXmlHandler, wxXmlResourceHandler)
+#include "wx/xml/xml.h"
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxSplitterWindowXmlHandler, wxXmlResourceHandler);
 
 wxSplitterWindowXmlHandler::wxSplitterWindowXmlHandler() : wxXmlResourceHandler()
 {
     XRC_ADD_STYLE(wxSP_3D);
     XRC_ADD_STYLE(wxSP_3DSASH);
     XRC_ADD_STYLE(wxSP_3DBORDER);
-#if WXWIN_COMPATIBILITY_2_6
-    XRC_ADD_STYLE(wxSP_FULLSASH);
-#endif // WXWIN_COMPATIBILITY_2_6
     XRC_ADD_STYLE(wxSP_BORDER);
     XRC_ADD_STYLE(wxSP_NOBORDER);
     XRC_ADD_STYLE(wxSP_PERMIT_UNSPLIT);
@@ -45,7 +43,7 @@ wxSplitterWindowXmlHandler::wxSplitterWindowXmlHandler() : wxXmlResourceHandler(
 
 wxObject *wxSplitterWindowXmlHandler::DoCreateResource()
 {
-    XRC_MAKE_INSTANCE(splitter, wxSplitterWindow);
+    XRC_MAKE_INSTANCE(splitter, wxSplitterWindow)
 
     splitter->Create(m_parentAsWindow,
                      GetID(),
@@ -55,8 +53,8 @@ wxObject *wxSplitterWindowXmlHandler::DoCreateResource()
 
     SetupWindow(splitter);
 
-    long sashpos = GetLong(wxT("sashpos"), 0);
-    long minpanesize = GetLong(wxT("minsize"), -1);
+    long sashpos = GetDimension(wxT("sashpos"), 0);
+    long minpanesize = GetDimension(wxT("minsize"), -1);
     float gravity = GetFloat(wxT("gravity"), 0.0);
     if (minpanesize != -1)
         splitter->SetMinimumPaneSize(minpanesize);
@@ -87,7 +85,7 @@ wxObject *wxSplitterWindowXmlHandler::DoCreateResource()
     }
 
     if (win1 == NULL)
-        wxLogError(wxT("wxSplitterWindow node must contain at least one window."));
+        ReportError("wxSplitterWindow node must contain at least one window");
 
     bool horizontal = (GetParamValue(wxT("orientation")) != wxT("vertical"));
     if (win1 && win2)

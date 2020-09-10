@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
-// Name:        xmldemo.cpp
+// Name:        derivdlg.h
 // Purpose:     XML resources sample: A derived dialog
 // Author:      Robert O'Connor (rob@medicalmnemonics.com), Vaclav Slavik
-// RCS-ID:      $Id: derivdlg.h 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Robert O'Connor and Vaclav Slavik
 // Licence:     wxWindows licence
 //-----------------------------------------------------------------------------
@@ -37,7 +36,7 @@ public:
     PreferencesDialog( wxWindow* parent );
 
     // Destructor.
-    ~PreferencesDialog(){};
+    ~PreferencesDialog(){}
 
 private:
 
@@ -52,7 +51,7 @@ private:
     void OnOK( wxCommandEvent &event );
 
     // Any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
 };
 

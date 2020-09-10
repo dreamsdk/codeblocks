@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxChoice
 // Author:      Bob Mitchell
 // Created:     2000/03/21
-// RCS-ID:      $Id: xh_choic.cpp 42258 2006-10-22 22:12:32Z VZ $
 // Copyright:   (c) 2000 Bob Mitchell and Verant Interactive
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,7 +23,9 @@
     #include "wx/choice.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxChoiceXmlHandler, wxXmlResourceHandler)
+#include "wx/xml/xml.h"
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxChoiceXmlHandler, wxXmlResourceHandler);
 
 wxChoiceXmlHandler::wxChoiceXmlHandler()
 : wxXmlResourceHandler() , m_insideBox(false)
@@ -69,10 +70,7 @@ wxObject *wxChoiceXmlHandler::DoCreateResource()
         // handle <item>Label</item>
 
         // add to the list
-        wxString str = GetNodeContent(m_node);
-        if (m_resource->GetFlags() & wxXRC_USE_LOCALE)
-            str = wxGetTranslation(str, m_resource->GetDomain());
-        strList.Add(str);
+        strList.Add(GetNodeText(m_node, wxXRC_TEXT_NO_ESCAPE));
 
         return NULL;
     }

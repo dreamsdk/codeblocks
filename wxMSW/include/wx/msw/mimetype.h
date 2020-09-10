@@ -4,9 +4,8 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     23.09.98
-// RCS-ID:      $Id: mimetype.h 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) 1998 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
-// Licence:     wxWindows licence (part of wxExtra library)
+// Licence:     wxWidgets licence (part of base library)
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _MIMETYPE_IMPL_H
@@ -43,9 +42,18 @@ public:
     bool GetIcon(wxIconLocation *iconLoc) const;
     bool GetDescription(wxString *desc) const;
     bool GetOpenCommand(wxString *openCmd,
-                        const wxFileType::MessageParameters& params) const;
+                        const wxFileType::MessageParameters& params) const
+    {
+        *openCmd = GetExpandedCommand(wxS("open"), params);
+        return !openCmd->empty();
+    }
+
     bool GetPrintCommand(wxString *printCmd,
-                         const wxFileType::MessageParameters& params) const;
+                         const wxFileType::MessageParameters& params) const
+    {
+        *printCmd = GetExpandedCommand(wxS("print"), params);
+        return !printCmd->empty();
+    }
 
     size_t GetAllCommands(wxArrayString * verbs, wxArrayString * commands,
                           const wxFileType::MessageParameters& params) const;
@@ -63,10 +71,27 @@ public:
     // this is called  by Associate
     bool SetDescription (const wxString& desc);
 
+    // This is called by all our own methods modifying the registry to let the
+    // Windows Shell know about the changes.
+    //
+    // It is also called from Associate() and Unassociate() which suppress the
+    // internally generated notifications using the method below, which is why
+    // it has to be public.
+    void MSWNotifyShell();
+
+    // Call before/after performing several registry changes in a row to
+    // temporarily suppress multiple notifications that would be generated for
+    // them and generate a single one at the end using MSWNotifyShell()
+    // explicitly.
+    void MSWSuppressNotifications(bool supress);
+
+    wxString
+    GetExpandedCommand(const wxString& verb,
+                       const wxFileType::MessageParameters& params) const;
 private:
     // helper function: reads the command corresponding to the specified verb
     // from the registry (returns an empty string if not found)
-    wxString GetCommand(const wxChar *verb) const;
+    wxString GetCommand(const wxString& verb) const;
 
     // get the registry path for the given verb
     wxString GetVerbPath(const wxString& verb) const;
@@ -77,6 +102,7 @@ private:
 
     wxString m_strFileType,         // may be empty
              m_ext;
+    bool m_suppressNotify;
 
     // these methods are not publicly accessible (as wxMimeTypesManager
     // doesn't know about them), and should only be called by Unassociate
@@ -101,12 +127,6 @@ public:
     wxFileType *GetFileTypeFromMimeType(const wxString& mimeType);
 
     size_t EnumAllFileTypes(wxArrayString& mimetypes);
-
-    // this are NOPs under Windows
-    bool ReadMailcap(const wxString& WXUNUSED(filename), bool WXUNUSED(fallback) = true)
-        { return true; }
-    bool ReadMimeTypes(const wxString& WXUNUSED(filename))
-        { return true; }
 
     // create a new filetype association
     wxFileType *Associate(const wxFileTypeInfo& ftInfo);

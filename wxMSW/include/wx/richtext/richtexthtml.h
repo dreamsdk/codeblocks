@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2005-09-30
-// RCS-ID:      $Id: richtexthtml.h 62033 2009-09-23 11:06:30Z JS $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -27,18 +26,18 @@
 
 class WXDLLIMPEXP_RICHTEXT wxRichTextHTMLHandler: public wxRichTextFileHandler
 {
-    DECLARE_CLASS(wxRichTextHTMLHandler)
+    wxDECLARE_DYNAMIC_CLASS(wxRichTextHTMLHandler);
 public:
     wxRichTextHTMLHandler(const wxString& name = wxT("HTML"), const wxString& ext = wxT("html"), int type = wxRICHTEXT_TYPE_HTML);
 
     /// Can we save using this handler?
-    virtual bool CanSave() const { return true; }
+    virtual bool CanSave() const wxOVERRIDE { return true; }
 
     /// Can we load using this handler?
-    virtual bool CanLoad() const { return false; }
+    virtual bool CanLoad() const wxOVERRIDE { return false; }
 
     /// Can we handle this filename (if using files)? By default, checks the extension.
-    virtual bool CanHandle(const wxString& filename) const;
+    virtual bool CanHandle(const wxString& filename) const wxOVERRIDE;
 
 // Accessors and operations unique to this handler
 
@@ -76,19 +75,19 @@ protected:
 // Implementation
 
 #if wxUSE_STREAMS
-    virtual bool DoLoadFile(wxRichTextBuffer *buffer, wxInputStream& stream);
-    virtual bool DoSaveFile(wxRichTextBuffer *buffer, wxOutputStream& stream);
+    virtual bool DoLoadFile(wxRichTextBuffer *buffer, wxInputStream& stream) wxOVERRIDE;
+    virtual bool DoSaveFile(wxRichTextBuffer *buffer, wxOutputStream& stream) wxOVERRIDE;
 
     /// Output character formatting
-    void BeginCharacterFormatting(const wxTextAttrEx& currentStyle, const wxTextAttrEx& thisStyle, const wxTextAttrEx& paraStyle, wxTextOutputStream& stream );
-    void EndCharacterFormatting(const wxTextAttrEx& currentStyle, const wxTextAttrEx& thisStyle, const wxTextAttrEx& paraStyle, wxTextOutputStream& stream );
+    void BeginCharacterFormatting(const wxRichTextAttr& currentStyle, const wxRichTextAttr& thisStyle, const wxRichTextAttr& paraStyle, wxTextOutputStream& stream );
+    void EndCharacterFormatting(const wxRichTextAttr& currentStyle, const wxRichTextAttr& thisStyle, const wxRichTextAttr& paraStyle, wxTextOutputStream& stream );
 
     /// Output paragraph formatting
-    void BeginParagraphFormatting(const wxTextAttrEx& currentStyle, const wxTextAttrEx& thisStyle, wxTextOutputStream& stream);
-    void EndParagraphFormatting(const wxTextAttrEx& currentStyle, const wxTextAttrEx& thisStyle, wxTextOutputStream& stream);
+    void BeginParagraphFormatting(const wxRichTextAttr& currentStyle, const wxRichTextAttr& thisStyle, wxTextOutputStream& stream);
+    void EndParagraphFormatting(const wxRichTextAttr& currentStyle, const wxRichTextAttr& thisStyle, wxTextOutputStream& stream);
 
     /// Output font tag
-    void OutputFont(const wxTextAttrEx& style, wxTextOutputStream& stream);
+    void OutputFont(const wxRichTextAttr& style, wxTextOutputStream& stream);
 
     /// Closes lists to level (-1 means close all)
     void CloseLists(int level, wxTextOutputStream& str);
@@ -106,13 +105,13 @@ protected:
     const wxChar* GetMimeType(int imageType);
 
     /// Gets the html equivalent of the specified value
-    wxString GetAlignment(const wxTextAttrEx& thisStyle);
+    wxString GetAlignment(const wxRichTextAttr& thisStyle);
 
     /// Generates &nbsp; array for indentations
     wxString SymbolicIndent(long indent);
 
     /// Finds the html equivalent of the specified bullet
-    int TypeOfList(const wxTextAttrEx& thisStyle, wxString& tag);
+    int TypeOfList(const wxRichTextAttr& thisStyle, wxString& tag);
 #endif
 
 // Data members

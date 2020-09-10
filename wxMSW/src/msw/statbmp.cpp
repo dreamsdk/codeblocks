@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: statbmp.cpp 56532 2008-10-27 18:15:19Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -36,67 +35,20 @@
 #endif
 
 #include "wx/msw/private.h"
+#include "wx/msw/dib.h"
+#include "wx/msw/private/winstyle.h"
 
 #include "wx/sysopt.h"
 
 #include <stdio.h>
 
 // ---------------------------------------------------------------------------
-// macors
+// macros
 // ---------------------------------------------------------------------------
 
-#if wxUSE_EXTENDED_RTTI
-WX_DEFINE_FLAGS( wxStaticBitmapStyle )
-
-wxBEGIN_FLAGS( wxStaticBitmapStyle )
-    // new style border flags, we put them first to
-    // use them for streaming out
-    wxFLAGS_MEMBER(wxBORDER_SIMPLE)
-    wxFLAGS_MEMBER(wxBORDER_SUNKEN)
-    wxFLAGS_MEMBER(wxBORDER_DOUBLE)
-    wxFLAGS_MEMBER(wxBORDER_RAISED)
-    wxFLAGS_MEMBER(wxBORDER_STATIC)
-    wxFLAGS_MEMBER(wxBORDER_NONE)
-
-    // old style border flags
-    wxFLAGS_MEMBER(wxSIMPLE_BORDER)
-    wxFLAGS_MEMBER(wxSUNKEN_BORDER)
-    wxFLAGS_MEMBER(wxDOUBLE_BORDER)
-    wxFLAGS_MEMBER(wxRAISED_BORDER)
-    wxFLAGS_MEMBER(wxSTATIC_BORDER)
-    wxFLAGS_MEMBER(wxBORDER)
-
-    // standard window styles
-    wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
-    wxFLAGS_MEMBER(wxCLIP_CHILDREN)
-    wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
-    wxFLAGS_MEMBER(wxWANTS_CHARS)
-    wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
-    wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
-    wxFLAGS_MEMBER(wxVSCROLL)
-    wxFLAGS_MEMBER(wxHSCROLL)
-
-wxEND_FLAGS( wxStaticBitmapStyle )
-
-IMPLEMENT_DYNAMIC_CLASS_XTI(wxStaticBitmap, wxControl,"wx/statbmp.h")
-
-wxBEGIN_PROPERTIES_TABLE(wxStaticBitmap)
-    wxPROPERTY_FLAGS( WindowStyle , wxStaticBitmapStyle , long , SetWindowStyleFlag , GetWindowStyleFlag , EMPTY_MACROVALUE, 0 /*flags*/ , wxT("Helpstring") , wxT("group")) // style
-wxEND_PROPERTIES_TABLE()
-
-wxBEGIN_HANDLERS_TABLE(wxStaticBitmap)
-wxEND_HANDLERS_TABLE()
-
-wxCONSTRUCTOR_5( wxStaticBitmap, wxWindow* , Parent , wxWindowID , Id , wxBitmap, Bitmap, wxPoint , Position , wxSize , Size )
-
-#else
-IMPLEMENT_DYNAMIC_CLASS(wxStaticBitmap, wxControl)
-#endif
-
-/*
-    TODO PROPERTIES :
-        bitmap
-*/
+wxBEGIN_EVENT_TABLE(wxStaticBitmap, wxStaticBitmapBase)
+    EVT_SIZE(wxStaticBitmap::WXHandleSize)
+wxEND_EVENT_TABLE()
 
 // ===========================================================================
 // implementation
@@ -114,12 +66,12 @@ IMPLEMENT_DYNAMIC_CLASS(wxStaticBitmap, wxControl)
 
 static wxGDIImage* ConvertImage( const wxGDIImage& bitmap )
 {
-    bool isIcon = bitmap.IsKindOf( CLASSINFO(wxIcon) );
+    bool isIcon = bitmap.IsKindOf( wxCLASSINFO(wxIcon) );
 
     if( !isIcon )
     {
         wxASSERT_MSG( wxDynamicCast(&bitmap, wxBitmap),
-                      _T("not an icon and not a bitmap?") );
+                      wxT("not an icon and not a bitmap?") );
 
         const wxBitmap& bmp = (const wxBitmap&)bitmap;
         wxMask *mask = bmp.GetMask();
@@ -152,13 +104,16 @@ bool wxStaticBitmap::Create(wxWindow *parent,
     // we may have either bitmap or icon: if a bitmap with mask is passed, we
     // will transform it to an icon ourselves because otherwise the mask will
     // be ignored by Windows
-    m_isIcon = bitmap.IsKindOf(CLASSINFO(wxIcon));
-
     wxGDIImage *image = ConvertImage( bitmap );
-    m_isIcon = image->IsKindOf( CLASSINFO(wxIcon) );
+
+    // Note that m_isIcon must be set before calling MSWCreateControl() so that
+    // it creates the control with the correct style, as returned by
+    // MSWGetStyle(), which uses m_isIcon to determine whether to use SS_ICON
+    // or SS_BITMAP.
+    m_isIcon = image->IsKindOf( wxCLASSINFO(wxIcon) );
 
     // create the native control
-    if ( !MSWCreateControl(_T("STATIC"), wxEmptyString, pos, size) )
+    if ( !MSWCreateControl(wxT("STATIC"), wxEmptyString, pos, size) )
     {
         // control creation failed
         return false;
@@ -170,27 +125,16 @@ bool wxStaticBitmap::Create(wxWindow *parent,
     // GetBestSize will work properly now, so set the best size if needed
     SetInitialSize(size);
 
-    // painting manually is reported not to work under Windows CE (see #10093),
-    // so don't do it there even if this probably means that alpha is not
-    // supported there -- but at least bitmaps without alpha appear correctly
-#ifndef __WXWINCE__
-    // Windows versions before XP (and even XP if the application has no
-    // manifest and so the old comctl32.dll is used) don't draw correctly the
-    // images with alpha channel so we need to draw them ourselves and it's
-    // easier to just always do it rather than check if we have an image with
-    // alpha or not
+    // if the application has no manifest and so the old comctl32.dll is
+    // used, the images with alpha channel are not correctly drawn so we need
+    // to draw them ourselves and it's easier to just always do it rather than
+    // check if we have an image with alpha or not
     if ( wxTheApp->GetComCtl32Version() < 600 )
     {
-        Connect(wxEVT_PAINT, wxPaintEventHandler(wxStaticBitmap::DoPaintManually));
+        Bind(wxEVT_PAINT, &wxStaticBitmap::DoPaintManually, this);
     }
-#endif // !__WXWINCE__
 
     return true;
-}
-
-wxBorder wxStaticBitmap::GetDefaultBorder() const
-{
-    return wxBORDER_NONE;
 }
 
 WXDWORD wxStaticBitmap::MSWGetStyle(long style, WXDWORD *exstyle) const
@@ -211,15 +155,15 @@ WXDWORD wxStaticBitmap::MSWGetStyle(long style, WXDWORD *exstyle) const
 
 bool wxStaticBitmap::ImageIsOk() const
 {
-    return m_image && m_image->Ok();
+    return m_image && m_image->IsOk();
 }
 
 wxIcon wxStaticBitmap::GetIcon() const
 {
-    wxCHECK_MSG( m_image, wxIcon(), _T("no image in wxStaticBitmap") );
+    wxCHECK_MSG( m_image, wxIcon(), wxT("no image in wxStaticBitmap") );
 
     // we can't ask for an icon if all we have is a bitmap
-    wxCHECK_MSG( m_isIcon, wxIcon(), _T("no icon in this wxStaticBitmap") );
+    wxCHECK_MSG( m_isIcon, wxIcon(), wxT("no icon in this wxStaticBitmap") );
 
     return *(wxIcon *)m_image;
 }
@@ -236,30 +180,62 @@ wxBitmap wxStaticBitmap::GetBitmap() const
     }
     else // we have a bitmap
     {
-        wxCHECK_MSG( m_image, wxBitmap(), _T("no image in wxStaticBitmap") );
+        wxCHECK_MSG( m_image, wxBitmap(), wxT("no image in wxStaticBitmap") );
 
         return *(wxBitmap *)m_image;
     }
 }
 
-void wxStaticBitmap::Free()
+void wxStaticBitmap::Init()
 {
-    delete m_image;
-
+    m_isIcon = true;
     m_image = NULL;
+    m_currentHandle = 0;
+    m_ownsCurrentHandle = false;
 }
 
-wxSize wxStaticBitmap::DoGetBestSize() const
+void wxStaticBitmap::DeleteCurrentHandleIfNeeded()
 {
+    if ( m_ownsCurrentHandle )
+    {
+        ::DeleteObject(m_currentHandle);
+        m_ownsCurrentHandle = false;
+    }
+}
+
+void wxStaticBitmap::Free()
+{
+    MSWReplaceImageHandle(0);
+
+    DeleteCurrentHandleIfNeeded();
+
+    wxDELETE(m_image);
+}
+
+wxSize wxStaticBitmap::DoGetBestClientSize() const
+{
+    wxSize size;
     if ( ImageIsOk() )
     {
-        wxSize best(m_image->GetWidth(), m_image->GetHeight());
-        CacheBestSize(best);
-        return best;
+        size = m_image->GetSize();
+    }
+    else // No image yet
+    {
+        // this is completely arbitrary
+        size.x =
+        size.y = 16;
     }
 
-    // this is completely arbitrary
-    return wxSize(16, 16);
+    return size;
+}
+
+void wxStaticBitmap::WXHandleSize(wxSizeEvent& event)
+{
+    // Invalidate everything when our size changes as the image position (it's
+    // drawn centred in the window client area) changes.
+    Refresh();
+
+    event.Skip();
 }
 
 void wxStaticBitmap::DoPaintManually(wxPaintEvent& WXUNUSED(event))
@@ -288,57 +264,82 @@ void wxStaticBitmap::SetImage( const wxGDIImage* image )
 {
     wxGDIImage* convertedImage = ConvertImage( *image );
     SetImageNoCopy( convertedImage );
-    InvalidateBestSize();
 }
 
-void wxStaticBitmap::SetImageNoCopy( wxGDIImage* image)
+void wxStaticBitmap::MSWReplaceImageHandle(WXLPARAM handle)
 {
-    Free();
-
-    m_isIcon = image->IsKindOf( CLASSINFO(wxIcon) );
-    // the image has already been copied
-    m_image = image;
-
-    int x, y;
-    int w, h;
-    GetPosition(&x, &y);
-    GetSize(&w, &h);
-
-#ifdef __WIN32__
-    HANDLE handle = (HANDLE)m_image->GetHandle();
-    LONG style = ::GetWindowLong( (HWND)GetHWND(), GWL_STYLE ) ;
-    ::SetWindowLong( (HWND)GetHWND(), GWL_STYLE, ( style & ~( SS_BITMAP|SS_ICON ) ) |
-                     ( m_isIcon ? SS_ICON : SS_BITMAP ) );
     HGDIOBJ oldHandle = (HGDIOBJ)::SendMessage(GetHwnd(), STM_SETIMAGE,
                   m_isIcon ? IMAGE_ICON : IMAGE_BITMAP, (LPARAM)handle);
     // detect if this is still the handle we passed before or
     // if the static-control made a copy of the bitmap!
-    if (m_currentHandle != 0 && oldHandle != (HGDIOBJ) m_currentHandle)
+    if (oldHandle != 0 && oldHandle != (HGDIOBJ) m_currentHandle)
     {
         // the static control made a copy and we are responsible for deleting it
-        DeleteObject((HGDIOBJ) oldHandle);
+        ::DeleteObject((HGDIOBJ) oldHandle);
     }
-    m_currentHandle = (WXHANDLE)handle;
-#endif // Win32
+}
 
-    if ( ImageIsOk() )
+void wxStaticBitmap::SetImageNoCopy( wxGDIImage* image)
+{
+    wxSize sizeOld;
+    if ( m_image )
+        sizeOld = m_image->GetSize();
+
+    wxSize sizeNew;
+    if ( image )
+        sizeNew = image->GetSize();
+
+    const bool wasIcon = m_isIcon;
+
+    Free();
+
+    m_isIcon = image->IsKindOf( wxCLASSINFO(wxIcon) );
+    // the image has already been copied
+    m_image = image;
+
+    // Normally we just use the handle of provided image but in some cases we
+    // create our own temporary bitmap, so the actual handle may end up being
+    // different from the original one.
+    const HANDLE handleOrig = (HANDLE)m_image->GetHandle();
+    HANDLE handle = handleOrig;
+
+#if wxUSE_WXDIB
+    if ( !m_isIcon )
     {
-        int width = image->GetWidth(),
-            height = image->GetHeight();
-        if ( width && height )
+        // wxBitmap normally stores alpha in pre-multiplied format but
+        // apparently STM_SETIMAGE message handler does pre-multiplication
+        // internally so we need to undo the pre-multiplication here for a
+        // while (this is similar to what we do in ImageList::Add()).
+        const wxBitmap& bmp = static_cast<wxBitmap&>(*image);
+        if ( bmp.HasAlpha() )
         {
-            w = width;
-            h = height;
-
-            ::MoveWindow(GetHwnd(), x, y, width, height, FALSE);
+            // For bitmap with alpha channel create temporary DIB with
+            // not-premultiplied alpha values.
+            handle = wxDIB(bmp.ConvertToImage(),
+                           wxDIB::PixelFormat_NotPreMultiplied).Detach();
         }
     }
+#endif // wxUSE_WXDIB
 
-    RECT rect;
-    rect.left   = x;
-    rect.top    = y;
-    rect.right  = x + w;
-    rect.bottom = y + h;
+    if ( m_isIcon != wasIcon )
+    {
+        wxMSWWinStyleUpdater(GetHwnd())
+            .TurnOff(SS_BITMAP | SS_ICON)
+            .TurnOn(m_isIcon ? SS_ICON : SS_BITMAP);
+    }
+
+    MSWReplaceImageHandle((WXLPARAM)handle);
+
+    m_currentHandle = (WXHANDLE)handle;
+    m_ownsCurrentHandle = handle != handleOrig;
+
+    if ( sizeNew != sizeOld )
+    {
+        InvalidateBestSize();
+        SetSize(GetBestSize());
+    }
+
+    RECT rect = wxGetWindowRect(GetHwnd());
     ::InvalidateRect(GetHwndOf(GetParent()), &rect, TRUE);
 }
 

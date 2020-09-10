@@ -4,7 +4,6 @@
 // Author:      Hajo Kirchhoff
 // Modified by:
 // Created:     06/11/2003
-// RCS-ID:      $Id: urlmsw.cpp 58116 2009-01-15 12:45:22Z VZ $
 // Copyright:   (c) 2003 Hajo Kirchhoff
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -49,13 +48,13 @@ public:
 protected:
     wxProtocolError m_error;
 
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxHTTPDummyProto)
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxHTTPDummyProto);
     DECLARE_PROTOCOL(wxHTTPDummyProto)
 };
 
 // the only "reason for being" for this class is to tell
 // wxURL that there is someone dealing with the http protocol
-IMPLEMENT_DYNAMIC_CLASS(wxHTTPDummyProto, wxProtocol)
+wxIMPLEMENT_DYNAMIC_CLASS(wxHTTPDummyProto, wxProtocol);
 IMPLEMENT_PROTOCOL(wxHTTPDummyProto, wxT("http"), NULL, false)
 USE_PROTOCOL(wxHTTPDummyProto)
 
@@ -137,7 +136,7 @@ protected:
     HINTERNET m_hFile;
     size_t OnSysRead(void *buffer, size_t bufsize);
 
-    DECLARE_NO_COPY_CLASS(wxWinINetInputStream)
+    wxDECLARE_NO_COPY_CLASS(wxWinINetInputStream);
 };
 
 size_t wxWinINetInputStream::GetSize() const
@@ -174,7 +173,7 @@ size_t wxWinINetInputStream::OnSysRead(void *buffer, size_t bufsize)
             );
 
             wxLogError(wxT("Read failed with error %d: %s"),
-                       iError, errorString.c_str());
+                       iError, errorString);
         }
     }
 

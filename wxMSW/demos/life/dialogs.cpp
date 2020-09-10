@@ -4,7 +4,6 @@
 // Author:      Guillermo Rodriguez Garcia, <guille@iies.es>
 // Modified by:
 // Created:     Jan/2000
-// RCS-ID:      $Id: dialogs.cpp 41883 2006-10-10 12:06:09Z ABX $
 // Copyright:   (c) 2000, Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -58,9 +57,9 @@ enum
 // --------------------------------------------------------------------------
 
 // Event tables
-BEGIN_EVENT_TABLE(LifeSamplesDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(LifeSamplesDialog, wxDialog)
     EVT_LISTBOX (ID_LISTBOX, LifeSamplesDialog::OnListBox)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 
 // ==========================================================================
@@ -137,11 +136,9 @@ LifeSamplesDialog::LifeSamplesDialog(wxWindow *parent)
 
     // activate
     SetSizer(sizer3);
-#if !defined(__SMARTPHONE__) && !defined(__POCKETPC__)
     sizer3->SetSizeHints(this);
     sizer3->Fit(this);
     Centre(wxBOTH | wxCENTRE_ON_SCREEN);
-#endif
 }
 
 LifeSamplesDialog::~LifeSamplesDialog()
@@ -205,9 +202,7 @@ XLife is (c) 1989 by Jon Bennett et al.")),
 
     // activate
     SetSizer(sizer);
-#if !defined(__SMARTPHONE__) && !defined(__POCKETPC__)
     sizer->SetSizeHints(this);
     sizer->Fit(this);
     Centre(wxBOTH | wxCENTRE_ON_SCREEN);
-#endif
 }

@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     01/02/97
-// RCS-ID:      $Id: control.h 45498 2007-04-16 13:03:05Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,7 +14,7 @@
 #include "wx/dynarray.h"
 
 // General item class
-class WXDLLEXPORT wxControl : public wxControlBase
+class WXDLLIMPEXP_CORE wxControl : public wxControlBase
 {
 public:
     wxControl() { }
@@ -35,16 +34,15 @@ public:
             const wxValidator& validator = wxDefaultValidator,
             const wxString& name = wxControlNameStr);
 
-    virtual ~wxControl();
 
     // Simulates an event
-    virtual void Command(wxCommandEvent& event) { ProcessCommand(event); }
+    virtual void Command(wxCommandEvent& event) wxOVERRIDE { ProcessCommand(event); }
 
 
     // implementation from now on
     // --------------------------
 
-    virtual wxVisualAttributes GetDefaultAttributes() const
+    virtual wxVisualAttributes GetDefaultAttributes() const wxOVERRIDE
     {
         return GetClassDefaultAttributes(GetWindowVariant());
     }
@@ -56,7 +54,7 @@ public:
     bool ProcessCommand(wxCommandEvent& event);
 
     // MSW-specific
-    virtual bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result);
+    virtual bool MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result) wxOVERRIDE;
 
     // For ownerdraw items
     virtual bool MSWOnDraw(WXDRAWITEMSTRUCT *WXUNUSED(item)) { return false; }
@@ -69,20 +67,20 @@ public:
     virtual WXHBRUSH MSWControlColor(WXHDC pDC, WXHWND hWnd);
 
     // default style for the control include WS_TABSTOP if it AcceptsFocus()
-    virtual WXDWORD MSWGetStyle(long style, WXDWORD *exstyle) const;
+    virtual WXDWORD MSWGetStyle(long style, WXDWORD *exstyle) const wxOVERRIDE;
 
 protected:
+    // Hook for common controls for which we don't want to set the default font
+    // as if we do set it, the controls don't update their font size
+    // automatically in response to WM_SETTINGCHANGE if it's changed in the
+    // display properties in the control panel, so avoid doing this for them.
+    virtual bool MSWShouldSetDefaultFont() const { return true; }
+
     // choose the default border for this window
-    virtual wxBorder GetDefaultBorder() const;
+    virtual wxBorder GetDefaultBorder() const wxOVERRIDE;
 
     // return default best size (doesn't really make any sense, override this)
-    virtual wxSize DoGetBestSize() const;
-
-    // This is a helper for all wxControls made with UPDOWN native control.
-    // In wxMSW it was only wxSpinCtrl derived from wxSpinButton but in
-    // WinCE of Smartphones this happens also for native wxTextCtrl,
-    // wxChoice and others.
-    virtual wxSize GetBestSpinnerSize(const bool is_vertical) const;
+    virtual wxSize DoGetBestSize() const wxOVERRIDE;
 
     // create the control of the given Windows class: this is typically called
     // from Create() method of the derived class passing its label, pos and
@@ -123,19 +121,16 @@ protected:
     // one
     virtual WXHBRUSH DoMSWControlColor(WXHDC pDC, wxColour colBg, WXHWND hWnd);
 
-    // this is a helper for the derived class GetClassDefaultAttributes()
-    // implementation: it returns the right colours for the classes which
-    // contain something else (e.g. wxListBox, wxTextCtrl, ...) instead of
-    // being simple controls (such as wxButton, wxCheckBox, ...)
-    static wxVisualAttributes
-        GetCompositeControlsDefaultAttributes(wxWindowVariant variant);
+    // Look in our GetSubcontrols() for the windows with the given ID.
+    virtual wxWindow *MSWFindItem(long id, WXHWND hWnd) const wxOVERRIDE;
+
 
     // for controls like radiobuttons which are really composite this array
     // holds the ids (not HWNDs!) of the sub controls
     wxArrayLong m_subControls;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxControl)
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxControl);
 };
 
 #endif // _WX_CONTROL_H_

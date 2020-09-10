@@ -4,7 +4,6 @@
 // Author:      Ryan Norton <wxprojects@comcast.net>, Lindsay Mathieson <???>
 // Modified by:
 // Created:     11/07/04
-// RCS-ID:      $Id: activex.cpp 42688 2006-10-29 23:38:37Z VZ $
 // Copyright:   (c) 2003 Lindsay Mathieson, (c) 2005 Ryan Norton
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -30,18 +29,22 @@
     #include "wx/math.h"
 #endif
 
-#include "wx/msw/ole/activex.h"
-// autointerfaces that we only use here
-WX_DECLARE_AUTOOLE(wxAutoIOleInPlaceSite, IOleInPlaceSite)
-WX_DECLARE_AUTOOLE(wxAutoIOleDocument, IOleDocument)
-WX_DECLARE_AUTOOLE(wxAutoIPersistStreamInit, IPersistStreamInit)
-WX_DECLARE_AUTOOLE(wxAutoIAdviseSink, IAdviseSink)
-WX_DECLARE_AUTOOLE(wxAutoIProvideClassInfo, IProvideClassInfo)
-WX_DECLARE_AUTOOLE(wxAutoITypeInfo, ITypeInfo)
-WX_DECLARE_AUTOOLE(wxAutoIConnectionPoint, IConnectionPoint)
-WX_DECLARE_AUTOOLE(wxAutoIConnectionPointContainer, IConnectionPointContainer)
+#include "wx/msw/dc.h"
 
-DEFINE_EVENT_TYPE(wxEVT_ACTIVEX)
+#include "wx/msw/ole/activex.h"
+#include "wx/msw/private.h" // for wxCopyRectToRECT
+
+// autointerfaces that we only use here
+typedef wxAutoOleInterface<IOleInPlaceSite> wxAutoIOleInPlaceSite;
+typedef wxAutoOleInterface<IOleDocument> wxAutoIOleDocument;
+typedef wxAutoOleInterface<IPersistStreamInit> wxAutoIPersistStreamInit;
+typedef wxAutoOleInterface<IAdviseSink> wxAutoIAdviseSink;
+typedef wxAutoOleInterface<IProvideClassInfo> wxAutoIProvideClassInfo;
+typedef wxAutoOleInterface<ITypeInfo> wxAutoITypeInfo;
+typedef wxAutoOleInterface<IConnectionPoint> wxAutoIConnectionPoint;
+typedef wxAutoOleInterface<IConnectionPointContainer> wxAutoIConnectionPointContainer;
+
+wxDEFINE_EVENT( wxEVT_ACTIVEX, wxActiveXEvent );
 
 // Ole class helpers (sort of MFC-like) from wxActiveX
 #define DECLARE_OLE_UNKNOWN(cls)\
@@ -50,15 +53,15 @@ DEFINE_EVENT_TYPE(wxEVT_ACTIVEX)
     {\
         public:\
         LONG l;\
-        TAutoInitInt() : l(0) {}\
+        TAutoInitInt() : l(1) {}\
     };\
     TAutoInitInt refCount, lockCount;\
     static void _GetInterface(cls *self, REFIID iid, void **_interface, const char *&desc);\
     public:\
     LONG GetRefCount();\
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);\
-    ULONG STDMETHODCALLTYPE AddRef();\
-    ULONG STDMETHODCALLTYPE Release();\
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject) wxOVERRIDE;\
+    ULONG STDMETHODCALLTYPE AddRef() wxOVERRIDE;\
+    ULONG STDMETHODCALLTYPE Release() wxOVERRIDE;\
     ULONG STDMETHODCALLTYPE AddLock();\
     ULONG STDMETHODCALLTYPE ReleaseLock()
 
@@ -167,7 +170,7 @@ static void PixelsToHimetric(SIZEL &sz)
         logX = GetDeviceCaps(dc, LOGPIXELSX);
         logY = GetDeviceCaps(dc, LOGPIXELSY);
         ReleaseDC(NULL, dc);
-    };
+    }
 
 #define HIMETRIC_INCH   2540
 #define CONVERT(x, logpixels)   wxMulDivInt32(HIMETRIC_INCH, (x), (logpixels))
@@ -225,16 +228,16 @@ public:
     //***************************IDispatch*****************************
     HRESULT STDMETHODCALLTYPE GetIDsOfNames(REFIID, OLECHAR ** ,
                                             unsigned int , LCID ,
-                                            DISPID * )
+                                            DISPID * ) wxOVERRIDE
     {   return E_NOTIMPL;   }
-    STDMETHOD(GetTypeInfo)(unsigned int, LCID, ITypeInfo **)
+    STDMETHOD(GetTypeInfo)(unsigned int, LCID, ITypeInfo **) wxOVERRIDE
     {   return E_NOTIMPL;   }
-    HRESULT STDMETHODCALLTYPE GetTypeInfoCount(unsigned int *)
+    HRESULT STDMETHODCALLTYPE GetTypeInfoCount(unsigned int *) wxOVERRIDE
     {   return E_NOTIMPL;   }
     HRESULT STDMETHODCALLTYPE Invoke(DISPID dispIdMember, REFIID, LCID,
                             WORD wFlags, DISPPARAMS *,
                             VARIANT * pVarResult, EXCEPINFO *,
-                            unsigned int *)
+                            unsigned int *) wxOVERRIDE
     {
         if (!(wFlags & DISPATCH_PROPERTYGET))
             return S_OK;
@@ -248,24 +251,24 @@ public:
         switch (dispIdMember)
         {
             case DISPID_AMBIENT_MESSAGEREFLECT:
-                V_BOOL(pVarResult)= FALSE;
+                V_BOOL(pVarResult)= VARIANT_FALSE;
                 return S_OK;
 
             case DISPID_AMBIENT_DISPLAYASDEFAULT:
-                V_BOOL(pVarResult)= TRUE;
+                V_BOOL(pVarResult)= VARIANT_TRUE;
                 return S_OK;
 
             case DISPID_AMBIENT_OFFLINEIFNOTCONNECTED:
-                V_BOOL(pVarResult) = TRUE;
+                V_BOOL(pVarResult) = VARIANT_TRUE;
                 return S_OK;
 
             case DISPID_AMBIENT_SILENT:
-                V_BOOL(pVarResult)= TRUE;
+                V_BOOL(pVarResult)= VARIANT_TRUE;
                 return S_OK;
 
             case DISPID_AMBIENT_APPEARANCE:
                 pVarResult->vt = VT_BOOL;
-                pVarResult->boolVal = m_bAmbientAppearance;
+                pVarResult->boolVal = m_bAmbientAppearance ? VARIANT_TRUE : VARIANT_FALSE;
                 break;
 
             case DISPID_AMBIENT_FORECOLOR:
@@ -285,17 +288,17 @@ public:
 
             case DISPID_AMBIENT_USERMODE:
                 pVarResult->vt = VT_BOOL;
-                pVarResult->boolVal = m_window->m_bAmbientUserMode;
+                pVarResult->boolVal = m_window->m_bAmbientUserMode ? VARIANT_TRUE : VARIANT_FALSE;
                 break;
 
             case DISPID_AMBIENT_SHOWGRABHANDLES:
                 pVarResult->vt = VT_BOOL;
-                pVarResult->boolVal = m_bAmbientShowGrabHandles;
+                pVarResult->boolVal = m_bAmbientShowGrabHandles ? VARIANT_TRUE : VARIANT_FALSE;
                 break;
 
             case DISPID_AMBIENT_SHOWHATCHING:
                 pVarResult->vt = VT_BOOL;
-                pVarResult->boolVal = m_bAmbientShowHatching;
+                pVarResult->boolVal = m_bAmbientShowHatching ? VARIANT_TRUE : VARIANT_FALSE;
                 break;
 
             default:
@@ -306,32 +309,32 @@ public:
     }
 
     //**************************IOleWindow***************************
-    HRESULT STDMETHODCALLTYPE GetWindow(HWND * phwnd)
+    HRESULT STDMETHODCALLTYPE GetWindow(HWND * phwnd) wxOVERRIDE
     {
         if (phwnd == NULL)
             return E_INVALIDARG;
         (*phwnd) = m_hWndParent;
         return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE ContextSensitiveHelp(BOOL)
+    HRESULT STDMETHODCALLTYPE ContextSensitiveHelp(BOOL) wxOVERRIDE
     {return S_OK;}
     //**************************IOleInPlaceUIWindow*****************
-    HRESULT STDMETHODCALLTYPE GetBorder(LPRECT lprectBorder)
+    HRESULT STDMETHODCALLTYPE GetBorder(LPRECT lprectBorder) wxOVERRIDE
     {
         if (lprectBorder == NULL)
             return E_INVALIDARG;
         return INPLACE_E_NOTOOLSPACE;
     }
-    HRESULT STDMETHODCALLTYPE RequestBorderSpace(LPCBORDERWIDTHS pborderwidths)
+    HRESULT STDMETHODCALLTYPE RequestBorderSpace(LPCBORDERWIDTHS pborderwidths) wxOVERRIDE
     {
         if (pborderwidths == NULL)
             return E_INVALIDARG;
         return INPLACE_E_NOTOOLSPACE;
     }
-    HRESULT STDMETHODCALLTYPE SetBorderSpace(LPCBORDERWIDTHS)
+    HRESULT STDMETHODCALLTYPE SetBorderSpace(LPCBORDERWIDTHS) wxOVERRIDE
     {return S_OK;}
     HRESULT STDMETHODCALLTYPE SetActiveObject(
-        IOleInPlaceActiveObject *pActiveObject, LPCOLESTR)
+        IOleInPlaceActiveObject *pActiveObject, LPCOLESTR) wxOVERRIDE
     {
         if (pActiveObject)
             pActiveObject->AddRef();
@@ -342,30 +345,30 @@ public:
 
     //********************IOleInPlaceFrame************************
 
-    STDMETHOD(InsertMenus)(HMENU, LPOLEMENUGROUPWIDTHS){return S_OK;}
-    STDMETHOD(SetMenu)(HMENU, HOLEMENU, HWND){  return S_OK;}
-    STDMETHOD(RemoveMenus)(HMENU){return S_OK;}
-    STDMETHOD(SetStatusText)(LPCOLESTR){ return S_OK;}
-    HRESULT STDMETHODCALLTYPE EnableModeless(BOOL){return S_OK;}
-    HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpmsg, WORD)
+    STDMETHOD(InsertMenus)(HMENU, LPOLEMENUGROUPWIDTHS) wxOVERRIDE {return S_OK;}
+    STDMETHOD(SetMenu)(HMENU, HOLEMENU, HWND) wxOVERRIDE {return S_OK;}
+    STDMETHOD(RemoveMenus)(HMENU) wxOVERRIDE {return S_OK;}
+    STDMETHOD(SetStatusText)(LPCOLESTR) wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE EnableModeless(BOOL) wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpmsg, WORD) wxOVERRIDE
     {
         // TODO: send an event with this id
-        if (m_window->m_oleInPlaceActiveObject.Ok())
+        if (m_window->m_oleInPlaceActiveObject.IsOk())
             m_window->m_oleInPlaceActiveObject->TranslateAccelerator(lpmsg);
         return S_FALSE;
     }
 
     //*******************IOleInPlaceSite**************************
-    HRESULT STDMETHODCALLTYPE CanInPlaceActivate(){return S_OK;}
-    HRESULT STDMETHODCALLTYPE OnInPlaceActivate()
+    HRESULT STDMETHODCALLTYPE CanInPlaceActivate() wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE OnInPlaceActivate() wxOVERRIDE
     {   m_bInPlaceActive = true;    return S_OK;    }
-    HRESULT STDMETHODCALLTYPE OnUIActivate()
+    HRESULT STDMETHODCALLTYPE OnUIActivate() wxOVERRIDE
     {   m_bUIActive = true;         return S_OK;    }
     HRESULT STDMETHODCALLTYPE GetWindowContext(IOleInPlaceFrame **ppFrame,
                                         IOleInPlaceUIWindow **ppDoc,
                                         LPRECT lprcPosRect,
                                         LPRECT lprcClipRect,
-                                        LPOLEINPLACEFRAMEINFO lpFrameInfo)
+                                        LPOLEINPLACEFRAMEINFO lpFrameInfo) wxOVERRIDE
     {
         if (ppFrame == NULL || ppDoc == NULL || lprcPosRect == NULL ||
             lprcClipRect == NULL || lpFrameInfo == NULL)
@@ -412,21 +415,21 @@ public:
 
         return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE Scroll(SIZE){return S_OK;}
-    HRESULT STDMETHODCALLTYPE OnUIDeactivate(BOOL)
+    HRESULT STDMETHODCALLTYPE Scroll(SIZE) wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE OnUIDeactivate(BOOL) wxOVERRIDE
     {   m_bUIActive = false;         return S_OK;    }
-    HRESULT STDMETHODCALLTYPE OnInPlaceDeactivate()
+    HRESULT STDMETHODCALLTYPE OnInPlaceDeactivate() wxOVERRIDE
     {   m_bInPlaceActive = false;    return S_OK;    }
-    HRESULT STDMETHODCALLTYPE DiscardUndoState(){return S_OK;}
-    HRESULT STDMETHODCALLTYPE DeactivateAndUndo(){return S_OK; }
-    HRESULT STDMETHODCALLTYPE OnPosRectChange(LPCRECT lprcPosRect)
+    HRESULT STDMETHODCALLTYPE DiscardUndoState() wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE DeactivateAndUndo() wxOVERRIDE {return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnPosRectChange(LPCRECT lprcPosRect) wxOVERRIDE
     {
-        if (m_window->m_oleInPlaceObject.Ok() && lprcPosRect)
+        if (m_window->m_oleInPlaceObject.IsOk() && lprcPosRect)
         {
            //
            // Result of several hours and days of bug hunting -
            // this is called by an object when it wants to resize
-           // itself to something different then our parent window -
+           // itself to something different from our parent window -
            // don't let it :)
            //
 //            m_window->m_oleInPlaceObject->SetObjectRects(
@@ -439,42 +442,22 @@ public:
         return S_OK;
     }
     //*************************IOleInPlaceSiteEx***********************
-    HRESULT STDMETHODCALLTYPE OnInPlaceActivateEx(BOOL * pfNoRedraw, DWORD)
+    HRESULT STDMETHODCALLTYPE OnInPlaceActivateEx(BOOL * pfNoRedraw, DWORD) wxOVERRIDE
     {
-#ifdef __WXWINCE__
-        IRunnableObject* runnable = NULL;
-        HRESULT hr = QueryInterface(
-            IID_IRunnableObject, (void**)(& runnable));
-        if (SUCCEEDED(hr))
-        {
-            runnable->LockRunning(TRUE, FALSE);
-        }
-#else
         OleLockRunning(m_window->m_ActiveX, TRUE, FALSE);
-#endif
         if (pfNoRedraw)
             (*pfNoRedraw) = FALSE;
         return S_OK;
     }
 
-    HRESULT STDMETHODCALLTYPE OnInPlaceDeactivateEx(BOOL)
+    HRESULT STDMETHODCALLTYPE OnInPlaceDeactivateEx(BOOL) wxOVERRIDE
     {
-#ifdef __WXWINCE__
-        IRunnableObject* runnable = NULL;
-        HRESULT hr = QueryInterface(
-            IID_IRunnableObject, (void**)(& runnable));
-        if (SUCCEEDED(hr))
-        {
-            runnable->LockRunning(FALSE, FALSE);
-        }
-#else
         OleLockRunning(m_window->m_ActiveX, FALSE, FALSE);
-#endif
         return S_OK;
     }
-    STDMETHOD(RequestUIActivate)(){ return S_OK;}
+    STDMETHOD(RequestUIActivate)() wxOVERRIDE { return S_OK;}
     //*************************IOleClientSite**************************
-    HRESULT STDMETHODCALLTYPE SaveObject(){return S_OK;}
+    HRESULT STDMETHODCALLTYPE SaveObject() wxOVERRIDE {return S_OK;}
     const char *OleGetMonikerToStr(DWORD dwAssign)
     {
         switch (dwAssign)
@@ -497,8 +480,8 @@ public:
         default                     : return "Bad Enum";
         }
     }
-    STDMETHOD(GetMoniker)(DWORD, DWORD, IMoniker **){return E_FAIL;}
-    HRESULT STDMETHODCALLTYPE GetContainer(LPOLECONTAINER * ppContainer)
+    STDMETHOD(GetMoniker)(DWORD, DWORD, IMoniker **) wxOVERRIDE {return E_FAIL;}
+    HRESULT STDMETHODCALLTYPE GetContainer(LPOLECONTAINER * ppContainer) wxOVERRIDE
     {
         if (ppContainer == NULL)
             return E_INVALIDARG;
@@ -507,30 +490,28 @@ public:
         wxASSERT(SUCCEEDED(hr));
         return hr;
     }
-    HRESULT STDMETHODCALLTYPE ShowObject()
+    HRESULT STDMETHODCALLTYPE ShowObject() wxOVERRIDE
     {
         if (m_window->m_oleObjectHWND)
             ::ShowWindow(m_window->m_oleObjectHWND, SW_SHOW);
         return S_OK;
     }
-    STDMETHOD(OnShowWindow)(BOOL){return S_OK;}
-    STDMETHOD(RequestNewObjectLayout)(){return E_NOTIMPL;}
+    STDMETHOD(OnShowWindow)(BOOL) wxOVERRIDE {return S_OK;}
+    STDMETHOD(RequestNewObjectLayout)() wxOVERRIDE {return E_NOTIMPL;}
     //********************IParseDisplayName***************************
     HRESULT STDMETHODCALLTYPE ParseDisplayName(
-        IBindCtx *, LPOLESTR, ULONG *, IMoniker **){return E_NOTIMPL;}
+        IBindCtx *, LPOLESTR, ULONG *, IMoniker **) wxOVERRIDE {return E_NOTIMPL;}
     //********************IOleContainer*******************************
-    STDMETHOD(EnumObjects)(DWORD, IEnumUnknown **){return E_NOTIMPL;}
-    HRESULT STDMETHODCALLTYPE LockContainer(BOOL){return S_OK;}
+    STDMETHOD(EnumObjects)(DWORD, IEnumUnknown **) wxOVERRIDE {return E_NOTIMPL;}
+    HRESULT STDMETHODCALLTYPE LockContainer(BOOL) wxOVERRIDE {return S_OK;}
     //********************IOleItemContainer***************************
     HRESULT STDMETHODCALLTYPE
-    #if 0 // defined(__WXWINCE__) && __VISUALC__ < 1400
-    GetObject
-    #elif defined(_UNICODE)
+    #if defined(_UNICODE)
     GetObjectW
     #else
     GetObjectA
     #endif
-    (LPOLESTR pszItem, DWORD, IBindCtx *, REFIID, void ** ppvObject)
+    (LPOLESTR pszItem, DWORD, IBindCtx *, REFIID, void ** ppvObject) wxOVERRIDE
     {
         if (pszItem == NULL || ppvObject == NULL)
             return E_INVALIDARG;
@@ -538,43 +519,43 @@ public:
         return MK_E_NOOBJECT;
     }
     HRESULT STDMETHODCALLTYPE GetObjectStorage(
-        LPOLESTR pszItem, IBindCtx * , REFIID, void ** ppvStorage)
+        LPOLESTR pszItem, IBindCtx * , REFIID, void ** ppvStorage) wxOVERRIDE
     {
         if (pszItem == NULL || ppvStorage == NULL)
             return E_INVALIDARG;
         *ppvStorage = NULL;
         return MK_E_NOOBJECT;
     }
-    HRESULT STDMETHODCALLTYPE IsRunning(LPOLESTR pszItem)
+    HRESULT STDMETHODCALLTYPE IsRunning(LPOLESTR pszItem) wxOVERRIDE
     {
         if (pszItem == NULL)
             return E_INVALIDARG;
         return MK_E_NOOBJECT;
     }
     //***********************IOleControlSite*****************************
-    HRESULT STDMETHODCALLTYPE OnControlInfoChanged()
+    HRESULT STDMETHODCALLTYPE OnControlInfoChanged() wxOVERRIDE
     {return S_OK;}
-    HRESULT STDMETHODCALLTYPE LockInPlaceActive(BOOL fLock)
+    HRESULT STDMETHODCALLTYPE LockInPlaceActive(BOOL fLock) wxOVERRIDE
     {
         m_bInPlaceLocked = (fLock) ? true : false;
         return S_OK;
     }
-    HRESULT STDMETHODCALLTYPE GetExtendedControl(IDispatch **)
+    HRESULT STDMETHODCALLTYPE GetExtendedControl(IDispatch **) wxOVERRIDE
     {return E_NOTIMPL;}
     HRESULT STDMETHODCALLTYPE TransformCoords(
-        POINTL * pPtlHimetric, POINTF * pPtfContainer, DWORD)
+        POINTL * pPtlHimetric, POINTF * pPtfContainer, DWORD) wxOVERRIDE
     {
         if (pPtlHimetric == NULL || pPtfContainer == NULL)
             return E_INVALIDARG;
         return E_NOTIMPL;
     }
-    HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG, DWORD)
+    HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG, DWORD) wxOVERRIDE
     {return E_NOTIMPL;}
-    HRESULT STDMETHODCALLTYPE OnFocus(BOOL){return S_OK;}
-    HRESULT STDMETHODCALLTYPE ShowPropertyFrame(){return E_NOTIMPL;}
+    HRESULT STDMETHODCALLTYPE OnFocus(BOOL) wxOVERRIDE {return S_OK;}
+    HRESULT STDMETHODCALLTYPE ShowPropertyFrame() wxOVERRIDE {return E_NOTIMPL;}
     //**************************IOleCommandTarget***********************
     HRESULT STDMETHODCALLTYPE QueryStatus(const GUID *, ULONG cCmds,
-                                OLECMD prgCmds[], OLECMDTEXT *)
+                                OLECMD prgCmds[], OLECMDTEXT *) wxOVERRIDE
     {
         if (prgCmds == NULL) return E_INVALIDARG;
         for (ULONG nCmd = 0; nCmd < cCmds; nCmd++)
@@ -586,23 +567,23 @@ public:
     }
 
     HRESULT STDMETHODCALLTYPE Exec(const GUID *, DWORD,
-                            DWORD, VARIANTARG *, VARIANTARG *)
+                            DWORD, VARIANTARG *, VARIANTARG *) wxOVERRIDE
     {return OLECMDERR_E_NOTSUPPORTED;}
 
     //**********************IAdviseSink************************************
-    void STDMETHODCALLTYPE OnDataChange(FORMATETC *, STGMEDIUM *) {}
-    void STDMETHODCALLTYPE OnViewChange(DWORD, LONG) {}
-    void STDMETHODCALLTYPE OnRename(IMoniker *){}
-    void STDMETHODCALLTYPE OnSave(){}
-    void STDMETHODCALLTYPE OnClose(){}
+    void STDMETHODCALLTYPE OnDataChange(FORMATETC *, STGMEDIUM *) wxOVERRIDE {}
+    void STDMETHODCALLTYPE OnViewChange(DWORD, LONG) wxOVERRIDE {}
+    void STDMETHODCALLTYPE OnRename(IMoniker *) wxOVERRIDE {}
+    void STDMETHODCALLTYPE OnSave() wxOVERRIDE {}
+    void STDMETHODCALLTYPE OnClose() wxOVERRIDE {}
 
     //**********************IOleDocumentSite***************************
     HRESULT STDMETHODCALLTYPE ActivateMe(
-        IOleDocumentView __RPC_FAR *pViewToActivate)
+        IOleDocumentView __RPC_FAR *pViewToActivate) wxOVERRIDE
     {
         wxAutoIOleInPlaceSite inPlaceSite(
             IID_IOleInPlaceSite, (IDispatch *) this);
-        if (!inPlaceSite.Ok())
+        if (!inPlaceSite.IsOk())
             return E_FAIL;
 
         if (pViewToActivate)
@@ -614,7 +595,7 @@ public:
         {
             wxAutoIOleDocument oleDoc(
                 IID_IOleDocument, m_window->m_oleObject);
-            if (! oleDoc.Ok())
+            if (! oleDoc.IsOk())
                 return E_FAIL;
 
             HRESULT hr = oleDoc->CreateView(inPlaceSite, NULL,
@@ -629,6 +610,10 @@ public:
         return S_OK;
     }
 
+    friend bool QueryClientSiteInterface(FrameSite *self, REFIID iid, void **_interface, const char *&desc)
+    {
+        return self->m_window->QueryClientSiteInterface(iid,_interface,desc);
+    }
 
 protected:
     wxActiveXContainer * m_window;
@@ -666,6 +651,7 @@ DEFINE_OLE_TABLE(FrameSite)
     OLE_IINTERFACE(IOleDocumentSite)
     OLE_IINTERFACE(IAdviseSink)
     OLE_IINTERFACE(IOleControlSite)
+    OLE_INTERFACE_CUSTOM(QueryClientSiteInterface)
 END_OLE_TABLE
 
 
@@ -690,6 +676,13 @@ private:
     friend bool wxActiveXEventsInterface(wxActiveXEvents *self, REFIID iid, void **_interface, const char *&desc);
 
 public:
+
+    // a pointer to this static variable is used as an 'invalid_entry_marker'
+    // wxVariants containing a void* to this variables are 'empty' in the sense
+    // that the actual ActiveX OLE parameter has not been converted and inserted
+    // into m_params.
+    static wxVariant ms_invalidEntryMarker;
+
     wxActiveXEvents(wxActiveXContainer *ax) : m_activeX(ax), m_haveCustomId(false) {}
     wxActiveXEvents(wxActiveXContainer *ax, REFIID iid) : m_activeX(ax), m_customId(iid), m_haveCustomId(true) {}
     virtual ~wxActiveXEvents()
@@ -697,27 +690,27 @@ public:
     }
 
     // IDispatch
-    STDMETHODIMP GetIDsOfNames(REFIID, OLECHAR**, unsigned int, LCID, DISPID*)
+    STDMETHODIMP GetIDsOfNames(REFIID, OLECHAR**, unsigned int, LCID, DISPID*) wxOVERRIDE
     {
         return E_NOTIMPL;
     }
 
-    STDMETHODIMP GetTypeInfo(unsigned int, LCID, ITypeInfo**)
+    STDMETHODIMP GetTypeInfo(unsigned int, LCID, ITypeInfo**) wxOVERRIDE
     {
         return E_NOTIMPL;
     }
 
-    STDMETHODIMP GetTypeInfoCount(unsigned int*)
+    STDMETHODIMP GetTypeInfoCount(unsigned int*) wxOVERRIDE
     {
         return E_NOTIMPL;
     }
 
 
-    STDMETHODIMP Invoke(DISPID dispIdMember, REFIID WXUNUSED(riid),
-                        LCID WXUNUSED(lcid),
+    STDMETHODIMP Invoke(DISPID dispIdMember, REFIID riid,
+                        LCID lcid,
                           WORD wFlags, DISPPARAMS * pDispParams,
-                          VARIANT * WXUNUSED(pVarResult), EXCEPINFO * WXUNUSED(pExcepInfo),
-                          unsigned int * WXUNUSED(puArgErr))
+                          VARIANT * pVarResult, EXCEPINFO * pExcepInfo,
+                          unsigned int * puArgErr) wxOVERRIDE
     {
         if (wFlags & (DISPATCH_PROPERTYGET | DISPATCH_PROPERTYPUT | DISPATCH_PROPERTYPUTREF))
             return E_NOTIMPL;
@@ -729,31 +722,37 @@ public:
         // Dispatch Event
         wxActiveXEvent  event;
         event.SetEventType(wxEVT_ACTIVEX);
+        // Create an empty list of Variants
+        // Note that the event parameters use lazy evaluation
+        // They are not actually created until wxActiveXEvent::operator[] is called
         event.m_params.NullList();
         event.m_dispid = dispIdMember;
 
-        // arguments
-        if (pDispParams)
-        {
-            for (DWORD i = pDispParams->cArgs; i > 0; i--)
-            {
-                VARIANTARG& va = pDispParams->rgvarg[i-1];
-                wxVariant vx;
+        // save the native (MSW) event parameters for event handlers that need to access them
+        // this can be done on the stack since wxActiveXEvent is also allocated on the stack
+        wxActiveXEventNativeMSW eventParameters(dispIdMember, riid, lcid, wFlags, pDispParams, pVarResult, pExcepInfo, puArgErr);
+        event.SetClientData(&eventParameters);
 
-//                        vx.SetName(px.name);
-                wxConvertOleToVariant(va, vx);
-                event.m_params.Append(vx);
-            }
-        }
+        // The event parameters are not copied to event.m_params until they are actually
+        // referenced in wxActiveXEvent::operator[]
+        // This increases performance and avoids error messages and/or crashes
+        // when the event has parameters that are not (yet or never) supported
+        // by wxConvertOleToVariant
 
         // process the events from the activex method
-           m_activeX->ProcessEvent(event);
+        m_activeX->ProcessEvent(event);
         for (DWORD i = 0; i < pDispParams->cArgs; i++)
         {
-            VARIANTARG& va = pDispParams->rgvarg[i];
-            wxVariant& vx =
-                event.m_params[pDispParams->cArgs - i - 1];
-            wxConvertVariantToOle(vx, va);
+            size_t params_index = pDispParams->cArgs - i - 1;
+            if (params_index < event.m_params.GetCount()) {
+                wxVariant &vx = event.m_params[params_index];
+                // copy the result back to pDispParams only if the event has been accessed
+                //  i.e.  if vx != ms_invalidEntryMarker
+                if (!vx.IsType(wxActiveXEvents::ms_invalidEntryMarker.GetType()) || vx!=ms_invalidEntryMarker) {
+                    VARIANTARG& va = pDispParams->rgvarg[i];
+                    wxConvertVariantToOle(vx, va);
+                }
+            }
         }
 
         if(event.GetSkipped())
@@ -763,11 +762,61 @@ public:
     }
 };
 
+namespace
+{
+// just a unique global variable
+const int invalid_entry_marker = 0;
+}
+
+wxVariant wxActiveXEvents::ms_invalidEntryMarker((void*)&invalid_entry_marker);
+
+size_t wxActiveXEvent::ParamCount() const
+{
+    wxActiveXEventNativeMSW *native=GetNativeParameters();
+    // 'native' will always be != if the event has been created
+    // for an actual active X event.
+    // But it may be zero if the event has been created by wx program code.
+    if (native)
+        return native->pDispParams ? native->pDispParams->cArgs : 0;
+
+    return m_params.GetCount();
+}
+
+wxVariant &wxActiveXEvent::operator [](size_t idx)
+{
+    wxASSERT(idx < ParamCount());
+    wxActiveXEventNativeMSW *native=GetNativeParameters();
+    // 'native' will always be != if the event has been created
+    // for an actual active X event.
+    // But it may be zero if the event has been created by wx program code.
+    if (native)
+    {
+        while ( m_params.GetCount()<=idx )
+        {
+            m_params.Append(wxActiveXEvents::ms_invalidEntryMarker);
+        }
+
+        wxVariant& vx = m_params[idx];
+        if ( vx.IsType(wxActiveXEvents::ms_invalidEntryMarker.GetType()) &&
+                vx == wxActiveXEvents::ms_invalidEntryMarker)
+        {
+            // copy the _real_ parameter into this one
+            // NOTE: m_params stores the parameters in *reverse* order.
+            // Whyever, but this was the case in the original implementation of
+            // wxActiveXEvents::Invoke
+            // Keep this convention.
+            VARIANTARG& va = native->pDispParams->rgvarg[ native->pDispParams->cArgs - idx - 1 ];
+            wxConvertOleToVariant(va, vx);
+        }
+        return vx;
+    }
+    return m_params[idx];
+}
+
 bool wxActiveXEventsInterface(wxActiveXEvents *self, REFIID iid, void **_interface, const char *&desc)
 {
     if (self->m_haveCustomId && IsEqualIID(iid, self->m_customId))
     {
-//        WXOLE_TRACE("Found Custom Dispatch Interface");
         *_interface = (IUnknown *) (IDispatch *) self;
         desc = "Custom Dispatch Interface";
         return true;
@@ -811,13 +860,13 @@ wxActiveXContainer::wxActiveXContainer(wxWindow * parent,
 wxActiveXContainer::~wxActiveXContainer()
 {
     // disconnect connection points
-    if (m_oleInPlaceObject.Ok())
+    if (m_oleInPlaceObject.IsOk())
     {
         m_oleInPlaceObject->InPlaceDeactivate();
         m_oleInPlaceObject->UIDeactivate();
     }
 
-    if (m_oleObject.Ok())
+    if (m_oleObject.IsOk())
     {
         if (m_docAdviseCookie != 0)
             m_oleObject->Unadvise(m_docAdviseCookie);
@@ -827,7 +876,23 @@ wxActiveXContainer::~wxActiveXContainer()
         m_oleObject->Close(OLECLOSE_NOSAVE);
         m_oleObject->SetClientSite(NULL);
     }
+
+    // m_clientSite uses m_frameSite so destroy it first
+    m_clientSite.Free();
+    delete m_frameSite;
+
+    // our window doesn't belong to us, don't destroy it
+    m_hWnd = NULL;
 }
+
+// VZ: we might want to really report an error instead of just asserting here
+#if wxDEBUG_LEVEL
+    #define CHECK_HR(hr) \
+        wxASSERT_LEVEL_2_MSG( SUCCEEDED(hr), \
+                wxString::Format("HRESULT = %X", (unsigned)(hr)) )
+#else
+    #define CHECK_HR(hr) wxUnusedVar(hr)
+#endif
 
 //---------------------------------------------------------------------------
 // wxActiveXContainer::CreateActiveX
@@ -841,20 +906,21 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
 {
     HRESULT hret;
     hret = m_ActiveX.QueryInterface(iid, pUnk);
-    wxASSERT(SUCCEEDED(hret));
+    CHECK_HR(hret);
 
     // FrameSite
-    FrameSite *frame = new FrameSite(m_realparent, this);
+    m_frameSite = new FrameSite(m_realparent, this);
     // oleClientSite
     hret = m_clientSite.QueryInterface(
-        IID_IOleClientSite, (IDispatch *) frame);
-    wxASSERT(SUCCEEDED(hret));
+        IID_IOleClientSite, (IDispatch *) m_frameSite);
+    CHECK_HR(hret);
     // adviseSink
-    wxAutoIAdviseSink adviseSink(IID_IAdviseSink, (IDispatch *) frame);
-    wxASSERT(adviseSink.Ok());
+    wxAutoIAdviseSink adviseSink(IID_IAdviseSink, (IDispatch *) m_frameSite);
+    wxASSERT(adviseSink.IsOk());
 
     // Get Dispatch interface
     hret = m_Dispatch.QueryInterface(IID_IDispatch, m_ActiveX);
+    CHECK_HR(hret);
 
     //
     // SETUP TYPEINFO AND ACTIVEX EVENTS
@@ -862,17 +928,18 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
 
     // get type info via class info
     wxAutoIProvideClassInfo classInfo(IID_IProvideClassInfo, m_ActiveX);
-    wxASSERT(classInfo.Ok());
+    wxASSERT(classInfo.IsOk());
 
     // type info
     wxAutoITypeInfo typeInfo;
     hret = classInfo->GetClassInfo(typeInfo.GetRef());
-    wxASSERT(typeInfo.Ok());
+    CHECK_HR(hret);
+    wxASSERT(typeInfo.IsOk());
 
     // TYPEATTR
     TYPEATTR *ta = NULL;
     hret = typeInfo->GetTypeAttr(&ta);
-    wxASSERT(ta);
+    CHECK_HR(hret);
 
     // this should be a TKIND_COCLASS
     wxASSERT(ta->typekind == TKIND_COCLASS);
@@ -890,8 +957,10 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
         // get dispatch type info interface
         wxAutoITypeInfo  ti;
         hret = typeInfo->GetRefTypeInfo(rt, ti.GetRef());
-        if (! ti.Ok())
+        if (! ti.IsOk())
             continue;
+
+        CHECK_HR(hret);
 
         // check if default event sink
         bool defEventSink = false;
@@ -916,36 +985,47 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
 
         // wxAutoOleInterface<> assumes a ref has already been added
         // TYPEATTR
-        TYPEATTR *ta = NULL;
-        hret = ti->GetTypeAttr(&ta);
-        wxASSERT(ta);
+        TYPEATTR *ta2 = NULL;
+        hret = ti->GetTypeAttr(&ta2);
+        CHECK_HR(hret);
 
-        if (ta->typekind == TKIND_DISPATCH)
+        if (ta2->typekind == TKIND_DISPATCH)
         {
-            // WXOLE_TRACEOUT("GUID = " << GetIIDName(ta->guid).c_str());
+            // WXOLE_TRACEOUT("GUID = " << GetIIDName(ta2->guid).c_str());
             if (defEventSink)
             {
                 wxAutoIConnectionPoint    cp;
                 DWORD                    adviseCookie = 0;
 
                 wxAutoIConnectionPointContainer cpContainer(IID_IConnectionPointContainer, m_ActiveX);
-                wxASSERT( cpContainer.Ok());
+                wxASSERT( cpContainer.IsOk());
 
-                HRESULT hret =
-                    cpContainer->FindConnectionPoint(ta->guid, cp.GetRef());
-                wxASSERT ( SUCCEEDED(hret));
+                hret = cpContainer->FindConnectionPoint(ta2->guid, cp.GetRef());
 
-                IDispatch* disp;
-                frame->QueryInterface(IID_IDispatch, (void**)&disp);
-                hret = cp->Advise(new wxActiveXEvents(this, ta->guid),
-                                  &adviseCookie);
-                wxASSERT_MSG( SUCCEEDED(hret),
-                    wxString::Format(wxT("Cannot connect!\nHRESULT:%X"), (unsigned int)hret)
-                            );
+                // Notice that the return value of CONNECT_E_NOCONNECTION is
+                // expected if the interface doesn't support connection points.
+                if ( hret != CONNECT_E_NOCONNECTION )
+                {
+                    CHECK_HR(hret);
+                }
+
+                if ( cp )
+                {
+                    wxActiveXEvents * const
+                        events = new wxActiveXEvents(this, ta2->guid);
+                    hret = cp->Advise(events, &adviseCookie);
+
+                    // We don't need this object any more and cp will keep a
+                    // reference to it if it needs it, i.e. if Advise()
+                    // succeeded.
+                    events->Release();
+
+                    CHECK_HR(hret);
+                }
             }
         }
 
-        ti->ReleaseTypeAttr(ta);
+        ti->ReleaseTypeAttr(ta2);
     }
 
     // free
@@ -957,15 +1037,17 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
 
     // Get IOleObject interface
     hret = m_oleObject.QueryInterface(IID_IOleObject, m_ActiveX);
-    wxASSERT(SUCCEEDED(hret));
+    CHECK_HR(hret);
 
     // get IViewObject Interface
     hret = m_viewObject.QueryInterface(IID_IViewObject, m_ActiveX);
-    wxASSERT(SUCCEEDED(hret));
+    CHECK_HR(hret);
 
     // document advise
     m_docAdviseCookie = 0;
     hret = m_oleObject->Advise(adviseSink, &m_docAdviseCookie);
+    CHECK_HR(hret);
+
     // TODO:Needed?
 //    hret = m_viewObject->SetAdvise(DVASPECT_CONTENT, 0, adviseSink);
     m_oleObject->SetHostNames(L"wxActiveXContainer", NULL);
@@ -976,12 +1058,12 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
     // Get IOleInPlaceObject interface
     hret = m_oleInPlaceObject.QueryInterface(
         IID_IOleInPlaceObject, m_ActiveX);
-    wxASSERT(SUCCEEDED(hret));
+    CHECK_HR(hret);
 
     // status
     DWORD dwMiscStatus;
     m_oleObject->GetMiscStatus(DVASPECT_CONTENT, &dwMiscStatus);
-    wxASSERT(SUCCEEDED(hret));
+    CHECK_HR(hret);
 
     // set client site first ?
     if (dwMiscStatus & OLEMISC_SETCLIENTSITEFIRST)
@@ -992,43 +1074,50 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
     wxAutoIPersistStreamInit
         pPersistStreamInit(IID_IPersistStreamInit, m_oleObject);
 
-    if (pPersistStreamInit.Ok())
+    if (pPersistStreamInit.IsOk())
     {
         hret = pPersistStreamInit->InitNew();
+        CHECK_HR(hret);
     }
 
     if (! (dwMiscStatus & OLEMISC_SETCLIENTSITEFIRST))
         m_oleObject->SetClientSite(m_clientSite);
 
 
-    RECT posRect;
-    ::GetClientRect((HWND)m_realparent->GetHWND(), &posRect);
-
     m_oleObjectHWND = 0;
-
-    if (m_oleInPlaceObject.Ok())
-    {
-        hret = m_oleInPlaceObject->GetWindow(&m_oleObjectHWND);
-        if (SUCCEEDED(hret))
-            ::SetActiveWindow(m_oleObjectHWND);
-    }
 
 
     if (! (dwMiscStatus & OLEMISC_INVISIBLEATRUNTIME))
     {
-        if (posRect.right > 0 && posRect.bottom > 0 &&
-            m_oleInPlaceObject.Ok())
-                m_oleInPlaceObject->SetObjectRects(&posRect, &posRect);
+        RECT posRect;
+        wxCopyRectToRECT(m_realparent->GetClientSize(), posRect);
 
         hret = m_oleObject->DoVerb(OLEIVERB_INPLACEACTIVATE, NULL,
             m_clientSite, 0, (HWND)m_realparent->GetHWND(), &posRect);
+        CHECK_HR(hret);
+
+        if (m_oleInPlaceObject.IsOk())
+        {
+            hret = m_oleInPlaceObject->GetWindow(&m_oleObjectHWND);
+            CHECK_HR(hret);
+            ::SetActiveWindow(m_oleObjectHWND);
+        }
+
+        if (posRect.right > 0 && posRect.bottom > 0 &&
+            m_oleInPlaceObject.IsOk())
+        {
+            m_oleInPlaceObject->SetObjectRects(&posRect, &posRect);
+        }
+
         hret = m_oleObject->DoVerb(OLEIVERB_SHOW, 0, m_clientSite, 0,
             (HWND)m_realparent->GetHWND(), &posRect);
+        CHECK_HR(hret);
     }
 
-    if (! m_oleObjectHWND && m_oleInPlaceObject.Ok())
+    if (! m_oleObjectHWND && m_oleInPlaceObject.IsOk())
     {
         hret = m_oleInPlaceObject->GetWindow(&m_oleObjectHWND);
+        CHECK_HR(hret);
     }
 
     if (m_oleObjectHWND)
@@ -1042,14 +1131,9 @@ void wxActiveXContainer::CreateActiveX(REFIID iid, IUnknown* pUnk)
         wxWindow* pWnd = m_realparent;
         int id = m_realparent->GetId();
 
-        pWnd->Connect(id, wxEVT_SIZE,
-            wxSizeEventHandler(wxActiveXContainer::OnSize), 0, this);
-//        this->Connect(GetId(), wxEVT_PAINT,
-//            wxPaintEventHandler(wxActiveXContainer::OnPaint), 0, this);
-        pWnd->Connect(id, wxEVT_SET_FOCUS,
-            wxFocusEventHandler(wxActiveXContainer::OnSetFocus), 0, this);
-        pWnd->Connect(id, wxEVT_KILL_FOCUS,
-            wxFocusEventHandler(wxActiveXContainer::OnKillFocus), 0, this);
+        pWnd->Bind(wxEVT_SIZE, &wxActiveXContainer::OnSize, this, id);
+        pWnd->Bind(wxEVT_SET_FOCUS, &wxActiveXContainer::OnSetFocus, this, id);
+        pWnd->Bind(wxEVT_KILL_FOCUS, &wxActiveXContainer::OnKillFocus, this, id);
     }
 }
 
@@ -1070,14 +1154,12 @@ void wxActiveXContainer::OnSize(wxSizeEvent& event)
     posRect.right = w;
     posRect.bottom = h;
 
-    if (w <= 0 && h <= 0)
+    if (w <= 0 || h <= 0)
         return;
 
     // extents are in HIMETRIC units
-    if (m_oleObject.Ok())
+    if (m_oleObject.IsOk())
     {
-        m_oleObject->DoVerb(OLEIVERB_HIDE, 0, m_clientSite, 0,
-            (HWND)m_realparent->GetHWND(), &posRect);
 
         SIZEL sz = {w, h};
         PixelsToHimetric(sz);
@@ -1088,11 +1170,9 @@ void wxActiveXContainer::OnSize(wxSizeEvent& event)
         if (sz2.cx !=  sz.cx || sz.cy != sz2.cy)
             m_oleObject->SetExtent(DVASPECT_CONTENT, &sz);
 
-        m_oleObject->DoVerb(OLEIVERB_SHOW, 0, m_clientSite, 0,
-            (HWND)m_realparent->GetHWND(), &posRect);
     }
 
-    if (m_oleInPlaceObject.Ok())
+    if (m_oleInPlaceObject.IsOk())
         m_oleInPlaceObject->SetObjectRects(&posRect, &posRect);
 
     event.Skip();
@@ -1117,14 +1197,11 @@ void wxActiveXContainer::OnPaint(wxPaintEvent& WXUNUSED(event))
         posRect.right = w;
         posRect.bottom = h;
 
-#if !(defined(_WIN32_WCE) && _WIN32_WCE < 400)
         ::RedrawWindow(m_oleObjectHWND, NULL, NULL, RDW_INTERNALPAINT);
-#else
-        ::InvalidateRect(m_oleObjectHWND, NULL, false);
-#endif
         RECTL *prcBounds = (RECTL *) &posRect;
+        wxMSWDCImpl *msw = wxDynamicCast( dc.GetImpl() , wxMSWDCImpl );
         m_viewObject->Draw(DVASPECT_CONTENT, -1, NULL, NULL, NULL,
-            (HDC)dc.GetHDC(), prcBounds, NULL, NULL, 0);
+            (HDC)msw->GetHDC(), prcBounds, NULL, NULL, 0);
     }
 }
 
@@ -1135,7 +1212,7 @@ void wxActiveXContainer::OnPaint(wxPaintEvent& WXUNUSED(event))
 //---------------------------------------------------------------------------
 void wxActiveXContainer::OnSetFocus(wxFocusEvent& event)
 {
-    if (m_oleInPlaceActiveObject.Ok())
+    if (m_oleInPlaceActiveObject.IsOk())
         m_oleInPlaceActiveObject->OnFrameWindowActivate(TRUE);
 
     event.Skip();
@@ -1149,10 +1226,39 @@ void wxActiveXContainer::OnSetFocus(wxFocusEvent& event)
 //---------------------------------------------------------------------------
 void wxActiveXContainer::OnKillFocus(wxFocusEvent& event)
 {
-    if (m_oleInPlaceActiveObject.Ok())
+    if (m_oleInPlaceActiveObject.IsOk())
         m_oleInPlaceActiveObject->OnFrameWindowActivate(FALSE);
 
     event.Skip();
+}
+
+//---------------------------------------------------------------------------
+// wxActiveXContainer::MSWTranslateMessage
+//
+// Called for every message that needs to be translated.
+// Some controls might need more keyboard keys to process (CTRL-C, CTRL-A etc),
+// In that case TranslateAccelerator should always be called first.
+//---------------------------------------------------------------------------
+bool wxActiveXContainer::MSWTranslateMessage(WXMSG* pMsg)
+{
+    if(m_oleInPlaceActiveObject.IsOk() && m_oleInPlaceActiveObject->TranslateAccelerator(pMsg) == S_OK)
+    {
+        return true;
+    }
+    return wxWindow::MSWTranslateMessage(pMsg);
+}
+
+//---------------------------------------------------------------------------
+// wxActiveXContainer::QueryClientSiteInterface
+//
+// Called in the host's site's query method for other interfaces.
+//---------------------------------------------------------------------------
+bool wxActiveXContainer::QueryClientSiteInterface(REFIID iid, void **_interface, const char *&desc)
+{
+    wxUnusedVar(iid);
+    wxUnusedVar(_interface);
+    wxUnusedVar(desc);
+    return false;
 }
 
 #endif // wxUSE_ACTIVEX

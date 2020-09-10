@@ -3,13 +3,15 @@
 // Purpose:     wxDisplay class
 // Author:      Royce Mitchell III, Vadim Zeitlin
 // Created:     06/21/02
-// RCS-ID:      $Id: display.h 49804 2007-11-10 01:09:42Z VZ $
 // Copyright:   (c) 2002-2006 wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_DISPLAY_H_BASE_
 #define _WX_DISPLAY_H_BASE_
+
+#include "wx/defs.h"
+#include "wx/gdicmn.h"      // wxSize
 
 // NB: no #if wxUSE_DISPLAY here, the display geometry part of this class (but
 //     not the video mode stuff) is always available but if wxUSE_DISPLAY == 0
@@ -22,7 +24,7 @@
     WX_DECLARE_EXPORTED_OBJARRAY(wxVideoMode, wxArrayVideoModes);
 
     // default, uninitialized, video mode object
-    extern WXDLLEXPORT_DATA(const wxVideoMode) wxDefaultVideoMode;
+    extern WXDLLIMPEXP_DATA_CORE(const wxVideoMode) wxDefaultVideoMode;
 #endif // wxUSE_DISPLAY
 
 class WXDLLIMPEXP_FWD_CORE wxWindow;
@@ -37,7 +39,7 @@ class WXDLLIMPEXP_FWD_CORE wxDisplayImpl;
 // wxDisplay: represents a display/monitor attached to the system
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxDisplay
+class WXDLLIMPEXP_CORE wxDisplay
 {
 public:
     // initialize the object containing all information about the given
@@ -47,9 +49,12 @@ public:
     // primary display and the only one which is always supported
     wxDisplay(unsigned n = 0);
 
+    // create display object corresponding to the display of the given window
+    // or the default one if the window display couldn't be found
+    explicit wxDisplay(const wxWindow* window);
+
     // dtor is not virtual as this is a concrete class not meant to be derived
     // from
-    ~wxDisplay();
 
 
     // return the number of available displays, valid parameters to
@@ -62,7 +67,7 @@ public:
 
     // find the display where the given window lies, return wxNOT_FOUND if it
     // is not shown at all
-    static int GetFromWindow(wxWindow *window);
+    static int GetFromWindow(const wxWindow *window);
 
 
     // return true if the object was initialized successfully
@@ -73,6 +78,12 @@ public:
 
     // get the client area of the display, i.e. without taskbars and such
     wxRect GetClientArea() const;
+
+    // get the depth, i.e. number of bits per pixel (0 if unknown)
+    int GetDepth() const;
+
+    // get the resolution of this monitor in pixels per inch
+    wxSize GetPPI() const;
 
     // name may be empty
     wxString GetName() const;
@@ -104,6 +115,11 @@ public:
     void ResetMode() { (void)ChangeMode(); }
 #endif // wxUSE_DISPLAY
 
+    // If the implementation caches any information about the displays, calling
+    // this function clears it -- this should be done e.g. after a display
+    // [dis]connection.
+    static void InvalidateCache();
+
 private:
     // returns the factory used to implement our static methods and create new
     // displays
@@ -122,7 +138,7 @@ private:
     wxDisplayImpl *m_impl;
 
 
-    DECLARE_NO_COPY_CLASS(wxDisplay)
+    wxDECLARE_NO_COPY_CLASS(wxDisplay);
 };
 
 #endif // _WX_DISPLAY_H_BASE_

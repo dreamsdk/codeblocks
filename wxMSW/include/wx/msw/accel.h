@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     31/7/98
-// RCS-ID:      $Id: accel.h 53135 2008-04-12 02:31:04Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -18,7 +17,7 @@ class WXDLLIMPEXP_FWD_CORE wxWindow;
 // the accel table has all accelerators for a given window or menu
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxAcceleratorTable : public wxObject
+class WXDLLIMPEXP_CORE wxAcceleratorTable : public wxObject
 {
 public:
     // default ctor
@@ -39,7 +38,7 @@ public:
     bool Translate(wxWindow *window, WXMSG *msg) const;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxAcceleratorTable)
+    wxDECLARE_DYNAMIC_CLASS(wxAcceleratorTable);
 };
 
 #endif

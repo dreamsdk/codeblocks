@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     20.02.01
-// RCS-ID:      $Id: gauge.h 41089 2006-09-09 13:36:54Z RR $
 // Copyright:   (c) 1996-2001 wxWidgets team
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,32 +24,39 @@
 #define wxGA_HORIZONTAL      wxHORIZONTAL
 #define wxGA_VERTICAL        wxVERTICAL
 
+// Available since Windows 7 only. With this style, the value of guage will
+// reflect on the taskbar button.
+#define wxGA_PROGRESS        0x0010
 // Win32 only, is default (and only) on some other platforms
 #define wxGA_SMOOTH          0x0020
-
-#if WXWIN_COMPATIBILITY_2_6
-    // obsolete style
-    #define wxGA_PROGRESSBAR     0
-#endif // WXWIN_COMPATIBILITY_2_6
+// QT only, display current completed percentage (text default format "%p%")
+#define wxGA_TEXT            0x0040
 
 // GTK and Mac always have native implementation of the indeterminate mode
 // wxMSW has native implementation only if comctl32.dll >= 6.00
-#if !defined(__WXGTK20__) && !defined(__WXMAC__) && !defined(__WXCOCOA__)
+#if !defined(__WXGTK20__) && !defined(__WXMAC__)
     #define wxGAUGE_EMULATE_INDETERMINATE_MODE 1
 #else
     #define wxGAUGE_EMULATE_INDETERMINATE_MODE 0
 #endif
 
-extern WXDLLEXPORT_DATA(const wxChar) wxGaugeNameStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxGaugeNameStr[];
+
+class WXDLLIMPEXP_FWD_CORE wxAppProgressIndicator;
 
 // ----------------------------------------------------------------------------
 // wxGauge: a progress bar
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxGaugeBase : public wxControl
+class WXDLLIMPEXP_CORE wxGaugeBase : public wxControl
 {
 public:
-    wxGaugeBase() { m_rangeMax = m_gaugePos = 0; }
+    wxGaugeBase() : m_rangeMax(0), m_gaugePos(0),
+#if wxGAUGE_EMULATE_INDETERMINATE_MODE
+        m_nDirection(wxRIGHT),
+#endif
+        m_appProgressIndicator(NULL) { }
+
     virtual ~wxGaugeBase();
 
     bool Create(wxWindow *parent,
@@ -77,17 +83,32 @@ public:
     // simple accessors
     bool IsVertical() const { return HasFlag(wxGA_VERTICAL); }
 
-    // appearance params (not implemented for most ports)
-    virtual void SetShadowWidth(int w);
-    virtual int GetShadowWidth() const;
+    // overridden base class virtuals
+    virtual bool AcceptsFocus() const wxOVERRIDE { return false; }
 
-    virtual void SetBezelFace(int w);
-    virtual int GetBezelFace() const;
+    // Deprecated methods not doing anything since a long time.
+    wxDEPRECATED_MSG("Remove calls to this method, it doesn't do anything")
+    void SetShadowWidth(int WXUNUSED(w)) { }
 
-    // overriden base class virtuals
-    virtual bool AcceptsFocus() const { return false; }
+    wxDEPRECATED_MSG("Remove calls to this method, it always returns 0")
+    int GetShadowWidth() const { return 0; }
+
+    wxDEPRECATED_MSG("Remove calls to this method, it doesn't do anything")
+    void SetBezelFace(int WXUNUSED(w)) { }
+
+    wxDEPRECATED_MSG("Remove calls to this method, it always returns 0")
+    int GetBezelFace() const { return 0; }
 
 protected:
+    virtual wxBorder GetDefaultBorder() const wxOVERRIDE { return wxBORDER_NONE; }
+
+    // Initialize m_appProgressIndicator if necessary, i.e. if this object has
+    // wxGA_PROGRESS style. This method is supposed to be called from the
+    // derived class Create() if it doesn't call the base class Create(), which
+    // already does it, after initializing the window style and range.
+    void InitProgressIndicatorIfNeeded();
+
+
     // the max position
     int m_rangeMax;
 
@@ -98,14 +119,15 @@ protected:
     int m_nDirection;       // can be wxRIGHT or wxLEFT
 #endif
 
-    DECLARE_NO_COPY_CLASS(wxGaugeBase)
+    wxAppProgressIndicator *m_appProgressIndicator;
+
+    wxDECLARE_NO_COPY_CLASS(wxGaugeBase);
 };
 
 #if defined(__WXUNIVERSAL__)
     #include "wx/univ/gauge.h"
 #elif defined(__WXMSW__)
-    #include "wx/msw/gauge95.h"
-    #define wxGauge wxGauge95
+    #include "wx/msw/gauge.h"
 #elif defined(__WXMOTIF__)
     #include "wx/motif/gauge.h"
 #elif defined(__WXGTK20__)
@@ -113,11 +135,9 @@ protected:
 #elif defined(__WXGTK__)
     #include "wx/gtk1/gauge.h"
 #elif defined(__WXMAC__)
-    #include "wx/mac/gauge.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/gauge.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/gauge.h"
+    #include "wx/osx/gauge.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/gauge.h"
 #endif
 
 #endif // wxUSE_GAUGE

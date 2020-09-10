@@ -3,7 +3,6 @@
 // Purpose:     XML resource handler for wxAnimationCtrl
 // Author:      Francesco Montorsi
 // Created:     2006-10-15
-// RCS-ID:      $Id: xh_animatctrl.h 42196 2006-10-21 13:59:25Z RR $
 // Copyright:   (c) 2006 Francesco Montorsi
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,12 +16,12 @@
 
 class WXDLLIMPEXP_XRC wxAnimationCtrlXmlHandler : public wxXmlResourceHandler
 {
-    DECLARE_DYNAMIC_CLASS(wxAnimationCtrlXmlHandler)
+    wxDECLARE_DYNAMIC_CLASS(wxAnimationCtrlXmlHandler);
 
 public:
     wxAnimationCtrlXmlHandler();
-    virtual wxObject *DoCreateResource();
-    virtual bool CanHandle(wxXmlNode *node);
+    virtual wxObject *DoCreateResource() wxOVERRIDE;
+    virtual bool CanHandle(wxXmlNode *node) wxOVERRIDE;
 };
 
 #endif // wxUSE_XRC && wxUSE_ANIMATIONCTRL

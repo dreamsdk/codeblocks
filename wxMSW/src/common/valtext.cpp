@@ -2,9 +2,8 @@
 // Name:        src/common/valtext.cpp
 // Purpose:     wxTextValidator
 // Author:      Julian Smart
-// Modified by:
+// Modified by: Francesco Montorsi
 // Created:     04/01/98
-// RCS-ID:      $Id: valtext.cpp 39656 2006-06-09 21:21:53Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -16,13 +15,15 @@
   #pragma hdrstop
 #endif
 
-#if wxUSE_VALIDATORS && wxUSE_TEXTCTRL
+#if wxUSE_VALIDATORS && (wxUSE_TEXTCTRL || wxUSE_COMBOBOX)
 
 #include "wx/valtext.h"
 
 #ifndef WX_PRECOMP
   #include <stdio.h>
   #include "wx/textctrl.h"
+  #include "wx/combobox.h"
+  #include "wx/log.h"
   #include "wx/utils.h"
   #include "wx/msgdlg.h"
   #include "wx/intl.h"
@@ -32,28 +33,39 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef __SALFORDC__
-    #include <clib.h>
-#endif
+#include "wx/combo.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxTextValidator, wxValidator)
+// ----------------------------------------------------------------------------
+// global helpers
+// ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(wxTextValidator, wxValidator)
+static bool wxIsNumeric(const wxString& val)
+{
+    for ( wxString::const_iterator i = val.begin(); i != val.end(); ++i )
+    {
+        // Allow for "," (French) as well as "." -- in future we should
+        // use wxSystemSettings or other to do better localisation
+        if ((!wxIsdigit(*i)) &&
+            (*i != wxS('.')) && (*i != wxS(',')) && (*i != wxS('e')) &&
+            (*i != wxS('E')) && (*i != wxS('+')) && (*i != wxS('-')))
+            return false;
+    }
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+// wxTextValidator
+// ----------------------------------------------------------------------------
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxTextValidator, wxValidator);
+wxBEGIN_EVENT_TABLE(wxTextValidator, wxValidator)
     EVT_CHAR(wxTextValidator::OnChar)
-END_EVENT_TABLE()
-
-static bool wxIsNumeric(const wxString& val);
+wxEND_EVENT_TABLE()
 
 wxTextValidator::wxTextValidator(long style, wxString *val)
 {
-    m_validatorStyle = style;
     m_stringValue = val;
-/*
-    m_refData = new wxVTextRefData;
-
-    M_VTEXTDATA->m_validatorStyle = style;
-    M_VTEXTDATA->m_stringValue = val;
-*/
+    SetStyle(style);
 }
 
 wxTextValidator::wxTextValidator(const wxTextValidator& val)
@@ -62,283 +74,304 @@ wxTextValidator::wxTextValidator(const wxTextValidator& val)
     Copy(val);
 }
 
+void wxTextValidator::SetStyle(long style)
+{
+    m_validatorStyle = style;
+}
+
 bool wxTextValidator::Copy(const wxTextValidator& val)
 {
     wxValidator::Copy(val);
 
     m_validatorStyle = val.m_validatorStyle;
-    m_stringValue = val.m_stringValue;
+    m_stringValue    = val.m_stringValue;
 
-    m_includes    = val.m_includes;
-    m_excludes    = val.m_excludes;
+    m_charIncludes = val.m_charIncludes;
+    m_charExcludes = val.m_charExcludes;
+    m_includes     = val.m_includes;
+    m_excludes     = val.m_excludes;
 
     return true;
 }
 
-static bool wxIsAlpha(const wxString& val)
+wxTextEntry *wxTextValidator::GetTextEntry()
 {
-    int i;
-    for ( i = 0; i < (int)val.length(); i++)
+#if wxUSE_TEXTCTRL
+    if (wxDynamicCast(m_validatorWindow, wxTextCtrl))
     {
-        if (!wxIsalpha(val[i]))
-            return false;
+        return (wxTextCtrl*)m_validatorWindow;
     }
-    return true;
-}
+#endif
 
-static bool wxIsAlphaNumeric(const wxString& val)
-{
-    int i;
-    for ( i = 0; i < (int)val.length(); i++)
+#if wxUSE_COMBOBOX
+    if (wxDynamicCast(m_validatorWindow, wxComboBox))
     {
-        if (!wxIsalnum(val[i]))
-            return false;
+        return (wxComboBox*)m_validatorWindow;
     }
-    return true;
+#endif
+
+#if wxUSE_COMBOCTRL
+    if (wxDynamicCast(m_validatorWindow, wxComboCtrl))
+    {
+        return (wxComboCtrl*)m_validatorWindow;
+    }
+#endif
+
+    wxFAIL_MSG(
+        "wxTextValidator can only be used with wxTextCtrl, wxComboBox, "
+        "or wxComboCtrl"
+    );
+
+    return NULL;
 }
 
 // Called when the value in the window must be validated.
 // This function can pop up an error message.
 bool wxTextValidator::Validate(wxWindow *parent)
 {
-    if( !CheckValidator() )
-        return false;
-
-    wxTextCtrl *control = (wxTextCtrl *) m_validatorWindow;
-
     // If window is disabled, simply return
-    if ( !control->IsEnabled() )
+    if ( !m_validatorWindow->IsEnabled() )
         return true;
 
-    wxString val(control->GetValue());
+    wxTextEntry * const text = GetTextEntry();
+    if ( !text )
+        return false;
 
-    bool ok = true;
+    const wxString& errormsg = IsValid(text->GetValue());
 
-    // NB: this format string should contian exactly one '%s'
-    wxString errormsg;
-
-    bool includes = (m_validatorStyle & wxFILTER_INCLUDE_LIST) != 0;
-    if ( includes || (m_validatorStyle & wxFILTER_EXCLUDE_LIST) )
+    if ( !errormsg.empty() )
     {
-        // if includes, it's only ok to have the members of the list,
-        // otherwise it's only ok to have non-members
-        ok = includes == (m_includes.Index(val) != wxNOT_FOUND);
-        if ( !ok )
+        m_validatorWindow->SetFocus();
+        wxMessageBox(errormsg, _("Validation conflict"),
+                     wxOK | wxICON_EXCLAMATION, parent);
+
+        return false;
+    }
+
+    return true;
+}
+
+// Called to transfer data to the window
+bool wxTextValidator::TransferToWindow()
+{
+    if ( m_stringValue )
+    {
+        wxTextEntry * const text = GetTextEntry();
+        if ( !text )
+            return false;
+
+        text->SetValue(*m_stringValue);
+    }
+
+    return true;
+}
+
+// Called to transfer data to the window
+bool wxTextValidator::TransferFromWindow()
+{
+    if ( m_stringValue )
+    {
+        wxTextEntry * const text = GetTextEntry();
+        if ( !text )
+            return false;
+
+        *m_stringValue = text->GetValue();
+    }
+
+    return true;
+}
+
+wxString wxTextValidator::IsValid(const wxString& str) const
+{
+    if ( HasFlag(wxFILTER_EMPTY) && str.empty() )
+        return _("Required information entry is empty.");
+    else if ( IsExcluded(str) )
+        return wxString::Format(_("'%s' is one of the invalid strings"), str);
+    else if ( !IsIncluded(str) )
+        return wxString::Format(_("'%s' is not one of the valid strings"), str);
+
+    // check the whole string for invalid chars.
+    for ( wxString::const_iterator i = str.begin(), end = str.end();
+          i != end; ++i )
+    {
+        if ( !IsValidChar(*i) )
         {
-            errormsg = _("'%s' is invalid");
+            return wxString::Format(
+                _("'%s' contains invalid character(s)"), str);
         }
     }
-    else if ( (m_validatorStyle & wxFILTER_ASCII) && !val.IsAscii() )
-    {
-        ok = false;
 
-        errormsg = _("'%s' should only contain ASCII characters.");
-    }
-    else if ( (m_validatorStyle & wxFILTER_ALPHA) && !wxIsAlpha(val) )
-    {
-        ok = false;
-
-        errormsg = _("'%s' should only contain alphabetic characters.");
-    }
-    else if ( (m_validatorStyle & wxFILTER_ALPHANUMERIC) && !wxIsAlphaNumeric(val))
-    {
-        ok = false;
-
-        errormsg = _("'%s' should only contain alphabetic or numeric characters.");
-    }
-    else if ( (m_validatorStyle & wxFILTER_NUMERIC) && !wxIsNumeric(val))
-    {
-        ok = false;
-
-        errormsg = _("'%s' should be numeric.");
-    }
-    else if ( (m_validatorStyle & wxFILTER_INCLUDE_CHAR_LIST) && !IsInCharIncludes(val))
-    {
-        //it's only ok to have the members of the list
-        errormsg = _("'%s' is invalid");
-        ok = false;
-    }
-    else if ( (m_validatorStyle & wxFILTER_EXCLUDE_CHAR_LIST) && !IsNotInCharExcludes(val))
-    {
-        // it's only ok to have non-members of the list
-        errormsg = _("'%s' is invalid");
-        ok = false;
-    }
-
-    if ( !ok )
-    {
-        wxASSERT_MSG( !errormsg.empty(), _T("you forgot to set errormsg") );
-
-        m_validatorWindow->SetFocus();
-
-        wxString buf;
-        buf.Printf(errormsg, val.c_str());
-
-        wxMessageBox(buf, _("Validation conflict"),
-                     wxOK | wxICON_EXCLAMATION, parent);
-    }
-
-    return ok;
+    return wxString();
 }
 
-// Called to transfer data to the window
-bool wxTextValidator::TransferToWindow(void)
-{
-    if( !CheckValidator() )
-        return false;
 
-    if ( m_stringValue )
+void wxTextValidator::SetCharIncludes(const wxString& chars)
+{
+    m_charIncludes.clear();
+
+    AddCharIncludes(chars);
+}
+
+void wxTextValidator::AddCharIncludes(const wxString& chars)
+{
+    m_charIncludes += chars;
+}
+
+void wxTextValidator::SetCharExcludes(const wxString& chars)
+{
+    m_charExcludes.clear();
+
+    AddCharExcludes(chars);
+}
+
+void wxTextValidator::AddCharExcludes(const wxString& chars)
+{
+    m_charExcludes += chars;
+}
+
+void wxTextValidator::SetIncludes(const wxArrayString& includes)
+{
+    // preserve compatibily with versions prior 3.1.3 which used m_includes
+    // to store the list of char includes.
+    if ( HasFlag(wxFILTER_INCLUDE_CHAR_LIST) )
     {
-        wxTextCtrl *control = (wxTextCtrl *) m_validatorWindow;
-        control->SetValue(* m_stringValue);
+        for ( wxArrayString::const_iterator i = includes.begin(),
+              end = includes.end(); i != end; ++i )
+        {
+            AddCharIncludes(*i);
+        }
+
+        return;
     }
 
-    return true;
+    m_includes = includes;
 }
 
-// Called to transfer data to the window
-bool wxTextValidator::TransferFromWindow(void)
+void wxTextValidator::AddInclude(const wxString& include)
 {
-    if( !CheckValidator() )
-        return false;
+    m_includes.push_back(include);
+}
 
-    if ( m_stringValue )
+void wxTextValidator::SetExcludes(const wxArrayString& excludes)
+{
+    // preserve compatibily with versions prior 3.1.3 which used m_excludes
+    // to store the list of char excludes.
+    if ( HasFlag(wxFILTER_EXCLUDE_CHAR_LIST) )
     {
-        wxTextCtrl *control = (wxTextCtrl *) m_validatorWindow;
-        *m_stringValue = control->GetValue();
+        for ( wxArrayString::const_iterator i = excludes.begin(),
+              end = excludes.end(); i != end; ++i )
+        {
+            AddCharExcludes(*i);
+        }
+
+        return;
     }
 
-    return true;
+    m_excludes = excludes;
 }
 
-#if WXWIN_COMPATIBILITY_2_4
-
-inline void wxCopyStringListToArrayString(wxArrayString& to, const wxStringList& from)
+void wxTextValidator::AddExclude(const wxString& exclude)
 {
-    to.Clear();
-
-    for ( wxStringList::compatibility_iterator pNode = from.GetFirst();
-          pNode;
-          pNode = pNode->GetNext() )
-    {
-        to.Add(pNode->GetData());
-    }
-}
-
-inline void wxCopyArrayStringToStringList(wxStringList& to, const wxArrayString& from)
-{
-    to.Clear();
-
-    for(size_t i = 0; i < from.GetCount(); ++i)
-        to.Add(from[i]);
-}
-
-wxStringList& wxTextValidator::GetIncludeList()
-{
-    wxCopyArrayStringToStringList(m_includeList, m_includes);
-    return m_includeList;
-}
-
-wxStringList& wxTextValidator::GetExcludeList()
-{
-    wxCopyArrayStringToStringList(m_excludeList, m_excludes);
-    return m_excludeList;
-}
-
-void wxTextValidator::SetIncludeList(const wxStringList& list)
-{
-    wxCopyStringListToArrayString(m_includes, list);
-}
-
-void wxTextValidator::SetExcludeList(const wxStringList& list)
-{
-    wxCopyStringListToArrayString(m_excludes, list);
-}
-
-bool wxTextValidator::IsInCharIncludeList(const wxString& val)
-{
-    return IsInCharIncludes(val);
-}
-
-bool wxTextValidator::IsNotInCharExcludeList(const wxString& val)
-{
-    return IsNotInCharExcludes(val);
-}
-
-#endif //compat 2.4
-
-
-bool wxTextValidator::IsInCharIncludes(const wxString& val)
-{
-    size_t i;
-    for ( i = 0; i < val.length(); i++)
-    {
-        if (m_includes.Index((wxString) val[i]) == wxNOT_FOUND)
-            return false;
-    }
-    return true;
-}
-
-bool wxTextValidator::IsNotInCharExcludes(const wxString& val)
-{
-    size_t i;
-    for ( i = 0; i < val.length(); i++)
-    {
-       if (m_excludes.Index((wxString) val[i]) != wxNOT_FOUND)
-            return false;
-    }
-    return true;
+    m_excludes.push_back(exclude);
 }
 
 void wxTextValidator::OnChar(wxKeyEvent& event)
 {
-/*
-    if ( !M_VTEXTDATA )
-        return;
-*/
-
-    if ( m_validatorWindow )
-    {
-        int keyCode = event.GetKeyCode();
-
-        // we don't filter special keys and Delete
-        if (
-             !(keyCode < WXK_SPACE || keyCode == WXK_DELETE || keyCode > WXK_START) &&
-             (
-              ((m_validatorStyle & wxFILTER_INCLUDE_CHAR_LIST) && !IsInCharIncludes(wxString((wxChar) keyCode, 1))) ||
-              ((m_validatorStyle & wxFILTER_EXCLUDE_CHAR_LIST) && !IsNotInCharExcludes(wxString((wxChar) keyCode, 1))) ||
-              ((m_validatorStyle & wxFILTER_ASCII) && !isascii(keyCode)) ||
-              ((m_validatorStyle & wxFILTER_ALPHA) && !wxIsalpha(keyCode)) ||
-              ((m_validatorStyle & wxFILTER_ALPHANUMERIC) && !wxIsalnum(keyCode)) ||
-              ((m_validatorStyle & wxFILTER_NUMERIC) && !wxIsdigit(keyCode)
-                                && keyCode != wxT('.') && keyCode != wxT(',') && keyCode != wxT('-') && keyCode != wxT('+') && keyCode != wxT('e') && keyCode != wxT('E'))
-             )
-           )
-        {
-            if ( !wxValidator::IsSilent() )
-                wxBell();
-
-            // eat message
-            return;
-        }
-    }
-
+    // Let the event propagate by default.
     event.Skip();
+
+    if (!m_validatorWindow)
+        return;
+
+#if wxUSE_UNICODE
+    // We only filter normal, printable characters.
+    int keyCode = event.GetUnicodeKey();
+#else // !wxUSE_UNICODE
+    int keyCode = event.GetKeyCode();
+    if ( keyCode > WXK_START )
+        return;
+#endif // wxUSE_UNICODE/!wxUSE_UNICODE
+
+    // we don't filter special keys and delete
+    if (keyCode < WXK_SPACE || keyCode == WXK_DELETE)
+        return;
+
+    // Filter out invalid characters
+    if ( IsValidChar(static_cast<wxUniChar>(keyCode)) )
+        return;
+
+    if ( !wxValidator::IsSilent() )
+        wxBell();
+
+    // eat message
+    event.Skip(false);
 }
 
-static bool wxIsNumeric(const wxString& val)
+bool wxTextValidator::IsValidChar(const wxUniChar& c) const
 {
-    int i;
-    for ( i = 0; i < (int)val.length(); i++)
+    if ( !m_validatorStyle ) // no filtering if HasFlag(wxFILTER_NONE)
+        return true;
+
+    if ( IsCharExcluded(c) ) // disallow any char in the m_charExcludes.
+        return false;
+
+    if ( IsCharIncluded(c) ) // allow any char in the m_charIncludes.
+        return true;
+
+    if ( !HasFlag(wxFILTER_CC) )
     {
-        // Allow for "," (French) as well as "." -- in future we should
-        // use wxSystemSettings or other to do better localisation
-        if ((!wxIsdigit(val[i])) && (val[i] != wxT('.')) && (val[i] != wxT(',')) && (val[i] != wxT('e')) && (val[i] != wxT('E')) && (val[i] != wxT('+')) && (val[i] != wxT('-')))
+        // Validity is entirely determined by the exclude/include char lists
+        // and this character is in neither, so consider that it is valid if
+        // and only if we accept anything.
+        return !HasFlag(wxFILTER_INCLUDE_CHAR_LIST);
+    }
+
+    if ( HasFlag(wxFILTER_SPACE) && wxIsspace(c) )
+        return true;
+    if ( HasFlag(wxFILTER_ASCII) && c.IsAscii() )
+        return true;
+    if ( HasFlag(wxFILTER_NUMERIC) && wxIsNumeric(c) )
+        return true;
+    if ( HasFlag(wxFILTER_ALPHANUMERIC) && wxIsalnum(c) )
+        return true;
+    if ( HasFlag(wxFILTER_ALPHA) && wxIsalpha(c) )
+        return true;
+    if ( HasFlag(wxFILTER_DIGITS) && wxIsdigit(c) )
+        return true;
+    if ( HasFlag(wxFILTER_XDIGITS) && wxIsxdigit(c) )
+        return true;
+
+    // If we are here, this means that the char c does not belong to any of the
+    // character classes checked above (e.g. emoji chars) so just return false.
+
+    return false;
+}
+
+// kept for compatibility reasons.
+bool wxTextValidator::ContainsOnlyIncludedCharacters(const wxString& str) const
+{
+    for ( wxString::const_iterator i = str.begin(), end = str.end();
+          i != end; ++i )
+    {
+        if ( !IsCharIncluded(*i) )
             return false;
     }
+
     return true;
 }
 
+// kept for compatibility reasons.
+bool wxTextValidator::ContainsExcludedCharacters(const wxString& str) const
+{
+    for ( wxString::const_iterator i = str.begin(), end = str.end();
+          i != end; ++i )
+    {
+        if ( IsCharExcluded(*i) )
+            return true;
+    }
+
+    return false;
+}
 
 #endif
-  // wxUSE_VALIDATORS && wxUSE_TEXTCTRL
+  // wxUSE_VALIDATORS && (wxUSE_TEXTCTRL || wxUSE_COMBOBOX)

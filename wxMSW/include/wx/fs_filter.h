@@ -3,7 +3,6 @@
 // Purpose:     Filter file system handler
 // Author:      Mike Wetherell
 // Copyright:   (c) 2006 Mike Wetherell
-// CVS-ID:      $Id: fs_filter.h 42713 2006-10-30 11:56:12Z ABX $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -26,14 +25,14 @@ public:
     wxFilterFSHandler() : wxFileSystemHandler() { }
     virtual ~wxFilterFSHandler() { }
 
-    virtual bool CanOpen(const wxString& location);
-    virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location);
+    virtual bool CanOpen(const wxString& location) wxOVERRIDE;
+    virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location) wxOVERRIDE;
 
-    virtual wxString FindFirst(const wxString& spec, int flags = 0);
-    virtual wxString FindNext();
+    virtual wxString FindFirst(const wxString& spec, int flags = 0) wxOVERRIDE;
+    virtual wxString FindNext() wxOVERRIDE;
 
 private:
-    DECLARE_NO_COPY_CLASS(wxFilterFSHandler)
+    wxDECLARE_NO_COPY_CLASS(wxFilterFSHandler);
 };
 
 #endif // wxUSE_FILESYSTEM

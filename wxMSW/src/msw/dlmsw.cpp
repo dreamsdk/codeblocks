@@ -1,11 +1,10 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        msw/dlmsw.cpp
+// Name:        src/msw/dlmsw.cpp
 // Purpose:     Win32-specific part of wxDynamicLibrary and related classes
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2005-01-10 (partly extracted from common/dynlib.cpp)
-// RCS-ID:      $Id: dlmsw.cpp 58750 2009-02-08 10:01:03Z VZ $
-// Copyright:   (c) 1998-2005 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 1998-2005 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -25,48 +24,21 @@
 
 #if wxUSE_DYNLIB_CLASS
 
+#include "wx/dynlib.h"
+
 #include "wx/msw/private.h"
 #include "wx/msw/debughlp.h"
+#include "wx/filename.h"
 
-const wxChar *wxDynamicLibrary::ms_dllext = _T(".dll");
+// For MSVC we can link in the required library explicitly, for the other
+// compilers (e.g. MinGW) this needs to be done at makefiles level.
+#ifdef __VISUALC__
+    #pragma comment(lib, "version")
+#endif
 
 // ----------------------------------------------------------------------------
 // private classes
 // ----------------------------------------------------------------------------
-
-// wrap some functions from version.dll: load them dynamically and provide a
-// clean interface
-class wxVersionDLL
-{
-public:
-    // load version.dll and bind to its functions
-    wxVersionDLL();
-
-    // return the file version as string, e.g. "x.y.z.w"
-    wxString GetFileVersion(const wxString& filename) const;
-
-private:
-    typedef DWORD (APIENTRY *GetFileVersionInfoSize_t)(PTSTR, PDWORD);
-    typedef BOOL (APIENTRY *GetFileVersionInfo_t)(PTSTR, DWORD, DWORD, PVOID);
-    typedef BOOL (APIENTRY *VerQueryValue_t)(const PVOID, PTSTR, PVOID *, PUINT);
-
-    #define DO_FOR_ALL_VER_FUNCS(what)                                        \
-        what(GetFileVersionInfoSize);                                         \
-        what(GetFileVersionInfo);                                             \
-        what(VerQueryValue)
-
-    #define DECLARE_VER_FUNCTION(func) func ## _t m_pfn ## func
-
-    DO_FOR_ALL_VER_FUNCS(DECLARE_VER_FUNCTION);
-
-    #undef DECLARE_VER_FUNCTION
-
-
-    wxDynamicLibrary m_dll;
-
-
-    DECLARE_NO_COPY_CLASS(wxVersionDLL)
-};
 
 // class used to create wxDynamicLibraryDetails objects
 class WXDLLIMPEXP_BASE wxDynamicLibraryDetailsCreator
@@ -76,145 +48,44 @@ public:
     struct EnumModulesProcParams
     {
         wxDynamicLibraryDetailsArray *dlls;
-        wxVersionDLL *verDLL;
     };
 
-    // the declared type of the first EnumModulesProc() parameter changed in
-    // recent SDK versions and is no PCSTR instead of old PSTR, we know that
-    // it's const in version 11 and non-const in version 8 included with VC8
-    // (and earlier), suppose that it's only changed in version 11
-    #if defined(API_VERSION_NUMBER) && API_VERSION_NUMBER >= 11
-        typedef PCSTR NameStr_t;
-    #else
-        typedef PSTR NameStr_t;
-    #endif
-
-    // TODO: fix EnumerateLoadedModules() to use EnumerateLoadedModules64()
-    #ifdef __WIN64__
-        typedef DWORD64 DWORD_32_64;
-    #else
-        typedef DWORD DWORD_32_64;
-    #endif
-
     static BOOL CALLBACK
-    EnumModulesProc(NameStr_t name, DWORD_32_64 base, ULONG size, void *data);
+    EnumModulesProc(const wxChar* name, DWORD64 base, ULONG size, PVOID data);
 };
 
 // ----------------------------------------------------------------------------
-// private functions
+// DLL version operations
 // ----------------------------------------------------------------------------
 
-// return the module handle for the given base name
-static
-HMODULE wxGetModuleHandle(const char *name, void *addr)
-{
-    // we want to use GetModuleHandleEx() instead of usual GetModuleHandle()
-    // because the former works correctly for comctl32.dll while the latter
-    // returns NULL when comctl32.dll version 6 is used under XP (note that
-    // GetModuleHandleEx() is only available under XP and later, coincidence?)
-
-    // check if we can use GetModuleHandleEx
-    typedef BOOL (WINAPI *GetModuleHandleEx_t)(DWORD, LPCSTR, HMODULE *);
-
-    static const GetModuleHandleEx_t INVALID_FUNC_PTR = (GetModuleHandleEx_t)-1;
-
-    static GetModuleHandleEx_t s_pfnGetModuleHandleEx = INVALID_FUNC_PTR;
-    if ( s_pfnGetModuleHandleEx == INVALID_FUNC_PTR )
-    {
-        wxDynamicLibrary dll(_T("kernel32.dll"), wxDL_VERBATIM);
-        s_pfnGetModuleHandleEx =
-            (GetModuleHandleEx_t)dll.RawGetSymbol(_T("GetModuleHandleExA"));
-
-        // dll object can be destroyed, kernel32.dll won't be unloaded anyhow
-    }
-
-    // get module handle from its address
-    if ( s_pfnGetModuleHandleEx )
-    {
-        // flags are GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT |
-        //           GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
-        HMODULE hmod;
-        if ( s_pfnGetModuleHandleEx(6, (char *)addr, &hmod) && hmod )
-            return hmod;
-    }
-
-    // Windows CE only has Unicode API, so even we have an ANSI string here, we
-    // still need to use GetModuleHandleW() there and so do it everywhere to
-    // avoid #ifdefs -- this code is not performance-critical anyhow...
-    return ::GetModuleHandle(wxString::FromAscii((char *)name));
-}
-
-// ============================================================================
-// wxVersionDLL implementation
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-// loading
-// ----------------------------------------------------------------------------
-
-wxVersionDLL::wxVersionDLL()
-{
-    // don't give errors if DLL can't be loaded or used, we're prepared to
-    // handle it
-    wxLogNull noLog;
-
-    if ( m_dll.Load(_T("version.dll"), wxDL_VERBATIM) )
-    {
-        // the functions we load have either 'A' or 'W' suffix depending on
-        // whether we're in ANSI or Unicode build
-        #ifdef UNICODE
-            #define SUFFIX L"W"
-        #else // ANSI
-            #define SUFFIX "A"
-        #endif // UNICODE/ANSI
-
-        #define LOAD_VER_FUNCTION(name)                                       \
-            m_pfn ## name = (name ## _t)m_dll.GetSymbol(_T(#name SUFFIX));    \
-        if ( !m_pfn ## name )                                                 \
-        {                                                                     \
-            m_dll.Unload();                                                   \
-            return;                                                           \
-        }
-
-        DO_FOR_ALL_VER_FUNCS(LOAD_VER_FUNCTION);
-
-        #undef LOAD_VER_FUNCTION
-    }
-}
-
-// ----------------------------------------------------------------------------
-// wxVersionDLL operations
-// ----------------------------------------------------------------------------
-
-wxString wxVersionDLL::GetFileVersion(const wxString& filename) const
+static wxString GetFileVersion(const wxString& filename)
 {
     wxString ver;
-    if ( m_dll.IsLoaded() )
-    {
-        wxChar *pc = wx_const_cast(wxChar *, filename.c_str());
+    wxChar *pc = const_cast<wxChar *>((const wxChar*) filename.t_str());
 
-        DWORD dummy;
-        DWORD sizeVerInfo = m_pfnGetFileVersionInfoSize(pc, &dummy);
-        if ( sizeVerInfo )
+    DWORD dummy;
+    DWORD sizeVerInfo = ::GetFileVersionInfoSize(pc, &dummy);
+    if ( sizeVerInfo )
+    {
+        wxCharBuffer buf(sizeVerInfo);
+        if ( ::GetFileVersionInfo(pc, 0, sizeVerInfo, buf.data()) )
         {
-            wxCharBuffer buf(sizeVerInfo);
-            if ( m_pfnGetFileVersionInfo(pc, 0, sizeVerInfo, buf.data()) )
+            void *pVer;
+            UINT sizeInfo;
+            if ( ::VerQueryValue(buf.data(),
+                                    const_cast<wxChar *>(wxT("\\")),
+                                    &pVer,
+                                    &sizeInfo) )
             {
-                void *pVer;
-                UINT sizeInfo;
-                if ( m_pfnVerQueryValue(buf.data(), _T("\\"), &pVer, &sizeInfo) )
-                {
-                    VS_FIXEDFILEINFO *info = (VS_FIXEDFILEINFO *)pVer;
-                    ver.Printf(_T("%d.%d.%d.%d"),
-                               HIWORD(info->dwFileVersionMS),
-                               LOWORD(info->dwFileVersionMS),
-                               HIWORD(info->dwFileVersionLS),
-                               LOWORD(info->dwFileVersionLS));
-                }
+                VS_FIXEDFILEINFO *info = (VS_FIXEDFILEINFO *)pVer;
+                ver.Printf(wxT("%d.%d.%d.%d"),
+                            HIWORD(info->dwFileVersionMS),
+                            LOWORD(info->dwFileVersionMS),
+                            HIWORD(info->dwFileVersionLS),
+                            LOWORD(info->dwFileVersionLS));
             }
         }
     }
-    //else: we failed to load DLL, can't retrieve version info
 
     return ver;
 }
@@ -225,8 +96,8 @@ wxString wxVersionDLL::GetFileVersion(const wxString& filename) const
 
 /* static */
 BOOL CALLBACK
-wxDynamicLibraryDetailsCreator::EnumModulesProc(NameStr_t name,
-                                                DWORD_32_64 base,
+wxDynamicLibraryDetailsCreator::EnumModulesProc(const wxChar* name,
+                                                DWORD64 base,
                                                 ULONG size,
                                                 void *data)
 {
@@ -235,19 +106,23 @@ wxDynamicLibraryDetailsCreator::EnumModulesProc(NameStr_t name,
     wxDynamicLibraryDetails *details = new wxDynamicLibraryDetails;
 
     // fill in simple properties
-    details->m_name = wxString::FromAscii(name);
-    details->m_address = wx_reinterpret_cast(void *, base);
+    details->m_name = name;
+    details->m_address = wxUIntToPtr(base);
     details->m_length = size;
 
     // to get the version, we first need the full path
-    HMODULE hmod = wxGetModuleHandle(name, (void *)base);
+    const HMODULE hmod = wxDynamicLibrary::MSWGetModuleHandle
+                         (
+                            details->m_name,
+                            details->m_address
+                         );
     if ( hmod )
     {
         wxString fullname = wxGetFullModuleName(hmod);
         if ( !fullname.empty() )
         {
             details->m_path = fullname;
-            details->m_version = params->verDLL->GetFileVersion(fullname);
+            details->m_version = GetFileVersion(fullname);
         }
     }
 
@@ -274,30 +149,34 @@ wxDllType wxDynamicLibrary::GetProgramHandle()
 // loading/unloading DLLs
 // ----------------------------------------------------------------------------
 
+#ifndef MAX_PATH
+    #define MAX_PATH 260        // from VC++ headers
+#endif
+
 /* static */
 wxDllType
 wxDynamicLibrary::RawLoad(const wxString& libname, int flags)
 {
-    return flags & wxDL_GET_LOADED
-            ? ::GetModuleHandle(libname)
-            : ::LoadLibrary(libname);
+    if (flags & wxDL_GET_LOADED)
+        return ::GetModuleHandle(libname.t_str());
+
+    return ::LoadLibrary(libname.t_str());
 }
 
 /* static */
 void wxDynamicLibrary::Unload(wxDllType handle)
 {
-    ::FreeLibrary(handle);
+    if ( !::FreeLibrary(handle) )
+    {
+        wxLogLastError(wxT("FreeLibrary"));
+    }
 }
 
 /* static */
 void *wxDynamicLibrary::RawGetSymbol(wxDllType handle, const wxString& name)
 {
     return (void *)::GetProcAddress(handle,
-#ifdef __WXWINCE__
-                                            name.c_str()
-#else
                                             name.ToAscii()
-#endif // __WXWINCE__
                                    );
 }
 
@@ -313,26 +192,107 @@ wxDynamicLibraryDetailsArray wxDynamicLibrary::ListLoaded()
 #if wxUSE_DBGHELP
     if ( wxDbgHelpDLL::Init() )
     {
-        // prepare to use functions for version info extraction
-        wxVersionDLL verDLL;
-
         wxDynamicLibraryDetailsCreator::EnumModulesProcParams params;
         params.dlls = &dlls;
-        params.verDLL = &verDLL;
 
-        if ( !wxDbgHelpDLL::EnumerateLoadedModules
+        if ( !wxDbgHelpDLL::CallEnumerateLoadedModules
                             (
                                 ::GetCurrentProcess(),
                                 wxDynamicLibraryDetailsCreator::EnumModulesProc,
                                 &params
                             ) )
         {
-            wxLogLastError(_T("EnumerateLoadedModules"));
+            wxLogLastError(wxT("EnumerateLoadedModules"));
         }
     }
 #endif // wxUSE_DBGHELP
 
     return dlls;
+}
+
+// ----------------------------------------------------------------------------
+// Getting the module from an address inside it
+// ----------------------------------------------------------------------------
+
+namespace
+{
+
+// Tries to dynamically load GetModuleHandleEx() from kernel32.dll and call it
+// to get the module handle from the given address. Returns NULL if it fails to
+// either resolve the function (which can only happen on pre-Vista systems
+// normally) or if the function itself failed.
+HMODULE CallGetModuleHandleEx(const void* addr)
+{
+    typedef BOOL (WINAPI *GetModuleHandleEx_t)(DWORD, LPCTSTR, HMODULE *);
+    static const GetModuleHandleEx_t INVALID_FUNC_PTR = (GetModuleHandleEx_t)-1;
+
+    static GetModuleHandleEx_t s_pfnGetModuleHandleEx = INVALID_FUNC_PTR;
+    if ( s_pfnGetModuleHandleEx == INVALID_FUNC_PTR )
+    {
+        wxDynamicLibrary dll(wxT("kernel32.dll"), wxDL_VERBATIM);
+
+        wxDL_INIT_FUNC_AW(s_pfn, GetModuleHandleEx, dll);
+
+        // dll object can be destroyed, kernel32.dll won't be unloaded anyhow
+    }
+
+    if ( !s_pfnGetModuleHandleEx )
+        return NULL;
+
+    // flags are GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT |
+    //           GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS
+    HMODULE hmod;
+    if ( !s_pfnGetModuleHandleEx(6, (LPCTSTR)addr, &hmod) )
+        return NULL;
+
+    return hmod;
+}
+
+} // anonymous namespace
+
+/* static */
+void* wxDynamicLibrary::GetModuleFromAddress(const void* addr, wxString* path)
+{
+    HMODULE hmod = CallGetModuleHandleEx(addr);
+    if ( !hmod )
+    {
+        wxLogLastError(wxT("GetModuleHandleEx"));
+        return NULL;
+    }
+
+    if ( path )
+    {
+        TCHAR libname[MAX_PATH];
+        if ( !::GetModuleFileName(hmod, libname, MAX_PATH) )
+        {
+            // GetModuleFileName could also return extended-length paths (paths
+            // prepended with "//?/", maximum length is 32767 charachters) so,
+            // in principle, MAX_PATH could be unsufficient and we should try
+            // increasing the buffer size here.
+            wxLogLastError(wxT("GetModuleFromAddress"));
+            return NULL;
+        }
+
+        libname[MAX_PATH-1] = wxT('\0');
+
+        *path = libname;
+    }
+
+    // In Windows HMODULE is actually the base address of the module so we
+    // can just cast it to the address.
+    return reinterpret_cast<void *>(hmod);
+}
+
+/* static */
+WXHMODULE wxDynamicLibrary::MSWGetModuleHandle(const wxString& name, void *addr)
+{
+    // we want to use GetModuleHandleEx() instead of usual GetModuleHandle()
+    // because the former works correctly for comctl32.dll while the latter
+    // returns NULL when comctl32.dll version 6 is used under XP (note that
+    // GetModuleHandleEx() is only available under XP and later, coincidence?)
+    HMODULE hmod = CallGetModuleHandleEx(addr);
+
+    return hmod ? hmod : ::GetModuleHandle(name.t_str());
 }
 
 #endif // wxUSE_DYNLIB_CLASS

@@ -4,9 +4,8 @@
 // Purpose:     Shows wxFontPickerCtrl
 // Author:      Francesco Montorsi
 // Created:     20/6/2006
-// Id:          $Id: fontpicker.cpp 43755 2006-12-03 13:43:44Z VZ $
 // Copyright:   (c) 2006 Francesco Montorsi
-// License:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // ============================================================================
@@ -64,13 +63,12 @@ class FontPickerWidgetsPage : public WidgetsPage
 {
 public:
     FontPickerWidgetsPage(WidgetsBookCtrl *book, wxImageList *imaglist);
-    virtual ~FontPickerWidgetsPage(){};
 
-    virtual wxControl *GetWidget() const { return m_fontPicker; }
-    virtual void RecreateWidget() { RecreatePicker(); }
+    virtual wxWindow *GetWidget() const wxOVERRIDE { return m_fontPicker; }
+    virtual void RecreateWidget() wxOVERRIDE { RecreatePicker(); }
 
     // lazy creation of the content
-    virtual void CreateContent();
+    virtual void CreateContent() wxOVERRIDE;
 
 protected:
 
@@ -82,9 +80,6 @@ protected:
 
     // restore the checkboxes state to the initial values
     void Reset();
-
-    // get the initial style for the picker of the given kind
-    long GetPickerStyle();
 
 
     void OnFontChange(wxFontPickerEvent &ev);
@@ -104,7 +99,7 @@ protected:
     wxBoxSizer *m_sizer;
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
     DECLARE_WIDGETS_PAGE(FontPickerWidgetsPage)
 };
 
@@ -112,25 +107,25 @@ private:
 // event tables
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(FontPickerWidgetsPage, WidgetsPage)
+wxBEGIN_EVENT_TABLE(FontPickerWidgetsPage, WidgetsPage)
     EVT_BUTTON(PickerPage_Reset, FontPickerWidgetsPage::OnButtonReset)
 
     EVT_FONTPICKER_CHANGED(PickerPage_Font, FontPickerWidgetsPage::OnFontChange)
 
     EVT_CHECKBOX(wxID_ANY, FontPickerWidgetsPage::OnCheckBox)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ============================================================================
 // implementation
 // ============================================================================
 
-#if defined(__WXGTK24__)
+#if defined(__WXGTK20__)
     #define FAMILY_CTRLS NATIVE_CTRLS
 #else
     #define FAMILY_CTRLS GENERIC_CTRLS
 #endif
 
-IMPLEMENT_WIDGETS_PAGE(FontPickerWidgetsPage, _T("FontPicker"),
+IMPLEMENT_WIDGETS_PAGE(FontPickerWidgetsPage, "FontPicker",
                        PICKER_CTRLS | FAMILY_CTRLS);
 
 FontPickerWidgetsPage::FontPickerWidgetsPage(WidgetsBookCtrl *book,
@@ -144,13 +139,13 @@ void FontPickerWidgetsPage::CreateContent()
     // left pane
     wxSizer *boxleft = new wxBoxSizer(wxVERTICAL);
 
-    wxStaticBoxSizer *fontbox = new wxStaticBoxSizer(wxVERTICAL, this, _T("&FontPicker style"));
-    m_chkFontTextCtrl = CreateCheckBoxAndAddToSizer(fontbox, _T("With textctrl"));
-    m_chkFontDescAsLabel = CreateCheckBoxAndAddToSizer(fontbox, _T("Font desc as btn label"));
-    m_chkFontUseFontForLabel = CreateCheckBoxAndAddToSizer(fontbox, _T("Use font for label"), false);
+    wxStaticBoxSizer *fontbox = new wxStaticBoxSizer(wxVERTICAL, this, "&FontPicker style");
+    m_chkFontTextCtrl = CreateCheckBoxAndAddToSizer(fontbox, "With textctrl");
+    m_chkFontDescAsLabel = CreateCheckBoxAndAddToSizer(fontbox, "Font desc as btn label");
+    m_chkFontUseFontForLabel = CreateCheckBoxAndAddToSizer(fontbox, "Use font for label");
     boxleft->Add(fontbox, 0, wxALL|wxGROW, 5);
 
-    boxleft->Add(new wxButton(this, PickerPage_Reset, _T("&Reset")),
+    boxleft->Add(new wxButton(this, PickerPage_Reset, "&Reset"),
                  0, wxALIGN_CENTRE_HORIZONTAL | wxALL, 15);
 
     Reset();    // set checkboxes state
@@ -177,15 +172,7 @@ void FontPickerWidgetsPage::CreatePicker()
 {
     delete m_fontPicker;
 
-    m_fontPicker = new wxFontPickerCtrl(this, PickerPage_Font,
-                                        *wxSWISS_FONT,
-                                        wxDefaultPosition, wxDefaultSize,
-                                        GetPickerStyle());
-}
-
-long FontPickerWidgetsPage::GetPickerStyle()
-{
-    long style = 0;
+    long style = GetAttrs().m_defaultFlags;
 
     if ( m_chkFontTextCtrl->GetValue() )
         style |= wxFNTP_USE_TEXTCTRL;
@@ -194,9 +181,12 @@ long FontPickerWidgetsPage::GetPickerStyle()
         style |= wxFNTP_USEFONT_FOR_LABEL;
 
     if ( m_chkFontDescAsLabel->GetValue() )
-            style |= wxFNTP_FONTDESC_AS_LABEL;
+        style |= wxFNTP_FONTDESC_AS_LABEL;
 
-    return style;
+    m_fontPicker = new wxFontPickerCtrl(this, PickerPage_Font,
+                                        *wxSWISS_FONT,
+                                        wxDefaultPosition, wxDefaultSize,
+                                        style);
 }
 
 void FontPickerWidgetsPage::RecreatePicker()
@@ -228,8 +218,8 @@ void FontPickerWidgetsPage::OnButtonReset(wxCommandEvent& WXUNUSED(event))
 
 void FontPickerWidgetsPage::OnFontChange(wxFontPickerEvent& event)
 {
-    wxLogMessage(wxT("The font changed to '%s' with size %d !"),
-                 event.GetFont().GetFaceName().c_str(), event.GetFont().GetPointSize());
+    wxLogMessage("The font changed to '%s' with size %d !",
+                 event.GetFont().GetFaceName(), event.GetFont().GetPointSize());
 }
 
 void FontPickerWidgetsPage::OnCheckBox(wxCommandEvent &event)

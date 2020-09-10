@@ -4,25 +4,12 @@
 // Author:      Guillermo Rodriguez Garcia, <guille@iies.es>
 // Modified by:
 // Created:     Jan/2000
-// RCS-ID:      $Id: dialogs.h 41020 2006-09-05 20:47:48Z VZ $
 // Copyright:   (c) 2000, Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _LIFE_DIALOGS_H_
 #define _LIFE_DIALOGS_H_
-
-// for compilers that support precompilation, includes "wx/wx.h"
-#include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
-// for all others, include the necessary headers
-#ifndef WX_PRECOMP
-    #include "wx/wx.h"
-#endif
 
 #include "life.h"
 #include "game.h"
@@ -47,7 +34,7 @@ public:
 
 private:
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
     int         m_value;
     wxListBox  *m_list;

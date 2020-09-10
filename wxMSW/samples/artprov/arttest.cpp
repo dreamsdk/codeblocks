@@ -4,9 +4,8 @@
 // Author:      Vaclav Slavik
 // Modified by:
 // Created:     2002/03/25
-// RCS-ID:      $Id: arttest.cpp 41398 2006-09-23 20:16:18Z VZ $
 // Copyright:   (c) Vaclav Slavik
-// Licence:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx/wx.h".
@@ -20,8 +19,8 @@
 #include "wx/wx.h"
 #endif
 
-#if !defined(__WXMSW__) && !defined(__WXPM__)
-    #include "mondrian.xpm"
+#ifndef wxHAS_IMAGES_IN_RESOURCES
+    #include "../sample.xpm"
 #endif
 
 #include "wx/artprov.h"
@@ -34,7 +33,7 @@
 class MyApp : public wxApp
 {
 public:
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 class MyFrame : public wxFrame
@@ -53,7 +52,7 @@ private:
     void OnBrowser(wxCommandEvent& event);
     void OnPlugProvider(wxCommandEvent& event);
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 // ----------------------------------------------------------------------------
@@ -63,8 +62,8 @@ private:
 // IDs for the controls and the menu commands
 enum
 {
-    ID_Quit = wxID_HIGHEST,
-    ID_Logs,
+    ID_Quit = wxID_EXIT,
+    ID_Logs = wxID_HIGHEST+1,
     ID_Browser,
     ID_PlugProvider
 };
@@ -73,7 +72,7 @@ enum
 // event tables and other macros for wxWidgets
 // ----------------------------------------------------------------------------
 
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(ID_Quit,         MyFrame::OnQuit)
 #if wxUSE_LOG
     EVT_MENU(ID_Logs,         MyFrame::OnLogs)
@@ -81,9 +80,9 @@ BEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(wxID_ABOUT,      MyFrame::OnAbout)
     EVT_MENU(ID_Browser,      MyFrame::OnBrowser)
     EVT_MENU(ID_PlugProvider, MyFrame::OnPlugProvider)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // ============================================================================
 // implementation
@@ -96,8 +95,11 @@ IMPLEMENT_APP(MyApp)
 // 'Main program' equivalent: the program execution "starts" here
 bool MyApp::OnInit()
 {
+    if ( !wxApp::OnInit() )
+        return false;
+
     // create the main application window
-    MyFrame *frame = new MyFrame(_T("wxArtProvider sample"),
+    MyFrame *frame = new MyFrame("wxArtProvider sample",
                                  wxPoint(50, 50), wxSize(450, 340));
     frame->Show(true);
     return true;
@@ -111,7 +113,7 @@ class MyArtProvider : public wxArtProvider
 {
 protected:
     virtual wxBitmap CreateBitmap(const wxArtID& id, const wxArtClient& client,
-                                  const wxSize& size);
+                                  const wxSize& size) wxOVERRIDE;
 };
 
 #include "info.xpm"
@@ -147,30 +149,30 @@ wxBitmap MyArtProvider::CreateBitmap(const wxArtID& id,
 MyFrame::MyFrame(const wxString& title, const wxPoint& pos, const wxSize& size, long style)
        : wxFrame(NULL, wxID_ANY, title, pos, size, style)
 {
-    SetIcon(wxICON(mondrian));
+    SetIcon(wxICON(sample));
 
     // create a menu bar
     wxMenu *menuFile = new wxMenu;
 
     // the "About" item should be in the help menu
     wxMenu *helpMenu = new wxMenu;
-    helpMenu->Append(wxID_ABOUT, _T("&About...\tF1"), _T("Show about dialog"));
+    helpMenu->Append(wxID_ABOUT, "&About\tF1", "Show about dialog");
 
-    menuFile->AppendCheckItem(ID_PlugProvider, _T("&Plug-in art provider"), _T("Enable custom art provider"));
+    menuFile->AppendCheckItem(ID_PlugProvider, "&Plug-in art provider", "Enable custom art provider");
     menuFile->AppendSeparator();
 
 #if wxUSE_LOG
-    menuFile->Append(ID_Logs, _T("&Logging test"), _T("Show some logging output"));
+    menuFile->Append(ID_Logs, "&Logging test", "Show some logging output");
 #endif // wxUSE_LOG
-    menuFile->Append(ID_Browser, _T("&Resources browser"), _T("Browse all available icons"));
+    menuFile->Append(ID_Browser, "&Resources browser", "Browse all available icons");
     menuFile->AppendSeparator();
 
-    menuFile->Append(ID_Quit, _T("E&xit\tAlt-X"), _T("Quit this program"));
+    menuFile->Append(ID_Quit, "E&xit\tAlt-X", "Quit this program");
 
     // now append the freshly created menu to the menu bar...
     wxMenuBar *menuBar = new wxMenuBar();
-    menuBar->Append(menuFile, _T("&File"));
-    menuBar->Append(helpMenu, _T("&Help"));
+    menuBar->Append(menuFile, "&File");
+    menuBar->Append(helpMenu, "&Help");
 
     // ... and attach this menu bar to the frame
     SetMenuBar(menuBar);
@@ -188,22 +190,22 @@ void MyFrame::OnQuit(wxCommandEvent& WXUNUSED(event))
 #if wxUSE_LOG
 void MyFrame::OnLogs(wxCommandEvent& WXUNUSED(event))
 {
-    wxLogMessage(_T("Some information."));
-    wxLogError(_T("This is an error."));
-    wxLogWarning(_T("A warning."));
-    wxLogError(_T("Yet another error."));
+    wxLogMessage("Some information.");
+    wxLogError("This is an error.");
+    wxLogWarning("A warning.");
+    wxLogError("Yet another error.");
     wxLog::GetActiveTarget()->Flush();
-    wxLogMessage(_T("Check/uncheck 'File/Plug-in art provider' and try again."));
+    wxLogMessage("Check/uncheck 'File/Plug-in art provider' and try again.");
 }
 #endif // wxUSE_LOG
 
 void MyFrame::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
     wxString msg;
-    msg.Printf( _T("This is the about dialog of wxArtProvider sample.\n")
-                _T("Welcome to %s"), wxVERSION_STRING);
+    msg.Printf( "This is the about dialog of wxArtProvider sample.\n"
+                "Welcome to %s", wxVERSION_STRING);
 
-    wxMessageBox(msg, _T("About wxArtProvider sample"),
+    wxMessageBox(msg, "About wxArtProvider sample",
         wxOK | wxICON_INFORMATION, this);
 }
 

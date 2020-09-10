@@ -4,7 +4,6 @@
 // Author:      Guilhem Lavaux
 // Modified by:
 // Created:     10/07/1997
-// RCS-ID:      $Id: protocol.h 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) 1997, 1998 Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,11 +23,13 @@
     #include "wx/socket.h"
 #endif
 
+class WXDLLIMPEXP_FWD_NET wxProtocolLog;
+
 // ----------------------------------------------------------------------------
 // constants
 // ----------------------------------------------------------------------------
 
-typedef enum
+enum wxProtocolError
 {
     wxPROTO_NOERR = 0,
     wxPROTO_NETERR,
@@ -40,7 +41,7 @@ typedef enum
     wxPROTO_ABRT,
     wxPROTO_RCNCT,
     wxPROTO_STREAMING
-} wxProtocolError;
+};
 
 // ----------------------------------------------------------------------------
 // wxProtocol: abstract base class for all protocols
@@ -55,11 +56,13 @@ class WXDLLIMPEXP_NET wxProtocol
 {
 public:
     wxProtocol();
+    virtual ~wxProtocol();
 
 #if wxUSE_SOCKETS
     bool Reconnect();
-    virtual bool Connect( const wxString& WXUNUSED(host) ) { return FALSE; }
-    virtual bool Connect( wxSockAddress& addr, bool WXUNUSED(wait) = TRUE) { return wxSocketClient::Connect(addr); }
+    virtual bool Connect( const wxString& WXUNUSED(host) ) { return false; }
+    virtual bool Connect( const wxSockAddress& addr, bool WXUNUSED(wait) = true) wxOVERRIDE
+        { return wxSocketClient::Connect(addr); }
 
     // read a '\r\n' terminated line from the given socket and put it in
     // result (without the terminators)
@@ -72,18 +75,61 @@ public:
 
     virtual bool Abort() = 0;
     virtual wxInputStream *GetInputStream(const wxString& path) = 0;
-    virtual wxProtocolError GetError() = 0;
-    virtual wxString GetContentType() { return wxEmptyString; }
-    virtual void SetUser(const wxString& WXUNUSED(user)) {}
-    virtual void SetPassword(const wxString& WXUNUSED(passwd) ) {}
+    virtual wxString GetContentType() const = 0;
+
+    // the error code
+    virtual wxProtocolError GetError() const { return m_lastError; }
+
+    void SetUser(const wxString& user) { m_username = user; }
+    void SetPassword(const wxString& passwd) { m_password = passwd; }
+
+    virtual void SetDefaultTimeout(wxUint32 Value);
+
+    // override wxSocketBase::SetTimeout function to avoid that the internal
+    // m_uiDefaultTimeout goes out-of-sync:
+    virtual void SetTimeout(long seconds) wxOVERRIDE
+        { SetDefaultTimeout(seconds); }
+
+
+    // logging support: each wxProtocol object may have the associated logger
+    // (by default there is none) which is used to log network requests and
+    // responses
+
+    // set the logger, deleting the old one and taking ownership of this one
+    void SetLog(wxProtocolLog *log);
+
+    // return the current logger, may be NULL
+    wxProtocolLog *GetLog() const { return m_log; }
+
+    // detach the existing logger without deleting it, the caller is
+    // responsible for deleting the returned pointer if it's non-NULL
+    wxProtocolLog *DetachLog()
+    {
+        wxProtocolLog * const log = m_log;
+        m_log = NULL;
+        return log;
+    }
+
+    // these functions forward to the same functions with the same names in
+    // wxProtocolLog if we have a valid logger and do nothing otherwise
+    void LogRequest(const wxString& str);
+    void LogResponse(const wxString& str);
+
+protected:
+    // the timeout associated with the protocol:
+    wxUint32        m_uiDefaultTimeout;
+
+    wxString        m_username;
+    wxString        m_password;
+
+    // this must be always updated by the derived classes!
+    wxProtocolError m_lastError;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxProtocol)
-};
+    wxProtocolLog *m_log;
 
-#if wxUSE_SOCKETS
-wxProtocolError WXDLLIMPEXP_NET GetLine(wxSocketBase *sock, wxString& result);
-#endif
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxProtocol);
+};
 
 // ----------------------------------------------------------------------------
 // macros for protocol classes
@@ -94,14 +140,14 @@ public: \
   static wxProtoInfo g_proto_##class;
 
 #define IMPLEMENT_PROTOCOL(class, name, serv, host) \
-wxProtoInfo class::g_proto_##class(name, serv, host, CLASSINFO(class)); \
-bool wxProtocolUse##class = TRUE;
+wxProtoInfo class::g_proto_##class(name, serv, host, wxCLASSINFO(class)); \
+bool wxProtocolUse##class = true;
 
 #define USE_PROTOCOL(class) \
     extern bool wxProtocolUse##class ; \
     static struct wxProtocolUserFor##class \
     { \
-        wxProtocolUserFor##class() { wxProtocolUse##class = TRUE; } \
+        wxProtocolUserFor##class() { wxProtocolUse##class = true; } \
     } wxProtocolDoUse##class;
 
 class WXDLLIMPEXP_NET wxProtoInfo : public wxObject
@@ -122,8 +168,8 @@ protected:
 
     friend class wxURL;
 
-    DECLARE_DYNAMIC_CLASS(wxProtoInfo)
-    DECLARE_NO_COPY_CLASS(wxProtoInfo)
+    wxDECLARE_DYNAMIC_CLASS(wxProtoInfo);
+    wxDECLARE_NO_COPY_CLASS(wxProtoInfo);
 };
 
 #endif // wxUSE_PROTOCOL

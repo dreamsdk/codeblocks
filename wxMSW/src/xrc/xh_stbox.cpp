@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxStaticBox
 // Author:      Brian Gavin
 // Created:     2000/09/09
-// RCS-ID:      $Id: xh_stbox.cpp 39487 2006-05-31 18:27:51Z ABX $
 // Copyright:   (c) 2000 Brian Gavin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -23,7 +22,7 @@
     #include "wx/statbox.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxStaticBoxXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxStaticBoxXmlHandler, wxXmlResourceHandler);
 
 wxStaticBoxXmlHandler::wxStaticBoxXmlHandler()
                       :wxXmlResourceHandler()

@@ -4,8 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2004-12-11
-// RCS-ID:      $Id: subwin.h 30981 2004-12-13 01:02:32Z VZ $
-// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -18,7 +17,7 @@
 // wxSubwindows contains all HWNDs making part of a single wx control
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxSubwindows
+class WXDLLIMPEXP_CORE wxSubwindows
 {
 public:
     // the number of subwindows can be specified either as parameter to ctor or
@@ -28,10 +27,11 @@ public:
     // allocate enough space for the given number of windows
     void Create(size_t n)
     {
-        wxASSERT_MSG( !m_hwnds, _T("Create() called twice?") );
+        wxASSERT_MSG( !m_hwnds, wxT("Create() called twice?") );
 
         m_count = n;
         m_hwnds = (HWND *)calloc(n, sizeof(HWND));
+        m_ids = new wxWindowIDRef[n];
     }
 
     // non-virtual dtor, this class is not supposed to be used polymorphically
@@ -39,10 +39,12 @@ public:
     {
         for ( size_t n = 0; n < m_count; n++ )
         {
-            ::DestroyWindow(m_hwnds[n]);
+            if ( m_hwnds[n] )
+                ::DestroyWindow(m_hwnds[n]);
         }
 
         free(m_hwnds);
+        delete [] m_ids;
     }
 
     // get the number of subwindows
@@ -51,15 +53,24 @@ public:
     // access a given window
     HWND& Get(size_t n)
     {
-        wxASSERT_MSG( n < m_count, _T("subwindow index out of range") );
+        wxASSERT_MSG( n < m_count, wxT("subwindow index out of range") );
 
         return m_hwnds[n];
     }
 
-    HWND& operator[](size_t n) { return Get(n); }
     HWND operator[](size_t n) const
     {
-        return wx_const_cast(wxSubwindows *, this)->Get(n);
+        return const_cast<wxSubwindows *>(this)->Get(n);
+    }
+
+    // initialize the given window: id will be stored in wxWindowIDRef ensuring
+    // that it is not reused while this object exists
+    void Set(size_t n, HWND hwnd, wxWindowID id)
+    {
+        wxASSERT_MSG( n < m_count, wxT("subwindow index out of range") );
+
+        m_hwnds[n] = hwnd;
+        m_ids[n] = id;
     }
 
     // check if we have this window
@@ -84,7 +95,8 @@ public:
         int sw = show ? SW_SHOW : SW_HIDE;
         for ( size_t n = 0; n < m_count; n++ )
         {
-            ::ShowWindow(m_hwnds[n], sw);
+            if ( m_hwnds[n] )
+                ::ShowWindow(m_hwnds[n], sw);
         }
     }
 
@@ -93,22 +105,35 @@ public:
     {
         for ( size_t n = 0; n < m_count; n++ )
         {
-            ::EnableWindow(m_hwnds[n], enable);
+            if ( m_hwnds[n] )
+                ::EnableWindow(m_hwnds[n], enable);
         }
     }
 
     // set font for all windows
     void SetFont(const wxFont& font)
     {
-        HFONT hfont = GetHfontOf(font);
-        wxCHECK_RET( hfont, _T("invalid font") );
-
         for ( size_t n = 0; n < m_count; n++ )
         {
-            ::SendMessage(m_hwnds[n], WM_SETFONT, (WPARAM)hfont, 0);
+            if ( m_hwnds[n] )
+            {
+                wxSetWindowFont(m_hwnds[n], font);
 
-            // otherwise the window might not be redrawn correctly
-            ::InvalidateRect(m_hwnds[n], NULL, FALSE /* don't erase bg */);
+                // otherwise the window might not be redrawn correctly
+                ::InvalidateRect(m_hwnds[n], NULL, FALSE /* don't erase bg */);
+            }
+        }
+    }
+
+    // add all windows to update region to force redraw
+    void Refresh()
+    {
+        for ( size_t n = 0; n < m_count; n++ )
+        {
+            if ( m_hwnds[n] )
+            {
+                ::InvalidateRect(m_hwnds[n], NULL, FALSE /* don't erase bg */);
+            }
         }
     }
 
@@ -118,10 +143,14 @@ public:
         wxRect r;
         for ( size_t n = 0; n < m_count; n++ )
         {
-            RECT rc;
-            ::GetWindowRect(m_hwnds[n], &rc);
+            if ( m_hwnds[n] )
+            {
+                RECT rc;
 
-            r.Union(wxRectFromRECT(rc));
+                ::GetWindowRect(m_hwnds[n], &rc);
+
+                r.Union(wxRectFromRECT(rc));
+            }
         }
 
         return r;
@@ -132,6 +161,7 @@ private:
     {
         m_count = 0;
         m_hwnds = NULL;
+        m_ids = NULL;
     }
 
     // number of elements in m_hwnds array
@@ -140,8 +170,11 @@ private:
     // the HWNDs we contain
     HWND *m_hwnds;
 
+    // the IDs of the windows
+    wxWindowIDRef *m_ids;
 
-    DECLARE_NO_COPY_CLASS(wxSubwindows)
+
+    wxDECLARE_NO_COPY_CLASS(wxSubwindows);
 };
 
 // convenient macro to forward a few methods which are usually propagated to
@@ -188,7 +221,29 @@ private:
             subwins->SetFont(font);                                           \
                                                                               \
         return true;                                                          \
-    }
+    }                                                                         \
+                                                                              \
+    bool cname::SetForegroundColour(const wxColour& colour)                   \
+    {                                                                         \
+        if ( !base::SetForegroundColour(colour) )                             \
+            return false;                                                     \
+                                                                              \
+        if ( subwins )                                                        \
+            subwins->Refresh();                                               \
+                                                                              \
+        return true;                                                          \
+    }                                                                         \
+                                                                              \
+    bool cname::SetBackgroundColour(const wxColour& colour)                   \
+    {                                                                         \
+        if ( !base::SetBackgroundColour(colour) )                             \
+            return false;                                                     \
+                                                                              \
+        if ( subwins )                                                        \
+            subwins->Refresh();                                               \
+                                                                              \
+        return true;                                                          \
+    }                                                                         \
 
 
 #endif // _WX_MSW_SUBWIN_H_

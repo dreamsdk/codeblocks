@@ -4,7 +4,6 @@
 // Author:      Guilhem Lavaux
 // Modified by:
 // Created:     07/07/1997
-// RCS-ID:      $Id: protocol.cpp 40943 2006-08-31 19:31:43Z ABX $
 // Copyright:   (c) 1997, 1998 Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -19,24 +18,23 @@
 #if wxUSE_PROTOCOL
 
 #include "wx/protocol/protocol.h"
+#include "wx/protocol/log.h"
 
 #ifndef WX_PRECOMP
+    #include "wx/app.h"
     #include "wx/module.h"
 #endif
 
 #include "wx/url.h"
+#include "wx/log.h"
 
 #include <stdlib.h>
 
-/////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------
 // wxProtoInfo
-/////////////////////////////////////////////////////////////////
+// ----------------------------------------------------------------------------
 
-/*
- * --------------------------------------------------------------
- * --------- wxProtoInfo CONSTRUCTOR ----------------------------
- * --------------------------------------------------------------
- */
+wxIMPLEMENT_CLASS(wxProtoInfo, wxObject);
 
 wxProtoInfo::wxProtoInfo(const wxChar *name, const wxChar *serv,
                          const bool need_host1, wxClassInfo *info)
@@ -53,21 +51,39 @@ wxProtoInfo::wxProtoInfo(const wxChar *name, const wxChar *serv,
 #endif
 }
 
-/////////////////////////////////////////////////////////////////
-// wxProtocol ///////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////
+
+// ----------------------------------------------------------------------------
+// wxProtocol
+// ----------------------------------------------------------------------------
 
 #if wxUSE_SOCKETS
-IMPLEMENT_ABSTRACT_CLASS(wxProtocol, wxSocketClient)
+wxIMPLEMENT_ABSTRACT_CLASS(wxProtocol, wxSocketClient);
 #else
-IMPLEMENT_ABSTRACT_CLASS(wxProtocol, wxObject)
+wxIMPLEMENT_ABSTRACT_CLASS(wxProtocol, wxObject);
 #endif
 
 wxProtocol::wxProtocol()
 #if wxUSE_SOCKETS
- : wxSocketClient()
+    // Only use non blocking sockets if we can dispatch events.
+    : wxSocketClient(wxSocketClient::GetBlockingFlagIfNeeded() | wxSOCKET_WAITALL)
 #endif
 {
+    m_lastError = wxPROTO_NOERR;
+    m_log = NULL;
+    SetDefaultTimeout(60);      // default timeout is 60 seconds
+}
+
+void wxProtocol::SetDefaultTimeout(wxUint32 Value)
+{
+    m_uiDefaultTimeout = Value;
+#if wxUSE_SOCKETS
+    wxSocketBase::SetTimeout(Value); // sets it for this socket
+#endif
+}
+
+wxProtocol::~wxProtocol()
+{
+    delete m_log;
 }
 
 #if wxUSE_SOCKETS
@@ -101,6 +117,11 @@ wxProtocolError wxProtocol::ReadLine(wxSocketBase *sock, wxString& result)
 
     result.clear();
 
+    // Although we're supposed to get 7-bit ASCII from the server, some FTP
+    // servers are known to send 8-bit data, so we try to decode it in
+    // any way that works as this is more useful than just throwing it away.
+    wxWhateverWorksConv conv;
+
     wxCharBuffer buf(LINE_BUF);
     char *pBuf = buf.data();
     while ( sock->WaitForRead() )
@@ -124,7 +145,7 @@ wxProtocolError wxProtocol::ReadLine(wxSocketBase *sock, wxString& result)
             if ( eol == pBuf )
             {
                 // check for case of "\r\n" being split
-                if ( result.empty() || result.Last() != _T('\r') )
+                if ( result.empty() || result.Last() != wxT('\r') )
                 {
                     // ignore the stray '\n'
                     eol = NULL;
@@ -152,7 +173,7 @@ wxProtocolError wxProtocol::ReadLine(wxSocketBase *sock, wxString& result)
             return wxPROTO_NETERR;
 
         pBuf[nRead] = '\0';
-        result += wxString::FromAscii(pBuf);
+        result += conv.cMB2WX(pBuf);
 
         if ( eol )
         {
@@ -171,45 +192,34 @@ wxProtocolError wxProtocol::ReadLine(wxString& result)
     return ReadLine(this, result);
 }
 
-// old function which only chops '\n' and not '\r\n'
-wxProtocolError GetLine(wxSocketBase *sock, wxString& result)
-{
-#define PROTO_BSIZE 2048
-    size_t avail, size;
-    char tmp_buf[PROTO_BSIZE], tmp_str[PROTO_BSIZE];
-    char *ret;
-    bool found;
-
-    avail = sock->Read(tmp_buf, PROTO_BSIZE).LastCount();
-    if (sock->Error() || avail == 0)
-        return wxPROTO_NETERR;
-
-    memcpy(tmp_str, tmp_buf, avail);
-
-    // Not implemented on all systems
-    // ret = (char *)memccpy(tmp_str, tmp_buf, '\n', avail);
-    found = false;
-    for (ret=tmp_str;ret < (tmp_str+avail); ret++)
-        if (*ret == '\n')
-        {
-            found = true;
-            break;
-        }
-
-    if (!found)
-        return wxPROTO_PROTERR;
-
-    *ret = 0;
-
-    result = wxString::FromAscii( tmp_str );
-    result = result.Left(result.length()-1);
-
-    size = ret-tmp_str+1;
-    sock->Unread(&tmp_buf[size], avail-size);
-
-    return wxPROTO_NOERR;
-#undef PROTO_BSIZE
-}
 #endif // wxUSE_SOCKETS
+
+// ----------------------------------------------------------------------------
+// logging
+// ----------------------------------------------------------------------------
+
+void wxProtocol::SetLog(wxProtocolLog *log)
+{
+    delete m_log;
+    m_log = log;
+}
+
+void wxProtocol::LogRequest(const wxString& str)
+{
+    if ( m_log )
+        m_log->LogRequest(str);
+}
+
+void wxProtocol::LogResponse(const wxString& str)
+{
+    if ( m_log )
+        m_log->LogResponse(str);
+}
+
+void wxProtocolLog::DoLogString(const wxString& str)
+{
+    wxUnusedVar(str); // unused if wxLogTrace() is disabled
+    wxLogTrace(m_traceMask, "%s", str);
+}
 
 #endif // wxUSE_PROTOCOL

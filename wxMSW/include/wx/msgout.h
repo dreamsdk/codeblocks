@@ -4,7 +4,6 @@
 // Author:      Mattia Barbon
 // Modified by:
 // Created:     17.07.02
-// RCS-ID:      $Id: msgout.h 35690 2005-09-25 20:23:30Z VZ $
 // Copyright:   (c) Mattia Barbon
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -17,7 +16,8 @@
 // ----------------------------------------------------------------------------
 
 #include "wx/defs.h"
-#include "wx/wxchar.h"
+#include "wx/chartype.h"
+#include "wx/strvararg.h"
 
 // ----------------------------------------------------------------------------
 // wxMessageOutput is a class abstracting formatted output target, i.e.
@@ -29,9 +29,6 @@ class WXDLLIMPEXP_BASE wxMessageOutput
 public:
     virtual ~wxMessageOutput() { }
 
-    // show a message to the user
-    virtual void Printf(const wxChar* format, ...)  ATTRIBUTE_PRINTF_2 = 0;
-
     // gets the current wxMessageOutput object (may be NULL during
     // initialization or shutdown)
     static wxMessageOutput* Get();
@@ -39,62 +36,124 @@ public:
     // sets the global wxMessageOutput instance; returns the previous one
     static wxMessageOutput* Set(wxMessageOutput* msgout);
 
+    // show a message to the user
+    // void Printf(const wxString& format, ...) = 0;
+    WX_DEFINE_VARARG_FUNC_VOID(Printf, 1, (const wxFormatString&),
+                               DoPrintfWchar, DoPrintfUtf8)
+
+    // called by DoPrintf() to output formatted string but can also be called
+    // directly if no formatting is needed
+    virtual void Output(const wxString& str) = 0;
+
+protected:
+#if !wxUSE_UTF8_LOCALE_ONLY
+    void DoPrintfWchar(const wxChar *format, ...);
+#endif
+#if wxUSE_UNICODE_UTF8
+    void DoPrintfUtf8(const char *format, ...);
+#endif
+
 private:
     static wxMessageOutput* ms_msgOut;
 };
 
 // ----------------------------------------------------------------------------
-// implementation showing the message to the user in "best" possible way: uses
-// native message box if available (currently only under Windows) and stderr
-// otherwise; unlike wxMessageOutputMessageBox this class is always safe to use
+// helper mix-in for output targets that can use difference encodings
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_BASE wxMessageOutputBest : public wxMessageOutput
+class WXDLLIMPEXP_BASE wxMessageOutputWithConv
 {
-public:
-    wxMessageOutputBest() { }
+protected:
+    explicit wxMessageOutputWithConv(const wxMBConv& conv)
+        : m_conv(conv.Clone())
+    {
+    }
 
-    virtual void Printf(const wxChar* format, ...) ATTRIBUTE_PRINTF_2;
+    ~wxMessageOutputWithConv()
+    {
+        delete m_conv;
+    }
+
+    // return the string with "\n" appended if it doesn't already terminate
+    // with it (in which case it's returned unchanged)
+    wxString AppendLineFeedIfNeeded(const wxString& str);
+
+    // Prepare the given string for output by appending a new line to it, if
+    // necessary, and converting it to a narrow string using our conversion
+    // object.
+    wxCharBuffer PrepareForOutput(const wxString& str);
+
+    const wxMBConv* const m_conv;
 };
 
 // ----------------------------------------------------------------------------
-// implementation which sends output to stderr
+// implementation which sends output to stderr or specified file
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_BASE wxMessageOutputStderr : public wxMessageOutput
+class WXDLLIMPEXP_BASE wxMessageOutputStderr : public wxMessageOutput,
+                                               protected wxMessageOutputWithConv
 {
 public:
-    wxMessageOutputStderr() { }
+    wxMessageOutputStderr(FILE *fp = stderr,
+                          const wxMBConv &conv = wxConvWhateverWorks);
 
-    virtual void Printf(const wxChar* format, ...) ATTRIBUTE_PRINTF_2;
+    virtual void Output(const wxString& str) wxOVERRIDE;
+
+protected:
+    FILE *m_fp;
+
+    wxDECLARE_NO_COPY_CLASS(wxMessageOutputStderr);
+};
+
+// ----------------------------------------------------------------------------
+// implementation showing the message to the user in "best" possible way:
+// uses stderr or message box if available according to the flag given to ctor.
+// ----------------------------------------------------------------------------
+
+enum wxMessageOutputFlags
+{
+    wxMSGOUT_PREFER_STDERR = 0, // use stderr if available (this is the default)
+    wxMSGOUT_PREFER_MSGBOX = 1  // always use message box if available
+};
+
+class WXDLLIMPEXP_BASE wxMessageOutputBest : public wxMessageOutputStderr
+{
+public:
+    wxMessageOutputBest(wxMessageOutputFlags flags = wxMSGOUT_PREFER_STDERR)
+        : m_flags(flags) { }
+
+    virtual void Output(const wxString& str) wxOVERRIDE;
+
+private:
+    wxMessageOutputFlags m_flags;
 };
 
 // ----------------------------------------------------------------------------
 // implementation which shows output in a message box
 // ----------------------------------------------------------------------------
 
-#if wxUSE_GUI
+#if wxUSE_GUI && wxUSE_MSGDLG
 
 class WXDLLIMPEXP_CORE wxMessageOutputMessageBox : public wxMessageOutput
 {
 public:
     wxMessageOutputMessageBox() { }
 
-    virtual void Printf(const wxChar* format, ...) ATTRIBUTE_PRINTF_2;
+    virtual void Output(const wxString& str) wxOVERRIDE;
 };
 
-#endif // wxUSE_GUI
+#endif // wxUSE_GUI && wxUSE_MSGDLG
 
 // ----------------------------------------------------------------------------
 // implementation using the native way of outputting debug messages
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_BASE wxMessageOutputDebug : public wxMessageOutput
+class WXDLLIMPEXP_BASE wxMessageOutputDebug : public wxMessageOutputStderr
 {
 public:
     wxMessageOutputDebug() { }
 
-    virtual void Printf(const wxChar* format, ...) ATTRIBUTE_PRINTF_2;
+    virtual void Output(const wxString& str) wxOVERRIDE;
 };
 
 // ----------------------------------------------------------------------------
@@ -106,8 +165,7 @@ class WXDLLIMPEXP_BASE wxMessageOutputLog : public wxMessageOutput
 public:
     wxMessageOutputLog() { }
 
-    virtual void Printf(const wxChar* format, ...) ATTRIBUTE_PRINTF_2;
+    virtual void Output(const wxString& str) wxOVERRIDE;
 };
 
-#endif
-    // _WX_MSGOUT_H_
+#endif // _WX_MSGOUT_H_

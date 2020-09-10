@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     07.04.98 (adapted from appconf.cpp)
-// RCS-ID:      $Id: fileconf.h 50711 2007-12-15 02:57:58Z VZ $
 // Copyright:   (c) 1997 Karsten Ballueder   &  Vadim Zeitlin
 //                       Ballueder@usa.net     <zeitlin@dptmaths.ens-cachan.fr>
 // Licence:     wxWindows licence
@@ -20,6 +19,7 @@
 #include "wx/textfile.h"
 #include "wx/string.h"
 #include "wx/confbase.h"
+#include "wx/filename.h"
 
 // ----------------------------------------------------------------------------
 // wxFileConfig
@@ -111,8 +111,18 @@ public:
   //
   // where file is the basename of szFile, ext is its extension
   // or .conf (Unix) or .ini (Win) if it has none
-  static wxString GetGlobalFileName(const wxChar *szFile);
-  static wxString GetLocalFileName(const wxChar *szFile);
+  static wxFileName GetGlobalFile(const wxString& szFile);
+  static wxFileName GetLocalFile(const wxString& szFile, int style = 0);
+
+  static wxString GetGlobalFileName(const wxString& szFile)
+  {
+      return GetGlobalFile(szFile).GetFullPath();
+  }
+
+  static wxString GetLocalFileName(const wxString& szFile, int style = 0)
+  {
+      return GetLocalFile(szFile, style).GetFullPath();
+  }
 
   // ctor & dtor
     // New constructor: one size fits all. Specify wxCONFIG_USE_LOCAL_FILE or
@@ -141,28 +151,28 @@ public:
 #endif // __UNIX__/!__UNIX__
 
   // implement inherited pure virtual functions
-  virtual void SetPath(const wxString& strPath);
-  virtual const wxString& GetPath() const { return m_strPath; }
+  virtual void SetPath(const wxString& strPath) wxOVERRIDE;
+  virtual const wxString& GetPath() const wxOVERRIDE;
 
-  virtual bool GetFirstGroup(wxString& str, long& lIndex) const;
-  virtual bool GetNextGroup (wxString& str, long& lIndex) const;
-  virtual bool GetFirstEntry(wxString& str, long& lIndex) const;
-  virtual bool GetNextEntry (wxString& str, long& lIndex) const;
+  virtual bool GetFirstGroup(wxString& str, long& lIndex) const wxOVERRIDE;
+  virtual bool GetNextGroup (wxString& str, long& lIndex) const wxOVERRIDE;
+  virtual bool GetFirstEntry(wxString& str, long& lIndex) const wxOVERRIDE;
+  virtual bool GetNextEntry (wxString& str, long& lIndex) const wxOVERRIDE;
 
-  virtual size_t GetNumberOfEntries(bool bRecursive = false) const;
-  virtual size_t GetNumberOfGroups(bool bRecursive = false) const;
+  virtual size_t GetNumberOfEntries(bool bRecursive = false) const wxOVERRIDE;
+  virtual size_t GetNumberOfGroups(bool bRecursive = false) const wxOVERRIDE;
 
-  virtual bool HasGroup(const wxString& strName) const;
-  virtual bool HasEntry(const wxString& strName) const;
+  virtual bool HasGroup(const wxString& strName) const wxOVERRIDE;
+  virtual bool HasEntry(const wxString& strName) const wxOVERRIDE;
 
-  virtual bool Flush(bool bCurrentOnly = false);
+  virtual bool Flush(bool bCurrentOnly = false) wxOVERRIDE;
 
-  virtual bool RenameEntry(const wxString& oldName, const wxString& newName);
-  virtual bool RenameGroup(const wxString& oldName, const wxString& newName);
+  virtual bool RenameEntry(const wxString& oldName, const wxString& newName) wxOVERRIDE;
+  virtual bool RenameGroup(const wxString& oldName, const wxString& newName) wxOVERRIDE;
 
-  virtual bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true);
-  virtual bool DeleteGroup(const wxString& szKey);
-  virtual bool DeleteAll();
+  virtual bool DeleteEntry(const wxString& key, bool bGroupIfEmptyAlso = true) wxOVERRIDE;
+  virtual bool DeleteGroup(const wxString& szKey) wxOVERRIDE;
+  virtual bool DeleteAll() wxOVERRIDE;
 
   // additional, wxFileConfig-specific, functionality
 #if wxUSE_STREAMS
@@ -171,6 +181,9 @@ public:
   // as it won't be "changed" any more
   virtual bool Save(wxOutputStream& os, const wxMBConv& conv = wxConvAuto());
 #endif // wxUSE_STREAMS
+
+  void EnableAutoSave() { m_autosave = true; }
+  void DisableAutoSave() { m_autosave = false; }
 
 public:
   // functions to work with this list
@@ -181,16 +194,22 @@ public:
   bool      LineListIsEmpty();
 
 protected:
-  virtual bool DoReadString(const wxString& key, wxString *pStr) const;
-  virtual bool DoReadLong(const wxString& key, long *pl) const;
+  virtual bool DoReadString(const wxString& key, wxString *pStr) const wxOVERRIDE;
+  virtual bool DoReadLong(const wxString& key, long *pl) const wxOVERRIDE;
+#if wxUSE_BASE64
+  virtual bool DoReadBinary(const wxString& key, wxMemoryBuffer* buf) const wxOVERRIDE;
+#endif // wxUSE_BASE64
 
-  virtual bool DoWriteString(const wxString& key, const wxString& szValue);
-  virtual bool DoWriteLong(const wxString& key, long lValue);
+  virtual bool DoWriteString(const wxString& key, const wxString& szValue) wxOVERRIDE;
+  virtual bool DoWriteLong(const wxString& key, long lValue) wxOVERRIDE;
+#if wxUSE_BASE64
+  virtual bool DoWriteBinary(const wxString& key, const wxMemoryBuffer& buf) wxOVERRIDE;
+#endif // wxUSE_BASE64
 
 private:
   // GetXXXFileName helpers: return ('/' terminated) directory names
   static wxString GetGlobalDir();
-  static wxString GetLocalDir();
+  static wxString GetLocalDir(int style = 0);
 
   // common part of all ctors (assumes that m_str{Local|Global}File are already
   // initialized
@@ -220,8 +239,8 @@ private:
   wxFileConfigLineList *m_linesHead,    // head of the linked list
                        *m_linesTail;    // tail
 
-  wxString    m_strLocalFile,           // local  file name passed to ctor
-              m_strGlobalFile;          // global
+  wxFileName  m_fnLocalFile,            // local  file name passed to ctor
+              m_fnGlobalFile;           // global
   wxString    m_strPath;                // current path (not '/' terminated)
 
   wxFileConfigGroup *m_pRootGroup,      // the top (unnamed) group
@@ -234,8 +253,10 @@ private:
 #endif // __UNIX__
 
   bool m_isDirty;                       // if true, we have unsaved changes
+  bool m_autosave;                      // if true, save changes on destruction
 
-  DECLARE_NO_COPY_CLASS(wxFileConfig)
+  wxDECLARE_NO_COPY_CLASS(wxFileConfig);
+  wxDECLARE_ABSTRACT_CLASS(wxFileConfig);
 };
 
 #endif

@@ -4,7 +4,6 @@
 // Author:      P. Foggia 1996
 // Modified by: Wlodzimierz Skiba (ABX) since 2003
 // Created:     1996
-// RCS-ID:      $Id: bombs1.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) 1996 P. Foggia
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,15 +31,7 @@
 void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
 {
     wxString buf;
-    long chw, chh;
-
-    wxColour wxYellow  = wxTheColourDatabase->Find(wxT("YELLOW"));
-    wxColour wxFocused = wxTheColourDatabase->Find(wxT("GREY"));
-
-    wxPen *bluePen = wxThePenList->FindOrCreatePen(*wxBLUE, 1, wxSOLID);
-
-    wxBrush *focusedBrush = wxTheBrushList->FindOrCreateBrush(wxFocused, wxSOLID);
-    wxBrush *yellowBrush  = wxTheBrushList->FindOrCreateBrush(wxYellow, wxSOLID);
+    wxCoord chw, chh;
 
     dc->SetPen(*wxBLACK_PEN);
 
@@ -53,8 +44,7 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
         dc->DrawLine(0, y*m_cellHeight*Y_UNIT, xMax, y*m_cellHeight*Y_UNIT);
 
 
-    wxFont font= BOMBS_FONT;
-    dc->SetFont(font);
+    dc->SetFont(BOMBS_FONT);
 
     for(x=xc1; x<=xc2; x++)
         for(y=yc1; y<=yc2; y++)
@@ -64,7 +54,7 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
                 dc->SetPen(*wxBLACK_PEN);
 
                 if (m_game->IsFocussed(x, y))
-                    dc->SetBrush(*focusedBrush);
+                    dc->SetBrush(*wxMEDIUM_GREY_BRUSH);
                 else
                     dc->SetBrush(*wxLIGHT_GREY_BRUSH);
 
@@ -95,7 +85,7 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
             {
                 dc->SetPen(*wxBLACK_PEN);
                 if (m_game->IsFocussed(x, y))
-                    dc->SetBrush(*focusedBrush);
+                    dc->SetBrush(*wxMEDIUM_GREY_BRUSH);
                 else
                     dc->SetBrush(*wxLIGHT_GREY_BRUSH);
 
@@ -117,7 +107,7 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
                     y*m_cellHeight*Y_UNIT + (m_cellHeight*Y_UNIT-chh)/2);
                 if (m_game->IsExploded(x,y))
                 {
-                    dc->SetPen(*bluePen);
+                    dc->SetPen(*wxBLUE_PEN);
                     dc->DrawLine(x*m_cellWidth*X_UNIT, y*m_cellHeight*Y_UNIT,
                         (x+1)*m_cellWidth*X_UNIT, (y+1)*m_cellHeight*Y_UNIT);
                     dc->DrawLine(x*m_cellWidth*X_UNIT, (y+1)*m_cellHeight*Y_UNIT,
@@ -128,11 +118,11 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
             {
                 dc->SetPen(*wxBLACK_PEN);
                 if (m_game->IsFocussed(x, y))
-                    dc->SetBrush(*focusedBrush);
+                    dc->SetBrush(*wxMEDIUM_GREY_BRUSH);
                 else if (m_game->IsSelected(x,y))
                     dc->SetBrush(*wxWHITE_BRUSH);
-                else 
-                    dc->SetBrush(*yellowBrush);
+                else
+                    dc->SetBrush(*wxYELLOW_BRUSH);
                 dc->DrawRectangle( x*m_cellWidth*X_UNIT, y*m_cellHeight*Y_UNIT,
                     m_cellWidth*X_UNIT+1, m_cellHeight*Y_UNIT+1);
 
@@ -163,7 +153,7 @@ void BombsCanvas::DrawField(wxDC *dc, int xc1, int yc1, int xc2, int yc2)
 
     wxString msg;
     msg.Printf(wxT("%d bombs, %u marked, %d remaining cells"),
-               m_game->GetNumBombs(), m_game->GetNumMarkedCells(), 
+               m_game->GetNumBombs(), m_game->GetNumMarkedCells(),
                m_game->GetNumRemainingCells() );
 
 #if wxUSE_LOG && wxUSE_STATUSBAR

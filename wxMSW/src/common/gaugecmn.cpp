@@ -4,9 +4,8 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     20.02.01
-// RCS-ID:      $Id: gaugecmn.cpp 41089 2006-09-09 13:36:54Z RR $
 // Copyright:   (c) 2001 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
-// License:     wxWindows licence
+// Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 // ============================================================================
@@ -30,8 +29,9 @@
 #if wxUSE_GAUGE
 
 #include "wx/gauge.h"
+#include "wx/appprogress.h"
 
-const wxChar wxGaugeNameStr[] = wxT("gauge");
+const char wxGaugeNameStr[] = "gauge";
 
 // ============================================================================
 // implementation
@@ -40,11 +40,83 @@ const wxChar wxGaugeNameStr[] = wxT("gauge");
 wxGaugeBase::~wxGaugeBase()
 {
     // this destructor is required for Darwin
+    delete m_appProgressIndicator;
 }
+
+// ----------------------------------------------------------------------------
+// XTI
+// ----------------------------------------------------------------------------
+
+wxDEFINE_FLAGS( wxGaugeStyle )
+wxBEGIN_FLAGS( wxGaugeStyle )
+// new style border flags, we put them first to
+// use them for streaming out
+wxFLAGS_MEMBER(wxBORDER_SIMPLE)
+wxFLAGS_MEMBER(wxBORDER_SUNKEN)
+wxFLAGS_MEMBER(wxBORDER_DOUBLE)
+wxFLAGS_MEMBER(wxBORDER_RAISED)
+wxFLAGS_MEMBER(wxBORDER_STATIC)
+wxFLAGS_MEMBER(wxBORDER_NONE)
+
+// old style border flags
+wxFLAGS_MEMBER(wxSIMPLE_BORDER)
+wxFLAGS_MEMBER(wxSUNKEN_BORDER)
+wxFLAGS_MEMBER(wxDOUBLE_BORDER)
+wxFLAGS_MEMBER(wxRAISED_BORDER)
+wxFLAGS_MEMBER(wxSTATIC_BORDER)
+wxFLAGS_MEMBER(wxBORDER)
+
+// standard window styles
+wxFLAGS_MEMBER(wxTAB_TRAVERSAL)
+wxFLAGS_MEMBER(wxCLIP_CHILDREN)
+wxFLAGS_MEMBER(wxTRANSPARENT_WINDOW)
+wxFLAGS_MEMBER(wxWANTS_CHARS)
+wxFLAGS_MEMBER(wxFULL_REPAINT_ON_RESIZE)
+wxFLAGS_MEMBER(wxALWAYS_SHOW_SB )
+wxFLAGS_MEMBER(wxVSCROLL)
+wxFLAGS_MEMBER(wxHSCROLL)
+
+wxFLAGS_MEMBER(wxGA_HORIZONTAL)
+wxFLAGS_MEMBER(wxGA_VERTICAL)
+wxFLAGS_MEMBER(wxGA_SMOOTH)
+wxFLAGS_MEMBER(wxGA_PROGRESS)
+wxEND_FLAGS( wxGaugeStyle )
+
+wxIMPLEMENT_DYNAMIC_CLASS_XTI(wxGauge, wxControl, "wx/gauge.h");
+
+wxBEGIN_PROPERTIES_TABLE(wxGauge)
+wxPROPERTY( Value, int, SetValue, GetValue, 0, 0 /*flags*/, \
+           wxT("Helpstring"), wxT("group"))
+wxPROPERTY( Range, int, SetRange, GetRange, 0, 0 /*flags*/, \
+           wxT("Helpstring"), wxT("group"))
+
+wxPROPERTY_FLAGS( WindowStyle, wxGaugeStyle, long, SetWindowStyleFlag, \
+                 GetWindowStyleFlag, wxEMPTY_PARAMETER_VALUE, 0 /*flags*/, \
+                 wxT("Helpstring"), wxT("group")) // style
+wxEND_PROPERTIES_TABLE()
+
+wxEMPTY_HANDLERS_TABLE(wxGauge)
+
+wxCONSTRUCTOR_6( wxGauge, wxWindow*, Parent, wxWindowID, Id, int, Range, \
+                wxPoint, Position, wxSize, Size, long, WindowStyle )
 
 // ----------------------------------------------------------------------------
 // wxGauge creation
 // ----------------------------------------------------------------------------
+
+void wxGaugeBase::InitProgressIndicatorIfNeeded()
+{
+    m_appProgressIndicator = NULL;
+    if ( HasFlag(wxGA_PROGRESS) )
+    {
+        wxWindow* topParent = wxGetTopLevelParent(this);
+        if ( topParent != NULL )
+        {
+            m_appProgressIndicator =
+                new wxAppProgressIndicator(topParent, GetRange());
+        }
+    }
+}
 
 bool wxGaugeBase::Create(wxWindow *parent,
                          wxWindowID id,
@@ -66,9 +138,12 @@ bool wxGaugeBase::Create(wxWindow *parent,
 
     SetRange(range);
     SetValue(0);
+
 #if wxGAUGE_EMULATE_INDETERMINATE_MODE
     m_nDirection = wxRIGHT;
 #endif
+
+    InitProgressIndicatorIfNeeded();
 
     return true;
 }
@@ -80,6 +155,9 @@ bool wxGaugeBase::Create(wxWindow *parent,
 void wxGaugeBase::SetRange(int range)
 {
     m_rangeMax = range;
+
+    if ( m_appProgressIndicator )
+        m_appProgressIndicator->SetRange(m_rangeMax);
 }
 
 int wxGaugeBase::GetRange() const
@@ -90,6 +168,15 @@ int wxGaugeBase::GetRange() const
 void wxGaugeBase::SetValue(int pos)
 {
     m_gaugePos = pos;
+
+    if ( m_appProgressIndicator )
+    {
+        m_appProgressIndicator->SetValue(pos);
+        if ( pos == 0 )
+        {
+            m_appProgressIndicator->Reset();
+        }
+    }
 }
 
 int wxGaugeBase::GetValue() const
@@ -128,29 +215,9 @@ void wxGaugeBase::Pulse()
         }
     }
 #endif
-}
 
-// ----------------------------------------------------------------------------
-// wxGauge appearance params
-// ----------------------------------------------------------------------------
-
-void wxGaugeBase::SetShadowWidth(int WXUNUSED(w))
-{
-}
-
-int wxGaugeBase::GetShadowWidth() const
-{
-    return 0;
-}
-
-
-void wxGaugeBase::SetBezelFace(int WXUNUSED(w))
-{
-}
-
-int wxGaugeBase::GetBezelFace() const
-{
-    return 0;
+    if ( m_appProgressIndicator )
+        m_appProgressIndicator->Pulse();
 }
 
 #endif // wxUSE_GAUGE

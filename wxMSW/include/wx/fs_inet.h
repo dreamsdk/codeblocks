@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        fs_inet.h
+// Name:        wx/fs_inet.h
 // Purpose:     HTTP and FTP file system
 // Author:      Vaclav Slavik
 // Copyright:   (c) 1999 Vaclav Slavik
@@ -22,8 +22,8 @@
 class WXDLLIMPEXP_NET wxInternetFSHandler : public wxFileSystemHandler
 {
     public:
-        virtual bool CanOpen(const wxString& location);
-        virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location);
+        virtual bool CanOpen(const wxString& location) wxOVERRIDE;
+        virtual wxFSFile* OpenFile(wxFileSystem& fs, const wxString& location) wxOVERRIDE;
 };
 
 #endif

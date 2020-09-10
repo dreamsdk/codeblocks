@@ -1,8 +1,7 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        imagpcx.h
+// Name:        wx/imagpcx.h
 // Purpose:     wxImage PCX handler
 // Author:      Guillermo Rodriguez Garcia <guille@iies.es>
-// RCS-ID:      $Id: imagpcx.h 37393 2006-02-08 21:47:09Z VZ $
 // Copyright:   (c) 1999 Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -18,7 +17,7 @@
 //-----------------------------------------------------------------------------
 
 #if wxUSE_PCX
-class WXDLLEXPORT wxPCXHandler : public wxImageHandler
+class WXDLLIMPEXP_CORE wxPCXHandler : public wxImageHandler
 {
 public:
     inline wxPCXHandler()
@@ -30,14 +29,14 @@ public:
     }
 
 #if wxUSE_STREAMS
-    virtual bool LoadFile( wxImage *image, wxInputStream& stream, bool verbose=true, int index=-1 );
-    virtual bool SaveFile( wxImage *image, wxOutputStream& stream, bool verbose=true );
+    virtual bool LoadFile( wxImage *image, wxInputStream& stream, bool verbose=true, int index=-1 ) wxOVERRIDE;
+    virtual bool SaveFile( wxImage *image, wxOutputStream& stream, bool verbose=true ) wxOVERRIDE;
 protected:
-    virtual bool DoCanRead( wxInputStream& stream );
+    virtual bool DoCanRead( wxInputStream& stream ) wxOVERRIDE;
 #endif // wxUSE_STREAMS
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxPCXHandler)
+    wxDECLARE_DYNAMIC_CLASS(wxPCXHandler);
 };
 #endif // wxUSE_PCX
 

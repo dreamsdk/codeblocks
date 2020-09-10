@@ -3,7 +3,6 @@
 // Purpose:     XRC resource for wxRadioButton
 // Author:      Bob Mitchell
 // Created:     2000/03/21
-// RCS-ID:      $Id: xh_radbt.cpp 39567 2006-06-05 16:46:15Z ABX $
 // Copyright:   (c) 2000 Bob Mitchell and Verant Interactive
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -23,7 +22,7 @@
     #include "wx/radiobut.h"
 #endif
 
-IMPLEMENT_DYNAMIC_CLASS(wxRadioButtonXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxRadioButtonXmlHandler, wxXmlResourceHandler);
 
 wxRadioButtonXmlHandler::wxRadioButtonXmlHandler()
 : wxXmlResourceHandler()

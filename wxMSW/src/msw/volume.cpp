@@ -4,7 +4,6 @@
 // Author:      George Policello
 // Modified by:
 // Created:     28 Jan 02
-// RCS-ID:      $Id: volume.cpp 41903 2006-10-10 17:37:02Z PC $
 // Copyright:   (c) 2002 George Policello
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,15 +31,20 @@
         #include "wx/icon.h"
     #endif
     #include "wx/intl.h"
+    #include "wx/log.h"
     #include "wx/hashmap.h"
+    #include "wx/filefn.h"
 #endif // WX_PRECOMP
 
 #include "wx/dir.h"
 #include "wx/dynlib.h"
 #include "wx/arrimpl.cpp"
 
+// some compilers require including <windows.h> before <shellapi.h> so do it
+// even if this is not necessary with most of them
+#include "wx/msw/wrapwin.h"
 #include <shellapi.h>
-#include <shlobj.h>
+#include "wx/msw/wrapshl.h"
 #include "wx/msw/missing.h"
 
 #if wxUSE_BASE
@@ -64,7 +68,18 @@ static WNetCloseEnumPtr s_pWNetCloseEnum;
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // Globals/Statics
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-static long s_cancelSearch = FALSE;
+
+#if defined(__CYGWIN__) && defined(__LP64__)
+    // We can't use long in 64 bit Cygwin build because Cygwin uses LP64 model
+    // (unlike all the other MSW compilers) and long is 64 bits, while
+    // InterlockedExchange(), with which this variable is used, requires a 32
+    // bit-sized value, so use Cygwin-specific type with the right size.
+    typedef __LONG32 wxInterlockedArg_t;
+#else
+    typedef long wxInterlockedArg_t;
+#endif
+
+static wxInterlockedArg_t s_cancelSearch = FALSE;
 
 struct FileInfo
 {
@@ -151,11 +166,13 @@ static unsigned GetBasicFlags(const wxChar* filename)
     // this information.
     //-----------------------------------------------------------------------
     SHFILEINFO fi;
-    long rc;
-    rc = SHGetFileInfo(filename, 0, &fi, sizeof(fi), SHGFI_ATTRIBUTES );
+    long rc = SHGetFileInfo(filename, 0, &fi, sizeof(fi), SHGFI_ATTRIBUTES);
     if (!rc)
     {
-        wxLogError(_("Cannot read typename from '%s'!"), filename);
+        // this error is not fatal, so don't show a message to the user about
+        // it, otherwise it would appear every time a generic directory picker
+        // dialog is used and there is a connected network drive
+        wxLogLastError(wxT("SHGetFileInfo"));
     }
     else
     {
@@ -262,6 +279,17 @@ static void BuildListFromNN(wxArrayString& list, NETRESOURCE* pResSrc,
                 {
                     wxString filename(pRes->lpRemoteName);
 
+                    // if the drive is unavailable, FilteredAdd() can hang for
+                    // a long time and, moreover, its failure appears to be not
+                    // cached so this will happen every time we use it, so try
+                    // a much quicker wxDirExists() test (which still hangs but
+                    // for much shorter time) for locally mapped drives first
+                    // to try to avoid this
+                    if ( pRes->lpLocalName &&
+                            *pRes->lpLocalName &&
+                                !wxDirExists(pRes->lpLocalName) )
+                        continue;
+
                     if (!filename.empty())
                     {
                         if (filename.Last() != '\\')
@@ -270,7 +298,7 @@ static void BuildListFromNN(wxArrayString& list, NETRESOURCE* pResSrc,
                         // The filter function will not know mounted from unmounted, and neither do we unless
                         // we are iterating using RESOURCE_CONNECTED, in which case they all are mounted.
                         // Volumes on disconnected servers, however, will correctly show as unmounted.
-                        FilteredAdd(list, filename, flagsSet, flagsUnset&~wxFS_VOL_MOUNTED);
+                        FilteredAdd(list, filename.t_str(), flagsSet, flagsUnset&~wxFS_VOL_MOUNTED);
                         if (scope == RESOURCE_GLOBALNET)
                             s_fileInfo[filename].m_flags &= ~wxFS_VOL_MOUNTED;
                     }
@@ -381,16 +409,16 @@ wxArrayString wxFSVolumeBase::GetVolumes(int flagsSet, int flagsUnset)
     ::InterlockedExchange(&s_cancelSearch, FALSE);     // reset
 
 #if wxUSE_DYNLIB_CLASS
-    if (!s_mprLib.IsLoaded() && s_mprLib.Load(_T("mpr.dll")))
+    if (!s_mprLib.IsLoaded() && s_mprLib.Load(wxT("mpr.dll")))
     {
 #ifdef UNICODE
-        s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(_T("WNetOpenEnumW"));
-        s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(_T("WNetEnumResourceW"));
+        s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(wxT("WNetOpenEnumW"));
+        s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(wxT("WNetEnumResourceW"));
 #else
-        s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(_T("WNetOpenEnumA"));
-        s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(_T("WNetEnumResourceA"));
+        s_pWNetOpenEnum = (WNetOpenEnumPtr)s_mprLib.GetSymbol(wxT("WNetOpenEnumA"));
+        s_pWNetEnumResource = (WNetEnumResourcePtr)s_mprLib.GetSymbol(wxT("WNetEnumResourceA"));
 #endif
-        s_pWNetCloseEnum = (WNetCloseEnumPtr)s_mprLib.GetSymbol(_T("WNetCloseEnum"));
+        s_pWNetCloseEnum = (WNetCloseEnumPtr)s_mprLib.GetSymbol(wxT("WNetCloseEnum"));
     }
 #endif
 
@@ -484,16 +512,17 @@ bool wxFSVolumeBase::Create(const wxString& name)
 
     // Display name.
     SHFILEINFO fi;
-    long rc = SHGetFileInfo(m_volName, 0, &fi, sizeof(fi), SHGFI_DISPLAYNAME);
+    long rc = SHGetFileInfo(m_volName.t_str(), 0, &fi, sizeof(fi), SHGFI_DISPLAYNAME);
     if (!rc)
     {
         wxLogError(_("Cannot read typename from '%s'!"), m_volName.c_str());
-        return m_isOk;
+        return false;
     }
     m_dispName = fi.szDisplayName;
 
     // all tests passed.
-    return m_isOk = true;
+    m_isOk = true;
+    return true;
 } // Create
 
 //=============================================================================
@@ -564,8 +593,9 @@ void wxFSVolume::InitIcons()
 wxIcon wxFSVolume::GetIcon(wxFSIconType type) const
 {
     wxCHECK_MSG( type >= 0 && (size_t)type < m_icons.GetCount(), wxNullIcon,
-                 _T("wxFSIconType::GetIcon(): invalid icon index") );
+                 wxT("wxFSIconType::GetIcon(): invalid icon index") );
 
+#ifdef __WXMSW__
     // Load on demand.
     if (m_icons[type].IsNull())
     {
@@ -589,18 +619,27 @@ wxIcon wxFSVolume::GetIcon(wxFSIconType type) const
             break;
 
         case wxFS_VOL_ICO_MAX:
-            wxFAIL_MSG(_T("wxFS_VOL_ICO_MAX is not valid icon type"));
+            wxFAIL_MSG(wxT("wxFS_VOL_ICO_MAX is not valid icon type"));
             break;
         }
 
         SHFILEINFO fi;
-        long rc = SHGetFileInfo(m_volName, 0, &fi, sizeof(fi), flags);
-        m_icons[type].SetHICON((WXHICON)fi.hIcon);
+        long rc = SHGetFileInfo(m_volName.t_str(), 0, &fi, sizeof(fi), flags);
         if (!rc || !fi.hIcon)
+        {
             wxLogError(_("Cannot load icon from '%s'."), m_volName.c_str());
+        }
+        else
+        {
+            m_icons[type].CreateFromHICON((WXHICON)fi.hIcon);
+        }
     }
 
     return m_icons[type];
+#else
+    wxFAIL_MSG(wxS("Can't convert HICON to wxIcon in this port."));
+    return wxNullIcon;
+#endif
 } // GetIcon
 
 #endif // wxUSE_GUI

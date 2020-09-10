@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        univ/tglbtn.cpp
+// Name:        src/univ/tglbtn.cpp
 // Purpose:     wxToggleButton
 // Author:      Vadim Zeitlin
 // Modified by: David Bjorkevik
 // Created:     16.05.06
-// RCS-ID:      $Id: tglbtn.cpp 39320 2006-05-24 17:17:27Z PC $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -18,10 +17,15 @@
 #if wxUSE_TOGGLEBTN
 
 #include "wx/tglbtn.h"
+#include "wx/univ/renderer.h"
+#include "wx/univ/colschem.h"
+#include "wx/univ/theme.h"
 
-DEFINE_EVENT_TYPE(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED)
+#include "wx/stockitem.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxToggleButton, wxButton)
+wxDEFINE_EVENT( wxEVT_TOGGLEBUTTON, wxCommandEvent );
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxToggleButton, wxToggleButtonBase);
 
 wxToggleButton::wxToggleButton()
 {
@@ -29,34 +33,55 @@ wxToggleButton::wxToggleButton()
 }
 
 wxToggleButton::wxToggleButton(wxWindow *parent,
-                               wxWindowID id,
-                               const wxBitmap& bitmap,
-                               const wxString& label,
-                               const wxPoint& pos,
-                               const wxSize& size,
-                               long style,
-                               const wxValidator& validator,
-                               const wxString& name)
-{
-    Init();
-    Create(parent, id, bitmap, label, pos, size, style, validator, name);
-}
-
-wxToggleButton::wxToggleButton(wxWindow *parent,
-                               wxWindowID id,
-                               const wxString& label,
-                               const wxPoint& pos,
-                               const wxSize& size,
-                               long style,
-                               const wxValidator& validator,
-                               const wxString& name)
+                       wxWindowID id,
+                       const wxString& label,
+                       const wxPoint& pos,
+                       const wxSize& size,
+                       long style,
+                       const wxValidator& validator,
+                       const wxString& name)
 {
     Init();
     Create(parent, id, label, pos, size, style, validator, name);
 }
 
-wxToggleButton::~wxToggleButton()
+bool wxToggleButton::Create(wxWindow *parent,
+                            wxWindowID id,
+                            const wxString& lbl,
+                            const wxPoint& pos,
+                            const wxSize& size, long style,
+                            const wxValidator& validator,
+                            const wxString& name)
 {
+    wxString label(lbl);
+    if (label.empty() && wxIsStockID(id))
+        label = wxGetStockLabel(id);
+
+    long ctrl_style = style & ~wxBU_ALIGN_MASK;
+    ctrl_style = ctrl_style & ~wxALIGN_MASK;
+
+    if((style & wxBU_RIGHT) == wxBU_RIGHT)
+        ctrl_style |= wxALIGN_RIGHT;
+    else if((style & wxBU_LEFT) == wxBU_LEFT)
+        ctrl_style |= wxALIGN_LEFT;
+    else
+        ctrl_style |= wxALIGN_CENTRE_HORIZONTAL;
+
+    if((style & wxBU_TOP) == wxBU_TOP)
+        ctrl_style |= wxALIGN_TOP;
+    else if((style & wxBU_BOTTOM) == wxBU_BOTTOM)
+        ctrl_style |= wxALIGN_BOTTOM;
+    else
+        ctrl_style |= wxALIGN_CENTRE_VERTICAL;
+
+    if ( !wxToggleButtonBase::Create(parent, id, pos, size, ctrl_style, validator, name) )
+    {
+        wxFAIL_MSG(wxT("wxToggleButton creation failed"));
+        return false;
+    }
+    SetLabel(label);
+    CreateInputHandler(wxINP_HANDLER_BUTTON);
+    return true;
 }
 
 void wxToggleButton::Init()
@@ -83,7 +108,7 @@ void wxToggleButton::Toggle()
 
 void wxToggleButton::Click()
 {
-    wxCommandEvent event(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED, GetId());
+    wxCommandEvent event(wxEVT_TOGGLEBUTTON, GetId());
     InitCommandEvent(event);
     event.SetInt(GetValue());
     Command(event);

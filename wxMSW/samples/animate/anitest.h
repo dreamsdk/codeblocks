@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     02/07/2001
-// RCS-ID:      $Id: anitest.h 43476 2006-11-17 18:15:44Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -15,7 +14,7 @@
 class MyApp : public wxApp
 {
 public:
-    bool OnInit();
+    bool OnInit() wxOVERRIDE;
 };
 
 // Define a new frame
@@ -49,5 +48,5 @@ protected:
     wxAnimationCtrl*    m_animationCtrl;
 
 private:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };

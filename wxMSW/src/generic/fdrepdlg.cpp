@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        src/generic/fdrepgg.cpp
+// Name:        src/generic/fdrepdlg.cpp
 // Purpose:     Find/Replace dialogs
 // Author:      Markus Greither and Vadim Zeitlin
 // Modified by:
 // Created:     05/25/01
-// RCS-ID:
 // Copyright:   (c) wxWidgets team
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -50,9 +49,9 @@
 // implementation
 // ============================================================================
 
-IMPLEMENT_DYNAMIC_CLASS(wxGenericFindReplaceDialog, wxDialog)
+wxIMPLEMENT_DYNAMIC_CLASS(wxGenericFindReplaceDialog, wxDialog);
 
-BEGIN_EVENT_TABLE(wxGenericFindReplaceDialog, wxDialog)
+wxBEGIN_EVENT_TABLE(wxGenericFindReplaceDialog, wxDialog)
     EVT_BUTTON(wxID_FIND, wxGenericFindReplaceDialog::OnFind)
     EVT_BUTTON(wxID_REPLACE, wxGenericFindReplaceDialog::OnReplace)
     EVT_BUTTON(wxID_REPLACE_ALL, wxGenericFindReplaceDialog::OnReplaceAll)
@@ -63,7 +62,7 @@ BEGIN_EVENT_TABLE(wxGenericFindReplaceDialog, wxDialog)
     EVT_UPDATE_UI(wxID_REPLACE_ALL, wxGenericFindReplaceDialog::OnUpdateFindUI)
 
     EVT_CLOSE(wxGenericFindReplaceDialog::OnCloseWindow)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // wxGenericFindReplaceDialog
@@ -87,6 +86,8 @@ bool wxGenericFindReplaceDialog::Create(wxWindow *parent,
                                         const wxString& title,
                                         int style)
 {
+    parent = GetParentForModalDialog(parent, style);
+
     if ( !wxDialog::Create(parent, wxID_ANY, title,
                            wxDefaultPosition, wxDefaultSize,
                            wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER
@@ -98,7 +99,7 @@ bool wxGenericFindReplaceDialog::Create(wxWindow *parent,
     SetData(data);
 
     wxCHECK_MSG( m_FindReplaceData, false,
-                 _T("can't create dialog without data") );
+                 wxT("can't create dialog without data") );
 
     bool isPda = (wxSystemSettings::GetScreenType() <= wxSYS_SCREEN_PDA);
 
@@ -257,22 +258,22 @@ void wxGenericFindReplaceDialog::SendEvent(const wxEventType& evtType)
 
 void wxGenericFindReplaceDialog::OnFind(wxCommandEvent& WXUNUSED(event))
 {
-    SendEvent(wxEVT_COMMAND_FIND_NEXT);
+    SendEvent(wxEVT_FIND_NEXT);
 }
 
 void wxGenericFindReplaceDialog::OnReplace(wxCommandEvent& WXUNUSED(event))
 {
-    SendEvent(wxEVT_COMMAND_FIND_REPLACE);
+    SendEvent(wxEVT_FIND_REPLACE);
 }
 
 void wxGenericFindReplaceDialog::OnReplaceAll(wxCommandEvent& WXUNUSED(event))
 {
-    SendEvent(wxEVT_COMMAND_FIND_REPLACE_ALL);
+    SendEvent(wxEVT_FIND_REPLACE_ALL);
 }
 
 void wxGenericFindReplaceDialog::OnCancel(wxCommandEvent& WXUNUSED(event))
 {
-    SendEvent(wxEVT_COMMAND_FIND_CLOSE);
+    SendEvent(wxEVT_FIND_CLOSE);
 
     Show(false);
 }
@@ -285,7 +286,7 @@ void wxGenericFindReplaceDialog::OnUpdateFindUI(wxUpdateUIEvent &event)
 
 void wxGenericFindReplaceDialog::OnCloseWindow(wxCloseEvent &)
 {
-    SendEvent(wxEVT_COMMAND_FIND_CLOSE);
+    SendEvent(wxEVT_FIND_CLOSE);
 }
 
 #endif // wxUSE_FINDREPLDLG

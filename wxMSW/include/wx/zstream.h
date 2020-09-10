@@ -4,7 +4,6 @@
 // Author:      Guilhem Lavaux
 // Modified by: Mike Wetherell
 // Created:     11/07/98
-// RCS-ID:      $Id: zstream.h 54688 2008-07-18 08:06:44Z MW $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -16,9 +15,10 @@
 #if wxUSE_ZLIB && wxUSE_STREAMS
 
 #include "wx/stream.h"
+#include "wx/versioninfo.h"
 
 // Compression level
-enum {
+enum wxZlibCompressionLevels {
     wxZ_DEFAULT_COMPRESSION = -1,
     wxZ_NO_COMPRESSION = 0,
     wxZ_BEST_SPEED = 1,
@@ -26,10 +26,7 @@ enum {
 };
 
 // Flags
-enum {
-#if WXWIN_COMPATIBILITY_2_4
-    wxZLIB_24COMPATIBLE = 4, // read v2.4.x data without error
-#endif
+enum wxZLibFlags {
     wxZLIB_NO_HEADER = 0,    // raw deflate stream, no header or checksum
     wxZLIB_ZLIB = 1,         // zlib header and checksum
     wxZLIB_GZIP = 2,         // gzip header and checksum, requires zlib 1.2.1+
@@ -42,14 +39,17 @@ class WXDLLIMPEXP_BASE wxZlibInputStream: public wxFilterInputStream {
   wxZlibInputStream(wxInputStream *stream, int flags = wxZLIB_AUTO);
   virtual ~wxZlibInputStream();
 
-  char Peek() { return wxInputStream::Peek(); }
-  wxFileOffset GetLength() const { return wxInputStream::GetLength(); }
+  char Peek() wxOVERRIDE { return wxInputStream::Peek(); }
+  wxFileOffset GetLength() const wxOVERRIDE { return wxInputStream::GetLength(); }
 
   static bool CanHandleGZip();
 
+  bool SetDictionary(const char *data, size_t datalen);
+  bool SetDictionary(const wxMemoryBuffer &buf);
+
  protected:
-  size_t OnSysRead(void *buffer, size_t size);
-  wxFileOffset OnSysTell() const { return m_pos; }
+  size_t OnSysRead(void *buffer, size_t size) wxOVERRIDE;
+  wxFileOffset OnSysTell() const wxOVERRIDE { return m_pos; }
 
  private:
   void Init(int flags);
@@ -59,11 +59,8 @@ class WXDLLIMPEXP_BASE wxZlibInputStream: public wxFilterInputStream {
   unsigned char *m_z_buffer;
   struct z_stream_s *m_inflate;
   wxFileOffset m_pos;
-#if WXWIN_COMPATIBILITY_2_4
-  bool m_24compatibilty;
-#endif
 
-  DECLARE_NO_COPY_CLASS(wxZlibInputStream)
+  wxDECLARE_NO_COPY_CLASS(wxZlibInputStream);
 };
 
 class WXDLLIMPEXP_BASE wxZlibOutputStream: public wxFilterOutputStream {
@@ -72,15 +69,18 @@ class WXDLLIMPEXP_BASE wxZlibOutputStream: public wxFilterOutputStream {
   wxZlibOutputStream(wxOutputStream *stream, int level = -1, int flags = wxZLIB_ZLIB);
   virtual ~wxZlibOutputStream() { Close(); }
 
-  void Sync() { DoFlush(false); }
-  bool Close();
-  wxFileOffset GetLength() const { return m_pos; }
+  void Sync() wxOVERRIDE { DoFlush(false); }
+  bool Close() wxOVERRIDE;
+  wxFileOffset GetLength() const wxOVERRIDE { return m_pos; }
 
   static bool CanHandleGZip();
 
+  bool SetDictionary(const char *data, size_t datalen);
+  bool SetDictionary(const wxMemoryBuffer &buf);
+
  protected:
-  size_t OnSysWrite(const void *buffer, size_t size);
-  wxFileOffset OnSysTell() const { return m_pos; }
+  size_t OnSysWrite(const void *buffer, size_t size) wxOVERRIDE;
+  wxFileOffset OnSysTell() const wxOVERRIDE { return m_pos; }
 
   virtual void DoFlush(bool final);
 
@@ -93,7 +93,7 @@ class WXDLLIMPEXP_BASE wxZlibOutputStream: public wxFilterOutputStream {
   struct z_stream_s *m_deflate;
   wxFileOffset m_pos;
 
-  DECLARE_NO_COPY_CLASS(wxZlibOutputStream)
+  wxDECLARE_NO_COPY_CLASS(wxZlibOutputStream);
 };
 
 class WXDLLIMPEXP_BASE wxZlibClassFactory: public wxFilterClassFactory
@@ -101,20 +101,20 @@ class WXDLLIMPEXP_BASE wxZlibClassFactory: public wxFilterClassFactory
 public:
     wxZlibClassFactory();
 
-    wxFilterInputStream *NewStream(wxInputStream& stream) const
+    wxFilterInputStream *NewStream(wxInputStream& stream) const wxOVERRIDE
         { return new wxZlibInputStream(stream); }
-    wxFilterOutputStream *NewStream(wxOutputStream& stream) const
+    wxFilterOutputStream *NewStream(wxOutputStream& stream) const wxOVERRIDE
         { return new wxZlibOutputStream(stream, -1); }
-    wxFilterInputStream *NewStream(wxInputStream *stream) const
+    wxFilterInputStream *NewStream(wxInputStream *stream) const wxOVERRIDE
         { return new wxZlibInputStream(stream); }
-    wxFilterOutputStream *NewStream(wxOutputStream *stream) const
+    wxFilterOutputStream *NewStream(wxOutputStream *stream) const wxOVERRIDE
         { return new wxZlibOutputStream(stream, -1); }
 
     const wxChar * const *GetProtocols(wxStreamProtocolType type
-                                       = wxSTREAM_PROTOCOL) const;
+                                       = wxSTREAM_PROTOCOL) const wxOVERRIDE;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxZlibClassFactory)
+    wxDECLARE_DYNAMIC_CLASS(wxZlibClassFactory);
 };
 
 class WXDLLIMPEXP_BASE wxGzipClassFactory: public wxFilterClassFactory
@@ -122,21 +122,23 @@ class WXDLLIMPEXP_BASE wxGzipClassFactory: public wxFilterClassFactory
 public:
     wxGzipClassFactory();
 
-    wxFilterInputStream *NewStream(wxInputStream& stream) const
+    wxFilterInputStream *NewStream(wxInputStream& stream) const wxOVERRIDE
         { return new wxZlibInputStream(stream); }
-    wxFilterOutputStream *NewStream(wxOutputStream& stream) const
-        { return new wxZlibOutputStream(stream, -1, wxZLIB_GZIP); }
-    wxFilterInputStream *NewStream(wxInputStream *stream) const
+    wxFilterOutputStream *NewStream(wxOutputStream& stream) const wxOVERRIDE
+        { return new wxZlibOutputStream(stream, -1); }
+    wxFilterInputStream *NewStream(wxInputStream *stream) const wxOVERRIDE
         { return new wxZlibInputStream(stream); }
-    wxFilterOutputStream *NewStream(wxOutputStream *stream) const
-        { return new wxZlibOutputStream(stream, -1, wxZLIB_GZIP); }
+    wxFilterOutputStream *NewStream(wxOutputStream *stream) const wxOVERRIDE
+        { return new wxZlibOutputStream(stream, -1); }
 
     const wxChar * const *GetProtocols(wxStreamProtocolType type
-                                       = wxSTREAM_PROTOCOL) const;
+                                       = wxSTREAM_PROTOCOL) const wxOVERRIDE;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxGzipClassFactory)
+    wxDECLARE_DYNAMIC_CLASS(wxGzipClassFactory);
 };
+
+WXDLLIMPEXP_BASE wxVersionInfo wxGetZlibVersionInfo();
 
 #endif
   // wxUSE_ZLIB && wxUSE_STREAMS

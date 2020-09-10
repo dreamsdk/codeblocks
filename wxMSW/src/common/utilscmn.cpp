@@ -1,9 +1,9 @@
+/////////////////////////////////////////////////////////////////////////////
 // Name:        src/common/utilscmn.cpp
 // Purpose:     Miscellaneous utility functions and classes
 // Author:      Julian Smart
 // Modified by:
 // Created:     29/01/98
-// RCS-ID:      $Id: utilscmn.cpp 66917 2011-02-16 21:51:31Z JS $
 // Copyright:   (c) 1998 Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -19,8 +19,33 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+#include "wx/debug.h"
+
 #ifdef __BORLANDC__
     #pragma hdrstop
+#endif
+
+// This is a needed to get the declaration of the global "environ" variable
+// from MinGW headers which don't declare it there when in strict ANSI mode. We
+// can't use the usual wxDECL_FOR_STRICT_MINGW32() hack for it because it's not
+// even a variable, but a macro expanding to a function or a variable depending
+// on the build and this is horribly brittle but there just doesn't seem to be
+// any other alternative.
+#ifdef wxNEEDS_STRICT_ANSI_WORKAROUNDS
+    // Notice that undefining __STRICT_ANSI__ and including it here doesn't
+    // work because it could have been already included, e.g. when using PCH.
+    #include <stdlib.h>
+
+    #ifndef environ
+        // This just reproduces what stdlib.h does in MinGW 4.8.1.
+        #ifdef __MSVCRT__
+            wxDECL_FOR_STRICT_MINGW32(char ***, __p__environ, (void));
+            #define environ (*__p__environ())
+        #else
+            extern char *** _imp___environ_dll;
+            #define environ (*_imp___environ_dll)
+        #endif
+    #endif // defined(environ)
 #endif
 
 #ifndef WX_PRECOMP
@@ -51,187 +76,86 @@
 #include "wx/uri.h"
 #include "wx/mimetype.h"
 #include "wx/config.h"
-
-#if defined(__WXWINCE__) && wxUSE_DATETIME
-#include "wx/datetime.h"
-#endif
+#include "wx/versioninfo.h"
+#include "wx/math.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
-#if !wxONLY_WATCOM_EARLIER_THAN(1,4)
-    #if !(defined(_MSC_VER) && (_MSC_VER > 800))
-        #include <errno.h>
-    #endif
+#if wxUSE_GUI
+    #include "wx/filename.h"
+    #include "wx/filesys.h"
+    #include "wx/notebook.h"
+    #include "wx/statusbr.h"
+    #include "wx/private/launchbrowser.h"
+#endif // wxUSE_GUI
+
+#include <time.h>
+
+#ifdef __WXMAC__
+    #include "wx/osx/private.h"
+#endif
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#if defined(__WINDOWS__)
+    #include "wx/msw/private.h"
 #endif
 
 #if wxUSE_GUI
-    #include "wx/colordlg.h"
-    #include "wx/fontdlg.h"
-    #include "wx/notebook.h"
-    #include "wx/statusbr.h"
-#endif // wxUSE_GUI
-
-#ifndef __WXWINCE__
-#include <time.h>
-#else
-#include "wx/msw/wince/time.h"
-#endif
-
-#ifdef __WXMAC__
-#include "wx/mac/private.h"
-#ifndef __DARWIN__
-#include "InternetConfig.h"
-#endif
-#endif
-
-#if !defined(__MWERKS__) && !defined(__WXWINCE__)
-    #include <sys/types.h>
-    #include <sys/stat.h>
-#endif
-
-#if defined(__WXMSW__)
-    #include "wx/msw/private.h"
-    #include "wx/msw/registry.h"
-    #include <shellapi.h> // needed for SHELLEXECUTEINFO
+    // Include the definitions of GTK_XXX_VERSION constants.
+    #ifdef __WXGTK20__
+        #include "wx/gtk/private/wrapgtk.h"
+    #elif defined(__WXGTK__)
+        #include <gtk/gtk.h>
+    #elif defined(__WXQT__)
+        #include <QtCore/QtGlobal>       // for QT_VERSION_STR constants
+    #endif
 #endif
 
 #if wxUSE_BASE
-
-// ----------------------------------------------------------------------------
-// common data
-// ----------------------------------------------------------------------------
 
 // ============================================================================
 // implementation
 // ============================================================================
 
-#if WXWIN_COMPATIBILITY_2_4
-
-wxChar *
-copystring (const wxChar *s)
-{
-    if (s == NULL) s = wxEmptyString;
-    size_t len = wxStrlen (s) + 1;
-
-    wxChar *news = new wxChar[len];
-    memcpy (news, s, len * sizeof(wxChar));    // Should be the fastest
-
-    return news;
-}
-
-#endif // WXWIN_COMPATIBILITY_2_4
-
-// ----------------------------------------------------------------------------
-// String <-> Number conversions (deprecated)
-// ----------------------------------------------------------------------------
-
-#if WXWIN_COMPATIBILITY_2_4
-
-WXDLLIMPEXP_DATA_BASE(const wxChar *) wxFloatToStringStr = wxT("%.2f");
-WXDLLIMPEXP_DATA_BASE(const wxChar *) wxDoubleToStringStr = wxT("%.2f");
-
-void
-StringToFloat (const wxChar *s, float *number)
-{
-    if (s && *s && number)
-        *number = (float) wxStrtod (s, (wxChar **) NULL);
-}
-
-void
-StringToDouble (const wxChar *s, double *number)
-{
-    if (s && *s && number)
-        *number = wxStrtod (s, (wxChar **) NULL);
-}
-
-wxChar *
-FloatToString (float number, const wxChar *fmt)
-{
-    static wxChar buf[256];
-
-    wxSprintf (buf, fmt, number);
-    return buf;
-}
-
-wxChar *
-DoubleToString (double number, const wxChar *fmt)
-{
-    static wxChar buf[256];
-
-    wxSprintf (buf, fmt, number);
-    return buf;
-}
-
-void
-StringToInt (const wxChar *s, int *number)
-{
-    if (s && *s && number)
-        *number = (int) wxStrtol (s, (wxChar **) NULL, 10);
-}
-
-void
-StringToLong (const wxChar *s, long *number)
-{
-    if (s && *s && number)
-        *number = wxStrtol (s, (wxChar **) NULL, 10);
-}
-
-wxChar *
-IntToString (int number)
-{
-    static wxChar buf[20];
-
-    wxSprintf (buf, wxT("%d"), number);
-    return buf;
-}
-
-wxChar *
-LongToString (long number)
-{
-    static wxChar buf[20];
-
-    wxSprintf (buf, wxT("%ld"), number);
-    return buf;
-}
-
-#endif // WXWIN_COMPATIBILITY_2_4
-
 // Array used in DecToHex conversion routine.
-static wxChar hexArray[] = wxT("0123456789ABCDEF");
+static const char hexArray[] = "0123456789ABCDEF";
 
 // Convert 2-digit hex number to decimal
-int wxHexToDec(const wxString& buf)
+int wxHexToDec(const wxString& str)
 {
-    int firstDigit, secondDigit;
+    wxCHECK_MSG( str.Length() >= 2, -1, wxS("Invalid argument") );
 
-    if (buf.GetChar(0) >= wxT('A'))
-        firstDigit = buf.GetChar(0) - wxT('A') + 10;
-    else
-       firstDigit = buf.GetChar(0) - wxT('0');
-
-    if (buf.GetChar(1) >= wxT('A'))
-        secondDigit = buf.GetChar(1) - wxT('A') + 10;
-    else
-        secondDigit = buf.GetChar(1) - wxT('0');
-
-    return (firstDigit & 0xF) * 16 + (secondDigit & 0xF );
+    char buf[2];
+    buf[0] = str.GetChar(0);
+    buf[1] = str.GetChar(1);
+    return wxHexToDec(buf);
 }
 
-// Convert decimal integer to 2-character hex string
-void wxDecToHex(int dec, wxChar *buf)
+// Convert decimal integer to 2-character hex string (not prefixed by 0x).
+void wxDecToHex(unsigned char dec, wxChar *buf)
 {
-    int firstDigit = (int)(dec/16.0);
-    int secondDigit = (int)(dec - (firstDigit*16.0));
-    buf[0] = hexArray[firstDigit];
-    buf[1] = hexArray[secondDigit];
+    wxASSERT_MSG( buf, wxS("Invalid argument") );
+    buf[0] = hexArray[dec >> 4];
+    buf[1] = hexArray[dec & 0x0F];
     buf[2] = 0;
 }
 
-// Convert decimal integer to 2-character hex string
-wxString wxDecToHex(int dec)
+// Convert decimal integer to 2 characters
+void wxDecToHex(unsigned char dec, char* ch1, char* ch2)
+{
+    wxASSERT_MSG( ch1 && ch2, wxS("Invalid argument(s)") );
+    *ch1 = hexArray[dec >> 4];
+    *ch2 = hexArray[dec & 0x0F];
+}
+
+// Convert decimal integer to 2-character hex string (not prefixed by 0x).
+wxString wxDecToHex(unsigned char dec)
 {
     wxChar buf[3];
     wxDecToHex(dec, buf);
@@ -245,25 +169,18 @@ wxString wxDecToHex(int dec)
 // Return the current date/time
 wxString wxNow()
 {
-#ifdef __WXWINCE__
-#if wxUSE_DATETIME
-    wxDateTime now = wxDateTime::Now();
-    return now.Format();
-#else
-    return wxEmptyString;
-#endif
-#else
-    time_t now = time((time_t *) NULL);
+    time_t now = time(NULL);
     char *date = ctime(&now);
     date[24] = '\0';
     return wxString::FromAscii(date);
-#endif
 }
 
+#if WXWIN_COMPATIBILITY_2_8
 void wxUsleep(unsigned long milliseconds)
 {
     wxMilliSleep(milliseconds);
 }
+#endif
 
 const wxChar *wxGetInstallPrefix()
 {
@@ -299,6 +216,10 @@ bool wxIsPlatformLittleEndian()
     return u.c[0] == 1;
 }
 
+
+// ----------------------------------------------------------------------------
+// wxPlatform
+// ----------------------------------------------------------------------------
 
 /*
  * Class to make it easier to specify platform-dependent values
@@ -430,36 +351,16 @@ void wxPlatform::AddPlatform(int platform)
 
 void wxPlatform::ClearPlatforms()
 {
-    delete sm_customPlatforms;
-    sm_customPlatforms = NULL;
+    wxDELETE(sm_customPlatforms);
 }
 
 /// Function for testing current platform
 
 bool wxPlatform::Is(int platform)
 {
-#ifdef __WXMSW__
+#ifdef __WINDOWS__
     if (platform == wxOS_WINDOWS)
         return true;
-#endif
-#ifdef __WXWINCE__
-    if (platform == wxOS_WINDOWS_CE)
-        return true;
-#endif
-
-#if 0
-
-// FIXME: wxWinPocketPC and wxWinSmartPhone are unknown symbols
-
-#if defined(__WXWINCE__) && defined(__POCKETPC__)
-    if (platform == wxWinPocketPC)
-        return true;
-#endif
-#if defined(__WXWINCE__) && defined(__SMARTPHONE__)
-    if (platform == wxWinSmartPhone)
-        return true;
-#endif
-
 #endif
 
 #ifdef __WXGTK__
@@ -478,20 +379,8 @@ bool wxPlatform::Is(int platform)
     if (platform == wxOS_UNIX)
         return true;
 #endif
-#ifdef __WXMGL__
-    if (platform == wxPORT_MGL)
-        return true;
-#endif
-#ifdef __OS2__
-    if (platform == wxOS_OS2)
-        return true;
-#endif
-#ifdef __WXPM__
-    if (platform == wxPORT_PM)
-        return true;
-#endif
-#ifdef __WXCOCOA__
-    if (platform == wxPORT_MAC)
+#ifdef __WXQT__
+    if (platform == wxPORT_QT)
         return true;
 #endif
 
@@ -512,8 +401,7 @@ bool wxGetEmailAddress(wxChar *address, int maxSize)
     if ( !email )
         return false;
 
-    wxStrncpy(address, email, maxSize - 1);
-    address[maxSize - 1] = wxT('\0');
+    wxStrlcpy(address, email.t_str(), maxSize);
 
     return true;
 }
@@ -611,7 +499,7 @@ wxString wxGetCurrentDir()
         {
             if ( errno != ERANGE )
             {
-                wxLogSysError(_T("Failed to get current directory"));
+                wxLogSysError(wxT("Failed to get current directory"));
 
                 return wxEmptyString;
             }
@@ -630,16 +518,98 @@ wxString wxGetCurrentDir()
 #endif // 0
 
 // ----------------------------------------------------------------------------
+// Environment
+// ----------------------------------------------------------------------------
+
+#ifdef __WXOSX__
+#if wxOSX_USE_COCOA_OR_CARBON
+    #include <crt_externs.h>
+#endif
+#endif
+
+bool wxGetEnvMap(wxEnvVariableHashMap *map)
+{
+    wxCHECK_MSG( map, false, wxS("output pointer can't be NULL") );
+
+#if defined(__VISUALC__)
+    // This variable only exists to force the CRT to fill the wide char array,
+    // it might only have it in narrow char version until now as we use main()
+    // (and not _wmain()) as our entry point.
+    static wxChar* s_dummyEnvVar = _tgetenv(wxT("TEMP"));
+
+    wxChar **env = _tenviron;
+#elif defined(__VMS)
+   // Now this routine wil give false for OpenVMS
+   // TODO : should we do something with logicals?
+    char **env=NULL;
+#elif defined(__DARWIN__)
+#if wxOSX_USE_COCOA_OR_CARBON
+    // Under Mac shared libraries don't have access to the global environ
+    // variable so use this Mac-specific function instead as advised by
+    // environ(7) under Darwin
+    char ***penv = _NSGetEnviron();
+    if ( !penv )
+        return false;
+    char **env = *penv;
+#else
+    char **env=NULL;
+    // todo translate NSProcessInfo environment into map
+#endif
+#else // non-MSVC non-Mac
+    // Not sure if other compilers have _tenviron so use the (more standard)
+    // ANSI version only for them.
+
+    // Both POSIX and Single UNIX Specification say that this variable must
+    // exist but not that it must be declared anywhere and, indeed, it's not
+    // declared in several common systems (some BSDs, Solaris with native CC)
+    // so we (re)declare it ourselves to deal with these cases. However we do
+    // not do this under MSW where there can be DLL-related complications, i.e.
+    // the variable might be DLL-imported or not. Luckily we don't have to
+    // worry about this as all MSW compilers do seem to define it in their
+    // standard headers anyhow so we can just rely on already having the
+    // correct declaration. And if this turns out to be wrong, we can always
+    // add a configure test checking whether it is declared later.
+#ifndef __WINDOWS__
+    extern char **environ;
+#endif // !__WINDOWS__
+
+    char **env = environ;
+#endif
+
+    if ( env )
+    {
+        wxString name,
+                 value;
+        while ( *env )
+        {
+            const wxString var(*env);
+
+            name = var.BeforeFirst(wxS('='), &value);
+
+            (*map)[name] = value;
+
+            env++;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+// ----------------------------------------------------------------------------
 // wxExecute
 // ----------------------------------------------------------------------------
 
-// wxDoExecuteWithCapture() helper: reads an entire stream into one array
+// wxDoExecuteWithCapture() helper: reads an entire stream into one array if
+// the stream is non-NULL (it doesn't do anything if it's NULL).
 //
 // returns true if ok, false if error
 #if wxUSE_STREAMS
 static bool ReadAll(wxInputStream *is, wxArrayString& output)
 {
-    wxCHECK_MSG( is, false, _T("NULL stream in wxExecute()?") );
+    if ( !is )
+        return true;
 
     // the stream could be already at EOF or in wxSTREAM_BROKEN_PIPE state
     is->Reset();
@@ -676,26 +646,26 @@ static bool ReadAll(wxInputStream *is, wxArrayString& output)
 static long wxDoExecuteWithCapture(const wxString& command,
                                    wxArrayString& output,
                                    wxArrayString* error,
-                                   int flags)
+                                   int flags,
+                                   const wxExecuteEnv *env)
 {
     // create a wxProcess which will capture the output
     wxProcess *process = new wxProcess;
     process->Redirect();
 
-    long rc = wxExecute(command, wxEXEC_SYNC | flags, process);
+    long rc = wxExecute(command, wxEXEC_SYNC | flags, process, env);
 
 #if wxUSE_STREAMS
-    if ( rc != -1 )
+    // Notice that while -1 indicates an error exit code for us, a program
+    // exiting with this code could still have written something to its stdout
+    // and, especially, stderr, so we still need to read from them.
+    if ( !ReadAll(process->GetInputStream(), output) )
+        rc = -1;
+
+    if ( error )
     {
-        if ( !ReadAll(process->GetInputStream(), output) )
+        if ( !ReadAll(process->GetErrorStream(), *error) )
             rc = -1;
-
-        if ( error )
-        {
-            if ( !ReadAll(process->GetErrorStream(), *error) )
-                rc = -1;
-        }
-
     }
 #else
     wxUnusedVar(output);
@@ -707,280 +677,360 @@ static long wxDoExecuteWithCapture(const wxString& command,
     return rc;
 }
 
-long wxExecute(const wxString& command, wxArrayString& output, int flags)
+long wxExecute(const wxString& command, wxArrayString& output, int flags,
+               const wxExecuteEnv *env)
 {
-    return wxDoExecuteWithCapture(command, output, NULL, flags);
+    return wxDoExecuteWithCapture(command, output, NULL, flags, env);
 }
 
 long wxExecute(const wxString& command,
                wxArrayString& output,
                wxArrayString& error,
-               int flags)
+               int flags,
+               const wxExecuteEnv *env)
 {
-    return wxDoExecuteWithCapture(command, output, &error, flags);
+    return wxDoExecuteWithCapture(command, output, &error, flags, env);
 }
 
 // ----------------------------------------------------------------------------
-// Launch default browser
+// Id functions
 // ----------------------------------------------------------------------------
 
-#include "wx/private/browserhack28.h"
+// Id generation
+static int wxCurrentId = 100;
 
-static bool wxLaunchDefaultBrowserBaseImpl(const wxString& url, int flags);
-
-// Use wxLaunchDefaultBrowserBaseImpl by default
-static wxLaunchDefaultBrowserImpl_t s_launchBrowserImpl = &wxLaunchDefaultBrowserBaseImpl;
-
-// Function the GUI library can call to provide a better implementation
-WXDLLIMPEXP_BASE void wxSetLaunchDefaultBrowserImpl(wxLaunchDefaultBrowserImpl_t newImpl)
+int wxNewId()
 {
-    s_launchBrowserImpl = newImpl!=NULL ? newImpl : &wxLaunchDefaultBrowserBaseImpl;
+    // skip the part of IDs space that contains hard-coded values:
+    if (wxCurrentId == wxID_LOWEST)
+        wxCurrentId = wxID_HIGHEST + 1;
+
+    return wxCurrentId++;
 }
 
-static bool wxLaunchDefaultBrowserBaseImpl(const wxString& url, int flags)
+int
+wxGetCurrentId(void) { return wxCurrentId; }
+
+void
+wxRegisterId (int id)
 {
-    wxUnusedVar(flags);
+  if (id >= wxCurrentId)
+    wxCurrentId = id + 1;
+}
 
-#if defined(__WXMSW__)
+// ----------------------------------------------------------------------------
+// wxQsort, adapted by RR to allow user_data
+// ----------------------------------------------------------------------------
 
-#if wxUSE_IPC
-    if ( flags & wxBROWSER_NEW_WINDOW )
+/* This file is part of the GNU C Library.
+   Written by Douglas C. Schmidt (schmidt@ics.uci.edu).
+
+   Douglas Schmidt kindly gave permission to relicence the
+   code under the wxWindows licence:
+
+From: "Douglas C. Schmidt" <schmidt@dre.vanderbilt.edu>
+To: Robert Roebling <robert.roebling@uni-ulm.de>
+Subject: Re: qsort licence
+Date: Mon, 23 Jul 2007 03:44:25 -0500
+Sender: schmidt@dre.vanderbilt.edu
+Message-Id: <20070723084426.64F511000A8@tango.dre.vanderbilt.edu>
+
+Hi Robert,
+
+> [...] I'm asking if you'd be willing to relicence your code
+> under the wxWindows licence. [...]
+
+That's fine with me [...]
+
+Thanks,
+
+     Doug */
+
+
+/* Byte-wise swap two items of size SIZE. */
+#define SWAP(a, b, size)                                                      \
+  do                                                                          \
+    {                                                                         \
+      size_t __size = (size);                                                 \
+      char *__a = (a), *__b = (b);                                            \
+      do                                                                      \
+        {                                                                     \
+          char __tmp = *__a;                                                  \
+          *__a++ = *__b;                                                      \
+          *__b++ = __tmp;                                                     \
+        } while (--__size > 0);                                               \
+    } while (0)
+
+/* Discontinue quicksort algorithm when partition gets below this size.
+   This particular magic number was chosen to work best on a Sun 4/260. */
+#define MAX_THRESH 4
+
+/* Stack node declarations used to store unfulfilled partition obligations. */
+typedef struct
+  {
+    char *lo;
+    char *hi;
+  } stack_node;
+
+/* The next 4 #defines implement a very fast in-line stack abstraction. */
+#define STACK_SIZE        (8 * sizeof(unsigned long int))
+#define PUSH(low, high)   ((void) ((top->lo = (low)), (top->hi = (high)), ++top))
+#define POP(low, high)    ((void) (--top, (low = top->lo), (high = top->hi)))
+#define STACK_NOT_EMPTY   (stack < top)
+
+
+/* Order size using quicksort.  This implementation incorporates
+   four optimizations discussed in Sedgewick:
+
+   1. Non-recursive, using an explicit stack of pointer that store the
+      next array partition to sort.  To save time, this maximum amount
+      of space required to store an array of MAX_INT is allocated on the
+      stack.  Assuming a 32-bit integer, this needs only 32 *
+      sizeof(stack_node) == 136 bits.  Pretty cheap, actually.
+
+   2. Chose the pivot element using a median-of-three decision tree.
+      This reduces the probability of selecting a bad pivot value and
+      eliminates certain extraneous comparisons.
+
+   3. Only quicksorts TOTAL_ELEMS / MAX_THRESH partitions, leaving
+      insertion sort to order the MAX_THRESH items within each partition.
+      This is a big win, since insertion sort is faster for small, mostly
+      sorted array segments.
+
+   4. The larger of the two sub-partitions is always pushed onto the
+      stack first, with the algorithm then concentrating on the
+      smaller partition.  This *guarantees* no more than log (n)
+      stack size is needed (actually O(1) in this case)!  */
+
+void wxQsort(void* pbase, size_t total_elems,
+             size_t size, wxSortCallback cmp, const void* user_data)
+{
+  char *base_ptr = (char *) pbase;
+  const size_t max_thresh = MAX_THRESH * size;
+
+  if (total_elems == 0)
+    /* Avoid lossage with unsigned arithmetic below.  */
+    return;
+
+  if (total_elems > MAX_THRESH)
     {
-        // ShellExecuteEx() opens the URL in an existing window by default so
-        // we can't use it if we need a new window
-        wxURI uri(url);
-        wxRegKey key(wxRegKey::HKCR, uri.GetScheme() + _T("\\shell\\open"));
-        if ( !key.Exists() )
-        {
-            // try default browser, it must be registered at least for http URLs
-            key.SetName(wxRegKey::HKCR, _T("http\\shell\\open"));
-        }
+      char *lo = base_ptr;
+      char *hi = &lo[size * (total_elems - 1)];
+      stack_node stack[STACK_SIZE];
+      stack_node *top = stack;
 
-        if ( key.Exists() )
+      PUSH (NULL, NULL);
+
+      while (STACK_NOT_EMPTY)
         {
-            wxRegKey keyDDE(key, wxT("DDEExec"));
-            if ( keyDDE.Exists() )
+          char *left_ptr;
+          char *right_ptr;
+
+          /* Select median value from among LO, MID, and HI. Rearrange
+             LO and HI so the three values are sorted. This lowers the
+             probability of picking a pathological pivot value and
+             skips a comparison for both the LEFT_PTR and RIGHT_PTR. */
+
+          char *mid = lo + size * ((hi - lo) / size >> 1);
+
+          if ((*cmp) ((void *) mid, (void *) lo, user_data) < 0)
+            SWAP (mid, lo, size);
+          if ((*cmp) ((void *) hi, (void *) mid, user_data) < 0)
+            SWAP (mid, hi, size);
+          else
+            goto jump_over;
+          if ((*cmp) ((void *) mid, (void *) lo, user_data) < 0)
+            SWAP (mid, lo, size);
+        jump_over:;
+          left_ptr  = lo + size;
+          right_ptr = hi - size;
+
+          /* Here's the famous ``collapse the walls'' section of quicksort.
+             Gotta like those tight inner loops!  They are the main reason
+             that this algorithm runs much faster than others. */
+          do
             {
-                // we only know the syntax of WWW_OpenURL DDE request for IE,
-                // optimistically assume that all other browsers are compatible
-                // with it
-                static const wxString TOPIC_OPEN_URL = wxT("WWW_OpenURL");
-                wxString ddeCmd;
-                wxRegKey keyTopic(keyDDE, wxT("topic"));
-                bool ok = keyTopic.Exists() && (keyTopic.QueryDefaultValue() = TOPIC_OPEN_URL);
-                if ( ok )
+              while ((*cmp) ((void *) left_ptr, (void *) mid, user_data) < 0)
+                left_ptr += size;
+
+              while ((*cmp) ((void *) mid, (void *) right_ptr, user_data) < 0)
+                right_ptr -= size;
+
+              if (left_ptr < right_ptr)
                 {
-                    ddeCmd = keyDDE.QueryDefaultValue();
-                    ok = !ddeCmd.empty();
+                  SWAP (left_ptr, right_ptr, size);
+                  if (mid == left_ptr)
+                    mid = right_ptr;
+                  else if (mid == right_ptr)
+                    mid = left_ptr;
+                  left_ptr += size;
+                  right_ptr -= size;
                 }
-
-                if ( ok )
+              else if (left_ptr == right_ptr)
                 {
-                    // for WWW_OpenURL, the index of the window to open the URL
-                    // in is -1 (meaning "current") by default, replace it with
-                    // 0 which means "new" (see KB article 160957)
-                    ok = ddeCmd.Replace(wxT("-1"), wxT("0"),
-                                        false /* only first occurence */) == 1;
+                  left_ptr += size;
+                  right_ptr -= size;
+                  break;
                 }
+            }
+          while (left_ptr <= right_ptr);
 
-                if ( ok )
-                {
-                    // and also replace the parameters: the topic should
-                    // contain a placeholder for the URL
-                    ok = ddeCmd.Replace(wxT("%1"), url, false) == 1;
-                }
+          /* Set up pointers for next iteration.  First determine whether
+             left and right partitions are below the threshold size.  If so,
+             ignore one or both.  Otherwise, push the larger partition's
+             bounds on the stack and continue sorting the smaller one. */
 
-                if ( ok )
-                {
-                    // try to send it the DDE request now but ignore the errors
-                    wxLogNull noLog;
-
-                    const wxString ddeServer = wxRegKey(keyDDE, wxT("application")).QueryDefaultValue();
-                    if ( wxExecuteDDE(ddeServer, TOPIC_OPEN_URL, ddeCmd) )
-                        return true;
-
-                    // this is not necessarily an error: maybe browser is
-                    // simply not running, but no matter, in any case we're
-                    // going to launch it using ShellExecuteEx() below now and
-                    // we shouldn't try to open a new window if we open a new
-                    // browser anyhow
-                }
+          if ((size_t) (right_ptr - lo) <= max_thresh)
+            {
+              if ((size_t) (hi - left_ptr) <= max_thresh)
+                /* Ignore both small partitions. */
+                POP (lo, hi);
+              else
+                /* Ignore small left partition. */
+                lo = left_ptr;
+            }
+          else if ((size_t) (hi - left_ptr) <= max_thresh)
+            /* Ignore small right partition. */
+            hi = right_ptr;
+          else if ((right_ptr - lo) > (hi - left_ptr))
+            {
+              /* Push larger left partition indices. */
+              PUSH (lo, right_ptr);
+              lo = left_ptr;
+            }
+          else
+            {
+              /* Push larger right partition indices. */
+              PUSH (left_ptr, hi);
+              hi = right_ptr;
             }
         }
     }
-#endif // wxUSE_IPC
 
-    WinStruct<SHELLEXECUTEINFO> sei;
-    sei.lpFile = url.c_str();
-    sei.lpVerb = _T("open");
-    sei.nShow = SW_SHOWNORMAL;
-    sei.fMask = SEE_MASK_FLAG_NO_UI; // we give error message ourselves
+  /* Once the BASE_PTR array is partially sorted by quicksort the rest
+     is completely sorted using insertion sort, since this is efficient
+     for partitions below MAX_THRESH size. BASE_PTR points to the beginning
+     of the array to sort, and END_PTR points at the very last element in
+     the array (*not* one beyond it!). */
 
-    BOOL nExecResult = ::ShellExecuteEx(&sei);
+  {
+    char *const end_ptr = &base_ptr[size * (total_elems - 1)];
+    char *tmp_ptr = base_ptr;
+    char *thresh = base_ptr + max_thresh;
+    if ( thresh > end_ptr )
+        thresh = end_ptr;
+    char *run_ptr;
 
-    //From MSDN for wince
-    //hInstApp member is only valid if the function fails, in which case it
-    //receives one of the following error values, which are less than or
-    //equal to 32.
-    const int nResult = (int) sei.hInstApp;
+    /* Find smallest element in first threshold and place it at the
+       array's beginning.  This is the smallest array element,
+       and the operation speeds up insertion sort's inner loop. */
 
-    // Firefox returns file not found for some reason, so make an exception
-    // for it
-    if ( nResult > 32 || nResult == SE_ERR_FNF  || nExecResult == TRUE )
+    for (run_ptr = tmp_ptr + size; run_ptr <= thresh; run_ptr += size)
+      if ((*cmp) ((void *) run_ptr, (void *) tmp_ptr, user_data) < 0)
+        tmp_ptr = run_ptr;
+
+    if (tmp_ptr != base_ptr)
+      SWAP (tmp_ptr, base_ptr, size);
+
+    /* Insertion sort, running from left-hand-side up to right-hand-side.  */
+
+    run_ptr = base_ptr + size;
+    while ((run_ptr += size) <= end_ptr)
+      {
+        tmp_ptr = run_ptr - size;
+        while ((*cmp) ((void *) run_ptr, (void *) tmp_ptr, user_data) < 0)
+          tmp_ptr -= size;
+
+        tmp_ptr += size;
+        if (tmp_ptr != run_ptr)
+          {
+            char *trav;
+
+            trav = run_ptr + size;
+            while (--trav >= run_ptr)
+              {
+                char c = *trav;
+                char *hi, *lo;
+
+                for (hi = lo = trav; (lo -= size) >= tmp_ptr; hi = lo)
+                  *hi = *lo;
+                *hi = c;
+              }
+          }
+      }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// wxGCD
+// Compute the greatest common divisor of two positive integers
+// using binary GCD algorithm.
+// See:
+//     http://en.wikipedia.org/wiki/Binary_GCD_algorithm#Iterative_version_in_C
+// ----------------------------------------------------------------------------
+
+unsigned int wxGCD(unsigned int u, unsigned int v)
+{
+    // GCD(0,v) == v; GCD(u,0) == u, GCD(0,0) == 0
+    if (u == 0)
+        return v;
+    if (v == 0)
+        return u;
+
+    int shift;
+
+    // Let shift := lg K, where K is the greatest power of 2
+    // dividing both u and v.
+    for (shift = 0; ((u | v) & 1) == 0; ++shift)
     {
-#ifdef __WXDEBUG__
-        // Log something if SE_ERR_FNF happens
-        if ( nResult == SE_ERR_FNF || nExecResult == FALSE )
-            wxLogDebug(wxT("SE_ERR_FNF from ShellExecute -- maybe FireFox?"));
-#endif // __WXDEBUG__
-        return true;
+        u >>= 1;
+        v >>= 1;
     }
-#elif defined(__WXMAC__)
-    OSStatus err;
-    ICInstance inst;
-    long int startSel;
-    long int endSel;
 
-    err = ICStart(&inst, 'STKA'); // put your app creator code here
-    if (err == noErr)
+    while ((u & 1) == 0)
+        u >>= 1;
+
+    // From here on, u is always odd.
+    do
     {
-#if !TARGET_CARBON
-        err = ICFindConfigFile(inst, 0, NULL);
-#endif
-        if (err == noErr)
+        // remove all factors of 2 in v -- they are not common
+        // note: v is not zero, so while will terminate
+        while ((v & 1) == 0)
+            v >>= 1;
+
+        // Now u and v are both odd. Swap if necessary so u <= v,
+        // then set v = v - u (which is even)
+        if (u > v)
         {
-            ConstStr255Param hint = 0;
-            startSel = 0;
-            endSel = url.length();
-            err = ICLaunchURL(inst, hint, url.fn_str(), endSel, &startSel, &endSel);
-            if (err != noErr)
-                wxLogDebug(wxT("ICLaunchURL error %d"), (int) err);
+            wxSwap(u, v);
         }
-        ICStop(inst);
-        return true;
-    }
-    else
-    {
-        wxLogDebug(wxT("ICStart error %d"), (int) err);
-        return false;
-    }
+        v -= u;  // Here v >= u
+    } while (v != 0);
+
+    // restore common factors of 2
+    return u << shift;
+}
+
+// ----------------------------------------------------------------------------
+// wxCTZ
+// Count trailing zeros. Use optimised builtin where available.
+// ----------------------------------------------------------------------------
+unsigned int wxCTZ(wxUint32 x)
+{
+    wxCHECK_MSG(x > 0, 0, "Undefined for x == 0.");
+#ifdef __GNUC__
+   return __builtin_ctz(x);
 #else
-    // (non-Mac, non-MSW)
-
-#ifdef __UNIX__
-
-    // Our best best is to use xdg-open from freedesktop.org cross-desktop
-    // compatibility suite xdg-utils
-    // (see http://portland.freedesktop.org/wiki/) -- this is installed on
-    // most modern distributions and may be tweaked by them to handle
-    // distribution specifics. Only if that fails, try to find the right
-    // browser ourselves.
-    wxString path, xdg_open;
-    if ( wxGetEnv(_T("PATH"), &path) &&
-         wxFindFileInPath(&xdg_open, path, _T("xdg-open")) )
-    {
-        if ( wxExecute(xdg_open + _T(" ") + url) )
-            return true;
-    }
-
-    wxString desktop = wxTheApp->GetTraits()->GetDesktopEnvironment();
-
-    // GNOME and KDE desktops have some applications which should be always installed
-    // together with their main parts, which give us the
-    if (desktop == wxT("GNOME"))
-    {
-        wxArrayString errors;
-        wxArrayString output;
-
-        // gconf will tell us the path of the application to use as browser
-        long res = wxExecute( wxT("gconftool-2 --get /desktop/gnome/applications/browser/exec"),
-                              output, errors, wxEXEC_NODISABLE );
-        if (res >= 0 && errors.GetCount() == 0)
-        {
-            wxString cmd = output[0];
-            cmd << _T(' ') << url;
-            if (wxExecute(cmd))
-                return true;
-        }
-    }
-    else if (desktop == wxT("KDE"))
-    {
-        // kfmclient directly opens the given URL
-        if (wxExecute(wxT("kfmclient openURL ") + url))
-            return true;
-    }
+   int n;
+   n = 1;
+   if ((x & 0x0000FFFF) == 0) {n = n +16; x = x >>16;}
+   if ((x & 0x000000FF) == 0) {n = n + 8; x = x >> 8;}
+   if ((x & 0x0000000F) == 0) {n = n + 4; x = x >> 4;}
+   if ((x & 0x00000003) == 0) {n = n + 2; x = x >> 2;}
+   return n - (x & 1);
 #endif
-
-    bool ok = false;
-    wxString cmd;
-
-#if wxUSE_MIMETYPE
-    wxFileType *ft = wxTheMimeTypesManager->GetFileTypeFromExtension(_T("html"));
-    if ( ft )
-    {
-        wxString mt;
-        ft->GetMimeType(&mt);
-
-        ok = ft->GetOpenCommand(&cmd, wxFileType::MessageParameters(url));
-        delete ft;
-    }
-#endif // wxUSE_MIMETYPE
-
-    if ( !ok || cmd.empty() )
-    {
-        // fallback to checking for the BROWSER environment variable
-        cmd = wxGetenv(wxT("BROWSER"));
-        if ( !cmd.empty() )
-            cmd << _T(' ') << url;
-    }
-
-    ok = ( !cmd.empty() && wxExecute(cmd) );
-    if (ok)
-        return ok;
-
-    // no file type for HTML extension
-    wxLogError(_T("No default application configured for HTML files."));
-
-#endif // !wxUSE_MIMETYPE && !__WXMSW__
-    return false;
 }
 
-bool wxLaunchDefaultBrowser(const wxString& urlOrig, int flags)
-{
-    // set the scheme of url to http if it does not have one
-    // RR: This doesn't work if the url is just a local path
-    wxString url(urlOrig);
-    wxURI uri(url);
-    if ( !uri.HasScheme() )
-    {
-        if (wxFileExists(urlOrig))
-            url.Prepend( wxT("file://") );
-        else
-            url.Prepend(wxT("http://"));
-    }
-
-    if(s_launchBrowserImpl(url, flags))
-        return true;
-
-    wxLogSysError(_T("Failed to open URL \"%s\" in default browser."),
-                  url.c_str());
-
-    return false;
-}
-
-// ----------------------------------------------------------------------------
-// wxApp::Yield() wrappers for backwards compatibility
-// ----------------------------------------------------------------------------
-
-bool wxYield()
-{
-    return wxTheApp && wxTheApp->Yield();
-}
-
-bool wxYieldIfNeeded()
-{
-    return wxTheApp && wxTheApp->Yield(true);
-}
 
 #endif // wxUSE_BASE
 
@@ -990,83 +1040,181 @@ bool wxYieldIfNeeded()
 
 #if wxUSE_GUI
 
-// Id generation
-static long wxCurrentId = 100;
-
-long wxNewId()
+// this function is only really implemented for X11-based ports, including GTK1
+// (GTK2 sets detectable auto-repeat automatically anyhow)
+#if !(defined(__WXX11__) || defined(__WXMOTIF__) || \
+        (defined(__WXGTK__) && !defined(__WXGTK20__)))
+bool wxSetDetectableAutoRepeat( bool WXUNUSED(flag) )
 {
-    // skip the part of IDs space that contains hard-coded values:
-    if (wxCurrentId == wxID_LOWEST)
-        wxCurrentId = wxID_HIGHEST + 1;
+    return true;
+}
+#endif // !X11-based port
 
-    return wxCurrentId++;
+// ----------------------------------------------------------------------------
+// Launch default browser
+// ----------------------------------------------------------------------------
+
+#if defined(__WINDOWS__) && !defined(__WXQT__) || \
+    defined(__WXX11__) || defined(__WXGTK__) || defined(__WXMOTIF__) || \
+    defined(__WXOSX__)
+
+// implemented in a port-specific utils source file:
+bool wxDoLaunchDefaultBrowser(const wxLaunchBrowserParams& params);
+
+#else
+
+// a "generic" implementation:
+bool wxDoLaunchDefaultBrowser(const wxLaunchBrowserParams& params)
+{
+    // on other platforms try to use mime types or wxExecute...
+
+    bool ok = false;
+    wxString cmd;
+
+#if wxUSE_MIMETYPE
+    wxFileType *ft = wxTheMimeTypesManager->GetFileTypeFromExtension(wxT("html"));
+    if ( ft )
+    {
+        wxString mt;
+        ft->GetMimeType(&mt);
+
+        ok = ft->GetOpenCommand(&cmd, wxFileType::MessageParameters(params.url));
+        delete ft;
+    }
+#endif // wxUSE_MIMETYPE
+
+    if ( !ok || cmd.empty() )
+    {
+        // fallback to checking for the BROWSER environment variable
+        if ( !wxGetEnv(wxT("BROWSER"), &cmd) || cmd.empty() )
+            cmd << wxT(' ') << params.url;
+    }
+
+    ok = ( !cmd.empty() && wxExecute(cmd) );
+    if (ok)
+        return ok;
+
+    // no file type for HTML extension
+    wxLogError(_("No default application configured for HTML files."));
+
+    return false;
+}
+#endif
+
+static bool DoLaunchDefaultBrowserHelper(const wxString& url, int flags)
+{
+    wxLaunchBrowserParams params(flags);
+
+    const wxURI uri(url);
+
+    // this check is useful to avoid that wxURI recognizes as scheme parts of
+    // the filename, in case url is a local filename
+    // (e.g. "C:\\test.txt" when parsed by wxURI reports a scheme == "C")
+    bool hasValidScheme = uri.HasScheme() && uri.GetScheme().length() > 1;
+
+    if ( !hasValidScheme )
+    {
+        if (wxFileExists(url) || wxDirExists(url))
+        {
+            params.scheme = "file";
+            params.path = url;
+        }
+        else
+        {
+            params.scheme = "http";
+        }
+
+        params.url << params.scheme << wxS("://") << url;
+    }
+    else if ( hasValidScheme )
+    {
+        params.url = url;
+        params.scheme = uri.GetScheme();
+
+        if ( params.scheme == "file" )
+        {
+            // for same reason as above, remove the scheme from the URL
+            params.path = wxFileName::URLToFileName(url).GetFullPath();
+        }
+    }
+
+    if ( !wxDoLaunchDefaultBrowser(params) )
+    {
+        wxLogSysError(_("Failed to open URL \"%s\" in default browser."), url);
+        return false;
+    }
+
+    return true;
 }
 
-long
-wxGetCurrentId(void) { return wxCurrentId; }
-
-void
-wxRegisterId (long id)
+bool wxLaunchDefaultBrowser(const wxString& url, int flags)
 {
-  if (id >= wxCurrentId)
-    wxCurrentId = id + 1;
+    // NOTE: as documented, "url" may be both a real well-formed URL
+    //       and a local file name
+
+    if ( flags & wxBROWSER_NOBUSYCURSOR )
+        return DoLaunchDefaultBrowserHelper(url, flags);
+
+    wxBusyCursor bc;
+    return DoLaunchDefaultBrowserHelper(url, flags);
 }
 
 // ----------------------------------------------------------------------------
 // Menu accelerators related functions
 // ----------------------------------------------------------------------------
 
-wxChar *wxStripMenuCodes(const wxChar *in, wxChar *out)
-{
-#if wxUSE_MENUS
-    wxString s = wxMenuItem::GetLabelFromText(in);
-#else
-    wxString str(in);
-    wxString s = wxStripMenuCodes(str);
-#endif // wxUSE_MENUS
-    if ( out )
-    {
-        // go smash their buffer if it's not big enough - I love char * params
-        memcpy(out, s.c_str(), s.length() * sizeof(wxChar));
-    }
-    else
-    {
-        // MYcopystring - for easier search...
-        out = new wxChar[s.length() + 1];
-        wxStrcpy(out, s.c_str());
-    }
-
-    return out;
-}
-
 wxString wxStripMenuCodes(const wxString& in, int flags)
 {
-    wxASSERT_MSG( flags, _T("this is useless to call without any flags") );
+    wxASSERT_MSG( flags, wxT("this is useless to call without any flags") );
 
     wxString out;
 
     size_t len = in.length();
     out.reserve(len);
 
-    for ( size_t n = 0; n < len; n++ )
+    // In some East Asian languages _("&File") translates as "<translation>(&F)"
+    // Check for this first, otherwise fall through to the standard situation
+    if ( flags & wxStrip_CJKMnemonics )
     {
-        wxChar ch = in[n];
-        if ( (flags & wxStrip_Mnemonics) && ch == _T('&') )
+        wxString label(in), accel;
+        int pos = in.Find('\t');
+        if (pos != wxNOT_FOUND)
+        {
+            label = in.Left(pos+1).Trim();
+            if (!(flags & wxStrip_Accel))
+            {
+                accel = in.Mid(pos);
+            }
+        }
+
+        // The initial '?' means we match "Foo(&F)" but not "(&F)"
+        if (label.Matches("?*(&?)"))
+        {
+            label = label.Left( label.Len()-4 ).Trim();
+            return label + accel;
+        }
+    }
+
+    for ( wxString::const_iterator it = in.begin(); it != in.end(); ++it )
+    {
+        wxChar ch = *it;
+        if ( (flags & wxStrip_Mnemonics) && ch == wxT('&') )
         {
             // skip it, it is used to introduce the accel char (or to quote
             // itself in which case it should still be skipped): note that it
             // can't be the last character of the string
-            if ( ++n == len )
+            if ( ++it == in.end() )
             {
-                wxLogDebug(_T("Invalid menu string '%s'"), in.c_str());
+                wxLogDebug(wxT("Invalid menu string '%s'"), in.c_str());
+                break;
             }
             else
             {
                 // use the next char instead
-                ch = in[n];
+                ch = *it;
             }
         }
-        else if ( (flags & wxStrip_Accel) && ch == _T('\t') )
+        else if ( (flags & wxStrip_Accel) && ch == wxT('\t') )
         {
             // everything after TAB is accel string, exit the loop
             break;
@@ -1109,13 +1257,19 @@ wxFindWindowByName (const wxString& name, wxWindow * parent)
 
 // Returns menu item id or wxNOT_FOUND if none.
 int
-wxFindMenuItemId (wxFrame * frame, const wxString& menuString, const wxString& itemString)
+wxFindMenuItemId(wxFrame *frame,
+                 const wxString& menuString,
+                 const wxString& itemString)
 {
 #if wxUSE_MENUS
     wxMenuBar *menuBar = frame->GetMenuBar ();
     if ( menuBar )
         return menuBar->FindMenuItem (menuString, itemString);
-#endif // wxUSE_MENUS
+#else // !wxUSE_MENUS
+    wxUnusedVar(frame);
+    wxUnusedVar(menuString);
+    wxUnusedVar(itemString);
+#endif // wxUSE_MENUS/!wxUSE_MENUS
 
     return wxNOT_FOUND;
 }
@@ -1133,7 +1287,7 @@ wxWindow* wxFindWindowAtPoint(wxWindow* win, const wxPoint& pt)
     // Hack for wxNotebook case: at least in wxGTK, all pages
     // claim to be shown, so we must only deal with the selected one.
 #if wxUSE_NOTEBOOK
-    if (win->IsKindOf(CLASSINFO(wxNotebook)))
+    if (wxDynamicCast(win, wxNotebook))
     {
       wxNotebook* nb = (wxNotebook*) win;
       int sel = nb->GetSelection();
@@ -1202,14 +1356,14 @@ wxWindow* wxGenericFindWindowAtPoint(const wxPoint& pt)
 int wxMessageBox(const wxString& message, const wxString& caption, long style,
                  wxWindow *parent, int WXUNUSED(x), int WXUNUSED(y) )
 {
-    long decorated_style = style;
-
-    if ( ( style & ( wxICON_EXCLAMATION | wxICON_HAND | wxICON_INFORMATION | wxICON_QUESTION ) ) == 0 )
+    // add the appropriate icon unless this was explicitly disabled by use of
+    // wxICON_NONE
+    if ( !(style & wxICON_NONE) && !(style & wxICON_MASK) )
     {
-        decorated_style |= ( style & wxYES ) ? wxICON_QUESTION : wxICON_INFORMATION ;
+        style |= style & wxYES ? wxICON_QUESTION : wxICON_INFORMATION;
     }
 
-    wxMessageDialog dialog(parent, message, caption, decorated_style);
+    wxMessageDialog dialog(parent, message, caption, style);
 
     int ans = dialog.ShowModal();
     switch ( ans )
@@ -1222,11 +1376,75 @@ int wxMessageBox(const wxString& message, const wxString& caption, long style,
             return wxNO;
         case wxID_CANCEL:
             return wxCANCEL;
+        case wxID_HELP:
+            return wxHELP;
     }
 
-    wxFAIL_MSG( _T("unexpected return code from wxMessageDialog") );
+    wxFAIL_MSG( wxT("unexpected return code from wxMessageDialog") );
 
     return wxCANCEL;
+}
+
+wxVersionInfo wxGetLibraryVersionInfo()
+{
+    // don't translate these strings, they're for diagnostics purposes only
+    wxString msg;
+    msg.Printf(wxS("wxWidgets Library (%s port)\n")
+               wxS("Version %d.%d.%d (Unicode: %s, debug level: %d),\n")
+#if !wxUSE_REPRODUCIBLE_BUILD
+               wxS("compiled at %s %s\n\n")
+#endif
+               wxS("Runtime version of toolkit used is %d.%d.\n"),
+               wxPlatformInfo::Get().GetPortIdName(),
+               wxMAJOR_VERSION,
+               wxMINOR_VERSION,
+               wxRELEASE_NUMBER,
+#if wxUSE_UNICODE_UTF8
+               "UTF-8",
+#elif wxUSE_UNICODE
+               "wchar_t",
+#else
+               "none",
+#endif
+               wxDEBUG_LEVEL,
+#if !wxUSE_REPRODUCIBLE_BUILD
+               __TDATE__,
+               __TTIME__,
+#endif
+               wxPlatformInfo::Get().GetToolkitMajorVersion(),
+               wxPlatformInfo::Get().GetToolkitMinorVersion()
+              );
+
+#ifdef __WXGTK__
+    msg += wxString::Format("Compile-time GTK+ version is %d.%d.%d.\n",
+                            GTK_MAJOR_VERSION,
+                            GTK_MINOR_VERSION,
+                            GTK_MICRO_VERSION);
+#endif // __WXGTK__
+
+#ifdef __WXQT__
+    msg += wxString::Format("Compile-time QT version is %s.\n",
+                            QT_VERSION_STR);
+#endif // __WXQT__
+
+    return wxVersionInfo(wxS("wxWidgets"),
+                         wxMAJOR_VERSION,
+                         wxMINOR_VERSION,
+                         wxRELEASE_NUMBER,
+                         msg,
+                         wxS("Copyright (c) 1995-2019 wxWidgets team"));
+}
+
+void wxInfoMessageBox(wxWindow* parent)
+{
+    wxVersionInfo info = wxGetLibraryVersionInfo();
+    wxString msg = info.ToString();
+
+    msg << wxS("\n") << info.GetCopyright();
+
+    wxMessageBox(msg, wxT("wxWidgets information"),
+                 wxICON_INFORMATION | wxOK,
+                 parent);
 }
 
 #endif // wxUSE_MSGDLG
@@ -1281,57 +1499,6 @@ wxString wxGetPasswordFromUser(const wxString& message,
 
 #endif // wxUSE_TEXTDLG
 
-#if wxUSE_COLOURDLG
-
-wxColour wxGetColourFromUser(wxWindow *parent, const wxColour& colInit, const wxString& caption)
-{
-    static wxColourData data;
-    data.SetChooseFull(true);
-    if ( colInit.Ok() )
-    {
-        data.SetColour((wxColour &)colInit); // const_cast
-    }
-
-    wxColour colRet;
-    wxColourDialog dialog(parent, &data);
-    if (!caption.empty())
-        dialog.SetTitle(caption);
-    if ( dialog.ShowModal() == wxID_OK )
-    {
-        colRet = dialog.GetColourData().GetColour();
-    }
-    //else: leave it invalid
-
-    return colRet;
-}
-
-#endif // wxUSE_COLOURDLG
-
-#if wxUSE_FONTDLG
-
-wxFont wxGetFontFromUser(wxWindow *parent, const wxFont& fontInit, const wxString& caption)
-{
-    wxFontData data;
-    if ( fontInit.Ok() )
-    {
-        data.SetInitialFont(fontInit);
-    }
-
-    wxFont fontRet;
-    wxFontDialog dialog(parent, data);
-    if (!caption.empty())
-        dialog.SetTitle(caption);
-    if ( dialog.ShowModal() == wxID_OK )
-    {
-        fontRet = dialog.GetFontData().GetChosenFont();
-    }
-    //else: leave it invalid
-
-    return fontRet;
-}
-
-#endif // wxUSE_FONTDLG
-
 // ----------------------------------------------------------------------------
 // wxSafeYield and supporting functions
 // ----------------------------------------------------------------------------
@@ -1343,7 +1510,26 @@ void wxEnableTopLevelWindows(bool enable)
         node->GetData()->Enable(enable);
 }
 
+#if defined(__WXOSX__) && wxOSX_USE_COCOA
+
+// defined in evtloop.mm
+
+#else
+
+wxWindowDisabler::wxWindowDisabler(bool disable)
+{
+    m_disabled = disable;
+    if ( disable )
+        DoDisable();
+}
+
 wxWindowDisabler::wxWindowDisabler(wxWindow *winToSkip)
+{
+    m_disabled = true;
+    DoDisable(winToSkip);
+}
+
+void wxWindowDisabler::DoDisable(wxWindow *winToSkip)
 {
     // remember the top level windows which were already disabled, so that we
     // don't reenable them later
@@ -1375,6 +1561,9 @@ wxWindowDisabler::wxWindowDisabler(wxWindow *winToSkip)
 
 wxWindowDisabler::~wxWindowDisabler()
 {
+    if ( !m_disabled )
+        return;
+
     wxWindowList::compatibility_iterator node;
     for ( node = wxTopLevelWindows.GetFirst(); node; node = node->GetNext() )
     {
@@ -1388,6 +1577,8 @@ wxWindowDisabler::~wxWindowDisabler()
 
     delete m_winDisabled;
 }
+
+#endif
 
 // Yield to other apps/messages and disable user input to all windows except
 // the given one
@@ -1404,14 +1595,18 @@ bool wxSafeYield(wxWindow *win, bool onlyIfNeeded)
     return rc;
 }
 
-// Don't synthesize KeyUp events holding down a key and producing KeyDown
-// events with autorepeat. On by default and always on in wxMSW. wxGTK version
-// in utilsgtk.cpp.
-#ifndef __WXGTK__
-bool wxSetDetectableAutoRepeat( bool WXUNUSED(flag) )
+// ----------------------------------------------------------------------------
+// wxApp::Yield() wrappers for backwards compatibility
+// ----------------------------------------------------------------------------
+
+bool wxYield()
 {
-    return true;    // detectable auto-repeat is the only mode MSW supports
+    return wxTheApp && wxTheApp->Yield();
 }
-#endif // !wxGTK
+
+bool wxYieldIfNeeded()
+{
+    return wxTheApp && wxTheApp->Yield(true);
+}
 
 #endif // wxUSE_GUI

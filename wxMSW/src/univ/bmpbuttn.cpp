@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     25.08.00
-// RCS-ID:      $Id: bmpbuttn.cpp 42778 2006-10-30 22:11:26Z VZ $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -38,12 +37,10 @@
 // implementation
 // ============================================================================
 
-IMPLEMENT_DYNAMIC_CLASS(wxBitmapButton, wxButton)
-
-BEGIN_EVENT_TABLE(wxBitmapButton, wxButton)
+wxBEGIN_EVENT_TABLE(wxBitmapButton, wxButton)
     EVT_SET_FOCUS(wxBitmapButton::OnSetFocus)
     EVT_KILL_FOCUS(wxBitmapButton::OnKillFocus)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // wxBitmapButton
@@ -65,7 +62,7 @@ bool wxBitmapButton::Create(wxWindow *parent,
                            pos, size, style | wxBU_EXACTFIT, validator, name) )
         return false;
 
-    m_bmpNormal = bitmap;
+    m_bitmaps[State_Normal] = bitmap;
 
     return true;
 }
@@ -75,31 +72,29 @@ void wxBitmapButton::OnSetBitmap()
     wxBitmap bmp;
     if ( !IsEnabled() )
     {
-        bmp = m_bmpDisabled;
+        bmp = GetBitmapDisabled();
     }
     else if ( IsPressed() )
     {
-        bmp = m_bmpSelected;
+        bmp = GetBitmapPressed();
     }
     else if ( IsFocused() )
     {
-        bmp = m_bmpFocus;
+        bmp = GetBitmapFocus();
     }
-    else
-    {
-        bmp = m_bmpNormal;
-    }
+    //else: just leave it invalid, this means "normal" anyhow in ChangeBitmap()
 
     ChangeBitmap(bmp);
 }
 
 bool wxBitmapButton::ChangeBitmap(const wxBitmap& bmp)
 {
-    wxBitmap bitmap = bmp.Ok() ? bmp : m_bmpNormal;
+    wxBitmap bitmap = bmp.IsOk() ? bmp : GetBitmapLabel();
     if ( bitmap.IsSameAs(m_bitmap) )
         return false;
 
     m_bitmap = bitmap;
+    SetInitialSize(bitmap.GetSize());
 
     return true;
 }
@@ -109,7 +104,7 @@ bool wxBitmapButton::Enable(bool enable)
     if ( !wxButton::Enable(enable) )
         return false;
 
-    if ( !enable && ChangeBitmap(m_bmpDisabled) )
+    if ( !enable && ChangeBitmap(GetBitmapDisabled()) )
         Refresh();
 
     return true;
@@ -117,14 +112,14 @@ bool wxBitmapButton::Enable(bool enable)
 
 bool wxBitmapButton::SetCurrent(bool doit)
 {
-    ChangeBitmap(doit ? m_bmpFocus : m_bmpNormal);
+    ChangeBitmap(doit ? GetBitmapFocus() : GetBitmapLabel());
 
     return wxButton::SetCurrent(doit);
 }
 
 void wxBitmapButton::OnSetFocus(wxFocusEvent& event)
 {
-    if ( ChangeBitmap(m_bmpFocus) )
+    if ( ChangeBitmap(GetBitmapFocus()) )
         Refresh();
 
     event.Skip();
@@ -132,7 +127,7 @@ void wxBitmapButton::OnSetFocus(wxFocusEvent& event)
 
 void wxBitmapButton::OnKillFocus(wxFocusEvent& event)
 {
-    if ( ChangeBitmap(m_bmpNormal) )
+    if ( ChangeBitmap(GetBitmapLabel()) )
         Refresh();
 
     event.Skip();
@@ -140,14 +135,14 @@ void wxBitmapButton::OnKillFocus(wxFocusEvent& event)
 
 void wxBitmapButton::Press()
 {
-    ChangeBitmap(m_bmpSelected);
+    ChangeBitmap(GetBitmapPressed());
 
     wxButton::Press();
 }
 
 void wxBitmapButton::Release()
 {
-    ChangeBitmap(IsFocused() ? m_bmpFocus : m_bmpNormal);
+    ChangeBitmap(IsFocused() ? GetBitmapFocus() : GetBitmapLabel());
 
     wxButton::Release();
 }

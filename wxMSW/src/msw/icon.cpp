@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by: 20.11.99 (VZ): don't derive from wxBitmap any more
 // Created:     04/01/98
-// RCS-ID:      $Id: icon.cpp 39551 2006-06-04 15:51:39Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -39,7 +38,7 @@
 // wxWin macros
 // ----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxIcon, wxGDIObject)
+wxIMPLEMENT_DYNAMIC_CLASS(wxIcon, wxGDIObject);
 
 // ============================================================================
 // implementation
@@ -53,9 +52,7 @@ void wxIconRefData::Free()
 {
     if ( m_hIcon )
     {
-#ifndef __WXMICROWIN__
         ::DestroyIcon((HICON) m_hIcon);
-#endif
 
         m_hIcon = 0;
     }
@@ -72,12 +69,12 @@ wxIcon::wxIcon(const char bits[], int width, int height)
 }
 
 wxIcon::wxIcon(const wxString& iconfile,
-               long flags,
+               wxBitmapType type,
                int desiredWidth,
                int desiredHeight)
 
 {
-    LoadFile(iconfile, flags, desiredWidth, desiredHeight);
+    LoadFile(iconfile, type, desiredWidth, desiredHeight);
 }
 
 wxIcon::wxIcon(const wxIconLocation& loc)
@@ -86,7 +83,7 @@ wxIcon::wxIcon(const wxIconLocation& loc)
     wxString fullname = loc.GetFileName();
     if ( loc.GetIndex() )
     {
-        fullname << _T(';') << loc.GetIndex();
+        fullname << wxT(';') << loc.GetIndex();
     }
     //else: 0 is default
 
@@ -100,7 +97,7 @@ wxIcon::~wxIcon()
 wxObjectRefData *wxIcon::CloneRefData(const wxObjectRefData *dataOrig) const
 {
     const wxIconRefData *
-        data = wx_static_cast(const wxIconRefData *, dataOrig);
+        data = static_cast<const wxIconRefData *>(dataOrig);
     if ( !data )
         return NULL;
 
@@ -114,7 +111,6 @@ wxObjectRefData *wxIcon::CloneRefData(const wxObjectRefData *dataOrig) const
 
 void wxIcon::CopyFromBitmap(const wxBitmap& bmp)
 {
-#ifndef __WXMICROWIN__
     HICON hicon = wxBitmapToHICON(bmp);
     if ( !hicon )
     {
@@ -122,20 +118,18 @@ void wxIcon::CopyFromBitmap(const wxBitmap& bmp)
     }
     else
     {
-        SetHICON((WXHICON)hicon);
-        SetSize(bmp.GetWidth(), bmp.GetHeight());
+        InitFromHICON((WXHICON)hicon, bmp.GetWidth(), bmp.GetHeight());
     }
-#endif // __WXMICROWIN__
 }
 
-void wxIcon::CreateIconFromXpm(const char **data)
+void wxIcon::CreateIconFromXpm(const char* const* data)
 {
     wxBitmap bmp(data);
     CopyFromBitmap(bmp);
 }
 
 bool wxIcon::LoadFile(const wxString& filename,
-                      long type,
+                      wxBitmapType type,
                       int desiredWidth, int desiredHeight)
 {
     UnRef();
@@ -155,4 +149,30 @@ bool wxIcon::LoadFile(const wxString& filename,
     }
 
     return handler->Load(this, filename, type, desiredWidth, desiredHeight);
+}
+
+bool wxIcon::CreateFromHICON(WXHICON icon)
+{
+    wxSize size = wxGetHiconSize(icon);
+    return InitFromHICON(icon, size.GetWidth(), size.GetHeight());
+}
+
+bool wxIcon::InitFromHICON(WXHICON icon, int width, int height)
+{
+#if wxDEBUG_LEVEL >= 2
+    if ( icon != NULL )
+    {
+        wxSize size = wxGetHiconSize(icon);
+        wxASSERT_MSG(size.GetWidth() == width && size.GetHeight() == height,
+                     wxS("Inconsistent icon parameters"));
+    }
+#endif // wxDEBUG_LEVEL >= 2
+
+    AllocExclusive();
+
+    GetGDIImageData()->m_handle = (WXHANDLE)icon;
+    GetGDIImageData()->m_width = width;
+    GetGDIImageData()->m_height = height;
+
+    return IsOk();
 }

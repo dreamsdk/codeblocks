@@ -3,7 +3,6 @@
 // Purpose:     XML resource handler for wxCollapsiblePane
 // Author:      Francesco Montorsi
 // Created:     2006-10-27
-// RCS-ID:      $Id: xh_collpane.cpp 43434 2006-11-15 19:00:16Z RR $
 // Copyright:   (c) 2006 Francesco Montorsi
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,9 +23,9 @@
 #include "wx/collpane.h"
 #include "wx/xrc/xh_collpane.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxCollapsiblePaneXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxCollapsiblePaneXmlHandler, wxXmlResourceHandler);
 
-wxCollapsiblePaneXmlHandler::wxCollapsiblePaneXmlHandler() 
+wxCollapsiblePaneXmlHandler::wxCollapsiblePaneXmlHandler()
 : wxXmlResourceHandler(), m_isInside(false)
 {
     XRC_ADD_STYLE(wxCP_NO_TLW_RESIZE);
@@ -54,7 +53,7 @@ wxObject *wxCollapsiblePaneXmlHandler::DoCreateResource()
         }
         else
         {
-            wxLogError(wxT("Error in resource: no control within collapsible pane's <panewindow> tag."));
+            ReportError("no control within panewindow");
             return NULL;
         }
     }
@@ -62,10 +61,10 @@ wxObject *wxCollapsiblePaneXmlHandler::DoCreateResource()
     {
         XRC_MAKE_INSTANCE(ctrl, wxCollapsiblePane)
 
-        wxString label = GetParamValue(wxT("label"));
+        wxString label = GetText(wxT("label"));
         if (label.empty())
         {
-            wxLogError(wxT("Error in resource: empty label for wxCollapsiblePane"));
+            ReportParamError("label", "label cannot be empty");
             return NULL;
         }
 
@@ -73,11 +72,11 @@ wxObject *wxCollapsiblePaneXmlHandler::DoCreateResource()
                     GetID(),
                     label,
                     GetPosition(), GetSize(),
-                    GetStyle(_T("style"), wxCP_DEFAULT_STYLE),
+                    GetStyle(wxT("style"), wxCP_DEFAULT_STYLE),
                     wxDefaultValidator,
                     GetName());
 
-        ctrl->Collapse(GetBool(_T("collapsed")));
+        ctrl->Collapse(GetBool(wxT("collapsed")));
         SetupWindow(ctrl);
 
         wxCollapsiblePane *old_par = m_collpane;

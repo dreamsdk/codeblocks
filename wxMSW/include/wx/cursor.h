@@ -1,41 +1,75 @@
 /////////////////////////////////////////////////////////////////////////////
 // Name:        wx/cursor.h
 // Purpose:     wxCursor base header
-// Author:      Julian Smart
-// Modified by:
+// Author:      Julian Smart, Vadim Zeitlin
 // Created:
 // Copyright:   (c) Julian Smart
-// RCS-ID:      $Id: cursor.h 40865 2006-08-27 09:42:42Z VS $
+//              (c) 2014 Vadim Zeitlin (wxCursorBase)
 // Licence:     wxWindows Licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_CURSOR_H_BASE_
 #define _WX_CURSOR_H_BASE_
 
-#include "wx/defs.h"
+#include "wx/gdiobj.h"
+#include "wx/gdicmn.h"
 
-#if defined(__WXPALMOS__)
-    #include "wx/palmos/cursor.h"
-#elif defined(__WXMSW__)
+// Under most ports, wxCursor derives directly from wxGDIObject, but in wxMSW
+// there is an intermediate wxGDIImage class.
+#ifdef __WXMSW__
+    #include "wx/msw/gdiimage.h"
+#else
+    typedef wxGDIObject wxGDIImage;
+#endif
+
+class WXDLLIMPEXP_CORE wxCursorBase : public wxGDIImage
+{
+public:
+/*
+    wxCursor classes should provide the following ctors:
+
+    wxCursor();
+    wxCursor(const wxImage& image);
+    wxCursor(const wxString& name,
+             wxBitmapType type = wxCURSOR_DEFAULT_TYPE,
+             int hotSpotX = 0, int hotSpotY = 0);
+    wxCursor(wxStockCursor id) { InitFromStock(id); }
+#if WXWIN_COMPATIBILITY_2_8
+    wxCursor(int id) { InitFromStock((wxStockCursor)id); }
+#endif
+*/
+
+    virtual wxPoint GetHotSpot() const { return wxDefaultPosition; }
+};
+
+#if defined(__WXMSW__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_CUR_RESOURCE
     #include "wx/msw/cursor.h"
 #elif defined(__WXMOTIF__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_XBM
     #include "wx/motif/cursor.h"
 #elif defined(__WXGTK20__)
+    #ifdef __WINDOWS__
+        #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_CUR_RESOURCE
+    #else
+        #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
+    #endif
     #include "wx/gtk/cursor.h"
 #elif defined(__WXGTK__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
     #include "wx/gtk1/cursor.h"
 #elif defined(__WXX11__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_XPM
     #include "wx/x11/cursor.h"
-#elif defined(__WXMGL__)
-    #include "wx/mgl/cursor.h"
 #elif defined(__WXDFB__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_CUR_RESOURCE
     #include "wx/dfb/cursor.h"
 #elif defined(__WXMAC__)
-    #include "wx/mac/cursor.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/cursor.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/cursor.h"
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_MACCURSOR_RESOURCE
+    #include "wx/osx/cursor.h"
+#elif defined(__WXQT__)
+    #define wxCURSOR_DEFAULT_TYPE   wxBITMAP_TYPE_CUR
+    #include "wx/qt/cursor.h"
 #endif
 
 #include "wx/utils.h"

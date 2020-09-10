@@ -4,10 +4,11 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     25/01/99
-// RCS-ID:      $Id: client.h 36898 2006-01-16 16:09:49Z ABX $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
+
+#include "connection.h"
 
 #define ID_START         10000
 #define ID_DISCONNECT    10001
@@ -23,15 +24,14 @@
 
 // Define a new application
 class MyClient;
-class MyConnection;
 class MyFrame;
 
 class MyApp: public wxApp
 {
 public:
-    virtual bool OnInit();
-    virtual int OnExit();
-    MyFrame *GetFrame() { return m_frame; };
+    virtual bool OnInit() wxOVERRIDE;
+    virtual int OnExit() wxOVERRIDE;
+    MyFrame *GetFrame() { return m_frame; }
 
 protected:
     MyFrame        *m_frame;
@@ -75,20 +75,17 @@ protected:
     void OnRequest(wxCommandEvent& event);
 
 protected:
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
-class MyConnection: public wxConnection
+class MyConnection : public MyConnectionBase
 {
 public:
-    virtual bool Execute(const wxChar *data, int size = -1, wxIPCFormat format = wxIPC_TEXT);
-    virtual wxChar *Request(const wxString& item, int *size = NULL, wxIPCFormat format = wxIPC_TEXT);
-    virtual bool Poke(const wxString& item, wxChar *data, int size = -1, wxIPCFormat format = wxIPC_TEXT);
-    virtual bool OnAdvise(const wxString& topic, const wxString& item, wxChar *data, int size, wxIPCFormat format);
-    virtual bool OnDisconnect();
-protected:
-    void Log(const wxString& command, const wxString& topic,
-        const wxString& item, wxChar *data, int size, wxIPCFormat format);
+    virtual bool DoExecute(const void *data, size_t size, wxIPCFormat format) wxOVERRIDE;
+    virtual const void *Request(const wxString& item, size_t *size = NULL, wxIPCFormat format = wxIPC_TEXT) wxOVERRIDE;
+    virtual bool DoPoke(const wxString& item, const void* data, size_t size, wxIPCFormat format) wxOVERRIDE;
+    virtual bool OnAdvise(const wxString& topic, const wxString& item, const void *data, size_t size, wxIPCFormat format) wxOVERRIDE;
+    virtual bool OnDisconnect() wxOVERRIDE;
 };
 
 class MyClient: public wxClient
@@ -98,9 +95,9 @@ public:
     ~MyClient();
     bool Connect(const wxString& sHost, const wxString& sService, const wxString& sTopic);
     void Disconnect();
-    wxConnectionBase *OnMakeConnection();
-    bool IsConnected() { return m_connection != NULL; };
-    MyConnection *GetConnection() { return m_connection; };
+    wxConnectionBase *OnMakeConnection() wxOVERRIDE;
+    bool IsConnected() { return m_connection != NULL; }
+    MyConnection *GetConnection() { return m_connection; }
 
 protected:
     MyConnection     *m_connection;

@@ -3,7 +3,6 @@
 // Purpose:     wxGIFDecoder, GIF reader for wxImage and wxAnimation
 // Author:      Guillermo Rodriguez Garcia <guille@iies.es>
 // Version:     3.02
-// CVS-ID:      $Id: gifdecod.h 45563 2007-04-21 18:17:50Z VZ $
 // Copyright:   (c) 1999 Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -46,7 +45,7 @@ enum wxGIFErrorCode
 // wxGIFDecoder class
 // --------------------------------------------------------------------------
 
-class WXDLLEXPORT wxGIFDecoder : public wxAnimationDecoder
+class WXDLLIMPEXP_CORE wxGIFDecoder : public wxAnimationDecoder
 {
 public:
     // constructor, destructor, etc.
@@ -58,12 +57,12 @@ public:
     unsigned char* GetPalette(unsigned int frame) const;
     unsigned int GetNcolours(unsigned int frame) const;
     int GetTransparentColourIndex(unsigned int frame) const;
-    wxColour GetTransparentColour(unsigned int frame) const;
+    wxColour GetTransparentColour(unsigned int frame) const wxOVERRIDE;
 
-    virtual wxSize GetFrameSize(unsigned int frame) const;
-    virtual wxPoint GetFramePosition(unsigned int frame) const;
-    virtual wxAnimationDisposal GetDisposalMethod(unsigned int frame) const;
-    virtual long GetDelay(unsigned int frame) const;
+    virtual wxSize GetFrameSize(unsigned int frame) const wxOVERRIDE;
+    virtual wxPoint GetFramePosition(unsigned int frame) const wxOVERRIDE;
+    virtual wxAnimationDisposal GetDisposalMethod(unsigned int frame) const wxOVERRIDE;
+    virtual long GetDelay(unsigned int frame) const wxOVERRIDE;
 
     // GIFs can contain both static images and animations
     bool IsAnimation() const
@@ -76,18 +75,26 @@ public:
     void Destroy();
 
     // implementation of wxAnimationDecoder's pure virtuals
-    virtual bool CanRead( wxInputStream& stream ) const;
-    virtual bool Load( wxInputStream& stream )
+    virtual bool Load( wxInputStream& stream ) wxOVERRIDE
         { return LoadGIF(stream) == wxGIF_OK; }
 
-    bool ConvertToImage(unsigned int frame, wxImage *image) const;
+    bool ConvertToImage(unsigned int frame, wxImage *image) const wxOVERRIDE;
 
-    wxAnimationDecoder *Clone() const
+    wxAnimationDecoder *Clone() const wxOVERRIDE
         { return new wxGIFDecoder; }
-    wxAnimationType GetType() const
+    wxAnimationType GetType() const wxOVERRIDE
         { return wxANIMATION_TYPE_GIF; }
 
 private:
+    // wxAnimationDecoder pure virtual
+    virtual bool DoCanRead( wxInputStream& stream ) const wxOVERRIDE;
+        // modifies current stream position (see wxAnimationDecoder::CanRead)
+
+    int getcode(wxInputStream& stream, int bits, int abfin);
+    wxGIFErrorCode dgif(wxInputStream& stream,
+                        GIFImage *img, int interl, int bits);
+
+
     // array of all frames
     wxArrayPtrVoid m_frames;
 
@@ -98,13 +105,9 @@ private:
     unsigned char m_buffer[256];    // buffer for reading
     unsigned char *m_bufp;          // pointer to next byte in buffer
 
-    int getcode(wxInputStream& stream, int bits, int abfin);
-    wxGIFErrorCode dgif(wxInputStream& stream,
-                        GIFImage *img, int interl, int bits);
-
-    DECLARE_NO_COPY_CLASS(wxGIFDecoder)
+    wxDECLARE_NO_COPY_CLASS(wxGIFDecoder);
 };
 
-#endif // wxUSE_STREAM && wxUSE_GIF
+#endif // wxUSE_STREAMS && wxUSE_GIF
 
 #endif // _WX_GIFDECOD_H_

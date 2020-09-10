@@ -1,9 +1,8 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        dialog.h
+// Name:        wx/univ/dialog.h
 // Purpose:     wxDialog class
 // Author:      Vaclav Slavik
 // Created:     2001/09/16
-// RCS-ID:      $Id: dialog.h 36891 2006-01-16 14:59:55Z MR $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -11,12 +10,12 @@
 #ifndef _WX_UNIV_DIALOG_H_
 #define _WX_UNIV_DIALOG_H_
 
-extern WXDLLEXPORT_DATA(const wxChar) wxDialogNameStr[];
-class WXDLLEXPORT wxWindowDisabler;
-class WXDLLEXPORT wxEventLoop;
+extern WXDLLIMPEXP_DATA_CORE(const char) wxDialogNameStr[];
+class WXDLLIMPEXP_FWD_CORE wxWindowDisabler;
+class WXDLLIMPEXP_FWD_CORE wxEventLoop;
 
 // Dialog boxes
-class WXDLLEXPORT wxDialog : public wxDialogBase
+class WXDLLIMPEXP_CORE wxDialog : public wxDialogBase
 {
 public:
     wxDialog() { Init(); }
@@ -43,18 +42,18 @@ public:
     virtual ~wxDialog();
 
     // is the dialog in modal state right now?
-    virtual bool IsModal() const;
+    virtual bool IsModal() const wxOVERRIDE;
 
     // For now, same as Show(true) but returns return code
-    virtual int ShowModal();
+    virtual int ShowModal() wxOVERRIDE;
 
     // may be called to terminate the dialog with the given return code
-    virtual void EndModal(int retCode);
+    virtual void EndModal(int retCode) wxOVERRIDE;
 
     // returns true if we're in a modal loop
     bool IsModalShowing() const;
 
-    virtual bool Show(bool show = true);
+    virtual bool Show(bool show = true) wxOVERRIDE;
 
     // implementation only from now on
     // -------------------------------
@@ -80,8 +79,8 @@ private:
     // is modal right now?
     bool m_isShowingModal;
 
-    DECLARE_DYNAMIC_CLASS(wxDialog)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(wxDialog);
+    wxDECLARE_EVENT_TABLE();
 };
 
 #endif

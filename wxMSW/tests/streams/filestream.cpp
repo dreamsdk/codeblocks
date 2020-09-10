@@ -2,9 +2,8 @@
 // Name:        tests/streams/filestream.cpp
 // Purpose:     Test wxFileInputStream/wxFileOutputStream
 // Author:      Hans Van Leemputten
-// RCS-ID:      $Id: filestream.cpp 30685 2004-11-22 05:00:19Z RN $
 // Copyright:   (c) 2004 Hans Van Leemputten
-// Licence:     wxWidgets licence
+// Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx/wx.h".
@@ -26,8 +25,8 @@
 
 #define DATABUFFER_SIZE     1024
 
-static const wxString FILENAME_FILEINSTREAM = _T("fileinstream.test");
-static const wxString FILENAME_FILEOUTSTREAM = _T("fileoutstream.test");
+static const wxString FILENAME_FILEINSTREAM = wxT("fileinstream.test");
+static const wxString FILENAME_FILEOUTSTREAM = wxT("fileoutstream.test");
 
 ///////////////////////////////////////////////////////////////////////////////
 // The test case
@@ -38,7 +37,6 @@ class fileStream : public BaseStreamTestCase<wxFileInputStream, wxFileOutputStre
 {
 public:
     fileStream();
-    virtual ~fileStream();
 
     CPPUNIT_TEST_SUITE(fileStream);
         // Base class stream tests the fileStream supports.
@@ -47,6 +45,7 @@ public:
         CPPUNIT_TEST(Input_Read);
         CPPUNIT_TEST(Input_Eof);
         CPPUNIT_TEST(Input_LastRead);
+        CPPUNIT_TEST(Input_CanRead);
         CPPUNIT_TEST(Input_SeekI);
         CPPUNIT_TEST(Input_TellI);
         CPPUNIT_TEST(Input_Peek);
@@ -66,9 +65,9 @@ protected:
 
 private:
     // Implement base class functions.
-    virtual wxFileInputStream  *DoCreateInStream();
-    virtual wxFileOutputStream *DoCreateOutStream();
-    virtual void DoDeleteOutStream();
+    virtual wxFileInputStream  *DoCreateInStream() wxOVERRIDE;
+    virtual wxFileOutputStream *DoCreateOutStream() wxOVERRIDE;
+    virtual void DoDeleteOutStream() wxOVERRIDE;
 
 private:
     wxString GetInFileName() const;
@@ -77,13 +76,6 @@ private:
 fileStream::fileStream()
 {
     m_bSeekInvalidBeyondEnd = false;
-}
-
-fileStream::~fileStream()
-{
-    // Remove the temp test file...
-    ::wxRemoveFile(FILENAME_FILEINSTREAM);
-    ::wxRemoveFile(FILENAME_FILEOUTSTREAM);
 }
 
 wxFileInputStream *fileStream::DoCreateInStream()
@@ -106,12 +98,37 @@ void fileStream::DoDeleteOutStream()
 
 wxString fileStream::GetInFileName() const
 {
-    static bool bFileCreated = false;
-    if (!bFileCreated)
+    class AutoRemoveFile
     {
-        // Create the file only once
-        bFileCreated = true;
+    public:
+        AutoRemoveFile()
+        {
+            m_created = false;
+        }
 
+        ~AutoRemoveFile()
+        {
+            if ( m_created )
+                wxRemoveFile(FILENAME_FILEINSTREAM);
+        }
+
+        bool ShouldCreate()
+        {
+            if ( m_created )
+                return false;
+
+            m_created = true;
+
+            return true;
+        }
+
+    private:
+        bool m_created;
+    };
+
+    static AutoRemoveFile autoFile;
+    if ( autoFile.ShouldCreate() )
+    {
         // Make sure we have a input file...
         char buf[DATABUFFER_SIZE];
         wxFileOutputStream out(FILENAME_FILEINSTREAM);

@@ -4,7 +4,6 @@
 // Author:      Marcel Rasche, Vaclav Slavik
 // Modified by:
 // Created:     25/10/98
-// RCS-ID:      $Id: sound.cpp 41020 2006-09-05 20:47:48Z VZ $
 // Copyright:   (c) Julian Smart, Open Source Applications Foundation
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -79,15 +78,15 @@ wxSoundData::~wxSoundData()
 class wxSoundBackendNull : public wxSoundBackend
 {
 public:
-    wxString GetName() const { return _("No sound"); }
-    int GetPriority() const { return 0; }
-    bool IsAvailable() const { return true; }
-    bool HasNativeAsyncPlayback() const { return true; }
+    wxString GetName() const wxOVERRIDE { return _("No sound"); }
+    int GetPriority() const wxOVERRIDE { return 0; }
+    bool IsAvailable() const wxOVERRIDE { return true; }
+    bool HasNativeAsyncPlayback() const wxOVERRIDE { return true; }
     bool Play(wxSoundData *WXUNUSED(data), unsigned WXUNUSED(flags),
-              volatile wxSoundPlaybackStatus *WXUNUSED(status))
+              volatile wxSoundPlaybackStatus *WXUNUSED(status)) wxOVERRIDE
         { return true; }
-    void Stop() {}
-    bool IsPlaying() const { return false; }
+    void Stop() wxOVERRIDE {}
+    bool IsPlaying() const wxOVERRIDE { return false; }
 };
 
 
@@ -104,14 +103,14 @@ public:
 class wxSoundBackendOSS : public wxSoundBackend
 {
 public:
-    wxString GetName() const { return _T("Open Sound System"); }
-    int GetPriority() const { return 10; }
-    bool IsAvailable() const;
-    bool HasNativeAsyncPlayback() const { return false; }
+    wxString GetName() const wxOVERRIDE { return wxT("Open Sound System"); }
+    int GetPriority() const wxOVERRIDE { return 10; }
+    bool IsAvailable() const wxOVERRIDE;
+    bool HasNativeAsyncPlayback() const wxOVERRIDE { return false; }
     bool Play(wxSoundData *data, unsigned flags,
-              volatile wxSoundPlaybackStatus *status);
-    void Stop() {}
-    bool IsPlaying() const { return false; }
+              volatile wxSoundPlaybackStatus *status) wxOVERRIDE;
+    void Stop() wxOVERRIDE {}
+    bool IsPlaying() const wxOVERRIDE { return false; }
 
 private:
     int OpenDSP(const wxSoundData *data);
@@ -152,7 +151,7 @@ bool wxSoundBackendOSS::Play(wxSoundData *data, unsigned flags,
         {
             if (status->m_stopRequested)
             {
-                wxLogTrace(_T("sound"), _T("playback stopped"));
+                wxLogTrace(wxT("sound"), wxT("playback stopped"));
                 close(dev);
                 return true;
             }
@@ -195,7 +194,7 @@ bool wxSoundBackendOSS::InitDSP(int dev, const wxSoundData *data)
     // Reset the dsp
     if (ioctl(dev, SNDCTL_DSP_RESET, 0) < 0)
     {
-        wxLogTrace(_T("sound"), _T("unable to reset dsp"));
+        wxLogTrace(wxT("sound"), wxT("unable to reset dsp"));
         return false;
     }
 
@@ -204,13 +203,13 @@ bool wxSoundBackendOSS::InitDSP(int dev, const wxSoundData *data)
     tmp = data->m_bitsPerSample;
     if (ioctl(dev, SNDCTL_DSP_SAMPLESIZE, &tmp) < 0)
     {
-        wxLogTrace(_T("sound"), _T("IOCTL failure (SNDCTL_DSP_SAMPLESIZE)"));
+        wxLogTrace(wxT("sound"), wxT("IOCTL failure (SNDCTL_DSP_SAMPLESIZE)"));
         return false;
     }
     if (tmp != data->m_bitsPerSample)
     {
-        wxLogTrace(_T("sound"),
-                   _T("Unable to set DSP sample size to %d (wants %d)"),
+        wxLogTrace(wxT("sound"),
+                   wxT("Unable to set DSP sample size to %d (wants %d)"),
                    data->m_bitsPerSample, tmp);
         m_needConversion = true;
     }
@@ -219,19 +218,18 @@ bool wxSoundBackendOSS::InitDSP(int dev, const wxSoundData *data)
     tmp = stereo;
     if (ioctl(dev, SNDCTL_DSP_STEREO, &tmp) < 0)
     {
-        wxLogTrace(_T("sound"), _T("IOCTL failure (SNDCTL_DSP_STEREO)"));
+        wxLogTrace(wxT("sound"), wxT("IOCTL failure (SNDCTL_DSP_STEREO)"));
         return false;
     }
     if (tmp != stereo)
     {
-        wxLogTrace(_T("sound"), _T("Unable to set DSP to %s."), stereo?  _T("stereo"):_T("mono"));
-        m_needConversion = true;
+        wxLogTrace(wxT("sound"), wxT("Unable to set DSP to %s."), stereo?  wxT("stereo"):wxT("mono"));
     }
 
     tmp = data->m_samplingRate;
     if (ioctl(dev, SNDCTL_DSP_SPEED, &tmp) < 0)
     {
-        wxLogTrace(_T("sound"), _T("IOCTL failure (SNDCTL_DSP_SPEED)"));
+        wxLogTrace(wxT("sound"), wxT("IOCTL failure (SNDCTL_DSP_SPEED)"));
        return false;
     }
     if (tmp != data->m_samplingRate)
@@ -244,8 +242,8 @@ bool wxSoundBackendOSS::InitDSP(int dev, const wxSoundData *data)
         // file rates for something that we can't hear anyways.
         if (data->m_samplingRate - tmp > (tmp * .01) ||
             tmp - data->m_samplingRate > (tmp * .01)) {
-            wxLogTrace(_T("sound"),
-                       _T("Unable to set DSP sampling rate to %d (wants %d)"),
+            wxLogTrace(wxT("sound"),
+                       wxT("Unable to set DSP sampling rate to %d (wants %d)"),
                        data->m_samplingRate, tmp);
             m_needConversion = true;
         }
@@ -255,7 +253,7 @@ bool wxSoundBackendOSS::InitDSP(int dev, const wxSoundData *data)
     // the sampling rate, etc.
     if (ioctl(dev, SNDCTL_DSP_GETBLKSIZE, &m_DSPblkSize) < 0)
     {
-        wxLogTrace(_T("sound"), _T("IOCTL failure (SNDCTL_DSP_GETBLKSIZE)"));
+        wxLogTrace(wxT("sound"), wxT("IOCTL failure (SNDCTL_DSP_GETBLKSIZE)"));
         return false;
     }
     return true;
@@ -279,7 +277,7 @@ public:
     wxSoundAsyncPlaybackThread(wxSoundSyncOnlyAdaptor *adaptor,
                               wxSoundData *data, unsigned flags)
         : wxThread(), m_adapt(adaptor), m_data(data), m_flags(flags) {}
-    virtual ExitCode Entry();
+    virtual ExitCode Entry() wxOVERRIDE;
 
 protected:
     wxSoundSyncOnlyAdaptor *m_adapt;
@@ -295,37 +293,36 @@ class wxSoundSyncOnlyAdaptor : public wxSoundBackend
 {
 public:
     wxSoundSyncOnlyAdaptor(wxSoundBackend *backend)
-        : m_backend(backend), m_playing(false) {}
+        : m_backend(backend) {}
     virtual ~wxSoundSyncOnlyAdaptor()
     {
         delete m_backend;
     }
-    wxString GetName() const
+    wxString GetName() const wxOVERRIDE
     {
         return m_backend->GetName();
     }
-    int GetPriority() const
+    int GetPriority() const wxOVERRIDE
     {
         return m_backend->GetPriority();
     }
-    bool IsAvailable() const
+    bool IsAvailable() const wxOVERRIDE
     {
         return m_backend->IsAvailable();
     }
-    bool HasNativeAsyncPlayback() const
+    bool HasNativeAsyncPlayback() const wxOVERRIDE
     {
         return true;
     }
     bool Play(wxSoundData *data, unsigned flags,
-              volatile wxSoundPlaybackStatus *status);
-    void Stop();
-    bool IsPlaying() const;
+              volatile wxSoundPlaybackStatus *status) wxOVERRIDE;
+    void Stop() wxOVERRIDE;
+    bool IsPlaying() const wxOVERRIDE;
 
 private:
     friend class wxSoundAsyncPlaybackThread;
 
     wxSoundBackend *m_backend;
-    bool m_playing;
 #if wxUSE_THREADS
     // player thread holds this mutex and releases it after it finishes
     // playing, so that the main thread knows when it can play sound
@@ -338,13 +335,15 @@ private:
 #if wxUSE_THREADS
 wxThread::ExitCode wxSoundAsyncPlaybackThread::Entry()
 {
+    wxMutexLocker locker(m_adapt->m_mutexRightToPlay);
+
     m_adapt->m_backend->Play(m_data, m_flags & ~wxSOUND_ASYNC,
                              &m_adapt->m_status);
 
     m_data->DecRef();
-    m_adapt->m_playing = false;
-    m_adapt->m_mutexRightToPlay.Unlock();
-    wxLogTrace(_T("sound"), _T("terminated async playback thread"));
+    m_adapt->m_status.m_playing = false;
+
+    wxLogTrace(wxT("sound"), wxT("terminated async playback thread"));
     return 0;
 }
 #endif
@@ -356,14 +355,14 @@ bool wxSoundSyncOnlyAdaptor::Play(wxSoundData *data, unsigned flags,
     if (flags & wxSOUND_ASYNC)
     {
 #if wxUSE_THREADS
-        m_mutexRightToPlay.Lock();
+        wxMutexLocker locker(m_mutexRightToPlay);
         m_status.m_playing = true;
         m_status.m_stopRequested = false;
         data->IncRef();
         wxThread *th = new wxSoundAsyncPlaybackThread(this, data, flags);
         th->Create();
         th->Run();
-        wxLogTrace(_T("sound"), _T("launched async playback thread"));
+        wxLogTrace(wxT("sound"), wxT("launched async playback thread"));
         return true;
 #else
         wxLogError(_("Unable to play sound asynchronously."));
@@ -373,31 +372,23 @@ bool wxSoundSyncOnlyAdaptor::Play(wxSoundData *data, unsigned flags,
     else
     {
 #if wxUSE_THREADS
-        m_mutexRightToPlay.Lock();
+        wxMutexLocker locker(m_mutexRightToPlay);
 #endif
-        bool rv = m_backend->Play(data, flags, status);
-#if wxUSE_THREADS
-        m_mutexRightToPlay.Unlock();
-#endif
-        return rv;
+        return m_backend->Play(data, flags, status);
     }
 }
 
 void wxSoundSyncOnlyAdaptor::Stop()
 {
-    wxLogTrace(_T("sound"), _T("asking audio to stop"));
+    wxLogTrace(wxT("sound"), wxT("asking audio to stop"));
 
 #if wxUSE_THREADS
+    wxMutexLocker lock(m_mutexRightToPlay);
+
     // tell the player thread (if running) to stop playback ASAP:
     m_status.m_stopRequested = true;
 
-    // acquire the mutex to be sure no sound is being played, then
-    // release it because we don't need it for anything (the effect of this
-    // is that calling thread will wait until playback thread reacts to
-    // our request to interrupt playback):
-    m_mutexRightToPlay.Lock();
-    m_mutexRightToPlay.Unlock();
-    wxLogTrace(_T("sound"), _T("audio was stopped"));
+    wxLogTrace(wxT("sound"), wxT("audio was stopped"));
 #endif
 }
 
@@ -435,7 +426,7 @@ wxSound::wxSound(const wxString& sFileName, bool isResource) : m_data(NULL)
     Create(sFileName, isResource);
 }
 
-wxSound::wxSound(int size, const wxByte* data) : m_data(NULL)
+wxSound::wxSound(size_t size, const void* data) : m_data(NULL)
 {
     Create(size, data);
 }
@@ -449,7 +440,7 @@ bool wxSound::Create(const wxString& fileName,
                      bool WXUNUSED_UNLESS_DEBUG(isResource))
 {
     wxASSERT_MSG( !isResource,
-             _T("Loading sound from resources is only supported on Windows") );
+             wxT("Loading sound from resources is only supported on Windows") );
 
     Free();
 
@@ -483,7 +474,7 @@ bool wxSound::Create(const wxString& fileName,
     return true;
 }
 
-bool wxSound::Create(int size, const wxByte* data)
+bool wxSound::Create(size_t size, const void* data)
 {
     wxASSERT( data != NULL );
 
@@ -509,12 +500,12 @@ bool wxSound::Create(int size, const wxByte* data)
             ms_backend = wxCreateSoundBackendSDL();
 #else
             wxString dllname;
-            dllname.Printf(_T("%s/%s"),
+            dllname.Printf(wxT("%s/%s"),
                 wxDynamicLibrary::GetPluginsDirectory().c_str(),
                 wxDynamicLibrary::CanonicalizePluginName(
-                    _T("sound_sdl"), wxDL_PLUGIN_BASE).c_str());
-            wxLogTrace(_T("sound"),
-                       _T("trying to load SDL plugin from '%s'..."),
+                    wxT("sound_sdl"), wxDL_PLUGIN_BASE).c_str());
+            wxLogTrace(wxT("sound"),
+                       wxT("trying to load SDL plugin from '%s'..."),
                        dllname.c_str());
             wxLogNull null;
             ms_backendSDL = new wxDynamicLibrary(dllname, wxDL_NOW);
@@ -557,8 +548,8 @@ bool wxSound::Create(int size, const wxByte* data)
         if (!ms_backend->HasNativeAsyncPlayback())
             ms_backend = new wxSoundSyncOnlyAdaptor(ms_backend);
 
-        wxLogTrace(_T("sound"),
-                   _T("using backend '%s'"), ms_backend->GetName().c_str());
+        wxLogTrace(wxT("sound"),
+                   wxT("using backend '%s'"), ms_backend->GetName().c_str());
     }
 }
 
@@ -566,12 +557,11 @@ bool wxSound::Create(int size, const wxByte* data)
 {
     if (ms_backend)
     {
-        wxLogTrace(_T("sound"), _T("unloading backend"));
+        wxLogTrace(wxT("sound"), wxT("unloading backend"));
 
         Stop();
 
-        delete ms_backend;
-        ms_backend = NULL;
+        wxDELETE(ms_backend);
 #if wxUSE_LIBSDL && wxUSE_PLUGINS
         delete ms_backendSDL;
 #endif
@@ -580,7 +570,7 @@ bool wxSound::Create(int size, const wxByte* data)
 
 bool wxSound::DoPlay(unsigned flags) const
 {
-    wxCHECK_MSG( IsOk(), false, _T("Attempt to play invalid wave data") );
+    wxCHECK_MSG( IsOk(), false, wxT("Attempt to play invalid wave data") );
 
     EnsureBackend();
     wxSoundPlaybackStatus status;
@@ -624,7 +614,7 @@ typedef struct
 #define WAVE_INDEX       8
 #define FMT_INDEX       12
 
-bool wxSound::LoadWAV(const wxUint8 *data, size_t length, bool copyData)
+bool wxSound::LoadWAV(const void* data_, size_t length, bool copyData)
 {
     // the simplest wave file header consists of 44 bytes:
     //
@@ -649,6 +639,8 @@ bool wxSound::LoadWAV(const wxUint8 *data, size_t length, bool copyData)
     if ( length < 44 )
         return false;
 
+    const wxUint8* data = static_cast<const wxUint8*>(data_);
+
     WAVEFORMAT waveformat;
     memcpy(&waveformat, &data[FMT_INDEX + 4], sizeof(WAVEFORMAT));
     waveformat.uiSize = wxUINT32_SWAP_ON_BE(waveformat.uiSize);
@@ -659,35 +651,64 @@ bool wxSound::LoadWAV(const wxUint8 *data, size_t length, bool copyData)
     waveformat.uiBlockAlign = wxUINT16_SWAP_ON_BE(waveformat.uiBlockAlign);
     waveformat.uiBitsPerSample = wxUINT16_SWAP_ON_BE(waveformat.uiBitsPerSample);
 
-    // get the sound data size
-    wxUint32 ul;
-    memcpy(&ul, &data[FMT_INDEX + waveformat.uiSize + 12], 4);
-    ul = wxUINT32_SWAP_ON_BE(ul);
-
-    if ( length < ul + FMT_INDEX + waveformat.uiSize + 16 )
-        return false;
-
     if (memcmp(data, "RIFF", 4) != 0)
         return false;
     if (memcmp(&data[WAVE_INDEX], "WAVE", 4) != 0)
         return false;
     if (memcmp(&data[FMT_INDEX], "fmt ", 4) != 0)
         return false;
+
+    // Check that the format chunk size is correct: it must be 16 for PCM,
+    // which is the only format we handle.
+    if (waveformat.uiSize != 16)
+        return false;
+
     if (memcmp(&data[FMT_INDEX + waveformat.uiSize + 8], "data", 4) != 0)
         return false;
 
     if (waveformat.uiFormatTag != WAVE_FORMAT_PCM)
         return false;
 
-    if (waveformat.ulSamplesPerSec !=
-        waveformat.ulAvgBytesPerSec / waveformat.uiBlockAlign)
+    if (waveformat.ulAvgBytesPerSec !=
+        waveformat.ulSamplesPerSec * waveformat.uiBlockAlign)
+        return false;
+
+    // We divide by the sample size below to obtain the number of samples, so
+    // it definitely can't be 0. Also take care to avoid integer overflow when
+    // computing it.
+    unsigned tmp = waveformat.uiChannels;
+    if (tmp >= 0x10000)
+        return false;
+
+    tmp *= waveformat.uiBitsPerSample;
+
+    wxUint32 const sampleSize = tmp / 8;
+    if (!sampleSize)
+        return false;
+
+    // get file size from header
+    wxUint32 chunkSize;
+    memcpy(&chunkSize, &data[4], 4);
+    chunkSize = wxUINT32_SWAP_ON_BE(chunkSize);
+
+    // ensure file length is at least length in header
+    if (chunkSize > length - 8)
+        return false;
+
+    // get the sound data size
+    wxUint32 ul;
+    memcpy(&ul, &data[FMT_INDEX + waveformat.uiSize + 12], 4);
+    ul = wxUINT32_SWAP_ON_BE(ul);
+
+    // ensure we actually have at least that much data in the input
+    if (ul > length - FMT_INDEX - waveformat.uiSize - 16)
         return false;
 
     m_data = new wxSoundData;
     m_data->m_channels = waveformat.uiChannels;
     m_data->m_samplingRate = waveformat.ulSamplesPerSec;
     m_data->m_bitsPerSample = waveformat.uiBitsPerSample;
-    m_data->m_samples = ul / (m_data->m_channels * m_data->m_bitsPerSample / 8);
+    m_data->m_samples = ul / sampleSize;
     m_data->m_dataBytes = ul;
 
     if (copyData)
@@ -712,11 +733,11 @@ bool wxSound::LoadWAV(const wxUint8 *data, size_t length, bool copyData)
 class wxSoundCleanupModule: public wxModule
 {
 public:
-    bool OnInit() { return true; }
-    void OnExit() { wxSound::UnloadBackend(); }
-    DECLARE_DYNAMIC_CLASS(wxSoundCleanupModule)
+    bool OnInit() wxOVERRIDE { return true; }
+    void OnExit() wxOVERRIDE { wxSound::UnloadBackend(); }
+    wxDECLARE_DYNAMIC_CLASS(wxSoundCleanupModule);
 };
 
-IMPLEMENT_DYNAMIC_CLASS(wxSoundCleanupModule, wxModule)
+wxIMPLEMENT_DYNAMIC_CLASS(wxSoundCleanupModule, wxModule);
 
 #endif

@@ -2,7 +2,6 @@
 // Name:        tests/archive/archive.cpp
 // Purpose:     Test the archive classes
 // Author:      Mike Wetherell
-// RCS-ID:      $Id: archivetest.cpp 56144 2008-10-07 09:29:45Z MW $
 // Copyright:   (c) 2004 Mike Wetherell
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,12 +18,6 @@
 
 #if wxUSE_STREAMS && wxUSE_ARCHIVE_STREAMS
 
-// VC++ 6 warns that the list iterator's '->' operator will not work whenever
-// std::list is used with a non-pointer, so switch it off.
-#if defined _MSC_VER && _MSC_VER < 1300
-#pragma warning (disable:4284)
-#endif
-
 #include "archivetest.h"
 #include "wx/dir.h"
 #include <string>
@@ -33,7 +26,6 @@
 #include <sys/stat.h>
 
 using std::string;
-using std::auto_ptr;
 
 
 // Check whether member templates can be used
@@ -46,12 +38,6 @@ using std::auto_ptr;
 #   define WXARC_MEMBER_TEMPLATES
 #endif
 #if defined __BORLANDC__ && __BORLANDC__ >= 0x530
-#   define WXARC_MEMBER_TEMPLATES
-#endif
-#if defined __DMC__ && __DMC__ >= 0x832
-#   define WXARC_MEMBER_TEMPLATES
-#endif
-#if defined __MWERKS__ && __MWERKS__ >= 0x2200
 #   define WXARC_MEMBER_TEMPLATES
 #endif
 #if defined __HP_aCC && __HP_aCC > 33300
@@ -269,10 +255,12 @@ size_t TestInputStream::OnSysRead(void *buffer, size_t size)
     }
 
     if (((m_eoftype & AtLast) != 0 && m_pos >= m_size) || count < size)
+    {
         if ((m_eoftype & WithError) != 0)
             m_lasterror = wxSTREAM_READ_ERROR;
         else
             m_lasterror = wxSTREAM_EOF;
+    }
 
     return count;
 }
@@ -333,7 +321,7 @@ private:
 
 TempDir::TempDir()
 {
-    wxString tmp = wxFileName::CreateTempFileName(_T("arctest-"));
+    wxString tmp = wxFileName::CreateTempFileName(wxT("arctest-"));
     if (!tmp.empty()) {
         wxRemoveFile(tmp);
         m_original = wxGetCwd();
@@ -354,26 +342,26 @@ TempDir::~TempDir()
 void TempDir::RemoveDir(wxString& path)
 {
     wxCHECK_RET(!m_tmp.empty() && path.substr(0, m_tmp.length()) == m_tmp,
-                _T("remove '") + path + _T("' fails safety check"));
+                wxT("remove '") + path + wxT("' fails safety check"));
 
     const wxChar *files[] = {
-        _T("text/empty"),
-        _T("text/small"),
-        _T("bin/bin1000"),
-        _T("bin/bin4095"),
-        _T("bin/bin4096"),
-        _T("bin/bin4097"),
-        _T("bin/bin16384"),
-        _T("zero/zero5"),
-        _T("zero/zero1024"),
-        _T("zero/zero32768"),
-        _T("zero/zero16385"),
-        _T("zero/newname"),
-        _T("newfile"),
+        wxT("text/empty"),
+        wxT("text/small"),
+        wxT("bin/bin1000"),
+        wxT("bin/bin4095"),
+        wxT("bin/bin4096"),
+        wxT("bin/bin4097"),
+        wxT("bin/bin16384"),
+        wxT("zero/zero5"),
+        wxT("zero/zero1024"),
+        wxT("zero/zero32768"),
+        wxT("zero/zero16385"),
+        wxT("zero/newname"),
+        wxT("newfile"),
     };
 
     const wxChar *dirs[] = {
-        _T("text/"), _T("bin/"), _T("zero/"), _T("empty/")
+        wxT("text/"), wxT("bin/"), wxT("zero/"), wxT("empty/")
     };
 
     wxString tmp = m_tmp + wxFileName::GetPathSeparator();
@@ -386,7 +374,9 @@ void TempDir::RemoveDir(wxString& path)
         wxRmdir(tmp + wxFileName(dirs[i], wxPATH_UNIX).GetFullPath());
 
     if (!wxRmdir(m_tmp))
-        wxLogSysError(_T("can't remove temporary dir '%s'"), m_tmp.c_str());
+    {
+        wxLogSysError(wxT("can't remove temporary dir '%s'"), m_tmp.c_str());
+    }
 }
 
 
@@ -405,7 +395,7 @@ void TempDir::RemoveDir(wxString& path)
 #   define WXARC_pclose(fp)
 #endif
 
-#ifdef __WXMSW__
+#ifdef __WINDOWS__
 #   define WXARC_b "b"
 #else
 #   define WXARC_b
@@ -559,7 +549,7 @@ TestEntry& ArchiveTestCase<ClassFactoryT>::Add(const char *name,
 template <class ClassFactoryT>
 void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out)
 {
-    auto_ptr<OutputStreamT> arc(m_factory->NewStream(out));
+    wxScopedPtr<OutputStreamT> arc(m_factory->NewStream(out));
     TestEntries::iterator it;
 
     OnCreateArchive(*arc);
@@ -576,18 +566,18 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out)
         // It should be possible to create a directory entry just by supplying
         // a name that looks like a directory, or alternatively any old name
         // can be identified as a directory using SetIsDir or PutNextDirEntry
-        bool setIsDir = name.Last() == _T('/') && (choices & 1);
+        bool setIsDir = name.Last() == wxT('/') && (choices & 1);
         if (setIsDir)
             name.erase(name.length() - 1);
 
         // provide some context for the error message so that we know which
         // iteration of the loop we were on
-        string error_entry((_T(" '") + name + _T("'")).mb_str());
+        string error_entry((wxT(" '") + name + wxT("'")).mb_str());
         string error_context(" failed for entry" + error_entry);
 
         if ((choices & 2) || testEntry.IsText()) {
             // try PutNextEntry(EntryT *pEntry)
-            auto_ptr<EntryT> entry(m_factory->NewEntry());
+            wxScopedPtr<EntryT> entry(m_factory->NewEntry());
             entry->SetName(name, wxPATH_UNIX);
             if (setIsDir)
                 entry->SetIsDir();
@@ -609,7 +599,7 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out)
                                       testEntry.GetLength()));
         }
 
-        if (it->first.Last() != _T('/')) {
+        if (it->first.Last() != wxT('/')) {
             // for non-dirs write the data
             arc->Write(testEntry.GetData(), testEntry.GetSize());
             CPPUNIT_ASSERT_MESSAGE("LastWrite check" + error_context,
@@ -645,7 +635,7 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out,
         TestEntry& entry = *i->second;
 
         if (fn.IsDir()) {
-            fn.Mkdir(0777, wxPATH_MKDIR_FULL);
+            wxFileName::Mkdir(fn.GetPath(), 0777, wxPATH_MKDIR_FULL);
         } else {
             wxFileName::Mkdir(fn.GetPath(), 0777, wxPATH_MKDIR_FULL);
             wxFFileOutputStream fileout(fn.GetFullPath());
@@ -657,7 +647,7 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out,
         wxFileName fn(i->first, wxPATH_UNIX);
         TestEntry& entry = *i->second;
         wxDateTime dt = entry.GetDateTime();
-#ifdef __WXMSW__
+#ifdef __WINDOWS__
         if (fn.IsDir())
             entry.SetDateTime(wxDateTime());
         else
@@ -667,16 +657,19 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out,
 
     if ((m_options & PipeOut) == 0) {
         wxFileName fn(tmpdir.GetName());
-        fn.SetExt(_T("arc"));
+        fn.SetExt(wxT("arc"));
         wxString tmparc = fn.GetPath(wxPATH_GET_SEPARATOR) + fn.GetFullName();
 
         // call the archiver to create an archive file
-        system(wxString::Format(archiver, tmparc.c_str()).mb_str());
+        if ( system(wxString::Format(archiver, tmparc.c_str()).mb_str()) == -1 )
+        {
+            wxLogError("Failed to run acrhiver command \"%s\"", archiver);
+        }
 
         // then load the archive file
         {
             wxFFileInputStream in(tmparc);
-            if (in.Ok())
+            if (in.IsOk())
                 out.Write(in);
         }
 
@@ -685,8 +678,8 @@ void ArchiveTestCase<ClassFactoryT>::CreateArchive(wxOutputStream& out,
     else {
         // for the non-seekable test, have the archiver output to "-"
         // and read the archive via a pipe
-        PFileInputStream in(wxString::Format(archiver, _T("-")));
-        if (in.Ok())
+        PFileInputStream in(wxString::Format(archiver, wxT("-")));
+        if (in.IsOk())
             out.Write(in);
     }
 }
@@ -698,26 +691,26 @@ template <class ClassFactoryT>
 void ArchiveTestCase<ClassFactoryT>::ModifyArchive(wxInputStream& in,
                                                    wxOutputStream& out)
 {
-    auto_ptr<InputStreamT> arcIn(m_factory->NewStream(in));
-    auto_ptr<OutputStreamT> arcOut(m_factory->NewStream(out));
+    wxScopedPtr<InputStreamT> arcIn(m_factory->NewStream(in));
+    wxScopedPtr<OutputStreamT> arcOut(m_factory->NewStream(out));
     EntryT *pEntry;
 
-    const wxString deleteName = _T("bin/bin1000");
-    const wxString renameFrom = _T("zero/zero1024");
-    const wxString renameTo   = _T("zero/newname");
-    const wxString newName    = _T("newfile");
+    const wxString deleteName = wxT("bin/bin1000");
+    const wxString renameFrom = wxT("zero/zero1024");
+    const wxString renameTo   = wxT("zero/newname");
+    const wxString newName    = wxT("newfile");
     const char *newData       = "New file added as a test\n";
 
     arcOut->CopyArchiveMetaData(*arcIn);
 
     while ((pEntry = arcIn->GetNextEntry()) != NULL) {
-        auto_ptr<EntryT> entry(pEntry);
+        wxScopedPtr<EntryT> entry(pEntry);
         OnSetNotifier(*entry);
         wxString name = entry->GetName(wxPATH_UNIX);
 
         // provide some context for the error message so that we know which
         // iteration of the loop we were on
-        string error_entry((_T(" '") + name + _T("'")).mb_str());
+        string error_entry((wxT(" '") + name + wxT("'")).mb_str());
         string error_context(" failed for entry" + error_entry);
 
         if (name == deleteName) {
@@ -756,7 +749,7 @@ void ArchiveTestCase<ClassFactoryT>::ModifyArchive(wxInputStream& in,
 
     // try adding a new entry
     TestEntry& testEntry = Add(newName.mb_str(), newData);
-    auto_ptr<EntryT> newentry(m_factory->NewEntry());
+    wxScopedPtr<EntryT> newentry(m_factory->NewEntry());
     newentry->SetName(newName);
     newentry->SetDateTime(testEntry.GetDateTime());
     newentry->SetSize(testEntry.GetLength());
@@ -779,7 +772,7 @@ void ArchiveTestCase<ClassFactoryT>::ExtractArchive(wxInputStream& in)
     typedef std::list<EntryPtr> Entries;
     typedef typename Entries::iterator EntryIter;
 
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
     int expectedTotal = m_testEntries.size();
     EntryPtr entry;
     Entries entries;
@@ -792,7 +785,7 @@ void ArchiveTestCase<ClassFactoryT>::ExtractArchive(wxInputStream& in)
 
         // provide some context for the error message so that we know which
         // iteration of the loop we were on
-        string error_entry((_T(" '") + name + _T("'")).mb_str());
+        string error_entry((wxT(" '") + name + wxT("'")).mb_str());
         string error_context(" failed for entry" + error_entry);
 
         TestEntries::iterator it = m_testEntries.find(name);
@@ -802,21 +795,25 @@ void ArchiveTestCase<ClassFactoryT>::ExtractArchive(wxInputStream& in)
 
         const TestEntry& testEntry = *it->second;
 
+#ifndef __WINDOWS__
+        // On Windows some archivers compensate for Windows DST handling, but
+        // other don't, so disable the test for now.
         wxDateTime dt = testEntry.GetDateTime();
         if (dt.IsValid())
             CPPUNIT_ASSERT_MESSAGE("timestamp check" + error_context,
                                    dt == entry->GetDateTime());
+#endif
 
         // non-seekable entries are allowed to have GetSize == wxInvalidOffset
         // until the end of the entry's data has been read past
         CPPUNIT_ASSERT_MESSAGE("entry size check" + error_context,
-            testEntry.GetLength() == entry->GetSize() ||
-            ((m_options & PipeIn) != 0 && entry->GetSize() == wxInvalidOffset));
+            (testEntry.GetLength() == entry->GetSize() ||
+            ((m_options & PipeIn) != 0 && entry->GetSize() == wxInvalidOffset)));
         CPPUNIT_ASSERT_MESSAGE(
             "arc->GetLength() == entry->GetSize()" + error_context,
             arc->GetLength() == entry->GetSize());
 
-        if (name.Last() != _T('/'))
+        if (name.Last() != wxT('/'))
         {
             CPPUNIT_ASSERT_MESSAGE("!IsDir" + error_context,
                 !entry->IsDir());
@@ -876,7 +873,7 @@ void ArchiveTestCase<ClassFactoryT>::ExtractArchive(wxInputStream& in,
 
     if ((m_options & PipeIn) == 0) {
         wxFileName fn(tmpdir.GetName());
-        fn.SetExt(_T("arc"));
+        fn.SetExt(wxT("arc"));
         wxString tmparc = fn.GetPath(wxPATH_GET_SEPARATOR) + fn.GetFullName();
 
         if (m_options & Stub)
@@ -885,19 +882,23 @@ void ArchiveTestCase<ClassFactoryT>::ExtractArchive(wxInputStream& in,
         // write the archive to a temporary file
         {
             wxFFileOutputStream out(tmparc);
-            if (out.Ok())
+            if (out.IsOk())
                 out.Write(in);
         }
 
         // call unarchiver
-        system(wxString::Format(unarchiver, tmparc.c_str()).mb_str());
+        if ( system(wxString::Format(unarchiver, tmparc.c_str()).mb_str()) == -1 )
+        {
+            wxLogError("Failed to run unarchiver command \"%s\"", unarchiver);
+        }
+
         wxRemoveFile(tmparc);
     }
     else {
         // for the non-seekable test, have the archiver extract "-" and
         // feed it the archive via a pipe
-        PFileOutputStream out(wxString::Format(unarchiver, _T("-")));
-        if (out.Ok())
+        PFileOutputStream out(wxString::Format(unarchiver, wxT("-")));
+        if (out.IsOk())
             out.Write(in);
     }
 
@@ -927,11 +928,11 @@ void ArchiveTestCase<ClassFactoryT>::VerifyDir(wxString& path,
 
             bool isDir = wxDirExists(path);
             if (isDir)
-                name += _T("/");
+                name += wxT("/");
 
             // provide some context for the error message so that we know which
             // iteration of the loop we were on
-            string error_entry((_T(" '") + name + _T("'")).mb_str());
+            string error_entry((wxT(" '") + name + wxT("'")).mb_str());
             string error_context(" failed for entry" + error_entry);
 
             TestEntries::iterator it = m_testEntries.find(name);
@@ -942,7 +943,7 @@ void ArchiveTestCase<ClassFactoryT>::VerifyDir(wxString& path,
 
             const TestEntry& testEntry = *it->second;
 
-#if 0 //ndef __WXMSW__
+#if 0 //ndef __WINDOWS__
             CPPUNIT_ASSERT_MESSAGE("timestamp check" + error_context,
                                    testEntry.GetDateTime() ==
                                    wxFileName(path).GetModificationTime());
@@ -950,7 +951,7 @@ void ArchiveTestCase<ClassFactoryT>::VerifyDir(wxString& path,
             if (!isDir) {
                 wxFFileInputStream in(path);
                 CPPUNIT_ASSERT_MESSAGE(
-                    "entry not found in archive" + error_entry, in.Ok());
+                    "entry not found in archive" + error_entry, in.IsOk());
 
                 size_t size = (size_t)in.GetLength();
                 wxCharBuffer buf(size);
@@ -980,7 +981,7 @@ void ArchiveTestCase<ClassFactoryT>::TestIterator(wxInputStream& in)
     typedef std::list<EntryT*> ArchiveCatalog;
     typedef typename ArchiveCatalog::iterator CatalogIter;
 
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
     size_t count = 0;
 
 #ifdef WXARC_MEMBER_TEMPLATES
@@ -992,7 +993,7 @@ void ArchiveTestCase<ClassFactoryT>::TestIterator(wxInputStream& in)
 #endif
 
     for (CatalogIter it = cat.begin(); it != cat.end(); ++it) {
-        auto_ptr<EntryT> entry(*it);
+        wxScopedPtr<EntryT> entry(*it);
         count += m_testEntries.count(entry->GetName(wxPATH_UNIX));
     }
 
@@ -1009,7 +1010,7 @@ void ArchiveTestCase<ClassFactoryT>::TestPairIterator(wxInputStream& in)
     typedef std::map<wxString, EntryT*> ArchiveCatalog;
     typedef typename ArchiveCatalog::iterator CatalogIter;
 
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
     size_t count = 0;
 
 #ifdef WXARC_MEMBER_TEMPLATES
@@ -1021,7 +1022,7 @@ void ArchiveTestCase<ClassFactoryT>::TestPairIterator(wxInputStream& in)
 #endif
 
     for (CatalogIter it = cat.begin(); it != cat.end(); ++it) {
-        auto_ptr<EntryT> entry(it->second);
+        wxScopedPtr<EntryT> entry(it->second);
         count += m_testEntries.count(entry->GetName(wxPATH_UNIX));
     }
 
@@ -1038,7 +1039,7 @@ void ArchiveTestCase<ClassFactoryT>::TestSmartIterator(wxInputStream& in)
     typedef typename ArchiveCatalog::iterator CatalogIter;
     typedef wxArchiveIterator<InputStreamT, Ptr<EntryT> > Iter;
 
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
 
 #ifdef WXARC_MEMBER_TEMPLATES
     ArchiveCatalog cat((Iter)*arc, Iter());
@@ -1069,7 +1070,7 @@ void ArchiveTestCase<ClassFactoryT>::TestSmartPairIterator(wxInputStream& in)
     typedef wxArchiveIterator<InputStreamT,
                 std::pair<wxString, Ptr<EntryT> > > PairIter;
 
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
 
 #ifdef WXARC_MEMBER_TEMPLATES
     ArchiveCatalog cat((PairIter)*arc, PairIter());
@@ -1097,8 +1098,8 @@ void ArchiveTestCase<ClassFactoryT>::ReadSimultaneous(TestInputStream& in)
 
     // create two archive input streams
     TestInputStream in2(in);
-    auto_ptr<InputStreamT> arc(m_factory->NewStream(in));
-    auto_ptr<InputStreamT> arc2(m_factory->NewStream(in2));
+    wxScopedPtr<InputStreamT> arc(m_factory->NewStream(in));
+    wxScopedPtr<InputStreamT> arc2(m_factory->NewStream(in2));
 
     // load the catalog
 #ifdef WXARC_MEMBER_TEMPLATES
@@ -1110,8 +1111,8 @@ void ArchiveTestCase<ClassFactoryT>::ReadSimultaneous(TestInputStream& in)
 #endif
 
     // the names of two entries to read
-    const wxChar *name = _T("text/small");
-    const wxChar *name2 = _T("bin/bin1000");
+    const wxChar *name = wxT("text/small");
+    const wxChar *name2 = wxT("bin/bin1000");
 
     // open them
     typename ArchiveCatalog::iterator j;
@@ -1158,7 +1159,7 @@ template <class NotifierT, class EntryT>
 class ArchiveNotifier : public NotifierT
 {
 public:
-    void OnEntryUpdated(EntryT& WXUNUSED(entry)) { }
+    void OnEntryUpdated(EntryT& WXUNUSED(entry)) wxOVERRIDE { }
 };
 
 template <class ClassFactoryT>
@@ -1183,14 +1184,14 @@ public:
         m_options(options)
     { }
 
-protected:
     // the entry point for the test
-    void runTest();
+    void runTest() wxOVERRIDE;
 
+protected:
     void CreateArchive(wxOutputStream& out);
     void ExtractArchive(wxInputStream& in);
 
-    auto_ptr<wxArchiveClassFactory> m_factory;  // factory to make classes
+    wxScopedPtr<wxArchiveClassFactory> m_factory;  // factory to make classes
     int m_options;                              // test options
 };
 
@@ -1200,9 +1201,9 @@ void CorruptionTestCase::runTest()
     CreateArchive(out);
     TestInputStream in(out, 0);
     wxFileOffset len = in.GetLength();
-    int pos, size;
 
     // try flipping one byte in the archive
+    int pos;
     for (pos = 0; pos < len; pos++) {
         char n = in[pos];
         in[pos] = ~n;
@@ -1221,7 +1222,7 @@ void CorruptionTestCase::runTest()
     }
 
     // try chopping the archive off
-    for (size = 1; size <= len; size++) {
+    for (int size = 1; size <= len; size++) {
         in.Chop(size);
         ExtractArchive(in);
         in.Rewind();
@@ -1230,27 +1231,25 @@ void CorruptionTestCase::runTest()
 
 void CorruptionTestCase::CreateArchive(wxOutputStream& out)
 {
-    auto_ptr<wxArchiveOutputStream> arc(m_factory->NewStream(out));
+    wxScopedPtr<wxArchiveOutputStream> arc(m_factory->NewStream(out));
 
-    arc->PutNextDirEntry(_T("dir"));
-    arc->PutNextEntry(_T("file"));
-    arc->Write(_T("foo"), 3);
+    arc->PutNextDirEntry(wxT("dir"));
+    arc->PutNextEntry(wxT("file"));
+    arc->Write(wxT("foo"), 3);
 }
 
 void CorruptionTestCase::ExtractArchive(wxInputStream& in)
 {
-    auto_ptr<wxArchiveInputStream> arc(m_factory->NewStream(in));
-    auto_ptr<wxArchiveEntry> entry(arc->GetNextEntry());
-        
+    wxScopedPtr<wxArchiveInputStream> arc(m_factory->NewStream(in));
+    wxScopedPtr<wxArchiveEntry> entry(arc->GetNextEntry());
+
     while (entry.get() != NULL) {
-        wxString name = entry->GetName();
         char buf[1024];
-        
+
         while (arc->IsOk())
             arc->Read(buf, sizeof(buf));
 
-        auto_ptr<wxArchiveEntry> next(arc->GetNextEntry());
-        entry = next;
+        entry.reset(arc->GetNextEntry());
     }
 }
 
@@ -1264,7 +1263,7 @@ int TestId::m_seed = 6219;
 string TestId::MakeId()
 {
     m_seed = (m_seed * 171) % 30269;
-    return string(wxString::Format(_T("%-6d"), m_seed).mb_str());
+    return string(wxString::Format(wxT("%-6d"), m_seed).mb_str());
 }
 
 
@@ -1275,10 +1274,10 @@ ArchiveTestSuite::ArchiveTestSuite(string name)
   : CppUnit::TestSuite("archive/" + name),
     m_name(name.c_str(), *wxConvCurrent)
 {
-    m_name = _T("wx") + m_name.Left(1).Upper() + m_name.Mid(1).Lower();
-    m_path.AddEnvList(_T("PATH"));
-    m_archivers.push_back(_T(""));
-    m_unarchivers.push_back(_T(""));
+    m_name = wxT("wx") + m_name.Left(1).Upper() + m_name.Mid(1).Lower();
+    m_path.AddEnvList(wxT("PATH"));
+    m_archivers.push_back(wxT(""));
+    m_unarchivers.push_back(wxT(""));
 }
 
 // add the command for an external archiver to the list, testing for it in
@@ -1292,16 +1291,16 @@ void ArchiveTestSuite::AddCmd(wxArrayString& cmdlist, const wxString& cmd)
 
 bool ArchiveTestSuite::IsInPath(const wxString& cmd)
 {
-    wxString c = cmd.BeforeFirst(_T(' '));
-#ifdef __WXMSW__
-    c += _T(".exe");
+    wxString c = cmd.BeforeFirst(wxT(' '));
+#ifdef __WINDOWS__
+    c += wxT(".exe");
 #endif
     return !m_path.FindValidPath(c).empty();
 }
 
-// make the test suite
+// run all the tests in the test suite
 //
-ArchiveTestSuite *ArchiveTestSuite::makeSuite()
+void ArchiveTestSuite::DoRunTest()
 {
     typedef wxArrayString::iterator Iter;
 
@@ -1324,12 +1323,15 @@ ArchiveTestSuite *ArchiveTestSuite::makeSuite()
                                                    generic != 0, *j, *i);
 
                     if (test)
-                        addTest(test);
+                    {
+                        test->runTest();
+                        delete test;
+                    }
                 }
 
-    for (int options = 0; options <= PipeIn; options += PipeIn) 
+    for (int options = 0; options <= PipeIn; options += PipeIn)
     {
-        wxObject *pObj = wxCreateDynamicObject(m_name + _T("ClassFactory"));
+        wxObject *pObj = wxCreateDynamicObject(m_name + wxT("ClassFactory"));
         wxArchiveClassFactory *factory;
         factory = wxDynamicCast(pObj, wxArchiveClassFactory);
 
@@ -1340,11 +1342,10 @@ ArchiveTestSuite *ArchiveTestSuite::makeSuite()
             if (options)
                 descr += " (PipeIn)";
 
-            addTest(new CorruptionTestCase(descr, factory, options));
+            CorruptionTestCase test(descr, factory, options);
+            test.runTest();
         }
     }
-
-    return this;
 }
 
 CppUnit::Test *ArchiveTestSuite::makeTest(
@@ -1368,29 +1369,35 @@ string ArchiveTestSuite::Description(const wxString& type,
     wxString descr;
 
     if (genericInterface)
-        descr << _T("wxArchive (") << type << _T(")");
+        descr << wxT("wxArchive (") << type << wxT(")");
     else
         descr << type;
 
     if (!archiver.empty()) {
-        const wxChar *fn = (options & PipeOut) != 0 ? _T("-") : _T("file");
-        descr << _T(" (") << wxString::Format(archiver, fn) << _T(")");
+        const wxChar *fn = (options & PipeOut) != 0 ? wxT("-") : wxT("file");
+        const wxString cmd = archiver.Contains("%s")
+                             ? wxString::Format(archiver, fn)
+                             : archiver;
+        descr << wxT(" (") << cmd << wxT(")");
     }
     if (!unarchiver.empty()) {
-        const wxChar *fn = (options & PipeIn) != 0 ? _T("-") : _T("file");
-        descr << _T(" (") << wxString::Format(unarchiver, fn) << _T(")");
+        const wxChar *fn = (options & PipeIn) != 0 ? wxT("-") : wxT("file");
+        const wxString cmd = unarchiver.Contains("%s")
+                             ? wxString::Format(unarchiver, fn)
+                             : unarchiver;
+        descr << wxT(" (") << cmd << wxT(")");
     }
 
     wxString optstr;
 
     if ((options & PipeIn) != 0)
-        optstr += _T("|PipeIn");
+        optstr += wxT("|PipeIn");
     if ((options & PipeOut) != 0)
-        optstr += _T("|PipeOut");
+        optstr += wxT("|PipeOut");
     if ((options & Stub) != 0)
-        optstr += _T("|Stub");
+        optstr += wxT("|Stub");
     if (!optstr.empty())
-        optstr = _T(" (") + optstr.substr(1) + _T(")");
+        optstr = wxT(" (") + optstr.substr(1) + wxT(")");
 
     descr << optstr;
 

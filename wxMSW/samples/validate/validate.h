@@ -4,9 +4,8 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: validate.h 40198 2006-07-20 11:57:15Z ABX $
 // Copyright:   (c) Julian Smart
-// Licence:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #include "wx/app.h"
@@ -21,7 +20,7 @@
 class MyApp : public wxApp
 {
 public:
-    bool OnInit();
+    bool OnInit() wxOVERRIDE;
 };
 
 // Define a new frame type
@@ -38,7 +37,7 @@ private:
     wxListBox *m_listbox;
     bool m_silent;
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 class MyDialog : public wxDialog
@@ -48,36 +47,146 @@ public:
             const wxPoint& pos = wxDefaultPosition,
             const wxSize& size = wxDefaultSize,
             const long style = wxDEFAULT_DIALOG_STYLE);
-    bool TransferDataToWindow();
-    wxTextCtrl *text;
-    wxComboBox *combobox;
+
+    void OnChangeValidator(wxCommandEvent& event);
+
+    wxTextCtrl *m_text;
+    wxComboBox *m_combobox;
+
+    wxTextCtrl *m_numericTextInt;
+    wxTextCtrl *m_numericTextDouble;
+};
+
+// ----------------------------------------------------------------------------
+// TextValidatorDialog
+// ----------------------------------------------------------------------------
+class TextValidatorDialog : public wxDialog
+{
+public:
+    TextValidatorDialog(wxWindow *parent, wxTextCtrl* txtCtrl);
+
+    void OnUpdateUI(wxUpdateUIEvent& event);
+    void OnChecked(wxCommandEvent& event);
+    void OnKillFocus( wxFocusEvent &event );
+
+    void ApplyValidator();
+
+private:
+    // Special validator for our checkboxes
+    class StyleValidator : public wxValidator
+    {
+    public:
+        StyleValidator(long* style) { m_style = style; }
+
+        virtual bool Validate(wxWindow *WXUNUSED(parent)) wxOVERRIDE { return true; }
+        virtual wxObject* Clone() const wxOVERRIDE { return new StyleValidator(*this); }
+
+        // Called to transfer data to the window
+        virtual bool TransferToWindow() wxOVERRIDE;
+
+        // Called to transfer data from the window
+        virtual bool TransferFromWindow() wxOVERRIDE;
+
+    private:
+        long* m_style;
+    };
+
+private:
+    bool HasFlag(wxTextValidatorStyle style) const
+    {
+        return (m_validatorStyle & style) != 0;
+    }
+
+    enum
+    {
+        // CheckBoxes Ids (should be in sync with wxTextValidatorStyle)
+        Id_None = wxID_HIGHEST,
+        Id_Empty,
+        Id_Ascii,
+        Id_Alpha,
+        Id_Alphanumeric,
+        Id_Digits,
+        Id_Numeric,
+        Id_IncludeList,
+        Id_IncludeCharList,
+        Id_ExcludeList,
+        Id_ExcludeCharList,
+        Id_Xdigits,
+        Id_Space,
+
+        // TextCtrls Ids
+        Id_IncludeListTxt,
+        Id_IncludeCharListTxt,
+        Id_ExcludeListTxt,
+        Id_ExcludeCharListTxt,
+    };
+
+    wxTextCtrl* const m_txtCtrl;
+
+    bool m_noValidation;
+    long m_validatorStyle;
+
+    wxString        m_charIncludes;
+    wxString        m_charExcludes;
+    wxArrayString   m_includes;
+    wxArrayString   m_excludes;
 };
 
 class MyData
 {
 public:
     MyData();
+
     // These data members are designed for transfer to and from
     // controls, via validators. For instance, a text control's
     // transferred value is a string:
-    wxString m_string;
+    wxString m_string, m_string2;
+
     // Listboxes may permit multiple selections, so their state
     // is transferred to an integer-array class.
     wxArrayInt m_listbox_choices;
-    bool m_checkbox_state;
+
     // Comboboxes differ from listboxes--validators transfer
     // the string entered in the combobox's text-edit field.
     wxString m_combobox_choice;
+
+    // variables handled by wxNumericTextValidator
+    int m_intValue;
+    unsigned short m_smallIntValue;
+    double m_doubleValue;
+    float m_percentValue;
+
+    bool m_checkbox_state;
     int m_radiobox_choice;
 };
 
-enum {
+class MyComboBoxValidator : public wxValidator
+{
+public:
+    MyComboBoxValidator(wxString* var) { m_var=var; }
+
+    virtual bool Validate(wxWindow* parent) wxOVERRIDE;
+    virtual wxObject* Clone() const wxOVERRIDE { return new MyComboBoxValidator(*this); }
+
+    // Called to transfer data to the window
+    virtual bool TransferToWindow() wxOVERRIDE;
+
+    // Called to transfer data from the window
+    virtual bool TransferFromWindow() wxOVERRIDE;
+
+protected:
+    wxString* m_var;
+};
+
+enum
+{
     VALIDATE_DIALOG_ID = wxID_HIGHEST,
 
     VALIDATE_TEST_DIALOG,
     VALIDATE_TOGGLE_BELL,
 
     VALIDATE_TEXT,
+    VALIDATE_TEXT2,
     VALIDATE_LIST,
     VALIDATE_CHECK,
     VALIDATE_COMBO,

@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     31.05.03
-// RCS-ID:      $Id: htmllbox.h 49804 2007-11-10 01:09:42Z VZ $
 // Copyright:   (c) 2003 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -25,8 +24,8 @@ class WXDLLIMPEXP_FWD_HTML wxHtmlWinParser;
 class WXDLLIMPEXP_FWD_HTML wxHtmlListBoxCache;
 class WXDLLIMPEXP_FWD_HTML wxHtmlListBoxStyle;
 
-extern WXDLLIMPEXP_DATA_HTML(const wxChar) wxHtmlListBoxNameStr[];
-extern WXDLLIMPEXP_DATA_HTML(const wxChar) wxSimpleHtmlListBoxNameStr[];
+extern WXDLLIMPEXP_DATA_HTML(const char) wxHtmlListBoxNameStr[];
+extern WXDLLIMPEXP_DATA_HTML(const char) wxSimpleHtmlListBoxNameStr[];
 
 // ----------------------------------------------------------------------------
 // wxHtmlListBox
@@ -36,7 +35,7 @@ class WXDLLIMPEXP_HTML wxHtmlListBox : public wxVListBox,
                                        public wxHtmlWindowInterface,
                                        public wxHtmlWindowMouseHelper
 {
-    DECLARE_ABSTRACT_CLASS(wxHtmlListBox)
+    wxDECLARE_ABSTRACT_CLASS(wxHtmlListBox);
 public:
     // constructors and such
     // ---------------------
@@ -69,10 +68,10 @@ public:
     virtual ~wxHtmlListBox();
 
     // override some base class virtuals
-    virtual void RefreshLine(size_t line);
-    virtual void RefreshLines(size_t from, size_t to);
-    virtual void RefreshAll();
-    virtual void SetItemCount(size_t count);
+    virtual void RefreshRow(size_t line) wxOVERRIDE;
+    virtual void RefreshRows(size_t from, size_t to) wxOVERRIDE;
+    virtual void RefreshAll() wxOVERRIDE;
+    virtual void SetItemCount(size_t count) wxOVERRIDE;
 
 #if wxUSE_FILESYSTEM
     // retrieve the file system used by the wxHtmlWinParser: if you use
@@ -81,7 +80,7 @@ public:
     const wxFileSystem& GetFileSystem() const { return m_filesystem; }
 #endif // wxUSE_FILESYSTEM
 
-    virtual void OnInternalIdle();
+    virtual void OnInternalIdle() wxOVERRIDE;
 
 protected:
     // this method must be implemented in the derived class and should return
@@ -108,11 +107,14 @@ protected:
 
     // we implement both of these functions in terms of OnGetItem(), they are
     // not supposed to be overridden by our descendants
-    virtual void OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const;
-    virtual wxCoord OnMeasureItem(size_t n) const;
+    virtual void OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const wxOVERRIDE;
+    virtual wxCoord OnMeasureItem(size_t n) const wxOVERRIDE;
 
-    // This method may be overriden to handle clicking on a link in
-    // the listbox. By default, clicking links is ignored.
+    // override this one to draw custom background for selected items correctly
+    virtual void OnDrawBackground(wxDC& dc, const wxRect& rect, size_t n) const wxOVERRIDE;
+
+    // this method may be overridden to handle clicking on a link in the
+    // listbox (by default, clicks on links are simply ignored)
     virtual void OnLinkClicked(size_t n, const wxHtmlLinkInfo& link);
 
     // event handlers
@@ -129,22 +131,25 @@ protected:
 
 private:
     // wxHtmlWindowInterface methods:
-    virtual void SetHTMLWindowTitle(const wxString& title);
-    virtual void OnHTMLLinkClicked(const wxHtmlLinkInfo& link);
+    virtual void SetHTMLWindowTitle(const wxString& title) wxOVERRIDE;
+    virtual void OnHTMLLinkClicked(const wxHtmlLinkInfo& link) wxOVERRIDE;
     virtual wxHtmlOpeningStatus OnHTMLOpeningURL(wxHtmlURLType type,
                                                  const wxString& url,
-                                                 wxString *redirect) const;
+                                                 wxString *redirect) const wxOVERRIDE;
     virtual wxPoint HTMLCoordsToWindow(wxHtmlCell *cell,
-                                       const wxPoint& pos) const;
-    virtual wxWindow* GetHTMLWindow();
-    virtual wxColour GetHTMLBackgroundColour() const;
-    virtual void SetHTMLBackgroundColour(const wxColour& clr);
-    virtual void SetHTMLBackgroundImage(const wxBitmap& bmpBg);
-    virtual void SetHTMLStatusText(const wxString& text);
-    virtual wxCursor GetHTMLCursor(HTMLCursor type) const;
+                                       const wxPoint& pos) const wxOVERRIDE;
+    virtual wxWindow* GetHTMLWindow() wxOVERRIDE;
+    virtual wxColour GetHTMLBackgroundColour() const wxOVERRIDE;
+    virtual void SetHTMLBackgroundColour(const wxColour& clr) wxOVERRIDE;
+    virtual void SetHTMLBackgroundImage(const wxBitmap& bmpBg) wxOVERRIDE;
+    virtual void SetHTMLStatusText(const wxString& text) wxOVERRIDE;
+    virtual wxCursor GetHTMLCursor(HTMLCursor type) const wxOVERRIDE;
 
     // returns index of item that contains given HTML cell
     size_t GetItemForCell(const wxHtmlCell *cell) const;
+
+    // Create the cell for the given item, caller is responsible for freeing it.
+    wxHtmlCell* CreateCellForItem(size_t n) const;
 
     // return physical coordinates of root wxHtmlCell of n-th item
     wxPoint GetRootCellCoords(size_t n) const;
@@ -181,8 +186,8 @@ private:
     friend class wxHtmlListBoxWinInterface;
 
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_NO_COPY_CLASS(wxHtmlListBox)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_NO_COPY_CLASS(wxHtmlListBox);
 };
 
 
@@ -193,9 +198,10 @@ private:
 #define wxHLB_DEFAULT_STYLE     wxBORDER_SUNKEN
 #define wxHLB_MULTIPLE          wxLB_MULTIPLE
 
-class WXDLLIMPEXP_HTML wxSimpleHtmlListBox : public wxHtmlListBox,
-                                             public wxItemContainer
+class WXDLLIMPEXP_HTML wxSimpleHtmlListBox :
+    public wxWindowWithItems<wxHtmlListBox, wxItemContainer>
 {
+    wxDECLARE_ABSTRACT_CLASS(wxSimpleHtmlListBox);
 public:
     // wxListbox-compatible constructors
     // ---------------------------------
@@ -245,71 +251,64 @@ public:
 
     // these must be overloaded otherwise the compiler will complain
     // about  wxItemContainerImmutable::[G|S]etSelection being pure virtuals...
-    void SetSelection(int n)
+    void SetSelection(int n) wxOVERRIDE
         { wxVListBox::SetSelection(n); }
-    int GetSelection() const
+    int GetSelection() const wxOVERRIDE
         { return wxVListBox::GetSelection(); }
-
-    // see ctrlsub.h for more info about this:
-    wxCONTROL_ITEMCONTAINER_CLIENTDATAOBJECT_RECAST
 
 
     // accessing strings
     // -----------------
 
-    virtual unsigned int GetCount() const
+    virtual unsigned int GetCount() const wxOVERRIDE
         { return m_items.GetCount(); }
 
-    virtual wxString GetString(unsigned int n) const;
+    virtual wxString GetString(unsigned int n) const wxOVERRIDE;
 
     // override default unoptimized wxItemContainer::GetStrings() function
     wxArrayString GetStrings() const
         { return m_items; }
 
-    virtual void SetString(unsigned int n, const wxString& s);
+    virtual void SetString(unsigned int n, const wxString& s) wxOVERRIDE;
 
-    virtual void Clear();
-    virtual void Delete(unsigned int n);
-
-    // override default unoptimized wxItemContainer::Append() function
-    void Append(const wxArrayString& strings);
-
-    // since we override one Append() overload, we need to overload all others too
-    int Append(const wxString& item)
-        { return wxItemContainer::Append(item); }
-    int Append(const wxString& item, void *clientData)
-        { return wxItemContainer::Append(item, clientData); }
-    int Append(const wxString& item, wxClientData *clientData)
-        { return wxItemContainer::Append(item, clientData); }
-
+    // resolve ambiguity between wxItemContainer and wxVListBox versions
+    void Clear() wxOVERRIDE;
 
 protected:
+    virtual int DoInsertItems(const wxArrayStringsAdapter & items,
+                              unsigned int pos,
+                              void **clientData, wxClientDataType type) wxOVERRIDE;
 
-    virtual int DoAppend(const wxString& item);
-    virtual int DoInsert(const wxString& item, unsigned int pos);
-
-    virtual void DoSetItemClientData(unsigned int n, void *clientData)
+    virtual void DoSetItemClientData(unsigned int n, void *clientData) wxOVERRIDE
         { m_HTMLclientData[n] = clientData; }
 
-    virtual void *DoGetItemClientData(unsigned int n) const
+    virtual void *DoGetItemClientData(unsigned int n) const wxOVERRIDE
         { return m_HTMLclientData[n]; }
-    virtual void DoSetItemClientObject(unsigned int n, wxClientData *clientData)
-        { m_HTMLclientData[n] = (void *)clientData; }
-    virtual wxClientData *DoGetItemClientObject(unsigned int n) const
-        { return (wxClientData *)m_HTMLclientData[n]; }
+
+    // wxItemContainer methods
+    virtual void DoClear() wxOVERRIDE;
+    virtual void DoDeleteOneItem(unsigned int n) wxOVERRIDE;
 
     // calls wxHtmlListBox::SetItemCount() and RefreshAll()
     void UpdateCount();
 
-    // overload these functions just to change their visibility: users of
+    // override these functions just to change their visibility: users of
     // wxSimpleHtmlListBox shouldn't be allowed to call them directly!
-    virtual void SetItemCount(size_t count)
+    virtual void SetItemCount(size_t count) wxOVERRIDE
         { wxHtmlListBox::SetItemCount(count); }
-    virtual void SetLineCount(size_t count)
-        { wxHtmlListBox::SetLineCount(count); }
+    virtual void SetRowCount(size_t count)
+        { wxHtmlListBox::SetRowCount(count); }
 
-    virtual wxString OnGetItem(size_t n) const
+    virtual wxString OnGetItem(size_t n) const wxOVERRIDE
         { return m_items[n]; }
+
+    virtual void InitEvent(wxCommandEvent& event, int n) wxOVERRIDE
+        {
+            // we're not a virtual control and we can include the string
+            // of the item which was clicked:
+            event.SetString(m_items[n]);
+            wxVListBox::InitEvent(event, n);
+        }
 
     wxArrayString   m_items;
     wxArrayPtrVoid  m_HTMLclientData;
@@ -318,7 +317,7 @@ protected:
     // not be named m_clientdata as that clashes with the name of an
     // anonymous struct member in wxEvtHandler, which we derive from.
 
-    DECLARE_NO_COPY_CLASS(wxSimpleHtmlListBox)
+    wxDECLARE_NO_COPY_CLASS(wxSimpleHtmlListBox);
 };
 
 #endif // _WX_HTMLLBOX_H_

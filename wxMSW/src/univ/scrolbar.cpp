@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     20.08.00
-// RCS-ID:      $Id: scrolbar.cpp 42821 2006-10-31 09:26:55Z VS $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -40,13 +39,11 @@
 #include "wx/univ/inphand.h"
 #include "wx/univ/theme.h"
 
-#define WXDEBUG_SCROLLBAR
+#if wxDEBUG_LEVEL >= 2
+    #define WXDEBUG_SCROLLBAR
+#endif
 
-#ifndef __WXDEBUG__
-    #undef WXDEBUG_SCROLLBAR
-#endif // !__WXDEBUG__
-
-#if defined(WXDEBUG_SCROLLBAR) && defined(__WXMSW__) && !defined(__WXMICROWIN__)
+#if defined(WXDEBUG_SCROLLBAR) && defined(__WXMSW__)
 #include "wx/msw/private.h"
 #endif
 
@@ -76,10 +73,8 @@ private:
 // implementation
 // ============================================================================
 
-IMPLEMENT_DYNAMIC_CLASS(wxScrollBar, wxControl)
-
-BEGIN_EVENT_TABLE(wxScrollBar, wxScrollBarBase)
-END_EVENT_TABLE()
+wxBEGIN_EVENT_TABLE(wxScrollBar, wxScrollBarBase)
+wxEND_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // creation
@@ -243,7 +238,7 @@ int wxScrollBar::GetRange() const
 
 void wxScrollBar::SetThumbPosition(int pos)
 {
-    wxCHECK_RET( pos >= 0 && pos <= m_range, _T("thumb position out of range") );
+    wxCHECK_RET( pos >= 0 && pos <= m_range, wxT("thumb position out of range") );
 
     DoSetThumb(pos);
 }
@@ -513,7 +508,7 @@ wxRect wxScrollBar::GetScrollbarRect(wxScrollBar::Element elem,
 
         case wxScrollBar::Element_Max:
         default:
-            wxFAIL_MSG( _T("unknown scrollbar element") );
+            wxFAIL_MSG( wxT("unknown scrollbar element") );
     }
 
     return rect;
@@ -632,7 +627,7 @@ void wxScrollBar::UpdateThumb()
             dc.DrawRectangle(rect);
 
             // under Unix we use "--sync" X option for this
-            #if defined(__WXMSW__) && !defined(__WXMICROWIN__)
+            #if defined(__WXMSW__)
                 ::GdiFlush();
                 ::Sleep(200);
             #endif // __WXMSW__
@@ -935,11 +930,7 @@ void wxStdScrollBarInputHandler::StopScrolling(wxScrollBar *control)
 
     m_btnCapture = -1;
 
-    if ( m_timerScroll )
-    {
-        delete m_timerScroll;
-        m_timerScroll = NULL;
-    }
+    wxDELETE(m_timerScroll);
 
     // unpress the arrow and highlight the current element
     Press(control, false);
@@ -1011,7 +1002,9 @@ bool wxStdScrollBarInputHandler::HandleMouse(wxInputConsumer *consumer,
             {
                 m_btnCapture = btn;
                 m_winCapture = consumer->GetInputWindow();
-                m_winCapture->CaptureMouse();
+
+                if ( !m_winCapture->HasCapture() )
+                    m_winCapture->CaptureMouse();
 
                 // generate the command
                 bool hasAction = true;
@@ -1040,7 +1033,7 @@ bool wxStdScrollBarInputHandler::HandleMouse(wxInputConsumer *consumer,
                         consumer->PerformAction(wxACTION_SCROLL_THUMB_DRAG);
                         m_ofsMouse = GetMouseCoord(scrollbar, event) -
                                      scrollbar->ScrollbarToPixel();
-
+                        wxFALLTHROUGH;
                         // fall through: there is no immediate action
 
                     default:
@@ -1074,7 +1067,8 @@ bool wxStdScrollBarInputHandler::HandleMouse(wxInputConsumer *consumer,
         {
             if ( m_winCapture )
             {
-                StopScrolling(scrollbar);
+                if ( m_winCapture->HasCapture() )
+                    StopScrolling(scrollbar);
 
                 // if we were dragging the thumb, send the last event
                 if ( m_htLast == wxHT_SCROLLBAR_THUMB )
@@ -1090,7 +1084,7 @@ bool wxStdScrollBarInputHandler::HandleMouse(wxInputConsumer *consumer,
                 // this is not supposed to happen as the button can't go up
                 // without going down previously and then we'd have
                 // m_winCapture by now
-                wxFAIL_MSG( _T("logic error in mouse capturing code") );
+                wxFAIL_MSG( wxT("logic error in mouse capturing code") );
             }
         }
     }
@@ -1159,7 +1153,7 @@ bool wxStdScrollBarInputHandler::HandleMouseMove(wxInputConsumer *consumer,
 
 #endif // wxUSE_SCROLLBAR
 
-#if wxUSE_TIMER
+#if wxUSE_TIMER && wxUSE_SCROLLBAR
 
 // ----------------------------------------------------------------------------
 // wxScrollTimer
@@ -1204,4 +1198,4 @@ void wxScrollTimer::Notify()
     }
 }
 
-#endif // wxUSE_TIMER
+#endif // wxUSE_TIMER && wxUSE_SCROLLBAR

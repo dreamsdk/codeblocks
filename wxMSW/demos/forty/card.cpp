@@ -4,7 +4,6 @@
 // Author:      Chris Breeze
 // Modified by:
 // Created:     21/07/97
-// RCS-ID:      $Id: card.cpp 39615 2006-06-07 13:26:00Z ABX $
 // Copyright:   (c) 1993-1998 Chris Breeze
 // Licence:     wxWindows licence
 //---------------------------------------------------------------------------
@@ -60,17 +59,17 @@ Card::Card(int value, WayUp way_up) :
     if (!m_symbolBmap)
     {
         m_symbolBmap = new wxBitmap(symbols_xpm);
-        if (!m_symbolBmap->Ok())
+        if (!m_symbolBmap->IsOk())
         {
-            ::wxMessageBox(_T("Failed to load bitmap CardSymbols"), _T("Error"));
+            ::wxMessageBox(wxT("Failed to load bitmap CardSymbols"), wxT("Error"));
         }
     }
     if (!m_pictureBmap)
     {
         m_pictureBmap = new wxBitmap(Pictures);
-        if (!m_pictureBmap->Ok())
+        if (!m_pictureBmap->IsOk())
         {
-            ::wxMessageBox(_T("Failed to load bitmap CardPictures"), _T("Error"));
+            ::wxMessageBox(wxT("Failed to load bitmap CardPictures"), wxT("Error"));
         }
     }
 
@@ -128,9 +127,7 @@ void Card::SetScale(double scale)
 void Card::Erase(wxDC& dc, int x, int y)
 {
     wxPen* pen = wxThePenList->FindOrCreatePen(
-                        FortyApp::BackgroundColour(),
-                        1,
-                        wxSOLID
+                        FortyApp::BackgroundColour()
                         );
     dc.SetPen(* pen);
     dc.SetBrush(FortyApp::BackgroundBrush());
@@ -168,9 +165,9 @@ void Card::Draw(wxDC& dc, int x, int y)
     if (m_wayUp == facedown)
     {
         dc.SetBackground(* wxRED_BRUSH);
-        dc.SetBackgroundMode(wxSOLID);
+        dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID);
         wxBrush* brush = wxTheBrushList->FindOrCreateBrush(
-                            *wxBLACK, wxCROSSDIAG_HATCH
+                            *wxBLACK, wxBRUSHSTYLE_CROSSDIAG_HATCH
                             );
         dc.SetBrush(* brush);
 
@@ -186,7 +183,7 @@ void Card::Draw(wxDC& dc, int x, int y)
 
         memoryDC.SelectObject(*m_symbolBmap);
 
-//        dc.SetBackgroundMode(wxTRANSPARENT);
+//        dc.SetBackgroundMode(wxBRUSHSTYLE_TRANSPARENT);
 
         dc.SetTextBackground(*wxWHITE);
         switch (m_suit)
@@ -284,6 +281,7 @@ void Card::Draw(wxDC& dc, int x, int y)
                     symsize * m_suit,
                     sympos,
                     wxCOPY);
+            wxFALLTHROUGH;
         case 2:
             dc.Blit((wxCoord)(x - symdist + m_width / 2),
                     (wxCoord)(y - symdist + m_height / 4),
@@ -312,6 +310,7 @@ void Card::Draw(wxDC& dc, int x, int y)
                     symsize * m_suit,
                     sympos,
                     wxCOPY);
+            wxFALLTHROUGH;
         case 4:
             dc.Blit((wxCoord)(x - symdist +  m_width / 4),
                     (wxCoord)(y - symdist + m_height / 4),
@@ -356,6 +355,7 @@ void Card::Draw(wxDC& dc, int x, int y)
                     symsize * m_suit,
                     sympos2,
                     wxCOPY);
+            wxFALLTHROUGH;
         case 7:
             dc.Blit((wxCoord)(x - symdist + 5 * m_width / 10),
                     (wxCoord)(y - symdist + 3 * m_height / 8),
@@ -365,6 +365,7 @@ void Card::Draw(wxDC& dc, int x, int y)
                     symsize * m_suit,
                     sympos,
                     wxCOPY);
+            wxFALLTHROUGH;
         case 6:
             dc.Blit((wxCoord)(x - symdist + m_width / 4),
                     (wxCoord)(y - symdist + m_height / 4),
@@ -422,6 +423,7 @@ void Card::Draw(wxDC& dc, int x, int y)
                     symsize * m_suit,
                     sympos2,
                     wxCOPY);
+            wxFALLTHROUGH;
         case 9:
             dc.Blit((wxCoord)(x - symdist + m_width / 4),
                     (wxCoord)(y - symdist2 + m_height / 4),
@@ -498,7 +500,9 @@ void Card::Draw(wxDC& dc, int x, int y)
                     wxCOPY);
             break;
         case 11:
+            wxFALLTHROUGH;
         case 12:
+            wxFALLTHROUGH;
         case 13:
             memoryDC.SelectObject(*m_pictureBmap);
             int picwidth = 40,picheight = 45;
@@ -545,7 +549,7 @@ void Card::Draw(wxDC& dc, int x, int y)
 //+-------------------------------------------------------------+
 void Card::DrawNullCard(wxDC& dc, int x, int y)
 {
-    wxPen* pen = wxThePenList->FindOrCreatePen(FortyApp::TextColour(), 1, wxSOLID);
+    wxPen* pen = wxThePenList->FindOrCreatePen(FortyApp::TextColour());
     dc.SetBrush(FortyApp::BackgroundBrush());
     dc.SetPen(*pen);
     dc.DrawRoundedRectangle(x, y, m_width, m_height, 4);

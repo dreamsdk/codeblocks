@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2005-03-12
-// RCS-ID:      $Id: propdlg.cpp 41838 2006-10-09 21:08:45Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -51,17 +50,18 @@
 // wxPropertySheetDialog
 //-----------------------------------------------------------------------------
 
-IMPLEMENT_DYNAMIC_CLASS(wxPropertySheetDialog, wxDialog)
+wxIMPLEMENT_DYNAMIC_CLASS(wxPropertySheetDialog, wxDialog);
 
-BEGIN_EVENT_TABLE(wxPropertySheetDialog, wxDialog)
-    EVT_ACTIVATE(wxPropertySheetDialog::OnActivate)
+wxBEGIN_EVENT_TABLE(wxPropertySheetDialog, wxDialog)
     EVT_IDLE(wxPropertySheetDialog::OnIdle)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 bool wxPropertySheetDialog::Create(wxWindow* parent, wxWindowID id, const wxString& title,
                                        const wxPoint& pos, const wxSize& sz, long style,
                                        const wxString& name)
 {
+    parent = GetParentForModalDialog(parent, style);
+
     if (!wxDialog::Create(parent, id, title, pos, sz, style|wxCLIP_CHILDREN, name))
         return false;
 
@@ -71,9 +71,6 @@ bool wxPropertySheetDialog::Create(wxWindow* parent, wxWindowID id, const wxStri
     // This gives more space around the edges
     m_innerSizer = new wxBoxSizer( wxVERTICAL );
 
-#if defined(__SMARTPHONE__) || defined(__POCKETPC__)
-    m_sheetOuterBorder = 0;
-#endif
     topSizer->Add(m_innerSizer, 1, wxGROW|wxALL, m_sheetOuterBorder);
 
     m_bookCtrl = CreateBookCtrl();
@@ -94,41 +91,21 @@ void wxPropertySheetDialog::Init()
 // Layout the dialog, to be called after pages have been created
 void wxPropertySheetDialog::LayoutDialog(int centreFlags)
 {
-#if !defined(__SMARTPHONE__) && !defined(__POCKETPC__)
     GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
     if (centreFlags)
         Centre(centreFlags);
-#else
-    wxUnusedVar(centreFlags);
-#endif
-#if defined(__SMARTPHONE__)
-    if (m_bookCtrl)
-        m_bookCtrl->SetFocus();
-#endif
 }
 
 // Creates the buttons, if any
 void wxPropertySheetDialog::CreateButtons(int flags)
 {
-#ifdef __POCKETPC__
-    // keep system option status
-    const wxChar *optionName = wxT("wince.dialog.real-ok-cancel");
-    const int status = wxSystemOptions::GetOptionInt(optionName);
-    wxSystemOptions::SetOption(optionName,0);
-#endif
-
-    wxSizer *buttonSizer = CreateButtonSizer( flags & ButtonSizerFlags );
+    wxSizer *buttonSizer = CreateButtonSizer(flags);
     if( buttonSizer )
     {
-        m_innerSizer->Add( buttonSizer, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxTOP|wxBOTTOM|wxLEFT|wxRIGHT, 2);
+        m_innerSizer->Add( buttonSizer, wxSizerFlags().Expand().Border(wxALL, 2) );
         m_innerSizer->AddSpacer(2);
     }
-
-#ifdef __POCKETPC__
-    // restore system option
-    wxSystemOptions::SetOption(optionName,status);
-#endif
 }
 
 // Creates the book control
@@ -149,7 +126,7 @@ wxBookCtrlBase* wxPropertySheetDialog::CreateBookCtrl()
 #if wxUSE_TOOLBOOK
 #if defined(__WXMAC__) && wxUSE_TOOLBAR && wxUSE_BMPBUTTON
     if (GetSheetStyle() & wxPROPSHEET_BUTTONTOOLBOOK)
-        bookCtrl = new wxToolbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, style|wxBK_BUTTONBAR );
+        bookCtrl = new wxToolbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, style|wxTBK_BUTTONBAR );
     else
 #endif
     if ((GetSheetStyle() & wxPROPSHEET_TOOLBOOK) || (GetSheetStyle() & wxPROPSHEET_BUTTONTOOLBOOK))
@@ -175,32 +152,7 @@ wxBookCtrlBase* wxPropertySheetDialog::CreateBookCtrl()
 // Adds the book control to the inner sizer.
 void wxPropertySheetDialog::AddBookCtrl(wxSizer* sizer)
 {
-#if defined(__POCKETPC__) && wxUSE_NOTEBOOK
-    // The book control has to be sized larger than the dialog because of a border bug
-    // in WinCE
-    int borderSize = -2;
-    sizer->Add( m_bookCtrl, 1, wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxRIGHT, borderSize );
-#else
-    sizer->Add( m_bookCtrl, 1, wxGROW|wxALIGN_CENTER_VERTICAL|wxALL, m_sheetInnerBorder );
-#endif
-}
-
-void wxPropertySheetDialog::OnActivate(wxActivateEvent& event)
-{
-#if defined(__SMARTPHONE__)
-    // Attempt to focus the choice control: not yet working, but might
-    // be a step in the right direction. OnActivate overrides the default
-    // handler in toplevel.cpp that sets the focus for the first child of
-    // of the dialog (the choicebook).
-    if (event.GetActive())
-    {
-        wxChoicebook* choiceBook = wxDynamicCast(GetBookCtrl(), wxChoicebook);
-        if (choiceBook)
-            choiceBook->SetFocus();
-    }
-    else
-#endif
-        event.Skip();
+    sizer->Add( m_bookCtrl, wxSizerFlags(1).Expand().Border(wxALL, m_sheetInnerBorder) );
 }
 
 // Resize dialog if necessary
@@ -221,6 +173,12 @@ void wxPropertySheetDialog::OnIdle(wxIdleEvent& event)
             LayoutDialog(0);
         }
     }
+}
+
+// Override function in base
+wxWindow* wxPropertySheetDialog::GetContentWindow() const
+{
+    return GetBookCtrl();
 }
 
 #endif // wxUSE_BOOKCTRL

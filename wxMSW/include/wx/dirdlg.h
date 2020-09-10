@@ -5,12 +5,13 @@
 // Modified by:
 // Created:
 // Copyright:   (c) Robert Roebling
-// RCS-ID:      $Id: dirdlg.h 44027 2006-12-21 19:26:48Z VZ $
 // Licence:     wxWindows Licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_DIRDLG_H_BASE_
 #define _WX_DIRDLG_H_BASE_
+
+#include "wx/defs.h"
 
 #if wxUSE_DIRDLG
 
@@ -20,9 +21,9 @@
 // constants
 // ----------------------------------------------------------------------------
 
-extern WXDLLEXPORT_DATA(const wxChar) wxDirDialogNameStr[];
-extern WXDLLEXPORT_DATA(const wxChar) wxDirDialogDefaultFolderStr[];
-extern WXDLLEXPORT_DATA(const wxChar) wxDirSelectorPromptStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxDirDialogNameStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxDirDialogDefaultFolderStr[];
+extern WXDLLIMPEXP_DATA_CORE(const char) wxDirSelectorPromptStr[];
 
 #define wxDD_CHANGE_DIR         0x0100
 #define wxDD_DIR_MUST_EXIST     0x0200
@@ -30,17 +31,13 @@ extern WXDLLEXPORT_DATA(const wxChar) wxDirSelectorPromptStr[];
 // deprecated, on by default now, use wxDD_DIR_MUST_EXIST to disable it
 #define wxDD_NEW_DIR_BUTTON     0
 
-#ifdef __WXWINCE__
-    #define wxDD_DEFAULT_STYLE      wxDEFAULT_DIALOG_STYLE
-#else
-    #define wxDD_DEFAULT_STYLE      (wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
-#endif
+#define wxDD_DEFAULT_STYLE      (wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
 
 //-------------------------------------------------------------------------
 // wxDirDialogBase
 //-------------------------------------------------------------------------
 
-class WXDLLEXPORT wxDirDialogBase : public wxDialog
+class WXDLLIMPEXP_CORE wxDirDialogBase : public wxDialog
 {
 public:
     wxDirDialogBase() {}
@@ -73,13 +70,6 @@ public:
         return true;
     }
 
-#if WXWIN_COMPATIBILITY_2_6
-
-    wxDEPRECATED( long GetStyle() const );
-    wxDEPRECATED( void SetStyle(long style) );
-
-#endif  // WXWIN_COMPATIBILITY_2_6
-
     virtual void SetMessage(const wxString& message) { m_message = message; }
     virtual void SetPath(const wxString& path) { m_path = path; }
 
@@ -96,39 +86,31 @@ protected:
 #if defined(__WXUNIVERSAL__)
     #include "wx/generic/dirdlgg.h"
     #define wxDirDialog wxGenericDirDialog
-#elif defined(__WXMSW__) && (defined(__SALFORDC__)    || \
-                             !wxUSE_OLE               || \
-                             (defined (__GNUWIN32__) && !wxUSE_NORLANDER_HEADERS))
+#elif defined(__WXMSW__) && !wxUSE_OLE
     #include "wx/generic/dirdlgg.h"
-    #define wxDirDialog wxGenericDirDialog
-#elif defined(__WXMSW__) && defined(__WXWINCE__) && !defined(__HANDHELDPC__)
-    #include "wx/generic/dirdlgg.h"     // MS PocketPC or MS Smartphone
     #define wxDirDialog wxGenericDirDialog
 #elif defined(__WXMSW__)
     #include "wx/msw/dirdlg.h"  // Native MSW
-#elif defined(__WXGTK24__)
+#elif defined(__WXGTK20__)
     #include "wx/gtk/dirdlg.h"  // Native GTK for gtk2.4
 #elif defined(__WXGTK__)
     #include "wx/generic/dirdlgg.h"
     #define wxDirDialog wxGenericDirDialog
 #elif defined(__WXMAC__)
-    #include "wx/mac/dirdlg.h"      // Native Mac
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/dirdlg.h"    // Native Cocoa
+    #include "wx/osx/dirdlg.h"      // Native Mac
 #elif defined(__WXMOTIF__) || \
-      defined(__WXX11__)   || \
-      defined(__WXMGL__)   || \
-      defined(__WXCOCOA__) || \
-      defined(__WXPM__)
+      defined(__WXX11__)
     #include "wx/generic/dirdlgg.h"     // Other ports use generic implementation
     #define wxDirDialog wxGenericDirDialog
+#elif defined(__WXQT__)
+    #include "wx/qt/dirdlg.h"
 #endif
 
 // ----------------------------------------------------------------------------
 // common ::wxDirSelector() function
 // ----------------------------------------------------------------------------
 
-WXDLLEXPORT wxString
+WXDLLIMPEXP_CORE wxString
 wxDirSelector(const wxString& message = wxDirSelectorPromptStr,
               const wxString& defaultPath = wxEmptyString,
               long style = wxDD_DEFAULT_STYLE,

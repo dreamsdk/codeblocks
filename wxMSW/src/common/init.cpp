@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     04.10.99
-// RCS-ID:      $Id: init.cpp 61555 2009-07-30 07:42:54Z VS $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -27,30 +26,37 @@
     #include "wx/app.h"
     #include "wx/filefn.h"
     #include "wx/log.h"
-    #include "wx/thread.h"
     #include "wx/intl.h"
     #include "wx/module.h"
 #endif
 
 #include "wx/init.h"
+#include "wx/thread.h"
 
-#include "wx/ptr_scpd.h"
+#include "wx/scopedptr.h"
 #include "wx/except.h"
 
-#if defined(__WXMSW__) && defined(__WXDEBUG__)
+#if defined(__WINDOWS__)
+    #include "wx/msw/private.h"
     #include "wx/msw/msvcrt.h"
 
-    static struct EnableMemLeakChecking
-    {
-        EnableMemLeakChecking()
+    #ifdef wxCrtSetDbgFlag
+        static struct EnableMemLeakChecking
         {
-            // do check for memory leaks on program exit (another useful flag
-            // is _CRTDBG_DELAY_FREE_MEM_DF which doesn't free deallocated
-            // memory which may be used to simulate low-memory condition)
-            wxCrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF);
-        }
-    } gs_enableLeakChecks;
-#endif // __WXMSW__ && __WXDEBUG__
+            EnableMemLeakChecking()
+            {
+                // check for memory leaks on program exit (another useful flag
+                // is _CRTDBG_DELAY_FREE_MEM_DF which doesn't free deallocated
+                // memory which may be used to simulate low-memory condition)
+                wxCrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF);
+            }
+        } gs_enableLeakChecks;
+    #endif // wxCrtSetDbgFlag
+#endif // __WINDOWS__
+
+#if wxUSE_UNICODE && defined(__WXOSX__)
+    #include <locale.h>
+#endif
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -62,9 +68,10 @@ class wxDummyConsoleApp : public wxAppConsole
 public:
     wxDummyConsoleApp() { }
 
-    virtual int OnRun() { wxFAIL_MSG( _T("unreachable code") ); return 0; }
+    virtual int OnRun() wxOVERRIDE { wxFAIL_MSG( wxT("unreachable code") ); return 0; }
+    virtual bool DoYield(bool, long) { return true; }
 
-    DECLARE_NO_COPY_CLASS(wxDummyConsoleApp)
+    wxDECLARE_NO_COPY_CLASS(wxDummyConsoleApp);
 };
 
 // we need a special kind of auto pointer to wxApp which not only deletes the
@@ -75,7 +82,7 @@ wxDEFINE_SCOPED_PTR(wxAppConsole, wxAppPtrBase)
 class wxAppPtr : public wxAppPtrBase
 {
 public:
-    wxEXPLICIT wxAppPtr(wxAppConsole *ptr = NULL) : wxAppPtrBase(ptr) { }
+    explicit wxAppPtr(wxAppConsole *ptr = NULL) : wxAppPtrBase(ptr) { }
     ~wxAppPtr()
     {
         if ( get() )
@@ -93,7 +100,7 @@ public:
         wxApp::SetInstance(ptr);
     }
 
-    DECLARE_NO_COPY_CLASS(wxAppPtr)
+    wxDECLARE_NO_COPY_CLASS(wxAppPtr);
 };
 
 // class to ensure that wxAppBase::CleanUp() is called if our Initialize()
@@ -130,8 +137,8 @@ static struct InitData
         nInitCount = 0;
 
 #if wxUSE_UNICODE
-        argc = 0;
-        // argv = NULL; -- not even really needed
+        argc = argcOrig = 0;
+        // argv = argvOrig = NULL; -- not even really needed
 #endif // wxUSE_UNICODE
     }
 
@@ -150,9 +157,15 @@ static struct InitData
     // for example), we remember the converted argv here because we'll have to
     // free it when doing cleanup to avoid memory leaks
     wchar_t **argv;
+
+    // we also need to keep two copies, one passed to other functions, and one
+    // unmodified original; somebody may modify the former, so we need to have
+    // the latter to be able to free everything correctly
+    int argcOrig;
+    wchar_t **argvOrig;
 #endif // wxUSE_UNICODE
 
-    DECLARE_NO_COPY_CLASS(InitData)
+    wxDECLARE_NO_COPY_CLASS(InitData);
 } gs_initData;
 
 // ============================================================================
@@ -167,7 +180,9 @@ static struct InitData
 
 static void ConvertArgsToUnicode(int argc, char **argv)
 {
+    gs_initData.argvOrig = new wchar_t *[argc + 1];
     gs_initData.argv = new wchar_t *[argc + 1];
+
     int wargc = 0;
     for ( int i = 0; i < argc; i++ )
     {
@@ -183,26 +198,28 @@ static void ConvertArgsToUnicode(int argc, char **argv)
         }
         else // converted ok
         {
-            gs_initData.argv[wargc++] = wxStrdup(buf);
+            gs_initData.argvOrig[wargc] = gs_initData.argv[wargc] = wxStrdup(buf);
+            wargc++;
         }
     }
 
-    gs_initData.argc = wargc;
-    gs_initData.argv[wargc] = NULL;
+    gs_initData.argcOrig = gs_initData.argc = wargc;
+    gs_initData.argvOrig[wargc] =gs_initData.argv[wargc] = NULL;
 }
 
 static void FreeConvertedArgs()
 {
-    if ( gs_initData.argv )
+    if ( gs_initData.argvOrig )
     {
-        for ( int i = 0; i < gs_initData.argc; i++ )
+        for ( int i = 0; i < gs_initData.argcOrig; i++ )
         {
-            free(gs_initData.argv[i]);
+            free(gs_initData.argvOrig[i]);
+            // gs_initData.argv[i] normally points to the same data
         }
 
-        delete [] gs_initData.argv;
-        gs_initData.argv = NULL;
-        gs_initData.argc = 0;
+        wxDELETEA(gs_initData.argvOrig);
+        wxDELETEA(gs_initData.argv);
+        gs_initData.argcOrig = gs_initData.argc = 0;
     }
 }
 
@@ -215,17 +232,47 @@ static void FreeConvertedArgs()
 // initialization which is always done (not customizable) before wxApp creation
 static bool DoCommonPreInit()
 {
+#if wxUSE_UNICODE && defined(__WXOSX__)
+    // In OS X and iOS, wchar_t CRT functions convert to char* and fail under
+    // some locales. The safest fix is to set LC_CTYPE to UTF-8 to ensure that
+    // they can handle any input.
+    //
+    // Note that this must be done for any app, Cocoa or console, whether or
+    // not it uses wxLocale.
+    //
+    // See https://stackoverflow.com/questions/11713745/why-does-the-printf-family-of-functions-care-about-locale
+    setlocale(LC_CTYPE, "UTF-8");
+#endif // wxUSE_UNICODE && defined(__WXOSX__)
+
 #if wxUSE_LOG
     // Reset logging in case we were cleaned up and are being reinitialized.
     wxLog::DoCreateOnDemand();
 
-    // install temporary log sink: we can't use wxLogGui before wxApp is
-    // constructed and if we use wxLogStderr, all messages during
-    // initialization simply disappear under Windows
+    // force wxLog to create a log target now: we do it because wxTheApp
+    // doesn't exist yet so wxLog will create a special log target which is
+    // safe to use even when the GUI is not available while without this call
+    // we could create wxApp in wxEntryStart() below, then log an error about
+    // e.g. failure to establish connection to the X server and wxLog would
+    // send it to wxLogGui (because wxTheApp does exist already) which, of
+    // course, can't be used in this case
     //
-    // note that we will delete this log target below
-    delete wxLog::SetActiveTarget(new wxLogBuffer);
+    // notice also that this does nothing if the user had set up a custom log
+    // target before -- which is fine as we want to give him this possibility
+    // (as it's impossible to override logging by overriding wxAppTraits::
+    // CreateLogTarget() before wxApp is created) and we just assume he knows
+    // what he is doing
+    wxLog::GetActiveTarget();
 #endif // wxUSE_LOG
+
+#ifdef __WINDOWS__
+    // GUI applications obtain HINSTANCE in their WinMain() but we also need to
+    // initialize the global wxhInstance variable for the console programs as
+    // they may need it too, so set it here if it wasn't done yet
+    if ( !wxGetInstance() )
+    {
+        wxSetInstance(::GetModuleHandle(NULL));
+    }
+#endif // __WINDOWS__
 
     return true;
 }
@@ -251,9 +298,7 @@ bool wxEntryStart(int& argc, wxChar **argv)
 
     // initialize wxRTTI
     if ( !DoCommonPreInit() )
-    {
         return false;
-    }
 
 
     // first of all, we need an application object
@@ -263,8 +308,8 @@ bool wxEntryStart(int& argc, wxChar **argv)
     wxAppPtr app(wxTheApp);
     if ( !app.get() )
     {
-        // if not, he might have used IMPLEMENT_APP() to give us a function to
-        // create it
+        // if not, he might have used wxIMPLEMENT_APP() to give us a
+        // function to create it
         wxAppInitializerFunction fnCreate = wxApp::GetInitializerFunction();
 
         if ( fnCreate )
@@ -276,8 +321,8 @@ bool wxEntryStart(int& argc, wxChar **argv)
 
     if ( !app.get() )
     {
-        // either IMPLEMENT_APP() was not used at all or it failed -- in any
-        // case we still need something
+        // either wxIMPLEMENT_APP() was not used at all or it failed -- in
+        // any case we still need something
         app.Set(new wxDummyConsoleApp);
     }
 
@@ -286,15 +331,18 @@ bool wxEntryStart(int& argc, wxChar **argv)
     // --------------------------------------------
 
     if ( !app->Initialize(argc, argv) )
-    {
         return false;
-    }
+
+    // remember, possibly modified (e.g. due to removal of toolkit-specific
+    // parameters), command line arguments in member variables
+    app->argc = argc;
+#if wxUSE_UNICODE
+    app->argv.Init(argc, argv);
+#else
+    app->argv = argv;
+#endif
 
     wxCallAppCleanup callAppCleanup(app.get());
-
-    // for compatibility call the old initialization function too
-    if ( !app->OnInitGui() )
-        return false;
 
 
     // common initialization after wxTheApp creation
@@ -348,14 +396,15 @@ bool wxEntryStart(int& argc, char **argv)
 static void DoCommonPreCleanup()
 {
 #if wxUSE_LOG
-    // flush the logged messages if any and install a 'safer' log target: the
-    // default one (wxLogGui) can't be used after the resources are freed just
-    // below and the user supplied one might be even more unsafe (using any
-    // wxWidgets GUI function is unsafe starting from now)
-    wxLog::DontCreateOnDemand();
-
-    // this will flush the old messages if any
-    delete wxLog::SetActiveTarget(new wxLogStderr);
+    // flush the logged messages if any and don't use the current probably
+    // unsafe log target any more: the default one (wxLogGui) can't be used
+    // after the resources are freed which happens when we return and the user
+    // supplied one might be even more unsafe (using any wxWidgets GUI function
+    // is unsafe starting from now)
+    //
+    // notice that wxLog will still recreate a default log target if any
+    // messages are logged but that one will be safe to use until the very end
+    delete wxLog::SetActiveTarget(NULL);
 #endif // wxUSE_LOG
 }
 
@@ -375,7 +424,18 @@ static void DoCommonPostCleanup()
     delete wxMessageOutput::Set(NULL);
 
 #if wxUSE_LOG
+    // call this first as it has a side effect: in addition to flushing all
+    // logs for this thread, it also flushes everything logged from other
+    // threads
+    wxLog::FlushActive();
+
     // and now delete the last logger as well
+    //
+    // we still don't disable log target auto-vivification even if any log
+    // objects created now will result in memory leaks because it seems better
+    // to leak memory which doesn't matter much considering the application is
+    // exiting anyhow than to not show messages which could still be logged
+    // from the user code (e.g. static dtors and such)
     delete wxLog::SetActiveTarget(NULL);
 #endif // wxUSE_LOG
 }
@@ -407,9 +467,9 @@ void wxEntryCleanup()
 // ----------------------------------------------------------------------------
 
 // for MSW the real wxEntry is defined in msw/main.cpp
-#ifndef __WXMSW__
+#ifndef __WINDOWS__
     #define wxEntryReal wxEntry
-#endif // !__WXMSW__
+#endif // !__WINDOWS__
 
 int wxEntryReal(int& argc, wxChar **argv)
 {
@@ -427,7 +487,6 @@ int wxEntryReal(int& argc, wxChar **argv)
 
     wxTRY
     {
-
         // app initialization
         if ( !wxTheApp->CallOnInit() )
         {
@@ -466,7 +525,13 @@ int wxEntry(int& argc, char **argv)
 // wxInitialize/wxUninitialize
 // ----------------------------------------------------------------------------
 
-bool wxInitialize(int argc, wxChar **argv)
+bool wxInitialize()
+{
+    int argc = 0;
+    return wxInitialize(argc, (wxChar**)NULL);
+}
+
+bool wxInitialize(int& argc, wxChar **argv)
 {
     wxCRIT_SECT_LOCKER(lockInit, gs_initData.csInit);
 
@@ -480,7 +545,7 @@ bool wxInitialize(int argc, wxChar **argv)
 }
 
 #if wxUSE_UNICODE
-bool wxInitialize(int argc, char **argv)
+bool wxInitialize(int& argc, char **argv)
 {
     wxCRIT_SECT_LOCKER(lockInit, gs_initData.csInit);
 

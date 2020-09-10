@@ -1,10 +1,9 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        src/generic/region.cpp
+// Name:        src/generic/regiong.cpp
 // Purpose:     generic wxRegion class
 // Author:      David Elliott
 // Modified by:
 // Created:     2004/04/12
-// RCS-ID:      $Id: regiong.cpp 41444 2006-09-25 18:18:26Z VZ $
 // Copyright:   (c) 2004 David Elliott
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -176,12 +175,12 @@ protected:
 // wxRegionRefData
 // ========================================================================
 
-class wxRegionRefData : public wxObjectRefData,
+class wxRegionRefData : public wxGDIRefData,
                         public REGION
 {
 public:
     wxRegionRefData()
-        : wxObjectRefData(),
+        : wxGDIRefData(),
           REGION()
     {
         size = 1;
@@ -194,7 +193,7 @@ public:
     }
 
     wxRegionRefData(const wxPoint& topLeft, const wxPoint& bottomRight)
-        : wxObjectRefData(),
+        : wxGDIRefData(),
           REGION()
     {
         rects = (BOX*)malloc(sizeof(BOX));
@@ -208,7 +207,7 @@ public:
     }
 
     wxRegionRefData(const wxRect& rect)
-        : wxObjectRefData(),
+        : wxGDIRefData(),
           REGION(rect)
     {
         rects = (BOX*)malloc(sizeof(BOX));
@@ -216,7 +215,7 @@ public:
     }
 
     wxRegionRefData(const wxRegionRefData& refData)
-        : wxObjectRefData(),
+        : wxGDIRefData(),
           REGION()
     {
         size = refData.size;
@@ -239,7 +238,7 @@ private:
 // ========================================================================
 // wxRegionGeneric
 // ========================================================================
-//IMPLEMENT_DYNAMIC_CLASS(wxRegionGeneric, wxGDIObject)
+//wxIMPLEMENT_DYNAMIC_CLASS(wxRegionGeneric, wxGDIObject);
 
 #define M_REGIONDATA ((wxRegionRefData *)m_refData)
 #define M_REGIONDATA_OF(rgn) ((wxRegionRefData *)(rgn.m_refData))
@@ -271,17 +270,34 @@ wxRegionGeneric::wxRegionGeneric(const wxPoint& topLeft, const wxPoint& bottomRi
     m_refData = new wxRegionRefData(topLeft, bottomRight);
 }
 
+wxRegionGeneric::wxRegionGeneric(const wxBitmap& bmp)
+{
+    wxFAIL_MSG("NOT IMPLEMENTED: wxRegionGeneric::wxRegionGeneric(const wxBitmap& bmp)");
+}
+
+wxRegionGeneric::wxRegionGeneric(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle)
+{
+    wxFAIL_MSG("NOT IMPLEMENTED: wxRegionGeneric::wxRegionGeneric(size_t n, const wxPoint *points, wxPolygonFillMode fillStyle)");
+}
+
+wxRegionGeneric::wxRegionGeneric(const wxBitmap& bmp, const wxColour& transp, int tolerance)
+{
+    wxFAIL_MSG("NOT IMPLEMENTED: wxRegionGeneric::wxRegionGeneric(const wxBitmap& bmp, const wxColour& transp, int tolerance)");
+}
+
 void wxRegionGeneric::Clear()
 {
     UnRef();
+    if (!m_refData)
+        m_refData = new wxRegionRefData(wxRect(0,0,0,0));
 }
 
-wxObjectRefData *wxRegionGeneric::CreateRefData() const
+wxGDIRefData *wxRegionGeneric::CreateGDIRefData() const
 {
     return new wxRegionRefData;
 }
 
-wxObjectRefData *wxRegionGeneric::CloneRefData(const wxObjectRefData *data) const
+wxGDIRefData *wxRegionGeneric::CloneGDIRefData(const wxGDIRefData *data) const
 {
     return new wxRegionRefData(*(wxRegionRefData *)data);
 }
@@ -384,7 +400,7 @@ wxRegionContain wxRegionGeneric::DoContainsRect(const wxRect& rect) const
 // ========================================================================
 // wxRegionIteratorGeneric
 // ========================================================================
-//IMPLEMENT_DYNAMIC_CLASS(wxRegionIteratorGeneric,wxObject)
+//wxIMPLEMENT_DYNAMIC_CLASS(wxRegionIteratorGeneric, wxObject);
 
 wxRegionIteratorGeneric::wxRegionIteratorGeneric()
 {
@@ -600,7 +616,7 @@ Region REGION::XCreateRegion(void)
 
     if (!temp->rects)
     {
-        free((char *) temp);
+        delete temp;
         return (Region) NULL;
     }
     temp->numRects = 0;
@@ -639,9 +655,7 @@ bool REGION::XClipBox(Region r, wxRect *rect)
 void REGION::
 miSetExtents (Region pReg)
 {
-    register BoxPtr pBox,
-                    pBoxEnd,
-                    pExtents;
+    BoxPtr pBox, pBoxEnd, pExtents;
 
     if (pReg->numRects == 0)
     {
@@ -668,7 +682,7 @@ miSetExtents (Region pReg)
     pExtents->x2 = pBoxEnd->x2;
     pExtents->y2 = pBoxEnd->y2;
 
-    assert(pExtents->y1 < pExtents->y2);
+    wxASSERT_LEVEL_2(pExtents->y1 < pExtents->y2);
     while (pBox <= pBoxEnd)
     {
         if (pBox->x1 < pExtents->x1)
@@ -681,7 +695,7 @@ miSetExtents (Region pReg)
         }
         pBox++;
     }
-    assert(pExtents->x1 < pExtents->x2);
+    wxASSERT_LEVEL_2(pExtents->x1 < pExtents->x2);
 }
 
 bool REGION::
@@ -704,8 +718,8 @@ XOffsetRegion(
     register int x,
     register int y)
 {
-    register int nbox;
-    register BOX *pbox;
+    int nbox;
+    BOX *pbox;
 
     pbox = pRegion->rects;
     nbox = pRegion->numRects;
@@ -752,9 +766,9 @@ miIntersectO (
     wxCoord             y1,
     wxCoord             y2)
 {
-    register wxCoord    x1;
-    register wxCoord    x2;
-    register BoxPtr     pNextRect;
+    wxCoord    x1;
+    wxCoord    x2;
+    BoxPtr     pNextRect;
 
     pNextRect = &pReg->rects[pReg->numRects];
 
@@ -772,7 +786,7 @@ miIntersectO (
          */
         if (x1 < x2)
         {
-            assert(y1<y2);
+            wxASSERT_LEVEL_2(y1<y2);
 
             MEMCHECK(pReg, pNextRect, pReg->rects);
             pNextRect->x1 = x1;
@@ -781,7 +795,7 @@ miIntersectO (
             pNextRect->y2 = y2;
             pReg->numRects += 1;
             pNextRect++;
-            assert(pReg->numRects <= pReg->size);
+            wxASSERT_LEVEL_2(pReg->numRects <= pReg->size);
         }
 
         /*
@@ -895,9 +909,9 @@ miCoalesce(
     int prevStart,            /* Index of start of previous band */
     int curStart)             /* Index of start of current band */
 {
-    register BoxPtr pPrevBox; /* Current box in previous band */
-    register BoxPtr pCurBox;  /* Current box in current band */
-    register BoxPtr pRegEnd;  /* End of region */
+    BoxPtr pPrevBox;          /* Current box in previous band */
+    BoxPtr pCurBox;           /* Current box in current band */
+    BoxPtr pRegEnd;           /* End of region */
     int         curNumRects;  /* Number of rectangles in current
                                * band */
     int        prevNumRects;  /* Number of rectangles in previous
@@ -1072,19 +1086,19 @@ miRegionOp(
                                                  * overlapping bands in region
                                                  * 2 */
 {
-    register BoxPtr        r1; /* Pointer into first region */
-    register BoxPtr        r2; /* Pointer into 2d region */
+    BoxPtr                 r1; /* Pointer into first region */
+    BoxPtr                 r2; /* Pointer into 2d region */
     BoxPtr              r1End; /* End of 1st region */
     BoxPtr              r2End; /* End of 2d region */
-    register wxCoord     ybot; /* Bottom of intersection */
-    register wxCoord     ytop; /* Top of intersection */
+    wxCoord              ybot; /* Bottom of intersection */
+    wxCoord              ytop; /* Top of intersection */
     BoxPtr           oldRects; /* Old rects for newReg */
     int              prevBand; /* Index of start of
                                 * previous band in newReg */
     int               curBand; /* Index of start of current
                                 * band in newReg */
-    register BoxPtr r1BandEnd; /* End of current band in r1 */
-    register BoxPtr r2BandEnd; /* End of current band in r2 */
+    BoxPtr                r1BandEnd; /* End of current band in r1 */
+    BoxPtr                r2BandEnd; /* End of current band in r2 */
     wxCoord               top; /* Top of non-overlapping
                                 * band */
     wxCoord               bot; /* Bottom of non-overlapping
@@ -1358,15 +1372,15 @@ miUnionNonO (
     register wxCoord       y1,
     register wxCoord       y2)
 {
-    register BoxPtr        pNextRect;
+    BoxPtr pNextRect;
 
     pNextRect = &pReg->rects[pReg->numRects];
 
-    assert(y1 < y2);
+    wxASSERT_LEVEL_2(y1 < y2);
 
     while (r != rEnd)
     {
-        assert(r->x1 < r->x2);
+        wxASSERT_LEVEL_2(r->x1 < r->x2);
         MEMCHECK(pReg, pNextRect, pReg->rects);
         pNextRect->x1 = r->x1;
         pNextRect->y1 = y1;
@@ -1375,7 +1389,7 @@ miUnionNonO (
         pReg->numRects += 1;
         pNextRect++;
 
-        assert(pReg->numRects<=pReg->size);
+        wxASSERT_LEVEL_2(pReg->numRects<=pReg->size);
         r++;
     }
     return 0;        /* lint */
@@ -1409,7 +1423,7 @@ miUnionO (
     register wxCoord       y1,
     register wxCoord       y2)
 {
-    register BoxPtr        pNextRect;
+    BoxPtr pNextRect;
 
     pNextRect = &pReg->rects[pReg->numRects];
 
@@ -1422,7 +1436,7 @@ miUnionO (
         if (pNextRect[-1].x2 < r->x2)  \
         {  \
             pNextRect[-1].x2 = r->x2;  \
-            assert(pNextRect[-1].x1<pNextRect[-1].x2); \
+            wxASSERT_LEVEL_2(pNextRect[-1].x1<pNextRect[-1].x2); \
         }  \
     }  \
     else  \
@@ -1435,10 +1449,10 @@ miUnionO (
         pReg->numRects += 1;  \
         pNextRect += 1;  \
     }  \
-    assert(pReg->numRects<=pReg->size);\
+    wxASSERT_LEVEL_2(pReg->numRects<=pReg->size);\
     r++;
 
-    assert (y1<y2);
+    wxASSERT_LEVEL_2 (y1<y2);
     while ((r1 != r1End) && (r2 != r2End))
     {
         if (r1->x1 < r2->x1)
@@ -1559,15 +1573,15 @@ miSubtractNonO1 (
     register wxCoord          y1,
     register wxCoord           y2)
 {
-    register BoxPtr        pNextRect;
+    BoxPtr        pNextRect;
 
     pNextRect = &pReg->rects[pReg->numRects];
 
-    assert(y1<y2);
+    wxASSERT_LEVEL_2(y1<y2);
 
     while (r != rEnd)
     {
-        assert(r->x1<r->x2);
+        wxASSERT_LEVEL_2(r->x1<r->x2);
         MEMCHECK(pReg, pNextRect, pReg->rects);
         pNextRect->x1 = r->x1;
         pNextRect->y1 = y1;
@@ -1576,7 +1590,7 @@ miSubtractNonO1 (
         pReg->numRects += 1;
         pNextRect++;
 
-        assert(pReg->numRects <= pReg->size);
+        wxASSERT_LEVEL_2(pReg->numRects <= pReg->size);
 
         r++;
     }
@@ -1608,12 +1622,12 @@ miSubtractO (
     register wxCoord          y1,
     register wxCoord          y2)
 {
-    register BoxPtr        pNextRect;
-    register int          x1;
+    BoxPtr        pNextRect;
+    int          x1;
 
     x1 = r1->x1;
 
-    assert(y1<y2);
+    wxASSERT_LEVEL_2(y1<y2);
     pNextRect = &pReg->rects[pReg->numRects];
 
     while ((r1 != r1End) && (r2 != r2End))
@@ -1628,7 +1642,7 @@ miSubtractO (
         else if (r2->x1 <= x1)
         {
             /*
-             * Subtrahend preceeds minuend: nuke left edge of minuend.
+             * Subtrahend precedes minuend: nuke left edge of minuend.
              */
             x1 = r2->x2;
             if (x1 >= r1->x2)
@@ -1656,7 +1670,7 @@ miSubtractO (
              * Left part of subtrahend covers part of minuend: add uncovered
              * part of minuend to region and skip to next subtrahend.
              */
-            assert(x1<r2->x1);
+            wxASSERT_LEVEL_2(x1<r2->x1);
             MEMCHECK(pReg, pNextRect, pReg->rects);
             pNextRect->x1 = x1;
             pNextRect->y1 = y1;
@@ -1665,7 +1679,7 @@ miSubtractO (
             pReg->numRects += 1;
             pNextRect++;
 
-            assert(pReg->numRects<=pReg->size);
+            wxASSERT_LEVEL_2(pReg->numRects<=pReg->size);
 
             x1 = r2->x2;
             if (x1 >= r1->x2)
@@ -1699,7 +1713,7 @@ miSubtractO (
                 pNextRect->y2 = y2;
                 pReg->numRects += 1;
                 pNextRect++;
-                assert(pReg->numRects<=pReg->size);
+                wxASSERT_LEVEL_2(pReg->numRects<=pReg->size);
             }
             r1++;
             if (r1 != r1End)
@@ -1712,7 +1726,7 @@ miSubtractO (
      */
     while (r1 != r1End)
     {
-        assert(x1<r1->x2);
+        wxASSERT_LEVEL_2(x1<r1->x2);
         MEMCHECK(pReg, pNextRect, pReg->rects);
         pNextRect->x1 = x1;
         pNextRect->y1 = y1;
@@ -1721,7 +1735,7 @@ miSubtractO (
         pReg->numRects += 1;
         pNextRect++;
 
-        assert(pReg->numRects<=pReg->size);
+        wxASSERT_LEVEL_2(pReg->numRects<=pReg->size);
 
         r1++;
         if (r1 != r1End)
@@ -1842,10 +1856,10 @@ wxRegionContain REGION::XRectInRegion(register Region region,
                                       unsigned int rwidth,
                                       unsigned int rheight)
 {
-    register BoxPtr pbox;
-    register BoxPtr pboxEnd;
+    BoxPtr pbox;
+    BoxPtr pboxEnd;
     Box rect;
-    register BoxPtr prect = &rect;
+    BoxPtr prect = &rect;
     int      partIn, partOut;
 
     prect->x1 = rx;

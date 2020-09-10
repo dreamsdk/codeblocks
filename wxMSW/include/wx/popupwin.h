@@ -4,9 +4,8 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     06.01.01
-// RCS-ID:      $Id: popupwin.h 53135 2008-04-12 02:31:04Z VZ $
 // Copyright:   (c) 2001 Vadim Zeitlin <zeitlin@dptmaths.ens-cachan.fr>
-// License:     wxWindows licence
+// Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_POPUPWIN_H_BASE_
@@ -16,14 +15,23 @@
 
 #if wxUSE_POPUPWIN
 
-#include "wx/window.h"
+// ----------------------------------------------------------------------------
+// wxPopupWindow specific flags
+// ----------------------------------------------------------------------------
+
+// This flag can be used in MSW if some controls are not working with the
+// default popup style.
+#define wxPU_CONTAINS_CONTROLS     0x0001
+
+
+#include "wx/nonownedwnd.h"
 
 // ----------------------------------------------------------------------------
 // wxPopupWindow: a special kind of top level window used for popup menus,
 // combobox popups and such.
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxPopupWindowBase : public wxWindow
+class WXDLLIMPEXP_CORE wxPopupWindowBase : public wxNonOwnedWindow
 {
 public:
     wxPopupWindowBase() { }
@@ -45,17 +53,15 @@ public:
     virtual void Position(const wxPoint& ptOrigin,
                           const wxSize& size);
 
-    virtual bool IsTopLevel() const { return true; }
+    virtual bool IsTopLevel() const wxOVERRIDE { return true; }
 
-    DECLARE_NO_COPY_CLASS(wxPopupWindowBase)
+    wxDECLARE_NO_COPY_CLASS(wxPopupWindowBase);
 };
 
 
 // include the real class declaration
 #if defined(__WXMSW__)
     #include "wx/msw/popupwin.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/popupwin.h"
 #elif defined(__WXGTK20__)
     #include "wx/gtk/popupwin.h"
 #elif defined(__WXGTK__)
@@ -64,10 +70,12 @@ public:
     #include "wx/x11/popupwin.h"
 #elif defined(__WXMOTIF__)
     #include "wx/motif/popupwin.h"
-#elif defined(__WXMGL__)
-    #include "wx/mgl/popupwin.h"
+#elif defined(__WXDFB__)
+    #include "wx/dfb/popupwin.h"
 #elif defined(__WXMAC__)
-    #include "wx/mac/popupwin.h"
+    #include "wx/osx/popupwin.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/popupwin.h"
 #else
     #error "wxPopupWindow is not supported under this platform."
 #endif
@@ -77,24 +85,16 @@ public:
 // when the user clicks mouse outside it or if it loses focus in any other way
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_FWD_CORE wxPopupWindowHandler;
-class WXDLLIMPEXP_FWD_CORE wxPopupFocusHandler;
-
-class WXDLLEXPORT wxPopupTransientWindow : public wxPopupWindow
+// Define the public API of wxPopupTransientWindow:
+class WXDLLIMPEXP_CORE wxPopupTransientWindowBase : public wxPopupWindow
 {
 public:
-    // ctors
-    wxPopupTransientWindow() { Init(); }
-    wxPopupTransientWindow(wxWindow *parent, int style = wxBORDER_NONE);
-
-    virtual ~wxPopupTransientWindow();
-
     // popup the window (this will show it too) and keep focus at winFocus
     // (or itself if it's NULL), dismiss the popup if we lose focus
-    virtual void Popup(wxWindow *focus = NULL);
+    virtual void Popup(wxWindow *focus = NULL) = 0;
 
     // hide the window
-    virtual void Dismiss();
+    virtual void Dismiss() = 0;
 
     // can the window be dismissed now?
     //
@@ -104,22 +104,84 @@ public:
 
     // called when a mouse is pressed while the popup is shown: return true
     // from here to prevent its normal processing by the popup (which consists
-    // in dismissing it if the mouse is cilcked outside it)
-    virtual bool ProcessLeftDown(wxMouseEvent& event);
+    // in dismissing it if the mouse is clicked outside it)
+    virtual bool ProcessLeftDown(wxMouseEvent& WXUNUSED(event))
+        { return false; }
+
+    // Override to implement delayed destruction of this window.
+    virtual bool Destroy() wxOVERRIDE;
+
+protected:
+    // this is called when the popup is disappeared because of anything
+    // else but direct call to Dismiss()
+    virtual void OnDismiss() { }
+
+    // dismiss and notify the derived class
+    void DismissAndNotify()
+    {
+        Dismiss();
+        OnDismiss();
+    }
+};
+
+#ifdef __WXMSW__
+
+class WXDLLIMPEXP_CORE wxPopupTransientWindow : public wxPopupTransientWindowBase
+{
+public:
+    // ctors
+    wxPopupTransientWindow() { }
+    wxPopupTransientWindow(wxWindow *parent, int style = wxBORDER_NONE)
+        { Create(parent, style); }
+    bool Create(wxWindow *parent, int style = wxBORDER_NONE)
+    {
+        return wxPopupTransientWindowBase::Create
+               (
+                    parent, style | wxPU_CONTAINS_CONTROLS
+               );
+    }
+
+    // Implement base class pure virtuals.
+    virtual void Popup(wxWindow *focus = NULL) wxOVERRIDE;
+    virtual void Dismiss() wxOVERRIDE;
+
+    // Override to handle WM_NCACTIVATE.
+    virtual bool MSWHandleMessage(WXLRESULT *result,
+                                  WXUINT message,
+                                  WXWPARAM wParam,
+                                  WXLPARAM lParam) wxOVERRIDE;
+
+private:
+    void DismissOnDeactivate();
+
+    wxDECLARE_DYNAMIC_CLASS(wxPopupTransientWindow);
+    wxDECLARE_NO_COPY_CLASS(wxPopupTransientWindow);
+};
+
+#else // !__WXMSW__
+
+class WXDLLIMPEXP_FWD_CORE wxPopupWindowHandler;
+class WXDLLIMPEXP_FWD_CORE wxPopupFocusHandler;
+
+class WXDLLIMPEXP_CORE wxPopupTransientWindow : public wxPopupTransientWindowBase
+{
+public:
+    // ctors
+    wxPopupTransientWindow() { Init(); }
+    wxPopupTransientWindow(wxWindow *parent, int style = wxBORDER_NONE);
+
+    virtual ~wxPopupTransientWindow();
+
+    // Implement base class pure virtuals.
+    virtual void Popup(wxWindow *focus = NULL) wxOVERRIDE;
+    virtual void Dismiss() wxOVERRIDE;
 
     // Overridden to grab the input on some plaforms
-    virtual bool Show( bool show = true );
+    virtual bool Show( bool show = true ) wxOVERRIDE;
 
 protected:
     // common part of all ctors
     void Init();
-
-    // this is called when the popup is disappeared because of anything
-    // else but direct call to Dismiss()
-    virtual void OnDismiss();
-
-    // dismiss and notify the derived class
-    void DismissAndNotify();
 
     // remove our event handlers
     void PopHandlers();
@@ -127,8 +189,9 @@ protected:
     // get alerted when child gets deleted from under us
     void OnDestroy(wxWindowDestroyEvent& event);
 
-#if defined( __WXMSW__ ) || defined( __WXMAC__ )
-    // check if the mouse needs captured or released
+#if defined(__WXMAC__) && wxOSX_USE_COCOA_OR_CARBON
+    // Check if the mouse needs to be captured or released: we must release
+    // when it's inside our window if we want the embedded controls to work.
     void OnIdle(wxIdleEvent& event);
 #endif
 
@@ -146,10 +209,12 @@ protected:
     wxPopupWindowHandler *m_handlerPopup;
     wxPopupFocusHandler  *m_handlerFocus;
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_DYNAMIC_CLASS(wxPopupTransientWindow)
-    DECLARE_NO_COPY_CLASS(wxPopupTransientWindow)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_DYNAMIC_CLASS(wxPopupTransientWindow);
+    wxDECLARE_NO_COPY_CLASS(wxPopupTransientWindow);
 };
+
+#endif // __WXMSW__/!__WXMSW__
 
 #if wxUSE_COMBOBOX && defined(__WXUNIVERSAL__)
 
@@ -157,10 +222,10 @@ protected:
 // wxPopupComboWindow: wxPopupTransientWindow used by wxComboBox
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxComboBox;
-class WXDLLEXPORT wxComboCtrl;
+class WXDLLIMPEXP_FWD_CORE wxComboBox;
+class WXDLLIMPEXP_FWD_CORE wxComboCtrl;
 
-class WXDLLEXPORT wxPopupComboWindow : public wxPopupTransientWindow
+class WXDLLIMPEXP_CORE wxPopupComboWindow : public wxPopupTransientWindow
 {
 public:
     wxPopupComboWindow() { m_combo = NULL; }
@@ -181,8 +246,8 @@ protected:
     // the parent combobox
     wxComboCtrl *m_combo;
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_DYNAMIC_CLASS(wxPopupComboWindow)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_DYNAMIC_CLASS(wxPopupComboWindow);
 };
 
 #endif // wxUSE_COMBOBOX && defined(__WXUNIVERSAL__)

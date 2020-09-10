@@ -4,7 +4,6 @@
 // Author:      Guillermo Rodriguez Garcia, <guille@iies.es>
 // Modified by:
 // Created:     Jan/2000
-// RCS-ID:      $Id: game.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) 2000, Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -31,7 +30,7 @@
 #include <string.h>           // for memset
 
 
-#define ARRAYSIZE  1024       // static array for BeginFind & co.
+#define CELLSARRAYSIZE  1024       // static array for BeginFind & co.
 #define ALLOCBOXES 16         // number of cellboxes to alloc at once
 #define MAXDEAD    8          // tics before removing cellbox from list
 
@@ -123,7 +122,7 @@ Life::Life()
         m_boxes[i] = NULL;
 
     // state vars for BeginFind & FindMore
-    m_cells       = new LifeCell[ARRAYSIZE];
+    m_cells       = new LifeCell[CELLSARRAYSIZE];
     m_ncells      = 0;
     m_findmore    = false;
     m_changed     = false;
@@ -524,7 +523,7 @@ bool Life::FindMore(LifeCell *cells[], size_t *ncells)
                     continue;
 
                 // check whether there is enough space left in the array
-                if (m_ncells > (ARRAYSIZE - 64))
+                if (m_ncells > (CELLSARRAYSIZE - 64))
                 {
                     *ncells = m_ncells;
                     return false;
@@ -549,7 +548,7 @@ bool Life::FindMore(LifeCell *cells[], size_t *ncells)
                     continue;
 
                 // check whether there is enough space left in the array
-                if (m_ncells > (ARRAYSIZE - 64))
+                if (m_ncells > (CELLSARRAYSIZE - 64))
                 {
                     *ncells = m_ncells;
                     return false;
@@ -585,7 +584,7 @@ extern int g_tab2[];
 bool Life::NextTic()
 {
     LifeCellBox  *c, *up, *dn, *lf, *rt;
-    wxUint32 t1, t2, t3, t4;
+    wxUint32 t1, t2;
     bool     changed = false;
 
     m_numcells = 0;
@@ -834,6 +833,7 @@ bool Life::NextTic()
         t1 = 0;
         t2 = 0;
 
+        wxUint32 t3, t4;
         t3 = c->m_live1;
         c->m_old1 = t3;
 
@@ -923,15 +923,15 @@ bool Life::NextTic()
 
 class LifeModule: public wxModule
 {
-DECLARE_DYNAMIC_CLASS(LifeModule)
+    wxDECLARE_DYNAMIC_CLASS(LifeModule);
 
 public:
-    LifeModule() {};
-    bool OnInit();
-    void OnExit();
+    LifeModule() {}
+    bool OnInit() wxOVERRIDE;
+    void OnExit() wxOVERRIDE;
 };
 
-IMPLEMENT_DYNAMIC_CLASS(LifeModule, wxModule)
+wxIMPLEMENT_DYNAMIC_CLASS(LifeModule, wxModule);
 
 bool LifeModule::OnInit()
 {

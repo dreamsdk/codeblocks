@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     15.08.00
-// RCS-ID:      $Id: statbox.h 37393 2006-02-08 21:47:09Z VZ $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -12,7 +11,7 @@
 #ifndef _WX_UNIV_STATBOX_H_
 #define _WX_UNIV_STATBOX_H_
 
-class WXDLLEXPORT wxStaticBox : public wxStaticBoxBase
+class WXDLLIMPEXP_CORE wxStaticBox : public wxStaticBoxBase
 {
 public:
     wxStaticBox() { }
@@ -49,17 +48,17 @@ public:
 
     // returning true from here ensures that we act as a container window for
     // our children
-    virtual bool IsStaticBox() const { return true; }
+    virtual bool IsStaticBox() const wxOVERRIDE { return true; }
 
 protected:
     // draw the control
-    virtual void DoDraw(wxControlRenderer *renderer);
+    virtual void DoDraw(wxControlRenderer *renderer) wxOVERRIDE;
 
     // get the size of the border
     wxRect GetBorderGeometry() const;
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxStaticBox)
+    wxDECLARE_DYNAMIC_CLASS(wxStaticBox);
 };
 
 #endif // _WX_UNIV_STATBOX_H_

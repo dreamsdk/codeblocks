@@ -4,8 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2004-09-19
-// RCS-ID:      $Id: sstream.h 45732 2007-05-01 13:52:19Z VZ $
-// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2004 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -26,21 +25,21 @@ public:
     // ctor associates the stream with the given string which makes a copy of
     // it
     wxStringInputStream(const wxString& s);
-    virtual ~wxStringInputStream();
 
-    virtual wxFileOffset GetLength() const;
+    virtual wxFileOffset GetLength() const wxOVERRIDE;
+    virtual bool IsSeekable() const wxOVERRIDE { return true; }
 
 protected:
-    virtual wxFileOffset OnSysSeek(wxFileOffset ofs, wxSeekMode mode);
-    virtual wxFileOffset OnSysTell() const;
-    virtual size_t OnSysRead(void *buffer, size_t size);
+    virtual wxFileOffset OnSysSeek(wxFileOffset ofs, wxSeekMode mode) wxOVERRIDE;
+    virtual wxFileOffset OnSysTell() const wxOVERRIDE;
+    virtual size_t OnSysRead(void *buffer, size_t size) wxOVERRIDE;
 
 private:
     // the string that was passed in the ctor
     wxString m_str;
 
     // the buffer we're reading from
-    char* m_buf;
+    wxCharBuffer m_buf;
 
     // length of the buffer we're reading from
     size_t m_len;
@@ -48,7 +47,7 @@ private:
     // position in the stream in bytes, *not* in chars
     size_t m_pos;
 
-    DECLARE_NO_COPY_CLASS(wxStringInputStream)
+    wxDECLARE_NO_COPY_CLASS(wxStringInputStream);
 };
 
 // ----------------------------------------------------------------------------
@@ -60,22 +59,20 @@ class WXDLLIMPEXP_BASE wxStringOutputStream : public wxOutputStream
 public:
     // The stream will write data either to the provided string or to an
     // internal string which can be retrieved using GetString()
-    wxStringOutputStream(wxString *pString = NULL)
-    {
-        m_str = pString ? pString : &m_strInternal;
-        m_pos = m_str->length() / sizeof(wxChar);
-    }
-
-#if wxABI_VERSION >= 20804 && wxUSE_UNICODE
-    virtual ~wxStringOutputStream();
-#endif // wx 2.8.4+
+    //
+    // Note that the conversion object should have the life time greater than
+    // this stream.
+    explicit wxStringOutputStream(wxString *pString = NULL,
+                                  wxMBConv& conv = wxConvUTF8);
 
     // get the string containing current output
     const wxString& GetString() const { return *m_str; }
 
+    virtual bool IsSeekable() const wxOVERRIDE { return true; }
+
 protected:
-    virtual wxFileOffset OnSysTell() const;
-    virtual size_t OnSysWrite(const void *buffer, size_t size);
+    virtual wxFileOffset OnSysTell() const wxOVERRIDE;
+    virtual size_t OnSysWrite(const void *buffer, size_t size) wxOVERRIDE;
 
 private:
     // internal string, not used if caller provided his own string
@@ -87,14 +84,17 @@ private:
     // position in the stream in bytes, *not* in chars
     size_t m_pos;
 
-#if wxUSE_WCHAR_T
-    // string encoding converter (UTF8 is the standard)
-    wxMBConvUTF8 m_conv;
-#else
-    wxMBConv m_conv;
-#endif
+    // converter to use: notice that with the default UTF-8 one the input
+    // stream must contain valid UTF-8 data, use wxConvISO8859_1 to work with
+    // arbitrary 8 bit data
+    wxMBConv& m_conv;
 
-    DECLARE_NO_COPY_CLASS(wxStringOutputStream)
+#if wxUSE_UNICODE
+    // unconverted data from the last call to OnSysWrite()
+    wxMemoryBuffer m_unconv;
+#endif // wxUSE_UNICODE
+
+    wxDECLARE_NO_COPY_CLASS(wxStringOutputStream);
 };
 
 #endif // wxUSE_STREAMS

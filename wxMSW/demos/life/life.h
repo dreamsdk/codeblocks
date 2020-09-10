@@ -4,25 +4,12 @@
 // Author:      Guillermo Rodriguez Garcia, <guille@iies.es>
 // Modified by:
 // Created:     Jan/2000
-// RCS-ID:      $Id: life.h 41020 2006-09-05 20:47:48Z VZ $
 // Copyright:   (c) 2000, Guillermo Rodriguez Garcia
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _LIFE_APP_H_
 #define _LIFE_APP_H_
-
-// for compilers that support precompilation, includes "wx/wx.h"
-#include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
-// for all others, include the necessary headers
-#ifndef WX_PRECOMP
-    #include "wx/wx.h"
-#endif
 
 #include "wx/minifram.h"
 
@@ -44,7 +31,7 @@ public:
     virtual ~LifeCanvas();
 
     // view management
-    int  GetCellSize() const { return m_cellsize; };
+    int  GetCellSize() const { return m_cellsize; }
     void SetCellSize(int cellsize);
     void Recenter(wxInt32 i, wxInt32 j);
 
@@ -54,7 +41,7 @@ public:
 
 private:
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
     // draw a cell (parametrized by DC)
     void DrawCell(wxInt32 i, wxInt32 j, wxDC &dc);
@@ -67,10 +54,10 @@ private:
     void OnEraseBackground(wxEraseEvent& event);
 
     // conversion between cell and screen coordinates
-    inline wxInt32 XToCell(wxCoord x) const { return (x / m_cellsize) + m_viewportX; };
-    inline wxInt32 YToCell(wxCoord y) const { return (y / m_cellsize) + m_viewportY; };
-    inline wxCoord CellToX(wxInt32 i) const { return (i - m_viewportX) * m_cellsize; };
-    inline wxCoord CellToY(wxInt32 j) const { return (j - m_viewportY) * m_cellsize; };
+    inline wxInt32 XToCell(wxCoord x) const { return (x / m_cellsize) + m_viewportX; }
+    inline wxInt32 YToCell(wxCoord y) const { return (y / m_cellsize) + m_viewportY; }
+    inline wxCoord CellToX(wxInt32 i) const { return (i - m_viewportX) * m_cellsize; }
+    inline wxCoord CellToY(wxInt32 j) const { return (j - m_viewportY) * m_cellsize; }
 
     // what is the user doing?
     enum MouseStatus
@@ -106,7 +93,7 @@ public:
 
 private:
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
     // event handlers
     void OnClose(wxCloseEvent& event);
@@ -130,7 +117,7 @@ public:
 
 private:
     // any class wishing to process wxWidgets events must use this macro
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
     // event handlers
     void OnMenu(wxCommandEvent& event);
@@ -166,7 +153,7 @@ private:
 class LifeApp : public wxApp
 {
 public:
-    virtual bool OnInit();
+    virtual bool OnInit() wxOVERRIDE;
 };
 
 #endif  // _LIFE_APP_H_

@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-// Name:        laywin.h
+// Name:        wx/generic/laywin.h
 // Purpose:     Implements a simple layout algorithm, plus
 //              wxSashLayoutWindow which is an example of a window with
 //              layout-awareness (via event handlers). This is suited to
@@ -7,7 +7,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: laywin.h 49563 2007-10-31 20:46:21Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -21,10 +20,11 @@
 
 #include "wx/event.h"
 
-BEGIN_DECLARE_EVENT_TYPES()
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_ADV, wxEVT_QUERY_LAYOUT_INFO, 1500)
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_ADV, wxEVT_CALCULATE_LAYOUT, 1501)
-END_DECLARE_EVENT_TYPES()
+class WXDLLIMPEXP_FWD_CORE wxQueryLayoutInfoEvent;
+class WXDLLIMPEXP_FWD_CORE wxCalculateLayoutEvent;
+
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_QUERY_LAYOUT_INFO, wxQueryLayoutInfoEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_CORE, wxEVT_CALCULATE_LAYOUT,  wxCalculateLayoutEvent );
 
 enum wxLayoutOrientation
 {
@@ -57,7 +57,7 @@ enum wxLayoutAlignment
  * orientation and size.
  */
 
-class WXDLLIMPEXP_ADV wxQueryLayoutInfoEvent: public wxEvent
+class WXDLLIMPEXP_CORE wxQueryLayoutInfoEvent: public wxEvent
 {
 public:
     wxQueryLayoutInfoEvent(wxWindowID id = 0)
@@ -87,7 +87,7 @@ public:
     void SetAlignment(wxLayoutAlignment align) { m_alignment = align; }
     wxLayoutAlignment GetAlignment() const { return m_alignment; }
 
-    virtual wxEvent *Clone() const { return new wxQueryLayoutInfoEvent(*this); }
+    virtual wxEvent *Clone() const wxOVERRIDE { return new wxQueryLayoutInfoEvent(*this); }
 
 protected:
     int                     m_flags;
@@ -97,19 +97,22 @@ protected:
     wxLayoutAlignment       m_alignment;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxQueryLayoutInfoEvent)
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxQueryLayoutInfoEvent);
 };
 
 typedef void (wxEvtHandler::*wxQueryLayoutInfoEventFunction)(wxQueryLayoutInfoEvent&);
 
+#define wxQueryLayoutInfoEventHandler( func ) \
+    wxEVENT_HANDLER_CAST( wxQueryLayoutInfoEventFunction, func )
+
 #define EVT_QUERY_LAYOUT_INFO(func) \
-    DECLARE_EVENT_TABLE_ENTRY( wxEVT_QUERY_LAYOUT_INFO, wxID_ANY, wxID_ANY, (wxObjectEventFunction) (wxEventFunction)  wxStaticCastEvent( wxQueryLayoutInfoEventFunction, & func ), NULL ),
+    wxDECLARE_EVENT_TABLE_ENTRY( wxEVT_QUERY_LAYOUT_INFO, wxID_ANY, wxID_ANY, wxQueryLayoutInfoEventHandler( func ), NULL ),
 
 /*
  * This event is used to take a bite out of the available client area.
  */
 
-class WXDLLIMPEXP_ADV wxCalculateLayoutEvent: public wxEvent
+class WXDLLIMPEXP_CORE wxCalculateLayoutEvent: public wxEvent
 {
 public:
     wxCalculateLayoutEvent(wxWindowID id = 0)
@@ -127,27 +130,29 @@ public:
     void SetRect(const wxRect& rect) { m_rect = rect; }
     wxRect GetRect() const { return m_rect; }
 
-    virtual wxEvent *Clone() const { return new wxCalculateLayoutEvent(*this); }
+    virtual wxEvent *Clone() const wxOVERRIDE { return new wxCalculateLayoutEvent(*this); }
 
 protected:
     int                     m_flags;
     wxRect                  m_rect;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxCalculateLayoutEvent)
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxCalculateLayoutEvent);
 };
 
 typedef void (wxEvtHandler::*wxCalculateLayoutEventFunction)(wxCalculateLayoutEvent&);
 
+#define wxCalculateLayoutEventHandler( func ) wxEVENT_HANDLER_CAST(wxCalculateLayoutEventFunction, func)
+
 #define EVT_CALCULATE_LAYOUT(func) \
-    DECLARE_EVENT_TABLE_ENTRY( wxEVT_CALCULATE_LAYOUT, wxID_ANY, wxID_ANY, (wxObjectEventFunction) (wxEventFunction)  wxStaticCastEvent( wxCalculateLayoutEventFunction, & func ), NULL ),
+    wxDECLARE_EVENT_TABLE_ENTRY( wxEVT_CALCULATE_LAYOUT, wxID_ANY, wxID_ANY, wxCalculateLayoutEventHandler( func ), NULL ),
 
 #if wxUSE_SASH
 
 // This is window that can remember alignment/orientation, does its own layout,
 // and can provide sashes too. Useful for implementing docked windows with sashes in
 // an IDE-style interface.
-class WXDLLIMPEXP_ADV wxSashLayoutWindow: public wxSashWindow
+class WXDLLIMPEXP_CORE wxSashLayoutWindow: public wxSashWindow
 {
 public:
     wxSashLayoutWindow()
@@ -190,8 +195,8 @@ private:
     wxSize                      m_defaultSize;
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxSashLayoutWindow)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxSashLayoutWindow);
+    wxDECLARE_EVENT_TABLE();
 };
 
 #endif // wxUSE_SASH
@@ -200,22 +205,22 @@ class WXDLLIMPEXP_FWD_CORE wxMDIParentFrame;
 class WXDLLIMPEXP_FWD_CORE wxFrame;
 
 // This class implements the layout algorithm
-class WXDLLIMPEXP_ADV wxLayoutAlgorithm: public wxObject
+class WXDLLIMPEXP_CORE wxLayoutAlgorithm: public wxObject
 {
 public:
     wxLayoutAlgorithm() {}
 
 #if wxUSE_MDI_ARCHITECTURE
     // The MDI client window is sized to whatever's left over.
-    bool LayoutMDIFrame(wxMDIParentFrame* frame, wxRect* rect = (wxRect*) NULL);
+    bool LayoutMDIFrame(wxMDIParentFrame* frame, wxRect* rect = NULL);
 #endif // wxUSE_MDI_ARCHITECTURE
 
     // mainWindow is sized to whatever's left over. This function for backward
     // compatibility; use LayoutWindow.
-    bool LayoutFrame(wxFrame* frame, wxWindow* mainWindow = (wxWindow*) NULL);
+    bool LayoutFrame(wxFrame* frame, wxWindow* mainWindow = NULL);
 
     // mainWindow is sized to whatever's left over.
-    bool LayoutWindow(wxWindow* frame, wxWindow* mainWindow = (wxWindow*) NULL);
+    bool LayoutWindow(wxWindow* frame, wxWindow* mainWindow = NULL);
 };
 
 #endif

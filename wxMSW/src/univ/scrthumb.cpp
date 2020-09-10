@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     13.02.01
-// RCS-ID:      $Id: scrthumb.cpp 39633 2006-06-08 11:25:30Z ABX $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -31,6 +30,7 @@
 #include "wx/univ/scrtimer.h"
 #include "wx/univ/scrthumb.h"
 
+#if wxUSE_SCROLLBAR
 // ----------------------------------------------------------------------------
 // wxScrollThumbCaptureData: the struct used while dragging the scroll thumb
 // ----------------------------------------------------------------------------
@@ -101,7 +101,7 @@ public:
                 break;
 
             default:
-                wxFAIL_MSG(_T("unexpected shaft part in wxScrollThumbTimer"));
+                wxFAIL_MSG(wxT("unexpected shaft part in wxScrollThumbTimer"));
                 // fall through
 
             case wxScrollThumb::Shaft_Below:
@@ -143,8 +143,10 @@ wxScrollThumb::wxScrollThumb(wxControlWithThumb *control)
 
 wxScrollThumb::~wxScrollThumb()
 {
-    // it should have been destroyed
-    wxASSERT_MSG( !m_captureData, _T("memory leak in wxScrollThumb") );
+    // make sure the mouse capture data will be released
+    // when destroy the thumb.
+    delete m_captureData;
+    wxConstCast(this, wxScrollThumb)->m_captureData = NULL;
 }
 
 // ----------------------------------------------------------------------------
@@ -238,7 +240,7 @@ bool wxScrollThumb::HandleMouseMove(const wxMouseEvent& event) const
 {
     if ( HasCapture() )
     {
-        if ( (m_captureData->m_shaftPart == Shaft_Thumb) && event.Moving() )
+        if ( (m_captureData->m_shaftPart == Shaft_Thumb) && event.Dragging() )
         {
             // make the thumb follow the mouse by keeping the same offset
             // between the mouse position and the top/left of the thumb
@@ -284,8 +286,9 @@ wxCoord wxScrollThumb::GetMouseCoord(const wxMouseEvent& event) const
 int wxScrollThumb::GetThumbPos(const wxMouseEvent& event) const
 {
     wxCHECK_MSG( m_captureData && m_captureData->m_shaftPart == Shaft_Thumb, 0,
-                 _T("can't be called when thumb is not dragged") );
+                 wxT("can't be called when thumb is not dragged") );
 
     int x = GetMouseCoord(event) - m_captureData->m_ofsMouse;
     return m_control->PixelToThumbPos(x);
 }
+#endif // wxUSE_SCROLLBAR

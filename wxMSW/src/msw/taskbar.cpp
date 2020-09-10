@@ -5,7 +5,6 @@
 // Author:      Julian Smart
 // Modified by: Vaclav Slavik
 // Created:     24/3/98
-// RCS-ID:      $Id: taskbar.cpp 50294 2007-11-28 01:59:59Z VZ $
 // Copyright:   (c)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////
@@ -17,42 +16,34 @@
     #pragma hdrstop
 #endif
 
+#if wxUSE_TASKBARICON
+
 #ifndef WX_PRECOMP
     #include "wx/window.h"
     #include "wx/frame.h"
     #include "wx/utils.h"
     #include "wx/menu.h"
+    #include "wx/app.h"
 #endif
 
-#include "wx/msw/private.h"
-#include "wx/msw/winundef.h"
+#include "wx/msw/wrapshl.h"
 
 #include <string.h>
 #include "wx/taskbar.h"
+#include "wx/platinfo.h"
+#include "wx/msw/private.h"
 
-#ifdef __WXWINCE__
-    #include <winreg.h>
-    #include <shellapi.h>
+#ifndef NIN_BALLOONTIMEOUT
+    #define NIN_BALLOONTIMEOUT      0x0404
+    #define NIN_BALLOONUSERCLICK    0x0405
 #endif
 
 // initialized on demand
-UINT   gs_msgTaskbar = 0;
-UINT   gs_msgRestartTaskbar = 0;
-
-#if WXWIN_COMPATIBILITY_2_4
-BEGIN_EVENT_TABLE(wxTaskBarIcon, wxTaskBarIconBase)
-    EVT_TASKBAR_MOVE         (wxTaskBarIcon::_OnMouseMove)
-    EVT_TASKBAR_LEFT_DOWN    (wxTaskBarIcon::_OnLButtonDown)
-    EVT_TASKBAR_LEFT_UP      (wxTaskBarIcon::_OnLButtonUp)
-    EVT_TASKBAR_RIGHT_DOWN   (wxTaskBarIcon::_OnRButtonDown)
-    EVT_TASKBAR_RIGHT_UP     (wxTaskBarIcon::_OnRButtonUp)
-    EVT_TASKBAR_LEFT_DCLICK  (wxTaskBarIcon::_OnLButtonDClick)
-    EVT_TASKBAR_RIGHT_DCLICK (wxTaskBarIcon::_OnRButtonDClick)
-END_EVENT_TABLE()
-#endif
+static UINT gs_msgTaskbar = 0;
+static UINT gs_msgRestartTaskbar = 0;
 
 
-IMPLEMENT_DYNAMIC_CLASS(wxTaskBarIcon, wxEvtHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxTaskBarIcon, wxEvtHandler);
 
 // ============================================================================
 // implementation
@@ -76,7 +67,7 @@ public:
     }
 
     WXLRESULT MSWWindowProc(WXUINT msg,
-                            WXWPARAM wParam, WXLPARAM lParam)
+                            WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE
     {
         if (msg == gs_msgRestartTaskbar || msg == gs_msgTaskbar)
         {
@@ -101,8 +92,15 @@ struct NotifyIconData : public NOTIFYICONDATA
 {
     NotifyIconData(WXHWND hwnd)
     {
-        memset(this, 0, sizeof(NOTIFYICONDATA));
-        cbSize = sizeof(NOTIFYICONDATA);
+        wxZeroMemory(*this);
+
+        // Since Vista there is a new member hBalloonIcon which will be used
+        // if a user specified icon is specified in ShowBalloon(). For XP 
+        // use the old size
+        cbSize = wxPlatformInfo::Get().CheckOSVersion(6, 0)
+                    ? sizeof(NOTIFYICONDATA)
+                    : NOTIFYICONDATA_V2_SIZE;
+
         hWnd = (HWND) hwnd;
         uCallbackMessage = gs_msgTaskbar;
         uFlags = NIF_MESSAGE;
@@ -117,7 +115,7 @@ struct NotifyIconData : public NOTIFYICONDATA
 // wxTaskBarIcon
 // ----------------------------------------------------------------------------
 
-wxTaskBarIcon::wxTaskBarIcon()
+wxTaskBarIcon::wxTaskBarIcon(wxTaskBarIconType WXUNUSED(iconType))
 {
     m_win = NULL;
     m_iconAdded = false;
@@ -126,11 +124,17 @@ wxTaskBarIcon::wxTaskBarIcon()
 
 wxTaskBarIcon::~wxTaskBarIcon()
 {
-    if (m_iconAdded)
+    if ( m_iconAdded )
         RemoveIcon();
 
-    if (m_win)
-        m_win->Destroy();
+    if ( m_win )
+    {
+        // we must use delete and not Destroy() here because the latter will
+        // only schedule the window to be deleted during the next idle event
+        // processing but we may not get any idle events if there are no other
+        // windows left in the program
+        delete m_win;
+    }
 }
 
 // Operations
@@ -149,7 +153,7 @@ bool wxTaskBarIcon::SetIcon(const wxIcon& icon, const wxString& tooltip)
 
     NotifyIconData notifyData(GetHwndOf(m_win));
 
-    if (icon.Ok())
+    if (icon.IsOk())
     {
         notifyData.uFlags |= NIF_ICON;
         notifyData.hIcon = GetHiconOf(icon);
@@ -160,17 +164,84 @@ bool wxTaskBarIcon::SetIcon(const wxIcon& icon, const wxString& tooltip)
     notifyData.uFlags |= NIF_TIP;
     if ( !tooltip.empty() )
     {
-        wxStrncpy(notifyData.szTip, tooltip.c_str(), WXSIZEOF(notifyData.szTip));
+        wxStrlcpy(notifyData.szTip, tooltip.t_str(), WXSIZEOF(notifyData.szTip));
     }
 
     bool ok = Shell_NotifyIcon(m_iconAdded ? NIM_MODIFY
-                                           : NIM_ADD, &notifyData) != 0;
+                                            : NIM_ADD, &notifyData) != 0;
+
+    if ( !ok )
+    {
+        wxLogLastError(wxT("Shell_NotifyIcon(NIM_MODIFY/ADD)"));
+    }
 
     if ( !m_iconAdded && ok )
         m_iconAdded = true;
 
     return ok;
 }
+
+#if wxUSE_TASKBARICON_BALLOONS
+
+bool
+wxTaskBarIcon::ShowBalloon(const wxString& title,
+                           const wxString& text,
+                           unsigned msec,
+                           int flags,
+                           const wxIcon& icon)
+{
+    wxCHECK_MSG( m_iconAdded, false,
+                    wxT("can't be used before the icon is created") );
+
+    const HWND hwnd = GetHwndOf(m_win);
+
+    // we need to enable version 5.0 behaviour to receive notifications about
+    // the balloon disappearance
+    NotifyIconData notifyData(hwnd);
+    notifyData.uFlags = 0;
+    notifyData.uVersion = 3 /* NOTIFYICON_VERSION for Windows 2000/XP */;
+
+    if ( !Shell_NotifyIcon(NIM_SETVERSION, &notifyData) )
+    {
+        wxLogLastError(wxT("Shell_NotifyIcon(NIM_SETVERSION)"));
+    }
+
+    // do show the balloon now
+    notifyData = NotifyIconData(hwnd);
+    notifyData.uFlags |= NIF_INFO;
+    notifyData.uTimeout = msec;
+    wxStrlcpy(notifyData.szInfo, text.t_str(), WXSIZEOF(notifyData.szInfo));
+    wxStrlcpy(notifyData.szInfoTitle, title.t_str(),
+                WXSIZEOF(notifyData.szInfoTitle));
+
+    wxUnusedVar(icon); // It's only unused if not supported actually.
+
+#ifdef NIIF_LARGE_ICON
+    // User specified icon is only supported since Vista
+    if ( icon.IsOk() && wxPlatformInfo::Get().CheckOSVersion(6, 0) )
+    {
+        notifyData.hBalloonIcon = GetHiconOf(icon);
+        notifyData.dwInfoFlags |= NIIF_USER | NIIF_LARGE_ICON;
+    }
+    else
+#endif
+    if ( flags & wxICON_INFORMATION )
+        notifyData.dwInfoFlags |= NIIF_INFO;
+    else if ( flags & wxICON_WARNING )
+        notifyData.dwInfoFlags |= NIIF_WARNING;
+    else if ( flags & wxICON_ERROR )
+        notifyData.dwInfoFlags |= NIIF_ERROR;
+
+    bool ok = Shell_NotifyIcon(NIM_MODIFY, &notifyData) != 0;
+    if ( !ok )
+    {
+        wxLogLastError(wxT("Shell_NotifyIcon(NIM_MODIFY)"));
+    }
+
+    return ok;
+}
+
+#endif // wxUSE_TASKBARICON_BALLOONS
 
 bool wxTaskBarIcon::RemoveIcon()
 {
@@ -181,12 +252,19 @@ bool wxTaskBarIcon::RemoveIcon()
 
     NotifyIconData notifyData(GetHwndOf(m_win));
 
-    return Shell_NotifyIcon(NIM_DELETE, &notifyData) != 0;
+    bool ok = Shell_NotifyIcon(NIM_DELETE, &notifyData) != 0;
+    if ( !ok )
+    {
+        wxLogLastError(wxT("Shell_NotifyIcon(NIM_DELETE)"));
+    }
+
+    return ok;
 }
 
+#if wxUSE_MENUS
 bool wxTaskBarIcon::PopupMenu(wxMenu *menu)
 {
-    wxASSERT_MSG( m_win != NULL, _T("taskbar icon not initialized") );
+    wxASSERT_MSG( m_win != NULL, wxT("taskbar icon not initialized") );
 
     static bool s_inPopup = false;
 
@@ -219,32 +297,7 @@ bool wxTaskBarIcon::PopupMenu(wxMenu *menu)
 
     return rval;
 }
-
-#if WXWIN_COMPATIBILITY_2_4
-// Overridables
-void wxTaskBarIcon::OnMouseMove(wxEvent& e)         { e.Skip(); }
-void wxTaskBarIcon::OnLButtonDown(wxEvent& e)       { e.Skip(); }
-void wxTaskBarIcon::OnLButtonUp(wxEvent& e)         { e.Skip(); }
-void wxTaskBarIcon::OnRButtonDown(wxEvent& e)       { e.Skip(); }
-void wxTaskBarIcon::OnRButtonUp(wxEvent& e)         { e.Skip(); }
-void wxTaskBarIcon::OnLButtonDClick(wxEvent& e)     { e.Skip(); }
-void wxTaskBarIcon::OnRButtonDClick(wxEvent& e)     { e.Skip(); }
-
-void wxTaskBarIcon::_OnMouseMove(wxTaskBarIconEvent& e)
-    { OnMouseMove(e);     }
-void wxTaskBarIcon::_OnLButtonDown(wxTaskBarIconEvent& e)
-    { OnLButtonDown(e);   }
-void wxTaskBarIcon::_OnLButtonUp(wxTaskBarIconEvent& e)
-    { OnLButtonUp(e);     }
-void wxTaskBarIcon::_OnRButtonDown(wxTaskBarIconEvent& e)
-    { OnRButtonDown(e);   }
-void wxTaskBarIcon::_OnRButtonUp(wxTaskBarIconEvent& e)
-    { OnRButtonUp(e);     }
-void wxTaskBarIcon::_OnLButtonDClick(wxTaskBarIconEvent& e)
-    { OnLButtonDClick(e); }
-void wxTaskBarIcon::_OnRButtonDClick(wxTaskBarIconEvent& e)
-    { OnRButtonDClick(e); }
-#endif
+#endif // wxUSE_MENUS
 
 void wxTaskBarIcon::RegisterWindowMessages()
 {
@@ -270,9 +323,7 @@ long wxTaskBarIcon::WindowProc(unsigned int msg,
                                unsigned int WXUNUSED(wParam),
                                long lParam)
 {
-    wxEventType eventType = 0;
-
-    if (msg == gs_msgRestartTaskbar)   // does the icon need to be redrawn?
+    if ( msg == gs_msgRestartTaskbar )   // does the icon need to be redrawn?
     {
         m_iconAdded = false;
         SetIcon(m_icon, m_strTooltip);
@@ -280,9 +331,10 @@ long wxTaskBarIcon::WindowProc(unsigned int msg,
     }
 
     // this function should only be called for gs_msg(Restart)Taskbar messages
-    wxASSERT(msg == gs_msgTaskbar);
+    wxASSERT( msg == gs_msgTaskbar );
 
-    switch (lParam)
+    wxEventType eventType = 0;
+    switch ( lParam )
     {
         case WM_LBUTTONDOWN:
             eventType = wxEVT_TASKBAR_LEFT_DOWN;
@@ -312,11 +364,16 @@ long wxTaskBarIcon::WindowProc(unsigned int msg,
             eventType = wxEVT_TASKBAR_MOVE;
             break;
 
-        default:
+        case NIN_BALLOONTIMEOUT:
+            eventType = wxEVT_TASKBAR_BALLOON_TIMEOUT;
+            break;
+
+        case NIN_BALLOONUSERCLICK:
+            eventType = wxEVT_TASKBAR_BALLOON_CLICK;
             break;
     }
 
-    if (eventType)
+    if ( eventType )
     {
         wxTaskBarIconEvent event(eventType, this);
 
@@ -325,3 +382,6 @@ long wxTaskBarIcon::WindowProc(unsigned int msg,
 
     return 0;
 }
+
+#endif // wxUSE_TASKBARICON
+

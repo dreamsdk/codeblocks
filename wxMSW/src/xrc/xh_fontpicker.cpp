@@ -3,7 +3,6 @@
 // Purpose:     XML resource handler for wxFontPickerCtrl
 // Author:      Francesco Montorsi
 // Created:     2006-04-17
-// RCS-ID:      $Id: xh_fontpicker.cpp 40101 2006-07-15 15:21:25Z VS $
 // Copyright:   (c) 2006 Francesco Montorsi
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -20,7 +19,7 @@
 #include "wx/xrc/xh_fontpicker.h"
 #include "wx/fontpicker.h"
 
-IMPLEMENT_DYNAMIC_CLASS(wxFontPickerCtrlXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxFontPickerCtrlXmlHandler, wxXmlResourceHandler);
 
 wxFontPickerCtrlXmlHandler::wxFontPickerCtrlXmlHandler() : wxXmlResourceHandler()
 {
@@ -43,7 +42,7 @@ wxObject *wxFontPickerCtrlXmlHandler::DoCreateResource()
                   GetID(),
                   f,
                   GetPosition(), GetSize(),
-                  GetStyle(_T("style"), wxFNTP_DEFAULT_STYLE),
+                  GetStyle(wxT("style"), wxFNTP_DEFAULT_STYLE),
                   wxDefaultValidator,
                   GetName());
 

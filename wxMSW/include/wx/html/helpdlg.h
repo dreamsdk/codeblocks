@@ -4,9 +4,8 @@
 // Notes:       Based on htmlhelp.cpp, implementing a monolithic
 //              HTML Help controller class,  by Vaclav Slavik
 // Author:      Harm van der Heijden, Vaclav Slavik, Julian Smart
-// RCS-ID:      $Id: helpdlg.h 49804 2007-11-10 01:09:42Z VZ $
 // Copyright:   (c) Harm van der Heijden, Vaclav Slavik, Julian Smart
-// Licence:     wxWidgets licence
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_HELPDLG_H_
@@ -37,7 +36,7 @@ class WXDLLIMPEXP_FWD_HTML wxHtmlHelpWindow;
 
 class WXDLLIMPEXP_HTML wxHtmlHelpDialog : public wxDialog
 {
-    DECLARE_DYNAMIC_CLASS(wxHtmlHelpDialog)
+    wxDECLARE_DYNAMIC_CLASS(wxHtmlHelpDialog);
 
 public:
     wxHtmlHelpDialog(wxHtmlHelpData* data = NULL) { Init(data); }
@@ -80,8 +79,8 @@ protected:
     wxHtmlHelpWindow *m_HtmlHelpWin;
     wxHtmlHelpController* m_helpController;
 
-    DECLARE_EVENT_TABLE()
-    DECLARE_NO_COPY_CLASS(wxHtmlHelpDialog)
+    wxDECLARE_EVENT_TABLE();
+    wxDECLARE_NO_COPY_CLASS(wxHtmlHelpDialog);
 };
 
 #endif

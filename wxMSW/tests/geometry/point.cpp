@@ -3,7 +3,6 @@
 // Purpose:     wxPoint unit test
 // Author:      Wlodzimierz ABX Skiba
 // Created:     2004-12-14
-// RCS-ID:      $Id: point.cpp 32219 2005-02-19 22:48:26Z VZ $
 // Copyright:   (c) 2004 wxWindows
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -39,7 +38,7 @@ private:
 
     void Operators();
 
-    DECLARE_NO_COPY_CLASS(PointTestCase)
+    wxDECLARE_NO_COPY_CLASS(PointTestCase);
 };
 
 class RealPointTestCase : public CppUnit::TestCase
@@ -54,14 +53,14 @@ private:
 
     void Operators();
 
-    DECLARE_NO_COPY_CLASS(RealPointTestCase)
+    wxDECLARE_NO_COPY_CLASS(RealPointTestCase);
 };
 
 // register in the unnamed registry so that these tests are run by default
 CPPUNIT_TEST_SUITE_REGISTRATION( PointTestCase );
 CPPUNIT_TEST_SUITE_REGISTRATION( RealPointTestCase );
 
-// also include in it's own registry so that these tests can be run alone
+// also include in its own registry so that these tests can be run alone
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( PointTestCase, "PointTestCase" );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( RealPointTestCase, "RealPointTestCase" );
 
@@ -73,8 +72,10 @@ void PointTestCase::Operators()
     wxPoint p4(5,1);
     wxPoint p5 = p2 + p1;
     wxPoint p6 = p2 - p1;
-    CPPUNIT_ASSERT( p3.x == p5.x && p3.y == p5.y );
-    CPPUNIT_ASSERT( p4.x == p6.x && p4.y == p6.y );
+    CPPUNIT_ASSERT( p3.x == p5.x );
+    CPPUNIT_ASSERT( p3.y == p5.y );
+    CPPUNIT_ASSERT( p4.x == p6.x );
+    CPPUNIT_ASSERT( p4.y == p6.y );
     CPPUNIT_ASSERT( p3 == p5 );
     CPPUNIT_ASSERT( p4 == p6 );
     CPPUNIT_ASSERT( p3 != p4 );
@@ -87,6 +88,10 @@ void PointTestCase::Operators()
     p6 = p2; p6 = p2 - s;
     CPPUNIT_ASSERT( p3 == p5 );
     CPPUNIT_ASSERT( p4 == p6 );
+    p5 = p2; p5 = s + p2;
+    p6 = p2; p6 = s - p2;
+    CPPUNIT_ASSERT( p3 == p5 );
+    CPPUNIT_ASSERT( p4 == -p6 );
     p5 = p2; p5 += s;
     p6 = p2; p6 -= s;
     CPPUNIT_ASSERT( p3 == p5 );
@@ -107,6 +112,8 @@ void RealPointTestCase::Operators()
     CPPUNIT_ASSERT( p4 == p6 );
     CPPUNIT_ASSERT( p3 != p4 );
     */
-    CPPUNIT_ASSERT( fabs( p3.x - p5.x ) < EPSILON && fabs( p3.y - p5.y ) < EPSILON );
-    CPPUNIT_ASSERT( fabs( p4.x - p6.x ) < EPSILON && fabs( p4.y - p6.y ) < EPSILON );
+    CPPUNIT_ASSERT( fabs( p3.x - p5.x ) < EPSILON );
+    CPPUNIT_ASSERT( fabs( p3.y - p5.y ) < EPSILON );
+    CPPUNIT_ASSERT( fabs( p4.x - p6.x ) < EPSILON );
+    CPPUNIT_ASSERT( fabs( p4.y - p6.y ) < EPSILON );
 }

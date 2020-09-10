@@ -4,7 +4,6 @@
 // Author:       Chris Breeze, Julian Smart
 // Modified by:  Klaas Holwerda
 // Created:      01/02/97
-// RCS-ID:       $Id: matrix.h 45498 2007-04-16 13:03:05Z VZ $
 // Copyright:    (c) Julian Smart, Chris Breeze
 // Licence:      wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -32,10 +31,10 @@
 //  at a certain coordinate and angle within another parent picture.
 //  At all times m_isIdentity is set if the matrix itself is an Identity matrix.
 //  It is used where possible to optimize calculations.
-class WXDLLEXPORT wxTransformMatrix: public wxObject
+class WXDLLIMPEXP_CORE wxTransformMatrix: public wxObject
 {
 public:
-    wxTransformMatrix(void);
+    wxTransformMatrix();
     wxTransformMatrix(const wxTransformMatrix& mat);
 
     //get the value in the matrix at col,row
@@ -86,18 +85,18 @@ public:
     double operator()(int col, int row) const;
 
     // Invert matrix
-    bool Invert(void);
+    bool Invert();
 
     // Make into identity matrix
-    bool Identity(void);
+    bool Identity();
 
     // Is the matrix the identity matrix?
     // Only returns a flag, which is set whenever an operation
     // is done.
-    inline bool IsIdentity(void) const { return m_isIdentity; }
+    inline bool IsIdentity() const { return m_isIdentity; }
 
     // This does an actual check.
-    inline bool IsIdentity1(void) const ;
+    inline bool IsIdentity1() const ;
 
     //Scale by scale (isotropic scaling i.e. the same in x and y):
     //!ex:
@@ -212,7 +211,7 @@ inline double wxTransformMatrix::TransformY(double y) const
 
 // Is the matrix the identity matrix?
 // Each operation checks whether the result is still the identity matrix and sets a flag.
-inline bool wxTransformMatrix::IsIdentity1(void) const
+inline bool wxTransformMatrix::IsIdentity1() const
 {
     return
     ( wxIsSameDouble(m_matrix[0][0], 1.0) &&

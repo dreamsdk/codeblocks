@@ -4,7 +4,6 @@
 // Author:      Francesco Montorsi
 // Modified by:
 // Created:     15/04/2006
-// RCS-ID:      $Id: fontpickerg.cpp 52835 2008-03-26 15:49:08Z JS $
 // Copyright:   (c) Francesco Montorsi
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,8 +34,7 @@
 // implementation
 // ============================================================================
 
-wxFontData wxGenericFontButton::ms_data;
-IMPLEMENT_DYNAMIC_CLASS(wxGenericFontButton, wxButton)
+wxIMPLEMENT_DYNAMIC_CLASS(wxGenericFontButton, wxButton);
 
 // ----------------------------------------------------------------------------
 // wxGenericFontButton
@@ -48,8 +46,8 @@ bool wxGenericFontButton::Create( wxWindow *parent, wxWindowID id,
                         const wxValidator& validator, const wxString &name)
 {
     wxString label = (style & wxFNTP_FONTDESC_AS_LABEL) ?
-                        wxEmptyString : // label will be updated by UpdateFont
-                        wxT("Choose font");
+                        wxString() : // label will be updated by UpdateFont
+                        _("Choose font");
 
     // create this button
     if (!wxButton::Create( parent, id, label, pos,
@@ -60,35 +58,34 @@ bool wxGenericFontButton::Create( wxWindow *parent, wxWindowID id,
     }
 
     // and handle user clicks on it
-    Connect(GetId(), wxEVT_COMMAND_BUTTON_CLICKED,
-            wxCommandEventHandler(wxGenericFontButton::OnButtonClick),
-            NULL, this);
+    Bind(wxEVT_BUTTON, &wxGenericFontButton::OnButtonClick, this, GetId());
+
+    InitFontData();
 
     m_selectedFont = initial.IsOk() ? initial : *wxNORMAL_FONT;
     UpdateFont();
-    InitFontData();
 
     return true;
 }
 
 void wxGenericFontButton::InitFontData()
 {
-    ms_data.SetAllowSymbols(true);
-    ms_data.SetColour(*wxBLACK);
-    ms_data.EnableEffects(true);
+    m_data.SetAllowSymbols(true);
+    m_data.SetColour(*wxBLACK);
+    m_data.EnableEffects(true);
 }
 
 void wxGenericFontButton::OnButtonClick(wxCommandEvent& WXUNUSED(ev))
 {
-    // update the wxFontData to be shown in the the dialog
-    ms_data.SetInitialFont(m_selectedFont);
+    // update the wxFontData to be shown in the dialog
+    m_data.SetInitialFont(m_selectedFont);
 
     // create the font dialog and display it
-    wxFontDialog dlg(this, ms_data);
+    wxFontDialog dlg(this, m_data);
     if (dlg.ShowModal() == wxID_OK)
     {
-        ms_data = dlg.GetFontData();
-        SetSelectedFont(ms_data.GetChosenFont());
+        m_data = dlg.GetFontData();
+        SetSelectedFont(m_data.GetChosenFont());
 
         // fire an event
         wxFontPickerEvent event(this, GetId(), m_selectedFont);
@@ -98,10 +95,10 @@ void wxGenericFontButton::OnButtonClick(wxCommandEvent& WXUNUSED(ev))
 
 void wxGenericFontButton::UpdateFont()
 {
-    if ( !m_selectedFont.Ok() )
+    if ( !m_selectedFont.IsOk() )
         return;
 
-    SetForegroundColour(ms_data.GetColour());
+    SetForegroundColour(m_data.GetColour());
 
     if (HasFlag(wxFNTP_USEFONT_FOR_LABEL))
     {

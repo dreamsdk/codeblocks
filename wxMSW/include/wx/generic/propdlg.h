@@ -4,7 +4,6 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2005-03-12
-// RCS-ID:      $Id: propdlg.h 49804 2007-11-10 01:09:42Z VZ $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -22,11 +21,8 @@ class WXDLLIMPEXP_FWD_CORE wxBookCtrlBase;
 
 //-----------------------------------------------------------------------------
 // wxPropertySheetDialog
-// A platform-independent properties dialog.
-//
-//   * on PocketPC, a flat-look 'property sheet' notebook will be used, with
-//     no OK/Cancel/Help buttons
-//   * on other platforms, a normal notebook will be used, with standard buttons
+// A platform-independent properties dialog with a notebook and standard
+// buttons.
 //
 // To use this class, call Create from your derived class.
 // Then create pages and add to the book control. Finally call CreateButtons and
@@ -50,29 +46,32 @@ class WXDLLIMPEXP_FWD_CORE wxBookCtrlBase;
 // kind of book control.
 //-----------------------------------------------------------------------------
 
-// Use the platform default
-#define wxPROPSHEET_DEFAULT         0x0001
+enum wxPropertySheetDialogFlags
+{
+    // Use the platform default
+    wxPROPSHEET_DEFAULT = 0x0001,
 
-// Use a notebook
-#define wxPROPSHEET_NOTEBOOK        0x0002
+    // Use a notebook
+    wxPROPSHEET_NOTEBOOK = 0x0002,
 
-// Use a toolbook
-#define wxPROPSHEET_TOOLBOOK        0x0004
+    // Use a toolbook
+    wxPROPSHEET_TOOLBOOK = 0x0004,
 
-// Use a choicebook
-#define wxPROPSHEET_CHOICEBOOK      0x0008
+    // Use a choicebook
+    wxPROPSHEET_CHOICEBOOK = 0x0008,
 
-// Use a listbook
-#define wxPROPSHEET_LISTBOOK        0x0010
+    // Use a listbook
+    wxPROPSHEET_LISTBOOK = 0x0010,
 
-// Use a wxButtonToolBar toolbook
-#define wxPROPSHEET_BUTTONTOOLBOOK  0x0020
+    // Use a wxButtonToolBar toolbook
+    wxPROPSHEET_BUTTONTOOLBOOK = 0x0020,
 
-// Use a treebook
-#define wxPROPSHEET_TREEBOOK        0x0040
+    // Use a treebook
+    wxPROPSHEET_TREEBOOK = 0x0040,
 
-// Shrink dialog to fit current page
-#define wxPROPSHEET_SHRINKTOFIT     0x0100
+    // Shrink dialog to fit current page
+    wxPROPSHEET_SHRINKTOFIT = 0x0100
+};
 
 class WXDLLIMPEXP_ADV wxPropertySheetDialog : public wxDialog
 {
@@ -103,8 +102,11 @@ public:
     void SetBookCtrl(wxBookCtrlBase* book) { m_bookCtrl = book; }
     wxBookCtrlBase* GetBookCtrl() const { return m_bookCtrl; }
 
+    // Override function in base
+    virtual wxWindow* GetContentWindow() const wxOVERRIDE;
+
     // Set and get the inner sizer
-    void SetInnerSize(wxSizer* sizer) { m_innerSizer = sizer; }
+    void SetInnerSizer(wxSizer* sizer) { m_innerSizer = sizer; }
     wxSizer* GetInnerSizer() const { return m_innerSizer ; }
 
     // Set and get the book style
@@ -121,7 +123,7 @@ public:
 
 /// Operations
 
-    // Creates the buttons (none on PocketPC)
+    // Creates the buttons
     virtual void CreateButtons(int flags = wxOK|wxCANCEL);
 
     // Lay out the dialog, to be called after pages have been created
@@ -135,9 +137,6 @@ public:
 
     // Adds the book control to the inner sizer.
     virtual void AddBookCtrl(wxSizer* sizer);
-
-    // Set the focus
-    void OnActivate(wxActivateEvent& event);
 
     // Resize dialog if necessary
     void OnIdle(wxIdleEvent& event);
@@ -153,8 +152,8 @@ protected:
     int             m_sheetInnerBorder;
     int             m_selectedPage;
 
-    DECLARE_DYNAMIC_CLASS(wxPropertySheetDialog)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS(wxPropertySheetDialog);
+    wxDECLARE_EVENT_TABLE();
 };
 
 #endif // wxUSE_BOOKCTRL

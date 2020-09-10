@@ -4,7 +4,6 @@
 // Author:      Jaakko Salli
 // Modified by:
 // Created:     Apr-30-2006
-// RCS-ID:      $Id: odcombo.h 64259 2010-05-09 10:48:37Z JMS $
 // Copyright:   (c) Jaakko Salli
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -40,7 +39,7 @@ enum
 //
 // Callback flags (see wxOwnerDrawnComboBox::OnDrawItem)
 //
-enum
+enum wxOwnerDrawnComboBoxPaintingFlags
 {
     // when set, we are painting the selected item in control,
     // not in the popup
@@ -78,19 +77,22 @@ public:
     virtual ~wxVListBoxComboPopup();
 
     // required virtuals
-    virtual void Init();
-    virtual bool Create(wxWindow* parent);
-    virtual wxWindow *GetControl() { return this; }
-    virtual void SetStringValue( const wxString& value );
-    virtual wxString GetStringValue() const;
+    virtual void Init() wxOVERRIDE;
+    virtual bool Create(wxWindow* parent) wxOVERRIDE;
+    virtual void SetFocus() wxOVERRIDE;
+    virtual wxWindow *GetControl() wxOVERRIDE { return this; }
+    virtual void SetStringValue( const wxString& value ) wxOVERRIDE;
+    virtual wxString GetStringValue() const wxOVERRIDE;
 
     // more customization
-    virtual void OnPopup();
-    virtual wxSize GetAdjustedSize( int minWidth, int prefHeight, int maxHeight );
-    virtual void PaintComboControl( wxDC& dc, const wxRect& rect );
-    virtual void OnComboKeyEvent( wxKeyEvent& event );
-    virtual void OnComboDoubleClick();
-    virtual bool LazyCreate();
+    virtual void OnPopup() wxOVERRIDE;
+    virtual wxSize GetAdjustedSize( int minWidth, int prefHeight, int maxHeight ) wxOVERRIDE;
+    virtual void PaintComboControl( wxDC& dc, const wxRect& rect ) wxOVERRIDE;
+    virtual void OnComboKeyEvent( wxKeyEvent& event ) wxOVERRIDE;
+    virtual void OnComboCharEvent( wxKeyEvent& event ) wxOVERRIDE;
+    virtual void OnComboDoubleClick() wxOVERRIDE;
+    virtual bool LazyCreate() wxOVERRIDE;
+    virtual bool FindItem(const wxString& item, wxString* trueItem) wxOVERRIDE;
 
     // Item management
     void SetSelection( int item );
@@ -113,12 +115,12 @@ public:
     // helpers
     int GetItemAtPosition( const wxPoint& pos ) { return HitTest(pos); }
     wxCoord GetTotalHeight() const { return EstimateTotalHeight(); }
-    wxCoord GetLineHeight(int line) const { return OnGetLineHeight(line); }
+    wxCoord GetLineHeight(int line) const { return OnGetRowHeight(line); }
 
 protected:
 
-    // Called by OnComboDoubleClick and OnComboKeyEvent
-    bool HandleKey( int keycode, bool saturate, wxChar unicode = 0 );
+    // Called by OnComboDoubleClick and OnCombo{Key,Char}Event
+    bool HandleKey( int keycode, bool saturate, wxChar keychar = 0 );
 
     // sends combobox select event from the parent combo control
     void SendComboBoxEvent( int selection );
@@ -140,12 +142,13 @@ protected:
     // item: item index to be drawn, may be wxNOT_FOUND when painting combo control itself
     //       and there is no valid selection
     // flags: wxODCB_PAINTING_CONTROL is set if painting to combo control instead of list
-    // NOTE: If wxVListBoxComboPopup is used with wxComboCtrl class not derived from
+    //
+    // NOTE: If wxVListBoxComboPopup is used with a wxComboCtrl class not derived from
     //       wxOwnerDrawnComboBox, this method must be overridden.
-    virtual void OnDrawItem( wxDC& dc, const wxRect& rect, int item, int flags ) const;
+    virtual void OnDrawItem( wxDC& dc, const wxRect& rect, int item, int flags) const;
 
     // This is same as in wxVListBox
-    virtual wxCoord OnMeasureItem( size_t item ) const;
+    virtual wxCoord OnMeasureItem( size_t item ) const wxOVERRIDE;
 
     // Return item width, or -1 for calculating from text extent (default)
     virtual wxCoord OnMeasureItemWidth( size_t item ) const;
@@ -155,14 +158,14 @@ protected:
     virtual void OnDrawBg(wxDC& dc, const wxRect& rect, int item, int flags) const;
 
     // Additional wxVListBox implementation (no need to override in derived classes)
-    virtual void OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const;
-    void OnDrawBackground(wxDC& dc, const wxRect& rect, size_t n) const;
+    virtual void OnDrawItem(wxDC& dc, const wxRect& rect, size_t n) const wxOVERRIDE;
+    void OnDrawBackground(wxDC& dc, const wxRect& rect, size_t n) const wxOVERRIDE;
 
     // filter mouse move events happening outside the list box
     // move selection with cursor
     void OnMouseMove(wxMouseEvent& event);
-    void OnMouseWheel(wxMouseEvent& event);
     void OnKey(wxKeyEvent& event);
+    void OnChar(wxKeyEvent& event);
     void OnLeftClick(wxMouseEvent& event);
 
     // Return the widest item width (recalculating it if necessary)
@@ -174,19 +177,12 @@ protected:
     // Stop partial completion (when some other event occurs)
     void StopPartialCompletion();
 
-#ifdef __WXMSW__
-    // Added to work around a SetFocus() log error. Overriding virtual member
-    // function from the primary base class (in this case, wxVListBox) should
-    // be ABI compatible.
-    virtual void SetFocus();
-#endif
-
     wxArrayString           m_strings;
-    wxArrayPtrVoid          m_clientDatas;
+    wxVector<void*>         m_clientDatas;
 
     wxFont                  m_useFont;
 
-    //wxString                m_stringValue; // displayed text (may be different than m_strings[m_value])
+    //wxString                m_stringValue; // displayed text (may be different from m_strings[m_value])
     int                     m_value; // selection
     int                     m_itemHover; // on which item the cursor is
     int                     m_itemHeight; // default item height (calculate from font size
@@ -196,7 +192,7 @@ protected:
 private:
 
     // Cached item widths (in pixels).
-    wxArrayInt              m_widths;
+    wxVector<int>           m_widths;
 
     // Width of currently widest item.
     int                     m_widestWidth;
@@ -219,12 +215,14 @@ private:
     // Partial completion string
     wxString                m_partialCompletionString;
 
+    wxString                m_stringValue;
+
 #if wxUSE_TIMER
     // Partial completion timer
     wxTimer                 m_partialCompletionTimer;
 #endif // wxUSE_TIMER
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
 
@@ -234,15 +232,15 @@ private:
 // the wxComboCtrl.
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_ADV wxOwnerDrawnComboBox : public wxComboCtrl,
-                                             public wxItemContainer
+class WXDLLIMPEXP_ADV wxOwnerDrawnComboBox :
+    public wxWindowWithItems<wxComboCtrl, wxItemContainer>
 {
     //friend class wxComboPopupWindow;
     friend class wxVListBoxComboPopup;
 public:
 
     // ctors and such
-    wxOwnerDrawnComboBox() : wxComboCtrl() { Init(); }
+    wxOwnerDrawnComboBox() { Init(); }
 
     wxOwnerDrawnComboBox(wxWindow *parent,
                          wxWindowID id,
@@ -254,7 +252,6 @@ public:
                          long style = 0,
                          const wxValidator& validator = wxDefaultValidator,
                          const wxString& name = wxComboBoxNameStr)
-        : wxComboCtrl()
     {
         Init();
 
@@ -273,11 +270,11 @@ public:
 
     wxOwnerDrawnComboBox(wxWindow *parent,
                          wxWindowID id,
-                         const wxString& value,
-                         const wxPoint& pos,
-                         const wxSize& size,
-                         const wxArrayString& choices,
-                         long style,
+                         const wxString& value = wxEmptyString,
+                         const wxPoint& pos = wxDefaultPosition,
+                         const wxSize& size = wxDefaultSize,
+                         const wxArrayString& choices = wxArrayString(),
+                         long style = 0,
                          const wxValidator& validator = wxDefaultValidator,
                          const wxString& name = wxComboBoxNameStr);
 
@@ -311,19 +308,27 @@ public:
     }
 
     // wxControlWithItems methods
-    virtual void Clear();
-    virtual void Delete(unsigned int n);
-    virtual unsigned int GetCount() const;
-    virtual wxString GetString(unsigned int n) const;
-    virtual void SetString(unsigned int n, const wxString& s);
-    virtual int FindString(const wxString& s, bool bCase = false) const;
+    virtual unsigned int GetCount() const wxOVERRIDE;
+    virtual wxString GetString(unsigned int n) const wxOVERRIDE;
+    virtual void SetString(unsigned int n, const wxString& s) wxOVERRIDE;
+    virtual int FindString(const wxString& s, bool bCase = false) const wxOVERRIDE;
     virtual void Select(int n);
-    virtual int GetSelection() const;
-    virtual void SetSelection(int n) { Select(n); }
+    virtual int GetSelection() const wxOVERRIDE;
+
+    // See wxComboBoxBase discussion of IsEmpty().
+    bool IsListEmpty() const { return wxItemContainer::IsEmpty(); }
+    bool IsTextEmpty() const { return wxTextEntry::IsEmpty(); }
+
+    // Override these just to maintain consistency with virtual methods
+    // between classes.
+    virtual void Clear() wxOVERRIDE;
+    virtual void GetSelection(long *from, long *to) const wxOVERRIDE;
+
+    virtual void SetSelection(int n) wxOVERRIDE { Select(n); }
 
 
     // Prevent a method from being hidden
-    virtual void SetSelection(long from, long to)
+    virtual void SetSelection(long from, long to) wxOVERRIDE
     {
         wxComboCtrl::SetSelection(from,to);
     }
@@ -334,9 +339,11 @@ public:
     // Return the index of the widest item (recalculating it if necessary)
     virtual int GetWidestItem() { EnsurePopupControl(); return GetVListBoxComboPopup()->GetWidestItem(); }
 
-    wxCONTROL_ITEMCONTAINER_CLIENTDATAOBJECT_RECAST
+    virtual bool IsSorted() const wxOVERRIDE { return HasFlag(wxCB_SORT); }
 
 protected:
+    virtual void DoClear() wxOVERRIDE;
+    virtual void DoDeleteOneItem(unsigned int n) wxOVERRIDE;
 
     // Callback for drawing. Font, background and text colour have been
     // prepared according to selection, focus and such.
@@ -351,12 +358,16 @@ protected:
     // Callback for item width, or -1 for default/undetermined
     virtual wxCoord OnMeasureItemWidth( size_t item ) const;
 
+    // override base implementation so we can return the size for the
+    // largest item
+    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+
     // Callback for background drawing. Flags are same as with
     // OnDrawItem.
     virtual void OnDrawBackground( wxDC& dc, const wxRect& rect, int item, int flags ) const;
 
     // NULL popup can be used to indicate default interface
-    virtual void DoSetPopupControl(wxComboPopup* popup);
+    virtual void DoSetPopupControl(wxComboPopup* popup) wxOVERRIDE;
 
     // clears all allocated client datas
     void ClearClientDatas();
@@ -366,12 +377,11 @@ protected:
         return (wxVListBoxComboPopup*) m_popupInterface;
     }
 
-    virtual int DoAppend(const wxString& item);
-    virtual int DoInsert(const wxString& item, unsigned int pos);
-    virtual void DoSetItemClientData(unsigned int n, void* clientData);
-    virtual void* DoGetItemClientData(unsigned int n) const;
-    virtual void DoSetItemClientObject(unsigned int n, wxClientData* clientData);
-    virtual wxClientData* DoGetItemClientObject(unsigned int n) const;
+    virtual int DoInsertItems(const wxArrayStringsAdapter& items,
+                              unsigned int pos,
+                              void **clientData, wxClientDataType type) wxOVERRIDE;
+    virtual void DoSetItemClientData(unsigned int n, void* clientData) wxOVERRIDE;
+    virtual void* DoGetItemClientData(unsigned int n) const wxOVERRIDE;
 
     // temporary storage for the initial choices
     //const wxString*         m_baseChoices;
@@ -381,9 +391,9 @@ protected:
 private:
     void Init();
 
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 
-    DECLARE_DYNAMIC_CLASS(wxOwnerDrawnComboBox)
+    wxDECLARE_DYNAMIC_CLASS(wxOwnerDrawnComboBox);
 };
 
 

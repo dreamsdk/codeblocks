@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.3.0.1">
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
   <object class="wxMenuBar" name="mainmenu">
     <style>wxMB_DOCKABLE</style>
     <object class="wxMenu" name="menu_file">
       <label>_File</label>
       <style>wxMENU_TEAROFF</style>
       <object class="wxMenuItem" name="menu_about">
-        <label>_About...</label>
+        <label>_About</label>
         <bitmap>filesave.gif</bitmap>
       </object>
       <object class="separator"/>
@@ -37,7 +37,7 @@
       <bitmap>update.gif</bitmap>
       <tooltip>Update catalog - synchronize it with sources</tooltip>
     </object>
-    <separator/>
+    <object class="separator"/>
     <object class="tool" name="menu_quotes">
       <bitmap>quotes.gif</bitmap>
       <toggle>1</toggle>
@@ -109,7 +109,6 @@
             </object>
             <label>Page 2</label>
           </object>
-          <usenotebooksizer>1</usenotebooksizer>
         </object>
         <flag>wxEXPAND</flag>
       </object>

@@ -3,7 +3,6 @@
 // Purpose:     wxXmlResource::InitAllHandlers
 // Author:      Vaclav Slavik
 // Created:     2000/03/05
-// RCS-ID:      $Id: xmlrsall.cpp 48045 2007-08-13 12:05:18Z JS $
 // Copyright:   (c) 2000 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -35,8 +34,14 @@ void wxXmlResource::InitAllHandlers()
     // these are configurable handlers
     //
     // please keep them in alphabetical order of wxUSE_XXX guards
+#if wxUSE_ACTIVITYINDICATOR
+    AddHandler(new wxActivityIndicatorXmlHandler);
+#endif
 #if wxUSE_ANIMATIONCTRL
     AddHandler(new wxAnimationCtrlXmlHandler);
+#endif
+#if wxUSE_BANNERWINDOW
+    AddHandler(new wxBannerWindowXmlHandler);
 #endif
 #if wxUSE_BITMAPCOMBOBOX
     AddHandler(new wxBitmapComboBoxXmlHandler);
@@ -75,6 +80,15 @@ void wxXmlResource::InitAllHandlers()
 #if wxUSE_COMBOBOX
     AddHandler(new wxComboBoxXmlHandler);
 #endif
+#if wxUSE_COMBOCTRL
+    AddHandler(new wxComboCtrlXmlHandler);
+#endif
+#if wxUSE_COMMANDLINKBUTTON
+    AddHandler(new wxCommandLinkButtonXmlHandler);
+#endif
+#if wxUSE_DATAVIEWCTRL
+    AddHandler(new wxDataViewXmlHandler);
+#endif
 #if wxUSE_DATEPICKCTRL
     AddHandler(new wxDateCtrlXmlHandler);
 #endif
@@ -83,6 +97,12 @@ void wxXmlResource::InitAllHandlers()
 #endif
 #if wxUSE_DIRPICKERCTRL
     AddHandler(new wxDirPickerCtrlXmlHandler);
+#endif
+#if wxUSE_EDITABLELISTBOX
+    AddHandler(new wxEditableListBoxXmlHandler);
+#endif
+#if wxUSE_FILECTRL
+    AddHandler(new wxFileCtrlXmlHandler);
 #endif
 #if wxUSE_FILEPICKERCTRL
     AddHandler(new wxFilePickerCtrlXmlHandler);
@@ -102,6 +122,9 @@ void wxXmlResource::InitAllHandlers()
 #endif
 #if wxUSE_HYPERLINKCTRL
     AddHandler( new wxHyperlinkCtrlXmlHandler);
+#endif
+#if wxUSE_INFOBAR
+    AddHandler(new wxInfoBarXmlHandler);
 #endif
 #if wxUSE_LISTBOOK
     AddHandler(new wxListbookXmlHandler);
@@ -131,11 +154,14 @@ void wxXmlResource::InitAllHandlers()
 #if wxUSE_RADIOBTN
     AddHandler(new wxRadioButtonXmlHandler);
 #endif
-#if 0 && wxUSE_RICHTEXT
-    AddHandler(new wxRichTextCtrlXmlHandler);
-#endif
 #if wxUSE_SCROLLBAR
     AddHandler(new wxScrollBarXmlHandler);
+#endif
+#if wxUSE_SEARCHCTRL
+    AddHandler(new wxSearchCtrlXmlHandler);
+#endif
+#if wxUSE_BOOKCTRL
+    AddHandler(new wxSimplebookXmlHandler);
 #endif
 #if wxUSE_SLIDER
     AddHandler(new wxSliderXmlHandler);
@@ -145,6 +171,7 @@ void wxXmlResource::InitAllHandlers()
 #endif
 #if wxUSE_SPINCTRL
     AddHandler(new wxSpinCtrlXmlHandler);
+    AddHandler(new wxSpinCtrlDoubleXmlHandler);
 #endif
 #if wxUSE_SPLITTER
     AddHandler(new wxSplitterWindowXmlHandler);
@@ -170,8 +197,14 @@ void wxXmlResource::InitAllHandlers()
 #if wxUSE_TOGGLEBTN
     AddHandler(new wxToggleButtonXmlHandler);
 #endif
+#if wxUSE_TIMEPICKCTRL
+    AddHandler(new wxTimeCtrlXmlHandler);
+#endif
 #if wxUSE_TOOLBAR
     AddHandler(new wxToolBarXmlHandler);
+#endif
+#if wxUSE_TOOLBOOK
+    AddHandler(new wxToolbookXmlHandler);
 #endif
 #if wxUSE_TREEBOOK
     AddHandler(new wxTreebookXmlHandler);

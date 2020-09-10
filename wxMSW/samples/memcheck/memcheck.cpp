@@ -4,9 +4,8 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     04/01/98
-// RCS-ID:      $Id: memcheck.cpp 35650 2005-09-23 12:56:45Z MR $
 // Copyright:   (c) Julian Smart
-// Licence:     wxWindows license
+// Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx.h".
@@ -22,8 +21,8 @@
 
 #include "wx/datetime.h"
 
-#if defined(__WXGTK__) || defined(__WXX11__) || defined(__WXMOTIF__) || defined(__WXMAC__)
-#include "mondrian.xpm"
+#ifndef wxHAS_IMAGES_IN_RESOURCES
+    #include "../sample.xpm"
 #endif
 
 #ifndef __WXDEBUG__
@@ -39,7 +38,7 @@
 // Define a new application type
 class MyApp: public wxApp
 { public:
-    bool OnInit(void);
+    bool OnInit(void) wxOVERRIDE;
 };
 
 // Define a new frame type
@@ -48,32 +47,35 @@ class MyFrame: public wxFrame
     MyFrame(wxFrame *parent);
     void OnQuit(wxCommandEvent& event);
 
-DECLARE_EVENT_TABLE()
+    wxDECLARE_EVENT_TABLE();
 };
 
-IMPLEMENT_APP(MyApp)
+wxIMPLEMENT_APP(MyApp);
 
 // `Main program' equivalent, creating windows and returning main app frame
 bool MyApp::OnInit(void)
 {
+  if ( !wxApp::OnInit() )
+      return false;
+
   // Create the main frame window
   MyFrame *frame = new MyFrame((wxFrame *) NULL);
 
   // Give it an icon
-  frame->SetIcon(wxICON(mondrian));
+  frame->SetIcon(wxICON(sample));
 
   // Make a menubar
   wxMenu *file_menu = new wxMenu;
 
-  file_menu->Append(wxID_EXIT, _T("E&xit"));
+  file_menu->Append(wxID_EXIT, "E&xit");
   wxMenuBar *menu_bar = new wxMenuBar;
-  menu_bar->Append(file_menu, _T("File"));
+  menu_bar->Append(file_menu, "File");
   frame->SetMenuBar(menu_bar);
 
   // Make a panel with a message
   wxPanel *panel = new wxPanel(frame);
 
-  (void)new wxStaticText(panel, wxID_ANY, _T("Hello, this is a minimal debugging wxWidgets program!"), wxPoint(10, 10));
+  (void)new wxStaticText(panel, wxID_ANY, "Hello, this is a minimal debugging wxWidgets program!", wxPoint(10, 10));
 
   // Show the frame
   frame->Show(true);
@@ -83,7 +85,7 @@ bool MyApp::OnInit(void)
 #endif
 
   // object allocation
-  wxBrush* brush = new wxBrush(*wxRED);
+  wxBrush* brush = new wxBrush(*wxRED_BRUSH);
   wxBitmap* bitmap = new wxBitmap(100, 100);
 
   // non-object allocation
@@ -118,13 +120,13 @@ bool MyApp::OnInit(void)
   return true;
 }
 
-BEGIN_EVENT_TABLE(MyFrame, wxFrame)
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(wxID_EXIT, MyFrame::OnQuit)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
 
 // My frame constructor
 MyFrame::MyFrame(wxFrame *parent):
-  wxFrame(parent, wxID_ANY, _T("MemCheck wxWidgets Sample"), wxDefaultPosition, wxSize(400, 200))
+  wxFrame(parent, wxID_ANY, "MemCheck wxWidgets Sample", wxDefaultPosition, wxSize(400, 200))
 {}
 
 // Intercept menu commands

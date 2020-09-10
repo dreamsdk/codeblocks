@@ -4,7 +4,6 @@
 // Author:      Julian Smart, Vadim Zeitlin
 // Modified by:
 // Created:     08/09/2000
-// RCS-ID:      $Id: cshelp.h 61872 2009-09-09 22:37:05Z VZ $
 // Copyright:   (c) 2000 Julian Smart, Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -36,7 +35,7 @@
  * window for the application to display help for.
  */
 
-class WXDLLEXPORT wxContextHelp : public wxObject
+class WXDLLIMPEXP_CORE wxContextHelp : public wxObject
 {
 public:
     wxContextHelp(wxWindow* win = NULL, bool beginHelp = true);
@@ -55,7 +54,7 @@ protected:
     bool    m_status; // true if the user left-clicked
 
 private:
-    DECLARE_DYNAMIC_CLASS(wxContextHelp)
+    wxDECLARE_DYNAMIC_CLASS(wxContextHelp);
 };
 
 #if wxUSE_BMPBUTTON
@@ -65,20 +64,33 @@ private:
  * to put the application into context help mode.
  */
 
-class WXDLLEXPORT wxContextHelpButton : public wxBitmapButton
+class WXDLLIMPEXP_CORE wxContextHelpButton : public wxBitmapButton
 {
 public:
+    wxContextHelpButton() {}
+
     wxContextHelpButton(wxWindow* parent,
                         wxWindowID id = wxID_CONTEXT_HELP,
                         const wxPoint& pos = wxDefaultPosition,
                         const wxSize& size = wxDefaultSize,
-                        long style = wxBU_AUTODRAW);
+                        long style = 0)
+    {
+        Create(parent, id, pos, size, style);
+    }
+
+
+    bool Create(wxWindow* parent,
+                wxWindowID id = wxID_CONTEXT_HELP,
+                const wxPoint& pos = wxDefaultPosition,
+                const wxSize& size = wxDefaultSize,
+                long style = 0);
+
 
     void OnContextHelp(wxCommandEvent& event);
 
 private:
-    DECLARE_DYNAMIC_CLASS_NO_COPY(wxContextHelpButton)
-    DECLARE_EVENT_TABLE()
+    wxDECLARE_DYNAMIC_CLASS_NO_COPY(wxContextHelpButton);
+    wxDECLARE_EVENT_TABLE();
 };
 
 #endif
@@ -106,7 +118,7 @@ private:
 // and overriding ShowHelp() but calling the base class version wouldn't work
 // any more, which forces us to use a rather ugly hack and pass the extra
 // parameters of ShowHelpAtPoint() to ShowHelp() via member variables.
-class WXDLLEXPORT wxHelpProvider
+class WXDLLIMPEXP_CORE wxHelpProvider
 {
 public:
     // get/set the current (application-global) help provider (Set() returns
@@ -188,18 +200,18 @@ WX_DECLARE_EXPORTED_HASH_MAP( wxUIntPtr, wxString, wxIntegerHash,
 // wxSimpleHelpProvider is an implementation of wxHelpProvider which supports
 // only plain text help strings and shows the string associated with the
 // control (if any) in a tooltip
-class WXDLLEXPORT wxSimpleHelpProvider : public wxHelpProvider
+class WXDLLIMPEXP_CORE wxSimpleHelpProvider : public wxHelpProvider
 {
 public:
     // implement wxHelpProvider methods
-    virtual wxString GetHelp(const wxWindowBase *window);
+    virtual wxString GetHelp(const wxWindowBase *window) wxOVERRIDE;
 
     // override ShowHelp() and not ShowHelpAtPoint() as explained above
-    virtual bool ShowHelp(wxWindowBase *window);
+    virtual bool ShowHelp(wxWindowBase *window) wxOVERRIDE;
 
-    virtual void AddHelp(wxWindowBase *window, const wxString& text);
-    virtual void AddHelp(wxWindowID id, const wxString& text);
-    virtual void RemoveHelp(wxWindowBase* window);
+    virtual void AddHelp(wxWindowBase *window, const wxString& text) wxOVERRIDE;
+    virtual void AddHelp(wxWindowID id, const wxString& text) wxOVERRIDE;
+    virtual void RemoveHelp(wxWindowBase* window) wxOVERRIDE;
 
 protected:
     // we use 2 hashes for storing the help strings associated with windows
@@ -212,18 +224,18 @@ protected:
 // both context identifiers and plain text help strings. If the help text is an integer,
 // it is passed to wxHelpController::DisplayContextPopup. Otherwise, it shows the string
 // in a tooltip as per wxSimpleHelpProvider.
-class WXDLLEXPORT wxHelpControllerHelpProvider : public wxSimpleHelpProvider
+class WXDLLIMPEXP_CORE wxHelpControllerHelpProvider : public wxSimpleHelpProvider
 {
 public:
     // Note that it doesn't own the help controller. The help controller
     // should be deleted separately.
-    wxHelpControllerHelpProvider(wxHelpControllerBase* hc = (wxHelpControllerBase*) NULL);
+    wxHelpControllerHelpProvider(wxHelpControllerBase* hc = NULL);
 
     // implement wxHelpProvider methods
 
     // again (see above): this should be ShowHelpAtPoint() but we need to
     // override ShowHelp() to avoid breaking existing code
-    virtual bool ShowHelp(wxWindowBase *window);
+    virtual bool ShowHelp(wxWindowBase *window) wxOVERRIDE;
 
     // Other accessors
     void SetHelpController(wxHelpControllerBase* hc) { m_helpController = hc; }
@@ -232,11 +244,11 @@ public:
 protected:
     wxHelpControllerBase*   m_helpController;
 
-    DECLARE_NO_COPY_CLASS(wxHelpControllerHelpProvider)
+    wxDECLARE_NO_COPY_CLASS(wxHelpControllerHelpProvider);
 };
 
 // Convenience function for turning context id into wxString
-WXDLLEXPORT wxString wxContextId(int id);
+WXDLLIMPEXP_CORE wxString wxContextId(int id);
 
 #endif // wxUSE_HELP
 

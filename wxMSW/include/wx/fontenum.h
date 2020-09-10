@@ -5,7 +5,6 @@
 // Modified by: extended to enumerate more than just font facenames and works
 //              not only on Windows now (VZ)
 // Created:     04/01/98
-// RCS-ID:      $Id: fontenum.h 43727 2006-12-01 10:14:28Z VS $
 // Copyright:   (c) Julian Smart, Vadim Zeitlin
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -13,20 +12,19 @@
 #ifndef _WX_FONTENUM_H_
 #define _WX_FONTENUM_H_
 
+#include "wx/defs.h"
+
+#if wxUSE_FONTENUM
+
 #include "wx/fontenc.h"
 #include "wx/arrstr.h"
-
-#if wxUSE_PANGO || defined(__WXDFB__)
-    // defined if the port uses only UTF-8 font encodings internally
-    #define wxHAS_UTF8_FONTS
-#endif
 
 // ----------------------------------------------------------------------------
 // wxFontEnumerator enumerates all available fonts on the system or only the
 // fonts with given attributes
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxFontEnumerator
+class WXDLLIMPEXP_CORE wxFontEnumerator
 {
 public:
     wxFontEnumerator() {}
@@ -76,13 +74,20 @@ public:
     // in the user's system
     static bool IsValidFacename(const wxString &str);
 
+    // Invalidate cache used by some of the methods of this class internally.
+    // This should be called if the list of the fonts available on the system
+    // changes, for whatever reason.
+    static void InvalidateCache();
+
 private:
 #ifdef wxHAS_UTF8_FONTS
     // helper for ports that only use UTF-8 encoding natively
     bool EnumerateEncodingsUTF8(const wxString& facename);
 #endif
 
-    DECLARE_NO_COPY_CLASS(wxFontEnumerator)
+    wxDECLARE_NO_COPY_CLASS(wxFontEnumerator);
 };
+
+#endif // wxUSE_FONTENUM
 
 #endif // _WX_FONTENUM_H_

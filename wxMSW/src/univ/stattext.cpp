@@ -4,7 +4,6 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     14.08.00
-// RCS-ID:      $Id: stattext.cpp 45447 2007-04-14 01:17:28Z VZ $
 // Copyright:   (c) 2000 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -39,8 +38,6 @@
 // implementation
 // ============================================================================
 
-IMPLEMENT_ABSTRACT_CLASS(wxStaticText, wxControl)
-
 // ----------------------------------------------------------------------------
 // creation
 // ----------------------------------------------------------------------------
@@ -63,26 +60,6 @@ bool wxStaticText::Create(wxWindow *parent,
 }
 
 // ----------------------------------------------------------------------------
-// size management
-// ----------------------------------------------------------------------------
-
-void wxStaticText::SetLabel(const wxString& label)
-{
-    wxControl::SetLabel(label);
-}
-
-wxSize wxStaticText::DoGetBestClientSize() const
-{
-    wxStaticText *self = wxConstCast(this, wxStaticText);
-    wxClientDC dc(self);
-    dc.SetFont(GetFont());
-    wxCoord width, height;
-    dc.GetMultiLineTextExtent(GetLabel(), &width, &height);
-
-    return wxSize(width, height);
-}
-
-// ----------------------------------------------------------------------------
 // drawing
 // ----------------------------------------------------------------------------
 
@@ -90,5 +67,32 @@ void wxStaticText::DoDraw(wxControlRenderer *renderer)
 {
     renderer->DrawLabel();
 }
+
+void wxStaticText::SetLabel(const wxString& str)
+{
+    if ( str == m_labelOrig )
+        return;
+
+    // save original label
+    m_labelOrig = str;
+
+    // draw as real label the abbreviated version of it
+    WXSetVisibleLabel(GetEllipsizedLabel());
+}
+
+void wxStaticText::WXSetVisibleLabel(const wxString& str)
+{
+    UnivDoSetLabel(str);
+}
+
+wxString wxStaticText::WXGetVisibleLabel() const
+{
+    return wxControl::GetLabel();
+}
+
+/*
+   FIXME: UpdateLabel() should be called on size events to allow correct
+          dynamic ellipsizing of the label
+*/
 
 #endif // wxUSE_STATTEXT

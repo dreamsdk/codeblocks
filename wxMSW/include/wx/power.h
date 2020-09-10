@@ -4,8 +4,7 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     2006-05-27
-// RCS-ID:      $Id: power.h 48811 2007-09-19 23:11:28Z RD $
-// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwindows.org>
+// Copyright:   (c) 2006 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -42,13 +41,16 @@ enum wxBatteryState
 // compiling in the code for handling them which is never going to be invoked
 // under the other platforms, we define wxHAS_POWER_EVENTS symbol if this event
 // is available, it should be used to guard all code using wxPowerEvent
-#ifdef __WXMSW__
+#ifdef __WINDOWS__
 
 #define wxHAS_POWER_EVENTS
 
 class WXDLLIMPEXP_BASE wxPowerEvent : public wxEvent
 {
 public:
+    wxPowerEvent()            // just for use by wxRTTI
+        : m_veto(false) { }
+
     wxPowerEvent(wxEventType evtType) : wxEvent(wxID_NONE, evtType)
     {
         m_veto = false;
@@ -62,28 +64,23 @@ public:
 
     // default copy ctor, assignment operator and dtor are ok
 
-    virtual wxEvent *Clone() const { return new wxPowerEvent(*this); }
+    virtual wxEvent *Clone() const wxOVERRIDE { return new wxPowerEvent(*this); }
 
 private:
     bool m_veto;
 
-#if wxABI_VERSION >= 20806
-    DECLARE_ABSTRACT_CLASS(wxPowerEvent)
-#endif
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxPowerEvent);
 };
 
-BEGIN_DECLARE_EVENT_TYPES()
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDING, 406)
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDED, 407)
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPEND_CANCEL, 408)
-    DECLARE_EXPORTED_EVENT_TYPE(WXDLLIMPEXP_BASE, wxEVT_POWER_RESUME, 444)
-END_DECLARE_EVENT_TYPES()
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDING, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPENDED, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_SUSPEND_CANCEL, wxPowerEvent );
+wxDECLARE_EXPORTED_EVENT( WXDLLIMPEXP_BASE, wxEVT_POWER_RESUME, wxPowerEvent );
 
 typedef void (wxEvtHandler::*wxPowerEventFunction)(wxPowerEvent&);
 
 #define wxPowerEventHandler(func) \
-    (wxObjectEventFunction)(wxEventFunction) \
-        wxStaticCastEvent(wxPowerEventFunction, &func)
+    wxEVENT_HANDLER_CAST(wxPowerEventFunction, func)
 
 #define EVT_POWER_SUSPENDING(func) \
     wx__DECLARE_EVT0(wxEVT_POWER_SUSPENDING, wxPowerEventHandler(func))
@@ -97,6 +94,49 @@ typedef void (wxEvtHandler::*wxPowerEventFunction)(wxPowerEvent&);
 #else // no support for power events
     #undef wxHAS_POWER_EVENTS
 #endif // support for power events/no support
+
+// ----------------------------------------------------------------------------
+// wxPowerResourceBlocker
+// ----------------------------------------------------------------------------
+
+enum wxPowerResourceKind
+{
+    wxPOWER_RESOURCE_SCREEN,
+    wxPOWER_RESOURCE_SYSTEM
+};
+
+class WXDLLIMPEXP_BASE wxPowerResource
+{
+public:
+    static bool Acquire(wxPowerResourceKind kind,
+                        const wxString& reason = wxString());
+    static void Release(wxPowerResourceKind kind);
+};
+
+class wxPowerResourceBlocker
+{
+public:
+    explicit wxPowerResourceBlocker(wxPowerResourceKind kind,
+                                    const wxString& reason = wxString())
+        : m_kind(kind),
+          m_acquired(wxPowerResource::Acquire(kind, reason))
+    {
+    }
+
+    bool IsInEffect() const { return m_acquired; }
+
+    ~wxPowerResourceBlocker()
+    {
+        if ( m_acquired )
+            wxPowerResource::Release(m_kind);
+    }
+
+private:
+    const wxPowerResourceKind m_kind;
+    const bool m_acquired;
+
+    wxDECLARE_NO_COPY_CLASS(wxPowerResourceBlocker);
+};
 
 // ----------------------------------------------------------------------------
 // power management functions

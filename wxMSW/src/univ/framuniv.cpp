@@ -1,10 +1,9 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Name:        src/univ/frame.cpp
+// Name:        src/univ/framuniv.cpp
 // Purpose:     wxFrame class for wxUniversal
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     19.05.01
-// RCS-ID:      $Id: framuniv.cpp 42664 2006-10-29 20:39:31Z VZ $
 // Copyright:   (c) 2001 SciTech Software, Inc. (www.scitechsoft.com)
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,12 +36,10 @@
 // implementation
 // ============================================================================
 
-BEGIN_EVENT_TABLE(wxFrame, wxFrameBase)
+wxBEGIN_EVENT_TABLE(wxFrame, wxFrameBase)
     EVT_SIZE(wxFrame::OnSize)
     EVT_SYS_COLOUR_CHANGED(wxFrame::OnSysColourChanged)
-END_EVENT_TABLE()
-
-IMPLEMENT_DYNAMIC_CLASS(wxFrame, wxTopLevelWindow)
+wxEND_EVENT_TABLE()
 
 // ----------------------------------------------------------------------------
 // ctors
@@ -92,13 +89,6 @@ void wxFrame::OnSize(wxSizeEvent& event)
     event.Skip();
 }
 
-void wxFrame::SendSizeEvent()
-{
-    wxSizeEvent event(GetSize(), GetId());
-    event.SetEventObject(this);
-    GetEventHandler()->ProcessEvent(event);
-}
-
 #if wxUSE_MENUS
 
 void wxFrame::PositionMenuBar()
@@ -117,12 +107,7 @@ void wxFrame::PositionMenuBar()
 #endif // wxUSE_TOOLBAR
 
         m_frameMenuBar->SetSize(0,
-#ifdef __WXPM__   // FIXME -- remove this, make wxOS2/Univ behave as
-                 //          the rest of the world!!!
-                                GetClientSize().y - heightMbar - heightTbar,
-#else
                                 - (heightMbar + heightTbar),
-#endif
                                 GetClientSize().x, heightMbar);
     }
 }
@@ -203,7 +188,7 @@ wxPoint wxFrame::GetClientAreaOrigin() const
 {
     wxPoint pt = wxFrameBase::GetClientAreaOrigin();
 
-#if wxUSE_MENUS && !defined(__WXPM__)
+#if wxUSE_MENUS
     if ( m_frameMenuBar )
     {
         pt.y += m_frameMenuBar->GetSize().y;
@@ -271,10 +256,6 @@ void wxFrame::DoSetClientSize(int width, int height)
 #if wxUSE_TOOLBAR
     if ( m_frameToolBar )
     {
-#if wxUSE_STATUSBAR
-        height += m_frameStatusBar->GetSize().y;
-#endif // wxUSE_STATUSBAR
-
         if ( m_frameToolBar->GetWindowStyleFlag() & wxTB_VERTICAL )
             width += m_frameToolBar->GetSize().x;
         else
@@ -320,9 +301,5 @@ bool wxFrame::Enable(bool enable)
 {
     if (!wxFrameBase::Enable(enable))
         return false;
-#ifdef __WXMICROWIN__
-    if (m_frameMenuBar)
-        m_frameMenuBar->Enable(enable);
-#endif
     return true;
 }

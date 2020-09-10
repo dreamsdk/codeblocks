@@ -4,15 +4,19 @@
 // Author:      Eric Kidd, Vadim Zeitlin
 // Modified by:
 // Created:     10.03.03
-// RCS-ID:      $Id: rawbmp.h 41661 2006-10-06 16:34:45Z PC $
 // Copyright:   (c) 2002 Vadim Zeitlin <vadim@wxwidgets.org>
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef _WX_RAWBMP_H_BASE_
-#define _WX_RAWBMP_H_BASE_
+#ifndef _WX_RAWBMP_H_
+#define _WX_RAWBMP_H_
+
+#include "wx/defs.h"
+
+#ifdef wxHAS_RAW_BITMAP
 
 #include "wx/image.h"
+#include "wx/bitmap.h"
 
 // ----------------------------------------------------------------------------
 // Abstract Pixel API
@@ -72,7 +76,7 @@
  */
 
 /*
-    Note: we do not use WXDLLEXPORT with classes in this file because VC++ has
+    Note: we do not use WXDLLIMPEXP_CORE with classes in this file because VC++ has
     problems with exporting inner class defined inside a specialization of a
     template class from a DLL. Besides, as all the methods are inline it's not
     really necessary to put them in DLL at all.
@@ -117,14 +121,11 @@ struct wxPixelFormat
     // the type which may hold the entire pixel value
     typedef Pixel PixelType;
 
-    // NB: using static ints initialized inside the class declaration is not
-    //     portable as it doesn't work with VC++ 6, so we must use enums
-
     // size of one pixel in bits
-    enum { BitsPerPixel = Bpp };
+    static const int BitsPerPixel = Bpp;
 
     // size of one pixel in ChannelType units (usually bytes)
-    enum { SizePixel = Bpp / (8 * sizeof(Channel)) };
+    static const int SizePixel = Bpp / (8 * sizeof(Channel));
 
     // the channels indices inside the pixel
     enum
@@ -158,13 +159,17 @@ typedef wxPixelFormat<unsigned char, 24, 0, 1, 2> wxImagePixelFormat;
     typedef wxPixelFormat<unsigned char, 32, 1, 2, 3> wxNativePixelFormat;
 
     #define wxPIXEL_FORMAT_ALPHA 0
-#elif defined(__WXCOCOA__)
-    // Cocoa is standard RGB or RGBA (normally it is RGBA)
+#elif defined(__WXGTK__)
+    // Under GTK+ 2.X we use GdkPixbuf, which is standard RGB or RGBA
     typedef wxPixelFormat<unsigned char, 24, 0, 1, 2> wxNativePixelFormat;
 
     #define wxPIXEL_FORMAT_ALPHA 3
-#elif defined(__WXGTK__)
-    // Under GTK+ 2.X we use GdkPixbuf, which is standard RGB or RGBA
+#elif defined(__WXDFB__)
+    // Under DirectFB, RGB components are reversed, they're in BGR order
+    typedef wxPixelFormat<unsigned char, 24, 2, 1, 0> wxNativePixelFormat;
+
+    #define wxPIXEL_FORMAT_ALPHA 3
+#elif defined(__WXQT__)
     typedef wxPixelFormat<unsigned char, 24, 0, 1, 2> wxNativePixelFormat;
 
     #define wxPIXEL_FORMAT_ALPHA 3
@@ -257,10 +262,10 @@ protected:
     into the CPU registers by the compiler any more.
 
     Implementation note: we use the standard workaround for lack of partial
-    template specialization support in VC (both 6 and 7): instead of partly
-    specializing the class Foo<T, U> for some T we introduce FooOut<T> and
-    FooIn<U> nested in it, make Foo<T, U> equivalent to FooOut<T>::FooIn<U> and
-    fully specialize FooOut.
+    template specialization support in VC7: instead of partly specializing the
+    class Foo<T, U> for some T we introduce FooOut<T> and FooIn<U> nested in
+    it, make Foo<T, U> equivalent to FooOut<T>::FooIn<U> and fully specialize
+    FooOut (FIXME-VC7).
 
     Also note that this class doesn't have any default definition because we
     can't really do anything without knowing the exact image class. We do
@@ -302,9 +307,6 @@ struct wxPixelDataOut<wxImage>
         public:
             // the pixel format we use
             typedef wxImagePixelFormat PixelFormat;
-
-            // the type of the pixel components
-            typedef typename dummyPixelFormat::ChannelType ChannelType;
 
             // the pixel data we're working with
             typedef
@@ -370,7 +372,7 @@ struct wxPixelDataOut<wxImage>
             {
                 m_pRGB += data.GetRowStride()*y + PixelFormat::SizePixel*x;
                 if ( m_pAlpha )
-                    m_pAlpha += data.GetWidth() + x;
+                    m_pAlpha += data.GetWidth()*y + x;
             }
 
             // move x pixels to the right (again, no row wrapping)
@@ -386,7 +388,7 @@ struct wxPixelDataOut<wxImage>
             {
                 m_pRGB += data.GetRowStride()*y;
                 if ( m_pAlpha )
-                    m_pAlpha += data.GetWidth();
+                    m_pAlpha += data.GetWidth()*y;
             }
 
             // go to the given position
@@ -400,11 +402,19 @@ struct wxPixelDataOut<wxImage>
             // data access
             // -----------
 
-            // access to invidividual colour components
-            ChannelType& Red() { return m_pRGB[PixelFormat::RED]; }
-            ChannelType& Green() { return m_pRGB[PixelFormat::GREEN]; }
-            ChannelType& Blue() { return m_pRGB[PixelFormat::BLUE]; }
-            ChannelType& Alpha() { return *m_pAlpha; }
+            // access to individual colour components
+            PixelFormat::ChannelType& Red() { return m_pRGB[PixelFormat::RED]; }
+            PixelFormat::ChannelType& Green() { return m_pRGB[PixelFormat::GREEN]; }
+            PixelFormat::ChannelType& Blue() { return m_pRGB[PixelFormat::BLUE]; }
+            PixelFormat::ChannelType& Alpha() { return *m_pAlpha; }
+
+            // address the pixel contents directly (always RGB, without alpha)
+            //
+            // this can't be used to modify the image as assigning a 32bpp
+            // value to 24bpp pixel would overwrite an extra byte in the next
+            // pixel or beyond the end of image
+            const typename PixelFormat::PixelType& Data()
+                { return *(typename PixelFormat::PixelType *)m_pRGB; }
 
         // private: -- see comment in the beginning of the file
 
@@ -420,7 +430,7 @@ struct wxPixelDataOut<wxImage>
         {
             m_width = image.GetWidth();
             m_height = image.GetHeight();
-            m_stride = Iterator::SizePixel * m_width;
+            m_stride = Iterator::PixelFormat::SizePixel * m_width;
         }
 
         // initializes us with the given region of the specified image
@@ -428,7 +438,7 @@ struct wxPixelDataOut<wxImage>
                       const wxPoint& pt,
                       const wxSize& sz) : m_image(image), m_pixels(image)
         {
-            m_stride = Iterator::SizePixel * m_width;
+            m_stride = Iterator::PixelFormat::SizePixel * m_width;
 
             InitRect(pt, sz);
         }
@@ -437,7 +447,7 @@ struct wxPixelDataOut<wxImage>
         wxPixelDataIn(ImageType& image,
                       const wxRect& rect) : m_image(image), m_pixels(image)
         {
-            m_stride = Iterator::SizePixel * m_width;
+            m_stride = Iterator::PixelFormat::SizePixel * m_width;
 
             InitRect(rect.GetPosition(), rect.GetSize());
         }
@@ -525,7 +535,7 @@ struct wxPixelDataOut<wxBitmap>
             {
                 m_ptr = NULL;
             }
-            
+
             // return true if this iterator is valid
             bool IsOk() const { return m_ptr != NULL; }
 
@@ -581,7 +591,7 @@ struct wxPixelDataOut<wxBitmap>
             // data access
             // -----------
 
-            // access to invidividual colour components
+            // access to individual colour components
             ChannelType& Red() { return m_ptr[PixelFormat::RED]; }
             ChannelType& Green() { return m_ptr[PixelFormat::GREEN]; }
             ChannelType& Blue() { return m_ptr[PixelFormat::BLUE]; }
@@ -590,6 +600,10 @@ struct wxPixelDataOut<wxBitmap>
             // address the pixel contents directly
             //
             // warning: the format is platform dependent
+            //
+            // warning 2: assigning to Data() only works correctly for 16bpp or
+            //            32bpp formats but using it for 24bpp ones overwrites
+            //            one extra byte and so can't be done
             typename PixelFormat::PixelType& Data()
                 { return *(typename PixelFormat::PixelType *)m_ptr; }
 
@@ -631,11 +645,22 @@ struct wxPixelDataOut<wxBitmap>
         // dtor unlocks the bitmap
         ~wxPixelDataIn()
         {
-            m_bmp.UngetRawData(*this);
+            if ( m_pixels.IsOk() )
+            {
+#if defined(__WXMSW__) || defined(__WXMAC__)
+                // this is a hack to mark wxBitmap as using alpha channel
+                if ( Format::HasAlpha )
+                    m_bmp.UseAlpha();
+#endif
+                m_bmp.UngetRawData(*this);
+            }
+            // else: don't call UngetRawData() if GetRawData() failed
         }
 
-        // call this to indicate that we should use the alpha channel
-        void UseAlpha() { m_bmp.UseAlpha(); }
+#if WXWIN_COMPATIBILITY_2_8
+        // not needed anymore, calls to it should be simply removed
+        wxDEPRECATED_INLINE( void UseAlpha(), wxEMPTY_PARAMETER_VALUE )
+#endif
 
     // private: -- see comment in the beginning of the file
 
@@ -656,9 +681,11 @@ struct wxPixelDataOut<wxBitmap>
         }
     };
 };
+
 #endif //wxUSE_GUI
 
-template <class Image, class PixelFormat = wxPixelFormatFor<Image> >
+template <class Image,
+          class PixelFormat = typename wxPixelFormatFor<Image>::Format >
 class wxPixelData :
     public wxPixelDataOut<Image>::template wxPixelDataIn<PixelFormat>
 {
@@ -676,7 +703,6 @@ public:
     {
     }
 };
-
 
 // some "predefined" pixel data classes
 #if wxUSE_IMAGE
@@ -702,12 +728,12 @@ typedef wxPixelData<wxBitmap, wxAlphaPixelFormat> wxAlphaPixelData;
     Note that although it would have been much more intuitive to have a real
     class here instead of what we have now, this class would need two template
     parameters, and this can't be done because we'd need compiler support for
-    partial template specialization then and neither VC6 nor VC7 provide it.
+    partial template specialization then and VC7 doesn't provide it.
  */
 template < class Image, class PixelFormat = wxPixelFormatFor<Image> >
 struct wxPixelIterator : public wxPixelData<Image, PixelFormat>::Iterator
 {
 };
 
-#endif // _WX_RAWBMP_H_BASE_
-
+#endif // wxHAS_RAW_BITMAP
+#endif // _WX_RAWBMP_H_

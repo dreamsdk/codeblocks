@@ -14,9 +14,6 @@
 
 #endif /* __cplusplus */
 
-/* fill in with the string wxGetOsDescription() will return */
-#undef WXWIN_OS_DESCRIPTION
-
 /* the installation location prefix from configure */
 #undef wxINSTALL_PREFIX
 
@@ -53,20 +50,26 @@
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
 #undef WORDS_BIGENDIAN
 
-/* Define this if your version of GTK+ is greater than 1.2 */
-#undef __WXGTK12__
-
 /* Define this if your version of GTK+ is greater than 1.2.7 */
 #undef __WXGTK127__
 
 /* Define this if your version of GTK+ is greater than 2.0 */
 #undef __WXGTK20__
 
-/* Define this if your version of GTK+ is greater than 2.4 */
-#undef __WXGTK24__
+/* Define this if your version of GTK+ is greater than 2.10 */
+#undef __WXGTK210__
 
-/* Define this if your version of GTK+ is greater than 2.6 */
-#undef __WXGTK26__
+/* Define this if your version of GTK+ is greater than 2.18 */
+#undef __WXGTK218__
+
+/* Define this if your version of GTK+ is greater than 2.20 */
+#undef __WXGTK220__
+
+/* Define this if your version of GTK+ is >= 3.0 */
+#undef __WXGTK3__
+
+/* Define this if your version of GTK+ is >= 3.90.0 */
+#undef __WXGTK4__
 
 /* Define this if you want to use GPE features */
 #undef __WXGPE__
@@ -94,6 +97,7 @@
 #undef __NETBSD__
 #undef __OPENBSD__
 #undef __OSF__
+#undef __QNX__
 #undef __SGI__
 #undef __SOLARIS__
 #undef __SUN__
@@ -112,7 +116,6 @@
 
 /* PowerPC Darwin & Mac OS X */
 #undef __POWERPC__
-#undef TARGET_CARBON
 
 /* Hack to make IOGraphicsTypes.h not define Point conflicting with MacTypes */
 #undef __Point__
@@ -138,9 +141,6 @@
 #undef WINVER
 #endif
 
-/* OS/2 with EMX */
-#undef __OS2__
-
 /* --- start common options --- */
 
 #ifndef wxUSE_GUI
@@ -148,11 +148,23 @@
 #endif
 
 
-#define WXWIN_COMPATIBILITY_2_4 0
+#define WXWIN_COMPATIBILITY_2_8 0
 
-#define WXWIN_COMPATIBILITY_2_6 0
+#define WXWIN_COMPATIBILITY_3_0 0
 
 #define wxDIALOG_UNIT_COMPATIBILITY   0
+
+#define wxUSE_UNSAFE_WXSTRING_CONV 0
+
+#define wxUSE_REPRODUCIBLE_BUILD 0
+
+
+
+#define wxUSE_ON_FATAL_EXCEPTION 0
+
+#define wxUSE_STACKWALKER 0
+
+#define wxUSE_DEBUGREPORT 0
 
 
 
@@ -164,11 +176,6 @@
 
 #define wxUSE_DEBUG_NEW_ALWAYS 0
 
-#define wxUSE_ON_FATAL_EXCEPTION 0
-
-#define wxUSE_STACKWALKER 0
-
-#define wxUSE_DEBUGREPORT 0
 
 
 #ifndef wxUSE_UNICODE
@@ -181,8 +188,6 @@
 #define wxUSE_EXCEPTIONS    0
 
 #define wxUSE_EXTENDED_RTTI 0
-
-#define wxUSE_STL 0
 
 #define wxUSE_LOG 0
 
@@ -198,24 +203,38 @@
 
 #define wxUSE_STREAMS       0
 
-#define wxUSE_STD_IOSTREAM  0
-
-#if defined(__DMC__) || defined(__WATCOMC__) \
-        || (defined(_MSC_VER) && _MSC_VER < 1200)
-    #define wxUSE_STD_STRING  0
-#else
-    #define wxUSE_STD_STRING  0
-#endif
-
 #define wxUSE_PRINTF_POS_PARAMS      0
+
+#define wxUSE_COMPILER_TLS 0
+
+
+#define wxUSE_STL 0
+
+#define wxUSE_STD_DEFAULT  0
+
+#define wxUSE_STD_CONTAINERS_COMPATIBLY wxUSE_STD_DEFAULT
+
+#define wxUSE_STD_CONTAINERS 0
+
+#define wxUSE_STD_IOSTREAM  wxUSE_STD_DEFAULT
+
+#define wxUSE_STD_STRING  wxUSE_STD_DEFAULT
+
+#define wxUSE_STD_STRING_CONV_IN_WXSTRING wxUSE_STL
 
 
 #define wxUSE_LONGLONG      0
+
+#define wxUSE_BASE64        0
+
+#define wxUSE_CONSOLE_EVENTLOOP 0
 
 #define wxUSE_FILE          0
 #define wxUSE_FFILE         0
 
 #define wxUSE_FSVOLUME      0
+
+#define wxUSE_SECRETSTORE   0
 
 #define wxUSE_STDPATHS      0
 
@@ -225,11 +244,15 @@
 
 #define wxUSE_INTL          0
 
+#define wxUSE_XLOCALE       0
+
 #define wxUSE_DATETIME      0
 
 #define wxUSE_TIMER         0
 
 #define wxUSE_STOPWATCH     0
+
+#define wxUSE_FSWATCHER     0
 
 #define wxUSE_CONFIG        0
 
@@ -242,6 +265,8 @@
 #define wxUSE_DYNAMIC_LOADER  0
 
 #define wxUSE_SOCKETS       0
+
+#define wxUSE_IPV6          0
 
 #define wxUSE_FILESYSTEM    0
 
@@ -259,9 +284,13 @@
 
 #define wxUSE_ZLIB          0
 
+#define wxUSE_LIBLZMA       0
+
 #define wxUSE_APPLE_IEEE          0
 
 #define wxUSE_JOYSTICK            0
+
+#define wxUSE_FONTENUM 0
 
 #define wxUSE_FONTMAP 0
 
@@ -279,6 +308,8 @@
 
 #define wxUSE_VARIANT 0
 
+#define wxUSE_ANY 0
+
 #define wxUSE_REGEX       0
 
 #define wxUSE_SYSTEM_OPTIONS 0
@@ -287,27 +318,61 @@
 
 #define wxUSE_MEDIACTRL     0
 
-#define wxUSE_GSTREAMER    0
-
 #define wxUSE_XRC       0
 
 #define wxUSE_XML       wxUSE_XRC
 
 #define wxUSE_AUI       0
 
+#define wxUSE_RIBBON    0
 
-#ifndef wxUSE_GRAPHICS_CONTEXT
-#define wxUSE_GRAPHICS_CONTEXT 0
+#define wxUSE_PROPGRID  0
+
+#define wxUSE_STC 0
+
+#define wxUSE_WEBVIEW 0
+
+#ifdef __WXMSW__
+#define wxUSE_WEBVIEW_IE 0
+#else
+#define wxUSE_WEBVIEW_IE 0
+#endif
+
+#if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
+#define wxUSE_WEBVIEW_WEBKIT 0
+#else
+#define wxUSE_WEBVIEW_WEBKIT 0
+#endif
+
+#if defined(__WXGTK3__)
+#define wxUSE_WEBVIEW_WEBKIT2 0
+#else
+#define wxUSE_WEBVIEW_WEBKIT2 0
 #endif
 
 
+#if defined(_MSC_VER) || \
+    (defined(__MINGW32__) && (__GNUC__ > 4 || __GNUC_MINOR__ >= 8))
+#define wxUSE_GRAPHICS_CONTEXT 0
+#else
+#define wxUSE_GRAPHICS_CONTEXT 0
+#endif
+
+#define wxUSE_CAIRO 0
+
+
+
 #define wxUSE_CONTROLS     0
+
+#define wxUSE_MARKUP       0
 
 #define wxUSE_POPUPWIN     0
 
 #define wxUSE_TIPWINDOW    0
 
+#define wxUSE_ACTIVITYINDICATOR 0
 #define wxUSE_ANIMATIONCTRL 0
+#define wxUSE_BANNERWINDOW  0
 #define wxUSE_BUTTON        0
 #define wxUSE_BMPBUTTON     0
 #define wxUSE_CALENDARCTRL  0
@@ -317,17 +382,22 @@
 #define wxUSE_COLLPANE      0
 #define wxUSE_COLOURPICKERCTRL 0
 #define wxUSE_COMBOBOX      0
+#define wxUSE_COMMANDLINKBUTTON 0
 #define wxUSE_DATAVIEWCTRL  0
 #define wxUSE_DATEPICKCTRL  0
 #define wxUSE_DIRPICKERCTRL 0
+#define wxUSE_EDITABLELISTBOX 0
+#define wxUSE_FILECTRL      0
 #define wxUSE_FILEPICKERCTRL 0
 #define wxUSE_FONTPICKERCTRL 0
 #define wxUSE_GAUGE         0
+#define wxUSE_HEADERCTRL    0
 #define wxUSE_HYPERLINKCTRL 0
 #define wxUSE_LISTBOX       0
 #define wxUSE_LISTCTRL      0
 #define wxUSE_RADIOBOX      0
 #define wxUSE_RADIOBTN      0
+#define wxUSE_RICHMSGDLG    0
 #define wxUSE_SCROLLBAR     0
 #define wxUSE_SEARCHCTRL    0
 #define wxUSE_SLIDER        0
@@ -338,8 +408,10 @@
 #define wxUSE_STATTEXT      0
 #define wxUSE_STATBMP       0
 #define wxUSE_TEXTCTRL      0
+#define wxUSE_TIMEPICKCTRL  0
 #define wxUSE_TOGGLEBTN     0
 #define wxUSE_TREECTRL      0
+#define wxUSE_TREELISTCTRL  0
 
 #define wxUSE_STATUSBAR    0
 
@@ -358,7 +430,7 @@
 
 #define wxUSE_TOOLBOOK 0
 
-#define wxUSE_TAB_DIALOG    0
+#define wxUSE_TASKBARICON 0
 
 #define wxUSE_GRID         0
 
@@ -370,8 +442,16 @@
 
 #define wxUSE_BITMAPCOMBOBOX 0
 
+#define wxUSE_REARRANGECTRL 0
+
+#define wxUSE_ADDREMOVECTRL 0
+
 
 #define wxUSE_ACCEL 0
+
+#define wxUSE_ARTPROVIDER_STD 0
+
+#define wxUSE_ARTPROVIDER_TANGO 0
 
 #define wxUSE_HOTKEY 0
 
@@ -383,7 +463,17 @@
 
 #define wxUSE_IMAGLIST      0
 
+#define wxUSE_INFOBAR       0
+
 #define wxUSE_MENUS         0
+
+#define wxUSE_NOTIFICATION_MESSAGE 0
+
+#define wxUSE_PREFERENCES_EDITOR 0
+
+#define wxUSE_PRIVATE_FONTS 0
+
+#define wxUSE_RICHTOOLTIP 0
 
 #define wxUSE_SASH          0
 
@@ -392,6 +482,12 @@
 #define wxUSE_TOOLTIPS      0
 
 #define wxUSE_VALIDATORS 0
+
+#ifdef __WXMSW__
+#define wxUSE_AUTOID_MANAGEMENT 0
+#else
+#define wxUSE_AUTOID_MANAGEMENT 0
+#endif
 
 
 #define wxUSE_COMMON_DIALOGS 0
@@ -415,6 +511,8 @@
 
 #define wxUSE_PROGRESSDLG 0
 
+#define wxUSE_NATIVE_PROGRESSDLG 0
+
 #define wxUSE_STARTUP_TIPS 0
 
 #define wxUSE_TEXTDLG 0
@@ -426,6 +524,8 @@
 #define wxUSE_WIZARDDLG 0
 
 #define wxUSE_ABOUTDLG 0
+
+#define wxUSE_FILE_HISTORY 0
 
 
 #define wxUSE_METAFILE              0
@@ -454,7 +554,11 @@
 
 #define wxUSE_DRAG_AND_DROP 0
 
+#ifdef __WXMSW__
 #define wxUSE_ACCESSIBILITY 0
+#else
+#define wxUSE_ACCESSIBILITY 0
+#endif
 
 
 #define wxUSE_SNGLINST_CHECKER  0
@@ -471,8 +575,6 @@
 
 #define wxUSE_WXHTML_HELP 0
 
-#define wxUSE_RESOURCES   0
-
 #define wxUSE_CONSTRAINTS 0
 
 
@@ -482,22 +584,16 @@
 #define wxUSE_MOUSEWHEEL        0
 
 
+#define wxUSE_UIACTIONSIMULATOR 0
+
 
 #define wxUSE_POSTSCRIPT  0
 
 #define wxUSE_AFM_FOR_POSTSCRIPT 0
 
+#define wxUSE_SVG 0
 
-#define wxUSE_ODBC          0
-
-#define wxODBC_FWD_ONLY_CURSORS	 0
-
-#define wxODBC_BACKWARD_COMPATABILITY 0
-
-
-#define REMOVE_UNUSED_ARG   0
-
-#define wxUSE_IOSTREAMH     0
+#define wxUSE_DC_TRANSFORM_MATRIX 0
 
 
 
@@ -536,60 +632,101 @@
 
 /* --- end common options --- */
 
-/* for some features we don't have dedicated configure switches, so just choose
- * the common values automatically */
-#if (defined(__WIN32__) && !defined(__WXUNIVERSAL__)) || defined(__WXPM__)
-#define wxUSE_OWNER_DRAWN 1
+/*
+ * Unix-specific options
+ */
+#define wxUSE_SELECT_DISPATCHER 0
+#define wxUSE_EPOLL_DISPATCHER 0
+
+#define wxUSE_UNICODE_UTF8 0
+#define wxUSE_UTF8_LOCALE_ONLY 0
+
+/*
+   Use GStreamer for Unix.
+
+   Default is 0 as this requires a lot of dependencies which might not be
+   available.
+
+   Recommended setting: 1 (wxMediaCtrl won't work by default without it).
+ */
+#define wxUSE_GSTREAMER 0
+
+#define wxUSE_GSTREAMER_PLAYER 0
+
+/*
+   Use XTest extension to implement wxUIActionSimulator?
+
+   Default is 1, it is set to 0 if the necessary headers/libraries are not
+   found by configure.
+
+   Recommended setting: 1, wxUIActionSimulator won't work in wxGTK3 without it.
+ */
+#define wxUSE_XTEST 0
+
+/* --- start MSW options --- */
+
+
+#define wxUSE_GRAPHICS_GDIPLUS wxUSE_GRAPHICS_CONTEXT
+
+#if defined(_MSC_VER) && _MSC_VER >= 1600
+    #define wxUSE_GRAPHICS_DIRECT2D wxUSE_GRAPHICS_CONTEXT
 #else
-#define wxUSE_OWNER_DRAWN 0
+    #define wxUSE_GRAPHICS_DIRECT2D 0
 #endif
 
-#if defined(__WIN32__) && !defined(__WINE__) && !defined(__GNUWIN32_OLD__)
-#define wxUSE_RICHEDIT 1
-#define wxUSE_RICHEDIT2 1
+
+#define wxUSE_OLE           0
+
+#define wxUSE_OLE_AUTOMATION 0
+
+#define wxUSE_ACTIVEX 0
+
+#if defined(_MSC_VER) && _MSC_VER >= 1700 && !defined(_USING_V110_SDK71_)
+    #define wxUSE_WINRT 0
 #else
-#define wxUSE_RICHEDIT 0
-#define wxUSE_RICHEDIT2 0
+    #define wxUSE_WINRT 0
 #endif
-
-#if !defined(__WIN32__) && !defined(__APPLE__)
-#define wxUSE_CAIRO 1
-#else
-#define wxUSE_CAIRO 0
-#endif
-
-#define wxUSE_INKEDIT 0
-
-#define wxUSE_UNICODE_MSLU 0
 
 #define wxUSE_DC_CACHEING 0
 
-#define wxUSE_GADGETS 0
+#define wxUSE_WXDIB 0
 
-/*
- * Supports bool type
- */
-#undef HAVE_BOOL
+#define wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW 0
 
-/*
- * Define if your compiler supports the explicit keyword
- */
-#undef HAVE_EXPLICIT
+#define wxUSE_REGKEY 0
 
-/*
- * Define if your compiler supports const_cast<>()
- */
-#undef HAVE_CONST_CAST
+#define wxUSE_RICHEDIT  0
 
-/*
- * Define if your compiler supports reinterpret_cast<>()
- */
-#undef HAVE_REINTERPRET_CAST
+#define wxUSE_RICHEDIT2 0
 
-/*
- * Define if your compiler supports static_cast<>()
- */
-#undef HAVE_STATIC_CAST
+#define wxUSE_OWNER_DRAWN 0
+
+#define wxUSE_TASKBARICON_BALLOONS 0
+
+#define wxUSE_TASKBARBUTTON 0
+
+#define wxUSE_UXTHEME           0
+
+#define wxUSE_INKEDIT  0
+
+#define wxUSE_INICONF 0
+
+#define wxUSE_WINSOCK2 0
+
+
+#define wxUSE_DATEPICKCTRL_GENERIC 0
+
+#define wxUSE_TIMEPICKCTRL_GENERIC 0
+
+
+#if defined(__VISUALC__) || defined(__MINGW64_TOOLCHAIN__)
+    #define wxUSE_DBGHELP 0
+#else
+    #define wxUSE_DBGHELP 0
+#endif
+
+#define wxUSE_CRASHREPORT 0
+/* --- end MSW options --- */
 
 /*
  * Define if your compiler has C99 va_copy
@@ -605,6 +742,12 @@
  * Define if the compiler supports variadic macros
  */
 #undef HAVE_VARIADIC_MACROS
+
+/*
+ * Define if you don't want variadic macros to be used even if they are
+ * supported by the compiler.
+ */
+#undef wxNO_VARIADIC_MACROS
 
 /*
  * Define if your compiler has std::wstring
@@ -652,6 +795,31 @@
 #undef HAVE_TR1_UNORDERED_SET
 
 /*
+ * Define if your compiler has <tr1/type_traits>
+ */
+#undef HAVE_TR1_TYPE_TRAITS
+
+/*
+ * Define if your compiler has <type_traits>
+ */
+#undef HAVE_TYPE_TRAITS
+
+/*
+ * Define if the compiler supports simple visibility declarations.
+ */
+#undef HAVE_VISIBILITY
+
+/*
+ * Define if the compiler supports GCC's atomic memory access builtins
+ */
+#undef HAVE_GCC_ATOMIC_BUILTINS
+
+/*
+ * Define if compiler's visibility support in libstdc++ is broken
+ */
+#undef HAVE_BROKEN_LIBSTDCXX_VISIBILITY
+
+/*
  * The built-in regex supports advanced REs in additional to POSIX's basic
  * and extended. Your system regex probably won't support this, and in this
  * case WX_NO_REGEX_ADVANCED should be defined.
@@ -673,29 +841,21 @@
 #define wxUSE_PLUGINS 0
 
 /*
- * Use GNOME print for printing under GTK+ 2.0
+ * Use GTK print for printing under GTK+ 2.10+
  */
-#define wxUSE_LIBGNOMEPRINT 0
+#define wxUSE_GTKPRINT 0
 /*
  * Use GNOME VFS for MIME types
  */
 #define wxUSE_LIBGNOMEVFS 0
 /*
- * Use the Hildon framework
+ * Use libnotify library.
  */
-#define wxUSE_LIBHILDON 0
+#define wxUSE_LIBNOTIFY 0
 /*
- * Use iODBC
+ * Use libnotify 0.7+ API.
  */
-#define wxUSE_BUILTIN_IODBC 0
-/*
- * Use freetype
- */
-#define wxUSE_FREETYPE 0
-/*
- * Have glibc2
- */
-#define wxHAVE_GLIBC2 0
+#define wxUSE_LIBNOTIFY_0_7 0
 /*
  * Use libXpm
  */
@@ -705,58 +865,18 @@
  */
 #undef wxHAVE_PTHREAD_CLEANUP
 /*
- * Use consistent PostScript fonts for AFM and printing (!)
+ * Define if compiler has __thread keyword.
  */
-#define wxUSE_NORMALIZED_PS_FONTS 0
-
-/* compatibility */
-#define WX_NORMALIZED_PS_FONTS wxUSE_NORMALIZED_PS_FONTS
+#undef HAVE___THREAD_KEYWORD
+/*
+ * Define if large (64 bit file offsets) files are supported.
+ */
+#undef HAVE_LARGEFILE_SUPPORT
 
 /*
  * Use OpenGL
  */
 #define wxUSE_OPENGL 0
-
-/*
- * Set to 1 to compile MS Windows XP theme engine support
- */
-#define wxUSE_UXTHEME 1
-
-/*
- *  Set to 1 to auto-adapt to MS Windows XP themes where possible
- * (notably, wxNotebook pages)
- */
-#define wxUSE_UXTHEME_AUTO 1
-
-/*
- * Work around a bug in GNU libc 5.x wcstombs() implementation.
- *
- * Note that you must link your programs with libc.a if you enable this and you
- * have libc 5 (you should enable this for libc6 where wcsrtombs() is
- * thread-safe version of wcstombs()).
- */
-#define wxUSE_WCSRTOMBS 0
-
-/*
- * Use the new experimental implementation of wxString::Printf()?
- *
- * Warning: enabling this may cause internal compiler errors with gcc!
- */
-#define wxUSE_EXPERIMENTAL_PRINTF 0
-
-/*
- * Use wxGetResource & wxWriteResource (change .Xdefaults)
- */
-#define wxUSE_X_RESOURCES 0
-/*
- * Use OLE and OLE Automation (MSW only)
- */
-#define wxUSE_OLE 0
-#define wxUSE_OLE_AUTOMATION 0
-#define wxUSE_ACTIVEX 0
-
-/* for compatibility */
-#define wxUSE_WX_RESOURCES wxUSE_RESOURCES
 
 /*
  * Use MS HTML Help via libmspack (Unix)
@@ -772,16 +892,6 @@
  * wxWebKitCtrl
  */
 #define wxUSE_WEBKIT 0
-
-/*
- * Objective-C class name uniquifying
- */
-#define wxUSE_OBJC_UNIQUIFYING 0
-
-/*
- * ABI incompatible features
- */
-#define wxUSE_ABI_INCOMPATIBLE_FEATURES 0
 
 /*
  * The const keyword is being introduced more in wxWindows.
@@ -822,6 +932,9 @@
 /* struct tm doesn't always have the tm_gmtoff field, define this if it does */
 #undef WX_GMTOFF_IN_TM
 
+/* check if nl_langinfo() can be called with argument _NL_TIME_FIRST_WEEKDAY */
+#undef HAVE_NL_TIME_FIRST_WEEKDAY
+
 /* Define if you have poll(2) function */
 #undef HAVE_POLL
 
@@ -840,17 +953,11 @@
 /* Define if fsync() is available */
 #undef HAVE_FSYNC
 
-/* Define if you have ftime() */
-#undef HAVE_FTIME
-
 /* Define if round() is available */
 #undef HAVE_ROUND
 
-/* Define if you have support for large (64 bit size) files */
-#undef HAVE_LARGEFILE_SUPPORT
-
-/* Define if you have localtime() */
-#undef HAVE_LOCALTIME
+/* Define if you have ftime() */
+#undef HAVE_FTIME
 
 /* Define if you have nanosleep() */
 #undef HAVE_NANOSLEEP
@@ -870,14 +977,11 @@
 /* Define if you have pthread_cancel */
 #undef HAVE_PTHREAD_CANCEL
 
+/* Define if you have pthread_mutex_timedlock */
+#undef HAVE_PTHREAD_MUTEX_TIMEDLOCK
+
 /* Define if you have pthread_attr_setstacksize */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-
-/* Define if you have sigaction() */
-#undef HAVE_SIGACTION
-
-/* Define if you have sigemptyset() */
-#undef HAVE_SIGEMPTYSET
 
 /* Define if you have shl_load() */
 #undef HAVE_SHL_LOAD
@@ -887,10 +991,6 @@
 
 /* Define if you have snprintf() declaration in the header */
 #undef HAVE_SNPRINTF_DECL
-
-/* Define if you have a _broken_ snprintf() declaration in the header,
- * with 'char*' for the 3rd parameter instead of 'const char*' */
-#undef HAVE_BROKEN_SNPRINTF_DECL
 
 /* Define if you have a snprintf() which supports positional arguments
    (defined in the unix98 standard) */
@@ -905,20 +1005,11 @@
 /* define if you have statvfs function */
 #undef HAVE_STATVFS
 
-/* Define if you have strptime() */
-#undef HAVE_STRPTIME
-
-/* Define if strptime() is declared in headers */
-#undef HAVE_STRPTIME_DECL
-
 /* Define if you have strtoull() and strtoll() */
 #undef HAVE_STRTOULL
 
 /* Define if you have all functions to set thread priority */
 #undef HAVE_THREAD_PRIORITY_FUNCTIONS
-
-/* Define if you have timegm() function */
-#undef HAVE_TIMEGM
 
 /* Define if you have vsnprintf() */
 #undef HAVE_VSNPRINTF
@@ -930,20 +1021,42 @@
  * with 'char*' for the 3rd parameter instead of 'const char*' */
 #undef HAVE_BROKEN_VSNPRINTF_DECL
 
+/* Define if you have a _broken_ vsscanf() declaration in the header,
+ * with 'char*' for the 1st parameter instead of 'const char*' */
+#undef HAVE_BROKEN_VSSCANF_DECL
+
+/* Define if you have vsscanf() */
+#undef HAVE_VSSCANF
+
+/* Define if you have vsscanf() declaration in the header */
+#undef HAVE_VSSCANF_DECL
+
 /* Define if you have usleep() */
 #undef HAVE_USLEEP
+
+/* Define if you have wcscasecmp() function  */
+#undef HAVE_WCSCASECMP
+
+/* Define if you have wcsncasecmp() function  */
+#undef HAVE_WCSNCASECMP
 
 /* Define if you have wcslen function  */
 #undef HAVE_WCSLEN
 
+/* Define if you have wcsdup function  */
+#undef HAVE_WCSDUP
+
+/* Define if you have wcsftime() function  */
+#undef HAVE_WCSFTIME
+
+/* Define if you have strnlen() function */
+#undef HAVE_STRNLEN
+
+/* Define if you have wcsnlen() function */
+#undef HAVE_WCSNLEN
+
 /* Define if you have wcstoull() and wcstoll() */
 #undef HAVE_WCSTOULL
-
-/* define if you have vsscanf function */
-#undef HAVE_VSSCANF
-
-/* The number of bytes in a char.  */
-#undef SIZEOF_CHAR
 
 /* The number of bytes in a wchar_t.  */
 #undef SIZEOF_WCHAR_T
@@ -972,11 +1085,14 @@
 /* Define if size_t on your machine is the same type as unsigned long. */
 #undef wxSIZE_T_IS_ULONG
 
-/* Define if you have the dlopen function.  */
-#undef HAVE_DLOPEN
+/* Define if wchar_t is distinct type in your compiler. */
+#undef wxWCHAR_T_IS_REAL_TYPE
 
 /* Define if you have the dlerror function.  */
 #undef HAVE_DLERROR
+
+/* Define if you have the dladdr function.  */
+#undef HAVE_DLADDR
 
 /* Define if you have Posix fnctl() function. */
 #undef HAVE_FCNTL
@@ -1032,20 +1148,11 @@
 /* Define if you have the mkstemp function.  */
 #undef HAVE_MKSTEMP
 
-/* Define if you have the nanosleep function.  */
-#undef HAVE_NANOSLEEP
-
 /* Define if you have the putenv function.  */
 #undef HAVE_PUTENV
 
-/* Define if you have the readdir_r function.  */
-#undef HAVE_READDIR_R
-
 /* Define if you have the setenv function.  */
 #undef HAVE_SETENV
-
-/* Define if you have the shl_load function.  */
-#undef HAVE_SHL_LOAD
 
 /* Define if you have strtok_r function. */
 #undef HAVE_STRTOK_R
@@ -1053,32 +1160,20 @@
 /* Define if you have thr_setconcurrency function */
 #undef HAVE_THR_SETCONCURRENCY
 
+/* Define if you have pthread_setconcurrency function */
+#undef HAVE_PTHREAD_SET_CONCURRENCY
+
 /* Define if you have the uname function.  */
 #undef HAVE_UNAME
 
 /* Define if you have the unsetenv function.  */
 #undef HAVE_UNSETENV
 
-/* Define if you have the usleep function.  */
-#undef HAVE_USLEEP
-
 /* Define if you have the <X11/XKBlib.h> header file.  */
 #undef HAVE_X11_XKBLIB_H
 
 /* Define if you have the <X11/extensions/xf86vmode.h> header file.  */
 #undef HAVE_X11_EXTENSIONS_XF86VMODE_H
-
-/* Define if you have the fnmatch() function */
-#undef HAVE_FNMATCH
-
-/* Define if you have the <fnmatch.h> header file.  */
-#undef HAVE_FNMATCH_H
-
-/* Define if you have the <iostream> header file.  */
-#undef HAVE_IOSTREAM
-
-/* Define if you have the <linux/joystick.h> header file.  */
-#undef HAVE_LINUX_JOYSTICK_H
 
 /* Define if you have the <sched.h> header file.  */
 #undef HAVE_SCHED_H
@@ -1095,9 +1190,6 @@
 /* Define if you have the <wcstr.h> header file.  */
 #undef HAVE_WCSTR_H
 
-/* Define if you have the <wctype.h> header file.  */
-#undef HAVE_WCTYPE_H
-
 /* Define if you have <widec.h> (Solaris only) */
 #undef HAVE_WIDEC_H
 
@@ -1113,23 +1205,11 @@
 /* Define if you have the <w32api.h> header file (mingw,cygwin).  */
 #undef HAVE_W32API_H
 
-/* Define if you have the <esd.h> header file.  */
-#undef HAVE_ESD_H
-
 /* Define if you have the <sys/soundcard.h> header file. */
 #undef HAVE_SYS_SOUNDCARD_H
 
-/* Define if you have a CD-ROM interface known to mmedia.  */
-#undef HAVE_KNOWN_CDROM_INTERFACE
-
 /* Define if you have wcsrtombs() function */
 #undef HAVE_WCSRTOMBS
-
-/* Define this if you have wputc() */
-#undef HAVE_WPUTC
-
-/* Define this if you have wputchar() */
-#undef HAVE_WPUTCHAR
 
 /* Define this if you have putws() */
 #undef HAVE_PUTWS
@@ -1137,27 +1217,17 @@
 /* Define this if you have fputws() */
 #undef HAVE_FPUTWS
 
-/* Define this if you have strcasecmp() function in <string.h> */
-#undef HAVE_STRCASECMP_IN_STRING_H
-
-/* Define this if you have strcasecmp() function in <strings.h> */
-#undef HAVE_STRCASECMP_IN_STRINGS_H
-
 /* Define this if you have wprintf() and related functions */
 #undef HAVE_WPRINTF
-
-/* Define this if you have swprintf() */
-#undef HAVE_SWPRINTF
-
-/* Define if you have a _broken_ swprintf() declaration in the header,
- * without a 'size_t max' parameter as second argument */
-#undef HAVE_BROKEN_SWPRINTF_DECL
 
 /* Define this if you have vswprintf() and related functions */
 #undef HAVE_VSWPRINTF
 
 /* Define this if you have _vsnwprintf */
 #undef HAVE__VSNWPRINTF
+
+/* vswscanf() */
+#undef HAVE_VSWSCANF
 
 /* Define if fseeko and ftello are available.  */
 #undef HAVE_FSEEKO
@@ -1174,14 +1244,14 @@
 /* Define if you have pango_font_family_is_monospace() (Pango >= 1.3.3) */
 #undef HAVE_PANGO_FONT_FAMILY_IS_MONOSPACE
 
-/* Define if gtk_icon_size_lookup is missing from the GTK+ headers */
-#undef NEED_GTK_ICON_SIZE_LOOKUP
-
 /* Define if you have Pango xft support */
 #undef HAVE_PANGO_XFT
 
 /* Define if you have the <sys/select.h> header file.  */
 #undef HAVE_SYS_SELECT_H
+
+/* Define if you have abi::__forced_unwind in your <cxxabi.h>. */
+#undef HAVE_ABI_FORCEDUNWIND
 
 /* Define if fdopen is available.  */
 #undef HAVE_FDOPEN
@@ -1195,20 +1265,26 @@
 /* Define if getgrgid_r is available. */
 #undef HAVE_GETGRGID_R
 
+/* Define if setpriority() is available. */
+#undef HAVE_SETPRIORITY
+
+/* Define if xlocale.h header file exists. */
+#undef HAVE_XLOCALE_H
+
+/* Define if locale_t is available */
+#undef HAVE_LOCALE_T
+
+/* Define if you have inotify_xxx() functions. */
+#undef wxHAS_INOTIFY
+
+/* Define if you have kqueu_xxx() functions. */
+#undef wxHAS_KQUEUE
+
 /* -------------------------------------------------------------------------
    Win32 adjustments section
    ------------------------------------------------------------------------- */
 
 #ifdef __WIN32__
-
-/* we need to define wxUSE_XPM_IN_MSW for MSW compilation for compatibility
-   with wx/msw/setup.h */
-#define wxUSE_XPM_IN_MSW wxUSE_XPM
-
-/* Set to 0 to disable PostScript print/preview architecture code under Windows
-  (just use Windows printing).
- */
-#define wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW 1
 
 /* When using an external jpeg library and the Windows headers already define
  * boolean, define to the type used by the jpeg library for boolean.  */

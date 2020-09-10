@@ -5,7 +5,6 @@
 // Modified by:
 // Created:
 // Copyright:   (c) Karsten Ballueder
-// RCS-ID:      $Id: treectrl.h 49563 2007-10-31 20:46:21Z VZ $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -22,31 +21,23 @@
 
 #include "wx/control.h"
 #include "wx/treebase.h"
-#include "wx/textctrl.h" // wxTextCtrl::ms_classinfo used through CLASSINFO macro
+#include "wx/textctrl.h" // wxTextCtrl::ms_classinfo used through wxCLASSINFO macro
+#include "wx/systhemectrl.h"
 
 class WXDLLIMPEXP_FWD_CORE wxImageList;
+
+#if !defined(__WXMSW__) && !defined(__WXQT__) || defined(__WXUNIVERSAL__)
+    #define wxHAS_GENERIC_TREECTRL
+#endif
 
 // ----------------------------------------------------------------------------
 // wxTreeCtrlBase
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxTreeCtrlBase : public wxControl
+class WXDLLIMPEXP_CORE wxTreeCtrlBase : public wxSystemThemedControl<wxControl>
 {
 public:
-    wxTreeCtrlBase()
-    {
-        m_imageListNormal =
-        m_imageListState = NULL;
-        m_ownsImageListNormal =
-        m_ownsImageListState = false;
-
-        // arbitrary default
-        m_spacing = 18;
-
-        // quick DoGetBestSize calculation
-        m_quickBestSize = true;
-    }
-
+    wxTreeCtrlBase();
     virtual ~wxTreeCtrlBase();
 
     // accessors
@@ -118,12 +109,18 @@ public:
         // get the item's font
     virtual wxFont GetItemFont(const wxTreeItemId& item) const = 0;
 
+        // get the items state
+    int GetItemState(const wxTreeItemId& item) const
+    {
+        return DoGetItemState(item);
+    }
+
     // modifiers
     // ---------
 
         // set items label
     virtual void SetItemText(const wxTreeItemId& item, const wxString& text) = 0;
-        // get one of the images associated with the item (normal by default)
+        // set one of the images associated with the item (normal by default)
     virtual void SetItemImage(const wxTreeItemId& item,
                               int image,
                               wxTreeItemIcon which = wxTreeItemIcon_Normal) = 0;
@@ -156,6 +153,9 @@ public:
     virtual void SetItemFont(const wxTreeItemId& item,
                              const wxFont& font) = 0;
 
+        // set the items state (special state values: wxTREE_ITEMSTATE_NONE/NEXT/PREV)
+    void SetItemState(const wxTreeItemId& item, int state);
+
     // item status inquiries
     // ---------------------
 
@@ -172,10 +172,8 @@ public:
     virtual bool IsSelected(const wxTreeItemId& item) const = 0;
         // is item text in bold font?
     virtual bool IsBold(const wxTreeItemId& item) const = 0;
-#if wxABI_VERSION >= 20801
         // is the control empty?
     bool IsEmpty() const;
-#endif // wxABI 2.8.1+
 
 
     // number of children
@@ -202,6 +200,17 @@ public:
         // NB: this operation is expensive and can take a long time for a
         //     control with a lot of items (~ O(number of items)).
     virtual size_t GetSelections(wxArrayTreeItemIds& selections) const = 0;
+
+        // get the last item to be clicked when the control has wxTR_MULTIPLE
+        // equivalent to GetSelection() if not wxTR_MULTIPLE
+    virtual wxTreeItemId GetFocusedItem() const = 0;
+
+
+        // Clears the currently focused item
+    virtual void ClearFocusedItem() = 0;
+        // Sets the currently focused item. Item should be valid
+    virtual void SetFocusedItem(const wxTreeItemId& item) = 0;
+
 
         // get the parent of this item (may return NULL if root)
     virtual wxTreeItemId GetItemParent(const wxTreeItemId& item) const = 0;
@@ -284,26 +293,24 @@ public:
         // delete this item and associated data if any
     virtual void Delete(const wxTreeItemId& item) = 0;
         // delete all children (but don't delete the item itself)
-        // NB: this won't send wxEVT_COMMAND_TREE_ITEM_DELETED events
+        // NB: this won't send wxEVT_TREE_ITEM_DELETED events
     virtual void DeleteChildren(const wxTreeItemId& item) = 0;
         // delete all items from the tree
-        // NB: this won't send wxEVT_COMMAND_TREE_ITEM_DELETED events
+        // NB: this won't send wxEVT_TREE_ITEM_DELETED events
     virtual void DeleteAllItems() = 0;
 
         // expand this item
     virtual void Expand(const wxTreeItemId& item) = 0;
-        // expand the item and all its childs and thats childs
+        // expand the item and all its children recursively
     void ExpandAllChildren(const wxTreeItemId& item);
         // expand all items
     void ExpandAll();
         // collapse the item without removing its children
     virtual void Collapse(const wxTreeItemId& item) = 0;
-#if wxABI_VERSION >= 20801
-        // collapse the item and all its childs and thats childs
+        // collapse the item and all its children
     void CollapseAllChildren(const wxTreeItemId& item);
         // collapse all items
     void CollapseAll();
-#endif // wxABI 2.8.1+
         // collapse the item and remove all children
     virtual void CollapseAndReset(const wxTreeItemId& item) = 0;
         // toggles the current state
@@ -315,6 +322,9 @@ public:
     virtual void UnselectAll() = 0;
         // select this item
     virtual void SelectItem(const wxTreeItemId& item, bool select = true) = 0;
+        // selects all (direct) children for given parent (only for
+        // multiselection controls)
+    virtual void SelectChildren(const wxTreeItemId& parent) = 0;
         // unselect this item
     void UnselectItem(const wxTreeItemId& item) { SelectItem(item, false); }
         // toggle item selection
@@ -334,7 +344,7 @@ public:
         // been before. textCtrlClass parameter allows you to create an edit
         // control of arbitrary user-defined class deriving from wxTextCtrl.
     virtual wxTextCtrl *EditLabel(const wxTreeItemId& item,
-                      wxClassInfo* textCtrlClass = CLASSINFO(wxTextCtrl)) = 0;
+                      wxClassInfo* textCtrlClass = wxCLASSINFO(wxTextCtrl)) = 0;
         // returns the same pointer as StartEdit() if the item is being edited,
         // NULL otherwise (it's assumed that no more than one item may be
         // edited simultaneously)
@@ -343,12 +353,16 @@ public:
     virtual void EndEditLabel(const wxTreeItemId& item,
                               bool discardChanges = false) = 0;
 
+        // Enable or disable beep when incremental match doesn't find any item.
+        // Only implemented in the generic version currently.
+    virtual void EnableBellOnNoMatch(bool WXUNUSED(on) = true) { }
+
     // sorting
     // -------
 
         // this function is called to compare 2 items and should return -1, 0
         // or +1 if the first item is less than, equal to or greater than the
-        // second one. The base class version performs alphabetic comparaison
+        // second one. The base class version performs alphabetic comparison
         // of item labels (GetText)
     virtual int OnCompareItems(const wxTreeItemId& item1,
                                const wxTreeItemId& item2)
@@ -382,14 +396,18 @@ public:
     // implementation
     // --------------
 
-    virtual bool ShouldInheritColours() const { return false; }
+    virtual bool ShouldInheritColours() const wxOVERRIDE { return false; }
 
     // hint whether to calculate best size quickly or accurately
     void SetQuickBestSize(bool q) { m_quickBestSize = q; }
     bool GetQuickBestSize() const { return m_quickBestSize; }
 
 protected:
-    virtual wxSize DoGetBestSize() const;
+    virtual wxSize DoGetBestSize() const wxOVERRIDE;
+
+    // common part of Get/SetItemState()
+    virtual int DoGetItemState(const wxTreeItemId& item) const = 0;
+    virtual void DoSetItemState(const wxTreeItemId& item, int state) = 0;
 
     // common part of Append/Prepend/InsertItem()
     //
@@ -429,29 +447,28 @@ protected:
     bool        m_quickBestSize;
 
 
-    DECLARE_NO_COPY_CLASS(wxTreeCtrlBase)
+private:
+    // Intercept Escape and Return keys to ensure that our in-place edit
+    // control always gets them before they're used for dialog navigation or
+    // anything else.
+    void OnCharHook(wxKeyEvent& event);
+
+
+    wxDECLARE_NO_COPY_CLASS(wxTreeCtrlBase);
 };
 
 // ----------------------------------------------------------------------------
 // include the platform-dependent wxTreeCtrl class
 // ----------------------------------------------------------------------------
 
-#if defined(__WXUNIVERSAL__)
+#ifdef wxHAS_GENERIC_TREECTRL
     #include "wx/generic/treectlg.h"
-#elif defined(__WXPALMOS__)
-    #include "wx/palmos/treectrl.h"
 #elif defined(__WXMSW__)
     #include "wx/msw/treectrl.h"
-#elif defined(__WXMOTIF__)
-    #include "wx/generic/treectlg.h"
-#elif defined(__WXGTK__)
-    #include "wx/generic/treectlg.h"
-#elif defined(__WXMAC__)
-    #include "wx/generic/treectlg.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/generic/treectlg.h"
-#elif defined(__WXPM__)
-    #include "wx/generic/treectlg.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/treectrl.h"
+#else
+    #error "unknown native wxTreeCtrl implementation"
 #endif
 
 #endif // wxUSE_TREECTRL

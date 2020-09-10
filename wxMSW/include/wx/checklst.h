@@ -4,13 +4,14 @@
 // Author:      Vadim Zeitlin
 // Modified by:
 // Created:     12.09.00
-// RCS-ID:      $Id: checklst.h 38319 2006-03-23 22:05:23Z VZ $
 // Copyright:   (c) Vadim Zeitlin
 // Licence:     wxWindows licence
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef _WX_CHECKLST_H_BASE_
 #define _WX_CHECKLST_H_BASE_
+
+#include "wx/defs.h"
 
 #if wxUSE_CHECKLISTBOX
 
@@ -20,13 +21,7 @@
 // wxCheckListBox: a listbox whose items may be checked
 // ----------------------------------------------------------------------------
 
-class WXDLLEXPORT wxCheckListBoxBase : public
-                                              #ifdef __WXWINCE__
-                                                  // keep virtuals synchronised
-                                                  wxListBoxBase
-                                              #else
-                                                  wxListBox
-                                              #endif
+class WXDLLIMPEXP_CORE wxCheckListBoxBase : public wxListBox
 {
 public:
     wxCheckListBoxBase() { }
@@ -35,13 +30,13 @@ public:
     virtual bool IsChecked(unsigned int item) const = 0;
     virtual void Check(unsigned int item, bool check = true) = 0;
 
-    DECLARE_NO_COPY_CLASS(wxCheckListBoxBase)
+    virtual unsigned int GetCheckedItems(wxArrayInt& checkedItems) const;
+
+    wxDECLARE_NO_COPY_CLASS(wxCheckListBoxBase);
 };
 
 #if defined(__WXUNIVERSAL__)
     #include "wx/univ/checklst.h"
-#elif defined(__WXWINCE__)
-    #include "wx/msw/wince/checklst.h"
 #elif defined(__WXMSW__)
     #include "wx/msw/checklst.h"
 #elif defined(__WXMOTIF__)
@@ -51,11 +46,9 @@ public:
 #elif defined(__WXGTK__)
     #include "wx/gtk1/checklst.h"
 #elif defined(__WXMAC__)
-    #include "wx/mac/checklst.h"
-#elif defined(__WXCOCOA__)
-    #include "wx/cocoa/checklst.h"
-#elif defined(__WXPM__)
-    #include "wx/os2/checklst.h"
+    #include "wx/osx/checklst.h"
+#elif defined(__WXQT__)
+    #include "wx/qt/checklst.h"
 #endif
 
 #endif // wxUSE_CHECKLISTBOX
