@@ -75,7 +75,10 @@ class MainFrame : public wxFrame
         bool LayoutDifferent(const wxString& layout1,const wxString& layout2,const wxString& delimiter=_("|"));
         bool LayoutMessagePaneDifferent(const wxString& layout1,const wxString& layout2, bool checkSelection=false);
     public:
-        wxAcceleratorTable* m_pAccel;
+        std::unique_ptr<wxAcceleratorTable> m_pAccel;
+        std::unique_ptr<wxAcceleratorEntry[]> m_pAccelEntries;
+        size_t              m_AccelCount;
+
         MainFrame(wxWindow* parent = (wxWindow*)NULL);
         ~MainFrame();
 
@@ -297,6 +300,10 @@ class MainFrame : public wxFrame
         void OnNotebookDoubleClick(CodeBlocksEvent& event);
         // Statusbar highlighting menu
         void OnHighlightMenu(wxCommandEvent& event);
+
+        // Allow plugins to obtain copy of global accelerators
+        void OnGetGlobalAccels(wxCommandEvent& event);
+
     protected:
         void CreateIDE();
         void CreateMenubar();
@@ -305,7 +312,7 @@ class MainFrame : public wxFrame
         void AddToolbarItem(int id, const wxString& title, const wxString& shortHelp, const wxString& longHelp, const wxString& image);
         void RecreateMenuBar();
         void RegisterEvents();
-        void SetupGUILogging();
+        void SetupGUILogging(int uiSize16);
         void SetupDebuggerUI();
 
         void RegisterScriptFunctions();
@@ -363,11 +370,11 @@ class MainFrame : public wxFrame
         /// "Close FullScreen" button. Only shown when in FullScreen view
         wxButton* m_pCloseFullScreenBtn;
 
-        EditorManager*    m_pEdMan;
-        ProjectManager*   m_pPrjMan;
+        EditorManager*      m_pEdMan;
+        ProjectManager*     m_pPrjMan;
         cbProjectManagerUI* m_pPrjManUI;
-        LogManager*       m_pLogMan;
-        InfoPane*         m_pInfoPane;
+        LogManager*         m_pLogMan;
+        InfoPane*           m_pInfoPane;
 
         wxToolBar* m_pToolbar; // main toolbar
         PluginToolbarsMap m_PluginsTools; // plugin -> toolbar map
@@ -378,7 +385,6 @@ class MainFrame : public wxFrame
         wxMenu* m_HelpPluginsMenu;
         bool    m_ScanningForPlugins; // this variable is used to delay the UI construction
 
-        bool m_SmallToolBar;
         bool m_StartupDone;
         bool m_InitiatedShutdown;
 

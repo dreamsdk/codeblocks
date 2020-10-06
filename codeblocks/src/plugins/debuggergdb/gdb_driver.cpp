@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11163 $
- * $Id: gdb_driver.cpp 11163 2017-09-09 14:40:27Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/gdb_driver.cpp $
+ * $Revision: 11876 $
+ * $Id: gdb_driver.cpp 11876 2019-10-10 23:13:33Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/gdb_driver.cpp $
  */
 
 #include <sdk.h>
@@ -73,7 +73,6 @@ static wxRegEx reChildPid1(_T("Thread[ \t]+[xA-Fa-f0-9-]+[ \t]+\\(LWP ([0-9]+)\\
 // MinGW GDB 6.8 and later
 // [New Thread 2684.0xf40] or [New thread 2684.0xf40]
 static wxRegEx reChildPid2(_T("\\[New [tT]hread[ \t]+[0-9]+\\.[xA-Fa-f0-9-]+\\]"));
-static wxRegEx reAttachedChildPid(wxT("Attaching to process ([0-9]+)"));
 
 static wxRegEx reInferiorExited(wxT("^\\[Inferior[ \\t].+[ \\t]exited normally\\]$"), wxRE_EXTENDED);
 static wxRegEx reInferiorExitedWithCode(wxT("^\\[[Ii]nferior[ \\t].+[ \\t]exited[ \\t]with[ \\t]code[ \\t]([0-9]+)\\]$"), wxRE_EXTENDED);
@@ -130,7 +129,7 @@ void GDB_driver::SetTarget(ProjectBuildTarget* target)
     m_pTarget = target;
 }
 
-void GDB_driver::Prepare(bool isConsole, int printElements)
+void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebugging &remoteDebugging)
 {
     // default initialization
 
@@ -155,7 +154,7 @@ void GDB_driver::Prepare(bool isConsole, int printElements)
     QueueCommand(new DebuggerCmd(this, _T("set print asm-demangle on")));
     // unwind stack on signal
     QueueCommand(new DebuggerCmd(this, _T("set unwindonsignal on")));
-    // disalbe result string truncations
+    // disable result string truncations
     QueueCommand(new DebuggerCmd(this, wxString::Format(wxT("set print elements %d"), printElements)));
 
     if (platform::windows && isConsole)
@@ -188,80 +187,56 @@ void GDB_driver::Prepare(bool isConsole, int printElements)
     if (!m_Args.IsEmpty())
         QueueCommand(new DebuggerCmd(this, _T("set args ") + m_Args));
 
-    RemoteDebugging* rd = GetRemoteDebuggingInfo();
-
-    // send additional gdb commands before establishing remote connection
-    if (rd)
+    // Send additional gdb commands before establishing remote connection.
+    // These are executed no matter if doing remote debugging or not.
+    if (!remoteDebugging.additionalCmdsBefore.IsEmpty())
     {
-        if (!rd->additionalCmdsBefore.IsEmpty())
+        wxArrayString initCmds = GetArrayFromString(remoteDebugging.additionalCmdsBefore, _T('\n'));
+        for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
         {
-            wxArrayString initCmds = GetArrayFromString(rd->additionalCmdsBefore, _T('\n'));
-            for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
-            {
-                macrosManager->ReplaceMacros(initCmds[i]);
-                QueueCommand(new DebuggerCmd(this, initCmds[i]));
-            }
+            macrosManager->ReplaceMacros(initCmds[i]);
+            QueueCommand(new DebuggerCmd(this, initCmds[i]));
         }
-        if (!rd->additionalShellCmdsBefore.IsEmpty())
+    }
+    if (!remoteDebugging.additionalShellCmdsBefore.IsEmpty())
+    {
+        wxArrayString initCmds = GetArrayFromString(remoteDebugging.additionalShellCmdsBefore, _T('\n'));
+        for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
         {
-            wxArrayString initCmds = GetArrayFromString(rd->additionalShellCmdsBefore, _T('\n'));
-            for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
-            {
-                macrosManager->ReplaceMacros(initCmds[i]);
-                QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
-            }
+            macrosManager->ReplaceMacros(initCmds[i]);
+            QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
         }
     }
 
     // if performing remote debugging, now is a good time to try and connect to the target :)
-    if (rd && rd->IsOk())
+    m_isRemoteDebugging = remoteDebugging.IsOk();
+    if (m_isRemoteDebugging)
     {
-        if (rd->connType == RemoteDebugging::Serial)
-            QueueCommand(new GdbCmd_RemoteBaud(this, rd->serialBaud));
-        QueueCommand(new GdbCmd_RemoteTarget(this, rd));
+        if (remoteDebugging.connType == RemoteDebugging::Serial)
+            QueueCommand(new GdbCmd_RemoteBaud(this, remoteDebugging.serialBaud));
+        QueueCommand(new GdbCmd_RemoteTarget(this, &remoteDebugging));
     }
 
     // run per-target additional commands (remote debugging)
     // moved after connection to remote target (if any)
-    if (rd)
+    if (!remoteDebugging.additionalCmds.IsEmpty())
     {
-        if (!rd->additionalCmds.IsEmpty())
+        wxArrayString initCmds = GetArrayFromString(remoteDebugging.additionalCmds, _T('\n'));
+        for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
         {
-            wxArrayString initCmds = GetArrayFromString(rd->additionalCmds, _T('\n'));
-            for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
-            {
-                macrosManager->ReplaceMacros(initCmds[i]);
-                QueueCommand(new DebuggerCmd(this, initCmds[i]));
-            }
-        }
-        if (!rd->additionalShellCmdsAfter.IsEmpty())
-        {
-            wxArrayString initCmds = GetArrayFromString(rd->additionalShellCmdsAfter, _T('\n'));
-            for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
-            {
-                macrosManager->ReplaceMacros(initCmds[i]);
-                QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
-            }
+            macrosManager->ReplaceMacros(initCmds[i]);
+            QueueCommand(new DebuggerCmd(this, initCmds[i]));
         }
     }
-}
-
-// remote debugging
-RemoteDebugging* GDB_driver::GetRemoteDebuggingInfo()
-{
-//    if (!m_pTarget)
-//        return 0;
-
-    // first, project-level (straight copy)
-    m_MergedRDInfo = m_pDBG->GetRemoteDebuggingMap()[0];
-
-    // then merge with target settings
-    RemoteDebuggingMap::iterator it = m_pDBG->GetRemoteDebuggingMap().find(m_pTarget);
-    if (it != m_pDBG->GetRemoteDebuggingMap().end())
+    if (!remoteDebugging.additionalShellCmdsAfter.IsEmpty())
     {
-        m_MergedRDInfo.MergeWith(it->second);
+        wxArrayString initCmds = GetArrayFromString(remoteDebugging.additionalShellCmdsAfter, _T('\n'));
+        for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
+        {
+            macrosManager->ReplaceMacros(initCmds[i]);
+            QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
+        }
     }
-    return &m_MergedRDInfo;
 }
 
 // Cygwin check code
@@ -376,13 +351,7 @@ void GDB_driver::CorrectCygwinPath(wxString& path)
 #ifdef __WXMSW__
 bool GDB_driver::UseDebugBreakProcess()
 {
-    RemoteDebugging* rd = GetRemoteDebuggingInfo();
-    bool remoteDebugging = rd && rd->IsOk();
-    if (remoteDebugging)
-    {
-        DebugLog(_("Remote Debugging is enabled!"));
-    }
-    return !remoteDebugging;
+    return !m_isRemoteDebugging;
 }
 #endif
 
@@ -406,23 +375,20 @@ void GDB_driver::Start(bool breakOnEntry)
         disassembly_dialog->Clear(cbStackFrame());
     }
 
+    m_BreakOnEntry = breakOnEntry && !m_isRemoteDebugging;
+
     // if performing remote debugging, use "continue" command
-    RemoteDebugging* rd = GetRemoteDebuggingInfo();
-    bool remoteDebugging = rd && rd->IsOk();
-
-    m_BreakOnEntry = breakOnEntry && !remoteDebugging;
-
     if (!m_pDBG->GetActiveConfigEx().GetFlag(DebuggerConfiguration::DoNotRun))
     {
-        m_ManualBreakOnEntry = !remoteDebugging;
+        m_ManualBreakOnEntry = !m_isRemoteDebugging;
         // start the process
         if (breakOnEntry)
-            QueueCommand(new GdbCmd_Start(this, remoteDebugging ? _T("continue") : _T("start")));
+            QueueCommand(new GdbCmd_Start(this, m_isRemoteDebugging ? _T("continue") : _T("start")));
         else
         {
             // if breakOnEntry is not set, we need to use 'run' to make gdb stop at a breakpoint at first instruction
             m_ManualBreakOnEntry=false;  // must be reset or gdb does not stop at first breakpoint
-            QueueCommand(new GdbCmd_Start(this, remoteDebugging ? _T("continue") : _T("run")));
+            QueueCommand(new GdbCmd_Start(this, m_isRemoteDebugging ? _T("continue") : _T("run")));
         }
         m_IsStarted = true;
     }
@@ -446,9 +412,7 @@ void GDB_driver::Continue()
     else
     {
         // if performing remote debugging, use "continue" command
-        RemoteDebugging* rd = GetRemoteDebuggingInfo();
-        bool remoteDebugging = rd && rd->IsOk();
-        if (remoteDebugging)
+        if (m_isRemoteDebugging)
             QueueCommand(new GdbCmd_Continue(this));
         else
             QueueCommand(new GdbCmd_Start(this, m_ManualBreakOnEntry ? wxT("start") : wxT("run")));
@@ -526,6 +490,33 @@ void GDB_driver::SetVarValue(const wxString& var, const wxString& value)
 {
     const wxString &cleanValue=CleanStringValue(value);
     QueueCommand(new DebuggerCmd(this, wxString::Format(_T("set variable %s=%s"), var.c_str(), cleanValue.c_str())));
+}
+
+void GDB_driver::SetMemoryRangeValue(uint64_t addr, const wxString& value)
+{
+    const size_t size = value.size();
+    if(size == 0)
+        return;
+
+    wxString dataStr = wxT("{");
+    const wxCharBuffer &data = value.To8BitData();
+    for (size_t i = 0; i < size; i++)
+    {
+        if (i != 0)
+            dataStr << wxT(",");
+        dataStr << wxString::Format(wxT("0x%x"), uint8_t(data[i]));
+    }
+    dataStr << wxT("}");
+
+    wxString commandStr;
+#ifdef __WXMSW__
+    commandStr.Printf(wxT("set {char [%ul]} 0x%" PRIx64 "="), size, addr);
+#else
+    commandStr.Printf(wxT("set {char [%zu]} 0x%" PRIx64 "="), size, addr);
+#endif // __WXMSW__
+    commandStr << dataStr;
+
+    QueueCommand(new DebuggerCmd(this, commandStr));
 }
 
 void GDB_driver::MemoryDump()
@@ -630,16 +621,23 @@ void GDB_driver::EvaluateSymbol(const wxString& symbol, const wxRect& tipRect)
     QueueCommand(new GdbCmd_FindTooltipType(this, symbol, tipRect));
 }
 
-void GDB_driver::UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_ptr<GDBWatch> funcArgsWatch,
-                               WatchesContainer &watches)
+void GDB_driver::UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch,
+                               cb::shared_ptr<GDBWatch> funcArgsWatch,
+                               WatchesContainer &watches, bool ignoreAutoUpdate)
 {
+    if (!m_FileName.IsSameAs(m_Cursor.file))
+    {
+        m_FileName = m_Cursor.file;
+        m_pDBG->DetermineLanguage();
+    }
+
     bool updateWatches = false;
-    if (localsWatch && localsWatch->IsAutoUpdateEnabled())
+    if (localsWatch && (localsWatch->IsAutoUpdateEnabled() || ignoreAutoUpdate))
     {
         QueueCommand(new GdbCmd_LocalsFuncArgs(this, localsWatch, true));
         updateWatches = true;
     }
-    if (funcArgsWatch && funcArgsWatch->IsAutoUpdateEnabled())
+    if (funcArgsWatch && (funcArgsWatch->IsAutoUpdateEnabled() || ignoreAutoUpdate))
     {
         QueueCommand(new GdbCmd_LocalsFuncArgs(this, funcArgsWatch, false));
         updateWatches = true;
@@ -648,7 +646,7 @@ void GDB_driver::UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_
     for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
     {
         WatchesContainer::reference watch = *it;
-        if (watch->IsAutoUpdateEnabled())
+        if (watch->IsAutoUpdateEnabled() || ignoreAutoUpdate)
         {
             QueueCommand(new GdbCmd_FindWatchType(this, watch));
             updateWatches = true;
@@ -658,20 +656,43 @@ void GDB_driver::UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_
     if (updateWatches)
     {
         // run this action-only command to update the tree
-        QueueCommand(new DbgCmd_UpdateWatchesTree(this));
+        QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::Watches));
     }
+}
+
+void GDB_driver::UpdateMemoryRangeWatches(MemoryRangeWatchesContainer &watches,
+                                          bool ignoreAutoUpdate)
+{
+    bool updateWatches = false;
+    for (cb::shared_ptr<GDBMemoryRangeWatch> &watch : watches)
+    {
+        if (watch->IsAutoUpdateEnabled() || ignoreAutoUpdate)
+        {
+            QueueCommand(new GdbCmd_MemoryRangeWatch(this, watch));
+            updateWatches = true;
+        }
+    }
+
+    if (updateWatches)
+        QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::MemoryRange));
 }
 
 void GDB_driver::UpdateWatch(const cb::shared_ptr<GDBWatch> &watch)
 {
     QueueCommand(new GdbCmd_FindWatchType(this, watch));
-    QueueCommand(new DbgCmd_UpdateWatchesTree(this));
+    QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::Watches));
+}
+
+void GDB_driver::UpdateMemoryRangeWatch(const cb::shared_ptr<GDBMemoryRangeWatch> &watch)
+{
+    QueueCommand(new GdbCmd_MemoryRangeWatch(this, watch));
+    QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::MemoryRange));
 }
 
 void GDB_driver::UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bool locals)
 {
     QueueCommand(new GdbCmd_LocalsFuncArgs(this, watch, locals));
-    QueueCommand(new DbgCmd_UpdateWatchesTree(this));
+    QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::Watches));
 }
 
 void GDB_driver::Attach(int pid)
@@ -1123,3 +1144,9 @@ void GDB_driver::HandleMainBreakPoint(const wxRegEx& reBreak_in, wxString line)
         m_needsUpdate = true;
     }
 }
+
+void GDB_driver::DetermineLanguage()
+{
+    QueueCommand(new GdbCmd_DebugLanguage(this));
+}
+

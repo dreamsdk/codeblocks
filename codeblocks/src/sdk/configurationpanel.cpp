@@ -4,7 +4,7 @@
  *
  * $Revision: 7964 $
  * $Id: configurationpanel.cpp 7964 2012-05-11 07:36:28Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/configurationpanel.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/configurationpanel.cpp $
  */
 
 #include "configurationpanel.h"

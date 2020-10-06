@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9181 $
- * $Id: projectsimporter.cpp 9181 2013-07-08 23:05:27Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/projectsimporter/projectsimporter.cpp $
+ * $Revision: 11822 $
+ * $Id: projectsimporter.cpp 11822 2019-08-01 22:04:41Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/projectsimporter.cpp $
  */
 
 #include "sdk.h"
@@ -70,7 +70,7 @@ void ProjectsImporter::BuildMenu(wxMenuBar* menuBar)
     {
         int menuId = 0, id = 0;
         wxMenuItemList menuItems = fileMenu->GetMenuItems();
-        menuId = fileMenu->FindItem(_T("R&ecent files"));
+        menuId = fileMenu->FindItem(_("R&ecent files"));
         wxMenuItem* recentFileItem = fileMenu->FindItem(menuId);
         id = menuItems.IndexOf(recentFileItem);
         if (id == wxNOT_FOUND)

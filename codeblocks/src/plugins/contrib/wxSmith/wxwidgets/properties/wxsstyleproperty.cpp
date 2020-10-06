@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsstyleproperty.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsstyleproperty.cpp $
+* $Revision: 11434 $
+* $Id: wxsstyleproperty.cpp 11434 2018-08-07 07:12:59Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsstyleproperty.cpp $
 */
 
 #include "wxsstyleproperty.h"
@@ -105,6 +105,18 @@ bool wxsStyleProperty::XmlRead(wxsPropertyContainer* Object,TiXmlElement* Elemen
     {
         STYLEBITS = STYLESETPTR?STYLESETPTR->GetDefaultBits(IsExtra):0;
         return false;
+    }
+    else
+    {
+        // Do some string replacements to support loading files saved with old versions. It is not
+        // really fast, but lets hope it is not called much, so it shouldn't be a performance
+        // problem.
+        Str.Replace(wxT("wxSIMPLE_BORDER"), wxT("wxBORDER_SIMPLE"));
+        Str.Replace(wxT("wxDOUBLE_BORDER"), wxT("wxBORDER_DOUBLE"));
+        Str.Replace(wxT("wxSUNKEN_BORDER"), wxT("wxBORDER_SUNKEN"));
+        Str.Replace(wxT("wxRAISED_BORDER"), wxT("wxBORDER_RAISED"));
+        Str.Replace(wxT("wxSTATIC_BORDER"), wxT("wxBORDER_STATIC"));
+        Str.Replace(wxT("wxNO_BORDER"), wxT("wxBORDER_NONE"));
     }
     STYLEBITS = STYLESETPTR->GetBits(Str,IsExtra);
     return true;

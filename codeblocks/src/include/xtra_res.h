@@ -18,17 +18,21 @@ class DLLIMPORT wxToolBarAddOnXmlHandler : public wxXmlResourceHandler
 {
     public:
         wxToolBarAddOnXmlHandler();
-        virtual wxObject *DoCreateResource();
-        virtual bool CanHandle(wxXmlNode *node);
+        wxObject *DoCreateResource() override;
+        bool CanHandle(wxXmlNode *node) override;
+
+        void SetToolbarImageSize(int size);
+        void SetCurrentResourceID(const wxString &id);
 
     protected:
         bool m_isInside;
         bool m_isAddon;
         wxToolBar *m_toolbar;
+        int m_ImageSize;
+        wxString m_PathReplaceString;
+        wxString m_CurrentID;
 
-        wxBitmap GetCenteredBitmap(const wxString& param = wxT("bitmap"),
-            const wxArtClient& defaultArtClient = wxART_OTHER,
-            wxSize size = wxDefaultSize);
+        wxBitmap GetCenteredBitmap(const wxString& param, wxSize size, double scaleFactor);
 };
 
 class DLLIMPORT wxScrollingDialogXmlHandler : public wxDialogXmlHandler
@@ -37,8 +41,8 @@ class DLLIMPORT wxScrollingDialogXmlHandler : public wxDialogXmlHandler
 
 public:
     wxScrollingDialogXmlHandler();
-    virtual wxObject *DoCreateResource();
-    virtual bool CanHandle(wxXmlNode *node);
+    wxObject *DoCreateResource() override;
+    bool CanHandle(wxXmlNode *node) override;
 };
 
 #endif

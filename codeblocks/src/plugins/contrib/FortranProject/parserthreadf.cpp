@@ -5,11 +5,17 @@
  */
 
 #include "parserthreadf.h"
-#include "usetokenf.h"
-#include <set>
-#include <wx/tokenzr.h>
 
-ParserThreadF::ParserThreadF(const wxString& bufferOrFilename,
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
+#endif
+#include <set>
+
+#include "usetokenf.h"
+
+ParserThreadF::ParserThreadF(const wxString& projectFilename,
+                             const wxString& bufferOrFilename,
                              TokensArrayF* tokens,
                              FortranSourceForm fsForm,
                              bool isBuffer,
@@ -25,14 +31,17 @@ ParserThreadF::ParserThreadF(const wxString& bufferOrFilename,
     m_InterfaceRead = 0;
     m_InterfaceWrite = 0;
 
+    m_pPPDefineTokens = new TokensArrayF();
+    m_inIfdef = 0;
+
     if (!isBuffer)
     {
         if (!bufferOrFilename.IsEmpty())
         {
             m_Filename = bufferOrFilename;
             m_Tokens.Init(m_Filename, fsForm);
-            wxFileName fn(bufferOrFilename);
-            m_pLastParent = DoAddToken(tkFile, fn.GetFullName());
+            wxChar sep = wxFileName::GetPathSeparator();
+            m_pLastParent = DoAddFileToken(bufferOrFilename.AfterLast(sep), projectFilename);
         }
     }
     else
@@ -42,7 +51,8 @@ ParserThreadF::ParserThreadF(const wxString& bufferOrFilename,
     InitSecondEndPart();
 }
 
-ParserThreadF::ParserThreadF(const wxString& filename,
+ParserThreadF::ParserThreadF(const wxString& projectFilename,
+                             const wxString& filename,
                              TokensArrayF* tokens,
                              FortranSourceForm fsForm,
                              IncludeDB* includeDB,
@@ -58,11 +68,14 @@ ParserThreadF::ParserThreadF(const wxString& filename,
     m_InterfaceRead = 0;
     m_InterfaceWrite = 0;
 
+    m_pPPDefineTokens = new TokensArrayF();
+    m_inIfdef = 0;
+
     m_Filename = filename;
     m_Tokens.InitFromBuffer(buffer, fsForm);
     m_Tokens.SetFilename(filename);
-    wxFileName fn(filename);
-    m_pLastParent = DoAddToken(tkFile, fn.GetFullName());
+    wxChar sep = wxFileName::GetPathSeparator();
+    m_pLastParent = DoAddFileToken(filename.AfterLast(sep), projectFilename);
 
     InitSecondEndPart();
 }
@@ -70,6 +83,7 @@ ParserThreadF::ParserThreadF(const wxString& filename,
 ParserThreadF::~ParserThreadF()
 {
     //dtor
+    delete m_pPPDefineTokens;
 }
 
 void ParserThreadF::InitSecondEndPart()
@@ -160,10 +174,7 @@ bool ParserThreadF::Parse()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
         else if (tok_low.Matches(_T("interface")))
         {
@@ -204,8 +215,8 @@ bool ParserThreadF::Parse()
     if (!m_Filename.IsEmpty() && m_pIncludeDB)
     {
         //update IncludeDB
-        wxFileName fn(m_Filename);
-        m_pIncludeDB->SetInclude(fn.GetFullName(), m_IncludeList);
+        wxChar sep = wxFileName::GetPathSeparator();
+        m_pIncludeDB->SetInclude(m_Filename.AfterLast(sep), m_IncludeList);
     }
     return true;
 }
@@ -260,6 +271,25 @@ TokenF* ParserThreadF::DoAddToken(TokenKindF kind, const wxString& name, const w
     {
         m_pTokens->Add(newToken);
     }
+
+    return newToken;
+}
+
+FileTokenF* ParserThreadF::DoAddFileToken(const wxString& filename, const wxString& projectFilename)
+{
+    FileTokenF* newToken = new FileTokenF;
+    newToken->m_Name = filename.Lower();
+
+    newToken->m_TokenKind = tkFile;
+    newToken->m_pParent = m_pLastParent;
+    newToken->m_Filename = m_Tokens.GetFilename();
+    newToken->m_LineStart = 0;
+    newToken->m_DisplayName = filename;
+    newToken->m_DefinitionLength = 1;
+
+    m_pTokens->Add(newToken);
+
+    newToken->m_ProjectFilename = projectFilename;
 
     return newToken;
 }
@@ -428,9 +458,7 @@ void ParserThreadF::HandleModule()
     wxArrayString publicNameList;
     wxArrayString protectedNameList;
 
-    TokensArrayF typeTokens;
     TokensArrayF typeTokensAll;
-    TokensArrayF decklTokens;
     TokensArrayF interfGenTokens;
     TokensArrayF interfTokens;
 
@@ -454,12 +482,15 @@ void ParserThreadF::HandleModule()
             bool needDefault=true;
             TokenF* tokTmp = 0;
             HandleType(needDefault, tokTmp);
-            if (needDefault && tokTmp)
-            {
-                typeTokens.Add(tokTmp);
-            }
             if (tokTmp)
                 typeTokensAll.Add(tokTmp);
+            if (!needDefault && tokTmp)
+            {
+                if (tokTmp->m_TokenAccess == taPrivate)
+                    privateNameList.Add(tokTmp->m_Name);
+                else
+                    publicNameList.Add(tokTmp->m_Name);
+            }
         }
         else if (tok_low.Matches(_T("subroutine")))
         {
@@ -489,10 +520,7 @@ void ParserThreadF::HandleModule()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
         else if (tok_low.Matches(_T("private")))
         {
@@ -525,27 +553,20 @@ void ParserThreadF::HandleModule()
             bool hasFunctionInLine;
             TokensArrayF tokTmpArr;
             CheckParseOneDeclaration(token, tok_low, next, nex_low, needDefault, tokTmpArr, hasFunctionInLine);
-            if (needDefault)
+            if (!needDefault)
             {
                 for (size_t i=0; i<tokTmpArr.Count(); i++)
                 {
-                    decklTokens.Add(tokTmpArr.Item(i));
+                    if (tokTmpArr.Item(i)->m_TokenAccess == taPrivate)
+                        privateNameList.Add(tokTmpArr.Item(i)->m_Name);
+                    else
+                        publicNameList.Add(tokTmpArr.Item(i)->m_Name);
                 }
             }
         }
     }
     modToken->AddLineEnd(m_Tokens.GetLineNumber());
     m_pLastParent = old_parent;
-
-    for (size_t i=0; i<typeTokens.GetCount(); i++)
-    {
-        typeTokens.Item(i)->m_TokenAccess = taDefKind;
-    }
-
-    for (size_t i=0; i<decklTokens.GetCount(); i++)
-    {
-        decklTokens.Item(i)->m_TokenAccess = taDefKind;
-    }
 
     for (size_t i=0; i<interfTokens.GetCount(); i++)
     {
@@ -574,7 +595,7 @@ void ParserThreadF::HandleModule()
     {
         for (size_t i=0; i<toks->GetCount(); i++)
         {
-            ChangeTokenAccess(modToken, toks->Item(i));
+            SetTokenAccess(modToken, toks->Item(i), taDefKind);
 
             if (protectedNameList.Index(toks->Item(i)->m_Name) != wxNOT_FOUND)
             {
@@ -587,7 +608,7 @@ void ParserThreadF::HandleModule()
                 {
                     for (size_t j=0; j<chs->GetCount(); j++)
                     {
-                        ChangeTokenAccess(modToken, chs->Item(j));
+                        SetTokenAccess(modToken, chs->Item(j), taDefKind);
                     }
                 }
             }
@@ -813,10 +834,7 @@ void ParserThreadF::HandleSubmodule()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
         else if (tok_low.Matches(_T("module")) && nex_low.Matches(_T("procedure")))
         {
@@ -1086,10 +1104,7 @@ void ParserThreadF::ParseDeclarations(bool breakAtEnd, bool breakAtContains)
         }
         else if (m_LastTokenName.GetChar(0) == '#')
         {
-            if (m_LastTokenName.IsSameAs(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
         else if (m_LastTokenName.IsSameAs(_T("interface")))
         {
@@ -1293,8 +1308,13 @@ void ParserThreadF::ParseDeclarationsSecondPart(wxString& token, bool& needDefau
             }
         }
     }
-    else
+    else // "::" not found
     {
+        if (lineTok.GetCount() > 0 && lineTok.Item(0).IsSameAs(_T(",")))
+        {
+            // it is unfinished declaration (e.g. "real, pointer, ")
+            return;
+        }
         idx = -1;
     }
 
@@ -1544,10 +1564,7 @@ void ParserThreadF::HandleSelectTypeConstruct()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
     }
     m_pLastParent = old_parent;
@@ -1728,10 +1745,7 @@ void ParserThreadF::HandleBlockData()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
     }
     m_pLastParent->AddLineEnd(m_Tokens.GetLineNumber());
@@ -1740,8 +1754,7 @@ void ParserThreadF::HandleBlockData()
 
 void ParserThreadF::HandleInclude()
 {
-    wxString token;
-    token = m_Tokens.GetTokenSameFortranLine();
+    wxString token = m_Tokens.GetTokenSameFortranLine();
 
     if (token.IsEmpty())
         return; // something wrong
@@ -1765,6 +1778,179 @@ void ParserThreadF::HandleInclude()
         m_IncludeList.Add(token);
         m_Tokens.SkipToEOL();
     }
+}
+
+void ParserThreadF::HandlePPDirective(wxString& token)
+{
+    if (token.Matches(_T("#define")))
+        HandlePPDefine();
+    else if (token.Matches(_T("#undefine")))
+        HandlePPUndefine();
+    else if (token.Matches(_T("#if")) || token.Matches(_T("#ifdef")) || token.Matches(_T("#ifndef")))
+        HandlePPIfdef(token);
+    else if (token.Matches(_T("#endif")) || token.Matches(_T("#else")) || token.Matches(_T("#elif")))
+        HandlePPIfdef(token);
+    else if (token.Matches(_T("#include")))
+        HandleInclude();
+    else
+        m_Tokens.SkipToEOL();
+}
+
+void ParserThreadF::HandlePPDefine()
+{
+    // Handle #define ABC
+    // More sophisticated cases isn't interpreted
+    wxString token = m_Tokens.GetTokenSameLine();
+
+    if (token.IsEmpty())
+        return; // something wrong
+
+    TokenF* newToken = new TokenF;
+    newToken->m_TokenKind = tkMacroDefine;
+    newToken->m_Filename = m_Tokens.GetFilename();
+    newToken->m_DisplayName = token;
+    newToken->m_LineStart = m_Tokens.GetLineNumber();
+    newToken->m_LineEnd = 0;
+
+    m_pPPDefineTokens->Add(newToken);
+    m_Tokens.SkipToEOL();
+}
+
+void ParserThreadF::HandlePPUndefine()
+{
+    // Handle #undefine ABC or #undef ABC
+    wxString token = m_Tokens.GetTokenSameLine();
+
+    if (token.IsEmpty())
+        return; // something wrong
+
+    for (size_t i=0; i<m_pPPDefineTokens->size(); ++i)
+    {
+        if (m_pPPDefineTokens->Item(i)->m_DisplayName == token)
+        {
+            m_pPPDefineTokens->Item(i)->m_LineEnd = m_Tokens.GetLineNumber();
+            break;
+        }
+    }
+    m_Tokens.SkipToEOL();
+}
+
+void ParserThreadF::HandlePPIfdef(wxString& ifToken)
+{
+    // Handle #ifdef construct in the simplest cases.
+    if (ifToken.IsSameAs(_T("#ifdef")) || ifToken.IsSameAs(_T("#ifndef")))
+    {
+        m_inIfdef += 1;
+        wxString token = m_Tokens.GetTokenSameLine();
+        if (token.IsEmpty())
+            return;
+
+        bool hasDef = HasDefine(token, m_Tokens.GetLineNumber());
+        if ((ifToken.IsSameAs(_T("#ifdef")) && hasDef) || (ifToken.IsSameAs(_T("#ifndef")) && !hasDef))
+        {
+            // Will be interpreted until correcponding #elif, #else or #endif
+        }
+        else
+        {
+            // Skip to the corresponding #elif #else or #endif
+            m_Tokens.SkipToEOL();
+            wxString lastTok;
+            SkipPPIfdef(lastTok);
+            if (lastTok.IsEmpty() || lastTok.IsSameAs(_T("#endif")))
+                m_inIfdef -= 1;
+            else if (lastTok.IsSameAs(_T("#elif")))
+                HandlePPIfdef(lastTok);
+        }
+    }
+    else if (ifToken.IsSameAs(_T("#if")) || ifToken.IsSameAs(_T("#elif")))
+    {
+        // More clever interpreter is required.
+        // For now take as if defined in case of #if
+        if (ifToken.IsSameAs(_T("#if")))
+        {
+            m_inIfdef += 1;
+        }
+        else
+        {
+            // Skip to the corresponding #endif
+            wxString lastTok;
+            while (true)
+            {
+                m_Tokens.SkipToEOL();
+                SkipPPIfdef(lastTok);
+                if (lastTok.IsEmpty() || lastTok.IsSameAs(_T("#endif")))
+                    break;
+            }
+            m_inIfdef -= 1;
+        }
+    }
+    else if (ifToken.IsSameAs(_T("#else")))
+    {
+        // Skip to the corresponding #endif
+        m_Tokens.SkipToEOL();
+        wxString lastTok;
+        SkipPPIfdef(lastTok);
+        // here should be lastTok==#endif
+        m_inIfdef -= 1;
+    }
+    else // #endif
+        m_inIfdef -= 1;
+
+    m_Tokens.SkipToEOL();
+}
+
+bool ParserThreadF::HasDefine(const wxString& token, unsigned int lnum)
+{
+    size_t nDef = m_pPPDefineTokens->size();
+    for (size_t i=0; i<nDef; ++i)
+    {
+        if (m_pPPDefineTokens->Item(i)->m_DisplayName.IsSameAs(token) &&
+            (m_pPPDefineTokens->Item(i)->m_LineEnd == 0 ||
+             m_pPPDefineTokens->Item(i)->m_LineEnd > lnum))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+void ParserThreadF::SkipPPIfdef(wxString& tokenAtEnd)
+{
+    // Skip to the next corresponding #elif, #else or #endif
+    tokenAtEnd.clear();
+    int start_inIfdef = m_inIfdef;
+    while (true)
+    {
+        wxString token = m_Tokens.GetToken();
+        if (token.IsEmpty())
+            break;
+
+        if (token.StartsWith(_T("#")))
+        {
+            if (token.IsSameAs(_T("#ifdef")) || token.IsSameAs(_T("#ifndef")))
+            {
+                m_inIfdef += 1;
+                m_Tokens.SkipToEOL();
+            }
+            else if (m_inIfdef > start_inIfdef && token.IsSameAs(_T("#endif")))
+            {
+                m_inIfdef -= 1;
+                m_Tokens.SkipToEOL();
+            }
+            else if (token.IsSameAs(_T("#define")))
+                continue; //HandlePPDefine();
+            else if (token.IsSameAs(_T("#undefine")) || token.IsSameAs(_T("#undef")))
+                continue; //HandlePPUndefine();
+            else if (m_inIfdef == start_inIfdef)
+            {
+                tokenAtEnd = token;
+                break;
+            }
+        }
+        else
+            m_Tokens.SkipToEOL();
+    }
+    m_Tokens.SkipToEOL();
 }
 
 void ParserThreadF::HandleAccessList(TokenAccessKind taKind, bool& changeDefault, int& countAccess, wxArrayString& nameList)
@@ -1797,10 +1983,12 @@ void ParserThreadF::HandleAccessList(TokenAccessKind taKind, bool& changeDefault
     if (countAccess > 1)
         name << _T(" ") << countAccess;
 
-    TokenF* token = DoAddToken(tkAccessList, name, wxEmptyString, defStartLine);
+    TokenF* token;
+    token = DoAddToken(tkAccessList, name, wxEmptyString, defStartLine);
     token->AddLineEnd(m_Tokens.GetLineNumber());
     token->m_TokenAccess = taKind;
 
+    nameList.Add(token->m_Name);
     size_t i=0;
     if (curLineArr.Item(0).IsSameAs(_T("::")))
         i=1;
@@ -1821,13 +2009,12 @@ void ParserThreadF::GoThroughBody()
         wxString token = m_Tokens.GetToken();
         if (token.IsEmpty())
             break;
-
-        tok_low = token.Lower();
-        if (tok_low.Matches(_T("::")))
+        else if (token.Matches(_T("::")))
         {
             m_Tokens.SkipToOneOfChars(";", true);
             continue;
         }
+        tok_low = token.Lower();
 
         wxString next = m_Tokens.PeekToken();
         wxString nex_low = next.Lower();
@@ -1873,10 +2060,7 @@ void ParserThreadF::GoThroughBody()
         }
         else if (tok_low.GetChar(0) == '#')
         {
-            if (tok_low.Matches(_T("#include")))
-                HandleInclude();
-            else
-                m_Tokens.SkipToEOL();
+            HandlePPDirective(token);
         }
         else if (tok_low.Matches(_T("procedure")) && m_pLastParent->m_TokenKind == tkInterface)
         {
@@ -1905,7 +2089,7 @@ void ParserThreadF::GoThroughBody()
                 nex_low = next.Lower();
                 HandleBlockData();
             }
-            else
+            else if (m_Tokens.GetLineNumber() != m_Tokens.GetPeekedLineNumber() || next.Matches(_T(";")))
             {
                 HandleBlockConstruct();
             }
@@ -1943,9 +2127,13 @@ void ParserThreadF::GoThroughBody()
         else
         {
             bool needDefault = true;
-            bool hasFunctionInLine;
+            bool hasFunctionInLine = false;
             TokensArrayF tokTmpArr;
-            CheckParseOneDeclaration(token, tok_low, next, nex_low, needDefault, tokTmpArr, hasFunctionInLine);
+            if (ln_tokold != m_Tokens.GetLineNumber()) // declaration can start only from a new line
+            {
+                CheckParseOneDeclaration(token, tok_low, next, nex_low, needDefault, tokTmpArr, hasFunctionInLine);
+            }
+
             if (tokTmpArr.size() == 0 && m_pLastParent && !hasFunctionInLine)
             {
                 CheckParseCallProcedure(token, tok_low, next);
@@ -2209,7 +2397,7 @@ void ParserThreadF::MakeArrayStringLower(wxArrayString &arr, wxArrayString &arrL
     }
 }
 
-void ParserThreadF::ChangeTokenAccess(ModuleTokenF* modToken, TokenF* token)
+void ParserThreadF::SetTokenAccess(ModuleTokenF* modToken, TokenF* token, TokenAccessKind defAKind)
 {
     if (modToken->HasNameInPrivateList(token->m_Name))
     {
@@ -2219,6 +2407,10 @@ void ParserThreadF::ChangeTokenAccess(ModuleTokenF* modToken, TokenF* token)
     {
         if (token->m_TokenAccess != taProtected)
             token->m_TokenAccess = taPublic;
+    }
+    else
+    {
+        token->m_TokenAccess = defAKind;
     }
 }
 
@@ -2523,6 +2715,7 @@ void ParserThreadF::CheckParseCallProcedure(wxString& token, wxString& tok_low, 
 {
     if ( tok_low.IsSameAs(_T("call")) )
     {
+        wxArrayString args_arr;
         token = m_Tokens.GetTokenSameFortranLine();
         while (true)
         {
@@ -2532,20 +2725,26 @@ void ParserThreadF::CheckParseCallProcedure(wxString& token, wxString& tok_low, 
                 token << m_Tokens.GetTokenSameFortranLine();
                 token << m_Tokens.GetTokenSameFortranLine();
             }
+            else if (nextTok.StartsWith(_T("(")) && nextTok.EndsWith(_T(")")))
+            {
+                args_arr.Add(m_Tokens.GetTokenSameFortranLine());
+            }
             else
                 break;
         }
         if (token != wxEmptyString)
         {
             DoAddToken(tkCallSubroutine, token);
-            token = m_Tokens.GetTokenSameFortranLine();
-            if (token.StartsWith(_T("(")) && token.EndsWith(_T(")")))
+            for (size_t i=0; i<args_arr.size(); ++i)
             {
-                // we have argument list. Find function-array calls.
-                wxString args = token.Mid(1, token.length()-2);
-                TakeFunctionsCallsFromString(args);
+                token = args_arr.Item(i);
+                if (token.StartsWith(_T("(")) && token.EndsWith(_T(")")))
+                {
+                    // we have argument list. Find function-array calls.
+                    wxString args = token.Mid(1, token.length()-2);
+                    TakeFunctionsCallsFromString(args);
+                }
             }
-
         }
     }
     else
@@ -2582,6 +2781,10 @@ void ParserThreadF::TakeFunctionsCallsFromString(const wxString& strIn)
                 {
                     break;
                 }
+                else if (wordTmp.StartsWith(_T("(")) && wordTmp.EndsWith(_T(")")))
+                {
+                    idxEnd = idxStart - 1;
+                }
                 else
                 {
                     int idxCur = idxStart-1;
@@ -2604,7 +2807,7 @@ void ParserThreadF::TakeFunctionsCallsFromString(const wxString& strIn)
                 }
             }
 
-            if (funName != wxEmptyString)
+            if (!funName.IsEmpty() && !isdigit(funName.GetChar(0)))
             {
                 DoAddToken(tkCallFunction, funName);
             }
@@ -2628,9 +2831,26 @@ void ParserThreadF::GetWordBefore(const wxString& str, int idxEnd, wxString& fun
     if (idxEnd < 0)
         return;
 
+    int lev = 0;
     for (idxStart=idxEnd; idxStart>=0; idxStart--)
     {
-        if (!isalnum(str.GetChar(idxStart)) && str.GetChar(idxStart) != '_' && str.GetChar(idxStart) != '$')
+        if (str.GetChar(idxStart) == ')')
+        {
+            lev+=1;
+        }
+        else if (str.GetChar(idxStart) == '(')
+        {
+            if (lev == 0)
+                break;
+            else if (lev == 1)
+            {
+                idxStart-=1;
+                break;
+            }
+            else
+                lev-=1;
+        }
+        else if (!isalnum(str.GetChar(idxStart)) && str.GetChar(idxStart) != '_' && str.GetChar(idxStart) != '$')
             break;
     }
     idxStart += 1;

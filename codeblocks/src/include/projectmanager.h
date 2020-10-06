@@ -118,10 +118,11 @@ class DLLIMPORT cbProjectManagerUI
         virtual wxArrayInt AskForMultiBuildTargetIndex(cbProject* project = nullptr) = 0;
 
         /** Displays a dialog to setup project dependencies.
-          * @param base The project to setup its dependencies. Can be NULL (default) because
-          * there's a project selection combo in the dialog.
+          * @param base The project to setup its dependencies. Can be NULL because there's a
+          * project selection combo in the dialog.
+          * @param parent Parent window which should be used to show the dialog.
           */
-        virtual void ConfigureProjectDependencies(cbProject* base = nullptr) = 0;
+        virtual void ConfigureProjectDependencies(cbProject* base, wxWindow *parent) = 0;
 
         /** Switches the management's notebook to the Projects tab */
         virtual void SwitchToProjectsPage() = 0;
@@ -435,8 +436,12 @@ class DLLIMPORT ProjectManager : public Mgr<ProjectManager>, public wxEvtHandler
             return *this;
         }
 
-        /** If a plugin runs the project executable, should not be able to run it too */
+        /// This method should be called when the applications is started by a plugin.
+        /// There is only one plugin which could be running the application.
+        /// Running means that plugin has started the executable and it is waiting for it to finish.
         void SetIsRunning(cbPlugin *plugin);
+
+        /// Return a pointer to the plugin which is running the application.
         cbPlugin* GetIsRunning() const;
 
         /** Return the project which has the file in it, also return the pointer to the ProjectFile object. */
@@ -447,7 +452,7 @@ class DLLIMPORT ProjectManager : public Mgr<ProjectManager>, public wxEvtHandler
         ProjectManager(cb_unused const ProjectManager& rhs); // prevent copy construction
 
         ProjectManager();
-        ~ProjectManager();
+        ~ProjectManager() override;
         void OnAppDoneStartup(CodeBlocksEvent& event);
         int  DoAddFileToProject(const wxString& filename, cbProject* project, wxArrayInt& targets);
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10948 $
- * $Id: todolistview.cpp 10948 2016-12-28 00:06:17Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/todo/todolistview.cpp $
+ * $Revision: 11829 $
+ * $Id: todolistview.cpp 11829 2019-08-28 20:34:31Z pecanh $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/todo/todolistview.cpp $
  */
 
 #include "sdk.h"
@@ -699,7 +699,7 @@ void ToDoListView::OnButtonRefresh(cb_unused wxCommandEvent& event)
 }
 
 void ToDoListView::OnDoubleClick(cb_unused wxCommandEvent& event)
-{    // pecan 1/2/2006 12PM : Switched with OnListItemSelected by Rick 20/07/2007
+{
     long item = control->GetNextItem(-1,
                                      wxLIST_NEXT_ALL,
                                      wxLIST_STATE_SELECTED);

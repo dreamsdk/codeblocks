@@ -17,7 +17,7 @@
 *
 * $Revision: 8565 $
 * $Id: DigitView.cpp 8565 2012-11-14 22:49:50Z killerbot $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/HexEditor/DigitView.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/DigitView.cpp $
 */
 
 #include "DigitView.h"

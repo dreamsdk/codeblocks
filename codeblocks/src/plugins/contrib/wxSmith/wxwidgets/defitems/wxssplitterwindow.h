@@ -17,7 +17,7 @@
 *
 * $Revision: 10959 $
 * $Id: wxssplitterwindow.h 10959 2017-01-14 22:40:56Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssplitterwindow.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssplitterwindow.h $
 */
 
 #ifndef WXSPLITTERWINDOW_H

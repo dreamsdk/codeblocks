@@ -21,7 +21,7 @@ struct RemoteDebugging
 		Serial
 	};
 
-	RemoteDebugging() : skipLDpath(false), extendedRemote(false) {}
+	RemoteDebugging() : connType(TCP), skipLDpath(false), extendedRemote(false) {}
 
 	bool IsOk() const
 	{
@@ -53,8 +53,6 @@ struct RemoteDebugging
 
 		skipLDpath = other.skipLDpath;
 		extendedRemote = other.extendedRemote;
-		loaderArguments = other.loaderArguments;
-		loaderWaitingTime = other.loaderWaitingTime;
 
 		if (!additionalShellCmdsAfter.IsEmpty() && !other.additionalShellCmdsAfter.IsEmpty())
 			additionalShellCmdsAfter += _T('\n');
@@ -65,6 +63,21 @@ struct RemoteDebugging
 			additionalShellCmdsBefore += _T('\n');
 		if (!other.additionalShellCmdsBefore.IsEmpty())
 			additionalShellCmdsBefore += other.additionalShellCmdsBefore;
+	}
+
+	bool operator == (const RemoteDebugging &rd) const
+	{
+	    return (connType == rd.connType
+            && serialPort == rd.serialPort
+            && serialBaud == rd.serialBaud
+            && ip == rd.ip
+            && ipPort == rd.ipPort
+            && additionalCmds == rd.additionalCmds
+            && additionalCmdsBefore == rd.additionalCmdsBefore
+            && additionalShellCmdsAfter == rd.additionalShellCmdsAfter
+            && additionalShellCmdsBefore == rd.additionalShellCmdsBefore
+            && skipLDpath == rd.skipLDpath
+            && extendedRemote == rd.extendedRemote);
 	}
 
 	ConnectionType connType;
@@ -78,8 +91,6 @@ struct RemoteDebugging
 	wxString additionalShellCmdsBefore; ///< shell commands before establishing remote connection
 	bool skipLDpath; ///< skip adjusting LD_LIBRARY_PATH before launching debugger
 	bool extendedRemote;//!< connect with extended remote or not
-	wxString loaderArguments;
-	int loaderWaitingTime;
 };
 
 typedef std::map<ProjectBuildTarget*, RemoteDebugging> RemoteDebuggingMap;

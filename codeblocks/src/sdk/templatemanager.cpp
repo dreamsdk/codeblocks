@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: templatemanager.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/templatemanager.cpp $
+ * $Revision: 11432 $
+ * $Id: templatemanager.cpp 11432 2018-08-06 14:42:01Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/templatemanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -25,7 +25,6 @@
     #include "globals.h"
     #include "compilerfactory.h"
     #include "cbplugin.h"
-    #include "cbproject.h"
 #endif
 
 #include <wx/filedlg.h>

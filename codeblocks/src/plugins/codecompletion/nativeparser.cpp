@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11070 $
- * $Id: nativeparser.cpp 11070 2017-05-28 15:26:46Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/nativeparser.cpp $
+ * $Revision: 11898 $
+ * $Id: nativeparser.cpp 11898 2019-11-04 19:35:16Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/nativeparser.cpp $
  */
 
 #include <sdk.h>
@@ -38,8 +38,6 @@
 
 #include <cbstyledtextctrl.h>
 #include <compilercommandgenerator.h>
-#include <projectloader_hooks.h>
-#include <tinyxml.h>
 
 #include "nativeparser.h"
 #include "classbrowser.h"
@@ -98,14 +96,14 @@ namespace NativeParserHelper
             m_Files(files)
         {}
 
-        virtual wxDirTraverseResult OnFile(const wxString& filename)
+        wxDirTraverseResult OnFile(const wxString& filename) override
         {
             if (ParserCommon::FileType(filename) != ParserCommon::ftOther)
                 m_Files.Add(filename);
             return wxDIR_CONTINUE;
         }
 
-        virtual wxDirTraverseResult OnDir(const wxString& dirname)
+        wxDirTraverseResult OnDir(const wxString& dirname) override
         {
             if (dirname == m_ExcludeDir)
                 return wxDIR_IGNORE;
@@ -127,11 +125,73 @@ int idTimerParsingOneByOne = wxNewId();
 /** if this option is enabled, there will be many log messages when doing semantic match */
 bool s_DebugSmartSense = false;
 
+static void AddToImageList(wxImageList *list, const wxString &path)
+{
+    wxBitmap bmp = cbLoadBitmap(path, wxBITMAP_TYPE_PNG);
+    if (!bmp.IsOk())
+    {
+        printf("failed to load: %s\n", path.utf8_str().data());
+    }
+    list->Add(bmp);
+}
+
+static wxImageList* LoadImageList(int size)
+{
+    wxImageList *list = new wxImageList(size, size);
+    wxBitmap bmp;
+    const wxString prefix = ConfigManager::GetDataFolder()
+                          + wxString::Format(_T("/codecompletion.zip#zip:images/%dx%d/"), size,
+                                             size);
+
+    // Bitmaps must be added by order of PARSER_IMG_* consts.
+    AddToImageList(list, prefix + _T("class_folder.png")); // PARSER_IMG_CLASS_FOLDER
+    AddToImageList(list, prefix + _T("class.png")); // PARSER_IMG_CLASS
+    AddToImageList(list, prefix + _T("class_private.png")); // PARSER_IMG_CLASS_PRIVATE
+    AddToImageList(list, prefix + _T("class_protected.png")); // PARSER_IMG_CLASS_PROTECTED
+    AddToImageList(list, prefix + _T("class_public.png")); // PARSER_IMG_CLASS_PUBLIC
+    AddToImageList(list, prefix + _T("ctor_private.png")); // PARSER_IMG_CTOR_PRIVATE
+    AddToImageList(list, prefix + _T("ctor_protected.png")); // PARSER_IMG_CTOR_PROTECTED
+    AddToImageList(list, prefix + _T("ctor_public.png")); // PARSER_IMG_CTOR_PUBLIC
+    AddToImageList(list, prefix + _T("dtor_private.png")); // PARSER_IMG_DTOR_PRIVATE
+    AddToImageList(list, prefix + _T("dtor_protected.png")); // PARSER_IMG_DTOR_PROTECTED
+    AddToImageList(list, prefix + _T("dtor_public.png")); // PARSER_IMG_DTOR_PUBLIC
+    AddToImageList(list, prefix + _T("method_private.png")); // PARSER_IMG_FUNC_PRIVATE
+    AddToImageList(list, prefix + _T("method_protected.png")); // PARSER_IMG_FUNC_PRIVATE
+    AddToImageList(list, prefix + _T("method_public.png")); // PARSER_IMG_FUNC_PUBLIC
+    AddToImageList(list, prefix + _T("var_private.png")); // PARSER_IMG_VAR_PRIVATE
+    AddToImageList(list, prefix + _T("var_protected.png")); // PARSER_IMG_VAR_PROTECTED
+    AddToImageList(list, prefix + _T("var_public.png")); // PARSER_IMG_VAR_PUBLIC
+    AddToImageList(list, prefix + _T("macro_def.png")); // PARSER_IMG_MACRO_DEF
+    AddToImageList(list, prefix + _T("enum.png")); // PARSER_IMG_ENUM
+    AddToImageList(list, prefix + _T("enum_private.png")); // PARSER_IMG_ENUM_PRIVATE
+    AddToImageList(list, prefix + _T("enum_protected.png")); // PARSER_IMG_ENUM_PROTECTED
+    AddToImageList(list, prefix + _T("enum_public.png")); // PARSER_IMG_ENUM_PUBLIC
+    AddToImageList(list, prefix + _T("enumerator.png")); // PARSER_IMG_ENUMERATOR
+    AddToImageList(list, prefix + _T("namespace.png")); // PARSER_IMG_NAMESPACE
+    AddToImageList(list, prefix + _T("typedef.png")); // PARSER_IMG_TYPEDEF
+    AddToImageList(list, prefix + _T("typedef_private.png")); // PARSER_IMG_TYPEDEF_PRIVATE
+    AddToImageList(list, prefix + _T("typedef_protected.png")); // PARSER_IMG_TYPEDEF_PROTECTED
+    AddToImageList(list, prefix + _T("typedef_public.png")); // PARSER_IMG_TYPEDEF_PUBLIC
+    AddToImageList(list, prefix + _T("symbols_folder.png")); // PARSER_IMG_SYMBOLS_FOLDER
+    AddToImageList(list, prefix + _T("vars_folder.png")); // PARSER_IMG_VARS_FOLDER
+    AddToImageList(list, prefix + _T("funcs_folder.png")); // PARSER_IMG_FUNCS_FOLDER
+    AddToImageList(list, prefix + _T("enums_folder.png")); // PARSER_IMG_ENUMS_FOLDER
+    AddToImageList(list, prefix + _T("macro_def_folder.png")); // PARSER_IMG_MACRO_DEF_FOLDER
+    AddToImageList(list, prefix + _T("others_folder.png")); // PARSER_IMG_OTHERS_FOLDER
+    AddToImageList(list, prefix + _T("typedefs_folder.png")); // PARSER_IMG_TYPEDEF_FOLDER
+    AddToImageList(list, prefix + _T("macro_use.png")); // PARSER_IMG_MACRO_USE
+    AddToImageList(list, prefix + _T("macro_use_private.png")); // PARSER_IMG_MACRO_USE_PRIVATE
+    AddToImageList(list, prefix + _T("macro_use_protected.png")); // PARSER_IMG_MACRO_USE_PROTECTED
+    AddToImageList(list, prefix + _T("macro_use_public.png")); // PARSER_IMG_MACRO_USE_PUBLIC
+    AddToImageList(list, prefix + _T("macro_use_folder.png")); // PARSER_IMG_MACRO_USE_FOLDER
+
+    return list;
+}
+
 NativeParser::NativeParser() :
     m_TimerParsingOneByOne(this, idTimerParsingOneByOne),
     m_ClassBrowser(nullptr),
     m_ClassBrowserIsFloating(false),
-    m_ImageList(nullptr),
     m_ParserPerWorkspace(false),
     m_LastAISearchWasGlobal(false),
     m_LastControl(nullptr),
@@ -143,98 +203,8 @@ NativeParser::NativeParser() :
     m_TempParser = new Parser(this, nullptr);
     m_Parser     = m_TempParser;
 
-    m_ImageList = new wxImageList(16, 16);
-    wxBitmap bmp;
-    wxString prefix;
-    prefix = ConfigManager::GetDataFolder() + _T("/images/codecompletion/");
-    // bitmaps must be added by order of PARSER_IMG_* consts
-    bmp = cbLoadBitmap(prefix + _T("class_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CLASS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("class.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CLASS
-    bmp = cbLoadBitmap(prefix + _T("class_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CLASS_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("class_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CLASS_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("class_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CLASS_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("ctor_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CTOR_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("ctor_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CTOR_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("ctor_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_CTOR_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("dtor_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_DTOR_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("dtor_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_DTOR_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("dtor_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_DTOR_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("method_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_FUNC_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("method_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_FUNC_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("method_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_FUNC_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("var_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_VAR_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("var_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_VAR_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("var_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_VAR_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("macro_def.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_DEF
-    bmp = cbLoadBitmap(prefix + _T("enum.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUM
-    bmp = cbLoadBitmap(prefix + _T("enum_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUM_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("enum_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUM_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("enum_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUM_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("enumerator.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUMERATOR
-    bmp = cbLoadBitmap(prefix + _T("namespace.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_NAMESPACE
-    bmp = cbLoadBitmap(prefix + _T("typedef.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_TYPEDEF
-    bmp = cbLoadBitmap(prefix + _T("typedef_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("typedef_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("typedef_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("symbols_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_SYMBOLS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("vars_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_VARS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("funcs_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_FUNCS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("enums_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_ENUMS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("macro_def_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_DEF_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("others_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_OTHERS_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("typedefs_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_TYPEDEF_FOLDER
-    bmp = cbLoadBitmap(prefix + _T("macro_use.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_USE
-    bmp = cbLoadBitmap(prefix + _T("macro_use_private.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_USE_PRIVATE
-    bmp = cbLoadBitmap(prefix + _T("macro_use_protected.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_USE_PROTECTED
-    bmp = cbLoadBitmap(prefix + _T("macro_use_public.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_USE_PUBLIC
-    bmp = cbLoadBitmap(prefix + _T("macro_use_folder.png"), wxBITMAP_TYPE_PNG);
-    m_ImageList->Add(bmp); // PARSER_IMG_MACRO_USE_FOLDER
-
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("code_completion"));
     m_ParserPerWorkspace = cfg->ReadBool(_T("/parser_per_workspace"), false);
-
-    // hook to project loading procedure
-    ProjectLoaderHooks::HookFunctorBase* myhook = new ProjectLoaderHooks::HookFunctor<NativeParser>(this, &NativeParser::OnProjectLoadingHook);
-    m_HookId = ProjectLoaderHooks::RegisterHook(myhook);
 
     Connect(ParserCommon::idParserStart, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(NativeParser::OnParserStart));
     Connect(ParserCommon::idParserEnd,   wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(NativeParser::OnParserEnd));
@@ -246,10 +216,8 @@ NativeParser::~NativeParser()
     Disconnect(ParserCommon::idParserStart, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(NativeParser::OnParserStart));
     Disconnect(ParserCommon::idParserEnd,   wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(NativeParser::OnParserEnd));
     Disconnect(idTimerParsingOneByOne,      wxEVT_TIMER,                 wxTimerEventHandler(NativeParser::OnParsingOneByOneTimer));
-    ProjectLoaderHooks::UnregisterHook(m_HookId, true);
     RemoveClassBrowser();
     ClearParsers();
-    Delete(m_ImageList);
     Delete(m_TempParser);
 }
 
@@ -270,7 +238,7 @@ ParserBase* NativeParser::GetParserByProject(cbProject* project)
         }
     }
 
-    TRACE(_T("NativeParser::GetParserByProject(): Returning nullptr."));
+    TRACE(_T("NativeParser::GetParserByProject: Returning nullptr."));
     return nullptr;
 }
 
@@ -288,13 +256,13 @@ cbProject* NativeParser::GetProjectByParser(ParserBase* parser)
             return it->first;
     }
 
-    TRACE(_T("NativeParser::GetProjectByParser(): Returning NULL."));
+    TRACE(_T("NativeParser::GetProjectByParser: Returning NULL."));
     return NULL;
 }
 
 cbProject* NativeParser::GetProjectByFilename(const wxString& filename)
 {
-    TRACE(_T("NativeParser::GetProjectByFilename(): %s"), filename.wx_str());
+    TRACE(_T("NativeParser::GetProjectByFilename: %s"), filename.wx_str());
     cbProject* activeProject = Manager::Get()->GetProjectManager()->GetActiveProject();
     if (activeProject)
     {
@@ -358,8 +326,23 @@ bool NativeParser::Done()
             break;
         }
     }
-    TRACE(_T("NativeParser::Done(): %s"), done ? _T("true"): _T("false"));
+    TRACE(_T("NativeParser::Done: %s"), done ? _T("true"): _T("false"));
     return done;
+}
+
+wxImageList* NativeParser::GetImageList(int maxSize)
+{
+    const int size = cbFindMinSize16to64(maxSize);
+
+    SizeToImageList::iterator it = m_ImageListMap.find(size);
+    if (it == m_ImageListMap.end())
+    {
+        wxImageList *list = LoadImageList(size);
+        m_ImageListMap.insert(SizeToImageList::value_type(size, std::unique_ptr<wxImageList>(list)));
+        return list;
+    }
+    else
+        return it->second.get();
 }
 
 int NativeParser::GetTokenKindImage(const Token* token)
@@ -464,7 +447,7 @@ int NativeParser::GetTokenKindImage(const Token* token)
 
 wxArrayString NativeParser::GetAllPathsByFilename(const wxString& filename)
 {
-    TRACE(_T("NativeParser::GetAllPathsByFilename(): Enter"));
+    TRACE(_T("NativeParser::GetAllPathsByFilename: Enter"));
 
     wxArrayString dirs;
     const wxFileName fn(filename);
@@ -476,11 +459,12 @@ wxArrayString NativeParser::GetAllPathsByFilename(const wxString& filename)
     wxArrayString files;
     NativeParserHelper::ParserDirTraverser traverser(wxEmptyString, files);
     const wxString filespec = fn.HasExt() ? fn.GetName() + _T(".*") : fn.GetName();
-    CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename(): Traversing '") + fn.GetPath() + _T("' for: ") + filespec);
+    CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename: Traversing '") + fn.GetPath() + _T("' for: ") + filespec);
 
+    // search in the same directory of the input file
     dir.Traverse(traverser, filespec, wxDIR_FILES);
 
-    // only find one file in the dir, go other place
+    // only find one file in the dir, which is the input file itself, try searching in other places
     if (files.GetCount() == 1)
     {
         cbProject* project = IsParserPerWorkspace() ? GetCurrentProject()
@@ -503,7 +487,7 @@ wxArrayString NativeParser::GetAllPathsByFilename(const wxString& filename)
                     {
                         wxArrayString priorityPathSub;
                         NativeParserHelper::ParserDirTraverser traverser_2(wxEmptyString, priorityPathSub);
-                        CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename(): Traversing '") + priorityPath + _T("' for: ") + filespec);
+                        CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename: Traversing '") + priorityPath + _T("' for: ") + filespec);
                         priorityDir.Traverse(traverser_2, filespec, wxDIR_FILES | wxDIR_DIRS);
                         if (priorityPathSub.GetCount() == 1)
                             AddPaths(dirs, priorityPathSub[0], fn.HasExt());
@@ -519,7 +503,7 @@ wxArrayString NativeParser::GetAllPathsByFilename(const wxString& filename)
                     // try to search the project top level folder
                     wxArrayString prjDirSub;
                     NativeParserHelper::ParserDirTraverser traverser_2(priorityPath, prjDirSub);
-                    CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename(): Traversing '") + priorityPath + wxT(" - ") + prjPath + _T("' for: ") + filespec);
+                    CCLogger::Get()->DebugLog(_T("NativeParser::GetAllPathsByFilename: Traversing '") + priorityPath + wxT(" - ") + prjPath + _T("' for: ") + filespec);
                     prjDir.Traverse(traverser_2, filespec, wxDIR_FILES | wxDIR_DIRS);
                     if (prjDirSub.GetCount() == 1)
                         AddPaths(dirs, prjDirSub[0], fn.HasExt());
@@ -528,14 +512,14 @@ wxArrayString NativeParser::GetAllPathsByFilename(const wxString& filename)
         }
     }
 
-    CCLogger::Get()->DebugLog(F(_T("NativeParser::GetAllPathsByFilename(): Found %lu files:"), static_cast<unsigned long>(files.GetCount())));
+    CCLogger::Get()->DebugLog(F(_T("NativeParser::GetAllPathsByFilename: Found %lu files:"), static_cast<unsigned long>(files.GetCount())));
     for (size_t i=0; i<files.GetCount(); i++)
         CCLogger::Get()->DebugLog(F(_T("- %s"), files[i].wx_str()));
 
     if (!files.IsEmpty())
         AddPaths(dirs, files[0], fn.HasExt());
 
-    TRACE(_T("NativeParser::GetAllPathsByFilename(): Leave"));
+    TRACE(_T("NativeParser::GetAllPathsByFilename: Leave"));
     return dirs;
 }
 
@@ -555,7 +539,7 @@ ParserBase* NativeParser::CreateParser(cbProject* project)
 {
     if ( GetParserByProject(project) )
     {
-        CCLogger::Get()->DebugLog(_T("NativeParser::CreateParser(): Parser for this project already exists!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::CreateParser: Parser for this project already exists!"));
         return nullptr;
     }
 
@@ -563,12 +547,12 @@ ParserBase* NativeParser::CreateParser(cbProject* project)
     if (m_ParserPerWorkspace && !m_ParsedProjects.empty())
         return m_ParserList.begin()->second;
 
-    TRACE(_T("NativeParser::CreateParser(): Calling DoFullParsing()"));
+    TRACE(_T("NativeParser::CreateParser: Calling DoFullParsing()"));
 
     ParserBase* parser = new Parser(this, project);
     if ( !DoFullParsing(project, parser) )
     {
-        CCLogger::Get()->DebugLog(_T("NativeParser::CreateParser(): Full parsing failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::CreateParser: Full parsing failed!"));
         delete parser;
         return nullptr;
     }
@@ -582,7 +566,7 @@ ParserBase* NativeParser::CreateParser(cbProject* project)
     m_ParserList.push_back(std::make_pair(project, parser));
 
     wxString prj = (project ? project->GetTitle() : _T("*NONE*"));
-    wxString log(F(_("NativeParser::CreateParser(): Finish creating a new parser for project '%s'"), prj.wx_str()));
+    wxString log(F(_("NativeParser::CreateParser: Finish creating a new parser for project '%s'"), prj.wx_str()));
     CCLogger::Get()->Log(log);
     CCLogger::Get()->DebugLog(log);
 
@@ -607,7 +591,7 @@ bool NativeParser::DeleteParser(cbProject* project)
 
     if (it == m_ParserList.end())
     {
-        CCLogger::Get()->DebugLog(F(_T("NativeParser::DeleteParser(): Parser does not exist for delete '%s'!"), prj.wx_str()));
+        CCLogger::Get()->DebugLog(F(_T("NativeParser::DeleteParser: Parser does not exist for delete '%s'!"), prj.wx_str()));
         return false;
     }
 
@@ -617,7 +601,7 @@ bool NativeParser::DeleteParser(cbProject* project)
 
     if (m_ParsedProjects.empty()) // this indicates we are in one parser per one project mode
     {
-        wxString log(F(_("NativeParser::DeleteParser(): Deleting parser for project '%s'!"), prj.wx_str()));
+        wxString log(F(_("NativeParser::DeleteParser: Deleting parser for project '%s'!"), prj.wx_str()));
         CCLogger::Get()->Log(log);
         CCLogger::Get()->DebugLog(log);
 
@@ -640,7 +624,7 @@ bool NativeParser::DeleteParser(cbProject* project)
     if (removeProjectFromParser)
         return true;
 
-    CCLogger::Get()->DebugLog(_T("NativeParser::DeleteParser(): Deleting parser failed!"));
+    CCLogger::Get()->DebugLog(_T("NativeParser::DeleteParser: Deleting parser failed!"));
     return false;
 }
 
@@ -656,7 +640,7 @@ bool NativeParser::ReparseFile(cbProject* project, const wxString& filename)
     if (!parser->UpdateParsingProject(project))
         return false;
 
-    TRACE(_T("NativeParser::ReparseFile(): Calling Parser::Reparse()"));
+    TRACE(_T("NativeParser::ReparseFile: Calling Parser::Reparse()"));
 
     return parser->Reparse(filename);
 }
@@ -676,7 +660,7 @@ bool NativeParser::AddFileToParser(cbProject* project, const wxString& filename,
     if (!parser->UpdateParsingProject(project))
         return false;
 
-    TRACE(_T("NativeParser::AddFileToParser(): Calling Parser::AddFile()"));
+    TRACE(_T("NativeParser::AddFileToParser: Calling Parser::AddFile()"));
 
     return parser->AddFile(filename, project);
 }
@@ -687,7 +671,7 @@ bool NativeParser::RemoveFileFromParser(cbProject* project, const wxString& file
     if (!parser)
         return false;
 
-    TRACE(_T("NativeParser::RemoveFileFromParser(): Calling Parser::RemoveFile()"));
+    TRACE(_T("NativeParser::RemoveFileFromParser: Calling Parser::RemoveFile()"));
 
     return parser->RemoveFile(filename);
 }
@@ -764,7 +748,7 @@ void NativeParser::ReparseCurrentProject()
     cbProject* project = GetCurrentProject();
     if (project)
     {
-        TRACE(_T("NativeParser::ReparseCurrentProject(): Calling DeleteParser() and CreateParser()"));
+        TRACE(_T("NativeParser::ReparseCurrentProject: Calling DeleteParser() and CreateParser()"));
         DeleteParser(project);
         CreateParser(project);
     }
@@ -789,7 +773,7 @@ void NativeParser::ReparseSelectedProject()
         cbProject* project = data->GetProject();
         if (project)
         {
-            TRACE(_T("NativeParser::ReparseSelectedProject(): Calling DeleteParser() and CreateParser()"));
+            TRACE(_T("NativeParser::ReparseSelectedProject: Calling DeleteParser() and CreateParser()"));
             DeleteParser(project);
             CreateParser(project);
         }
@@ -950,19 +934,67 @@ int NativeParser::GetCallTips(wxArrayString& items, int& typedCommas, cbEditor* 
     ComputeCallTip(m_Parser->GetTokenTree(), result, items);
 
     typedCommas = commas;
-    TRACE(_T("NativeParser::GetCallTips(): typedCommas=%d"), typedCommas);
+    TRACE(_T("NativeParser::GetCallTips: typedCommas=%d"), typedCommas);
     items.Sort();
     return end;
 }
 
-wxArrayString& NativeParser::GetProjectSearchDirs(cbProject* project)
+wxArrayString NativeParser::ParseProjectSearchDirs(const cbProject &project)
 {
-    ProjectSearchDirsMap::iterator it;
-    it = m_ProjectSearchDirsMap.find(project);
-    if (it == m_ProjectSearchDirsMap.end())
-        it = m_ProjectSearchDirsMap.insert(m_ProjectSearchDirsMap.end(), std::make_pair(project, wxArrayString()));
 
-    return it->second;
+    const TiXmlNode *extensionNode = project.GetExtensionsNode();
+    if (!extensionNode)
+        return wxArrayString();
+    const TiXmlElement* elem = extensionNode->ToElement();
+    if (!elem)
+        return wxArrayString();
+
+    wxArrayString pdirs;
+    const TiXmlElement* CCConf = elem->FirstChildElement("code_completion");
+    if (CCConf)
+    {
+        const TiXmlElement* pathsElem = CCConf->FirstChildElement("search_path");
+        while (pathsElem)
+        {
+            if (pathsElem->Attribute("add"))
+            {
+                wxString dir = cbC2U(pathsElem->Attribute("add"));
+                if (pdirs.Index(dir) == wxNOT_FOUND)
+                    pdirs.Add(dir);
+            }
+
+            pathsElem = pathsElem->NextSiblingElement("search_path");
+        }
+    }
+    return pdirs;
+}
+
+void NativeParser::SetProjectSearchDirs(cbProject &project, const wxArrayString &dirs)
+{
+    TiXmlNode *extensionNode = project.GetExtensionsNode();
+    if (!extensionNode)
+        return;
+    TiXmlElement* elem = extensionNode->ToElement();
+    if (!elem)
+        return;
+
+    // since rev4332, the project keeps a copy of the <Extensions> element
+    // and re-uses it when saving the project (so to avoid losing entries in it
+    // if plugins that use that element are not loaded atm).
+    // so, instead of blindly inserting the element, we must first check it's
+    // not already there (and if it is, clear its contents)
+    TiXmlElement* node = elem->FirstChildElement("code_completion");
+    if (!node)
+        node = elem->InsertEndChild(TiXmlElement("code_completion"))->ToElement();
+    if (node)
+    {
+        node->Clear();
+        for (size_t i = 0; i < dirs.GetCount(); ++i)
+        {
+            TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
+            if (path) path->SetAttribute("add", cbU2C(dirs[i]));
+        }
+    }
 }
 
 void NativeParser::CreateClassBrowser()
@@ -975,7 +1007,7 @@ void NativeParser::CreateClassBrowser()
     if (m_ClassBrowser || !cfg->ReadBool(_T("/use_symbols_browser"), true))
         return;
 
-    TRACE(_T("NativeParser::CreateClassBrowser(): Enter"));
+    TRACE(_T("NativeParser::CreateClassBrowser: Enter"));
 
     m_ClassBrowserIsFloating = cfg->ReadBool(_T("/as_floating_window"), false);
 
@@ -1010,7 +1042,7 @@ void NativeParser::CreateClassBrowser()
     // TODO (Morten): ? what's bug? I test it, it's works well now.
     m_ClassBrowser->SetParser(m_Parser); // Also updates class browser
 
-    TRACE(_T("NativeParser::CreateClassBrowser(): Leave"));
+    TRACE(_T("NativeParser::CreateClassBrowser: Leave"));
 }
 
 void NativeParser::RemoveClassBrowser(cb_unused bool appShutDown)
@@ -1045,7 +1077,7 @@ void NativeParser::UpdateClassBrowser()
 
     if (   m_Parser != m_TempParser
         && m_Parser->Done()
-        && !Manager::IsAppShuttingDown())
+        && !Manager::IsAppShuttingDown() )
     {
         m_ClassBrowser->UpdateClassBrowserView();
     }
@@ -1053,19 +1085,20 @@ void NativeParser::UpdateClassBrowser()
 
 bool NativeParser::DoFullParsing(cbProject* project, ParserBase* parser)
 {
+    wxStopWatch timer;
     if (!parser)
         return false;
 
-    TRACE(_T("NativeParser::DoFullParsing(): Enter"));
+    TRACE(_T("NativeParser::DoFullParsing: Enter"));
 
     if (!AddCompilerDirs(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing(): AddCompilerDirs failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing: AddCompilerDirs failed!"));
 
     if (!AddCompilerPredefinedMacros(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing(): AddCompilerPredefinedMacros failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing: AddCompilerPredefinedMacros failed!"));
 
     if (!AddProjectDefinedMacros(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing(): AddProjectDefinedMacros failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing: AddProjectDefinedMacros failed!"));
 
     // add per-project dirs
     if (project)
@@ -1073,7 +1106,9 @@ bool NativeParser::DoFullParsing(cbProject* project, ParserBase* parser)
         if (   !parser->Options().platformCheck
             || (parser->Options().platformCheck && project->SupportsCurrentPlatform()) )
         {
-            AddIncludeDirsToParser(GetProjectSearchDirs(project),
+            // Note: This parses xml data to get the search directories. It might be expensive if
+            //       the list of directories is too large.
+            AddIncludeDirsToParser(ParseProjectSearchDirs(*project),
                                    project->GetBasePath(), parser);
         }
     }
@@ -1097,7 +1132,7 @@ bool NativeParser::DoFullParsing(cbProject* project, ParserBase* parser)
         }
     }
 
-    CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing(): Adding cpp/c files to batch-parser"));
+    CCLogger::Get()->DebugLog(_T("NativeParser::DoFullParsing: Adding cpp/c files to batch-parser"));
 
     // parse priority files
     wxString prj = (project ? project->GetTitle() : _T("*NONE*"));
@@ -1105,15 +1140,19 @@ bool NativeParser::DoFullParsing(cbProject* project, ParserBase* parser)
 
     if (!localSources.empty())
     {
-        CCLogger::Get()->DebugLog(F(_T("NativeParser::DoFullParsing(): Added %lu source file(s) for project '%s' to batch-parser..."),
+        CCLogger::Get()->DebugLog(F(_T("NativeParser::DoFullParsing: Added %lu source file(s) for project '%s' to batch-parser..."),
                                     static_cast<unsigned long>( localSources.size()), prj.wx_str()));
 
         // local source files added to Parser
         parser->AddBatchParse(localSources);
     }
 
-    TRACE(_T("NativeParser::DoFullParsing(): Leave"));
+    TRACE(_T("NativeParser::DoFullParsing: Leave"));
 
+    long time = timer.Time();
+    if (time >= 50)
+        Manager::Get()->GetLogManager()->Log(F(wxT("NativeParser::DoFullParsing took: %.3f seconds."),
+                                               time / 1000.0f));
     return true;
 }
 
@@ -1121,7 +1160,7 @@ bool NativeParser::SwitchParser(cbProject* project, ParserBase* parser)
 {
     if (!parser || parser == m_Parser || GetParserByProject(project) != parser)
     {
-        TRACE(_T("NativeParser::SwitchParser(): No need to / cannot switch."));
+        TRACE(_T("NativeParser::SwitchParser: No need to / cannot switch."));
         return false;
     }
 
@@ -1176,7 +1215,7 @@ void NativeParser::ClearParsers()
 
 void NativeParser::RemoveObsoleteParsers()
 {
-    TRACE(_T("NativeParser::RemoveObsoleteParsers(): Enter"));
+    TRACE(_T("NativeParser::RemoveObsoleteParsers: Enter"));
 
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("code_completion"));
     const size_t maxParsers = cfg->ReadInt(_T("/max_parsers"), 5);
@@ -1209,12 +1248,12 @@ void NativeParser::RemoveObsoleteParsers()
 
     for (size_t i = 0; i < removedProjectNames.GetCount(); ++i)
     {
-        wxString log(F(_("NativeParser::RemoveObsoleteParsers():Removed obsolete parser of '%s'"), removedProjectNames[i].wx_str()));
+        wxString log(F(_("NativeParser::RemoveObsoleteParsers:Removed obsolete parser of '%s'"), removedProjectNames[i].wx_str()));
         CCLogger::Get()->Log(log);
         CCLogger::Get()->DebugLog(log);
     }
 
-    TRACE(_T("NativeParser::RemoveObsoleteParsers(): Leave"));
+    TRACE(_T("NativeParser::RemoveObsoleteParsers: Leave"));
 }
 
 std::pair<cbProject*, ParserBase*> NativeParser::GetParserInfoByCurrentEditor()
@@ -1231,87 +1270,10 @@ std::pair<cbProject*, ParserBase*> NativeParser::GetParserInfoByCurrentEditor()
     return info;
 }
 
-#ifdef __WXMSW__
-void NativeParser::SetTokenKindImage(int kind, const wxBitmap& bitmap, const wxBitmap& mask)
-{
-    if (kind < PARSER_IMG_MIN || kind > PARSER_IMG_MAX)
-        return;
-    m_ImageList->Replace(kind, bitmap, mask);
-}
-#else
-void NativeParser::SetTokenKindImage(int WXUNUSED(kind), const wxBitmap& WXUNUSED(bitmap), const wxBitmap& WXUNUSED(mask))
-{
-    return;
-}
-#endif
-
-void NativeParser::SetTokenKindImage(int kind, const wxBitmap& bitmap, cb_unused const wxColour& maskColour)
-{
-    if (kind < PARSER_IMG_MIN || kind > PARSER_IMG_MAX)
-        return;
-    m_ImageList->Replace(kind, bitmap);//, maskColour);
-}
-
-void NativeParser::SetTokenKindImage(int kind, const wxIcon& icon)
-{
-    if (kind < PARSER_IMG_MIN || kind > PARSER_IMG_MAX)
-        return;
-    m_ImageList->Replace(kind, icon);
-}
-
 void NativeParser::SetCBViewMode(const BrowserViewMode& mode)
 {
     m_Parser->ClassBrowserOptions().showInheritance = (mode == bvmInheritance) ? true : false;
     UpdateClassBrowser();
-}
-
-void NativeParser::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading)
-{
-    if (loading)
-    {
-        // Hook called when loading project file.
-        wxArrayString& pdirs = GetProjectSearchDirs(project);
-
-        TiXmlElement* CCConf = elem->FirstChildElement("code_completion");
-        if (CCConf)
-        {
-            TiXmlElement* pathsElem = CCConf->FirstChildElement("search_path");
-            while (pathsElem)
-            {
-                if (pathsElem->Attribute("add"))
-                {
-                    wxString dir = cbC2U(pathsElem->Attribute("add"));
-                    if (pdirs.Index(dir) == wxNOT_FOUND)
-                        pdirs.Add(dir);
-                }
-
-                pathsElem = pathsElem->NextSiblingElement("search_path");
-            }
-        }
-    }
-    else
-    {
-        // Hook called when saving project file.
-        wxArrayString& pdirs = GetProjectSearchDirs(project);
-
-        // since rev4332, the project keeps a copy of the <Extensions> element
-        // and re-uses it when saving the project (so to avoid losing entries in it
-        // if plugins that use that element are not loaded atm).
-        // so, instead of blindly inserting the element, we must first check it's
-        // not already there (and if it is, clear its contents)
-        TiXmlElement* node = elem->FirstChildElement("code_completion");
-        if (!node)
-            node = elem->InsertEndChild(TiXmlElement("code_completion"))->ToElement();
-        if (node)
-        {
-            node->Clear();
-            for (size_t i = 0; i < pdirs.GetCount(); ++i)
-            {
-                TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
-                if (path) path->SetAttribute("add", cbU2C(pdirs[i]));
-            }
-        }
-    }
 }
 
 // helper funcs
@@ -1886,20 +1848,20 @@ bool NativeParser::AddCompilerDirs(cbProject* project, ParserBase* parser)
     if (!parser)
         return false;
 
-    TRACE(_T("NativeParser::AddCompilerDirs(): Enter"));
+    TRACE(_T("NativeParser::AddCompilerDirs: Enter"));
 
     // If there is no project, work on default compiler
     if (!project)
     {
         AddCompilerIncludeDirsToParser(CompilerFactory::GetDefaultCompiler(), parser);
-        TRACE(_T("NativeParser::AddCompilerDirs(): Leave"));
+        TRACE(_T("NativeParser::AddCompilerDirs: Leave"));
         return true;
     }
 
     // Otherwise (if there is a project), work on the project's compiler...
     wxString base = project->GetBasePath();
     parser->AddIncludeDir(base); // add project's base path
-    TRACE(_T("NativeParser::AddCompilerDirs(): Adding project base dir to parser: ") + base);
+    TRACE(_T("NativeParser::AddCompilerDirs: Adding project base dir to parser: ") + base);
 
     // ...so we can access post-processed project's search dirs
     Compiler* compiler = CompilerFactory::GetCompiler(project->GetCompilerID());
@@ -1959,10 +1921,10 @@ bool NativeParser::AddCompilerDirs(cbProject* project, ParserBase* parser)
         AddCompilerIncludeDirsToParser(Compilers[idxCompiler], parser);
 
     if (!nCompilers)
-        CCLogger::Get()->DebugLog(_T("NativeParser::AddCompilerDirs(): No compilers found!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::AddCompilerDirs: No compilers found!"));
 
     delete [] Compilers;
-    TRACE(_T("NativeParser::AddCompilerDirs(): Leave"));
+    TRACE(_T("NativeParser::AddCompilerDirs: Leave"));
     return true;
 }
 
@@ -1974,7 +1936,7 @@ bool NativeParser::AddCompilerPredefinedMacros(cbProject* project, ParserBase* p
     if (!parser->Options().wantPreprocessor)
         return false;
 
-    TRACE(_T("NativeParser::AddCompilerPredefinedMacros(): Enter"));
+    TRACE(_T("NativeParser::AddCompilerPredefinedMacros: Enter"));
 
     // Default compiler is used for for single file parser (non project)
     wxString compilerId = project ? project->GetCompilerID() : CompilerFactory::GetDefaultCompilerID();
@@ -1993,10 +1955,10 @@ bool NativeParser::AddCompilerPredefinedMacros(cbProject* project, ParserBase* p
           return false;
     }
 
-    TRACE(_T("NativeParser::AddCompilerPredefinedMacros(): Add compiler predefined preprocessor macros:\n%s"), defs.wx_str());
+    TRACE(_T("NativeParser::AddCompilerPredefinedMacros: Add compiler predefined preprocessor macros:\n%s"), defs.wx_str());
     parser->AddPredefinedMacros(defs);
 
-    TRACE(_T("NativeParser::AddCompilerPredefinedMacros(): Leave"));
+    TRACE(_T("NativeParser::AddCompilerPredefinedMacros: Leave"));
     if ( defs.IsEmpty() )
         return false;
 
@@ -2015,41 +1977,26 @@ bool NativeParser::AddCompilerPredefinedMacrosGCC(const wxString& compilerId, cb
         return false;
     }
 
-    wxString masterPath = compiler->GetMasterPath();
-    Manager::Get()->GetMacrosManager()->ReplaceMacros(masterPath);
-#ifdef __WXMSW__
-    const wxString cpp_compiler = masterPath + _T("\\bin\\") + compiler->GetPrograms().CPP;
-#else
-    const wxString cpp_compiler = masterPath + _T("/bin/") + compiler->GetPrograms().CPP;
-#endif
-    if ( !wxFileName::FileExists(cpp_compiler) )
-        return false;
+    wxString sep = (platform::windows ? _T("\\") : _T("/"));
+    wxString cpp_compiler = compiler->GetMasterPath() + sep + _T("bin") + sep + compiler->GetPrograms().CPP;
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(cpp_compiler);
 
     static std::map<wxString, wxString> gccDefsMap;
-    if (gccDefsMap[cpp_compiler].IsEmpty())
+    if ( gccDefsMap[cpp_compiler].IsEmpty() )
     {
-        static bool reentry = false;
-        if (reentry)
-            return false;
-
         // Check if user set language standard version to use
         wxString standard = GetCompilerStandardGCC(compiler, project);
 
+        // Different command on Windows and other OSes
 #ifdef __WXMSW__
         const wxString args(wxString::Format(_T(" -E -dM -x c++ %s nul"), standard.wx_str()) );
 #else
         const wxString args(wxString::Format(_T(" -E -dM -x c++ %s /dev/null"), standard.wx_str()) );
 #endif
 
-        wxArrayString output;
-        reentry = true;
-        if ( wxExecute(cpp_compiler + args, output, wxEXEC_SYNC | wxEXEC_NODISABLE) == -1 )
-        {
-            TRACE(_T("NativeParser::AddCompilerPredefinedMacrosGCC: wxExecute failed!"));
-            reentry = false;
+        wxArrayString output, error;
+        if ( !SafeExecute(compiler->GetMasterPath(), compiler->GetPrograms().CPP, args, output, error) )
             return false;
-        }
-        reentry = false;
 
         // wxExecute can be a long action and C::B might have been shutdown in the meantime...
         if ( Manager::IsAppShuttingDown() )
@@ -2105,7 +2052,7 @@ wxString NativeParser::GetCompilerUsingStandardGCC(const wxArrayString& compiler
         if (compilerOptions[i].StartsWith(_T("-std=")))
         {
             standard = compilerOptions[i];
-            CCLogger::Get()->DebugLog(wxString::Format(_T("NativeParser::GetCompilerUsingStandardGCC(): Using language standard: %s"), standard.wx_str()));
+            CCLogger::Get()->DebugLog(wxString::Format(_T("NativeParser::GetCompilerUsingStandardGCC: Using language standard: %s"), standard.wx_str()));
             break;
         }
     }
@@ -2134,33 +2081,9 @@ bool NativeParser::AddCompilerPredefinedMacrosVC(const wxString& compilerId, wxS
         return false;
     }
 
-    wxString masterPath = compiler->GetMasterPath();
-    Manager::Get()->GetMacrosManager()->ReplaceMacros(masterPath);
-#ifdef __WXMSW__
-    const wxString c_compiler = masterPath + _T("\\bin\\") + compiler->GetPrograms().C;
-#else
-    const wxString c_compiler = masterPath + _T("/bin/") + compiler->GetPrograms().C;
-#endif
-    if ( !wxFileName::FileExists(c_compiler) )
-        return false;
-
-    static bool reentry = false;
-    if (reentry)
-        return false;
-
     wxArrayString output, error;
-    reentry = true;
-    // Just run the compiler which shows e.g.:
-    // "Microsoft (R) C/C++ Optimizing Compiler Version 12.00.8804, for x86", or
-    // "Microsoft (R) C/C++ Optimizing Compiler Version 18.00.31101 for x86"
-    // ...and extract platform information (32/64 bit) and compiler version (12) out of it
-    if ( wxExecute(c_compiler, output, error, wxEXEC_SYNC | wxEXEC_NODISABLE) == -1 )
-    {
-        TRACE(_T("NativeParser::AddCompilerPredefinedMacrosVC: wxExecute failed!"));
-        reentry = false;
+    if ( !SafeExecute(compiler->GetMasterPath(), compiler->GetPrograms().C, wxEmptyString, output, error) )
         return false;
-    }
-    reentry = false;
 
     // wxExecute can be a long action and C::B might have been shutdown in the meantime...
     if ( Manager::IsAppShuttingDown() )
@@ -2223,7 +2146,7 @@ bool NativeParser::AddProjectDefinedMacros(cbProject* project, ParserBase* parse
     if (!project)
         return true;
 
-    TRACE(_T("NativeParser::AddProjectDefinedMacros(): Enter"));
+    TRACE(_T("NativeParser::AddProjectDefinedMacros: Enter"));
 
     wxString compilerId = project->GetCompilerID();
     wxString defineCompilerSwitch(wxEmptyString);
@@ -2288,7 +2211,7 @@ bool NativeParser::AddProjectDefinedMacros(cbProject* project, ParserBase* parse
 
     TRACE(_T("Add project and current build target defined preprocessor macros:\n%s"), defs.wx_str());
     parser->AddPredefinedMacros(defs);
-    TRACE(_T("NativeParser::AddProjectDefinedMacros(): Leave"));
+    TRACE(_T("NativeParser::AddProjectDefinedMacros: Leave"));
     if ( defs.IsEmpty() )
         return false;
 
@@ -2315,9 +2238,13 @@ void NativeParser::AddCompilerIncludeDirsToParser(const Compiler* compiler, Pars
 
 // These dirs are the built-in search dirs of the compiler itself (GCC).
 // Such as when you install your MinGW GCC in E:/code/MinGW/bin
-// The buildin search dir may contains: E:/code/MinGW/include
-const wxArrayString& NativeParser::GetGCCCompilerDirs(const wxString &cpp_compiler)
+// The built-in search dir may contain: E:/code/MinGW/include
+const wxArrayString& NativeParser::GetGCCCompilerDirs(const wxString& cpp_path, const wxString& cpp_executable)
 {
+    wxString sep = (platform::windows ? _T("\\") : _T("/"));
+    wxString cpp_compiler = cpp_path + sep + _T("bin") + sep + cpp_executable;
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(cpp_compiler);
+
     // keep the gcc compiler path's once if found across C::B session
     // makes opening workspaces a *lot* faster by avoiding endless calls to the compiler
     static std::map<wxString, wxArrayString> dirs;
@@ -2326,52 +2253,27 @@ const wxArrayString& NativeParser::GetGCCCompilerDirs(const wxString &cpp_compil
     if ( !cached_result.IsEmpty() )
         return cached_result;
 
-    if ( !wxFileExists(cpp_compiler) )
-    {
-        CCLogger::Get()->DebugLog(_T("NativeParser::GetGCCCompilerDirs(): Cannot get compiler dirs due to invalid compiler: ") + cpp_compiler);
-        return cached_result;
-    }
+    TRACE(_T("NativeParser::GetGCCCompilerDirs: Enter"));
 
-    // wxExecute can be a long action and C::B might have been shutdown in the meantime...
-    // This is here, to protect at re-entry:
-    if (Manager::IsAppShuttingDown())
-        return cached_result;
-
-    TRACE(_T("NativeParser::GetGCCCompilerDirs(): Enter"));
-
-    // for starters , only do this for gnu compiler
+    // for starters, only do this for gnu compiler
     //CCLogger::Get()->DebugLog(_T("CompilerID ") + CompilerID);
     //
     //   Windows: mingw32-g++ -v -E -x c++ nul
     //   Linux  : g++ -v -E -x c++ /dev/null
     // do the trick only for c++, not needed then for C (since this is a subset of C++)
 
+    // Different command on Windows and other OSes
+#ifdef __WXMSW__
+    const wxString args(_T(" -v -E -x c++ nul"));
+#else
+    const wxString args(_T(" -v -E -x c++ /dev/null"));
+#endif
 
-    // let's construct the command
-    // use a null file handler
-    // both works fine in Windows and Linux
-
-    // Different command on Windows
-    wxString Command = platform::windows ? (cpp_compiler + _T(" -v -E -x c++ nul"))
-                                         : (cpp_compiler + _T(" -v -E -x c++ /dev/null"));
-
-    static bool reentry_protection = false;
-    if (reentry_protection)   // still running previous command
-        return cached_result; // better return previous result...
-    reentry_protection = true;
-
-    // action time (everything shows up on the error stream)
-    wxArrayString Output, Errors;
-    if ( wxExecute(Command, Output, Errors, wxEXEC_SYNC | wxEXEC_NODISABLE) == -1 )
-    {
-        TRACE(_T("NativeParser::GetGCCCompilerDirs(): GetGCCCompilerDirs::wxExecute failed!"));
-        reentry_protection = false;
+    wxArrayString output, error;
+    if ( !SafeExecute(cpp_path, cpp_executable, args, output, error) )
         return cached_result;
-    }
-    reentry_protection = false;
 
     // wxExecute can be a long action and C::B might have been shutdown in the meantime...
-    // This is here, to protect a long run:
     if ( Manager::IsAppShuttingDown() )
         return cached_result;
 
@@ -2379,14 +2281,14 @@ const wxArrayString& NativeParser::GetGCCCompilerDirs(const wxString &cpp_compil
     // let's hope this does not change too quickly, otherwise we need
     // to adjust our search code (for several versions ...)
     bool start = false;
-    for (size_t idxCount = 0; idxCount < Errors.GetCount(); ++idxCount)
+    for (size_t idxCount = 0; idxCount < error.GetCount(); ++idxCount)
     {
-        wxString path = Errors[idxCount].Trim(true).Trim(false);
+        wxString path = error[idxCount].Trim(true).Trim(false);
         if (!start)
         {
             if (!path.StartsWith(_T("#include <...>")))
                 continue; // Next for-loop
-            path = Errors[++idxCount].Trim(true).Trim(false);
+            path = error[++idxCount].Trim(true).Trim(false);
             start = true;
         }
 
@@ -2398,27 +2300,21 @@ const wxArrayString& NativeParser::GetGCCCompilerDirs(const wxString &cpp_compil
 
         dirs[cpp_compiler].Add(fname.GetPath());
 
-        CCLogger::Get()->DebugLog(_T("NativeParser::GetGCCCompilerDirs(): Caching GCC default include dir: ") + fname.GetPath());
+        CCLogger::Get()->DebugLog(_T("NativeParser::GetGCCCompilerDirs: Caching GCC default include dir: ") + fname.GetPath());
     }
 
-    TRACE(_T("NativeParser::GetGCCCompilerDirs(): Leave"));
+    TRACE(_T("NativeParser::GetGCCCompilerDirs: Leave"));
     return dirs[cpp_compiler];
 }
 
 void NativeParser::AddGCCCompilerDirs(const wxString& masterPath, const wxString& compilerCpp, ParserBase* parser)
 {
-    wxFileName fn(wxEmptyString, compilerCpp);
-    wxString masterPathNoMacros(masterPath);
-    Manager::Get()->GetMacrosManager()->ReplaceMacros(masterPathNoMacros);
-    fn.SetPath(masterPathNoMacros);
-    fn.AppendDir(_T("bin"));
-
-    const wxArrayString& gccDirs = GetGCCCompilerDirs(fn.GetFullPath());
-    TRACE(_T("NativeParser::AddGCCCompilerDirs(): Adding %lu cached gcc dirs to parser..."), static_cast<unsigned long>(gccDirs.GetCount()));
+    const wxArrayString& gccDirs = GetGCCCompilerDirs(masterPath, compilerCpp);
+    TRACE(_T("NativeParser::AddGCCCompilerDirs: Adding %lu cached gcc dirs to parser..."), static_cast<unsigned long>(gccDirs.GetCount()));
     for (size_t i=0; i<gccDirs.GetCount(); ++i)
     {
         parser->AddIncludeDir(gccDirs[i]);
-        TRACE(_T("NativeParser::AddGCCCompilerDirs(): Adding cached compiler dir to parser: ") + gccDirs[i]);
+        TRACE(_T("NativeParser::AddGCCCompilerDirs: Adding cached compiler dir to parser: ") + gccDirs[i]);
     }
 }
 
@@ -2434,19 +2330,66 @@ void NativeParser::AddIncludeDirsToParser(const wxArrayString& dirs, const wxStr
             if ( NormalizePath(fn, base) )
             {
                 parser->AddIncludeDir(fn.GetFullPath());
-                TRACE(_T("NativeParser::AddIncludeDirsToParser(): Adding directory to parser: ") + fn.GetFullPath());
+                TRACE(_T("NativeParser::AddIncludeDirsToParser: Adding directory to parser: ") + fn.GetFullPath());
             }
             else
-                CCLogger::Get()->DebugLog(F(_T("NativeParser::AddIncludeDirsToParser(): Error normalizing path: '%s' from '%s'"), dir.wx_str(), base.wx_str()));
+                CCLogger::Get()->DebugLog(F(_T("NativeParser::AddIncludeDirsToParser: Error normalizing path: '%s' from '%s'"), dir.wx_str(), base.wx_str()));
         }
         else
             parser->AddIncludeDir(dir); // no base path, nothing to normalise
     }
 }
 
+bool NativeParser::SafeExecute(const wxString& app_path, const wxString& app, const wxString& args, wxArrayString& output, wxArrayString& error)
+{
+    wxString sep = (platform::windows ? _T("\\") : _T("/"));
+    wxString pth = (app_path.IsEmpty() ? _T("") : (app_path + sep + _T("bin") + sep));
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(pth);
+    wxString cmd = pth + app;
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(cmd);
+//    CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Application command: ") + cmd + _T(", path (in): ") + app_path + _T(", path (set): ") + pth + _T(", args: ") + args);
+
+    if ( !wxFileExists(cmd) )
+    {
+        CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Invalid application command: ") + cmd);
+        return false;
+    }
+
+    static bool reentry = false;
+    if (reentry)
+    {
+        CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Re-Entry protection."));
+        return false;
+    }
+    reentry = true;
+
+    // Update PATH environment variable
+    wxString path_env;
+    if ( !pth.IsEmpty() && wxGetEnv(_T("PATH"), &path_env) )
+    {
+        wxString tmp_path_env = pth + (platform::windows ? _T(";") : _T(":")) + path_env;
+        if ( !wxSetEnv(_T("PATH"), tmp_path_env) )
+        {   CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Could not set PATH environment variable: ") + tmp_path_env); }
+    }
+
+    if ( wxExecute(cmd + args, output, error, wxEXEC_SYNC | wxEXEC_NODISABLE) == -1 )
+    {
+        CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Failed application call: ") + cmd + args);
+        reentry = false;
+        return false;
+    }
+
+    if ( !pth.IsEmpty() && !wxSetEnv(_T("PATH"), path_env) )
+    {   CCLogger::Get()->DebugLog(_T("NativeParser::SafeExecute: Could not restore PATH environment variable: ") + path_env); }
+
+    reentry = false;
+
+    return true;
+}
+
 void NativeParser::OnParserStart(wxCommandEvent& event)
 {
-    TRACE(_T("NativeParser::OnParserStart(): Enter"));
+    TRACE(_T("NativeParser::OnParserStart: Enter"));
 
     cbProject* project = static_cast<cbProject*>(event.GetClientData());
     wxString   prj     = (project ? project->GetTitle() : _T("*NONE*"));
@@ -2455,30 +2398,30 @@ void NativeParser::OnParserStart(wxCommandEvent& event)
     switch (state)
     {
         case ParserCommon::ptCreateParser:
-            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart(): Starting batch parsing for project '%s'..."), prj.wx_str()));
+            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart: Starting batch parsing for project '%s'..."), prj.wx_str()));
             {
                 std::pair<cbProject*, ParserBase*> info = GetParserInfoByCurrentEditor();
                 if (info.second && m_Parser != info.second)
                 {
-                    CCLogger::Get()->DebugLog(_T("NativeParser::OnParserStart(): Start switch from OnParserStart::ptCreateParser"));
+                    CCLogger::Get()->DebugLog(_T("NativeParser::OnParserStart: Start switch from OnParserStart::ptCreateParser"));
                     SwitchParser(info.first, info.second); // Calls SetParser() which also calls UpdateClassBrowserView()
                 }
             }
             break;
 
         case ParserCommon::ptAddFileToParser:
-            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart(): Starting add file parsing for project '%s'..."), prj.wx_str()));
+            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart: Starting add file parsing for project '%s'..."), prj.wx_str()));
             break;
 
         case ParserCommon::ptReparseFile:
-            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart(): Starting re-parsing for project '%s'..."), prj.wx_str()));
+            CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart: Starting re-parsing for project '%s'..."), prj.wx_str()));
             break;
 
         case ParserCommon::ptUndefined:
             if (event.GetString().IsEmpty())
-                CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart(): Batch parsing error in project '%s'"), prj.wx_str()));
+                CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart: Batch parsing error in project '%s'"), prj.wx_str()));
             else
-                CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart(): %s in project '%s'"), event.GetString().wx_str(), prj.wx_str()));
+                CCLogger::Get()->DebugLog(F(_("NativeParser::OnParserStart: %s in project '%s'"), event.GetString().wx_str(), prj.wx_str()));
             return;
 
         default:
@@ -2487,12 +2430,12 @@ void NativeParser::OnParserStart(wxCommandEvent& event)
 
     event.Skip();
 
-    TRACE(_T("NativeParser::OnParserStart(): Leave"));
+    TRACE(_T("NativeParser::OnParserStart: Leave"));
 }
 
 void NativeParser::OnParserEnd(wxCommandEvent& event)
 {
-    TRACE(_T("NativeParser::OnParserEnd(): Enter"));
+    TRACE(_T("NativeParser::OnParserEnd: Enter"));
 
     ParserBase* parser = reinterpret_cast<ParserBase*>(event.GetEventObject());
     cbProject* project = static_cast<cbProject*>(event.GetClientData());
@@ -2503,7 +2446,7 @@ void NativeParser::OnParserEnd(wxCommandEvent& event)
     {
         case ParserCommon::ptCreateParser:
             {
-                wxString log(F(_("NativeParser::OnParserEnd(): Project '%s' parsing stage done!"), prj.wx_str()));
+                wxString log(F(_("NativeParser::OnParserEnd: Project '%s' parsing stage done!"), prj.wx_str()));
                 CCLogger::Get()->Log(log);
                 CCLogger::Get()->DebugLog(log);
             }
@@ -2518,14 +2461,14 @@ void NativeParser::OnParserEnd(wxCommandEvent& event)
                 std::pair<cbProject*, ParserBase*> info = GetParserInfoByCurrentEditor();
                 if (info.second && info.second != m_Parser)
                 {
-                    CCLogger::Get()->DebugLog(_T("NativeParser::OnParserEnd(): Start switch from OnParserEnd::ptReparseFile"));
+                    CCLogger::Get()->DebugLog(_T("NativeParser::OnParserEnd: Start switch from OnParserEnd::ptReparseFile"));
                     SwitchParser(info.first, info.second); // Calls SetParser() which also calls UpdateClassBrowserView()
                 }
             }
             break;
 
         case ParserCommon::ptUndefined:
-            CCLogger::Get()->DebugLog(F(_T("NativeParser::OnParserEnd(): Parser event handling error of project '%s'"), prj.wx_str()));
+            CCLogger::Get()->DebugLog(F(_T("NativeParser::OnParserEnd: Parser event handling error of project '%s'"), prj.wx_str()));
             return;
 
         default:
@@ -2539,17 +2482,17 @@ void NativeParser::OnParserEnd(wxCommandEvent& event)
 
     // In this case, the parser will record all the cbprojects' token, so this will start parsing
     // the next cbproject.
-    TRACE(_T("NativeParser::OnParserEnd(): Starting m_TimerParsingOneByOne."));
+    TRACE(_T("NativeParser::OnParserEnd: Starting m_TimerParsingOneByOne."));
     m_TimerParsingOneByOne.Start(500, wxTIMER_ONE_SHOT);
 
     // both NativeParser and CodeCompletion class need to handle this event
     event.Skip();
-    TRACE(_T("NativeParser::OnParserEnd(): Leave"));
+    TRACE(_T("NativeParser::OnParserEnd: Leave"));
 }
 
 void NativeParser::OnParsingOneByOneTimer(cb_unused wxTimerEvent& event)
 {
-    TRACE(_T("NativeParser::OnParsingOneByOneTimer(): Enter"));
+    TRACE(_T("NativeParser::OnParsingOneByOneTimer: Enter"));
 
     std::pair<cbProject*, ParserBase*> info = GetParserInfoByCurrentEditor();
     if (m_ParserPerWorkspace)
@@ -2559,7 +2502,7 @@ void NativeParser::OnParsingOneByOneTimer(cb_unused wxTimerEvent& event)
         {
             // NOTE (Morten#1#): Shouldn't this actually be a temp parser??? I think this screws things with re-opening files on load of a projects...
             AddProjectToParser(info.first);
-            CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer(): Add foreign active editor to current active project's parser."));
+            CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer: Add foreign active editor to current active project's parser."));
         }
         // Otherwise, there is a parser already present
         else
@@ -2569,7 +2512,7 @@ void NativeParser::OnParsingOneByOneTimer(cb_unused wxTimerEvent& event)
             if (m_ParsedProjects.find(activeProject) == m_ParsedProjects.end())
             {
                 AddProjectToParser(activeProject);
-                CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer(): Add new (un-parsed) active project to parser."));
+                CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer: Add new (un-parsed) active project to parser."));
             }
             // Else: add remaining projects one-by-one (if any)
             else
@@ -2586,11 +2529,11 @@ void NativeParser::OnParsingOneByOneTimer(cb_unused wxTimerEvent& event)
                         // AddProjectToParser return true means there are something need to parse, otherwise, it is false
                         if (!AddProjectToParser(projs->Item(i)))
                         {
-                            CCLogger::Get()->Log(_T("NativeParser::OnParsingOneByOneTimer(): nothing need to parse in this project, try next project."));
+                            CCLogger::Get()->Log(_T("NativeParser::OnParsingOneByOneTimer: nothing need to parse in this project, try next project."));
                             continue;
                         }
 
-                        CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer(): Add additional (next) project to parser."));
+                        CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer: Add additional (next) project to parser."));
                         break;
                     }
                 }
@@ -2602,11 +2545,11 @@ void NativeParser::OnParsingOneByOneTimer(cb_unused wxTimerEvent& event)
         info.second = CreateParser(info.first);
         if (info.second && info.second != m_Parser)
         {
-            CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer(): Start switch from OnParsingOneByOneTimer"));
+            CCLogger::Get()->DebugLog(_T("NativeParser::OnParsingOneByOneTimer: Start switch from OnParsingOneByOneTimer"));
             SwitchParser(info.first, info.second); // Calls SetParser() which also calls UpdateClassBrowserView()
         }
     }
-    TRACE(_T("NativeParser::OnParsingOneByOneTimer(): Leave"));
+    TRACE(_T("NativeParser::OnParsingOneByOneTimer: Leave"));
 }
 
 void NativeParser::OnEditorActivated(EditorBase* editor)
@@ -2723,22 +2666,22 @@ bool NativeParser::AddProjectToParser(cbProject* project)
     }
 
     // TODO (ollydbg#1#) did exactly the same thing as the function NativeParser::DoFullParsing()?
-    wxString log(F(_("NativeParser::AddProjectToParser(): Add project (%s) to parser"), prj.wx_str()));
+    wxString log(F(_("NativeParser::AddProjectToParser: Add project (%s) to parser"), prj.wx_str()));
     CCLogger::Get()->Log(log);
     CCLogger::Get()->DebugLog(log);
 
     bool needParseMacros = false;
 
     if (!AddCompilerDirs(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser(): AddCompilerDirs failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser: AddCompilerDirs failed!"));
 
     if (!AddCompilerPredefinedMacros(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser(): AddCompilerPredefinedMacros failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser: AddCompilerPredefinedMacros failed!"));
     else
         needParseMacros = true;
 
     if (!AddProjectDefinedMacros(project, parser))
-        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser(): AddProjectDefinedMacros failed!"));
+        CCLogger::Get()->DebugLog(_T("NativeParser::AddProjectToParser: AddProjectDefinedMacros failed!"));
     else
     {
         if(!needParseMacros)
@@ -2767,7 +2710,7 @@ bool NativeParser::AddProjectToParser(cbProject* project)
             }
         }
 
-        CCLogger::Get()->DebugLog(F(_("NativeParser::AddProjectToParser(): Done adding %lu files of project (%s) to parser."), static_cast<unsigned long>(fileCount), prj.wx_str()));
+        CCLogger::Get()->DebugLog(F(_("NativeParser::AddProjectToParser: Done adding %lu files of project (%s) to parser."), static_cast<unsigned long>(fileCount), prj.wx_str()));
 
         // in some cases, all the files were already be parsed, so fileCount is still 0
         return ((fileCount>0) || needParseMacros);
@@ -2781,7 +2724,7 @@ bool NativeParser::AddProjectToParser(cbProject* project)
             parser->AddIncludeDir(file.GetPath());
             m_StandaloneFiles.Add(editor->GetFilename());
 
-            CCLogger::Get()->DebugLog(F(_("NativeParser::AddProjectToParser(): Done adding stand-alone file (%s) of editor to parser."), editor->GetFilename().wx_str()));
+            CCLogger::Get()->DebugLog(F(_("NativeParser::AddProjectToParser: Done adding stand-alone file (%s) of editor to parser."), editor->GetFilename().wx_str()));
             return true;
         }
     }

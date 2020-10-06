@@ -11,7 +11,11 @@
 #ifndef MAKEFILEGEN_H
 #define MAKEFILEGEN_H
 
-#include <cbproject.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <cbproject.h>
+#endif
+
 #include "projectdependencies.h"
 
 class MakefileGen

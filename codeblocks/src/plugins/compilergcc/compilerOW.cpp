@@ -4,7 +4,7 @@
  *
  * $Revision: 9011 $
  * $Id: compilerOW.cpp 9011 2013-04-29 19:32:22Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compilerOW.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerOW.cpp $
  */
 
 #include <sdk.h>

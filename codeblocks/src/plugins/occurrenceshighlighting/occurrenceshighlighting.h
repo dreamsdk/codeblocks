@@ -28,7 +28,7 @@ class OccurrencesHighlighting : public cbPlugin
 
         virtual void BuildMenu(wxMenuBar* menuBar);
         virtual void BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data = 0);
-        virtual bool BuildToolBar(wxToolBar* toolBar){ return false; }
+        virtual bool BuildToolBar(cb_unused wxToolBar* toolBar){ return false; }
         virtual cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent);
         virtual int GetConfigurationPriority() const { return 50; }
         virtual int GetConfigurationGroup() const { return cgEditor; }
@@ -50,7 +50,7 @@ class OccurrencesHighlighting : public cbPlugin
         void OnPanelPopupMenu(wxContextMenuEvent &event);
 
         void OnEditorHook(cbEditor* editor, wxScintillaEvent& event);
-
+        void OnEditorEvent(CodeBlocksEvent& event);
     private:
         wxString GetWordAtCaret()const;
         void RemoveSelected();

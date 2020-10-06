@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10854 $
- * $Id: sc_consts.cpp 10854 2016-05-18 22:20:45Z d_anselmi $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_consts.cpp $
+ * $Revision: 11887 $
+ * $Id: sc_consts.cpp 11887 2019-10-26 09:12:28Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_consts.cpp $
  */
 
 #include <sdk_precomp.h>
@@ -277,5 +277,11 @@ namespace ScriptBindings
         BIND_WXSTR_CONSTANT_NAMED(FileFilters::RESOURCEBIN_DOT_EXT, "DOT_EXT_RESOURCEBIN");
         BIND_WXSTR_CONSTANT_NAMED(FileFilters::XML_DOT_EXT, "DOT_EXT_XML");
         BIND_WXSTR_CONSTANT_NAMED(FileFilters::SCRIPT_DOT_EXT, "DOT_EXT_SCRIPT");
+
+        // LinkerExecutableOption
+        BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::AutoDetect), "leoAutoDetect");
+        BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::CCompiler), "leoCCompiler");
+        BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::CppCompiler), "leoCppCompiler");
+        BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::Linker), "leoLinker");
     }
 };

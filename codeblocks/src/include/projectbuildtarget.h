@@ -26,11 +26,17 @@ class DLLIMPORT ProjectBuildTarget : public CompileTargetBase
     public:
         /// Constructor
         ProjectBuildTarget(cbProject* parentProject);
+
+        /// Something like a copy constructor
+        ProjectBuildTarget(const ProjectBuildTarget &bt, cbProject* parentProject);
+
         /// Destructor
-        ~ProjectBuildTarget();
+        ~ProjectBuildTarget() override;
 
         /** @return The target's parent project. */
         virtual cbProject* GetParentProject();
+        /** @return The target's parent project. */
+        virtual const cbProject* GetParentProject() const;
         /** @return The full title, i.e. "projectname - targetname". */
         virtual wxString GetFullTitle() const;
 
@@ -80,7 +86,7 @@ class DLLIMPORT ProjectBuildTarget : public CompileTargetBase
 
         /** Valid only for targets generating dynamic libraries (DLLs or SOs).
           * @return True if an import library will be created, false if not. */
-        virtual bool GetCreateStaticLib();
+        virtual bool GetCreateStaticLib() const;
 
         /** Set if an import library should be created.
           * Valid only for targets generating dynamic libraries (DLLs or SOs).
@@ -100,21 +106,12 @@ class DLLIMPORT ProjectBuildTarget : public CompileTargetBase
           * @param useIt If true, ConsoleRunner is used else it is not. */
         virtual void SetUseConsoleRunner(bool useIt);
 
-        virtual void SetTargetType(TargetType pt); // overriden
-
-        /** Targets to be compiled (if necessary) before this one.
-          * Add a target to the list of dependencies of this target. Be careful
-          * not to add a target more than once.
-          * @param target The build target to add as a dependency.
-          */
-        virtual void AddTargetDep(ProjectBuildTarget* target);
-
-        /** @return A list of dependency targets of this target. */
-        virtual BuildTargets& GetTargetDeps();
+        void SetTargetType(TargetType pt) override; // overriden
 
         /** Provides an easy way to iterate all the files belonging in this target.
           * @return A list of files belonging in this target. */
         virtual FilesList& GetFilesList(){ return m_Files; }
+        virtual const FilesList& GetFilesList() const { return m_Files; }
 
         /** @return The number of files in the target. */
         int GetFilesCount(){ return m_Files.size(); }
@@ -137,7 +134,6 @@ class DLLIMPORT ProjectBuildTarget : public CompileTargetBase
         cbProject*       m_Project;
         wxString         m_ExternalDeps;
         wxString         m_AdditionalOutputFiles;
-        BuildTargets     m_TargetDeps;
         FilesList        m_Files;
         ProjectFileArray m_FileArray;
         bool             m_BuildWithAll; // obsolete: left just to convert old projects to use virtual targets

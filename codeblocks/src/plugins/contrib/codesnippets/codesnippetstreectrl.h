@@ -17,7 +17,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: codesnippetstreectrl.h 10874 2016-07-16 20:00:28Z jenslody $
+// RCS-ID: $Id: codesnippetstreectrl.h 11345 2018-03-23 00:40:30Z pecanh $
 
 #ifndef CODESNIPPETSTREECTRL_H
 #define CODESNIPPETSTREECTRL_H
@@ -93,6 +93,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
                 wxTreeItemId itemID = GetSelection();
                 if (not itemID.IsOk()) return itemData;
                 SnippetTreeItemData* pItem = (SnippetTreeItemData*)(GetItemData(itemID));
+                if (not pItem) return wxEmptyString;
                 itemData = pItem->GetSnippetString();
                 return itemData;
             }
@@ -100,6 +101,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
             {   wxString itemData = wxEmptyString;
                 if (not itemId.IsOk()) return itemData;
                 SnippetTreeItemData* pItem = (SnippetTreeItemData*)(GetItemData(itemId));
+                if (not pItem) return wxEmptyString;
                 itemData = pItem->GetSnippetString();
                 return itemData;
             }
@@ -147,6 +149,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
                 if (itemId == (void*)0) itemId = GetSelection();
                 if (not itemId.IsOk()) return false;
                 SnippetTreeItemData* pItem = (SnippetTreeItemData*)(GetItemData(itemId));
+                if (not pItem) return false;
                 return pItem->IsCategory();
             }
         bool IsSnippet(wxTreeItemId treeItemId = (void*)0)
@@ -154,6 +157,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
                 if (itemId == (void*)0) itemId = GetSelection();
                 if (not itemId.IsOk()) return false;
                 SnippetTreeItemData* pItem = (SnippetTreeItemData*)(GetItemData(itemId));
+                if (not pItem) return false;
                 return pItem->IsSnippet();
             }
         bool IsFileSnippet (wxTreeItemId treeItemId = (void*)0 );
@@ -177,7 +181,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
         void            SetAssociatedItemID(wxTreeItemId id){m_MnuAssociatedItemID = id;}
         bool            EditSnippetProperties(wxTreeItemId& itemId);
         void            OpenSnippetAsFileLink();
-        int             ExecuteDialog(wxScrollingDialog* pdlg, wxSemaphore& waitSem);
+        int             ExecuteDialog(SnippetProperty* pdlg, wxSemaphore& waitSem);
 
         wxTreeItemId FindTreeItemByLabel(const wxString& searchTerms, const wxTreeItemId& node, int requestType);
         wxTreeItemId FindTreeItemByTreeId(const wxTreeItemId& itemToFind, const wxTreeItemId& startNode, int itemToFindType);

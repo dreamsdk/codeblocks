@@ -18,7 +18,7 @@
 *
 * $Revision: 10771 $
 * $Id: projectconfigurationpanel.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/projectconfigurationpanel.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/projectconfigurationpanel.cpp $
 */
 
 #include "projectconfigurationpanel.h"

@@ -10,8 +10,11 @@
 #ifndef FINFOWINDOW_H
 #define FINFOWINDOW_H
 
-#include <wx/panel.h>
-#include <cbstyledtextctrl.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/panel.h>
+    #include <cbstyledtextctrl.h>
+#endif
 
 
 class FInfoWindow : public wxPanel

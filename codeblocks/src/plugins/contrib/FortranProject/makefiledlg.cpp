@@ -1,5 +1,10 @@
+
 #include "makefiledlg.h"
-#include <wx/filedlg.h>
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/filedlg.h>
+#endif
 
 //(*InternalHeaders(MakefileDlg)
 #include <wx/intl.h>

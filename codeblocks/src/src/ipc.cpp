@@ -4,7 +4,7 @@
  *
  * $Revision: 8245 $
  * $Id: ipc.cpp 8245 2012-08-22 06:51:14Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/ipc.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/ipc.cpp $
  */
 
 #include "ipc.h"

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10807 $
- * $Id: projectmanagerui.h 10807 2016-03-11 09:12:14Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/projectmanagerui.h $
+ * $Revision: 11842 $
+ * $Id: projectmanagerui.h 11842 2019-09-08 18:12:55Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/projectmanagerui.h $
  */
 
 #include "projectmanager.h"
@@ -51,12 +51,11 @@ class ProjectManagerUI : public wxEvtHandler, public cbProjectManagerUI
 
         int AskForBuildTargetIndex(cbProject* project);
         wxArrayInt AskForMultiBuildTargetIndex(cbProject* project);
-        void ConfigureProjectDependencies(cbProject* base);
+        void ConfigureProjectDependencies(cbProject* base, wxWindow *parent);
         void CheckForExternallyModifiedProjects();
 
     private:
         void InitPane();
-        void BuildTree();
         void SwitchToProjectsPage();
         void ShowMenu(wxTreeItemId id, const wxPoint& pt);
         void CreateMenuTreeProps(wxMenu* menu, bool popup);
@@ -139,7 +138,7 @@ class ProjectManagerUI : public wxEvtHandler, public cbProjectManagerUI
         cbAuiNotebook*       m_pNotebook;
         cbTreeCtrl*          m_pTree;
         wxTreeItemId         m_TreeRoot;
-        wxImageList*         m_pImages;
+        std::unique_ptr<wxImageList> m_pImages;
         int                  m_TreeVisualState;
         int                  m_TreeFreezeCounter;
         wxArrayTreeItemIds   m_DraggingSelection;
@@ -158,24 +157,41 @@ class BatchProjectManagerUI : public cbProjectManagerUI
         cbTreeCtrl* GetTree() override { return nullptr; }
         void RebuildTree() override {}
         void FreezeTree() override {}
-        void UnfreezeTree(bool force = false) override {}
+        void UnfreezeTree(cb_unused bool force = false) override {}
         wxTreeItemId GetTreeSelection() override { return wxTreeItemId(); }
 
-        void ShowFileInTree(ProjectFile &projectFile) override {}
+        void ShowFileInTree(cb_unused ProjectFile &projectFile) override {}
 
-        void UpdateActiveProject(cbProject *oldProject, cbProject *newProject, bool refresh) override {}
-        void RemoveProject(cbProject *project) override {}
+        void UpdateActiveProject(cb_unused cbProject *oldProject, cb_unused cbProject *newProject,
+                                 cb_unused bool refresh) override
+        {
+        }
+
+        void RemoveProject(cb_unused cbProject *project) override {}
         void BeginLoadingWorkspace() override {}
         void CloseWorkspace() override {}
-        void FinishLoadingProject(cbProject *project, bool newAddition, FilesGroupsAndMasks* fileGroups) override {}
-        void FinishLoadingWorkspace(cbProject *activeProject, const wxString &workspaceTitle) override {}
-
+        void FinishLoadingProject(cb_unused cbProject *project, cb_unused bool newAddition,
+                                  cb_unused FilesGroupsAndMasks* fileGroups) override
+        {
+        }
+        void FinishLoadingWorkspace(cb_unused cbProject *activeProject,
+                                    cb_unused const wxString &workspaceTitle) override
+        {
+        }
         bool QueryCloseAllProjects() override { return true; }
-        bool QueryCloseProject(cbProject *proj, bool dontsavefiles = false) override { return true; }
+        bool QueryCloseProject(cb_unused cbProject *proj,
+                               cb_unused bool dontsavefiles = false) override
+        {
+            return true;
+        }
         bool QueryCloseWorkspace() override { return true; }
 
-        int AskForBuildTargetIndex(cbProject* project = nullptr) override { return -1; }
-        wxArrayInt AskForMultiBuildTargetIndex(cbProject* project = nullptr) override { return wxArrayInt(); }
-        void ConfigureProjectDependencies(cbProject* base = nullptr) override {}
+        int AskForBuildTargetIndex(cb_unused cbProject* project = nullptr) override { return -1; }
+        wxArrayInt AskForMultiBuildTargetIndex(cb_unused cbProject* project = nullptr) override
+        {
+            return wxArrayInt();
+        }
+        void ConfigureProjectDependencies(cb_unused cbProject* base,
+                                          cb_unused wxWindow *parent) override {}
         void SwitchToProjectsPage() override {}
 };

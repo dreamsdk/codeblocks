@@ -2,15 +2,16 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11139 $
- * $Id: globals.cpp 11139 2017-08-12 22:37:55Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/globals.cpp $
+ * $Revision: 11847 $
+ * $Id: globals.cpp 11847 2019-09-08 22:38:06Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/globals.cpp $
  */
 
 #include "sdk_precomp.h"
 
 #ifndef CB_PRECOMP
     #include <wx/choicdlg.h>
+    #include <wx/dcmemory.h>
     #include <wx/file.h>
     #include <wx/filename.h>
     #include <wx/filesys.h>
@@ -388,21 +389,30 @@ FileType FileTypeOf(const wxString& filename)
     // TODO (Morten#3#): This code should actually be a method of filegroups and masks or alike. So we collect all extension specific things in one place. As of now this would break ABI compatibilty with 08.02 so this should happen later.
     else
     {
-        ProjectManager *prjMgr = Manager::Get()->GetProjectManager();
-        if ( prjMgr )
-        {
-            const FilesGroupsAndMasks* fgm = prjMgr->GetFilesGroupsAndMasks();
-            if (fgm)
-            {
-               for (unsigned int i = 0; i != fgm->GetGroupsCount(); ++i)
-               {
-                    if (fgm->GetGroupName(i) == _T("Sources") && fgm->MatchesMask(ext, i))
-                        return ftSource;
-                    if (fgm->GetGroupName(i) == _T("Headers") && fgm->MatchesMask(ext, i))
-                        return ftHeader;
-               }
-            }
-        }
+        // This code breaks ABI compatibility as noted by (Morten#3#) above.
+        // Code commented out by (pecan 2018/04/15). See http://forums.codeblocks.org/index.php/topic,22576.0.html
+        // The user can perform an equivalent objective by:
+        // 1) Fetching FilesGroupsAndMasks and adding the file extention(s) to file masks in the appropriate group.
+        // 2) Using the cbEVT_FILE_ADDED event to set the added file(s) properties (eg., compile and link).
+
+        //ProjectManager *prjMgr = Manager::Get()->GetProjectManager();
+        //if ( prjMgr )
+        //{
+        //    const FilesGroupsAndMasks* fgm = prjMgr->GetFilesGroupsAndMasks();
+        //    // Since "ext" var has no "." prefixed, but FilesGropupsAndMasks uses
+        //    // dot notation(".ext"), prefix a '.' here.
+        //    wxString dotExt = _T(".") + ext;
+        //   if (fgm)
+        //    {
+        //       for (unsigned int i = 0; i != fgm->GetGroupsCount(); ++i)
+        //       {
+        //            if (fgm->GetGroupName(i) == _T("Sources") && fgm->MatchesMask(dotExt, i))
+        //                return ftSource;
+        //            if (fgm->GetGroupName(i) == _T("Headers") && fgm->MatchesMask(dotExt, i))
+        //                return ftHeader;
+        //       }
+        //    }
+        //}
     }
 
     return ftOther;
@@ -709,9 +719,10 @@ bool cbWrite(wxFile& file, const wxString& buff, wxFontEncoding encoding)
 
 // Writes a wxString to a file. Takes care of unicode and uses a temporary file
 // to save first and then it copies it over the original.
-bool cbSaveToFile(const wxString& filename, const wxString& contents, wxFontEncoding encoding, bool bom)
+bool cbSaveToFile(const wxString& filename, const wxString& contents, wxFontEncoding encoding,
+                  bool bom, bool robust)
 {
-    return Manager::Get()->GetFileManager()->Save(filename, contents, encoding, bom);
+    return Manager::Get()->GetFileManager()->Save(filename, contents, encoding, bom, robust);
 }
 
 // Save a TinyXML document correctly, even if the path contains unicode characters.
@@ -994,6 +1005,8 @@ bool cbResolveSymLinkedDirPath(wxString& dirpath)
 #ifdef _WIN32
     return false;
 #else
+    if (dirpath.empty())
+        return false;
     if (dirpath.Last() == wxFILE_SEP_PATH)
         dirpath.RemoveLast();
 
@@ -1027,9 +1040,9 @@ bool cbResolveSymLinkedDirPath(wxString& dirpath)
             }
 
             wxString fullPath = fileName.GetFullPath();
-            if (fullPath.Last() == wxT('.')) // this case should be handled because of a bug in wxWidgets
+            if (!fullPath.empty() && fullPath.Last() == wxT('.')) // this case should be handled because of a bug in wxWidgets
                 fullPath.RemoveLast();
-            if (fullPath.Last() == wxFILE_SEP_PATH)
+            if (fullPath.length() > 1 && fullPath.Last() == wxFILE_SEP_PATH)
                 fullPath.RemoveLast();
             dirpath = fullPath;
             return true;
@@ -1088,25 +1101,174 @@ bool UsesCommonControls6()
 }
 #endif
 
-wxBitmap cbLoadBitmap(const wxString& filename, wxBitmapType bitmapType)
+static void cbLoadImageFromFS(wxImage &image, const wxString& filename, wxBitmapType bitmapType,
+                              wxFileSystem& fs)
 {
     // cache this, can't change while we 're running :)
     static bool oldCommonControls = !UsesCommonControls6();
 
-    wxImage im;
-    wxFileSystem* fs = new wxFileSystem;
-    wxFSFile* f = fs->OpenFile(filename);
+    wxFSFile* f = fs.OpenFile(filename);
     if (f)
     {
         wxInputStream* is = f->GetStream();
-        im.LoadFile(*is, bitmapType);
+        image.LoadFile(*is, bitmapType);
         delete f;
     }
-    delete fs;
-    if (oldCommonControls && im.HasAlpha())
-        im.ConvertAlphaToMask();
+    if (oldCommonControls && image.HasAlpha())
+        image.ConvertAlphaToMask();
+}
+
+wxBitmap cbLoadBitmap(const wxString& filename, wxBitmapType bitmapType, wxFileSystem *fs)
+{
+    wxImage im;
+    if (fs)
+        cbLoadImageFromFS(im, filename, bitmapType, *fs);
+    else
+    {
+        wxFileSystem defaultFS;
+        cbLoadImageFromFS(im, filename, bitmapType, defaultFS);
+    }
+
+    if (!im.IsOk())
+        return wxNullBitmap;
 
     return wxBitmap(im);
+}
+
+wxBitmap cbLoadBitmapScaled(const wxString& filename, wxBitmapType bitmapType, double scaleFactor,
+                            wxFileSystem *fs)
+{
+
+    wxImage im;
+    if (fs)
+        cbLoadImageFromFS(im, filename, bitmapType, *fs);
+    else
+    {
+        wxFileSystem defaultFS;
+        cbLoadImageFromFS(im, filename, bitmapType, defaultFS);
+    }
+
+    if (!im.IsOk())
+        return wxNullBitmap;
+
+#if defined(__WXOSX__) || (defined(__WXGTK3__) && wxCHECK_VERSION(3, 1, 2))
+    return wxBitmap(im, -1, scaleFactor);
+#else
+    (void)scaleFactor;
+    return wxBitmap(im);
+#endif // defined(__WXOSX__) || (defined(__WXGTK3__) && wxCHECK_VERSION(3, 1, 2))
+}
+
+double cbGetContentScaleFactor(const wxWindow &window)
+{
+#if wxCHECK_VERSION(3, 0, 0)
+    return window.GetContentScaleFactor();
+#else
+    return 1.0;
+#endif // wxCHECK_VERSION(3, 0, 0)
+}
+
+#ifdef __WXGTK__
+// GTK 2 doesn't support scaling.
+// GTK 3 supports scaling, but doesn't support fractional values.
+// In both cases we need to make up our on scaling value.
+// For other platforms the value returned by GetContentScalingFactor seems adequate.
+double cbGetActualContentScaleFactor(cb_unused const wxWindow &window)
+{
+#if wxCHECK_VERSION(3, 0, 0)
+    // It is possible to use the window to find a display, but unfortunately this doesn't work well,
+    // because we call this function mostly on windows which haven't been shown. This leads to
+    // warnings in the log about ClientToScreen failures.
+    // If there are problems on multi-monitor setups we should think about some other solution. :(
+    const wxSize ppi = wxGetDisplayPPI();
+    return ppi.y / 96.0;
+#else // wxCHECK_VERSION(3, 0, 0)
+    // This code is the simplest version which works in the most common case.
+    // If people complain that multi-monitor setups behave strangely, this should be revised with
+    // direct calls to GTK/GDK functions.
+
+    // This function might return bad results for multi screen setups.
+    const wxSize mm = wxGetDisplaySizeMM();
+    if (mm.x == 0 || mm.y == 0)
+        return 1.0;
+    const wxSize pixels = wxGetDisplaySize();
+
+    const double ppiX = wxRound((pixels.x * inches2mm) / mm.x);
+    const double ppiY = wxRound((pixels.y * inches2mm) / mm.y);
+
+    // My guess is that smaller scaling factor would look better. Probably it has effect only in
+    // multi monitor setups where there are monitors with different dpi.
+    return std::min(ppiX / 96.0, ppiY /96.0);
+#endif // wxCHECK_VERSION(3, 0, 0)
+}
+#else // __WXGTK__
+double cbGetActualContentScaleFactor(const wxWindow &window)
+{
+    return cbGetContentScaleFactor(window);
+}
+#endif // __WXGTK__
+
+int cbFindMinSize(int targetSize, const int possibleSize[], int numWidths)
+{
+    int selected = possibleSize[0];
+    for (int ii = 0; ii < numWidths; ++ii)
+    {
+        if (possibleSize[ii] <= targetSize)
+            selected = possibleSize[ii];
+        else
+            break;
+    }
+    return selected;
+}
+
+int cbFindMinSize16to64(int targetSize)
+{
+    const int sizes[] = { 16, 20, 24, 28, 32, 40, 48, 56, 64 };
+    return cbFindMinSize(targetSize, sizes, cbCountOf(sizes));
+}
+
+std::unique_ptr<wxImageList> cbMakeScaledImageList(int size, double scaleFactor,
+                                                   int &outActualSize)
+{
+#ifdef __WXMSW__
+    outActualSize = size;
+#else
+    outActualSize = floor(size / scaleFactor);
+#endif // __WXMSW__
+
+    return std::unique_ptr<wxImageList>(new wxImageList(outActualSize, outActualSize));
+}
+
+bool cbAddBitmapToImageList(wxImageList &list, const wxBitmap &bitmap, int size, int listSize,
+                            double scaleFactor)
+{
+    if (bitmap.IsOk())
+    {
+        list.Add(bitmap);
+        return true;
+    }
+    else
+    {
+        wxBitmap missingBitmap;
+#if wxCHECK_VERSION(3, 1, 0)
+        missingBitmap.CreateScaled(listSize, listSize,  wxBITMAP_SCREEN_DEPTH, scaleFactor);
+#else
+        (void)scaleFactor;
+        missingBitmap.Create(listSize, listSize);
+#endif // wxCHECK_VERSION(3, 1, 0)
+
+        {
+            // Draw red square image. Do the drawing in a separate scope, because we need to
+            // deselect the missing bitmap from the DC before calling the Add method.
+            wxMemoryDC dc;
+            dc.SelectObject(missingBitmap);
+            dc.SetBrush(*wxRED_BRUSH);
+            dc.DrawRectangle(0, 0, size, size);
+        }
+
+        list.Add(missingBitmap);
+        return false;
+    }
 }
 
 // this doesn't work under wxGTK, and is only needed on wxMSW, we work around it on wxGTK
@@ -1139,31 +1301,12 @@ SettingsIconsStyle GetSettingsIconsStyle()
     return SettingsIconsStyle(Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/environment/settings_size"), 0));
 }
 
-void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode, bool enforce)
+wxRect cbGetMonitorRectForWindow(wxWindow *window)
 {
-
-    if (!w)
-        cbThrow(_T("Passed NULL pointer to PlaceWindow."));
-
-    ConfigManager *cfg = Manager::Get()->GetConfigManager(_T("app"));
-    if (!enforce && cfg->ReadBool(_T("/dialog_placement/do_place")) == false)
-        return;
-
-    wxWindow* referenceWindow = Manager::Get()->GetAppWindow();
-    if (!referenceWindow)    // no application window available, so this is as good as we can get
-        referenceWindow = w;
-
-    int the_mode;
-    if (mode == pdlBest)
-        the_mode = cfg->ReadInt(_T("/dialog_placement/dialog_position"), (int) pdlCentre);
-    else
-        the_mode = (int) mode;
-
     wxRect monitorRect;
-
     if (wxDisplay::GetCount() > 0)
     {
-        int displayIdx = wxDisplay::GetFromWindow(referenceWindow);
+        int displayIdx = wxDisplay::GetFromWindow(window);
         if (displayIdx == wxNOT_FOUND)
             displayIdx = 0;
         wxDisplay display(displayIdx);
@@ -1179,7 +1322,53 @@ void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode, bool enforce)
         wxDisplaySize(&width, &height);
         monitorRect = wxRect(0, 0, width, height);
     }
+    return monitorRect;
+}
 
+cbChildWindowPlacement cbGetChildWindowPlacement(ConfigManager &appConfig)
+{
+    int intChildWindowPlacement = appConfig.ReadInt(wxT("/dialog_placement/child_placement"),
+                                                    int(cbChildWindowPlacement::CenterOnParent));
+    if (intChildWindowPlacement < 0 || intChildWindowPlacement >= 3)
+        intChildWindowPlacement = 0;
+
+    return cbChildWindowPlacement(intChildWindowPlacement);
+}
+
+void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode, bool enforce)
+{
+    if (!w)
+        cbThrow(_T("Passed NULL pointer to PlaceWindow."));
+
+    int the_mode;
+
+    if (!enforce)
+    {
+        ConfigManager *cfg = Manager::Get()->GetConfigManager(_T("app"));
+        const cbChildWindowPlacement placement =  cbGetChildWindowPlacement(*cfg);
+        switch (placement)
+        {
+            case cbChildWindowPlacement::CenterOnParent:
+                w->CenterOnParent();
+                return;
+            case cbChildWindowPlacement::CenterOnDisplay:
+            {
+                if (mode == pdlBest)
+                    the_mode = cfg->ReadInt(_T("/dialog_placement/dialog_position"), (int) pdlCentre);
+                else
+                    the_mode = (int) mode;
+                break;
+            }
+            case cbChildWindowPlacement::LeaveToWM:
+                return;
+        }
+    }
+
+    wxWindow* referenceWindow = Manager::Get()->GetAppWindow();
+    if (!referenceWindow)    // no application window available, so this is as good as we can get
+        referenceWindow = w;
+
+    const wxRect monitorRect = cbGetMonitorRectForWindow(referenceWindow);
     wxRect windowRect = w->GetRect();
 
     switch(the_mode)
@@ -1233,7 +1422,6 @@ void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode, bool enforce)
         }
         break;
 
-
         case pdlClip:
         {
             int x1 = windowRect.x;
@@ -1252,6 +1440,44 @@ void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode, bool enforce)
     }
 
     w->SetSize(windowRect.x,  windowRect.y, windowRect.width, windowRect.height, wxSIZE_ALLOW_MINUS_ONE);
+}
+
+void cbFixWindowSizeAndPlace(wxTopLevelWindow* const w)
+{
+    if (w == nullptr)
+        return;
+
+    const int displayNumber = wxDisplay::GetFromWindow(w); // The display number this window is targeted from the layout file
+    if (displayNumber == wxNOT_FOUND)
+    {
+        // this window is not on a valid display.
+        // Place the window to the centre of the current display
+        const wxDisplay currentDisplay;
+
+        const int displayHeight = currentDisplay.GetClientArea().GetHeight();
+        const int displayWidth  = currentDisplay.GetClientArea().GetWidth();
+        const int panelHeight   = w->GetSize().GetHeight();
+        const int panelWidth    = w->GetSize().GetWidth();
+        if (panelHeight > displayHeight ||
+            panelWidth  > displayWidth)
+        {
+            // If the window is bigger then the current display
+            // Rescale the window to 1/3 of the current resolution
+            // try to keep the aspect ratio
+            const float windowRatio = (float) panelHeight / panelWidth;
+            const float scaledWidth = displayWidth / 3.0f;
+            float scaledHeight = scaledWidth * windowRatio;
+            if (scaledHeight > displayHeight)
+            {
+                // If the window is still to tall we break the aspect ratio
+                scaledHeight = displayHeight / 3.0f;
+            }
+            w->SetSize(scaledWidth, scaledHeight);
+        }
+        // Replace it to the centre of the screen...
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Window \"%s\" was on an invalid display, relocate it to main display"), w->GetTitle().ToUTF8().data()));
+        PlaceWindow(w, pdlCentre, true);
+    }
 }
 
 DirAccessCheck cbDirAccessCheck(const wxString& dir)
@@ -1469,9 +1695,9 @@ wxString cbGetTextFromUser(const wxString& message, const wxString& caption, con
 }
 
 
-wxImageList* cbProjectTreeImages::MakeImageList()
+std::unique_ptr<wxImageList> cbProjectTreeImages::MakeImageList(int baseSize, wxWindow &treeParent)
 {
-    static const wxString imgs[] =
+    static const wxString imgs[fvsLast] =
     {
         // NOTE: Keep in sync with FileVisualState in globals.h!
 
@@ -1502,17 +1728,23 @@ wxImageList* cbProjectTreeImages::MakeImageList()
         _T("project-readonly.png"),      // fvsProjectReadOnly,   ProjectIconIndex(true)
         _T("folder_open.png"),           // fvsFolder,            FolderIconIndex()
         _T("vfolder_open.png"),          // fvsVirtualFolder,     VirtualFolderIconIndex()
-
-        wxEmptyString
     };
-    wxBitmap bmp;
-    wxImageList *images = new wxImageList(16, 16);
-    wxString prefix = ConfigManager::ReadDataPath() + _T("/images/");
 
-    for (int i = 0; !imgs[i].IsEmpty(); ++i)
+    const double scaleFactor = cbGetContentScaleFactor(treeParent);
+    const int targetHeight = floor(baseSize * cbGetActualContentScaleFactor(treeParent));
+    const int size = cbFindMinSize16to64(targetHeight);
+
+    int imageListSize;
+    std::unique_ptr<wxImageList> images = cbMakeScaledImageList(size, scaleFactor, imageListSize);
+
+    const wxString prefix = ConfigManager::ReadDataPath()
+                          + wxString::Format(_T("/resources.zip#zip:images/tree/%dx%d/"),
+                                             size, size);
+    wxBitmap bmp;
+    for (const wxString &img : imgs)
     {
-        bmp = cbLoadBitmap(prefix + imgs[i], wxBITMAP_TYPE_PNG); // workspace
-        images->Add(bmp);
+        bmp = cbLoadBitmapScaled(prefix + img, wxBITMAP_TYPE_PNG, scaleFactor);
+        cbAddBitmapToImageList(*images, bmp, size, imageListSize, scaleFactor);
     }
     return images;
 }

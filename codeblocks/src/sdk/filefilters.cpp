@@ -4,7 +4,7 @@
  *
  * $Revision: 10854 $
  * $Id: filefilters.cpp 10854 2016-05-18 22:20:45Z d_anselmi $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/filefilters.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/filefilters.cpp $
  */
 
 #include "sdk_precomp.h"

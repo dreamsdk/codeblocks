@@ -4,7 +4,7 @@
  *
  * $Revision: 10722 $
  * $Id: config.script 10722 2016-01-28 14:39:15Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/scriptedwizard/resources/config.script $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/resources/config.script $
  */
 
 //
@@ -73,8 +73,6 @@ function RegisterWizards()
     RegisterWizard(wizProject,     _T("tricore"),      _T("TriCore Project"),       _T("Embedded Systems"));
     RegisterWizard(wizProject,     _T("ppc"),          _T("PowerPC Project"),       _T("Embedded Systems"));
     RegisterWizard(wizProject,     _T("mcs51"),        _T("MCS51 Project"),         _T("Embedded Systems"));
-	RegisterWizard(wizProject,     _T("dc"),           _T("Sega Dreamcast Project"),_T("Embedded Systems"));
-	
     //
     // file wizards
     //

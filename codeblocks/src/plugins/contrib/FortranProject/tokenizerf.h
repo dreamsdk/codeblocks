@@ -7,10 +7,13 @@
 #ifndef FTOKINIZER_H
 #define FTOKINIZER_H
 
-#include <wx/string.h>
-#include <filemanager.h>
-#include <vector>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
 
+    #include <filemanager.h>
+#endif
+#include <vector>
 
 //bool cbRead(wxFile& file,wxString& st);
 

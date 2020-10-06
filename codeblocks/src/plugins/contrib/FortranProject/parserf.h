@@ -7,15 +7,20 @@
 #ifndef PARSERF_H
 #define PARSERF_H
 
-#include <wx/string.h>
-#include <wx/event.h>
-#include <wx/file.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/event.h>
+    #include <wx/file.h>
+
+    #include <cbeditor.h>
+#endif
+#include <set>
+#include <vector>
+
 #include "tokenf.h"
 #include "tokenizerf.h"
 #include "includedb.h"
-#include "cbeditor.h"
-#include <set>
-#include <vector>
 #include "farrays.h"
 #include "fortranfileext.h"
 #include "calledbydict.h"
@@ -29,9 +34,9 @@ class ParserF
     public:
         ParserF(bool withIntrinsicModules=true);
         ~ParserF();
-        bool Parse(const wxString& filename, FortranSourceForm fsForm);
-        bool Reparse(const wxString& filename, FortranSourceForm fsForm);
-        bool BatchParse(const wxArrayString& filenames, ArrayOfFortranSourceForm& fileForms);
+        bool Parse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm);
+        bool Reparse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm);
+        bool BatchParse(const wxArrayString& projectFilenames, const wxArrayString& filenames, ArrayOfFortranSourceForm& fileForms);
         bool RemoveFile(const wxString& filename);
         void RemoveBuffer(const wxString& filename);
         TokensArrayF* GetTokens(){return m_pTokens;};
@@ -56,8 +61,9 @@ class ParserF
         void FindGenericTypeBoudComponents(TokenFlat* token, TokensArrayFlat& result);
         void FindMatchOperatorTokensForJump(wxString& nameOperator, TokensArrayFlat& result);
         void FindMatchTokensForJump(cbEditor* ed, bool onlyUseAssoc, bool onlyPublicNames, TokensArrayFlat& result);
-        bool FindMatchTokensForCodeCompletion(bool useSmartCC, bool onlyUseAssoc, bool onlyPublicNames, const wxString& nameUnderCursor, cbEditor* ed, TokensArrayFlat& result, bool& isAfterPercent, int& tokKind);
-        bool FindWordsBefore(cbEditor* ed, int numberOfWords, wxString &curLine, wxArrayString &firstWords);
+        bool FindMatchTokensForCodeCompletion(bool useSmartCC, bool onlyUseAssoc, bool onlyPublicNames, const wxString& nameUnderCursor,
+                                              cbEditor* ed, TokensArrayFlat& result, bool& isAfterPercent, int& tokKind, wxArrayString& firstWords);
+        bool FindWordsBefore(cbEditor* ed, int numberOfWordsMax, wxString &curLine, wxArrayString &firstWords);
         void RereadOptions();
         bool FindTokenDeclaration(TokenFlat& token, const wxString& argName, wxString& argDecl, wxString& argDescription);
         bool FindTokenRange(TokenFlat& token, wxString& txtRange, wxString& buff, std::vector<int> &lineStarts, bool withDefinition=false, bool readFile=true);
@@ -84,15 +90,20 @@ class ParserF
         void FindFile(const wxString& filename, TokensArrayFlat& result);
         void SetNewTokens(TokensArrayF* pTokens);
         void SetNewIncludeDB(IncludeDB* pIncludeDB);
+        void SetNewADirTokens(TokensArrayF* pTokens);
+        void SetNewADirIncludeDB(IncludeDB* pIncludeDB);
         void ConnectToNewTokens();
+        void ConnectToNewADirTokens();
         void SetNewCurrentTokens(TokensArrayF* pTokens);
         void ConnectToNewCurrentTokens();
         void ChangeLineIfRequired(cbEditor* ed, wxString& curLine);
         TokenF* FindTokenBetweenChildren(TokenF* pToken, const wxString& name);
-        void GetAddress(TokenF* token, wxArrayString& address);
+        //void GetAddress(TokenF* token, wxArrayString& address);
+        void GetAddressOfToken(TokenF* token, wxArrayString& address);
         TokenF* FindToken(const TokenFlat &token, TokensArrayF* children=NULL);
         void ChangeArgumentsTypeBoundProc(TokenFlat& tbProcTok, const TokenFlat& procTok);
-        void GetChildren(TokenFlat* token, int tokenKindMask, TokensArrayFlat& result);
+        void GetChildren(TokenFlat* token, int tokenKindMask, TokensArrayFlat& result, int levelMax=1);
+        void GetChildren(TokenF* pToken, int tokenKindMask, TokensArrayFlat& result, int level, int levelMax);
         void FindImplementedProcInMySubmodules(TokenFlat* tok, const wxString& search, TokensArrayFlat& result);
         void BuildCalledByDict(CalledByDict& cByDict);
 
@@ -105,7 +116,7 @@ class ParserF
         TokenF* FindModuleSubmoduleToken(const wxString& moduleName);
         void ObtainUDModulesToken(TokenF* token, StringSet* fileUseModules, StringSet* fileDeclaredModules,
                                    StringSet* fileExtendsSModules, StringSet* fileDeclaredSubmodules, StringSet* fileIncludes);
-        void FindMatchChildrenDeclared(TokensArrayF &m_Children, wxString search, TokensArrayFlat& result, int tokenKindMask, bool partialMatch=false, int noChildrenOf=0, bool onlyPublicNames=false);
+        void FindMatchChildrenDeclared(TokensArrayF &m_Children, const wxString search, TokensArrayFlat& result, int tokenKindMask, bool partialMatch=false, int noChildrenOf=0, bool onlyPublicNames=false);
         bool FindLineScope(unsigned int line, int& lineStart, int tokenKindMask, TokensArrayF& children, TokenF* &pToken);
         void FindLineScopeLN(cbEditor* ed, int& lineStart, TokenFlat* &token, int endPos);
         bool CutBlocks(const wxChar& ch, wxString& line);
@@ -131,15 +142,17 @@ class ParserF
         void ClearTokens(TokensArrayF* pTokens);
         void ParseIntrinsicModules();
         void ChangeCaseChildren(TokensArrayF &children, int dispCase);
-        void GetAddressOfToken(TokenF* token, wxArrayString& address);
         void FindImplementedProcInMySubmodules(cbEditor* ed, const wxString& search, TokensArrayFlat& result);
         void FindImplementedProcInMySubmodules(wxArrayString& address, const wxString& search, TokensArrayFlat& result);
         void FindSubmodulesWhichExtends(const wxString& moduleName, TokensArrayF* result);
         void FindMatchTokensAtInclude(cbEditor* ed, const wxString& findName, bool onlyPublicNames, bool partialMach, TokensArrayFlat& result);
+        void GetChildrenAssociateConstruct(TokenF* token, int tokenKindMask, TokensArrayFlat& result);
 
         TokensArrayF* m_pTokens;
         TokensArrayF* m_pIntrinsicModuleTokens;
         IncludeDB* m_pIncludeDB;
+        TokensArrayF* m_pAdditionalDirTokens;
+        IncludeDB* m_pIncludeDBADir;
         bool m_Done;
 
         wxString m_Buff;
@@ -167,6 +180,8 @@ class ParserF
 
         TokensArrayF* m_pTokensNew;
         IncludeDB*    m_pIncludeDBNew;
+        TokensArrayF* m_pTokensADirNew;
+        IncludeDB*    m_pIncludeDBADirNew;
         TokensArrayF* m_pBufferTokens;
         TokensArrayF* m_pCurrentBufferTokensNew;
 };

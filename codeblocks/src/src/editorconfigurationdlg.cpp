@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11139 $
- * $Id: editorconfigurationdlg.cpp 11139 2017-08-12 22:37:55Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/editorconfigurationdlg.cpp $
+ * $Revision: 11870 $
+ * $Id: editorconfigurationdlg.cpp 11870 2019-10-01 22:16:21Z pecanh $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/editorconfigurationdlg.cpp $
  */
 
 #include "sdk.h"
@@ -93,6 +93,8 @@ BEGIN_EVENT_TABLE(EditorConfigurationDlg, wxScrollingDialog)
 
     EVT_LISTBOOK_PAGE_CHANGED(XRCID("nbMain"), EditorConfigurationDlg::OnPageChanged)
     EVT_BUTTON(XRCID("btnWSColour"),                   EditorConfigurationDlg::OnChooseColour)
+
+    EVT_UPDATE_UI(XRCID("cmbFontQuality"),             EditorConfigurationDlg::OnUpdateUIFontQuality)
 END_EVENT_TABLE()
 
 EditorConfigurationDlg::EditorConfigurationDlg(wxWindow* parent)
@@ -143,8 +145,25 @@ EditorConfigurationDlg::EditorConfigurationDlg(wxWindow* parent)
     XRCCTRL(*this, "chkResetZoom",                wxCheckBox)->SetValue(cfg->ReadBool(_T("/reset_zoom"),                 false));
     XRCCTRL(*this, "chkZoomAll",                  wxCheckBox)->SetValue(cfg->ReadBool(_T("/zoom_all"),                   false));
     XRCCTRL(*this, "chkSyncEditorWithProjectManager", wxCheckBox)->SetValue(cfg->ReadBool(_T("/sync_editor_with_project_manager"), false));
+    XRCCTRL(*this, "chkEnableMiddleMousePaste",   wxCheckBox)->SetValue(cfg->ReadBool(_T("/enable_middle_mouse_paste"),  false));
     XRCCTRL(*this, "spnTabSize",                  wxSpinCtrl)->SetValue(cfg->ReadInt(_T("/tab_size"),                    4));
     XRCCTRL(*this, "cmbViewWS",                   wxChoice)->SetSelection(cfg->ReadInt(_T("/view_whitespace"),           0));
+    XRCCTRL(*this, "cmbCaretBuffer", wxChoice)->SetSelection(cfg->ReadInt(wxT("/caret_buffer"), 2));
+
+    wxChoice *cmbTechnology = XRCCTRL(*this, "cmbTechnology", wxChoice);
+    wxChoice *cmbFontQuality = XRCCTRL(*this, "cmbFontQuality", wxChoice);
+
+#if defined(__WXMSW__) && wxCHECK_VERSION(3, 1, 0)
+    cmbTechnology->SetSelection(cfg->ReadInt(wxT("/technology"), 0));
+    cmbFontQuality->SetSelection(cfg->ReadInt(wxT("/font_quality"), 0));
+#else
+    cmbTechnology->SetSelection(0);
+    cmbTechnology->Enable(false);
+
+    cmbFontQuality->SetSelection(0);
+    cmbFontQuality->Enable(false);
+#endif // defined(__WXMSW__) && wxCHECK_VERSION(3, 1, 0)
+
     XRCCTRL(*this, "rbTabText",                   wxRadioBox)->SetSelection(cfg->ReadBool(_T("/tab_text_relative"),      false)? 1 : 0);
 
     XRCCTRL(*this, "chkTrackPreprocessor",        wxCheckBox)->SetValue(cfg->ReadBool(_T("/track_preprocessor"),         true));
@@ -374,7 +393,6 @@ void EditorConfigurationDlg::CreateColoursSample()
         m_TextColourControl = new cbStyledTextCtrl(this, wxID_ANY);
 
         m_TextColourControl->SetTabWidth(4);
-        m_TextColourControl->SetCaretWidth(0);
         m_TextColourControl->SetMarginType(0, wxSCI_MARGIN_NUMBER);
         m_TextColourControl->SetMarginWidth(0, 32);
         m_TextColourControl->SetMinSize(wxSize(50,50));
@@ -389,10 +407,14 @@ void EditorConfigurationDlg::CreateColoursSample()
     wxString code = m_Theme->GetSampleCode(m_Lang, &breakLine, &debugLine, &errorLine);
     if (!code.IsEmpty())
     {
-        m_TextColourControl->SetReadOnly(false);
         m_TextColourControl->LoadFile(code);
-        m_TextColourControl->SetReadOnly(true);
     }
+
+    const bool hightlightCaretLine = XRCCTRL(*this, "chkHighlightCaretLine", wxCheckBox)->GetValue();
+    m_TextColourControl->SetCaretLineVisible(hightlightCaretLine);
+
+    const bool showIndentGuides = XRCCTRL(*this, "chkShowIndentGuides", wxCheckBox)->GetValue();
+    m_TextColourControl->SetIndentationGuides(showIndentGuides ? wxSCI_IV_LOOKBOTH : wxSCI_IV_NONE);
 
     m_TextColourControl->MarkerDeleteAll(2);
     m_TextColourControl->MarkerDeleteAll(3);
@@ -409,13 +431,18 @@ void EditorConfigurationDlg::FillColourComponents()
 {
     wxListBox* colours = XRCCTRL(*this, "lstComponents", wxListBox);
     colours->Clear();
-    for (int i = 0; i < m_Theme->GetOptionCount(m_Lang); ++i)
+    int count = m_Theme->GetOptionCount(m_Lang);
+    if (count == 0)
+        return;
+
+    for (int i = 0; i < count; ++i)
     {
         OptionColour* opt = m_Theme->GetOptionByIndex(m_Lang, i);
         if (colours->FindString(opt->name) == -1)
             colours->Append(opt->name);
     }
-    colours->SetSelection(0);
+    if (colours->GetCount() > 0)
+        colours->SetSelection(0);
     ReadColours();
 }
 
@@ -424,11 +451,9 @@ void EditorConfigurationDlg::ApplyColours()
     if (m_TextColourControl && m_Theme)
     {
         wxFont fnt = XRCCTRL(*this, "lblEditorFont", wxStaticText)->GetFont();
-        if (m_TextColourControl)
-        {
-            m_TextColourControl->StyleSetFont(wxSCI_STYLE_DEFAULT,fnt);
-            m_Theme->Apply(m_Lang, m_TextColourControl);
-        }
+
+        m_TextColourControl->StyleSetFont(wxSCI_STYLE_DEFAULT,fnt);
+        m_Theme->Apply(m_Lang, m_TextColourControl, false, true);
     }
 }
 
@@ -620,6 +645,7 @@ void EditorConfigurationDlg::ChangeTheme()
     wxChoice* cmbLangs = XRCCTRL(*this, "cmbLangs", wxChoice);
     int sel = cmbLangs->GetSelection();
     cmbLangs->Clear();
+    cmbLangs->Append(_("Plain text"));
     wxArrayString langs = m_Theme->GetAllHighlightLanguages();
     for (unsigned int i = 0; i < langs.GetCount(); ++i)
     {
@@ -1030,9 +1056,17 @@ void EditorConfigurationDlg::EndModal(int retCode)
         cfg->Write(_T("/reset_zoom"),                          resetZoom);
         cfg->Write(_T("/zoom_all"),                            zoomAll);
         cfg->Write(_T("/sync_editor_with_project_manager"),    XRCCTRL(*this, "chkSyncEditorWithProjectManager", wxCheckBox)->GetValue());
+        cfg->Write(_T("/enable_middle_mouse_paste"),           XRCCTRL(*this, "chkEnableMiddleMousePaste", wxCheckBox)->GetValue());
 
         cfg->Write(_T("/tab_size"),                            XRCCTRL(*this, "spnTabSize",                           wxSpinCtrl)->GetValue());
         cfg->Write(_T("/view_whitespace"),                     XRCCTRL(*this, "cmbViewWS",                            wxChoice)->GetSelection());
+        cfg->Write(_T("/caret_buffer"), XRCCTRL(*this, "cmbCaretBuffer", wxChoice)->GetSelection());
+
+#if defined(__WXMSW__) && wxCHECK_VERSION(3, 1, 0)
+    cfg->Write(_T("/technology"), XRCCTRL(*this, "cmbTechnology", wxChoice)->GetSelection());
+    cfg->Write(_T("/font_quality"), XRCCTRL(*this, "cmbFontQuality", wxChoice)->GetSelection());
+#endif // defined(__WXMSW__) && wxCHECK_VERSION(3, 1, 0)
+
         cfg->Write(_T("/tab_text_relative"),                   XRCCTRL(*this, "rbTabText",                            wxRadioBox)->GetSelection() ? true : false);
         // find & replace, regex searches
 
@@ -1184,4 +1218,10 @@ void EditorConfigurationDlg::EndModal(int retCode)
 void EditorConfigurationDlg::OnMultipleSelections(wxCommandEvent& event)
 {
     XRCCTRL(*this, "chkEnableAdditionalSelectionTyping", wxCheckBox)->Enable( event.IsChecked() );
+}
+
+void EditorConfigurationDlg::OnUpdateUIFontQuality(wxUpdateUIEvent& event)
+{
+    wxChoice *cmbTechnology = XRCCTRL(*this, "cmbTechnology", wxChoice);
+    event.Enable(cmbTechnology->GetSelection() != 0);
 }

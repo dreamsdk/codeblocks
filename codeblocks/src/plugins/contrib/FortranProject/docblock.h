@@ -1,11 +1,14 @@
 #ifndef DOCBLOCK_H
 #define DOCBLOCK_H
 
-#include "tokenf.h"
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/html/htmlwin.h>
+#endif
 #include <map>
-#include <wx/string.h>
-#include <wx/html/htmlwin.h>
 
+#include "tokenf.h"
 
 class DocBlock
 {

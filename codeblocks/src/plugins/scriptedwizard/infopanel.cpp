@@ -4,7 +4,7 @@
  *
  * $Revision: 10270 $
  * $Id: infopanel.cpp 10270 2015-05-15 10:57:08Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/scriptedwizard/infopanel.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/infopanel.cpp $
  */
 
 #include <sdk.h>

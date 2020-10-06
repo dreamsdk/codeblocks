@@ -4,7 +4,7 @@
  *
  * $Revision: 7749 $
  * $Id: profiletimer.cpp 7749 2012-02-01 09:42:05Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/profiletimer.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/profiletimer.cpp $
  */
 
 #include "profiletimer.h"

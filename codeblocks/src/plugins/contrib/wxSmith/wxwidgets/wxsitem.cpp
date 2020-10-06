@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsitem.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.cpp $
+* $Revision: 11442 $
+* $Id: wxsitem.cpp 11442 2018-08-07 07:14:29Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.cpp $
 */
 
 #include "wxsitem.h"
@@ -490,6 +490,21 @@ void wxsItem::Codef(const wxChar* Fmt,...)
 
     va_list ap;
     va_start(ap,Fmt);
+
+    Codef(GetCoderContext(),Fmt,GetCoderContext()->m_BuildingCode,ap);
+
+    va_end(ap);
+}
+void wxsItem::Codef(const wxString &Fmt,...)
+{
+    if ( !GetCoderContext() )
+    {
+        // TODO: Debug log
+        return;
+    }
+
+    va_list ap;
+    va_start(ap,Fmt.wx_str());
 
     Codef(GetCoderContext(),Fmt,GetCoderContext()->m_BuildingCode,ap);
 

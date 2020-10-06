@@ -364,6 +364,33 @@
 													<border>8</border>
 													<option>1</option>
 												</object>
+												<object class="sizeritem">
+													<object class="wxBoxSizer">
+														<object class="sizeritem">
+															<object class="wxStaticText" name="txtLinkerExe">
+																<label>Linker executable:</label>
+															</object>
+															<flag>wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+														</object>
+														<object class="sizeritem">
+															<object class="wxChoice" name="chLinkerExe">
+																<content>
+																	<item>Auto detect</item>
+																	<item>Use C compiler</item>
+																	<item>Use C++ compiler</item>
+																	<item>Use linker</item>
+																</content>
+																<selection>0</selection>
+																<help>This option controls which executable would be used for linking. Auto detect means that C++ compiler would be used for C++ projects and C compiler for C projects.</help>
+															</object>
+															<border>5</border>
+															<option>1</option>
+														</object>
+													</object>
+													<flag>wxBOTTOM|wxLEFT|wxRIGHT</flag>
+													<border>8</border>
+												</object>
 											</object>
 										</object>
 										<label>Linker settings</label>
@@ -869,30 +896,6 @@
 																						</object>
 																						<flag>wxEXPAND</flag>
 																					</object>
-																					<object class="sizeritem">
-																						<object class="wxStaticText" name="ID_STATICTEXT32">
-																							<label>Loader for native executables:</label>
-																						</object>
-																						<flag>wxALIGN_TOP</flag>
-																					</object>
-																					<object class="sizeritem">
-																						<object class="wxBoxSizer">
-																							<object class="sizeritem">
-																								<object class="wxTextCtrl" name="txtLoader" />
-																								<flag>wxEXPAND</flag>
-																								<border>8</border>
-																								<option>1</option>
-																							</object>
-																							<object class="sizeritem">
-																								<object class="wxButton" name="btnLoader">
-																									<label>...</label>
-																									<size>20,-1</size>
-																								</object>
-																								<flag>wxALIGN_TOP</flag>
-																							</object>
-																						</object>
-																						<flag>wxEXPAND</flag>
-																					</object>
 																				</object>
 																				<flag>wxALL|wxEXPAND</flag>
 																				<border>8</border>
@@ -982,7 +985,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT16">
-														<label>These variables can be used in compiler and/or linker options.&#x0A;Use them as compiler/linker options this way: $$(varname)</label>
+														<label>These variables can be used in compiler and/or linker options.&#x0A;Use them as compiler/linker options this way: $(varname)</label>
 														<fg>#800000</fg>
 														<style>wxST_NO_AUTORESIZE</style>
 													</object>
@@ -1123,7 +1126,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT22">
-														<label>Known variables: $$make, $$makefile, $$target, $$file and all macro variables</label>
+														<label>Known variables: $make, $makefile, $target, $file and all macro variables</label>
 														<fg>#800000</fg>
 													</object>
 													<flag>wxLEFT|wxRIGHT|wxEXPAND</flag>
@@ -1390,44 +1393,6 @@
 											</object>
 										</object>
 										<label>Other settings</label>
-									</object>
-									<object class="notebookpage">
-										<object class="wxPanel" name="tabAdvanced">
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<object class="wxStaticText" name="ID_STATICTEXT34">
-														<label>IMPORTANT: These options are taken into account only when using the Run command in Code::Blocks.</label>
-														<fg>#800000</fg>
-													</object>
-													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
-													<border>8</border>
-												</object>
-												<object class="sizeritem">
-													<object class="wxFlexGridSizer">
-														<cols>2</cols>
-														<vgap>8</vgap>
-														<hgap>8</hgap>
-														<growablecols>1</growablecols>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT33">
-																<label>Loader for native executable arguments:</label>
-															</object>
-															<flag>wxTOP|wxRIGHT|wxALIGN_TOP</flag>
-															<border>4</border>
-														</object>
-														<object class="sizeritem">
-															<object class="wxTextCtrl" name="txtLoaderArguments" />                                                               
-															<flag>wxEXPAND</flag>
-															<option>1</option>
-														</object>
-													</object>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>8</border>
-												</object>
-											</object>
-										</object>
-										<label>Advanced</label>
 									</object>
 								</object>
 								<flag>wxEXPAND</flag>

@@ -36,8 +36,8 @@
 
 // this is the plugins SDK version number
 // it will change when the SDK interface breaks
-#define PLUGIN_SDK_VERSION_MAJOR   1
-#define PLUGIN_SDK_VERSION_MINOR   33
+#define PLUGIN_SDK_VERSION_MAJOR   2
+#define PLUGIN_SDK_VERSION_MINOR   0
 #define PLUGIN_SDK_VERSION_RELEASE 0
 
 // class decls
@@ -91,7 +91,7 @@ class PLUGIN_EXPORT cbPlugin : public wxEvtHandler
         cbPlugin();
 
         /** cbPlugin destructor. */
-        virtual ~cbPlugin();
+        ~cbPlugin() override;
 
         /** The plugin must return its type on request. */
         virtual PluginType GetType() const { return m_Type; }
@@ -365,7 +365,7 @@ class PLUGIN_EXPORT cbCompilerPlugin: public cbPlugin
           * @param project The selected project (can be NULL).
           * @param target The selected target (can be NULL).
           */
-        virtual int Configure(cbProject* project, ProjectBuildTarget* target = nullptr) = 0;
+        virtual int Configure(cbProject* project, ProjectBuildTarget* target, wxWindow *parent) = 0;
     private:
 };
 
@@ -400,12 +400,12 @@ class PLUGIN_EXPORT cbDebuggerPlugin: public cbPlugin
         cbDebuggerPlugin(const wxString& guiName, const wxString& settingsName);
 
     public:
-        virtual void OnAttach();
-        virtual void OnRelease(bool appShutDown);
+        void OnAttach() override;
+        void OnRelease(bool appShutDown) override;
 
-        virtual void BuildMenu(wxMenuBar* menuBar);
-        virtual void BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data = nullptr);
-        virtual bool BuildToolBar(wxToolBar* toolBar);
+        void BuildMenu(wxMenuBar* menuBar) override;
+        void BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data = nullptr) override;
+        bool BuildToolBar(wxToolBar* toolBar) override;
 
         /** @brief Notify the debugger that lines were added or removed in an editor.
           * This causes the debugger to keep the breakpoints list in-sync with the
@@ -512,7 +512,24 @@ class PLUGIN_EXPORT cbDebuggerPlugin: public cbPlugin
         virtual bool SwitchToThread(int thread_number) = 0;
 
         // watches
-        virtual cb::shared_ptr<cbWatch> AddWatch(const wxString& symbol) = 0;
+
+        /// Request to add a watch for a given symbol in your language.
+        /// @param symbol Symbol or expression the debugger could understand and return a value for.
+        /// @param update Pass true if you want the debugger to immediately read the value of the
+        ///        symbol/expression, else it would be delayed until a call to UpdateWatch or
+        ///        UpdateWatches is made or some stepping command finishes. Passing false might be
+        ///        useful if you want to add multiple watches in one batch.
+        virtual cb::shared_ptr<cbWatch> AddWatch(const wxString& symbol, bool update) = 0;
+        /// Request to add a watch which would allow read/write access to a given memory range.
+        /// @param address The start address of the range.
+        /// @param size The size in bytes of the range.
+        /// @param symbol The name of the watch shown in the UI.
+        /// @param update Pass true if you want to make the debugger to immediately read the value
+        ///        of the watch, else it would be delayed until UpdateWatch/UpdateWatches is called
+        ///        or some stepping command finishes. Passing false is useful if you want to add
+        ///        multiple watches in one batch.
+        virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size,
+                                                       const wxString &symbol, bool update) = 0;
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual bool HasWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual void ShowWatchProperties(cb::shared_ptr<cbWatch> watch) = 0;
@@ -520,6 +537,14 @@ class PLUGIN_EXPORT cbDebuggerPlugin: public cbPlugin
         virtual void ExpandWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual void CollapseWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual void UpdateWatch(cb::shared_ptr<cbWatch> watch) = 0;
+
+        /// Manually ask the debugger to read/update the values of the given list of watches.
+        /// Depending on the debugger it might be more efficient than calling UpdateWatch multiple
+        /// times. The default implementation does just that.
+        /// @note The caller must make sure that all watches in the array are for this plugin.
+        /// Passing watches for other plugins would have unexpected results. The plugins aren't
+        /// required to check for this.
+        virtual void UpdateWatches(const std::vector<cb::shared_ptr<cbWatch>> &watches);
 
         struct WatchesDisabledMenuItems
         {
@@ -584,6 +609,7 @@ class PLUGIN_EXPORT cbDebuggerPlugin: public cbPlugin
             CPURegisters,
             Disassembly,
             ExamineMemory,
+            MemoryRange,
             Threads,
             Watches
         };
@@ -669,10 +695,10 @@ class PLUGIN_EXPORT cbToolPlugin : public cbPlugin
         virtual int Execute() = 0;
     private:
         // "Hide" some virtual members, that are not needed in cbToolPlugin
-        void BuildMenu(cb_unused wxMenuBar* menuBar){}
+        void BuildMenu(cb_unused wxMenuBar* menuBar) override{}
         void RemoveMenu(cb_unused wxMenuBar* menuBar){}
-        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr){}
-        bool BuildToolBar(cb_unused wxToolBar* toolBar){ return false; }
+        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr) override{}
+        bool BuildToolBar(cb_unused wxToolBar* toolBar) override{ return false; }
         void RemoveToolBar(cb_unused wxToolBar* toolBar){}
 };
 
@@ -714,10 +740,10 @@ class PLUGIN_EXPORT cbMimePlugin : public cbPlugin
         virtual bool HandlesEverything() const = 0;
     private:
         // "Hide" some virtual members, that are not needed in cbMimePlugin
-        void BuildMenu(cb_unused wxMenuBar* menuBar){}
+        void BuildMenu(cb_unused wxMenuBar* menuBar) override{}
         void RemoveMenu(cb_unused wxMenuBar* menuBar){}
-        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr){}
-        bool BuildToolBar(cb_unused wxToolBar* toolBar){ return false; }
+        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr) override{}
+        bool BuildToolBar(cb_unused wxToolBar* toolBar) override{ return false; }
         void RemoveToolBar(cb_unused wxToolBar* toolBar){}
 };
 
@@ -1008,10 +1034,10 @@ class PLUGIN_EXPORT cbWizardPlugin : public cbPlugin
         virtual CompileTargetBase* Launch(int index, wxString* createdFilename = nullptr) = 0; // do your work ;)
     private:
         // "Hide" some virtual members, that are not needed in cbCreateWizardPlugin
-        void BuildMenu(cb_unused wxMenuBar* menuBar){}
+        void BuildMenu(cb_unused wxMenuBar* menuBar) override{}
         void RemoveMenu(cb_unused wxMenuBar* menuBar){}
-        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr){}
-        bool BuildToolBar(cb_unused wxToolBar* toolBar){ return false; }
+        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr) override{}
+        bool BuildToolBar(cb_unused wxToolBar* toolBar) override{ return false; }
         void RemoveToolBar(cb_unused wxToolBar* toolBar){}
 };
 
@@ -1028,14 +1054,14 @@ class cbSmartIndentPlugin : public cbPlugin
         cbSmartIndentPlugin();
     private:
         // "Hide" some virtual members, that are not needed in cbSmartIndentPlugin
-        void BuildMenu(cb_unused wxMenuBar* menuBar){}
+        void BuildMenu(cb_unused wxMenuBar* menuBar) override{}
         void RemoveMenu(cb_unused wxMenuBar* menuBar){}
-        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr){}
-        bool BuildToolBar(cb_unused wxToolBar* toolBar){ return false; }
+        void BuildModuleMenu(cb_unused const ModuleType type, cb_unused wxMenu* menu, cb_unused const FileTreeData* data = nullptr) override{}
+        bool BuildToolBar(cb_unused wxToolBar* toolBar) override{ return false; }
         void RemoveToolBar(cb_unused wxToolBar* toolBar){}
     protected:
-        void OnAttach();
-        void OnRelease(bool appShutDown);
+        void OnAttach() override;
+        void OnRelease(bool appShutDown) override;
 
     public:
         /** When this is called, the smartIndent mechanism must get to work ;).

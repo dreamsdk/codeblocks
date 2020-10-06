@@ -4,7 +4,7 @@
  *
  * $Revision: 8524 $
  * $Id: windowsxplooknfeel.cpp 8524 2012-11-07 16:34:06Z thomasdenk $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/xpmanifest/windowsxplooknfeel.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/xpmanifest/windowsxplooknfeel.cpp $
  */
 
 #include <sdk.h>

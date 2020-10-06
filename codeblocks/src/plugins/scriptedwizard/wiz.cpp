@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11148 $
- * $Id: wiz.cpp 11148 2017-08-15 19:14:30Z pecanh $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/scriptedwizard/wiz.cpp $
+ * $Revision: 11529 $
+ * $Id: wiz.cpp 11529 2018-12-15 16:18:20Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/wiz.cpp $
  */
 
 #include <sdk.h>
@@ -240,10 +240,15 @@ CompileTargetBase* Wiz::Launch(int index, wxString* pFilename)
     wxString user_commons = ConfigManager::GetFolder(sdDataUser) + _T("/templates/wizard/common_functions.script");
 
     m_LastXRC = m_Wizards[index].xrc;
-    if ( wxFileExists(m_LastXRC) )
+    if (wxFileExists(m_LastXRC))
     {
-        if ( !wxXmlResource::Get()->Load(m_LastXRC) )
-            cbMessageBox(m_Wizards[index].title + _(" has failed to load XRC resource..."), _("Error"), wxICON_ERROR);
+        if (!wxXmlResource::Get()->Load(m_LastXRC))
+        {
+            wxString message = wxString::Format(_("%s has failed to load XRC resource from '%s'"),
+                                                m_Wizards[index].title.wx_str(),
+                                                m_LastXRC.wx_str());
+            cbMessageBox(message, _("Error"), wxICON_ERROR);
+        }
     }
     else
         m_LastXRC.Clear();

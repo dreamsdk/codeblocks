@@ -15,25 +15,45 @@
                         index="64,72,75"
                         fg="200,200,200"/>
                 <Style name="Comment (normal)"
-                        index="1,23,65,87"
-                        fg="160,160,160"/>
+                        index="1,23"
+                        fg="152,152,217"/>
+                <Style name="Comment (inactive)"
+                        index="65,87"
+                        fg="192,192,192"/>
                 <Style name="Comment line (normal)"
-                        index="2,66"
-                        fg="190,190,230"/>
+                        index="2"
+                        fg="152,152,217"/>
+                <Style name="Comment line (inactive)"
+                        index="66"
+                        fg="192,192,192"/>
                 <Style name="Comment (documentation)"
-                        index="3,24,67,88"
+                        index="3,24"
                         fg="128,128,255"
+                        bold="1"/>
+                <Style name="Comment (documentation, inactive)"
+                        index="67,88"
+                        fg="170,170,240"
                         bold="1"/>
                 <Style name="Comment line (documentation)"
-                        index="15,79"
+                        index="15"
                         fg="128,128,255"
                         bold="1"/>
+                <Style name="Comment line (documentation, inactive)"
+                        index="79"
+                        fg="170,170,240"
+                        bold="1"/>
                 <Style name="Comment keyword (documentation)"
-                        index="17,81"
+                        index="17"
                         fg="0,128,128"/>
+                <Style name="Comment keyword (documentation, inactive)"
+                        index="81"
+                        fg="107,153,153"/>
                 <Style name="Comment keyword error (documentation)"
-                        index="18,82"
+                        index="18"
                         fg="128,0,0"/>
+                <Style name="Comment keyword error (documentation, inactive)"
+                        index="82"
+                        fg="172,89,89"/>
                 <Style name="Number"
                         index="4"
                         fg="240,0,240"/>
@@ -91,12 +111,6 @@
                 <Style name="Operator (inactive)"
                         index="74"
                         fg="255,200,200"/>
-                <Style name="Selection"
-                        index="-99"
-                        bg="192,192,192"/>
-                <Style name="Active line"
-                        index="-98"
-                        bg="255,255,160"/>
                 <Style name="Breakpoint line"
                         index="-2"
                         bg="255,160,160"/>
@@ -106,16 +120,6 @@
                 <Style name="Compiler error line"
                         index="-4"
                         bg="255,128,0"/>
-                <Style name="Matching brace highlight"
-                        index="34"
-                        fg="0,0,0"
-                        bg="128,255,255"
-                        bold="1"/>
-                <Style name="No matching brace highlight"
-                        index="35"
-                        fg="255,255,255"
-                        bg="255,0,0"
-                        bold="1"/>
                 <Style name="wxSmith-generated code"
                         index="50"
                         fg="64,64,128"
@@ -166,18 +170,29 @@
                                    wiostream wistream wofstream wregex xor_combine"/>
                         <!-- Documentation comment keywords -->
                         <Set index="2"
-                            value="a addindex addtogroup anchor arg attention
-                                   author b brief bug c class code date def defgroup deprecated
-                                   dontinclude e em endcode endhtmlonly endif endlatexonly endlink
-                                   endverbatim enum example exception f$ f[ f] file fn
-                                   hideinitializer htmlinclude htmlonly if image include ingroup
-                                   internal invariant interface latexonly li line link mainpage name
-                                   namespace nosubgrouping note overload p page par param param[in]
-                                   param[out] param[in,out] post pre ref relates remarks return
-                                   retval sa section see showinitializer since skip skipline struct
-                                   subsection test throw todo typedef union until var verbatim
-                                   verbinclude version warning weakgroup
-                                   $ @ \ &amp; &lt; &gt;  # { }"/>
+                            value="a addindex addtogroup anchor arg attention author authors b
+                                   brief bug c callergraph callgraph category cite class code cond
+                                   copybrief copydetails copydoc copyright date def defgroup
+                                   deprecated details diafile dir docbookonly dontinclude dot
+                                   dotfile e else elseif em endcode endcond enddocbookonly enddot
+                                   endhtmlonly endif endinternal endlatexonly endlink endmanonly
+                                   endmsc endparblock endrtfonly endsecreflist endverbatim enduml
+                                   endxmlonly enum example exception extends f$ f[ f] f{ f} file fn
+                                   headerfile hidecallergraph hidecallgraph hideinitializer
+                                   htmlinclude htmlonly idlexcept if ifnot image implements include
+                                   includedoc includelineno ingroup internal invariant interface
+                                   latexinclude latexonly li line link mainpage manonly memberof msc
+                                   mscfile n name namespace nosubgrouping note overload p package
+                                   page par paragraph param param[in] param[out] param[in,out]
+                                   parblock post pre private privatesection property protected
+                                   protectedsection protocol public publicsection pure ref refitem
+                                   related relates relatedalso relatesalso remark remarks result
+                                   return returns retval rtfonly sa secreflist section see short
+                                   showinitializer since skip skipline snippet snippetdoc
+                                   snippetlineno startuml struct subpage subsection subsubsection
+                                   tableofcontents test throw throws todo tparam typedef union until
+                                   var verbatim verbinclude version vhdlflow warning weakgroup
+                                   xmlonly xrefitem $ @ \ &amp; &lt; &gt;  # { }"/>
                         <!-- wxSmith block identifiers -->
                         <Set index="6"
                             value="^AppHeaders ^AppInitialize ^Declarations ^Destroy ^EventTable ^Handlers

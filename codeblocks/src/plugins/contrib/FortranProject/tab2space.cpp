@@ -1,14 +1,19 @@
+
 #include "tab2space.h"
 
-#include <cbeditor.h>
-#include <cbproject.h>
-#include <cbstyledtextctrl.h>
-#include <editormanager.h>
-#include <logmanager.h>
-#include <projectmanager.h>
-#include <wx/tokenzr.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
 
+    #include <cbeditor.h>
+    #include <cbproject.h>
+    #include <cbstyledtextctrl.h>
+    #include <editormanager.h>
+    #include <logmanager.h>
+    #include <projectmanager.h>
+#endif
 #include <set>
+
 #include "fortranfileext.h"
 #include "textcutter.h"
 

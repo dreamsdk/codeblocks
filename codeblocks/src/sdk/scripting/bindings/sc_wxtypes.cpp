@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11088 $
- * $Id: sc_wxtypes.cpp 11088 2017-06-11 18:20:49Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_wxtypes.cpp $
+ * $Revision: 11439 $
+ * $Id: sc_wxtypes.cpp 11439 2018-08-07 07:13:55Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_wxtypes.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -22,6 +22,21 @@ namespace ScriptBindings
     ///////////////////
     // wxArrayString //
     ///////////////////
+    void wxArrayString_Clear(HSQUIRRELVM v)
+    {
+        static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
+        StackHandler sa(v);
+        wxArrayString& self = *SqPlus::GetInstance<wxArrayString,false>(v, 1);
+        self.Clear();
+    }
+    SQInteger wxArrayString_GetCount(HSQUIRRELVM v)
+    {
+        static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
+        StackHandler sa(v);
+        wxArrayString& self = *SqPlus::GetInstance<wxArrayString,false>(v, 1);
+        return sa.Return((SQInteger)self.GetCount());
+    }
+
     SQInteger wxArrayString_Index(HSQUIRRELVM v)
     {
         static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
@@ -262,11 +277,12 @@ namespace ScriptBindings
 
     void Register_wxTypes()
     {
-#if wxCHECK_VERSION(3, 0, 0)
-        typedef const wxString& (wxArrayString::*WXARRAY_STRING_ITEM)(size_t nIndex) const;
+#if wxCHECK_VERSION(3, 0, 0) && !wxUSE_STD_CONTAINERS
+        typedef const wxString& (wxArrayString::*wxArrayStringItem)(size_t nIndex) const;
 #else
-        typedef wxString& (wxArrayString::*WXARRAY_STRING_ITEM)(size_t nIndex) const;
+        typedef wxString& (wxArrayString::*wxArrayStringItem)(size_t nIndex) const;
 #endif
+        typedef size_t (wxArrayString::*wxArrayStrinGetCount)() const;
 
         ///////////////////
         // wxArrayString //
@@ -274,11 +290,10 @@ namespace ScriptBindings
         SqPlus::SQClassDef<wxArrayString>("wxArrayString").
                 emptyCtor().
                 func(&wxArrayString::Add, "Add").
-                func(&wxArrayString::Clear, "Clear").
-//                func(&wxArrayString::Index, "Index").
+                staticFunc(&wxArrayString_Clear, "Clear").
                 staticFuncVarArgs(&wxArrayString_Index, "Index", "*").
-                func(&wxArrayString::GetCount, "GetCount").
-                func<WXARRAY_STRING_ITEM>(&wxArrayString::Item, "Item").
+                func<wxArrayStrinGetCount>(&wxArrayString::GetCount, "GetCount").
+                func<wxArrayStringItem>(&wxArrayString::Item, "Item").
                 staticFuncVarArgs(&wxArrayString_SetItem, "SetItem", "*");
 
         //////////////

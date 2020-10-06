@@ -9,7 +9,10 @@
 #ifndef LINEADDRESS_H_INCLUDED
 #define LINEADDRESS_H_INCLUDED
 
-#include <wx/string.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+#endif
 #include <list>
 
 

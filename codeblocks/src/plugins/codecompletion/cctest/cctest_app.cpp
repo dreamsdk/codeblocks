@@ -3,7 +3,7 @@
  * http://www.gnu.org/licenses/gpl-3.0.html
  * $Revision: 10336 $
  * $Id: cctest_app.cpp 10336 2015-06-19 01:49:41Z ollydbg $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/cctest/cctest_app.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/cctest/cctest_app.cpp $
  */
 
 /**

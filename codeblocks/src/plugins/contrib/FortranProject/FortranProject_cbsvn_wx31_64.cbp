@@ -54,11 +54,14 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<ExtraCommands>
-			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip manifest.xml resources\workspacebrowserf.xrc resources\settings.xrc resources\fortranprojecttoolbar.xrc" />
+			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip manifest.xml resources\settings.xrc resources\fortranprojecttoolbar.xrc" />
 			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip resources\changecase.xrc resources\tab2space.xrc" />
+			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip resources\project_settings_fortran.xrc resources\calltreeview.xrc" />
 			<Add after="zip -r9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip images" />
 			<Add after=".\update31_64.bat" />
 		</ExtraCommands>
+		<Unit filename="adddirparserthread.cpp" />
+		<Unit filename="adddirparserthread.h" />
 		<Unit filename="autoinsert.cpp" />
 		<Unit filename="autoinsert.h" />
 		<Unit filename="bindto.cpp" />
@@ -99,6 +102,8 @@
 		<Unit filename="fpimagelist.h" />
 		<Unit filename="fpoptionsdlg.cpp" />
 		<Unit filename="fpoptionsdlg.h" />
+		<Unit filename="fpoptionsprjdlg.cpp" />
+		<Unit filename="fpoptionsprjdlg.h" />
 		<Unit filename="includedb.cpp" />
 		<Unit filename="includedb.h" />
 		<Unit filename="indentestimator.cpp" />
@@ -124,11 +129,12 @@
 		<Unit filename="parserthreadf.h" />
 		<Unit filename="projectdependencies.cpp" />
 		<Unit filename="projectdependencies.h" />
+		<Unit filename="resources/calltreeview.xrc" />
 		<Unit filename="resources/changecase.xrc" />
 		<Unit filename="resources/fortranprojecttoolbar.xrc" />
+		<Unit filename="resources/project_settings_fortran.xrc" />
 		<Unit filename="resources/settings.xrc" />
 		<Unit filename="resources/tab2space.xrc" />
-		<Unit filename="resources/workspacebrowserf.xrc" />
 		<Unit filename="submoduletokenf.h" />
 		<Unit filename="tab2space.cpp" />
 		<Unit filename="tab2space.h" />
@@ -151,9 +157,6 @@
 		<Unit filename="wxsmith/FormatIndentDlg.wxs" />
 		<Unit filename="wxsmith/MakefileDlg.wxs" />
 		<Extensions>
-			<code_completion />
-			<debugger />
-			<envvars />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10050 $
- * $Id: loggers.cpp 10050 2014-12-06 17:42:06Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/loggers.cpp $
+ * $Revision: 11436 $
+ * $Id: loggers.cpp 11436 2018-08-07 07:13:27Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/loggers.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -131,7 +131,12 @@ void TextCtrlLogger::UpdateSettings()
 void TextCtrlLogger::Append(const wxString& msg, Logger::level lv)
 {
     if (!control)
+    {
+        // Do the same as the stdout logger, to prevent loss of messages during start up!
+        fputs(wxSafeConvertWX2MB(msg.wc_str()), lv < error ? stdout : stderr);
+        fputs(::newline_string.mb_str(), lv < error ? stdout : stderr);
         return;
+    }
 
     ::temp_string.assign(msg);
     ::temp_string.append(_T("\n"));
@@ -460,7 +465,7 @@ HTMLFileLogger::HTMLFileLogger(const wxString& filename)
 
 void HTMLFileLogger::Append(const wxString& msg, cb_unused Logger::level lv)
 {
-    fputs(wxSafeConvertWX2MB(msg), f.fp());
+    fputs(wxSafeConvertWX2MB(msg.wc_str()), f.fp());
     fputs(::newline_string.mb_str(), f.fp());
 }
 
@@ -473,23 +478,23 @@ void HTMLFileLogger::Open(const wxString& filename)
     fputs("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en-US\" lang=\"en-US\">\n<head>\n<title>Build log</title>\n<style>\n", f.fp());
 
     if (!!css.asterisk)
-        fprintf(f.fp(), "* { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.asterisk));
+        fprintf(f.fp(), "* { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.asterisk.wc_str()));
     if (!!css.pagetitle)
-        fprintf(f.fp(), "h1 { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.pagetitle));
+        fprintf(f.fp(), "h1 { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.pagetitle.wc_str()));
     if (!!css.caption)
-        fprintf(f.fp(), "h2 { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.caption));
+        fprintf(f.fp(), "h2 { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.caption.wc_str()));
     if (!!css.info)
-        fprintf(f.fp(), ".info { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.info));
+        fprintf(f.fp(), ".info { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.info.wc_str()));
     if (!!css.warning)
-        fprintf(f.fp(), ".warn { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.warning));
+        fprintf(f.fp(), ".warn { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.warning.wc_str()));
     if (!!css.error)
-        fprintf(f.fp(), ".error { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.error));
+        fprintf(f.fp(), ".error { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.error.wc_str()));
     if (!!css.success)
-        fprintf(f.fp(), ".success { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.success));
+        fprintf(f.fp(), ".success { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.success.wc_str()));
     if (!!css.failure)
-        fprintf(f.fp(), ".failure { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.failure));
+        fprintf(f.fp(), ".failure { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.failure.wc_str()));
     if (!!css.critical)
-        fprintf(f.fp(), ".critical { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.critical));
+        fprintf(f.fp(), ".critical { %s }\n", (wxStringSucks) wxSafeConvertWX2MB(css.critical.wc_str()));
     fputs("</style>\n</head>\n\n<body>", f.fp());
 }
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11083 $
- * $Id: encodingdetector.cpp 11083 2017-06-04 12:24:03Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/encodingdetector.cpp $
+ * $Revision: 11970 $
+ * $Id: encodingdetector.cpp 11970 2020-02-23 14:25:19Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/encodingdetector.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -147,7 +147,8 @@ bool EncodingDetector::DetectEncoding(const wxString& filename, bool convert_to_
 bool EncodingDetector::DetectEncoding(const wxByte* buffer, size_t size, bool convert_to_wxstring)
 {
     ConfigManager* cfgMgr = Manager::Get()->GetConfigManager(_T("editor"));
-    wxString encname = cfgMgr->Read(_T("/default_encoding"));
+    const wxString &encname = cfgMgr->Read(_T("/default_encoding"),
+                                           wxLocale::GetSystemEncodingName());
 
     if (cfgMgr->ReadInt(_T("/default_encoding/use_option"), 0) == 1)
     {

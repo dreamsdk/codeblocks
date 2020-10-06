@@ -17,7 +17,7 @@
 *
 * $Revision: 8373 $
 * $Id: wxspropertycontainer.cpp 8373 2012-09-07 22:20:34Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.cpp $
 */
 
 #include "wxspropertycontainer.h"

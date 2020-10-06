@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9597 $
- * $Id: occurrenceshighlighting.cpp 9597 2014-01-22 22:11:10Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/occurrenceshighlighting/occurrenceshighlighting.cpp $
+ * $Revision: 11358 $
+ * $Id: occurrenceshighlighting.cpp 11358 2018-04-01 17:11:49Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/occurrenceshighlighting/occurrenceshighlighting.cpp $
  */
 
 #include <sdk.h> // Code::Blocks SDK
@@ -62,8 +62,10 @@ OccurrencesHighlighting::OccurrencesHighlighting():
         NotifyMissingFile(_T("occurrenceshighlighting.zip"));
 
     ColourManager* cm = Manager::Get()->GetColourManager();
-    cm->RegisterColour(_("Editor"), _("Highlight occurrence"),                wxT("editor_highlight_occurrence"),             *wxRED  );
+    cm->RegisterColour(_("Editor"), _("Highlight occurrence"),      wxT("editor_highlight_occurrence"), *wxRED);
+    cm->RegisterColour(_("Editor"), _("Highlight occurrence text"), wxT("editor_highlight_occurrence_text"), *wxWHITE);
     cm->RegisterColour(_("Editor"), _("Permanently highlighted occurrences"), wxT("editor_highlight_occurrence_permanently"), *wxGREEN);
+    cm->RegisterColour(_("Editor"), _("Permanently highlighted occurrences text"), wxT("editor_highlight_occurrence_permanently_text"), *wxBLACK);
 }
 
 // destructor
@@ -84,6 +86,12 @@ void OccurrencesHighlighting::OnAttach()
 
     EditorHooks::HookFunctorBase *editor_hook = new EditorHooks::HookFunctor<OccurrencesHighlighting>(this, &OccurrencesHighlighting::OnEditorHook);
     m_FunctorId = EditorHooks::RegisterHook(editor_hook);
+
+    typedef cbEventFunctor<OccurrencesHighlighting, CodeBlocksEvent> EditFunctor;
+    auto *handler = new EditFunctor(this, &OccurrencesHighlighting::OnEditorEvent);
+    Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN, handler);
+    handler = new EditFunctor(this, &OccurrencesHighlighting::OnEditorEvent);
+    Manager::Get()->RegisterEventSink(cbEVT_EDITOR_SPLIT, handler);
 
     m_pPanel = new OccurrencesPanel(Manager::Get()->GetAppWindow());
 
@@ -115,6 +123,8 @@ void OccurrencesHighlighting::OnRelease(bool appShutDown)
     // NOTE: after this function, the inherited member variable
     // m_IsAttached will be FALSE...
 
+    Manager::Get()->RemoveAllEventSinksFor(this);
+
     EditorHooks::UnregisterHook(m_FunctorId);
 
     delete m_pHighlighter;
@@ -139,7 +149,7 @@ void OccurrencesHighlighting::OnRelease(bool appShutDown)
     }
 }
 
-void OccurrencesHighlighting::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data)
+void OccurrencesHighlighting::BuildModuleMenu(const ModuleType type, wxMenu* menu, cb_unused const FileTreeData* data)
 {
     // Some library module is ready to display a pop-up menu.
     // Check the parameter \"type\" and see which module it is
@@ -161,12 +171,18 @@ void OccurrencesHighlighting::BuildModuleMenu(const ModuleType type, wxMenu* men
     wxString word = GetWordAtCaret();
     if ( word.IsEmpty() ) return;
 
-    menu->AppendSeparator();
-
     if ( m_texts.find(word) == m_texts.end() )
-        menu->Append(idMenuEntryPermanent, _("Permanently Highlight '") + word + _T("'"));
+    {
+        const wxString label = _("Permanently Highlight '") + word + _T("'");
+        const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+        menu->Insert(position, idMenuEntryPermanent, label);
+    }
     else
-        menu->Append(idMenuEntryRemove,    _("Don't Highlight '")       + word + _T("'"));
+    {
+        const wxString label = _("Don't Highlight '") + word + _T("'");
+        const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+        menu->Insert(position, idMenuEntryRemove, label);
+    }
 
 }
 void OccurrencesHighlighting::BuildMenu(wxMenuBar* menuBar)
@@ -334,6 +350,11 @@ void OccurrencesHighlighting::RemoveSelected()
 void OccurrencesHighlighting::OnEditorHook(cbEditor* editor, wxScintillaEvent& event)
 {
     m_pHighlighter->Call(editor, event);
+}
+
+void OccurrencesHighlighting::OnEditorEvent(cb_unused CodeBlocksEvent& event)
+{
+    m_pHighlighter->TextsChanged();
 }
 
 cbConfigurationPanel* OccurrencesHighlighting::GetConfigurationPanel(wxWindow* parent)

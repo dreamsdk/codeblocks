@@ -391,10 +391,14 @@ class DLLIMPORT CfgMgrBldr : public Mgr<CfgMgrBldr>
     wxString DetermineExecutablePath();
 protected:
     CfgMgrBldr();
-    ~CfgMgrBldr();
+    ~CfgMgrBldr() override;
 
 public:
     static ConfigManager* GetConfigManager(const wxString& name_space);
+
+    /// Return the path to the current configuration file.
+    /// This should be used only to print it in the log during start up.
+    wxString GetConfigFile() const;
 };
 
 #endif

@@ -7,7 +7,7 @@
  *
  * $Revision: 7600 $
  * $Id: manifest.xml 7600 2011-11-20 10:44:50Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ReopenEditor/manifest.xml $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/manifest.xml $
  -->
 <CodeBlocks_plugin_manifest_file>
   <SdkVersion major="1"

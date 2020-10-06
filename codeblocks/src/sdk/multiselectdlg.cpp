@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10912 $
- * $Id: multiselectdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/multiselectdlg.cpp $
+ * $Revision: 11366 $
+ * $Id: multiselectdlg.cpp 11366 2018-04-12 07:02:45Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/multiselectdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -36,11 +36,14 @@ MultiSelectDlg::MultiSelectDlg(wxWindow* parent,
 {
     //ctor
     wxXmlResource::Get()->LoadObject(this, parent, _T("dlgGenericMultiSelect"),_T("wxScrollingDialog"));
-    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
 
     SetTitle(title);
     XRCCTRL(*this, "lblLabel", wxStaticText)->SetLabel(label);
     Init(items, wildcard);
+
+    wxButton *buttonOK = XRCCTRL(*this, "wxID_OK", wxButton);
+    buttonOK->SetDefault();
+    buttonOK->SetFocus();
 }
 
 MultiSelectDlg::MultiSelectDlg(wxWindow* parent,
@@ -56,6 +59,10 @@ MultiSelectDlg::MultiSelectDlg(wxWindow* parent,
     SetTitle(title);
     XRCCTRL(*this, "lblLabel", wxStaticText)->SetLabel(label);
     Init(items, selectall ? _T("*") : _T(""));
+
+    wxButton *buttonOK = XRCCTRL(*this, "wxID_OK", wxButton);
+    buttonOK->SetDefault();
+    buttonOK->SetFocus();
 }
 
 MultiSelectDlg::~MultiSelectDlg()

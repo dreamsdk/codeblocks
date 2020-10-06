@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: version.cpp 10362 2015-07-26 08:13:33Z jenslody $
+// RCS-ID: $Id: version.cpp 11346 2018-03-24 21:29:44Z pecanh $
 
 #ifdef WX_PRECOMP
     #include "wx_pch.h"
@@ -525,6 +525,16 @@ AppVersion::~AppVersion()
 // ----------------------------------------------------------------------------
 //  Commit 1.4.0 2014/02/8
 //          Back to sanity
+// ----------------------------------------------------------------------------
+//          1.4.1 2018/03/21
+//          Apply Miguel Gimenez fixes for wxWidgets 3.0
+//          http://forums.codeblocks.org/index.php/topic,22480.0/topicseen.html
+//          1.4.2 2018/03/22
+//          Remove Drag and Drop insertion into CB (mod to bluehazzaard patch)
+//          http://forums.codeblocks.org/index.php/topic,22454.msg152852.html#msg152852
+//          1.4.3 2018/03/24
+//          Replace GenericMessageBox with wxMessageBox
+//          Remove use of external editor (causes hang)
 // ----------------------------------------------------------------------------
 //  Bugs
 //      2008/04/8

@@ -5,18 +5,21 @@
 #include <wx/string.h>
 //*)
 
-#include <editormanager.h>
-#include <cbstyledtextctrl.h>
-#include <configmanager.h>
-#include <projectmanager.h>
-#include <logmanager.h>
-#include <cbproject.h>
-#include <compilerfactory.h>
-#include <wx/regex.h>
-#include <wx/tokenzr.h>
-#include <wx/textdlg.h>
-#include <wx/dirdlg.h>
-#include <wx/msgdlg.h>
+#ifndef CB_PRECOMP
+    #include <wx/regex.h>
+    #include <wx/tokenzr.h>
+    #include <wx/textdlg.h>
+    #include <wx/dirdlg.h>
+    #include <wx/msgdlg.h>
+
+    #include <editormanager.h>
+    #include <cbstyledtextctrl.h>
+    #include <configmanager.h>
+    #include <projectmanager.h>
+    #include <logmanager.h>
+    #include <cbproject.h>
+    #include <compilerfactory.h>
+#endif
 
 //(*IdInit(Bindto)
 const long Bindto::ID_BTOACTIVEPROJECT = wxNewId();
@@ -167,7 +170,7 @@ Bindto::Bindto(wxWindow* parent, ParserF* pParser)
 	BoxSizer4 = new wxBoxSizer(wxVERTICAL);
 	StaticText3 = new wxStaticText(Panel1, wxID_ANY, _("Binding types"), wxDefaultPosition, wxDefaultSize, 0, _T("wxID_ANY"));
 	BoxSizer4->Add(StaticText3, 0, wxTOP|wxLEFT|wxRIGHT|wxALIGN_LEFT, 5);
-	lv_Types = new wxListView(Panel1, ID_LV_TYPES, wxDefaultPosition, wxSize(500,300), wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VRULES|wxSUNKEN_BORDER, wxDefaultValidator, _T("ID_LV_TYPES"));
+	lv_Types = new wxListView(Panel1, ID_LV_TYPES, wxDefaultPosition, wxSize(500,300), wxLC_REPORT|wxLC_SINGLE_SEL|wxLC_VRULES|wxBORDER_SUNKEN, wxDefaultValidator, _T("ID_LV_TYPES"));
 	BoxSizer4->Add(lv_Types, 1, wxTOP|wxBOTTOM|wxEXPAND, 5);
 	BoxSizer5 = new wxBoxSizer(wxHORIZONTAL);
 	bt_Add = new wxButton(Panel1, ID_BUTTON_ADD, _("Add"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_BUTTON_ADD"));
@@ -1661,7 +1664,7 @@ void Bindto::BindProcedure(wxString& txtBind, wxString& txtHeaders, wxString& tx
         {
             wxString pyClassName;
             wxArrayString address;
-            m_pParser->GetAddress(token, address);
+            m_pParser->GetAddressOfToken(token, address);
             TokensArrayFlatClass tokensTmp;
             TokensArrayFlat* resultTmp = tokensTmp.GetTokens();
             m_pParser->FindUseAssociatedTokens(true, address, tyaPy.fDrvTypeName, false, *resultTmp, tkType, false);
@@ -2029,7 +2032,7 @@ void Bindto::BindProcedure(wxString& txtBind, wxString& txtHeaders, wxString& tx
                 {
                     wxString pyClassName;
                     wxArrayString address;
-                    m_pParser->GetAddress(token, address);
+                    m_pParser->GetAddressOfToken(token, address);
                     TokensArrayFlatClass tokensTmp;
                     TokensArrayFlat* resultTmp = tokensTmp.GetTokens();
                     m_pParser->FindUseAssociatedTokens(true, address, tyaPy.fDrvTypeName, false, *resultTmp, tkType, false);
@@ -2381,7 +2384,7 @@ Bindto::TypeBind Bindto::GetBindType(const wxString& declar, int& nDimVarAdd)
             {
                 wxString tname = ftype.Mid(st+1,en-st-1);
                 wxArrayString address;
-                m_pParser->GetAddress(m_pTokenCurrent->m_pParent, address);
+                m_pParser->GetAddressOfToken(m_pTokenCurrent->m_pParent, address);
                 TokensArrayFlatClass tokensTmp;
                 TokensArrayFlat* resultTmp = tokensTmp.GetTokens();
                 m_pParser->FindUseAssociatedTokens(true, address, tname, false, *resultTmp, tkType, false);

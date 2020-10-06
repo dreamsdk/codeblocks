@@ -10,20 +10,18 @@
 #ifndef FORTRANPROJECT_H_INCLUDED
 #define FORTRANPROJECT_H_INCLUDED
 
-// For compilers that support precompilation, includes <wx/wx.h>
-#include <wx/wxprec.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/timer.h>
 
-#ifndef WX_PRECOMP
-    #include <wx/wx.h>
+    #include <cbplugin.h> // for "class cbToolPlugin"
+    #include <loggers.h>
 #endif
-
-#include <cbplugin.h> // for "class cbToolPlugin"
-#include "nativeparserf.h"
-#include "keywordsparserf.h"
-#include <wx/timer.h>
 #include <list>
 #include <map>
-#include "loggers.h"
+
+#include "nativeparserf.h"
+#include "keywordsparserf.h"
 #include "finfowindow.h"
 #include "lineaddress.h"
 #include "autoinsert.h"
@@ -63,6 +61,8 @@ class FortranProject : public cbCodeCompletionPlugin
         virtual int GetConfigurationGroup() const { return cgEditor; }
         void ShowInfoLog(TokensArrayFlat* result, bool isAfterPercent);
         cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent);
+        cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* parent, cbProject* project);
+        void OnProjectLoadingHook(cbProject* prj, TiXmlElement* elem, bool loading);
         void RereadOptions();
         void CheckEnableToolbar();
         bool GotoToken(TokenFlat* pToken, cbEditor* cured);
@@ -121,12 +121,15 @@ class FortranProject : public cbCodeCompletionPlugin
         void OnShowCallTreeView(wxCommandEvent& event);
         void OnShowCallTree(wxCommandEvent& event);
         void OnShowCalledByTree(wxCommandEvent& event);
+        void LoadFortranKeywordImages();
+        wxBitmap GetFortranKeywordImage(int height);
 
         bool m_InitDone;
 
         NativeParserF* m_pNativeParser;
         CallTree* m_pCallTree;
 
+        int                                m_ProjectLoadingHookID;
         int                                m_EditorHookId;
         int                                m_LastPosForCodeCompletion;
         wxTimer                            m_TimerCodeCompletion;
@@ -142,6 +145,7 @@ class FortranProject : public cbCodeCompletionPlugin
 
         bool                               m_IsAutoPopup;
         int                                m_ActiveCalltipsNest;
+        int                                m_ActiveCalltipsPosition;
         int                                m_CurrentLine;
         bool                               m_LexerKeywordsToInclude[9];
         bool                               m_UseSmartCC;
@@ -173,6 +177,7 @@ class FortranProject : public cbCodeCompletionPlugin
         wxTimer                            m_TimerReparseEditor;
 
         TokensArrayFlatClass               m_TokensCCList;
+        std::map<int,wxBitmap>             m_FKImages;
 
         DECLARE_EVENT_TABLE()
 };

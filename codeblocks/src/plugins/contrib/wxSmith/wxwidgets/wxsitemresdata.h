@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8574 $
-* $Id: wxsitemresdata.h 8574 2012-11-18 15:59:14Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.h $
+* $Revision: 11384 $
+* $Id: wxsitemresdata.h 11384 2018-04-29 15:37:23Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.h $
 */
 
 #ifndef WXSITEMRESDATA_H
@@ -121,6 +121,10 @@ class wxsItemResData
          * ans store new undo buffer entry.
          */
         void EndChange();
+
+        /// Causes the Quick properties to be rebuild when EndChange is called.
+        /// This is needed to prevent accessing freed memory.
+        void MarkExtraDataChanged();
 
         /** \brief Checking if item has modified state */
         inline bool GetModified() { return m_Undo.IsModified(); }
@@ -384,6 +388,7 @@ class wxsItemResData
         int m_LockCount;
 
         bool m_ReadOnly;
+        bool m_ExtraIsInvalid = false;
 };
 
 #endif

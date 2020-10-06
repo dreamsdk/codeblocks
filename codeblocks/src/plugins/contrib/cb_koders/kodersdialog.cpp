@@ -4,7 +4,7 @@
  *
  * $Revision: 10245 $
  * $Id: kodersdialog.cpp 10245 2015-05-02 14:45:07Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/cb_koders/kodersdialog.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/cb_koders/kodersdialog.cpp $
  */
 
 #include <wx/string.h>

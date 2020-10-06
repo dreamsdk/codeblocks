@@ -4,7 +4,7 @@
  *
  * $Revision: 10138 $
  * $Id: expression.cpp 10138 2015-03-10 02:50:53Z ollydbg $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/expression.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/expression.cpp $
  */
 
 #include <sdk.h>

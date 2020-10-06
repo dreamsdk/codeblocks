@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11198 $
- * $Id: cbstyledtextctrl.cpp 11198 2017-10-16 00:12:18Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/cbstyledtextctrl.cpp $
+ * $Revision: 11870 $
+ * $Id: cbstyledtextctrl.cpp 11870 2019-10-01 22:16:21Z pecanh $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbstyledtextctrl.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -117,6 +117,9 @@ void cbStyledTextCtrl::OnMouseMiddleDown(wxMouseEvent& event)
 {
     if (platform::gtk == false) // only if OnMouseMiddleDown is not already implemented by the OS
     {
+        if (not Manager::Get()->GetConfigManager(_T("editor"))->ReadBool(_T("/enable_middle_mouse_paste"), false))
+            {event.Skip(); return;}
+
         int pos = PositionFromPoint(wxPoint(event.GetX(), event.GetY()));
 
         if (pos == wxSCI_INVALID_POSITION)
@@ -380,6 +383,8 @@ void cbStyledTextCtrl::DoBraceCompletion(const wxChar& ch)
 
 bool cbStyledTextCtrl::DoSelectionBraceCompletion(const wxChar& ch)
 {
+    if (GetSelections() > 1)
+        return false;
     if (GetLastSelectedText().IsEmpty())
         return false; // nothing changed
     const wxString braces(wxT("([{<'\")]}>'\""));

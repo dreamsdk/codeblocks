@@ -25,7 +25,7 @@
 									<weight>bold</weight>
 									<family>swiss</family>
 								</font>
-								<style>wxALIGN_CENTRE|wxNO_BORDER|wxTRANSPARENT_WINDOW</style>
+								<style>wxALIGN_CENTRE|wxBORDER_NONE|wxTRANSPARENT_WINDOW</style>
 							</object>
 							<flag>wxALIGN_CENTER_VERTICAL</flag>
 							<option>1</option>
@@ -444,6 +444,7 @@
 																	<cols>1</cols>
 																	<vgap>4</vgap>
 																	<hgap>4</hgap>
+																	<growablecols>0</growablecols>
 																	<object class="sizeritem">
 																		<object class="wxCheckBox" name="chkWordWrap">
 																			<label>Word wrap</label>
@@ -455,7 +456,7 @@
 																			<label>Home/end to wrap point (line otherwise)</label>
 																			<checked>1</checked>
 																		</object>
-																		<flag>wxALIGN_TOP</flag>
+																		<flag>wxEXPAND</flag>
 																	</object>
 																	<object class="sizeritem">
 																		<object class="wxCheckBox" name="chkPosixRegex">
@@ -485,7 +486,7 @@
 																		<object class="wxCheckBox" name="chkSimplifiedHome">
 																			<label>Home key always moves caret to first column</label>
 																		</object>
-																		<flag>wxALIGN_TOP</flag>
+																		<flag>wxALIGN_LEFT</flag>
 																	</object>
 																	<object class="sizeritem">
 																		<object class="wxCheckBox" name="chkCamelCase">
@@ -506,12 +507,20 @@
 																		<flag>wxALIGN_TOP</flag>
 																	</object>
 																	<object class="sizeritem">
-																		<object class="wxBoxSizer">
+																		<object class="wxCheckBox" name="chkEnableMiddleMousePaste">
+																			<label>Enable marked text paste with middle mouse click (on Windows)</label>
+																		</object>
+																		<flag>wxALIGN_TOP</flag>
+																	</object>
+																	<object class="sizeritem">
+																		<object class="wxFlexGridSizer">
+																			<cols>2</cols>
+																			<rows>5</rows>
 																			<object class="sizeritem">
 																				<object class="wxStaticText" name="wxID_ANY">
 																					<label>Show spaces in editor:</label>
 																				</object>
-																				<flag>wxALIGN_CENTER_VERTICAL</flag>
+																				<flag>wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 																				<border>4</border>
 																			</object>
 																			<object class="sizeritem">
@@ -520,31 +529,103 @@
 																						<item>No</item>
 																						<item>Always</item>
 																						<item>Only after indent</item>
+																						<item>Only indent</item>
 																					</content>
 																				</object>
-																				<flag>wxLEFT|wxEXPAND</flag>
+																				<flag>wxBOTTOM|wxEXPAND</flag>
 																				<border>5</border>
 																				<option>1</option>
 																			</object>
-																		</object>
-																		<flag>wxALIGN_TOP</flag>
-																	</object>
-																	<object class="sizeritem">
-																		<object class="wxBoxSizer">
 																			<object class="sizeritem">
 																				<object class="wxStaticText" name="ID_STATICTEXT12">
 																					<label>Custom whitespace colour: </label>
 																				</object>
-																				<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+																				<flag>wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 																				<border>5</border>
 																				<option>1</option>
 																			</object>
 																			<object class="sizeritem">
 																				<object class="wxButton" name="btnWSColour" />
-																				<flag>wxALIGN_TOP</flag>
+																				<flag>wxBOTTOM|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxStaticText" name="ID_TEXT_CARET_BUFFER">
+																					<label>Editor caret buffer:</label>
+																				</object>
+																				<flag>wxTOP|wxBOTTOM|wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxChoice" name="cmbCaretBuffer">
+																					<content>
+																						<item>0 lines</item>
+																						<item>1 lines</item>
+																						<item>2 lines</item>
+																						<item>3 lines</item>
+																						<item>4 lines</item>
+																						<item>5 lines</item>
+																						<item>6 lines</item>
+																						<item>7 lines</item>
+																						<item>8 lines</item>
+																						<item>9 lines</item>
+																						<item>10 lines</item>
+																						<item>Centre caret</item>
+																					</content>
+																					<selection>2</selection>
+																				</object>
+																				<flag>wxBOTTOM|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxStaticText" name="ID_STATICTEXT13">
+																					<label>Technology:</label>
+																				</object>
+																				<flag>wxTOP|wxBOTTOM|wxRIGHT|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxChoice" name="cmbTechnology">
+																					<content>
+																						<item>Default</item>
+																						<item>DirectWrite (Windows Vista and newer)</item>
+																					</content>
+																					<selection>0</selection>
+																				</object>
+																				<flag>wxBOTTOM|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxStaticText" name="ID_STATICTEXT14">
+																					<label>Font quality:</label>
+																				</object>
+																				<flag>wxTOP|wxBOTTOM|wxRIGHT|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
+																			</object>
+																			<object class="sizeritem">
+																				<object class="wxChoice" name="cmbFontQuality">
+																					<content>
+																						<item>Default</item>
+																						<item>Non antialiased</item>
+																						<item>Antialiased</item>
+																						<item>LCD optimized</item>
+																					</content>
+																					<selection>0</selection>
+																				</object>
+																				<flag>wxBOTTOM|wxEXPAND</flag>
+																				<border>5</border>
+																				<option>1</option>
 																			</object>
 																		</object>
-																		<flag>wxALIGN_TOP</flag>
+																		<flag>wxTOP|wxLEFT|wxRIGHT</flag>
+																		<border>5</border>
+																		<option>1</option>
 																	</object>
 																</object>
 																<flag>wxEXPAND</flag>

@@ -7,10 +7,13 @@
 #ifndef FARRAYS_H
 #define FARRAYS_H
 
-#include <wx/dynarray.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/dynarray.h>
+#endif
+#include <vector>
 
 #include "tokenf.h"
-#include <vector>
 
 typedef std::vector<TokensArrayFlat*> PassedTokensArray2D;
 typedef std::vector<ArrOfSizeT*> ArrOfSizeT2D;

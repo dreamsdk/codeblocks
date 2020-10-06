@@ -2,7 +2,7 @@
 %define req_wxgtk           2.8.0
 %define _redhat             %(if [ -f /etc/redhat-release ]; then echo 1; else echo 0; fi)
 %define _mandrake           %(if [ -f /etc/mandrake-release ]; then echo 1; else echo 0; fi)
-%define _version            17.12.svn.%{_svnrev}
+%define _version            20.03
 %define _rel                1
 %define _release            %{_rel}
 %define jobs                %(if [ -e /usr/bin/getconf ]; then echo $(( `/usr/bin/getconf _NPROCESSORS_ONLN` + 1 )); else echo 1; fi)
@@ -175,6 +175,7 @@ plugins. These are:
  * NassiShneiderman
  * Regular expression testbed
  * Reopen last closed editor(s) via menu or hotkey
+ * Rndgen
  * Smartindent plugin (cpp, HDL, Fortran, Lua, Pascal, Python, XML)
  * Spellchecker plugin
  * Symbol table plugin
@@ -301,14 +302,12 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{pkgdatadir}/compilers/*
 %{pkgdatadir}/icons/*
 %{pkgdatadir}/images/*.png
-%{pkgdatadir}/images/16x16/*
-%{pkgdatadir}/images/codecompletion/*
 %{pkgdatadir}/images/settings/*
 %{pkgdatadir}/lexers/*
 %{pkgdatadir}/scripts/*
 %{pkgdatadir}/templates/*
-%{pkgdatadir}/abbreviations.zip
 %{pkgdatadir}/Astyle.zip
+%{pkgdatadir}/abbreviations.zip
 %{pkgdatadir}/autosave.zip
 %{pkgdatadir}/classwizard.zip
 %{pkgdatadir}/codecompletion.zip
@@ -371,6 +370,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{plugindir}/libValgrind.so
 %{plugindir}/libMouseSap.so
 %{plugindir}/libReopenEditor.so
+%{plugindir}/librndgen.so
 %{plugindir}/libwxsmith.so
 %{plugindir}/libwxsmithcontribitems.so
 %{plugindir}/libwxSmithAui.so
@@ -409,6 +409,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{pkgdatadir}/Profiler.zip
 %{pkgdatadir}/ProjectOptionsManipulator.zip
 %{pkgdatadir}/RegExTestbed.zip
+%{pkgdatadir}/rndgen.zip
 %{pkgdatadir}/ReopenEditor.zip
 %{pkgdatadir}/SymTab.zip
 %{pkgdatadir}/ThreadSearch.zip
@@ -418,8 +419,6 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{pkgdatadir}/wxsmithcontribitems.zip
 %{pkgdatadir}/wxSmithAui.zip
 %{pkgdatadir}/images/codesnippets/*
-%{pkgdatadir}/images/DoxyBlocks/*
-%{pkgdatadir}/images/ThreadSearch/*
 %{pkgdatadir}/images/wxsmith/*
 %{pkgdatadir}/lib_finder/*
 %if 0%{?spellchecker}
@@ -452,6 +451,8 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{_includedir}/wxsmith/*
 
 %changelog
+* Thu Feb 20 2020 Teodor Petrov <tpetrov@codeblocks.org>
+- Changes for release 20.03.
 * Tue Dec 23 2014 jens <jens@codeblocks.org>
 - do not try to build Spellchecker-plugin on CentOS/RedHat < 6, because the
   hunspell packages are only available from a thirdparty repo (atomicorp),

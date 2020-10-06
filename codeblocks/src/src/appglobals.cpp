@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9484 $
- * $Id: appglobals.cpp 9484 2013-12-03 20:34:13Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/appglobals.cpp $
+ * $Revision: 11901 $
+ * $Id: appglobals.cpp 11901 2019-11-04 19:35:26Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/appglobals.cpp $
  */
 
 #include <sdk.h>
@@ -66,8 +66,51 @@ namespace appglobals
     const wxString AppBuildTimestamp     = (  wxString(wxT(__DATE__)) + wxT(", ")
                                             + wxT(__TIME__) + wxT(" - wx")
                                             + wxString(wxT(wxVERSION_NUM_DOT_STRING))
+#if defined(__clang__)
+                                            + wxString::Format(wxT(" - clang %d.%d.%d"),
+                                                               __clang_major__, __clang_minor__, __clang_patchlevel__)
+#elif defined(__GNUC__)
+                                            + wxT(" - gcc ") + (wxString() << __GNUC__)
+                                            + wxT(".")       + (wxString() << __GNUC_MINOR__)
+                                            + wxT(".")       + (wxString() << __GNUC_PATCHLEVEL__)
+#endif
                                             + wxT(" (") + AppPlatform + wxT(", ")
                                             + AppWXAnsiUnicode + wxT(")") + bit_type );
 
     const wxString DefaultBatchBuildArgs = _T("-na -nd -ns --batch-build-notify");
 }
+namespace cbHelpers
+{
+
+/// Read the toolbar size setting from config.
+/// We store the value selected by the user without applying the scale factor.
+/// There are only 4 allow values to choose from.
+///
+/// These are the allowed values (1x column) and their values after the scale factor is applied.
+/// |-------|-----|-----|-----|-----|-----|-----|-----|
+/// |       |1x   |1.25x|1.5x |1.75 |2x   |2.5x |3x   |
+/// |-------|-----|-----|-----|-----|-----|-----|-----|
+/// |Normal |16   |20   |24   |28   |32   |40   |48   |
+/// |Large  |24   |28   |32   |40   |48   |56   |64   |
+/// |Larger |32   |40   |48   |56   |64   |64   |64   |
+/// |Largest|64   |64   |64   |64   |64   |64   |64   |
+/// |-------|-----|-----|-----|-----|-----|-----|-----|
+///
+int ReadToolbarSizeFromConfig()
+{
+    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("app"));
+
+    int size = defaultToolbarSize;
+    if (!cfg->Read(_T("/environment/toolbar_size"), &size))
+    {
+        bool smallSize = true;
+        if (cfg->Read(_T("/environment/toolbar_size"), &smallSize))
+            size = (smallSize ? 16 : 24);
+    }
+    if (size == 22)
+        size = 24;
+    const int possibleSizes[] = { 16, 24, 32, 64 };
+    return cbFindMinSize(size, possibleSizes, cbCountOf(possibleSizes));
+}
+
+} // namespace cbHelpers

@@ -25,6 +25,7 @@
 class DebuggerGDB;
 class Compiler;
 class ProjectBuildTarget;
+struct RemoteDebugging;
 
 WX_DEFINE_ARRAY(DebuggerCmd*, DebuggerCommands);
 
@@ -81,7 +82,7 @@ class DebuggerDriver
         /** Prepares the debugging process by setting up search dirs etc.
             @param isConsole If true, the debuggee is a console executable.
         */
-        virtual void Prepare(bool isConsole, int printElements) = 0;
+        virtual void Prepare(bool isConsole, int printElements, const RemoteDebugging &remoteDebugging) = 0;
 
         /** Begin the debugging process by launching a program. */
         virtual void Start(bool breakOnEntry) = 0;
@@ -105,6 +106,7 @@ class DebuggerDriver
         virtual void CPURegisters() = 0;
         virtual void SwitchToFrame(size_t number) = 0;
         virtual void SetVarValue(const wxString& var, const wxString& value) = 0;
+        virtual void SetMemoryRangeValue(uint64_t addr, const wxString& value) = 0;
         virtual void MemoryDump() = 0;
         virtual void RunningThreads() = 0;
 
@@ -138,10 +140,15 @@ class DebuggerDriver
             @param doArgs Display values of function arguments.
             @param tree The watches tree control.
         */
-        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_ptr<GDBWatch> funcArgsWatch,
-                                   WatchesContainer &watches) = 0;
+        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch,
+                                   cb::shared_ptr<GDBWatch> funcArgsWatch,
+                                   WatchesContainer &watches, bool ignoreAutoUpdate) = 0;
         virtual void UpdateWatch(cb::shared_ptr<GDBWatch> const &watch) = 0;
         virtual void UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bool locals) = 0;
+
+        virtual void UpdateMemoryRangeWatches(MemoryRangeWatchesContainer &watches,
+                                              bool ignoreAutoUpdate) = 0;
+        virtual void UpdateMemoryRangeWatch(const cb::shared_ptr<GDBMemoryRangeWatch> &watch) = 0;
 
         /** Attach to process */
         virtual void Attach(int pid) = 0;
@@ -198,6 +205,9 @@ class DebuggerDriver
         void NotifyDebuggeeContinued();
         /** Called by implementations to notify cursor changes. */
         void NotifyCursorChanged();
+
+        /** Determine language is debugged. */
+        virtual void DetermineLanguage() {};
     protected:
         /** Called by implementations to reset the cursor. */
         void ResetCursor();
@@ -225,6 +235,8 @@ class DebuggerDriver
         ThreadsContainer m_threads;
         int m_currentFrameNo;
         int m_userSelectedFrameNo;
+
+        wxString m_FileName;
 };
 
 #endif // DEBUGGERDRIVER_H

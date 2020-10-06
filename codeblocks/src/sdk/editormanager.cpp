@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11139 $
- * $Id: editormanager.cpp 11139 2017-08-12 22:37:55Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/editormanager.cpp $
+ * $Revision: 11771 $
+ * $Id: editormanager.cpp 11771 2019-07-04 22:18:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editormanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -38,6 +38,7 @@
 #include "cbcolourmanager.h"
 
 #include <wx/bmpbuttn.h>
+#include <wx/clipbrd.h>
 #include <wx/progdlg.h>
 #include <wx/tokenzr.h>
 
@@ -71,10 +72,13 @@ static const int idNBTabUnsplit              = wxNewId();
 static const int idNBTabClose                = wxNewId();
 static const int idNBTabCloseAll             = wxNewId();
 static const int idNBTabCloseAllOthers       = wxNewId();
+static const int idNBTabCloseToTheLeft       = wxNewId();
+static const int idNBTabCloseToTheRight      = wxNewId();
 static const int idNBTabSave                 = wxNewId();
 static const int idNBTabSaveAll              = wxNewId();
 static const int idNBSwapHeaderSource        = wxNewId();
 static const int idNBTabOpenContainingFolder = wxNewId();
+static const int idNBTabCopyFullPath         = wxNewId();
 static const int idNBTabTop                  = wxNewId();
 static const int idNBTabBottom               = wxNewId();
 static const int idNBProperties              = wxNewId();
@@ -105,6 +109,7 @@ struct EditorManagerInternalData
     /* Static data */
 
     EditorManager* m_pOwner;
+    wxBitmap m_ReadonlyIcon;
     bool m_SetFocusFlag;
 };
 
@@ -127,7 +132,10 @@ BEGIN_EVENT_TABLE(EditorManager, wxEvtHandler)
     EVT_MENU(idNBTabClose, EditorManager::OnClose)
     EVT_MENU(idNBTabCloseAll, EditorManager::OnCloseAll)
     EVT_MENU(idNBTabCloseAllOthers, EditorManager::OnCloseAllOthers)
+    EVT_MENU(idNBTabCloseToTheLeft, EditorManager::OnCloseAllOthers)
+    EVT_MENU(idNBTabCloseToTheRight, EditorManager::OnCloseAllOthers)
     EVT_MENU(idNBTabOpenContainingFolder, EditorManager::OnOpenContainingFolder)
+    EVT_MENU(idNBTabCopyFullPath, EditorManager::OnCopyFullPath)
     EVT_MENU(idNBTabSave, EditorManager::OnSave)
     EVT_MENU(idNBTabSaveAll, EditorManager::OnSaveAll)
     EVT_MENU(idNBSwapHeaderSource, EditorManager::OnSwapHeaderSource)
@@ -160,8 +168,8 @@ EditorManager::EditorManager()
     Manager::Get()->GetAppWindow()->PushEventHandler(this);
 
     m_Zoom = Manager::Get()->GetConfigManager(_T("editor"))->ReadInt(_T("/zoom"));
-    Manager::Get()->RegisterEventSink(cbEVT_BUILDTARGET_SELECTED, new cbEventFunctor<EditorManager, CodeBlocksEvent>(this, &EditorManager::CollectDefines));
-    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE, new cbEventFunctor<EditorManager, CodeBlocksEvent>(this, &EditorManager::CollectDefines));
+    Manager::Get()->RegisterEventSink(cbEVT_BUILDTARGET_SELECTED,       new cbEventFunctor<EditorManager, CodeBlocksEvent>(this, &EditorManager::CollectDefines));
+    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,           new cbEventFunctor<EditorManager, CodeBlocksEvent>(this, &EditorManager::CollectDefines));
     Manager::Get()->RegisterEventSink(cbEVT_WORKSPACE_LOADING_COMPLETE, new cbEventFunctor<EditorManager, CodeBlocksEvent>(this, &EditorManager::CollectDefines));
 
     ColourManager *colours = Manager::Get()->GetColourManager();
@@ -479,7 +487,7 @@ cbEditor* EditorManager::New(const wxString& newFileName)
         if (!f.IsOpened())
             return nullptr;
     }
-    cbEditor* ed = new cbEditor(m_pNotebook, newFileName);
+    cbEditor* ed = new cbEditor(m_pNotebook, newFileName, m_Theme);
 //    if ((newFileName.IsEmpty() && !ed->SaveAs()) || !ed->Save())
 //    {
 //        //DeletePage(ed->GetPageIndex());
@@ -608,9 +616,45 @@ bool EditorManager::CloseAllInTabCtrl(bool dontsave)
 bool EditorManager::CloseAllInTabCtrlExcept(EditorBase* editor, bool dontsave)
 {
     std::vector<EditorBase*> editors;
-    GetEditorsInTabCtrl(editors, GetActiveEditor());
+    GetEditorsInTabCtrl(editors, editor);
 
     editors.erase(std::remove(editors.begin(), editors.end(), editor), editors.end());
+
+    return CloseEditors(editors, dontsave);
+}
+
+bool EditorManager::CloseAllInTabCtrlToTheLeft(EditorBase* editor, bool dontsave)
+{
+    std::vector<EditorBase*> editors;
+    GetEditorsInTabCtrl(editors, editor);
+
+    for (auto it = editors.begin(); it != editors.end(); ++it)
+    {
+        if (*it == editor)
+        {
+            // We want to remove editors we want to preserve opened.
+            editors.erase(it, editors.end());
+            break;
+        }
+    }
+
+    return CloseEditors(editors, dontsave);
+}
+
+bool EditorManager::CloseAllInTabCtrlToTheRight(EditorBase* editor, bool dontsave)
+{
+    std::vector<EditorBase*> editors;
+    GetEditorsInTabCtrl(editors, editor);
+
+    for (auto it = editors.begin(); it != editors.end(); ++it)
+    {
+        if (*it == editor)
+        {
+            // We want to remove editors we want to preserve opened.
+            editors.erase(editors.begin(), it + 1);
+            break;
+        }
+    }
 
     return CloseEditors(editors, dontsave);
 }
@@ -1000,7 +1044,20 @@ void EditorManager::MarkReadOnly(int page, bool readOnly)
 {
     if (page > -1)
     {
-        wxBitmap bmp = readOnly ? cbLoadBitmap(ConfigManager::GetDataFolder() + _T("/images/") + _T("readonly.png")) : wxNullBitmap;
+        // The file is read-only and we don't have an image loaded - load it now.
+        if (readOnly && !m_pData->m_ReadonlyIcon.IsOk())
+        {
+            const int targetHeight = floor(16 * cbGetActualContentScaleFactor(*m_pNotebook));
+            const int size = cbFindMinSize16to64(targetHeight);
+
+            const wxString path = ConfigManager::GetDataFolder()
+                                + wxString::Format(wxT("/manager_resources.zip#zip:/images/%dx%d/readonly.png"),
+                                                   size, size);
+
+            m_pData->m_ReadonlyIcon = cbLoadBitmapScaled(path, wxBITMAP_TYPE_PNG,
+                                                         cbGetContentScaleFactor(*m_pNotebook));
+        }
+        wxBitmap bmp = readOnly ? m_pData->m_ReadonlyIcon : wxNullBitmap;
         if (m_pNotebook)
             m_pNotebook->SetPageBitmap(page, bmp);
     }
@@ -1161,21 +1218,36 @@ bool EditorManager::OpenContainingFolder()
 #endif
 
     const wxString& fullPath = ed->GetFilename();
-    cmdData.command << wxT(" ");
+    wxString path;
     if (!cmdData.supportSelect)
     {
         // Cannot select the file with with most editors, so just extract the folder name
-        wxString splitPath;
-        wxFileName::SplitPath(fullPath, &splitPath, nullptr, nullptr);
-        cmdData.command << splitPath;
+        wxFileName::SplitPath(fullPath, &path, nullptr, nullptr);
     }
     else
-        cmdData.command << fullPath;
+        path = fullPath;
+
+    QuoteStringIfNeeded(path);
+    cmdData.command << wxT(" ") << path;
 
     wxExecute(cmdData.command);
     Manager::Get()->GetLogManager()->DebugLog(F(wxT("Executing command to open folder: '%s'"),
                                                 cmdData.command.wx_str()));
     return true;
+}
+
+void EditorManager::CopyFullPath()
+{
+    EditorBase *editor = GetActiveEditor();
+    if (!editor)
+        return;
+    wxString filename = editor->GetFilename();
+
+    if (wxTheClipboard->Open())
+    {
+        wxTheClipboard->SetData(new wxTextDataObject(filename));
+        wxTheClipboard->Close();
+    }
 }
 
 bool EditorManager::SwapActiveHeaderSource()
@@ -1563,12 +1635,26 @@ void EditorManager::OnPageContextMenu(wxAuiNotebookEvent& event)
     pop->Append(idNBTabClose, _("Close"));
     pop->Append(idNBTabCloseAll, _("Close all"));
     pop->Append(idNBTabCloseAllOthers, _("Close all others"));
+    pop->Append(idNBTabCloseToTheLeft, _("Close to the left"));
+    pop->Append(idNBTabCloseToTheRight, _("Close to the right"));
 
-    wxAuiTabCtrl *activeTabCtrl = m_pNotebook->GetTabCtrl(GetActiveEditor());
+    EditorBase *activeEditor = GetActiveEditor();
+    wxAuiTabCtrl *activeTabCtrl = m_pNotebook->GetTabCtrl(activeEditor);
     if (!activeTabCtrl || activeTabCtrl->GetPageCount() <= 1)
     {
         pop->Enable(idNBTabCloseAll, false);
         pop->Enable(idNBTabCloseAllOthers, false);
+        pop->Enable(idNBTabCloseToTheLeft, false);
+        pop->Enable(idNBTabCloseToTheRight, false);
+    }
+    else
+    {
+        const int pageCount = activeTabCtrl->GetPageCount();
+        const int tabIndex = activeTabCtrl->GetIdxFromWindow(activeEditor);
+        if (tabIndex == 0)
+            pop->Enable(idNBTabCloseToTheLeft, false);
+        if (tabIndex == pageCount - 1)
+            pop->Enable(idNBTabCloseToTheRight, false);
     }
 
     int any_modified = 0;
@@ -1602,7 +1688,7 @@ void EditorManager::OnPageContextMenu(wxAuiNotebookEvent& event)
     {
         pop->Append(idNBSwapHeaderSource, _("Swap header/source"));
         pop->Append(idNBTabOpenContainingFolder, _("Open containing folder"));
-        pop->Append(idNBProperties, _("Properties..."));
+        pop->Append(idNBTabCopyFullPath, _("Copy full path"));
         pop->AppendSeparator();
     }
 
@@ -1638,6 +1724,9 @@ void EditorManager::OnPageContextMenu(wxAuiNotebookEvent& event)
             else
                 pop->Append(idNBAddFileToProject, _("Add file to active project"));
         }
+
+        pop->AppendSeparator();
+        pop->Append(idNBProperties, _("Properties..."));
     }
 
     // allow plugins to use this menu
@@ -1657,9 +1746,14 @@ void EditorManager::OnCloseAll(cb_unused wxCommandEvent& event)
     CloseAllInTabCtrl();
 }
 
-void EditorManager::OnCloseAllOthers(cb_unused wxCommandEvent& event)
+void EditorManager::OnCloseAllOthers(wxCommandEvent& event)
 {
-    CloseAllInTabCtrlExcept(GetActiveEditor());
+    if (event.GetId() == idNBTabCloseAllOthers)
+        CloseAllInTabCtrlExcept(GetActiveEditor());
+    else if (event.GetId() == idNBTabCloseToTheLeft)
+        CloseAllInTabCtrlToTheLeft(GetActiveEditor());
+    else if (event.GetId() == idNBTabCloseToTheRight)
+        CloseAllInTabCtrlToTheRight(GetActiveEditor());
 }
 
 void EditorManager::OnSave(cb_unused wxCommandEvent& event)
@@ -1680,6 +1774,11 @@ void EditorManager::OnSwapHeaderSource(cb_unused wxCommandEvent& event)
 void EditorManager::OnOpenContainingFolder(cb_unused wxCommandEvent& event)
 {
     OpenContainingFolder();
+}
+
+void EditorManager::OnCopyFullPath(cb_unused wxCommandEvent& event)
+{
+    CopyFullPath();
 }
 
 void EditorManager::OnTabPosition(wxCommandEvent& event)

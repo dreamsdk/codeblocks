@@ -1,10 +1,14 @@
 #ifndef USETOKENF_H
 #define USETOKENF_H
 
-#include "tokenf.h"
-#include <wx/arrstr.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/arrstr.h>
+#endif
 #include <set>
 #include <list>
+
+#include "tokenf.h"
 
 enum ModuleNature
 {

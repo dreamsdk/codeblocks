@@ -5,7 +5,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     1995
-// RCS-ID:      $Id: printing.h 8133 2012-07-15 13:37:32Z mortenmacfly $
+// RCS-ID:      $Id$
 // Copyright:   (c) Julian Smart
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -17,6 +17,10 @@ class MyApp: public wxApp
     MyApp(){};
     bool OnInit();
     int OnExit();
+
+    wxString m_workDirectory;
+    wxString m_fontDirectory;
+    int      m_rc;
 
     wxFont m_testFont;
 };

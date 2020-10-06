@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: scriptingmanager.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scriptingmanager.cpp $
+ * $Revision: 11658 $
+ * $Id: scriptingmanager.cpp 11658 2019-04-26 23:24:02Z bluehazzard $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scriptingmanager.cpp $
  */
 
 #include <sdk_precomp.h>
@@ -144,11 +144,15 @@ bool ScriptingManager::LoadScript(const wxString& filename)
         bool found = false;
 
         // check in same dir as currently running script (if any)
-        if (!m_CurrentlyRunningScriptFile.IsEmpty())
+        if (!m_RunningScriptFileStack.empty())
         {
-            fname = wxFileName(m_CurrentlyRunningScriptFile).GetPath() + _T('/') + filename;
-            f.Open(fname);
-            found = f.IsOpened();
+            const wxString& currentlyRunningScriptFile = m_RunningScriptFileStack.back();
+            if (!currentlyRunningScriptFile.IsEmpty())
+            {
+                fname = wxFileName(currentlyRunningScriptFile).GetPath() + _T('/') + filename;
+                f.Open(fname);
+                found = f.IsOpened();
+            }
         }
 
         if (!found)
@@ -165,9 +169,9 @@ bool ScriptingManager::LoadScript(const wxString& filename)
     }
     // read file
     wxString contents = cbReadFileContents(f);
-    m_CurrentlyRunningScriptFile = fname;
+    m_RunningScriptFileStack.push_back(fname);
     bool ret = LoadBuffer(contents, fname);
-    m_CurrentlyRunningScriptFile.Clear();
+    m_RunningScriptFileStack.pop_back();
     return ret;
 }
 
@@ -222,10 +226,26 @@ wxString ScriptingManager::LoadBufferRedirectOutput(const wxString& buffer)
     s_ScriptErrors.Clear();
     ::capture.Clear();
 
-    sq_setprintfunc(SquirrelVM::GetVMPtr(), CaptureScriptOutput);
-    bool res = LoadBuffer(buffer);
-    sq_setprintfunc(SquirrelVM::GetVMPtr(), ScriptsPrintFunc);
+    // Save the old used print function so we can restore it after the
+    // redirected print is finished. This is needed for example if the
+    // scripting console redirects the script print output to itself and
+    // not the default print function of the ScriptingManager.
+    // In this case we have to restore the print function after the call to
+    // the scripting console.
+    const HSQUIRRELVM vm = SquirrelVM::GetVMPtr();
+    const SQPRINTFUNCTION oldPrintFunc = sq_getprintfunc(vm);
 
+    // redirect the print output to an internal buffer, so we can collect
+    // the print output
+    sq_setprintfunc(vm, CaptureScriptOutput);
+
+    // Run the script
+    bool res = LoadBuffer(buffer);
+
+    // restore the old print function
+    sq_setprintfunc(vm, oldPrintFunc);
+
+    // return the internal print buffer if the script executed successfully
     return res ? ::capture : (wxString) wxEmptyString;
 }
 
@@ -357,7 +377,10 @@ bool ScriptingManager::IsScriptTrusted(const wxString& script)
 
 bool ScriptingManager::IsCurrentlyRunningScriptTrusted()
 {
-    return IsScriptTrusted(m_CurrentlyRunningScriptFile);
+    if (m_RunningScriptFileStack.empty())
+        return false;
+
+    return IsScriptTrusted(m_RunningScriptFileStack.back());
 }
 
 void ScriptingManager::TrustScript(const wxString& script, bool permanently)
@@ -380,7 +403,11 @@ void ScriptingManager::TrustScript(const wxString& script, bool permanently)
 
 void ScriptingManager::TrustCurrentlyRunningScript(bool permanently)
 {
-    TrustScript(m_CurrentlyRunningScriptFile, permanently);
+    if (!m_RunningScriptFileStack.empty())
+    {
+        const wxString currentlyRunningScriptFile = m_RunningScriptFileStack.back();
+        TrustScript(currentlyRunningScriptFile, permanently);
+    }
 }
 
 bool ScriptingManager::RemoveTrust(const wxString& script)

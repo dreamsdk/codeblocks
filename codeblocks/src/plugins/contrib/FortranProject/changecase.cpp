@@ -1,17 +1,21 @@
+
 #include "changecase.h"
 
-#include <wx/tokenzr.h>
-#include <cbauibook.h>
-#include <cbeditor.h>
-#include <cbproject.h>
-#include <cbstyledtextctrl.h>
-#include <editormanager.h>
-#include <editorcolourset.h>
-#include <logmanager.h>
-#include <projectmanager.h>
-#include <projectfile.h>
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
 
+    #include <cbauibook.h>
+    #include <cbeditor.h>
+    #include <cbproject.h>
+    #include <cbstyledtextctrl.h>
+    #include <editormanager.h>
+    #include <editorcolourset.h>
+    #include <logmanager.h>
+    #include <projectmanager.h>
+    #include <projectfile.h>
+#endif
 #include <set>
+
 #include "fortranfileext.h"
 #include "textcutter.h"
 

@@ -17,7 +17,7 @@
 *
 * $Revision: 10648 $
 * $Id: wxsproject.cpp 10648 2016-01-16 15:42:36Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxsproject.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsproject.cpp $
 */
 
 #include "wxsproject.h"

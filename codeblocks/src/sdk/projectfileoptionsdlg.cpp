@@ -4,7 +4,7 @@
  *
  * $Revision: 11119 $
  * $Id: projectfileoptionsdlg.cpp 11119 2017-08-01 21:49:34Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projectfileoptionsdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectfileoptionsdlg.cpp $
  */
 
 #include "sdk_precomp.h"

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11087 $
- * $Id: disassemblydlg.cpp 11087 2017-06-06 23:13:35Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/disassemblydlg.cpp $
+ * $Revision: 11350 $
+ * $Id: disassemblydlg.cpp 11350 2018-03-27 22:00:39Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/disassemblydlg.cpp $
  */
 
 #include "sdk.h"
@@ -78,7 +78,7 @@ DisassemblyDlg::DisassemblyDlg(wxWindow* parent) :
     if (colour_set)
     {
         HighlightLanguage lang = colour_set->GetHighlightLanguage(wxSCI_LEX_ASM);
-        colour_set->Apply(lang, (cbStyledTextCtrl*)m_pCode);
+        colour_set->Apply(lang, (cbStyledTextCtrl*)m_pCode, false, true);
     }
 
     m_MixedModeCB = (wxCheckBox*)FindWindow(XRCID("chkMode"));

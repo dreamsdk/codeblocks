@@ -4,7 +4,7 @@
  *
  * $Revision: 11066 $
  * $Id: devpakupdater.cpp 11066 2017-05-27 20:29:39Z d_anselmi $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/devpak_plugin/devpakupdater.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/devpak_plugin/devpakupdater.cpp $
  */
 
 #include "devpakupdater.h"

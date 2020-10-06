@@ -7,10 +7,15 @@
  *
  */
 #include "finfowindow.h"
-#include <manager.h>
-#include "cbeditor.h"
-#include "editorcolourset.h"
-#include <wx/sizer.h>
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <configmanager.h>
+    #include <manager.h>
+    #include <editorcolourset.h>
+    #include <cbeditor.h>
+    #include <wx/sizer.h>
+#endif
 
 FInfoWindow::FInfoWindow()
     :wxPanel(Manager::Get()->GetAppWindow())
@@ -28,10 +33,19 @@ FInfoWindow::FInfoWindow()
     // Colorize
     cbEditor::ApplyStyles(m_pView);
     EditorColourSet edColSet;
-    edColSet.Apply(edColSet.GetLanguageForFilename(_T("name.f90")), m_pView);
+    edColSet.Apply(edColSet.GetLanguageForFilename(_T("name.f90")), m_pView, false, true);
     SetFoldingIndicator();
 
-    CodeBlocksLogEvent evtAdd(cbEVT_ADD_LOG_WINDOW, this, _("Fortran info"));
+    // Creates log image
+    const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
+    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
+    const wxString imgFile = ConfigManager::GetDataFolder()
+                           + wxString::Format(_T("/FortranProject.zip#zip:/images/%dx%d/info_f.png"),
+                                              uiSize, uiSize);
+    wxBitmap* bmp = new wxBitmap(cbLoadBitmapScaled(imgFile, wxBITMAP_TYPE_PNG,
+                                                     uiScaleFactor));
+
+    CodeBlocksLogEvent evtAdd(cbEVT_ADD_LOG_WINDOW, this, _("Fortran info"), bmp);
     Manager::Get()->ProcessEvent(evtAdd);
 }
 

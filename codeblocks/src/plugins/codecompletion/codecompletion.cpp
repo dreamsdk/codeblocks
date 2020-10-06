@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11194 $
- * $Id: codecompletion.cpp 11194 2017-10-10 05:23:33Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/codecompletion.cpp $
+ * $Revision: 11838 $
+ * $Id: codecompletion.cpp 11838 2019-09-02 19:27:23Z pecanh $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/codecompletion.cpp $
  */
 
 #include <sdk.h>
@@ -279,118 +279,6 @@ namespace CodeCompletionHelper
 
 }//namespace CodeCompletionHelper
 
-// empty bitmap for use as C++ keywords icon in code-completion list
-/* XPM */
-static const char * cpp_keyword_xpm[] = {
-"16 16 2 1",
-"     c None",
-".    c #04049B",
-"                ",
-"  .......       ",
-" .........      ",
-" ..     ..      ",
-"..              ",
-"..   ..     ..  ",
-"..   ..     ..  ",
-".. ...... ......",
-".. ...... ......",
-"..   ..     ..  ",
-"..   ..     ..  ",
-"..      ..      ",
-"...     ..      ",
-" .........      ",
-"  .......       ",
-"                "};
-
-// bitmap for use as D keywords icon in code-completion list
-/* XPM */
-static const char *d_keyword_xpm[] = {
-/* width height num_colors chars_per_pixel */
-"    14    14      6            1",
-/* colors */
-"  c none",
-". c #fefefe",
-"# c #e43a3a",
-"a c #e40000",
-"b c #e48f8f",
-"c c #8f0000",
-/* pixels */
-"              ",
-"              ",
-"  .#aaaa#b.   ",
-"  baabb#aa#   ",
-"  ba#   baa#  ",
-"  ba#    bcab ",
-"  ba#     #a# ",
-"  ba#     bac ",
-"  ba#     ba# ",
-"  ba#     bc# ",
-"  ba#     #cb ",
-"  bcc    ac#  ",
-"  #aa###ac#   ",
-"  cccccc#b    "
-};
-
-
-// bitmap for other-than-C++ keywords
-// it's pretty nice actually :)
-/* XPM */
-static const char * unknown_keyword_xpm[] = {
-"16 16 7 1",
-"     c None",
-".    c #FF8800",
-"+    c #FF8D0B",
-"@    c #FF9115",
-"#    c #FFA948",
-"$    c #FFC686",
-"%    c #FFFFFF",
-"                ",
-"                ",
-"      ....      ",
-"    ........    ",
-"   ..+@+.....   ",
-"   .+#$#+....   ",
-"  ..@$%$@.....  ",
-"  ..+#$#+.....  ",
-"  ...+@+......  ",
-"  ............  ",
-"   ..........   ",
-"   ..........   ",
-"    ........    ",
-"      ....      ",
-"                ",
-"                "};
-
-// bitmap for #include file listings
-/* XPM */
-static const char* header_file_xpm[] = {
-"16 16 9 1",
-"   c None",
-"+  c #D23E39",
-"$  c #CF0C0A",
-"@  c #CB524B",
-"&  c #E2D8D8",
-"#  c #C7C7C4",
-"_  c #E4B9B5",
-"-  c #F7F9F7",
-"=  c #EBE9E7",
-"  #########     ",
-"  #=-----####   ",
-"  #--------=##  ",
-"  #--------=-#  ",
-"  #--=@_-----#  ",
-"  #--=+_-----#  ",
-"  #--=++@_---#  ",
-"  #--&$@@$=--#  ",
-"  #--&$__$&=-#  ",
-"  #--&$__$&=-#  ",
-"  #--&$__$&=-#  ",
-"  #-==#=&#==-#  ",
-"  #-========-#  ",
-"  #----=====-#  ",
-"  ############  ",
-"                "};
-
 // menu IDs
 // just because we don't know other plugins' used identifiers,
 // we use wxNewId() to generate a guaranteed unique ID ;), instead of enum
@@ -514,9 +402,10 @@ CodeCompletion::CodeCompletion() :
     Connect(idReparsingTimer,       wxEVT_TIMER, wxTimerEventHandler(CodeCompletion::OnReparsingTimer)      );
     Connect(idEditorActivatedTimer, wxEVT_TIMER, wxTimerEventHandler(CodeCompletion::OnEditorActivatedTimer));
 
-    Connect(idSystemHeadersThreadUpdate,    wxEVT_COMMAND_MENU_SELECTED,CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadUpdate));
-    Connect(idSystemHeadersThreadFinish,    wxEVT_COMMAND_MENU_SELECTED,CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadFinish));
-    Connect(idSystemHeadersThreadError,     wxEVT_COMMAND_MENU_SELECTED,CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadError) );
+    Connect(idSystemHeadersThreadMessage, wxEVT_COMMAND_MENU_SELECTED,
+            CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadMessage));
+    Connect(idSystemHeadersThreadFinish, wxEVT_COMMAND_MENU_SELECTED,
+            CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadFinish));
 }
 
 CodeCompletion::~CodeCompletion()
@@ -532,16 +421,17 @@ CodeCompletion::~CodeCompletion()
     Disconnect(idReparsingTimer,       wxEVT_TIMER, wxTimerEventHandler(CodeCompletion::OnReparsingTimer)      );
     Disconnect(idEditorActivatedTimer, wxEVT_TIMER, wxTimerEventHandler(CodeCompletion::OnEditorActivatedTimer));
 
-    Disconnect(idSystemHeadersThreadUpdate,    wxEVT_COMMAND_MENU_SELECTED, CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadUpdate));
-    Disconnect(idSystemHeadersThreadFinish,    wxEVT_COMMAND_MENU_SELECTED, CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadFinish));
-    Disconnect(idSystemHeadersThreadError,     wxEVT_COMMAND_MENU_SELECTED, CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadError) );
+    Disconnect(idSystemHeadersThreadMessage, wxEVT_COMMAND_MENU_SELECTED,
+               CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadMessage));
+    Disconnect(idSystemHeadersThreadFinish, wxEVT_COMMAND_MENU_SELECTED,
+               CodeBlocksThreadEventHandler(CodeCompletion::OnSystemHeadersThreadFinish));
 
     // clean up all the running thread
     while (!m_SystemHeadersThreads.empty())
     {
         SystemHeadersThread* thread = m_SystemHeadersThreads.front();
-        if (thread->IsAlive() && thread->IsRunning())
-            thread->Wait();
+        thread->Wait();
+        delete thread;
         m_SystemHeadersThreads.pop_front();
     }
 }
@@ -677,7 +567,7 @@ void CodeCompletion::BuildMenu(wxMenuBar* menuBar)
         m_SearchMenu->Append(idMenuGotoDeclaration,    _("Goto declaration\tCtrl-Shift-."));
         m_SearchMenu->Append(idMenuGotoImplementation, _("Goto implementation\tCtrl-."));
         m_SearchMenu->Append(idMenuFindReferences,     _("Find references\tAlt-."));
-        m_SearchMenu->Append(idMenuOpenIncludeFile,    _("Open include file\tCtrl-Shift-."));
+        m_SearchMenu->Append(idMenuOpenIncludeFile,    _("Open include file"));
     }
     else
         CCLogger::Get()->DebugLog(_T("Could not find Search menu!"));
@@ -758,37 +648,37 @@ void CodeCompletion::BuildModuleMenu(const ModuleType type, wxMenu* menu, const 
         const bool nameUnderCursor = CodeCompletionHelper::EditorHasNameUnderCursor(NameUnderCursor, IsInclude);
         if (nameUnderCursor)
         {
+            PluginManager *pluginManager = Manager::Get()->GetPluginManager();
+
             if (IsInclude)
             {
                 wxString msg;
                 msg.Printf(_("Open #include file: '%s'"), NameUnderCursor.wx_str());
                 menu->Insert(0, idOpenIncludeFile, msg);
                 menu->Insert(1, wxID_SEPARATOR, wxEmptyString);
+                pluginManager->RegisterFindMenuItems(true, 2);
             }
             else
             {
+                int initialPos = pluginManager->GetFindMenuItemFirst();
+                int pos = initialPos;
                 wxString msg;
-                size_t pos = 0;
                 msg.Printf(_("Find declaration of: '%s'"), NameUnderCursor.wx_str());
-                menu->Insert(pos, idGotoDeclaration, msg);
-                ++pos;
+                menu->Insert(pos++, idGotoDeclaration, msg);
 
                 msg.Printf(_("Find implementation of: '%s'"), NameUnderCursor.wx_str());
-                menu->Insert(pos, idGotoImplementation, msg);
-                ++pos;
+                menu->Insert(pos++, idGotoImplementation, msg);
 
                 if (m_NativeParser.GetParser().Done())
                 {
                     msg.Printf(_("Find references of: '%s'"), NameUnderCursor.wx_str());
-                    menu->Insert(pos, idMenuFindReferences, msg);
-                    ++pos;
+                    menu->Insert(pos++, idMenuFindReferences, msg);
                 }
-
-                menu->Insert(pos, wxID_SEPARATOR, wxEmptyString);
+                pluginManager->RegisterFindMenuItems(false, pos - initialPos);
             }
         }
 
-        const int insertId = menu->FindItem(_("Insert"));
+        const int insertId = menu->FindItem(_("Insert/Refactor"));
         if (insertId != wxNOT_FOUND)
         {
             if (wxMenuItem* insertMenu = menu->FindItem(insertId, 0))
@@ -797,6 +687,12 @@ void CodeCompletion::BuildModuleMenu(const ModuleType type, wxMenu* menu, const 
                 {
                     subMenu->Append(idClassMethod, _("Class method declaration/implementation..."));
                     subMenu->Append(idUnimplementedClassMethods, _("All class methods without implementation..."));
+
+                    subMenu->AppendSeparator();
+
+                    const bool enableRename = (m_NativeParser.GetParser().Done() && nameUnderCursor && !IsInclude);
+                    subMenu->Append(idMenuRenameSymbols, _("Rename symbols"), _("Rename symbols under cursor"));
+                    subMenu->Enable(idMenuRenameSymbols, enableRename);
                 }
                 else
                     CCLogger::Get()->DebugLog(_T("Could not find Insert menu 3!"));
@@ -806,14 +702,6 @@ void CodeCompletion::BuildModuleMenu(const ModuleType type, wxMenu* menu, const 
         }
         else
             CCLogger::Get()->DebugLog(_T("Could not find Insert menu!"));
-
-        if (m_NativeParser.GetParser().Done() && nameUnderCursor && !IsInclude)
-        {
-            wxMenu* refactorMenu = new wxMenu();
-            refactorMenu->Append(idMenuRenameSymbols, _("Rename symbols"), _("Rename symbols under cursor"));
-            menu->AppendSeparator();
-            menu->Append(wxID_ANY, _T("Code Refactoring"), refactorMenu);
-        }
     }
     else if (type == mtProjectManager)
     {
@@ -944,6 +832,15 @@ std::vector<CodeCompletion::CCToken> CodeCompletion::GetAutocompList(bool isAuto
     return tokens;
 }
 
+static int CalcStcFontSize(cbStyledTextCtrl *stc)
+{
+    wxFont defaultFont = stc->StyleGetFont(wxSCI_STYLE_DEFAULT);
+    defaultFont.SetPointSize(defaultFont.GetPointSize() + stc->GetZoom());
+    int fontSize;
+    stc->GetTextExtent(wxT("A"), nullptr, &fontSize, nullptr, nullptr, &defaultFont);
+    return fontSize;
+}
+
 void CodeCompletion::DoCodeComplete(int caretPos, cbEditor* ed, std::vector<CCToken>& tokens, bool preprocessorOnly)
 {
     const bool caseSens = m_NativeParser.GetParser().Options().caseSensitive;
@@ -962,7 +859,8 @@ void CodeCompletion::DoCodeComplete(int caretPos, cbEditor* ed, std::vector<CCTo
             if (s_DebugSmartSense)
                 CCLogger::Get()->DebugLog(wxT("Generating tokens list..."));
 
-            wxImageList* ilist = m_NativeParser.GetImageList();
+            const int fontSize = CalcStcFontSize(stc);
+            wxImageList* ilist = m_NativeParser.GetImageList(fontSize);
             stc->ClearRegisteredImages();
 
             tokens.reserve(result.size());
@@ -1035,11 +933,11 @@ void CodeCompletion::DoCodeComplete(int caretPos, cbEditor* ed, std::vector<CCTo
                     wxString strLang = colour_set->GetLanguageName(lang);
                     // if its sourcecode/header file and a known fileformat, show the corresponding icon
                     if (isC && strLang == wxT("C/C++"))
-                        stc->RegisterImage(iidx, wxBitmap(cpp_keyword_xpm));
+                        stc->RegisterImage(iidx, GetImage(ImageId::KeywordCPP, fontSize));
                     else if (isC && strLang == wxT("D"))
-                        stc->RegisterImage(iidx, wxBitmap(d_keyword_xpm));
+                        stc->RegisterImage(iidx, GetImage(ImageId::KeywordD, fontSize));
                     else
-                        stc->RegisterImage(iidx, wxBitmap(unknown_keyword_xpm));
+                        stc->RegisterImage(iidx, GetImage(ImageId::Unknown, fontSize));
                     // the first two keyword sets are the primary and secondary keywords (for most lexers at least)
                     // but this is now configurable in global settings
                     for (int i = 0; i <= wxSCI_KEYWORDSET_MAX; ++i)
@@ -1123,8 +1021,9 @@ void CodeCompletion::DoCodeCompletePreprocessor(int tknStart, int tknEnd, cbEdit
             tokens.push_back(CCToken(wxNOT_FOUND, macros[i], PARSER_IMG_MACRO_DEF));
     }
     stc->ClearRegisteredImages();
+    const int fontSize = CalcStcFontSize(stc);
     stc->RegisterImage(PARSER_IMG_MACRO_DEF,
-                       m_NativeParser.GetImageList()->GetBitmap(PARSER_IMG_MACRO_DEF));
+                       m_NativeParser.GetImageList(fontSize)->GetBitmap(PARSER_IMG_MACRO_DEF));
 }
 
 void CodeCompletion::DoCodeCompleteIncludes(cbEditor* ed, int& tknStart, int tknEnd, std::vector<CCToken>& tokens)
@@ -1170,13 +1069,21 @@ void CodeCompletion::DoCodeCompleteIncludes(cbEditor* ed, int& tknStart, int tkn
 
     // #include < or #include "
     cbProject* project = m_NativeParser.GetProjectByEditor(ed);
+
+    // since we are going to access the m_SystemHeadersMap, we add a locker here
+    // here we collect all the header files names which is under "system include search dirs"
+#if wxCHECK_VERSION(3, 0, 0)
+    if (m_SystemHeadersThreadCS.TryEnter())
     {
-        // since we are going to access the m_SystemHeadersMap, we add a locker here
-        // here we collect all the header files names which is under "system include search dirs"
-        wxCriticalSectionLocker locker(m_SystemHeadersThreadCS);
+#else
+    {
+        m_SystemHeadersThreadCS.Enter();
+#endif // wxCHECK_VERSION(3, 0, 0)
+        // if the project get modified, fetch the dirs again, otherwise, use cached dirs
         wxArrayString& incDirs = GetSystemIncludeDirs(project, project ? project->GetModified() : true);
         for (size_t i = 0; i < incDirs.GetCount(); ++i)
         {
+            // shm_it means system_header_map_iterator
             SystemHeadersMap::const_iterator shm_it = m_SystemHeadersMap.find(incDirs[i]);
             if (shm_it != m_SystemHeadersMap.end())
             {
@@ -1184,6 +1091,7 @@ void CodeCompletion::DoCodeCompleteIncludes(cbEditor* ed, int& tknStart, int tkn
                 for (StringSet::const_iterator ss_it = headers.begin(); ss_it != headers.end(); ++ss_it)
                 {
                     const wxString& file = *ss_it;
+                    // if find a value matches already typed "filename", add to the result
                     if (file.StartsWith(filename))
                     {
                         files.insert(file);
@@ -1195,53 +1103,63 @@ void CodeCompletion::DoCodeCompleteIncludes(cbEditor* ed, int& tknStart, int tkn
                     break; // exit outer loop
             }
         }
+        m_SystemHeadersThreadCS.Leave();
     }
 
     // #include "
     if (project)
     {
-        wxArrayString buildTargets;
-        ProjectFile* pf = project ? project->GetFileByFilename(curFile, false) : 0;
-        if (pf)
-            buildTargets = pf->buildTargets;
-
-        const wxArrayString localIncludeDirs = GetLocalIncludeDirs(project, buildTargets);
-        for (FilesList::const_iterator it = project->GetFilesList().begin();
-                                       it != project->GetFilesList().end(); ++it)
+#if wxCHECK_VERSION(3, 0, 0)
+        if (m_SystemHeadersThreadCS.TryEnter())
         {
-            pf = *it;
-            if (pf && FileTypeOf(pf->relativeFilename) == ftHeader)
+#else
+        {
+            m_SystemHeadersThreadCS.Enter();
+#endif // wxCHECK_VERSION(3, 0, 0)
+            wxArrayString buildTargets;
+            ProjectFile* pf = project ? project->GetFileByFilename(curFile, false) : 0;
+            if (pf)
+                buildTargets = pf->buildTargets;
+
+            const wxArrayString localIncludeDirs = GetLocalIncludeDirs(project, buildTargets);
+            for (FilesList::const_iterator it = project->GetFilesList().begin();
+                                           it != project->GetFilesList().end(); ++it)
             {
-                wxString file = pf->file.GetFullPath();
-                wxString header;
-                for (size_t j = 0; j < localIncludeDirs.GetCount(); ++j)
+                pf = *it;
+                if (pf && FileTypeOf(pf->relativeFilename) == ftHeader)
                 {
-                    const wxString& dir = localIncludeDirs[j];
-                    if (file.StartsWith(dir))
+                    wxString file = pf->file.GetFullPath();
+                    wxString header;
+                    for (size_t j = 0; j < localIncludeDirs.GetCount(); ++j)
                     {
-                        header = file.Mid(dir.Len());
-                        header.Replace(wxT("\\"), wxT("/"));
-                        break;
+                        const wxString& dir = localIncludeDirs[j];
+                        if (file.StartsWith(dir))
+                        {
+                            header = file.Mid(dir.Len());
+                            header.Replace(wxT("\\"), wxT("/"));
+                            break;
+                        }
+                    }
+
+                    if (header.IsEmpty())
+                    {
+                        if (pf->buildTargets != buildTargets)
+                            continue;
+
+                        wxFileName fn(file);
+                        fn.MakeRelativeTo(curPath);
+                        header = fn.GetFullPath(wxPATH_UNIX);
+                    }
+
+                    if (header.StartsWith(filename))
+                    {
+                        files.insert(header);
+                        if (files.size() > maxFiles)
+                            break;
                     }
                 }
-
-                if (header.IsEmpty())
-                {
-                    if (pf->buildTargets != buildTargets)
-                        continue;
-
-                    wxFileName fn(file);
-                    fn.MakeRelativeTo(curPath);
-                    header = fn.GetFullPath(wxPATH_UNIX);
-                }
-
-                if (header.StartsWith(filename))
-                {
-                    files.insert(header);
-                    if (files.size() > maxFiles)
-                        break;
-                }
             }
+            m_SystemHeadersThreadCS.Leave();
         }
     }
 
@@ -1252,7 +1170,8 @@ void CodeCompletion::DoCodeCompleteIncludes(cbEditor* ed, int& tknStart, int tkn
         for (StringSet::const_iterator ssIt = files.begin(); ssIt != files.end(); ++ssIt)
             tokens.push_back(CCToken(wxNOT_FOUND, *ssIt, 0));
         stc->ClearRegisteredImages();
-        stc->RegisterImage(0, wxBitmap(header_file_xpm));
+        const int fontSize = CalcStcFontSize(stc);
+        stc->RegisterImage(0, GetImage(ImageId::HeaderFile, fontSize));
     }
 }
 
@@ -1518,15 +1437,17 @@ wxArrayString CodeCompletion::GetLocalIncludeDirs(cbProject* project, const wxAr
     // Do not try to operate include directories if the project is not for this platform
     if (m_CCEnablePlatformCheck && !project->SupportsCurrentPlatform())
         return dirs;
-
+    // add project level compiler include search paths
     const wxString prjPath = project->GetCommonTopLevelPath();
     GetAbsolutePath(prjPath, project->GetIncludeDirs(), dirs);
-
+    // add target level compiler include search paths
     for (size_t i = 0; i < buildTargets.GetCount(); ++i)
     {
         ProjectBuildTarget* tgt = project->GetBuildTarget(buildTargets[i]);
+        if (!tgt)
+            continue;
         // Do not try to operate include directories if the target is not for this platform
-        if (   !m_CCEnablePlatformCheck || tgt->SupportsCurrentPlatform() )
+        if (!m_CCEnablePlatformCheck || tgt->SupportsCurrentPlatform())
         {
             GetAbsolutePath(prjPath, tgt->GetIncludeDirs(), dirs);
         }
@@ -1537,27 +1458,30 @@ wxArrayString CodeCompletion::GetLocalIncludeDirs(cbProject* project, const wxAr
     wxArrayString sysDirs;
     for (size_t i = 0; i < dirs.GetCount();)
     {
+        // if the dir with the prefix of project path, then it is a "local dir"
         if (dirs[i].StartsWith(prjPath))
             ++i;
-        else
+        else // otherwise, it is a "system dir", so add to "sysDirs"
         {
-            wxCriticalSectionLocker locker(m_SystemHeadersThreadCS);
             if (m_SystemHeadersMap.find(dirs[i]) == m_SystemHeadersMap.end())
                 sysDirs.Add(dirs[i]);
+            // remove the system dir in dirs
             dirs.RemoveAt(i);
         }
     }
 
     if (!sysDirs.IsEmpty())
     {
-        SystemHeadersThread* thread = new SystemHeadersThread(this, &m_SystemHeadersThreadCS, m_SystemHeadersMap, sysDirs);
+        cbAssert(m_CCEnableHeaders);
+        // Create a worker thread associated with "sysDirs". Put it in a queue and run it.
+        SystemHeadersThread* thread = new SystemHeadersThread(this, &m_SystemHeadersThreadCS,
+                                                              m_SystemHeadersMap, sysDirs);
         m_SystemHeadersThreads.push_back(thread);
-        if (!m_SystemHeadersThreads.front()->IsRunning() && m_NativeParser.Done())
-            thread->Run();
+        thread->Run();
     }
 
     dirs.Sort(CodeCompletionHelper::CompareStringLen);
-    return dirs;
+    return dirs; // return all the local dirs
 }
 
 wxArrayString& CodeCompletion::GetSystemIncludeDirs(cbProject* project, bool force)
@@ -1612,6 +1536,11 @@ void CodeCompletion::GetAbsolutePath(const wxString& basePath, const wxArrayStri
                 fn.AppendDir(oldDirs[j]);
         }
 
+        // Detect if this directory is for the file system root and skip it. Sometimes macro
+        // replacements create such paths and we don't want to scan whole disks because of this.
+        if (fn.IsAbsolute() && fn.GetDirCount() == 0)
+            continue;
+
         const wxString path = fn.GetFullPath();
         if (dirs.Index(path) == wxNOT_FOUND)
             dirs.Add(path);
@@ -1638,8 +1567,6 @@ void CodeCompletion::EditorEventHook(cbEditor* editor, wxScintillaEvent& event)
     {   TRACE(_T("wxEVT_SCI_CHARADDED")); }
     else if (event.GetEventType() == wxEVT_SCI_CHANGE)
     {   TRACE(_T("wxEVT_SCI_CHANGE")); }
-    else if (event.GetEventType() == wxEVT_SCI_KEY)
-    {   TRACE(_T("wxEVT_SCI_KEY")); }
     else if (event.GetEventType() == wxEVT_SCI_MODIFIED)
     {   TRACE(_T("wxEVT_SCI_MODIFIED")); }
     else if (event.GetEventType() == wxEVT_SCI_AUTOCOMP_SELECTION)
@@ -1801,6 +1728,7 @@ void CodeCompletion::OnUpdateUI(wxUpdateUIEvent& event)
 void CodeCompletion::OnViewClassBrowser(wxCommandEvent& event)
 {
 #if wxCHECK_VERSION(3, 0, 0)
+    (void)event;
     cbMessageBox(_("The symbols browser is disabled in wx3.x builds.\n"
                     "We've done this because it causes crashes."), _("Information"), wxICON_INFORMATION);
     return;
@@ -2514,14 +2442,20 @@ void CodeCompletion::OnParserStart(wxCommandEvent& event)
     ParserCommon::ParserState state   = static_cast<ParserCommon::ParserState>(event.GetInt());
     // Parser::OnBatchTimer will send this Parser Start event
     // If it starts a full parsing(ptCreateParser), we should prepare some data for the header
-    // file clawler
+    // file crawler
     if (state == ParserCommon::ptCreateParser)
     {
         if (m_CCEnableHeaders)
         {
-            wxArrayString&       dirs   = GetSystemIncludeDirs(project, true); // true means update the cache
-            SystemHeadersThread* thread = new SystemHeadersThread(this, &m_SystemHeadersThreadCS, m_SystemHeadersMap, dirs);
-            m_SystemHeadersThreads.push_back(thread);
+            wxArrayString &dirs = GetSystemIncludeDirs(project, true); // true means update the cache
+            if (!dirs.empty())
+            {
+                SystemHeadersThread* thread = new SystemHeadersThread(this,
+                                                                      &m_SystemHeadersThreadCS,
+                                                                      m_SystemHeadersMap, dirs);
+                m_SystemHeadersThreads.push_back(thread);
+                thread->Run();
+            }
         }
 
         cbEditor* editor = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
@@ -2532,21 +2466,6 @@ void CodeCompletion::OnParserStart(wxCommandEvent& event)
 
 void CodeCompletion::OnParserEnd(wxCommandEvent& event)
 {
-    ParserCommon::ParserState state = static_cast<ParserCommon::ParserState>(event.GetInt());
-
-    // ParserCommon::ptCreateParser means a full parsing stage is done, so it is the time to
-    // start the header file clawler
-    if (state == ParserCommon::ptCreateParser)
-    {
-        if (   m_CCEnableHeaders
-            && !m_SystemHeadersThreads.empty()
-            && !m_SystemHeadersThreads.front()->IsRunning()
-            && m_NativeParser.Done() )
-        {
-            m_SystemHeadersThreads.front()->Run();
-        }
-    }
-
     EditorManager* edMan = Manager::Get()->GetEditorManager();
     cbEditor* editor = edMan->GetBuiltinActiveEditor();
     if (editor)
@@ -2570,48 +2489,31 @@ void CodeCompletion::OnParserEnd(wxCommandEvent& event)
     event.Skip();
 }
 
-void CodeCompletion::OnSystemHeadersThreadUpdate(CodeBlocksThreadEvent& event)
+void CodeCompletion::OnSystemHeadersThreadMessage(CodeBlocksThreadEvent& event)
 {
-    if (!m_SystemHeadersThreads.empty())
-    {
-        SystemHeadersThread* thread = static_cast<SystemHeadersThread*>(event.GetClientData());
-        if (thread == m_SystemHeadersThreads.front())
-            CCLogger::Get()->DebugLog(event.GetString());
-    }
+    CCLogger::Get()->DebugLog(event.GetString());
 }
 
 void CodeCompletion::OnSystemHeadersThreadFinish(CodeBlocksThreadEvent& event)
 {
     if (m_SystemHeadersThreads.empty())
         return;
-    // wait for the current thread died, and remove it from the thread list, then try to run another
-    // thread
+    // Wait for the current thread to finish and remove it from the thread list.
     SystemHeadersThread* thread = static_cast<SystemHeadersThread*>(event.GetClientData());
-    if (thread == m_SystemHeadersThreads.front())
+
+    for (std::list<SystemHeadersThread*>::iterator it = m_SystemHeadersThreads.begin();
+         it != m_SystemHeadersThreads.end();
+         ++it)
     {
-        if (!event.GetString().IsEmpty())
-            CCLogger::Get()->DebugLog(event.GetString());
-        if (thread->IsAlive() && thread->IsRunning())
+        if (*it == thread)
+        {
+            if (!event.GetString().IsEmpty())
+                CCLogger::Get()->DebugLog(event.GetString());
             thread->Wait();
-        m_SystemHeadersThreads.pop_front();
-    }
-
-    if (   m_CCEnableHeaders
-        && !m_SystemHeadersThreads.empty()
-        && !m_SystemHeadersThreads.front()->IsRunning()
-        && m_NativeParser.Done() )
-    {
-        m_SystemHeadersThreads.front()->Run();
-    }
-}
-
-void CodeCompletion::OnSystemHeadersThreadError(CodeBlocksThreadEvent& event)
-{
-    if (!m_SystemHeadersThreads.empty())
-    {
-        SystemHeadersThread* thread = static_cast<SystemHeadersThread*>(event.GetClientData());
-        if (thread == m_SystemHeadersThreads.front())
-            CCLogger::Get()->DebugLog(event.GetString());
+            delete thread;
+            m_SystemHeadersThreads.erase(it);
+            break;
+        }
     }
 }
 
@@ -3565,4 +3467,58 @@ void CodeCompletion::OnEditorActivatedTimer(cb_unused wxTimerEvent& event)
     m_TimerToolbar.Start(TOOLBAR_REFRESH_DELAY, wxTIMER_ONE_SHOT);
     TRACE(_T("CodeCompletion::OnEditorActivatedTimer(): Current activated file is %s"), curFile.wx_str());
     UpdateEditorSyntax();
+}
+
+wxBitmap CodeCompletion::GetImage(ImageId::Id id, int fontSize)
+{
+    const int size = cbFindMinSize16to64(fontSize);
+    const ImageId key(id, size);
+    ImagesMap::const_iterator it = m_images.find(key);
+    if (it == m_images.end())
+    {
+        const wxString prefix = ConfigManager::GetDataFolder()
+                              + wxString::Format(_T("/codecompletion.zip#zip:images/%dx%d/"), size,
+                                                 size);
+
+        wxString filename;
+        switch (id)
+        {
+            case ImageId::HeaderFile:
+                filename = prefix + wxT("header.png");
+                break;
+            case ImageId::KeywordCPP:
+                filename = prefix + wxT("keyword_cpp.png");
+                break;
+            case ImageId::KeywordD:
+                filename = prefix + wxT("keyword_d.png");
+                break;
+            case ImageId::Unknown:
+                filename = prefix + wxT("unknown.png");
+                break;
+
+            case ImageId::Last:
+            default:
+                ;
+        }
+
+        if (!filename.empty())
+        {
+            wxBitmap bitmap = cbLoadBitmap(filename);
+            if (!bitmap.IsOk())
+            {
+                const wxString msg = wxString::Format(_("Cannot load image: '%s'!"),
+                                                      filename.wx_str());
+                Manager::Get()->GetLogManager()->LogError(msg);
+            }
+            m_images[key] = bitmap;
+            return bitmap;
+        }
+        else
+        {
+            m_images[key] = wxNullBitmap;
+            return wxNullBitmap;
+        }
+    }
+    else
+        return it->second;
 }

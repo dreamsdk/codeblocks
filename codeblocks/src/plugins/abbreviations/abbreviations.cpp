@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10794 $
- * $Id: abbreviations.cpp 10794 2016-02-26 06:19:20Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/abbreviations/abbreviations.cpp $
+ * $Revision: 11812 $
+ * $Id: abbreviations.cpp 11812 2019-07-30 15:15:02Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/abbreviations/abbreviations.cpp $
  */
 
 #include <sdk.h>
@@ -33,33 +33,6 @@ namespace
 }
 
 Abbreviations* Abbreviations::m_Singleton = nullptr;
-
-/* XPM */
-static const char* abbrev_xpm[] = {
-"16 16 7 1",
-"   c None",
-".  c #B00000",
-"+  c #F70000",
-"@  c #DD3F3F",
-"#  c #FF3A39",
-"$  c #D56D6C",
-"%  c #F5A8A8",
-"                ",
-"                ",
-"          +.    ",
-"   %%#++++++    ",
-"  %%#++++++++   ",
-" $%@+++++++++   ",
-" %@++. +++++++  ",
-" #++.  +++####  ",
-" +++   .@$$%%$@ ",
-"++++            ",
-"+++.            ",
-"+++             ",
-"++.             ",
-"+..             ",
-"                ",
-"                "};
 
 // events handling
 BEGIN_EVENT_TABLE(Abbreviations, cbPlugin)
@@ -167,6 +140,15 @@ void Abbreviations::BuildMenu(wxMenuBar* menuBar)
     }
 }
 
+static int CalcStcFontSize(cbStyledTextCtrl *stc)
+{
+    wxFont defaultFont = stc->StyleGetFont(wxSCI_STYLE_DEFAULT);
+    defaultFont.SetPointSize(defaultFont.GetPointSize() + stc->GetZoom());
+    int fontSize;
+    stc->GetTextExtent(wxT("A"), nullptr, &fontSize, nullptr, nullptr, &defaultFont);
+    return fontSize;
+}
+
 void Abbreviations::OnEditAutoComplete(cb_unused wxCommandEvent& event)
 {
     cbEditor* editor = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
@@ -198,8 +180,18 @@ void Abbreviations::OnEditAutoComplete(cb_unused wxCommandEvent& event)
 
         if (!items.IsEmpty())
         {
+
             control->ClearRegisteredImages();
-            control->RegisterImage(0, wxBitmap(abbrev_xpm));
+            {
+                const int fontSize = CalcStcFontSize(control);
+                const int size = cbFindMinSize16to64(fontSize);
+
+                const wxString prefix = ConfigManager::GetDataFolder()
+                      + wxString::Format(_T("/abbreviations.zip#zip:images/%dx%d/"), size, size);
+
+                control->RegisterImage(0, cbLoadBitmap(prefix + wxT("arrow.png")));
+            }
+
             items.Sort();
             wxString itemsStr = GetStringFromArray(items, _T(" "));
             control->AutoCompSetSeparator(_T(' '));

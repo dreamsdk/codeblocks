@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: editorlexerloader.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/editorlexerloader.cpp $
+ * $Revision: 11482 $
+ * $Id: editorlexerloader.cpp 11482 2018-09-29 12:20:40Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editorlexerloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -96,6 +96,10 @@ void EditorLexerLoader::DoLexer(TiXmlElement* node)
 
 void EditorLexerLoader::DoStyles(HighlightLanguage language, TiXmlElement* node)
 {
+    bool foundSelection = false, foundActiveLine = false;
+    bool foundMatchBrace = false, foundBraceError = false;
+    bool foundIndentationGuide = false;
+
     TiXmlElement* style = node->FirstChildElement("Style");
     while (style)
     {
@@ -139,6 +143,26 @@ void EditorLexerLoader::DoStyles(HighlightLanguage language, TiXmlElement* node)
                     continue;
                 long value = 0;
                 indices[i].ToLong(&value);
+
+                switch (value)
+                {
+                case cbSELECTION:
+                    foundSelection = true;
+                    break;
+                case cbHIGHLIGHT_LINE:
+                    foundActiveLine = true;
+                    break;
+                case wxSCI_STYLE_BRACELIGHT:
+                    foundMatchBrace = true;
+                    break;
+                case wxSCI_STYLE_BRACEBAD:
+                    foundBraceError = true;
+                    break;
+                case wxSCI_STYLE_INDENTGUIDE:
+                    foundIndentationGuide = true;
+                    break;
+                }
+
 //                LOGSTREAM << _("Adding style: ") << name << _T("(") << value << _T(")\n");
                 m_pTarget->AddOption(language, name, value,
                                     fgcolour,
@@ -150,6 +174,32 @@ void EditorLexerLoader::DoStyles(HighlightLanguage language, TiXmlElement* node)
             }
         }
         style = style->NextSiblingElement("Style");
+    }
+
+    if (!foundSelection)
+    {
+        m_pTarget->AddOption(language, wxT("Selection"), cbSELECTION, wxNullColour,
+                             wxColour(217, 217, 217), false, false, false, false);
+    }
+    if (!foundActiveLine)
+    {
+        m_pTarget->AddOption(language, wxT("Active line"), cbHIGHLIGHT_LINE, wxNullColour,
+                             wxColour(255, 255, 160), false, false, false, false);
+    }
+    if (!foundMatchBrace)
+    {
+        m_pTarget->AddOption(language, wxT("Matching brace highlight"), wxSCI_STYLE_BRACELIGHT,
+                             wxColour(0, 0, 0), wxColour(128, 255, 255), true, false, false, true);
+    }
+    if (!foundBraceError)
+    {
+        m_pTarget->AddOption(language, wxT("No matching brace highlight"), wxSCI_STYLE_BRACEBAD,
+                             wxColour(255, 255, 255), wxColour(255, 0, 0), true, false, false, true);
+    }
+    if (!foundIndentationGuide)
+    {
+        m_pTarget->AddOption(language, wxT("Indentation guide"), wxSCI_STYLE_INDENTGUIDE,
+                             wxColour(55, 55, 55), wxNullColour, false, false, false, true);
     }
 }
 

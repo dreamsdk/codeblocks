@@ -17,7 +17,7 @@
 *
 * $Revision: 10681 $
 * $Id: wxsarraystringcheckeditordlg.h 10681 2016-01-22 10:45:30Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsarraystringcheckeditordlg.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsarraystringcheckeditordlg.h $
 */
 
 #ifndef WXSARRAYSTRINGCHECKEDITORDLG_H

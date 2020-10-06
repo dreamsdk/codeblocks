@@ -4,7 +4,7 @@
  *
  * $Revision: 10848 $
  * $Id: MANFrame.cpp 10848 2016-05-05 14:29:22Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/help_plugin/MANFrame.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/help_plugin/MANFrame.cpp $
  */
 #include <sdk.h>
 

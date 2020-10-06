@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10770 $
- * $Id: compilerMINGW.cpp 10770 2016-02-06 14:27:56Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compilerMINGW.cpp $
+ * $Revision: 11525 $
+ * $Id: compilerMINGW.cpp 11525 2018-12-15 16:16:44Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerMINGW.cpp $
  */
 
 #include <sdk.h>
@@ -242,7 +242,7 @@ void CompilerMINGW::SetVersionString()
         {
 //            Manager::Get()->GetLogManager()->DebugLog(_T("Extracting compiler version from: ") + output[0]);
             wxRegEx reg_exp;
-            if (reg_exp.Compile(_T("[0-9][.][0-9][.][0-9]")) && reg_exp.Matches(output[0]))
+            if (reg_exp.Compile(_T("[0-9]+[.][0-9]+[.][0-9]+")) && reg_exp.Matches(output[0]))
             {
                 m_VersionString = reg_exp.GetMatch(output[0]);
 //                Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version via RegExp: ") + m_VersionString);

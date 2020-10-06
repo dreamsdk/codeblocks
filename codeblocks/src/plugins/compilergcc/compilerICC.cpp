@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10530 $
- * $Id: compilerICC.cpp 10530 2015-10-18 07:02:33Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compilerICC.cpp $
+ * $Revision: 11399 $
+ * $Id: compilerICC.cpp 11399 2018-05-08 21:54:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerICC.cpp $
  */
 
 #include <sdk.h>
@@ -32,12 +32,12 @@ class wxIccDirTraverser : public wxDirTraverser
             m_SepChar = (platform::windows == 1) ? _T('\\') : _T('/');
         }
 
-        virtual wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename))
+        wxDirTraverseResult OnFile(const wxString& WXUNUSED(filename)) override
         {
             return wxDIR_CONTINUE;
         }
 
-        virtual wxDirTraverseResult OnDir(const wxString& dirname)
+        wxDirTraverseResult OnDir(const wxString& dirname) override
         {
             if (m_Dirs.Index(dirname) == wxNOT_FOUND &&
                 dirname.AfterLast(m_SepChar).Contains(_T(".")))

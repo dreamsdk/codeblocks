@@ -4,7 +4,7 @@
  *
  * $Revision: 9173 $
  * $Id: cbworkspace.cpp 9173 2013-07-03 20:14:50Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/cbworkspace.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbworkspace.cpp $
  */
 
 #include "sdk_precomp.h"

@@ -18,7 +18,7 @@
 *
 * $Revision: 8148 $
 * $Id: wxsgenericdirctrl.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgenericdirctrl.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgenericdirctrl.h $
 */
 
 #ifndef WXSGENERICDIRCTRL_H

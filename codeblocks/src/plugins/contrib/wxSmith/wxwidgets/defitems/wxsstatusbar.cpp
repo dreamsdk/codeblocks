@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsstatusbar.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstatusbar.cpp $
+* $Revision: 11783 $
+* $Id: wxsstatusbar.cpp 11783 2019-07-08 19:39:27Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstatusbar.cpp $
 */
 
 #include <wx/statusbr.h>
@@ -146,9 +146,13 @@ void wxsStatusBar::OnAddExtraProperties(wxsPropertyGridManager* Grid)
     #endif
     m_FieldsId = Grid->Append(NEW_IN_WXPG14X wxIntProperty(_("Fields"),wxPG_LABEL,m_Fields));
 
+    m_FieldsId->SetAttribute(wxPG_ATTR_MIN, 1);
+    m_FieldsId->SetAttribute(wxPG_ATTR_MAX, 30);
+
     for ( int i=0; i<m_Fields; i++ )
     {
         wxPGId ParentProp = Grid->Append(NEW_IN_WXPG14X wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
+        ParentProp->ChangeFlag(wxPG_PROP_READONLY, true);
         m_WidthsIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
         m_VarWidthIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
         Grid->SetPropertyAttribute(m_VarWidthIds[i],wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
@@ -195,6 +199,7 @@ void wxsStatusBar::OnExtraPropertyChanged(wxsPropertyGridManager* Grid,wxPGId Id
             for ( int i = m_Fields; i<NewFields; i++ )
             {
                 wxPGId ParentProp = Grid->Append(NEW_IN_WXPG14X wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
+                ParentProp->ChangeFlag(wxPG_PROP_READONLY, true);
                 m_WidthsIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
                 m_VarWidthIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
                 Grid->SetPropertyAttribute(m_VarWidthIds[i],wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);

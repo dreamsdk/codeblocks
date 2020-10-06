@@ -1,10 +1,44 @@
 #! /bin/sh
 #
 
-mkdir -p ../../../devel30/share/codeblocks/images/fortranproject> /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/16x16 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/20x20 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/24x24 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/28x28 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/32x32 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/40x40 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/48x48 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/56x56 > /dev/null 2> /dev/null
+mkdir -p ../../../devel30/share/codeblocks/images/fortranproject/64x64 > /dev/null 2> /dev/null
 mkdir -p ../../../output30/share/codeblocks/images/fortranproject > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/16x16 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/20x20 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/24x24 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/28x28 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/32x32 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/40x40 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/48x48 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/56x56 > /dev/null 2> /dev/null
+mkdir -p ../../../output30/share/codeblocks/images/fortranproject/64x64 > /dev/null 2> /dev/null
 cp ./images/fortranproject/*.* ../../../devel30/share/codeblocks/images/fortranproject/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/16x16/*.* ../../../devel30/share/codeblocks/images/fortranproject/16x16/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/20x20/*.* ../../../devel30/share/codeblocks/images/fortranproject/20x20/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/24x24/*.* ../../../devel30/share/codeblocks/images/fortranproject/24x24/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/28x28/*.* ../../../devel30/share/codeblocks/images/fortranproject/28x28/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/32x32/*.* ../../../devel30/share/codeblocks/images/fortranproject/32x32/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/40x40/*.* ../../../devel30/share/codeblocks/images/fortranproject/40x40/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/48x48/*.* ../../../devel30/share/codeblocks/images/fortranproject/48x48/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/56x56/*.* ../../../devel30/share/codeblocks/images/fortranproject/56x56/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/64x64/*.* ../../../devel30/share/codeblocks/images/fortranproject/64x64/ > /dev/null 2> /dev/null
 cp ./images/fortranproject/*.* ../../../output30/share/codeblocks/images/fortranproject/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/16x16/*.* ../../../output30/share/codeblocks/images/fortranproject/16x16/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/20x20/*.* ../../../output30/share/codeblocks/images/fortranproject/20x20/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/24x24/*.* ../../../output30/share/codeblocks/images/fortranproject/24x24/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/28x28/*.* ../../../output30/share/codeblocks/images/fortranproject/28x28/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/32x32/*.* ../../../output30/share/codeblocks/images/fortranproject/32x32/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/40x40/*.* ../../../output30/share/codeblocks/images/fortranproject/40x40/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/48x48/*.* ../../../output30/share/codeblocks/images/fortranproject/48x48/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/56x56/*.* ../../../output30/share/codeblocks/images/fortranproject/56x56/ > /dev/null 2> /dev/null
+cp ./images/fortranproject/64x64/*.* ../../../output30/share/codeblocks/images/fortranproject/64x64/ > /dev/null 2> /dev/null
 exit 0
-
-

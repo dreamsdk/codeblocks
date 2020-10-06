@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10833 $
- * $Id: compileoptionsbase.cpp 10833 2016-04-17 21:31:25Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/compileoptionsbase.cpp $
+ * $Revision: 11887 $
+ * $Id: compileoptionsbase.cpp 11887 2019-10-26 09:12:28Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compileoptionsbase.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -20,6 +20,7 @@ namespace { static const bool s_case_sensitive = platform::windows ? false : tru
 
 CompileOptionsBase::CompileOptionsBase()
     : m_Platform(spAll),
+    m_LinkerExecutable(LinkerExecutableOption::AutoDetect),
     m_Modified(false),
     m_AlwaysRunPostCmds(false)
 {
@@ -574,4 +575,28 @@ const wxString& CompileOptionsBase::GetVar(const wxString& key) const
 const StringHash& CompileOptionsBase::GetAllVars() const
 {
     return m_Vars;
+}
+
+void CompileOptionsBase::SetLinkerExecutable(LinkerExecutableOption option)
+{
+    if (m_LinkerExecutable == option)
+        return;
+
+    // We need to do this range check because this function could be called from scripting and there
+    // is no range checking done by the compiler.
+    if (option>= LinkerExecutableOption::First && option <= LinkerExecutableOption::Last)
+    {
+        m_LinkerExecutable = option;
+        SetModified(true);
+    }
+    else if (m_LinkerExecutable != LinkerExecutableOption::AutoDetect)
+    {
+        m_LinkerExecutable = LinkerExecutableOption::AutoDetect;
+        SetModified(true);
+    }
+}
+
+LinkerExecutableOption CompileOptionsBase::GetLinkerExecutable() const
+{
+    return m_LinkerExecutable;
 }

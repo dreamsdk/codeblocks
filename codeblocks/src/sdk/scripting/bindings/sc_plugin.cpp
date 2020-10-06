@@ -4,7 +4,7 @@
  *
  * $Revision: 9419 $
  * $Id: sc_plugin.cpp 9419 2013-10-24 15:54:57Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_plugin.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_plugin.cpp $
  */
 
 #include <sdk_precomp.h>

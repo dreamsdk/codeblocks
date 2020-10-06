@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10976 $
-* $Id: wxsitemresdata.cpp 10976 2017-01-21 10:41:53Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.cpp $
+* $Revision: 11769 $
+* $Id: wxsitemresdata.cpp 11769 2019-07-04 22:14:25Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.cpp $
 */
 
 #include "wxsitemresdata.h"
@@ -44,7 +44,7 @@ using namespace wxsFlags;
 
 namespace
 {
-    const int ToolsTreeImageId = wxsResourceTree::LoadImage(_T("/images/misc_16x16.png"));
+    const int ToolsTreeImageId = wxsResourceTree::LoadImage(_T("images/wxsmith/tools16.png"));
 }
 
 wxsItemResData::wxsItemResData(
@@ -927,6 +927,7 @@ void wxsItemResData::BeginChange()
     {
         StoreTreeExpandState();
         wxsResourceTree::Get()->BlockSelect();
+        m_ExtraIsInvalid = false;
     }
 }
 
@@ -946,6 +947,9 @@ void wxsItemResData::EndChange()
         }
         if ( ValidateRootSelection() )
         {
+            if (m_ExtraIsInvalid && m_Editor)
+                m_Editor->RebuildQuickProps(m_RootSelection);
+
             m_RootSelection->NotifyPropertyChange(false);
         }
         else
@@ -960,6 +964,11 @@ void wxsItemResData::EndChange()
         RebuildTree();
         wxsResourceTree::Get()->UnblockSelect();
     }
+}
+
+void wxsItemResData::MarkExtraDataChanged()
+{
+    m_ExtraIsInvalid = true;
 }
 
 bool wxsItemResData::ValidateRootSelection()

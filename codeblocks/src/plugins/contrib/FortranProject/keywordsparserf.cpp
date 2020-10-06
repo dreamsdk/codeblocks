@@ -5,18 +5,21 @@
  */
 
 #include "keywordsparserf.h"
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
+    #include <wx/string.h>
+    #include <wx/arrstr.h>
+    #include <wx/file.h>
+
+    #include <globals.h>
+    #include <cbstyledtextctrl.h>
+    #include <configmanager.h>
+    #include <logmanager.h>
+#endif
+
 #include "parserthreadf.h"
-
-#include <wx/tokenzr.h>
-#include <wx/string.h>
-#include <wx/arrstr.h>
-#include <wx/file.h>
-#include <globals.h>
-#include "cbstyledtextctrl.h"
-#include <configmanager.h>
-
-#include <logmanager.h>
-
 
 KeywordsParserF::KeywordsParserF():
     m_Parser(false)
@@ -28,7 +31,7 @@ KeywordsParserF::KeywordsParserF():
         Manager::Get()->GetLogManager()->Log(_T("FortranProject plugin error: file ")+filename+_T(" was not found."));
         return;
     }
-    m_Parser.Reparse(filename, fsfFree);
+    m_Parser.Reparse(filename, filename, fsfFree);
 
     TokensArrayF* pTokensArr = m_Parser.GetTokens();
     TokensArrayF* pTokens = &pTokensArr->Item(0)->m_Children;
@@ -126,7 +129,7 @@ void KeywordsParserF::MakeOtherKeywordSet()
     //Parse
     TokensArrayClass tokensKeyTmp;
     TokensArrayF* parsResult = tokensKeyTmp.GetTokens();
-    ParserThreadF thread = ParserThreadF(txtRange, parsResult, fsfFree, true);
+    ParserThreadF thread = ParserThreadF(wxEmptyString, txtRange, parsResult, fsfFree, true);
     thread.ParseDeclarations();
 
     for (size_t i=0; i<parsResult->GetCount(); i++)

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsparent.cpp 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.cpp $
+* $Revision: 11384 $
+* $Id: wxsparent.cpp 11384 2018-04-29 15:37:23Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.cpp $
 */
 
 #include "wxsparent.h"
@@ -91,6 +91,7 @@ void wxsParent::UnbindChild(int Index)
         delete Extra[Index];
     }
     Extra.RemoveAt(Index);
+    GetResourceData()->MarkExtraDataChanged();
 }
 
 void wxsParent::UnbindChild(wxsItem* Child)
@@ -103,6 +104,7 @@ void wxsParent::UnbindChild(wxsItem* Child)
         delete Extra[Index];
     }
     Extra.RemoveAt(Index);
+    GetResourceData()->MarkExtraDataChanged();
 }
 
 int wxsParent::MoveChild(int OldIndex,int NewIndex )

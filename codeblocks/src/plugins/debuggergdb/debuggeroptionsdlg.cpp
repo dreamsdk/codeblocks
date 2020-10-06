@@ -4,7 +4,7 @@
  *
  * $Revision: 11165 $
  * $Id: debuggeroptionsdlg.cpp 11165 2017-09-09 14:40:32Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/debuggeroptionsdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggeroptionsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -28,90 +28,51 @@
 class DebuggerConfigurationPanel : public wxPanel
 {
     public:
-        void ValidateDebuggerExecutablePath()
+        void ValidateExecutablePath()
         {
             wxTextCtrl *pathCtrl = XRCCTRL(*this, "txtExecutablePath", wxTextCtrl);
-            DoValidateExecutablePath(pathCtrl, _("Full path to the debugger's executable."));
-        }
-
-        void ValidateLoaderExecutablePath()
-        {
-            wxTextCtrl *pathCtrl = XRCCTRL(*this, "txtLoaderExecutablePath", wxTextCtrl);
-            DoValidateExecutablePath(pathCtrl, _("Full path to the loader's executable."));
-        }
-    private:
-        void DoValidateExecutablePath(wxTextCtrl *pathCtrl, const wxString &tooltip)
-        {
             wxString path = pathCtrl->GetValue();
             Manager::Get()->GetMacrosManager()->ReplaceEnvVars(path);
             if (!wxFileExists(path))
             {
                 pathCtrl->SetForegroundColour(*wxWHITE);
                 pathCtrl->SetBackgroundColour(*wxRED);
-                pathCtrl->SetToolTip(tooltip + _(" Executable can't be found on the filesystem!"));
+                pathCtrl->SetToolTip(_("Full path to the debugger's executable. Executable can't be found on the filesystem!"));
             }
             else
             {
                 pathCtrl->SetForegroundColour(wxNullColour);
                 pathCtrl->SetBackgroundColour(wxNullColour);
-                pathCtrl->SetToolTip(tooltip);
+                pathCtrl->SetToolTip(_("Full path to the debugger's executable."));
             }
             pathCtrl->Refresh();
         }
-
-        wxString DoOnBrowse(wxString &oldPath)
+    private:
+        void OnBrowse(cb_unused wxCommandEvent &event)
         {
-            wxString newPath = wxEmptyString;
+            wxString oldPath = XRCCTRL(*this, "txtExecutablePath", wxTextCtrl)->GetValue();
             Manager::Get()->GetMacrosManager()->ReplaceEnvVars(oldPath);
             wxFileDialog dlg(this, _("Select executable file"), wxEmptyString, oldPath,
                              wxFileSelectorDefaultWildcardStr, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
             PlaceWindow(&dlg);
             if (dlg.ShowModal() == wxID_OK)
             {
-                newPath = dlg.GetPath();
-            }
-
-            return newPath;
-        }
-
-        void Debugger_OnBrowse(cb_unused wxCommandEvent &event)
-        {
-            wxString oldPath = XRCCTRL(*this, "txtExecutablePath", wxTextCtrl)->GetValue();
-            wxString newPath = DoOnBrowse(oldPath);
-            if (!newPath.empty()) {
+                wxString newPath = dlg.GetPath();
                 XRCCTRL(*this, "txtExecutablePath", wxTextCtrl)->ChangeValue(newPath);
-                ValidateDebuggerExecutablePath();
             }
         }
 
-        void Debugger_OnTextChange(cb_unused wxCommandEvent &event)
+        void OnTextChange(cb_unused wxCommandEvent &event)
         {
-            ValidateDebuggerExecutablePath();
-        }
-
-        void Loader_OnBrowse(cb_unused wxCommandEvent &event)
-        {
-            wxString oldPath = XRCCTRL(*this, "txtLoaderExecutablePath", wxTextCtrl)->GetValue();
-            wxString newPath = DoOnBrowse(oldPath);
-            if (!newPath.empty()) {
-                XRCCTRL(*this, "txtLoaderExecutablePath", wxTextCtrl)->ChangeValue(newPath);
-                ValidateLoaderExecutablePath();
-            }
-        }
-
-        void Loader_OnTextChange(cb_unused wxCommandEvent &event)
-        {
-            ValidateLoaderExecutablePath();
+            ValidateExecutablePath();
         }
     private:
         DECLARE_EVENT_TABLE()
 };
 
 BEGIN_EVENT_TABLE(DebuggerConfigurationPanel, wxPanel)
-    EVT_BUTTON(XRCID("btnBrowse"), DebuggerConfigurationPanel::Debugger_OnBrowse)
-    EVT_TEXT(XRCID("txtExecutablePath"), DebuggerConfigurationPanel::Debugger_OnTextChange)
-    EVT_BUTTON(XRCID("btnLoaderBrowse"), DebuggerConfigurationPanel::Loader_OnBrowse)
-    EVT_TEXT(XRCID("txtLoaderExecutablePath"), DebuggerConfigurationPanel::Loader_OnTextChange)
+    EVT_BUTTON(XRCID("btnBrowse"), DebuggerConfigurationPanel::OnBrowse)
+    EVT_TEXT(XRCID("txtExecutablePath"), DebuggerConfigurationPanel::OnTextChange)
 END_EVENT_TABLE()
 
 DebuggerConfiguration::DebuggerConfiguration(const ConfigManagerWrapper &config) : cbDebuggerConfiguration(config)
@@ -130,7 +91,7 @@ wxPanel* DebuggerConfiguration::MakePanel(wxWindow *parent)
         return panel;
 
     XRCCTRL(*panel, "txtExecutablePath", wxTextCtrl)->ChangeValue(GetDebuggerExecutable(false));
-    panel->ValidateDebuggerExecutablePath();
+    panel->ValidateExecutablePath();
     XRCCTRL(*panel, "chkDisableInit", wxCheckBox)->SetValue(GetFlag(DisableInit));
     XRCCTRL(*panel, "txtArguments", wxTextCtrl)->ChangeValue(GetUserArguments(false));
 
@@ -145,38 +106,24 @@ wxPanel* DebuggerConfiguration::MakePanel(wxWindow *parent)
     XRCCTRL(*panel, "chkDoNotRun",       wxCheckBox)->SetValue(GetFlag(DoNotRun));
     XRCCTRL(*panel, "choDisassemblyFlavor", wxChoice)->SetSelection(m_config.ReadInt(wxT("disassembly_flavor"), 0));
     XRCCTRL(*panel, "txtInstructionSet", wxTextCtrl)->ChangeValue(m_config.Read(wxT("instruction_set"), wxEmptyString));
-
-    XRCCTRL(*panel, "txtLoaderExecutablePath", wxTextCtrl)->ChangeValue(GetLoaderExecutable(false));
-    panel->ValidateLoaderExecutablePath();
-    XRCCTRL(*panel, "txtLoaderArguments", wxTextCtrl)->ChangeValue(GetLoaderArguments(wxEmptyString, false));
-
-    wxSpinCtrl *spn = XRCCTRL(*panel, "spnLoaderWaitingTime", wxSpinCtrl);
-    spn->SetRange(LOADER_WAITING_TIME_MIN, LOADER_WAITING_TIME_MAX);
-    spn->SetToolTip(_(LOADER_WAITING_TIME_TOOLTIP));
-    spn->SetValue(GetLoaderWaitingTime());
-
     return panel;
 }
 
 bool DebuggerConfiguration::SaveChanges(wxPanel *panel)
 {
-    m_config.Write(wxT("executable_path"),        XRCCTRL(*panel, "txtExecutablePath",       wxTextCtrl)->GetValue());
-    m_config.Write(wxT("disable_init"),           XRCCTRL(*panel, "chkDisableInit",          wxCheckBox)->GetValue());
-    m_config.Write(wxT("user_arguments"),         XRCCTRL(*panel, "txtArguments",            wxTextCtrl)->GetValue());
-    m_config.Write(wxT("type"),                   XRCCTRL(*panel, "rbType",                  wxRadioBox)->GetSelection());
-    m_config.Write(wxT("init_commands"),          XRCCTRL(*panel, "txtInit",                 wxTextCtrl)->GetValue());
-    m_config.Write(wxT("watch_args"),             XRCCTRL(*panel, "chkWatchArgs",            wxCheckBox)->GetValue());
-    m_config.Write(wxT("watch_locals"),           XRCCTRL(*panel, "chkWatchLocals",          wxCheckBox)->GetValue());
-    m_config.Write(wxT("catch_exceptions"),       XRCCTRL(*panel, "chkCatchExceptions",      wxCheckBox)->GetValue());
-    m_config.Write(wxT("eval_tooltip"),           XRCCTRL(*panel, "chkTooltipEval",          wxCheckBox)->GetValue());
-    m_config.Write(wxT("add_other_search_dirs"),  XRCCTRL(*panel, "chkAddForeignDirs",       wxCheckBox)->GetValue());
-    m_config.Write(wxT("do_not_run"),             XRCCTRL(*panel, "chkDoNotRun",             wxCheckBox)->GetValue());
-    m_config.Write(wxT("disassembly_flavor"),     XRCCTRL(*panel, "choDisassemblyFlavor",    wxChoice)->GetSelection());
-    m_config.Write(wxT("instruction_set"),        XRCCTRL(*panel, "txtInstructionSet",       wxTextCtrl)->GetValue());
-
-    m_config.Write(wxT("loader_executable_path"), XRCCTRL(*panel, "txtLoaderExecutablePath", wxTextCtrl)->GetValue());
-    m_config.Write(wxT("loader_arguments"),       XRCCTRL(*panel, "txtLoaderArguments",      wxTextCtrl)->GetValue());
-    m_config.Write(wxT("loader_waiting_time"),    XRCCTRL(*panel, "spnLoaderWaitingTime",    wxSpinCtrl)->GetValue());
+    m_config.Write(wxT("executable_path"),       XRCCTRL(*panel, "txtExecutablePath", wxTextCtrl)->GetValue());
+    m_config.Write(wxT("disable_init"),          XRCCTRL(*panel, "chkDisableInit",    wxCheckBox)->GetValue());
+    m_config.Write(wxT("user_arguments"),        XRCCTRL(*panel, "txtArguments",      wxTextCtrl)->GetValue());
+    m_config.Write(wxT("type"),                  XRCCTRL(*panel, "rbType",            wxRadioBox)->GetSelection());
+    m_config.Write(wxT("init_commands"),         XRCCTRL(*panel, "txtInit",           wxTextCtrl)->GetValue());
+    m_config.Write(wxT("watch_args"),            XRCCTRL(*panel, "chkWatchArgs",      wxCheckBox)->GetValue());
+    m_config.Write(wxT("watch_locals"),          XRCCTRL(*panel, "chkWatchLocals",    wxCheckBox)->GetValue());
+    m_config.Write(wxT("catch_exceptions"),      XRCCTRL(*panel, "chkCatchExceptions",wxCheckBox)->GetValue());
+    m_config.Write(wxT("eval_tooltip"),          XRCCTRL(*panel, "chkTooltipEval",    wxCheckBox)->GetValue());
+    m_config.Write(wxT("add_other_search_dirs"), XRCCTRL(*panel, "chkAddForeignDirs", wxCheckBox)->GetValue());
+    m_config.Write(wxT("do_not_run"),            XRCCTRL(*panel, "chkDoNotRun",       wxCheckBox)->GetValue());
+    m_config.Write(wxT("disassembly_flavor"),    XRCCTRL(*panel, "choDisassemblyFlavor", wxChoice)->GetSelection());
+    m_config.Write(wxT("instruction_set"),       XRCCTRL(*panel, "txtInstructionSet", wxTextCtrl)->GetValue());
 
     return true;
 }
@@ -252,33 +199,6 @@ wxString DebuggerConfiguration::GetUserArguments(bool expandMacro)
     if (expandMacro)
         Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
     return result;
-}
-
-bool DebuggerConfiguration::IsLoaderNecessary()
-{
-    return !GetLoaderExecutable().empty();
-}
-
-wxString DebuggerConfiguration::GetLoaderExecutable(bool expandMacro)
-{
-    wxString result = m_config.Read(wxT("loader_executable_path"), wxEmptyString);
-    if (expandMacro)
-        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
-    return result;
-}
-
-wxString DebuggerConfiguration::GetLoaderArguments(const wxString& debuggee, bool expandMacro)
-{
-    wxString result = m_config.Read(wxT("loader_arguments"), wxEmptyString);
-    if (expandMacro) {
-        result = DebuggerGDB::ParseLoaderArguments(result, debuggee);
-    }
-    return result;
-}
-
-int DebuggerConfiguration::GetLoaderWaitingTime()
-{
-    return m_config.ReadInt(wxT("loader_waiting_time"), LOADER_WAITING_TIME_DEFAULT);
 }
 
 wxString DebuggerConfiguration::GetDisassemblyFlavorCommand()

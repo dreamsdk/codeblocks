@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsfiledialog.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsfiledialog.cpp $
+* $Revision: 11893 $
+* $Id: wxsfiledialog.cpp 11893 2019-11-02 06:40:18Z mortenmacfly $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsfiledialog.cpp $
 */
 
 #include "wxsfiledialog.h"
@@ -39,6 +39,9 @@ namespace
         WXS_ST(wxFD_MULTIPLE)
         WXS_ST(wxFD_CHANGE_DIR)
         WXS_ST(wxFD_PREVIEW)
+#if wxCHECK_VERSION(3,1,3)
+        WXS_ST(wxFD_SHOW_HIDDEN)
+#endif // wxCHECK_VERSION
         WXS_ST_DEFAULTS()
     WXS_ST_END()
 }

@@ -18,7 +18,7 @@
 *
 * $Revision: 10832 $
 * $Id: processingdlg.cpp 10832 2016-04-17 21:31:19Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/processingdlg.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/processingdlg.cpp $
 */
 
 #include "processingdlg.h"

@@ -4,8 +4,12 @@
  * http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-#include <wx/file.h>
 #include "tokenizerf.h"
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/file.h>
+#endif
 
 bool ReadFileToString(wxFile& file,wxString& st)
 {
@@ -385,7 +389,7 @@ bool Tokenizerf::SkipBlock(const wxChar& ch, int maxLines)
 
 bool Tokenizerf::SkipUnwanted()
 {
-    while ((CurrentChar() == '=' && !m_DetailedParsing) ||
+    while ( //(CurrentChar() == '=' && !m_DetailedParsing) ||
             CurrentChar() == '!' ||
             ((CurrentChar() == 'c' || CurrentChar() == 'C' || CurrentChar() == '*') && m_Column == 1 && m_SourceForm == fsfFixed))
     {
@@ -406,26 +410,26 @@ bool Tokenizerf::SkipUnwanted()
                 return false;
         }
 
-        while (CurrentChar() == '=')
-        {
-            if (NextChar() != '>')
-            {
-                MoveToNextChar();
-                if (!SkipWhiteSpace())
-                    return false;
-                // skip assignments
-                if (CurrentChar() == '[' || CurrentChar() == '(')
-                    break;
-                if (!SkipToOneOfChars(";", true))
-                    return false;
-                if (!SkipWhiteSpace())
-                    return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
+//        while (CurrentChar() == '=')
+//        {
+//            if (NextChar() != '>')
+//            {
+//                MoveToNextChar();
+//                if (!SkipWhiteSpace())
+//                    return false;
+//                // skip assignments
+//                if (CurrentChar() == '[' || CurrentChar() == '(')
+//                    break;
+//                if (!SkipToOneOfChars(";", true))
+//                    return false;
+//                if (!SkipWhiteSpace())
+//                    return false;
+//            }
+//            else
+//            {
+//                return true;
+//            }
+//        }
     }
     return true;
 }

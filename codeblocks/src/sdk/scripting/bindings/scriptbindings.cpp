@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10677 $
- * $Id: scriptbindings.cpp 10677 2016-01-22 05:38:20Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/scriptbindings.cpp $
+ * $Revision: 11887 $
+ * $Id: scriptbindings.cpp 11887 2019-10-26 09:12:28Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/scriptbindings.cpp $
  */
 
 #include <sdk_precomp.h>
@@ -26,7 +26,6 @@
 #include "scriptbindings.h"
 #include <cbexception.h>
 #include "sc_base_types.h"
-#include "projectloader_hooks.h"
 
 namespace ScriptBindings
 {
@@ -267,21 +266,422 @@ namespace ScriptBindings
         return sa.ThrowError("Invalid arguments to \"cbProject::ExportTargetAsProject\"");
     }
 
-    SQInteger cbProject_CallHooks(HSQUIRRELVM v)
+    struct FindXmlElementResult
+    {
+        TiXmlElement *element = nullptr;
+        wxString errorStr;
+    };
+
+    static FindXmlElementResult FindExtensionElement(cbProject *project, const wxString &query)
+    {
+        TiXmlNode *extensionNode = project->GetExtensionsNode();
+        if (!extensionNode)
+            return FindXmlElementResult();
+        TiXmlElement *currentElem = extensionNode->ToElement();
+        if (!currentElem)
+            return FindXmlElementResult();
+
+        // Note: This is slow!
+        const wxArrayString names = GetArrayFromString(query, wxT("/"), false);
+        for (const wxString &name : names)
+        {
+            const wxString::size_type openBracePos = name.find_first_of(wxT("[("));
+            if (openBracePos != wxString::npos)
+            {
+                if (name[openBracePos] == wxT('['))
+                {
+                    const wxString::size_type closeBracePos = name.find(wxT(']'), openBracePos + 1);
+                    if (closeBracePos == wxString::npos || closeBracePos != name.length() - 1)
+                    {
+                        FindXmlElementResult result;
+                        result.errorStr.Printf(wxT("Invalid index format in '%s'!"), name.wx_str());
+                        return result;
+                    }
+
+                    const wxString nameStripped = name.substr(0, openBracePos);
+                    long lIndex;
+                    const wxString indexStr = name.substr(openBracePos + 1,
+                                                          closeBracePos - openBracePos - 1);
+                    if (!indexStr.ToLong(&lIndex))
+                    {
+                        FindXmlElementResult result;
+                        result.errorStr.Printf(wxT("Can't convert '%s' to integer!"),
+                                               indexStr.wx_str());
+                        return result;
+                    }
+
+                    const int index = int(lIndex);
+
+                    int currentIndex = -1;
+                    for (TiXmlNode *child = currentElem->FirstChild();
+                         child;
+                         child = child->NextSibling())
+                    {
+                        TiXmlElement *childElement = child->ToElement();
+                        if (wxString(childElement->Value(), wxConvUTF8) != nameStripped)
+                            continue;
+                        ++currentIndex;
+                        if (currentIndex == index)
+                        {
+                            currentElem = childElement;
+                            break;
+                        }
+                    }
+                    if (currentIndex != index)
+                        return FindXmlElementResult();
+                }
+                else if (name[openBracePos] == wxT('('))
+                {
+                    const wxString::size_type closeBracePos = name.find(wxT(')'), openBracePos + 1);
+                    if (closeBracePos == wxString::npos || closeBracePos != name.length() - 1)
+                    {
+                        FindXmlElementResult result;
+                        result.errorStr.Printf(wxT("Invalid attribute format in '%s'!"),
+                                               name.wx_str());
+                        return result;
+                    }
+
+                    const wxString nameStripped = name.substr(0, openBracePos);
+                    const wxString attributeStr = name.substr(openBracePos + 1,
+                                                           closeBracePos - openBracePos - 1);
+                    const wxString::size_type equalPos = attributeStr.find(wxT('='));
+                    if (equalPos == wxString::npos)
+                    {
+                        FindXmlElementResult result;
+                        result.errorStr.Printf(wxT("Invalid attribute format in '%s'!"),
+                                               attributeStr.wx_str());
+                        return result;
+                    }
+
+                    const std::string attributeName = wxString(attributeStr.substr(0, equalPos)).utf8_str().data();
+                    const std::string attributeValue = wxString(attributeStr.substr(equalPos + 1)).utf8_str().data();
+                    for (TiXmlNode *child = currentElem->FirstChild();
+                         child;
+                         child = child->NextSibling())
+                    {
+                        TiXmlElement *childElement = child->ToElement();
+                        if (wxString(childElement->Value(), wxConvUTF8) != nameStripped)
+                            continue;
+
+                        const char *value = childElement->Attribute(attributeName.c_str());
+                        if (value != nullptr && attributeValue == value)
+                        {
+                            currentElem = childElement;
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+                currentElem = currentElem->FirstChildElement(name.utf8_str().data());
+
+            if (!currentElem)
+                return FindXmlElementResult();
+        }
+
+        FindXmlElementResult result;
+        result.element = currentElem;
+        return result;
+    }
+
+    wxString FindFullExtensionPathForNode(const TiXmlNode *node)
+    {
+        if (!node)
+            return wxString();
+
+        struct StackItem
+        {
+            const char *name;
+            int index;
+        };
+        std::vector<StackItem> extensionStack;
+
+        while (node)
+        {
+            const char *nodeValue = node->ToElement()->Value();
+            if (strcmp(nodeValue, "Extensions") == 0)
+                break;
+
+            int index = 0;
+            // Find index by going back through the siblings and matching the names.
+            for (const TiXmlNode *sibling = node->PreviousSibling();
+                 sibling;
+                 sibling = sibling->PreviousSibling())
+            {
+                const char *value = sibling->ToElement()->Value();
+                if (strcmp(nodeValue, value) == 0)
+                    index++;
+            }
+
+            StackItem item;
+            item.name = nodeValue;
+            item.index = index;
+            extensionStack.push_back(item);
+
+            node = node->Parent();
+        }
+
+        wxString result;
+        for (std::vector<StackItem>::reverse_iterator it = extensionStack.rbegin();
+             it != extensionStack.rend();
+             ++it)
+        {
+            if (!result.empty())
+                result << wxT('/');
+            result << wxString(it->name, wxConvUTF8) << wxT('[') << it->index << wxT(']');
+        }
+        return result;
+    }
+
+    /// Squirrel function would expect a cbProject and an extension string. It will return a
+    /// wxArrayString object.
+    SQInteger cbProject_ExtensionListNodes(HSQUIRRELVM v)
     {
         StackHandler sa(v);
         int paramCount = sa.GetParamCount();
-        if (paramCount == 2)
-        {
-            cbProject* prj = SqPlus::GetInstance<cbProject,false>(v, 1);
-            if (!prj)
-                return sa.ThrowError("Null project in \"cbProject::CallHooks\"");
-            bool isLoading = (sa.GetBool(2) != 0);
+        if (paramCount != 2)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionListNodes\"");
 
-            ProjectLoaderHooks::CallHooks(prj, prj->GetExtensionsNode()->ToElement(), isLoading);
-            return 1;
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionListNodes\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionListNodes\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+                return SqPlus::ReturnCopy(v, wxArrayString());
+            else
+                return sa.ThrowError(queryResult.errorStr.utf8_str().data());
         }
-        return sa.ThrowError("Invalid arguments to \"cbProject::CallHooks\"");
+
+        wxArrayString result;
+        int index = 0;
+        for (const TiXmlNode *child = queryResult.element->FirstChild();
+             child;
+             child = child->NextSibling())
+        {
+            wxString msg = *extension + wxT("/") + wxString(child->Value(), wxConvUTF8);
+            msg << wxT('[') << index << wxT(']');
+            result.Add(msg);
+            ++index;
+        }
+        return SqPlus::ReturnCopy(v, result);
+    }
+
+    /// Squirrel function would expect a cbProject and an extension string. It will return a
+    /// wxArrayString object.
+    SQInteger cbProject_ExtensionListNodeAttributes(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 2)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionListNodeAttributes\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionListNodeAttributes\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionListNodeAttributes\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+                return SqPlus::ReturnCopy(v, wxArrayString());
+            else
+                return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        wxArrayString result;
+        for (const TiXmlAttribute *attr = queryResult.element->FirstAttribute();
+             attr;
+             attr = attr->Next())
+        {
+            result.Add(wxString(attr->Name(), wxConvUTF8));
+        }
+        return SqPlus::ReturnCopy(v, result);
+    }
+
+    /// Squirrel function would expect a cbProject, an extension string and attribute name. It will
+    /// return a wxString object.
+    SQInteger cbProject_ExtensionGetNodeAttribute(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 3)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionGetNodeAttribute\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionGetNodeAttribute\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionGetNodeAttribute\"");
+        const wxString *attributeName = SqPlus::GetInstance<wxString, false>(v, 3);
+        if (!attributeName)
+            return sa.ThrowError("Invalid attribute name argument to \"cbProject::ExtensionGetNodeAttribute\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+                return SqPlus::ReturnCopy(v, wxString());
+            else
+                return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        wxString result;
+        const char *attributeValue = queryResult.element->Attribute(attributeName->utf8_str().data());
+        if (attributeValue)
+            result = wxString(attributeValue, wxConvUTF8);
+        return SqPlus::ReturnCopy(v, result);
+    }
+
+    /// Squirrel function would expect a cbProject, an extension string, attribute name and
+    /// attribute value.
+    SQInteger cbProject_ExtensionSetNodeAttribute(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 4)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionSetNodeAttribute\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionSetNodeAttribute\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionSetNodeAttribute\"");
+        const wxString *attributeName = SqPlus::GetInstance<wxString, false>(v, 3);
+        if (!attributeName)
+            return sa.ThrowError("Invalid attribute name argument to \"cbProject::ExtensionSetNodeAttribute\"");
+        const wxString *attributeValue = SqPlus::GetInstance<wxString, false>(v, 4);
+        if (!attributeName)
+            return sa.ThrowError("Invalid attribute value argument to \"cbProject::ExtensionSetNodeAttribute\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+            {
+                queryResult.errorStr.Printf(wxT("Can't find extension node '%s'!"),
+                                            extension->wx_str());
+            }
+            return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        queryResult.element->SetAttribute(attributeName->utf8_str().data(),
+                                          attributeValue->utf8_str().data());
+        project->SetModified(true);
+        return sa.Return();
+    }
+
+    /// Squirrel function would expect a cbProject, an extension string, attribute name.
+    SQInteger cbProject_ExtensionRemoveNodeAttribute(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 3)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionRemoveNodeAttribute\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionRemoveNodeAttribute\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionRemoveNodeAttribute\"");
+        const wxString *attributeName = SqPlus::GetInstance<wxString, false>(v, 3);
+        if (!attributeName)
+            return sa.ThrowError("Invalid attribute name argument to \"cbProject::ExtensionRemoveNodeAttribute\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+            {
+                queryResult.errorStr.Printf(wxT("Can't find extension node '%s'!"),
+                                            extension->wx_str());
+            }
+            return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        queryResult.element->RemoveAttribute(attributeName->utf8_str().data());
+        project->SetModified(true);
+        return sa.Return();
+    }
+
+    /// Squirrel function would expect a cbProject, an extension string and node name.
+    /// It will return the extension of the newly created node, so it could be used in other
+    /// node calls.
+    SQInteger cbProject_ExtensionAddNode(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 3)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionAddNode\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionAddNode\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionAddNode\"");
+        const wxString *nodeName = SqPlus::GetInstance<wxString, false>(v, 3);
+        if (!nodeName)
+            return sa.ThrowError("Invalid node name argument to \"cbProject::ExtensionAddNode\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+            {
+                queryResult.errorStr.Printf(wxT("Can't find extension node '%s'!"),
+                                            extension->wx_str());
+            }
+            return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        TiXmlNode *newNode = queryResult.element->InsertEndChild(TiXmlElement(cbU2C(*nodeName)));
+        const wxString resultExtension = FindFullExtensionPathForNode(newNode);
+        project->SetModified(true);
+        return SqPlus::ReturnCopy(v, resultExtension);
+    }
+
+    /// Squirrel function would expect a cbProject and extension string.
+    SQInteger cbProject_ExtensionRemoveNode(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount != 2)
+            return sa.ThrowError("Invalid arguments to \"cbProject::ExtensionRemoveNode\"");
+
+        cbProject *project = SqPlus::GetInstance<cbProject, false>(v, 1);
+        if (!project)
+            return sa.ThrowError("Invalid project argument to \"cbProject::ExtensionRemoveNode\"");
+        const wxString *extension = SqPlus::GetInstance<wxString, false>(v, 2);
+        if (!extension)
+            return sa.ThrowError("Invalid extension argument to \"cbProject::ExtensionRemoveNode\"");
+
+        FindXmlElementResult queryResult = FindExtensionElement(project, *extension);
+        if (queryResult.element == nullptr)
+        {
+            if (queryResult.errorStr.empty())
+            {
+                queryResult.errorStr.Printf(wxT("Can't find extension node '%s'!"),
+                                            extension->wx_str());
+            }
+            return sa.ThrowError(queryResult.errorStr.utf8_str().data());
+        }
+
+        TiXmlNode *parent = queryResult.element->Parent();
+        parent->RemoveChild(queryResult.element);
+        project->SetModified(true);
+        return sa.Return();
     }
 
     SQInteger ProjectManager_AddFileToProject(HSQUIRRELVM v)
@@ -447,6 +847,8 @@ namespace ScriptBindings
                 func(&CompileOptionsBase::SupportsCurrentPlatform, "SupportsCurrentPlatform").
                 func(&CompileOptionsBase::SetLinkerOptions, "SetLinkerOptions").
                 func(&CompileOptionsBase::SetLinkLibs, "SetLinkLibs").
+                func(&CompileOptionsBase::SetLinkerExecutable, "SetLinkerExecutable").
+                func(&CompileOptionsBase::GetLinkerExecutable, "GetLinkerExecutable").
                 func(&CompileOptionsBase::SetCompilerOptions, "SetCompilerOptions").
                 func(&CompileOptionsBase::SetResourceCompilerOptions, "SetResourceCompilerOptions").
                 func(&CompileOptionsBase::SetIncludeDirs, "SetIncludeDirs").
@@ -536,7 +938,7 @@ namespace ScriptBindings
                 func(&CompileTargetBase::MakeCommandsModified, "MakeCommandsModified");
 
         SqPlus::SQClassDef<ProjectBuildTarget>("ProjectBuildTarget", "CompileTargetBase").
-                func(&ProjectBuildTarget::GetParentProject, "GetParentProject").
+                func<const cbProject* (ProjectBuildTarget::*)() const>(&ProjectBuildTarget::GetParentProject, "GetParentProject").
                 func(&ProjectBuildTarget::GetFullTitle, "GetFullTitle").
                 func(&ProjectBuildTarget::GetExternalDeps, "GetExternalDeps").
                 func(&ProjectBuildTarget::SetExternalDeps, "SetExternalDeps").
@@ -587,7 +989,7 @@ namespace ScriptBindings
                 func(&cbProject::SetActiveBuildTarget, "SetActiveBuildTarget").
                 func(&cbProject::GetActiveBuildTarget, "GetActiveBuildTarget").
                 func(&cbProject::SelectTarget, "SelectTarget").
-                func(&cbProject::GetCurrentlyCompilingTarget, "GetCurrentlyCompilingTarget").
+                func<const ProjectBuildTarget* (cbProject::*)() const>(&cbProject::GetCurrentlyCompilingTarget, "GetCurrentlyCompilingTarget").
                 func(&cbProject::SetCurrentlyCompilingTarget, "SetCurrentlyCompilingTarget").
                 func(&cbProject::GetModeForPCH, "GetModeForPCH").
                 func(&cbProject::SetModeForPCH, "SetModeForPCH").
@@ -601,7 +1003,13 @@ namespace ScriptBindings
                 func(&cbProject::GetCheckForExternallyModifiedFiles, "GetCheckForExternallyModifiedFiles").
                 func(&cbProject::ShowNotes, "ShowNotes").
                 func(&cbProject::AddToExtensions, "AddToExtensions").
-                staticFuncVarArgs(cbProject_CallHooks, "CallHooks", "*").
+                staticFuncVarArgs(cbProject_ExtensionListNodes, "ExtensionListNodes", "*").
+                staticFuncVarArgs(cbProject_ExtensionListNodeAttributes, "ExtensionListNodeAttributes", "*").
+                staticFuncVarArgs(cbProject_ExtensionGetNodeAttribute, "ExtensionGetNodeAttribute", "*").
+                staticFuncVarArgs(cbProject_ExtensionSetNodeAttribute, "ExtensionSetNodeAttribute", "*").
+                staticFuncVarArgs(cbProject_ExtensionRemoveNodeAttribute, "ExtensionRemoveNodeAttribute", "*").
+                staticFuncVarArgs(cbProject_ExtensionAddNode, "ExtensionAddNode", "*").
+                staticFuncVarArgs(cbProject_ExtensionRemoveNode, "ExtensionRemoveNode", "*").
                 func(&cbProject::DefineVirtualBuildTarget, "DefineVirtualBuildTarget").
                 func(&cbProject::HasVirtualBuildTarget, "HasVirtualBuildTarget").
                 func(&cbProject::RemoveVirtualBuildTarget, "RemoveVirtualBuildTarget").

@@ -1,12 +1,5 @@
-#ifndef HEADER_8420C535795AC84B
-#define HEADER_8420C535795AC84B
-
-#ifdef __GNUG__
-// #pragma interface
-#endif
-
-#ifndef __COMMAND_H__
-#define __COMMAND_H__
+#ifndef __COMMANDS_H__
+#define __COMMANDS_H__
 
 #include <wx/cmdproc.h>
 
@@ -19,10 +12,10 @@ class NassiEditTextCommand: public wxCommand
 {
 public:
     NassiEditTextCommand( NassiFileContent *nfc, NassiBrick *brick, const wxString &str, wxInt32 nmbr);
-    virtual ~NassiEditTextCommand(void);
+    virtual ~NassiEditTextCommand();
 
-    bool Do(void);
-    bool Undo(void);
+    bool Do();
+    bool Undo();
 protected:
     NassiBrick *m_brick;
     wxString m_str;
@@ -33,13 +26,14 @@ private:
     NassiEditTextCommand(const NassiEditTextCommand &p);
     NassiEditTextCommand &operator=(const NassiEditTextCommand &rhs);
 };
+
 class NassiAddChildIndicatorCommand: public wxCommand
 {
 public:
     NassiAddChildIndicatorCommand( NassiFileContent *nfc, NassiBrick *brick, NassiBrick *InsrBrick, wxUint32 ChildAddNumber, wxString _strc = _T(""), wxString _strs = _T("") );
-    virtual ~NassiAddChildIndicatorCommand(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiAddChildIndicatorCommand();
+    bool Do();
+    bool Undo();
 
 protected:
     NassiFileContent *m_nfc;
@@ -53,6 +47,7 @@ private:
     NassiAddChildIndicatorCommand(const NassiAddChildIndicatorCommand &p);
     NassiAddChildIndicatorCommand &operator=(const NassiAddChildIndicatorCommand &rhs);
 };
+
 class NassiInsertFirstBrick:public wxCommand
 {
 protected:
@@ -62,13 +57,14 @@ protected:
     NassiBrick *m_nlbrk;
 public:
     NassiInsertFirstBrick( NassiFileContent *nfc, NassiBrick *InsrBrick,  bool CanUndo = true);
-    virtual ~NassiInsertFirstBrick(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiInsertFirstBrick();
+    bool Do();
+    bool Undo();
 private:
     NassiInsertFirstBrick(const NassiInsertFirstBrick &p);
     NassiInsertFirstBrick &operator=(const NassiInsertFirstBrick &rhs);
 };
+
 class NassiInsertChildBrickCommand: public wxCommand
 {
 protected:
@@ -80,9 +76,9 @@ protected:
     wxUint32 m_childNumber;
 public :
     NassiInsertChildBrickCommand( NassiFileContent *nfc, NassiBrick *brick, NassiBrick *InsrBrick, wxUint32 ChildNumber);
-    virtual ~NassiInsertChildBrickCommand(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiInsertChildBrickCommand();
+    bool Do();
+    bool Undo();
 private:
     NassiInsertChildBrickCommand(const NassiInsertChildBrickCommand &p);
     NassiInsertChildBrickCommand &operator=(const NassiInsertChildBrickCommand &rhs);
@@ -98,13 +94,14 @@ protected:
     NassiBrick *m_nlbrk;
 public:
     NassiInsertBrickBefore( NassiFileContent *nfc, NassiBrick *brick, NassiBrick *InsrBrick);
-    virtual ~NassiInsertBrickBefore(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiInsertBrickBefore();
+    bool Do();
+    bool Undo();
 private:
     NassiInsertBrickBefore(const NassiInsertBrickBefore &p);
     NassiInsertBrickBefore &operator=(const NassiInsertBrickBefore &rhs);
 };
+
 class NassiInsertBrickAfter : public wxCommand
 {
 protected:
@@ -115,13 +112,14 @@ protected:
     NassiBrick *m_nlbrk;
 public:
     NassiInsertBrickAfter( NassiFileContent *nfc, NassiBrick *brick, NassiBrick *InsrBrick);
-    virtual ~NassiInsertBrickAfter(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiInsertBrickAfter();
+    bool Do();
+    bool Undo();
 private:
     NassiInsertBrickAfter(const NassiInsertBrickAfter &p);
     NassiInsertBrickAfter &operator=(const NassiInsertBrickAfter &rhs);
 };
+
 class NassiDeleteCommand : public wxCommand
 {
 protected:
@@ -137,13 +135,14 @@ protected:
     bool firstCall;
 public:
     NassiDeleteCommand( NassiFileContent *nfc, NassiBrick *first, NassiBrick *last);
-    virtual ~NassiDeleteCommand(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiDeleteCommand();
+    bool Do();
+    bool Undo();
 private:
     NassiDeleteCommand(const NassiDeleteCommand &p);
     NassiDeleteCommand &operator=(const NassiDeleteCommand &rhs);
 };
+
 class NassiDeleteChildRootCommand : public wxCommand
 {
 protected:
@@ -155,20 +154,21 @@ protected:
     wxInt32 m_childNmbr;
 public:
     NassiDeleteChildRootCommand(NassiFileContent *nfc, NassiBrick *parent, wxInt32 childNumber );
-    virtual ~NassiDeleteChildRootCommand(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiDeleteChildRootCommand();
+    bool Do();
+    bool Undo();
 private:
     NassiDeleteChildRootCommand(const NassiDeleteChildRootCommand &p);
     NassiDeleteChildRootCommand &operator=(const NassiDeleteChildRootCommand &rhs);
 };
+
 class NassiMoveBrick : public wxCommand
 {
 public:
     NassiMoveBrick( wxCommand *addCmd, wxCommand *delCmd);
-    virtual ~NassiMoveBrick(void);
-    bool Do(void);
-    bool Undo(void);
+    virtual ~NassiMoveBrick();
+    bool Do();
+    bool Undo();
 protected:
     wxCommand *m_addCmd;
     wxCommand *m_delCmd;
@@ -179,5 +179,3 @@ private:
 
 
 #endif
-
-#endif // header guard 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10194 $
- * $Id: parserthreadedtask.cpp 10194 2015-04-07 19:24:07Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/parserthreadedtask.cpp $
+ * $Revision: 11505 $
+ * $Id: parserthreadedtask.cpp 11505 2018-10-20 14:29:48Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parserthreadedtask.cpp $
  */
 
 #include <sdk.h>
@@ -73,10 +73,12 @@ int ParserThreadedTask::Execute()
 
     CC_LOCKER_TRACK_P_MTX_UNLOCK(m_ParserMutex);
 
+    // Here, it first parse the predefs, which is the predefined macros
     TRACE(_T("ParserThreadedTask::Execute(): Parse predefined macros(in buffer)"));
     if (!preDefs.IsEmpty())
         m_Parser->ParseBuffer(preDefs, false, false);
 
+    // clear the predefined macro string after it get parsed
     m_Parser->ClearPredefinedMacros();
 
     if (m_Parser->m_IgnoreThreadEvents)

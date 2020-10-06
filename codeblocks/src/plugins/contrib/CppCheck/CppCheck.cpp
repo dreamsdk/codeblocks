@@ -73,8 +73,6 @@ CppCheck::CppCheck() :
     m_ListLogPageIndex(0),
     m_PATH(wxEmptyString)
 {
-    if (!Manager::LoadResource(_T("CppCheck.zip")))
-        NotifyMissingFile(_T("CppCheck.zip"));
 }
 
 CppCheck::~CppCheck()
@@ -331,7 +329,7 @@ void CppCheck::DoCppCheckAnalysis(const wxString& Xml)
 
         bool ErrorsPresent = false;
         TiXmlElement* resultNode = Handle.ToElement();
-        if (nullptr!=resultNode->Attribute("version"))
+        if (resultNode && resultNode->Attribute("version"))
         {
             wxString Version = wxString::FromAscii(resultNode->Attribute("version"));
             if ( Version.IsSameAs(wxT("2")) )

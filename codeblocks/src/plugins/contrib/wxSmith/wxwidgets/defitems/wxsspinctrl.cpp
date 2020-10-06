@@ -17,7 +17,7 @@
 *
 * $Revision: 11154 $
 * $Id: wxsspinctrl.cpp 11154 2017-08-15 21:52:38Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinctrl.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinctrl.cpp $
 */
 
 #include "wxsspinctrl.h"

@@ -17,7 +17,7 @@
 *
 * $Revision: 10431 $
 * $Id: wxssizerflagsproperty.h 10431 2015-08-29 08:47:48Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssizerflagsproperty.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssizerflagsproperty.h $
 */
 
 #ifndef WXSSIZERFLAGSPROPERTY_H

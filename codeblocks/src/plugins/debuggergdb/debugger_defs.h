@@ -10,8 +10,10 @@
 #include <wx/dynarray.h>
 #include <deque>
 #include <vector>
+#include <unordered_map>
 
 #include "debuggermanager.h"
+#include "cbplugin.h"
 
 class DebuggerDriver;
 
@@ -112,12 +114,14 @@ class DebuggerContinueBaseCmd : public DebuggerCmd
 };
 
 /** Action-only debugger command to signal the watches tree to update. */
-class DbgCmd_UpdateWatchesTree : public DebuggerCmd
+class DbgCmd_UpdateWindow : public DebuggerCmd
 {
     public:
-        DbgCmd_UpdateWatchesTree(DebuggerDriver* driver);
-        virtual ~DbgCmd_UpdateWatchesTree(){}
-        virtual void Action();
+        DbgCmd_UpdateWindow(DebuggerDriver* driver, cbDebuggerPlugin::DebugWindows windowToUpdate);
+        void Action() override;
+
+    private:
+        cbDebuggerPlugin::DebugWindows m_windowToUpdate;
 };
 
 /** Debugger breakpoint interface.
@@ -223,7 +227,7 @@ class GDBWatch : public cbWatch
         virtual void GetType(wxString &type) const;
         virtual void SetType(const wxString &type);
 
-        virtual wxString const & GetDebugString() const;
+        virtual wxString GetDebugString() const;
 
         wxString MakeSymbolToAddress() const override;
         bool IsPointerType() const override;
@@ -256,11 +260,58 @@ class GDBWatch : public cbWatch
         int m_array_count;
         bool m_is_array;
         bool m_forTooltip;
-    };
+};
 
-typedef std::vector<cb::shared_ptr<GDBWatch> > WatchesContainer;
+class GDBMemoryRangeWatch  : public cbWatch
+{
+    public:
+        GDBMemoryRangeWatch(uint64_t address, uint64_t size, const wxString& symbol);
+
+    public:
+        void GetSymbol(wxString &symbol) const override { symbol = m_symbol; }
+        void GetValue(wxString &value) const override { value = m_value; }
+        bool SetValue(const wxString &value) override;
+        void GetFullWatchString(wxString &full_watch) const override { full_watch = wxEmptyString; }
+        void GetType(wxString &type) const override { type = wxT("Memory range"); }
+        void SetType(cb_unused const wxString &type) override {}
+
+        wxString GetDebugString() const override { return wxString(); }
+
+        wxString MakeSymbolToAddress() const override;
+        bool IsPointerType() const override { return false; }
+
+        uint64_t GetAddress() const { return m_address; }
+        uint64_t GetSize() const { return m_size; }
+
+    private:
+        uint64_t m_address;
+        uint64_t m_size;
+        wxString m_symbol;
+        wxString m_value;
+};
+
+typedef std::vector<cb::shared_ptr<GDBWatch>> WatchesContainer;
+typedef std::vector<cb::shared_ptr<GDBMemoryRangeWatch>> MemoryRangeWatchesContainer;
+
+
+enum class WatchType
+{
+    Normal,
+    MemoryRange
+};
+
+typedef std::unordered_map<cb::shared_ptr<cbWatch>, WatchType> MapWatchesToType;
 
 bool IsPointerType(wxString type);
 wxString CleanStringValue(wxString value);
+
+enum DebuggerLanguage
+{
+    dl_Cpp = 0, ///< C++ or C language.
+    dl_Fortran  ///< Fortran language.
+};
+
+extern DebuggerLanguage g_DebugLanguage;
+
 
 #endif // DEBUGGER_DEFS_H

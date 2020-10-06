@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10920 $
- * $Id: cdb_driver.cpp 10920 2016-11-09 18:32:43Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/cdb_driver.cpp $
+ * $Revision: 11858 $
+ * $Id: cdb_driver.cpp 11858 2019-09-29 12:53:40Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/cdb_driver.cpp $
  */
 
 #include <sdk.h>
@@ -107,7 +107,8 @@ void CDB_driver::SetTarget(ProjectBuildTarget* target)
     m_Target = target;
 }
 
-void CDB_driver::Prepare(cb_unused bool isConsole, cb_unused int printElements)
+void CDB_driver::Prepare(cb_unused bool isConsole, cb_unused int printElements,
+                         cb_unused const RemoteDebugging &remoteDebugging)
 {
 	// The very first command won't get the right output back due to the spam on CDB launch.
 	// Throw in a dummy command to flush the output buffer.
@@ -214,6 +215,11 @@ void CDB_driver::SetVarValue(cb_unused const wxString& var, cb_unused const wxSt
     NOT_IMPLEMENTED();
 }
 
+void CDB_driver::SetMemoryRangeValue(cb_unused uint64_t addr, cb_unused const wxString& value)
+{
+    NOT_IMPLEMENTED();
+}
+
 void CDB_driver::MemoryDump()
 {
     NOT_IMPLEMENTED();
@@ -271,13 +277,13 @@ void CDB_driver::EvaluateSymbol(const wxString& symbol, const wxRect& tipRect)
 
 void CDB_driver::UpdateWatches(cb_unused cb::shared_ptr<GDBWatch> localsWatch,
                                cb_unused cb::shared_ptr<GDBWatch> funcArgsWatch,
-                               WatchesContainer &watches)
+                               WatchesContainer &watches, bool ignoreAutoUpdate)
 {
     bool updateWatches = false;
     for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
     {
         WatchesContainer::reference watch = *it;
-        if (watch->IsAutoUpdateEnabled())
+        if (watch->IsAutoUpdateEnabled() || ignoreAutoUpdate)
         {
             QueueCommand(new CdbCmd_Watch(this, *it));
             updateWatches = true;
@@ -285,7 +291,7 @@ void CDB_driver::UpdateWatches(cb_unused cb::shared_ptr<GDBWatch> localsWatch,
     }
 
     if (updateWatches)
-        QueueCommand(new DbgCmd_UpdateWatchesTree(this));
+        QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::Watches));
 
     // FIXME (obfuscated#): reimplement this code
 //    // start updating watches tree
@@ -309,10 +315,11 @@ void CDB_driver::UpdateWatches(cb_unused cb::shared_ptr<GDBWatch> localsWatch,
 void CDB_driver::UpdateWatch(const cb::shared_ptr<GDBWatch> &watch)
 {
     QueueCommand(new CdbCmd_Watch(this, watch));
-    QueueCommand(new DbgCmd_UpdateWatchesTree(this));
+    QueueCommand(new DbgCmd_UpdateWindow(this, cbDebuggerPlugin::DebugWindows::Watches));
 }
 
-void CDB_driver::UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bool locals)
+void CDB_driver::UpdateWatchLocalsArgs(cb_unused cb::shared_ptr<GDBWatch> const &watch,
+                                       cb_unused bool locals)
 {
     // FIXME (obfuscated#): implement this
 }
@@ -320,6 +327,19 @@ void CDB_driver::UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bo
 void CDB_driver::Attach(cb_unused int pid)
 {
     // FIXME (obfuscated#): implement this
+}
+
+void CDB_driver::UpdateMemoryRangeWatches(cb_unused MemoryRangeWatchesContainer &watches,
+                                          cb_unused bool ignoreAutoUpdate)
+{
+    // FIXME (bluehazzard#): implement this
+    NOT_IMPLEMENTED();
+}
+
+void CDB_driver::UpdateMemoryRangeWatch(cb_unused const cb::shared_ptr<GDBMemoryRangeWatch> &watch)
+{
+    // FIXME (bluehazzard#): implement this
+    NOT_IMPLEMENTED();
 }
 
 void CDB_driver::Detach()

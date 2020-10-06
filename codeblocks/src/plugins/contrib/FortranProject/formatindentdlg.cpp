@@ -1,10 +1,12 @@
+
 #include "formatindentdlg.h"
-#include <editormanager.h>
-#include "cbeditor.h"
-#include <cbstyledtextctrl.h>
-#include <configmanager.h>
 
-
+#ifndef CB_PRECOMP
+    #include <editormanager.h>
+    #include <configmanager.h>
+    #include <cbstyledtextctrl.h>
+    #include "cbeditor.h"
+#endif
 
 //(*InternalHeaders(FormatIndentDlg)
 #include <wx/intl.h>

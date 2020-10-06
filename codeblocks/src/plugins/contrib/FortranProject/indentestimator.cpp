@@ -1,7 +1,11 @@
 
 #include "indentestimator.h"
-#include <configmanager.h>
-#include <wx/tokenzr.h>
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
+    #include <configmanager.h>
+#endif
 
 FormatIndentCodeTree::FormatIndentCodeTree()
 {
@@ -144,7 +148,7 @@ void IndentEstimator::CreateFormatIndentRegEx()
 	m_RegEx[wxT("regexInterface")] = new wxRegEx( wxT("^(\\s*)((abstract)(\\s+))?(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$"), options );
 	m_RegEx[wxT("regexEndInterface")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$"), options );
 	m_RegEx[wxT("regexContains")] = new wxRegEx( wxT("^(\\s*)(contains)((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexSubroutine")] = new wxRegEx( wxT("^(\\s*)(((pure)|(impure))(\\s+))?(((recursive)|(elemental))(\\s+))?((module)(\\s+))?(subroutine)(\\s+)([a-zA-Z0-9_]+)((\\s*)(\\()(\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)(\\))(\\s*))?"), options );
+	m_RegEx[wxT("regexSubroutine")] = new wxRegEx( wxT("^(\\s*)(((pure)|(impure)|(elemental)|(recursive)|(non_recursive)|(module))(\\s+))*((\\s+))?(subroutine)(\\s+)([a-zA-Z0-9_]+)((\\s*)(\\()(\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)(\\))(\\s*))?"), options );
 	m_RegEx[wxT("regexFunction")] = new wxRegEx( wxT("^(((.*)(\\s+))|(\\s*)){1}(function)(\\s+)([a-zA-Z0-9_]+)(\\s*)\\((\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)\\)"), options );
 	m_RegEx[wxT("regexType")] = new wxRegEx( wxT("^(\\s*)((type)(\\s*)(\\()(\\s*)([a-zA-Z0-9_]+)(\\s*)(\\)))(\\s*)"), options );
 	m_RegEx[wxT("regexTypeDefine")] = new wxRegEx( wxT("^(\\s*)((type)\\M((\\s*),(\\s*)((public)|(private)|(protected)))?((\\s*),(\\s*)((abstract)|((extends)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\))))?((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-z0-9_]+)(\\s*)\\)))?((\\s*)(::)?(\\s*)([a-zA-Z0-9_]+)))(\\s*)"), options );

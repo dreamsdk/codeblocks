@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11139 $
- * $Id: environmentsettingsdlg.cpp 11139 2017-08-12 22:37:55Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/environmentsettingsdlg.cpp $
+ * $Revision: 11847 $
+ * $Id: environmentsettingsdlg.cpp 11847 2019-09-08 22:38:06Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/environmentsettingsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -43,6 +43,7 @@
 #include <wx/listbook.h>
 
 #include "annoyingdialog.h"
+#include "appglobals.h"
 #include "configurationpanel.h"
 #include "environmentsettingsdlg.h"
 #include "cbcolourmanager.h"
@@ -69,6 +70,8 @@ const wxString base_imgs[] =
 };
 const int IMAGES_COUNT = sizeof(base_imgs) / sizeof(wxString);
 
+const int iconSizes[] = { 16, 24, 32, 64 };
+
 BEGIN_EVENT_TABLE(EnvironmentSettingsDlg, wxScrollingDialog)
     EVT_BUTTON(XRCID("btnSetAssocs"), EnvironmentSettingsDlg::OnSetAssocs)
     EVT_BUTTON(XRCID("btnManageAssocs"), EnvironmentSettingsDlg::OnManageAssocs)
@@ -82,15 +85,15 @@ BEGIN_EVENT_TABLE(EnvironmentSettingsDlg, wxScrollingDialog)
     EVT_BUTTON(XRCID("btnAuiInactiveCaptionTextColour"), EnvironmentSettingsDlg::OnChooseColour)
     EVT_BUTTON(XRCID("btnResetDefaultColours"), EnvironmentSettingsDlg::OnResetDefaultColours)
     EVT_CHECKBOX(XRCID("chkUseIPC"), EnvironmentSettingsDlg::OnUseIpcCheck)
-    EVT_CHECKBOX(XRCID("chkDoPlace"), EnvironmentSettingsDlg::OnPlaceCheck)
+    EVT_CHOICE(XRCID("chChildWindowPlace"), EnvironmentSettingsDlg::OnPlaceCheck)
     EVT_CHECKBOX(XRCID("chkPlaceHead"), EnvironmentSettingsDlg::OnHeadCheck)
     EVT_CHECKBOX(XRCID("chkAutoHideMessages"), EnvironmentSettingsDlg::OnAutoHide)
     EVT_CHECKBOX(XRCID("chkI18N"), EnvironmentSettingsDlg::OnI18NCheck)
-    EVT_RADIOBOX(XRCID("rbSettingsIconsSize"), EnvironmentSettingsDlg::OnSettingsIconsSize)
     EVT_CHECKBOX(XRCID("chkDblClkMaximizes"), EnvironmentSettingsDlg::OnDblClickMaximizes)
     EVT_CHECKBOX(XRCID("chkNBUseMousewheel"), EnvironmentSettingsDlg::OnUseTabMousewheel)
 
     EVT_CHOICE(XRCID("chCategory"), EnvironmentSettingsDlg::OnChooseAppColourCategory)
+    EVT_CHOICE(XRCID("chSettingsIconsSize"), EnvironmentSettingsDlg::OnSettingsIconsSize)
     EVT_LISTBOX(XRCID("lstColours"), EnvironmentSettingsDlg::OnChooseAppColourItem)
     EVT_BUTTON(XRCID("btnColour"), EnvironmentSettingsDlg::OnClickAppColour)
     EVT_BUTTON(XRCID("btnDefaultColour"), EnvironmentSettingsDlg::OnClickAppColour)
@@ -127,6 +130,7 @@ EnvironmentSettingsDlg::EnvironmentSettingsDlg(wxWindow* parent, wxAuiDockArt* a
     XRCCTRL(*this, "chkAssociations",       wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/check_associations"),     true));
     XRCCTRL(*this, "chkModifiedFiles",      wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/check_modified_files"),   true));
     XRCCTRL(*this, "chkInvalidTargets",     wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/ignore_invalid_targets"), true));
+    XRCCTRL(*this, "chkRobustSave",         wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/robust_save"), true));
     XRCCTRL(*this, "rbAppStart", wxRadioBox)->SetSelection(cfg->ReadBool(_T("/environment/blank_workspace"), true) ? 1 : 0);
     XRCCTRL(*this, "chkProjectLayout",      wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/enable_project_layout"),  true));
     XRCCTRL(*this, "chkEditorLayout",       wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/enable_editor_layout"),   false));
@@ -164,14 +168,46 @@ EnvironmentSettingsDlg::EnvironmentSettingsDlg(wxWindow* parent, wxAuiDockArt* a
     XRCCTRL(*this, "txtOpenFolder", wxTextCtrl)->SetValue(openFolderCommand);
 
     // tab "View"
-    bool do_place = cfg->ReadBool(_T("/dialog_placement/do_place"), false);
-    XRCCTRL(*this, "chkDoPlace", wxCheckBox)->SetValue(do_place);
+    const cbChildWindowPlacement childWindowPlacement = cbGetChildWindowPlacement(*cfg);
+    XRCCTRL(*this, "chChildWindowPlace", wxChoice)->SetSelection(int(childWindowPlacement));
     XRCCTRL(*this, "chkPlaceHead", wxCheckBox)->SetValue(cfg->ReadInt(_T("/dialog_placement/dialog_position"), 0) == pdlHead ? 1 : 0);
-    XRCCTRL(*this, "chkPlaceHead", wxCheckBox)->Enable(do_place);
+    XRCCTRL(*this, "chkPlaceHead", wxCheckBox)->Enable(childWindowPlacement == cbChildWindowPlacement::CenterOnDisplay);
 
-    XRCCTRL(*this, "rbProjectOpen",           wxRadioBox)->SetSelection(pcfg->ReadInt(_T("/open_files"), 1));
-    XRCCTRL(*this, "rbToolbarSize",           wxRadioBox)->SetSelection(cfg->ReadBool(_T("/environment/toolbar_size"), true) ? 1 : 0);
-    XRCCTRL(*this, "rbSettingsIconsSize",     wxRadioBox)->SetSelection(cfg->ReadInt(_T("/environment/settings_size"), 0));
+    XRCCTRL(*this, "rbProjectOpen", wxRadioBox)->SetSelection(pcfg->ReadInt(_T("/open_files"), 1));
+
+    {
+        const int size = cbHelpers::ReadToolbarSizeFromConfig();
+
+        int selection = -1;
+        for (int ii = 0; ii < cbCountOf(iconSizes); ++ii)
+        {
+            if (size == iconSizes[ii])
+            {
+                selection = ii;
+                break;
+            }
+        }
+
+        wxChoice *control = XRCCTRL(*this, "chToolbarIconSize", wxChoice);
+        const double actualScaleFactor = cbGetActualContentScaleFactor(*Manager::Get()->GetAppFrame());
+        int scaledSize;
+
+        scaledSize = cbFindMinSize16to64(iconSizes[0] * actualScaleFactor);
+        control->Append(_("Normal") + wxString::Format(wxT(" (%dx%d)"), scaledSize, scaledSize));
+
+        scaledSize = cbFindMinSize16to64(iconSizes[1] * actualScaleFactor);
+        control->Append(_("Large") + wxString::Format(wxT(" (%dx%d)"), scaledSize, scaledSize));
+
+        scaledSize = cbFindMinSize16to64(iconSizes[2] * actualScaleFactor);
+        control->Append(_("Larger") + wxString::Format(wxT(" (%dx%d)"), scaledSize, scaledSize));
+
+        scaledSize = cbFindMinSize16to64(iconSizes[3] * actualScaleFactor);
+        control->Append(_("Largest") + wxString::Format(wxT(" (%dx%d)"), scaledSize, scaledSize));
+
+        control->SetSelection(selection);
+    }
+
+    XRCCTRL(*this, "chSettingsIconsSize",     wxChoice)->SetSelection(cfg->ReadInt(_T("/environment/settings_size"), 0));
     XRCCTRL(*this, "chkShowStartPage",        wxCheckBox)->SetValue(cfg->ReadBool(_T("/environment/start_here_page"), true));
     XRCCTRL(*this, "spnLogFontSize",          wxSpinCtrl)->SetValue(mcfg->ReadInt(_T("/log_font_size"), 8));
 
@@ -226,16 +262,19 @@ EnvironmentSettingsDlg::EnvironmentSettingsDlg(wxWindow* parent, wxAuiDockArt* a
             {
                 const wxLanguageInfo* info = wxLocale::FindLanguageInfo(locFName);
                 if (info)
-                    XRCCTRL(*this, "cbxLanguage", wxComboBox)->Append(info->Description);
+                    XRCCTRL(*this, "choLanguage", wxChoice)->Append(info->Description);
             } while ( locDir.GetNext(&locFName) );
         }
     }
 
-    XRCCTRL(*this, "cbxLanguage", wxComboBox)->Enable(i18n);
+    XRCCTRL(*this, "choLanguage", wxChoice)->Enable(i18n);
 
     const wxLanguageInfo* info = wxLocale::FindLanguageInfo(cfg->Read(_T("/locale/language")));
     if (info)
-        XRCCTRL(*this, "cbxLanguage", wxComboBox)->SetStringSelection(info->Description);
+    {
+        const int position = XRCCTRL(*this, "choLanguage", wxChoice)->FindString(info->Description);
+        XRCCTRL(*this, "choLanguage", wxChoice)->SetSelection(position);
+    }
 
 
     // tab "Notebook"
@@ -372,7 +411,7 @@ void EnvironmentSettingsDlg::UpdateListbookImages()
     wxListbook* lb = XRCCTRL(*this, "nbMain", wxListbook);
     int sel = lb->GetSelection();
 
-    if (SettingsIconsStyle(XRCCTRL(*this, "rbSettingsIconsSize", wxRadioBox)->GetSelection()) == sisNoIcons)
+    if (SettingsIconsStyle(XRCCTRL(*this, "chSettingsIconsSize", wxChoice)->GetSelection()) == sisNoIcons)
     {
         SetSettingsIconsStyle(lb->GetListView(), sisNoIcons);
         lb->SetImageList(nullptr);
@@ -505,9 +544,11 @@ void EnvironmentSettingsDlg::OnUseTabMousewheel(cb_unused wxCommandEvent& event)
     XRCCTRL(*this, "chkNBInvertMove", wxCheckBox)->Enable(en);
 }
 
-void EnvironmentSettingsDlg::OnPlaceCheck(wxCommandEvent& event)
+void EnvironmentSettingsDlg::OnPlaceCheck(cb_unused wxCommandEvent& event)
 {
-    XRCCTRL(*this, "chkPlaceHead", wxCheckBox)->Enable(event.IsChecked());
+    wxChoice *place = XRCCTRL(*this, "chChildWindowPlace", wxChoice);
+    const cbChildWindowPlacement placement = cbChildWindowPlacement(place->GetSelection());
+    XRCCTRL(*this, "chkPlaceHead", wxCheckBox)->Enable(placement == cbChildWindowPlacement::CenterOnDisplay);
 }
 
 void EnvironmentSettingsDlg::OnHeadCheck(wxCommandEvent& event)
@@ -517,10 +558,10 @@ void EnvironmentSettingsDlg::OnHeadCheck(wxCommandEvent& event)
 
 void EnvironmentSettingsDlg::OnI18NCheck(wxCommandEvent& event)
 {
-    XRCCTRL(*this, "cbxLanguage", wxComboBox)->Enable(event.IsChecked());
+    XRCCTRL(*this, "choLanguage", wxChoice)->Enable(event.IsChecked());
 }
 
-void EnvironmentSettingsDlg::OnSettingsIconsSize(wxCommandEvent& event)
+void EnvironmentSettingsDlg::OnSettingsIconsSize(cb_unused wxCommandEvent& event)
 {
     UpdateListbookImages();
     Layout();
@@ -543,6 +584,7 @@ void EnvironmentSettingsDlg::EndModal(int retCode)
         cfg->Write(_T("/environment/check_associations"),          (bool) XRCCTRL(*this, "chkAssociations",       wxCheckBox)->GetValue());
         cfg->Write(_T("/environment/check_modified_files"),        (bool) XRCCTRL(*this, "chkModifiedFiles",      wxCheckBox)->GetValue());
         cfg->Write(_T("/environment/ignore_invalid_targets"),      (bool) XRCCTRL(*this, "chkInvalidTargets",     wxCheckBox)->GetValue());
+        cfg->Write(_T("/environment/robust_save"),                 (bool) XRCCTRL(*this, "chkRobustSave",         wxCheckBox)->GetValue());
         cfg->Write(_T("/console_shell"),                                  XRCCTRL(*this, "txtConsoleShell",       wxTextCtrl)->GetValue());
         cfg->Write(_T("/console_terminal"),                               XRCCTRL(*this, "cbConsoleTerm",         wxComboBox)->GetValue());
         cfg->Write(_T("/open_containing_folder"), XRCCTRL(*this, "txtOpenFolder", wxTextCtrl)->GetValue());
@@ -552,8 +594,19 @@ void EnvironmentSettingsDlg::EndModal(int retCode)
         cfg->Write(_T("/environment/enable_project_layout"), (bool) XRCCTRL(*this, "chkProjectLayout", wxCheckBox)->GetValue());
         cfg->Write(_T("/environment/enable_editor_layout"),  (bool) XRCCTRL(*this, "chkEditorLayout", wxCheckBox)->GetValue());
         pcfg->Write(_T("/open_files"),                       (int)  XRCCTRL(*this, "rbProjectOpen", wxRadioBox)->GetSelection());
-        cfg->Write(_T("/environment/toolbar_size"),          (bool) XRCCTRL(*this, "rbToolbarSize", wxRadioBox)->GetSelection() == 1);
-        cfg->Write(_T("/environment/settings_size"),         (int)  XRCCTRL(*this, "rbSettingsIconsSize", wxRadioBox)->GetSelection());
+
+        {
+            const int selection = XRCCTRL(*this, "chToolbarIconSize", wxChoice)->GetSelection();
+            int size = 16;
+            if (selection >= 0 && selection < cbCountOf(iconSizes))
+                size = iconSizes[selection];
+
+            // We call unset to remove the old bool value if it is present.
+            cfg->UnSet(_T("/environment/toolbar_size"));
+            cfg->Write(_T("/environment/toolbar_size"), size);
+        }
+
+        cfg->Write(_T("/environment/settings_size"),         (int)  XRCCTRL(*this, "chSettingsIconsSize", wxChoice)->GetSelection());
         mcfg->Write(_T("/auto_hide"),                        (bool) XRCCTRL(*this, "chkAutoHideMessages", wxCheckBox)->GetValue());
         mcfg->Write(_T("/auto_show_search"),                 (bool) XRCCTRL(*this, "chkAutoShowMessagesOnSearch", wxCheckBox)->GetValue());
         mcfg->Write(_T("/auto_show_build_warnings"),         (bool) XRCCTRL(*this, "chkAutoShowMessagesOnWarn", wxCheckBox)->GetValue());
@@ -567,7 +620,12 @@ void EnvironmentSettingsDlg::EndModal(int retCode)
         cfg->Write(_T("/environment/view/layout_to_toggle"),    XRCCTRL(*this, "choLayoutToToggle", wxChoice)->GetStringSelection());
 
         cfg->Write(_T("/locale/enable"),                     (bool) XRCCTRL(*this, "chkI18N", wxCheckBox)->GetValue());
-        const wxLanguageInfo *info = wxLocale::FindLanguageInfo(XRCCTRL(*this, "cbxLanguage", wxComboBox)->GetStringSelection());
+
+        wxChoice *chLanguage = XRCCTRL(*this, "choLanguage", wxChoice);
+        const int langSelection = chLanguage->GetSelection();
+        const wxLanguageInfo *info = nullptr;
+        if (langSelection != wxNOT_FOUND)
+            info = wxLocale::FindLanguageInfo(chLanguage->GetString(langSelection));
         if (info)
             cfg->Write(_T("/locale/language"), info->CanonicalName);
         else
@@ -575,7 +633,14 @@ void EnvironmentSettingsDlg::EndModal(int retCode)
 
         mcfg->Write(_T("/log_font_size"),                    (int)  XRCCTRL(*this, "spnLogFontSize",          wxSpinCtrl)->GetValue());
 
-        cfg->Write(_T("/dialog_placement/do_place"),         (bool) XRCCTRL(*this, "chkDoPlace",     wxCheckBox)->GetValue());
+        {
+            // Keep in sync with the code in cbGetChildWindowPlacement.
+            int placement = XRCCTRL(*this, "chChildWindowPlace", wxChoice)->GetSelection();
+            if (placement < 0 || placement >= 3)
+                placement = 0;
+            cfg->Write(wxT("/dialog_placement/child_placement"), placement);
+        }
+
         cfg->Write(_T("/dialog_placement/dialog_position"),  (int)  XRCCTRL(*this, "chkPlaceHead",   wxCheckBox)->GetValue() ? pdlHead : pdlCentre);
 
         // tab "Appearence"

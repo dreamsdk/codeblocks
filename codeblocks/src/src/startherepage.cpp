@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9818 $
- * $Id: startherepage.cpp 9818 2014-06-20 05:26:04Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/startherepage.cpp $
+ * $Revision: 11902 $
+ * $Id: startherepage.cpp 11902 2019-11-07 19:14:27Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/startherepage.cpp $
  */
 
 #include <sdk.h>
@@ -47,7 +47,7 @@ class MyHtmlWin : public wxHtmlWindow
         {
         }
 
-        void OnLinkClicked(const wxHtmlLinkInfo& link)
+        void OnLinkClicked(const wxHtmlLinkInfo& link) override
         {
             if (m_pOwner)
             {
@@ -196,21 +196,24 @@ StartHerePage::StartHerePage(wxEvtHandler* owner, const RecentItemsList &project
         buf = _("<html><body><h1>Welcome to Code::Blocks!</h1><br>The default start page seems to be missing...</body></html>");
     delete fs;
 
-    #if defined(_LP64) || defined(_WIN64)
+#if defined(_LP64) || defined(_WIN64)
     const int bit_type = 64;
-    #else
+#else
     const int bit_type = 32;
-    #endif
+#endif
 
-    #ifdef __GNUC__
-    revInfo.Printf(_T("%s (%s)   gcc %d.%d.%d %s/%s - %d bit"),
-                    appglobals::AppActualVersionVerb.c_str(), ConfigManager::GetSvnDate().c_str(),
-                    __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__, appglobals::AppPlatform.c_str(), appglobals::AppWXAnsiUnicode.c_str(), bit_type);
-    #else
-    revInfo.Printf(_T("%s (%s)   %s/%s"),
-                    appglobals::AppActualVersionVerb.c_str(), ConfigManager::GetSvnDate().c_str(),
-                    appglobals::AppPlatform.c_str(), appglobals::AppWXAnsiUnicode.c_str());
-    #endif
+    revInfo.Printf(_T("%s (%s)   "),
+                   appglobals::AppActualVersionVerb.c_str(), ConfigManager::GetSvnDate().c_str());
+
+#if defined(__clang__)
+    revInfo += wxString::Format(wxT("clang %d.%d.%d "), __clang_major__, __clang_minor__,
+                                __clang_patchlevel__);
+#elif defined(__GNUC__)
+    revInfo += wxString::Format(_T("gcc %d.%d.%d "), __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#endif
+    revInfo += wxString::Format(wxT("%s/%s - %d bit"), appglobals::AppPlatform.c_str(),
+                                appglobals::AppWXAnsiUnicode.c_str(), bit_type);
+
     // perform var substitution
     buf.Replace(_T("CB_VAR_REVISION_INFO"), revInfo);
     buf.Replace(_T("CB_VAR_VERSION_VERB"), appglobals::AppActualVersionVerb);

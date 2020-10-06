@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11152 $
- * $Id: debugger_defs.cpp 11152 2017-08-15 21:52:34Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/debugger_defs.cpp $
+ * $Revision: 11820 $
+ * $Id: debugger_defs.cpp 11820 2019-07-30 17:26:39Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debugger_defs.cpp $
  */
 
 #include "sdk.h"
@@ -19,8 +19,10 @@
 #include <cbdebugger_interfaces.h>
 #include "debugger_defs.h"
 #include "debuggerdriver.h"
+#include "debuggergdb.h"
 
 #include <wx/arrimpl.cpp>
+#include <cinttypes>
 
 #if !defined(CB_TEST_PROJECT)
 
@@ -40,14 +42,19 @@ void DebuggerCmd::ParseOutput(const wxString& output)
         m_pDriver->Log(output);
 }
 
-DbgCmd_UpdateWatchesTree::DbgCmd_UpdateWatchesTree(DebuggerDriver* driver)
-    : DebuggerCmd(driver)
+DbgCmd_UpdateWindow::DbgCmd_UpdateWindow(DebuggerDriver* driver,
+                                         cbDebuggerPlugin::DebugWindows windowToUpdate) :
+    DebuggerCmd(driver),
+    m_windowToUpdate(windowToUpdate)
 {
 }
 
-void DbgCmd_UpdateWatchesTree::Action()
+void DbgCmd_UpdateWindow::Action()
 {
-    Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->UpdateWatches();
+    CodeBlocksEvent event(cbEVT_DEBUGGER_UPDATED);
+    event.SetInt(int(m_windowToUpdate));
+    event.SetPlugin(m_pDriver->GetDebugger());
+    Manager::Get()->ProcessEvent(event);
 }
 
 // Custom window to display output of DebuggerInfoCmd
@@ -74,7 +81,7 @@ class DebuggerInfoWindow : public wxScrollingDialog
 
 void DebuggerInfoCmd::ParseOutput(const wxString& output)
 {
-    DebuggerInfoWindow win(Manager::Get()->GetAppWindow(), m_Title, output);
+    DebuggerInfoWindow win(Manager::Get()->GetAppWindow(), m_Title.wx_str(), output);
     win.ShowModal();
 }
 
@@ -230,7 +237,7 @@ void GDBWatch::SetType(const wxString &type)
     m_type = type;
 }
 
-wxString const & GDBWatch::GetDebugString() const
+wxString GDBWatch::GetDebugString() const
 {
     return m_debug_value;
 }
@@ -306,6 +313,34 @@ bool GDBWatch::GetForTooltip() const
     return m_forTooltip;
 }
 
+GDBMemoryRangeWatch::GDBMemoryRangeWatch(uint64_t address, uint64_t size, const wxString& symbol) :
+    m_address(address),
+    m_size(size),
+    m_symbol(symbol)
+{
+}
+
+bool GDBMemoryRangeWatch::SetValue(const wxString &value)
+{
+    if (m_value != value)
+    {
+        m_value = value;
+        MarkAsChanged(true);
+    }
+    return true;
+}
+
+wxString GDBMemoryRangeWatch::MakeSymbolToAddress() const
+{
+    const int tmpBuffSize = 20;
+    char tmpAddress[tmpBuffSize];
+
+    memset(tmpAddress, 0, tmpBuffSize);
+    snprintf(tmpAddress, tmpBuffSize, "0x%" PRIx64 " ", GetAddress());
+
+    return wxString::FromUTF8(tmpAddress);
+};
+
 bool IsPointerType(wxString type)
 {
     type.Trim(true);
@@ -319,6 +354,10 @@ bool IsPointerType(wxString type)
         return true;
     else if (type.EndsWith(wxT("* volatile")))
         return true;
+    else if (type.EndsWith(wxT("* const volatile")))
+        return true;
+    else if (type.EndsWith(wxT("restrict"))) // restrict is only for pointer types
+        return true;
     return false;
 }
 
@@ -330,4 +369,6 @@ wxString CleanStringValue(wxString value)
         value.RemoveLast();
     return value;
 }
+
+DebuggerLanguage g_DebugLanguage = dl_Cpp;
 

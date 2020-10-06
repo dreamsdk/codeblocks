@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsitem.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.h $
+* $Revision: 11442 $
+* $Id: wxsitem.h 11442 2018-08-07 07:14:29Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.h $
 */
 
 #ifndef WXSITEM_H
@@ -324,6 +324,7 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          * to currently generated source code.
          */
         void Codef(const wxChar* Fmt,...);
+        void Codef(const wxString &Fmt,...);
 
         /** \brief Default procedure generating declarations code */
         virtual void OnBuildDeclarationsCode();

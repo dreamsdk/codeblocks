@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10521 $
- * $Id: directcommands.cpp 10521 2015-10-04 01:23:05Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/directcommands.cpp $
+ * $Revision: 11886 $
+ * $Id: directcommands.cpp 11886 2019-10-26 09:12:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/directcommands.cpp $
  */
 
 #include <sdk.h>
@@ -273,14 +273,8 @@ wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, 
         Manager::Get()->GetLogManager()->DebugLog(F(_T("GetCompileFileCommand[2]: source_file='%s'."),
                                                     source_file.wx_str()));
 #endif
-
-        m_pGenerator->GenerateCommandLine(compiler_cmd,
-                                          target,
-                                          pf,
-                                          source_file,
-                                          object,
-                                          pfd.object_file_flat,
-                                          pfd.dep_file);
+        m_pGenerator->GenerateCommandLine(compiler_cmd, target, pf, source_file, object,
+                                          pfd.object_file_flat, pfd.dep_file);
     }
 
     if (!is_header && compiler_cmd.IsEmpty())
@@ -329,7 +323,7 @@ wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, 
                             ? pfd.object_file_flat_absolute_native
                             : pfd.object_file_absolute_native;
 
-        if ( !wxRemoveFile(object_abs) )
+        if ( wxFileExists(object_abs) && !wxRemoveFile(object_abs) )
             Manager::Get()->GetLogManager()->DebugLog(_("Cannot remove old PCH file:\n") + object_abs);
     }
 
@@ -367,21 +361,20 @@ wxArrayString DirectCommands::GetCompileSingleFileCommand(const wxString& filena
     if (!m_pGenerator) cbThrow(_T("Command generator not initialised through ctor!"));
 
     wxString compilerCmd = compiler->GetCommand(ctCompileObjectCmd, srcExt);
-    m_pGenerator->GenerateCommandLine(compilerCmd,
-                                      0,
-                                      0,
-                                      s_filename,
-                                      o_filename,
-                                      o_filename,
-                                      wxEmptyString);
+    CompilerCommandGenerator::Result compilerResult(&compilerCmd);
+    CompilerCommandGenerator::Params compilerParams;
+    compilerParams.file = s_filename;
+    compilerParams.object = o_filename;
+    compilerParams.flatObject = o_filename;
+    m_pGenerator->GenerateCommandLine(compilerResult, compilerParams);
+
     wxString linkerCmd = compiler->GetCommand(ctLinkConsoleExeCmd, fname.GetExt());
-    m_pGenerator->GenerateCommandLine(linkerCmd,
-                                      0,
-                                      0,
-                                      wxEmptyString,
-                                      o_filename,
-                                      o_filename,
-                                      wxEmptyString);
+    CompilerCommandGenerator::Result linkerResult(&linkerCmd);
+    CompilerCommandGenerator::Params linkerParams;
+    linkerParams.object = o_filename;
+    linkerParams.flatObject = o_filename;
+    linkerParams.hasCppFilesToLink = compilerResult.processedCppFile;
+    m_pGenerator->GenerateCommandLine(linkerResult, linkerParams);
 
     if (!compilerCmd.IsEmpty())
     {
@@ -538,9 +531,17 @@ wxArrayString DirectCommands::GetPreBuildCommands(ProjectBuildTarget* target) co
             if (compiler)
             {
                 if (target)
-                    m_pGenerator->GenerateCommandLine(buildcmds[i], target, 0, wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString);
+                {
+                    m_pGenerator->GenerateCommandLine(buildcmds[i], target, 0, wxEmptyString,
+                                                      wxEmptyString, wxEmptyString, wxEmptyString);
+                }
                 else
-                    m_pGenerator->GenerateCommandLine(buildcmds[i], m_pProject->GetCurrentlyCompilingTarget(), 0, wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString);
+                {
+                    m_pGenerator->GenerateCommandLine(buildcmds[i],
+                                                      m_pProject->GetCurrentlyCompilingTarget(), 0,
+                                                      wxEmptyString, wxEmptyString, wxEmptyString,
+                                                      wxEmptyString);
+                }
             }
 
             tmp.Add(COMPILER_WAIT); // all commands should wait for queue to empty first
@@ -570,16 +571,10 @@ wxArrayString DirectCommands::GetPostBuildCommands(ProjectBuildTarget* target) c
         {
             if (compiler)
             {
-                if (target)
-                {
-                    m_pGenerator->GenerateCommandLine(buildcmds[i], target, 0, wxEmptyString,
-                                                      wxEmptyString, wxEmptyString, wxEmptyString);
-                }
-                else
-                {
-                    m_pGenerator->GenerateCommandLine(buildcmds[i], m_pProject->GetCurrentlyCompilingTarget(),
-                                                      0, wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString);
-                }
+                CompilerCommandGenerator::Result result(&buildcmds[i]);
+                CompilerCommandGenerator::Params params;
+                params.target = (target ? target : m_pProject->GetCurrentlyCompilingTarget());
+                m_pGenerator->GenerateCommandLine(result, params);
             }
 
             tmp.Add(COMPILER_WAIT); // all commands should wait for queue to empty first
@@ -687,6 +682,7 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
     if (IsOpenWatcom && target->GetTargetType() != ttStaticLib)
         linkfiles << _T("file ");
     bool subseq(false);
+    bool hasCppFilesToLink = false;
     for (unsigned int i = 0; i < files.GetCount(); ++i)
     {
         ProjectFile* pf = files[i];
@@ -695,9 +691,16 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
         // and we can't check the file for existence because we 're still
         // generating the command lines that will create the files...
         wxString macro = _T("$compiler");
-        m_pGenerator->GenerateCommandLine(macro, target, pf, wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString);
+        CompilerCommandGenerator::Result result(&macro);
+        CompilerCommandGenerator::Params params;
+        params.target = target;
+        params.pf = pf;
+        m_pGenerator->GenerateCommandLine(result, params);
         if (macro.IsEmpty())
             continue;
+
+        if (result.processedCppFile)
+            hasCppFilesToLink = true;
 
         const pfDetails& pfd = pf->GetFileDetails(target);
         wxString Object = (compiler->GetSwitches().UseFlatObjects) ? pfd.object_file_flat
@@ -748,6 +751,11 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
         {
             time_t objtime;
             depsTimeStamp(pfd.object_file_native.mb_str(), &objtime);
+            // Honor compiler request to Use Flat Objects
+            // (Settings/compiler/otherSettings/advancedOptions/Others/UseFlatObjects)
+            if (compiler->GetSwitches().UseFlatObjects)
+                depsTimeStamp(pfd.object_file_flat.mb_str(), &objtime);
+
             if (!objtime)
                 force = true;
             if (objtime > outputtime)
@@ -813,14 +821,18 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
             cbThrow(ex);
         break;
     }
+
+    // Linker command
     wxString compilerCmd = compiler->GetCommand(ct);
-    m_pGenerator->GenerateCommandLine(compilerCmd,
-                                      target,
-                                      0,
-                                      _T(""),
-                                      linkfiles,
-                                      FlatLinkFiles,
-                                      resfiles);
+    CompilerCommandGenerator::Result result(&compilerCmd);
+    CompilerCommandGenerator::Params params;
+    params.target = target;
+    params.object = linkfiles;
+    params.flatObject = FlatLinkFiles;
+    params.deps = resfiles;
+    params.hasCppFilesToLink = hasCppFilesToLink;
+    m_pGenerator->GenerateCommandLine(result, params);
+
     if (!compilerCmd.IsEmpty())
     {
         switch (compiler->GetSwitches().logging)

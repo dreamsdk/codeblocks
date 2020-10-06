@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetsconfig.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
+// RCS-ID: $Id: snippetsconfig.cpp 11345 2018-03-23 00:40:30Z pecanh $
 #ifdef WX_PRECOMP
     #include "wx_pch.h"
 #endif
@@ -323,7 +323,6 @@ void CodeSnippetsConfig::SetSettingsWindowState(const wxString windowState)
     m_SettingsWindowState = windowState;
     SettingsSaveString( _T("WindowState"), m_SettingsWindowState );
     //LOGIT( _T("SetSettingsWindowState[%s]"),GetSettingsWindowState.c_str() );
-    return ;
 }
 // ----------------------------------------------------------------------------
 void CodeSnippetsConfig::SettingsSaveWinPosition()
@@ -395,10 +394,7 @@ void CodeSnippetsConfig::CenterChildOnParent(wxWindow* child, wxWindow* parentPa
             if ( parentPosn.y < 1) parentPosn.y = 1;
         }while(false);
         child->Move( parentPosn.x, parentPosn.y);
-        return;
     }
-
-    return;
 }
 // ----------------------------------------------------------------------------
 bool CodeSnippetsConfig::IsDockedWindow(wxWindow** pWindowRequest, wxPoint* pCoordRequest, wxSize* pSizeRequest)
@@ -504,9 +500,7 @@ bool CodeSnippetsConfig::IsFloatingWindow(wxWindow** pWindowRequest, wxPoint* pC
 bool CodeSnippetsConfig::IsExternalWindow()
 // ----------------------------------------------------------------------------
 {
-  	if ( GetConfig()->GetSettingsWindowState().Contains(wxT("External")) )
-        return true;
-    return false;
+  	return GetConfig()->GetSettingsWindowState().Contains(wxT("External"));
 }
 // ----------------------------------------------------------------------------
 wxString CodeSnippetsConfig::GetTempDir()

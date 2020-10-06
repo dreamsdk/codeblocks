@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetpropertyform.cpp 10362 2015-07-26 08:13:33Z jenslody $
+// RCS-ID: $Id: snippetpropertyform.cpp 11346 2018-03-24 21:29:44Z pecanh $
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -80,8 +80,8 @@ SnippetPropertyForm::SnippetPropertyForm( wxWindow* parent, int id, wxString tit
 	wxBoxSizer* bSizer5;
 	bSizer5 = new wxBoxSizer( wxHORIZONTAL );
 
-	m_SnippetButton = new wxButton( this, ID_SNIPPETBUTTON, wxT("ExtEdit"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer5->Add( m_SnippetButton, 0, wxALL, 5 );
+	//-2018/03/24 m_SnippetButton = new wxButton( this, ID_SNIPPETBUTTON, wxT("ExtEdit"), wxDefaultPosition, wxDefaultSize, 0 );
+	//-2018/03/24 bSizer5->Add( m_SnippetButton, 0, wxALL, 5 );
 
 	m_FileSelectButton = new wxButton( this, ID_FILESELECTBUTTON, wxT("Link target"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer5->Add( m_FileSelectButton, 0, wxALL, 5 );

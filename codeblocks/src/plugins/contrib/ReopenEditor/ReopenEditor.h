@@ -4,9 +4,9 @@
  *
  * Copyright: 2010 Jens Lody
  *
- * $Revision: 7443 $
- * $Id: ReopenEditor.h 7443 2011-09-01 16:29:16Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ReopenEditor/ReopenEditor.h $
+ * $Revision: 11477 $
+ * $Id: ReopenEditor.h 11477 2018-09-29 07:42:08Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/ReopenEditor.h $
  */
 
 #ifndef REOPEN_EDITOR_H_INCLUDED
@@ -59,6 +59,9 @@ class ReopenEditor : public cbPlugin
         ReopenEditorListView* m_pListLog;
 
         bool m_IsManaged;
+        /// We need this to live longer than the logger, because the InfoPane stores a pointer to
+        /// this icon.
+        wxBitmap m_LogIcon;
 
     DECLARE_EVENT_TABLE()
 };

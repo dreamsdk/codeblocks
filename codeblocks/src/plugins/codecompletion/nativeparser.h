@@ -11,6 +11,8 @@
 
 #include <queue>
 #include <map>
+#include <memory>
+#include <unordered_map>
 
 #include <wx/event.h>
 
@@ -27,9 +29,6 @@ class cbStyledTextCtrl;
 class ClassBrowser;
 class Compiler;
 class Token;
-
-
-typedef std::map<cbProject*, wxArrayString> ProjectSearchDirsMap;
 
 // TODO (ollydbg#1#), this class is dirty, I'm going to change its name like CursorLocation
 /** Search location combination, a pointer to cbStyledTextCtrl and a filename is enough */
@@ -107,10 +106,10 @@ public:
     /** Return true if all the parser's batch-parse stages are finished, otherwise return false*/
     bool Done();
 
-    /** Used to support Symbol browser and codecompletion UI
-     *  Image list is used to initialize the symbol browser tree node image.
+    /** Provides images for the Symbol browser (for tree node images) and AutoCompletion list.
+     *  @param maxSize Maximum size that will fit in the UI.
      */
-    wxImageList* GetImageList() { return m_ImageList; }
+    wxImageList* GetImageList(int maxSize);
 
     /** Returns the image assigned to a specific token for a symbol browser */
     int GetTokenKindImage(const Token* token);
@@ -129,7 +128,7 @@ public:
      * @param path the new added path
      * @param hasExt the file path has extensions, such as C:/aaa/bbb.cpp
      */
-static void AddPaths(wxArrayString& dirs, const wxString& path, bool hasExt);
+    static void AddPaths(wxArrayString& dirs, const wxString& path, bool hasExt);
 
     // the functions below are handling and managing Parser object
 
@@ -228,7 +227,8 @@ static void AddPaths(wxArrayString& dirs, const wxString& path, bool hasExt);
     int GetCallTips(wxArrayString& items, int& typedCommas, cbEditor* ed, int pos = wxNOT_FOUND);
 
     /** project search path is used for auto completion for #include <> */
-    wxArrayString& GetProjectSearchDirs(cbProject* project);
+    wxArrayString ParseProjectSearchDirs(const cbProject &project);
+    void SetProjectSearchDirs(cbProject &project, const wxArrayString &dirs);
 
     // The function below is used to manage symbols browser
     /** return active class browser pointer*/
@@ -273,26 +273,11 @@ protected:
     /** Get cbProject and Parser pointer, according to the current active editor */
     std::pair<cbProject*, ParserBase*> GetParserInfoByCurrentEditor();
 
-    /** Used to support Symbol browser and codecompletion UI
-     *  Image list is used to initialize the symbol browser tree node image.
-     */
-    void SetTokenKindImage(int kind, const wxBitmap& bitmap, const wxBitmap& mask = wxNullBitmap);
-    void SetTokenKindImage(int kind, const wxBitmap& bitmap, const wxColour& maskColour);
-    void SetTokenKindImage(int kind, const wxIcon& icon);
-
     /** set the class browser view mode */
     void SetCBViewMode(const BrowserViewMode& mode);
 
 private:
     friend class CodeCompletion;
-
-    /** Read or Write project' CC options when a C::B project is loading or saving
-     * user can set those settings in Menu->Project->Properties->C/C++ parser options panel
-     * @param project which project we are handling
-     * @param elem parent node of the project xml file (cbp) containing addtinal information
-     * @param loading true if the project is loading
-     */
-    void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
 
     /** Start an Artificial Intelligence search algorithm to gather all the matching tokens.
      * The actual AI is in FindAIMatches() below.
@@ -405,7 +390,7 @@ private:
     void AddCompilerIncludeDirsToParser(const Compiler* compiler, ParserBase* parser);
 
     /** Collect the default compiler include file search paths. called by AddCompilerDirs() function*/
-    const wxArrayString& GetGCCCompilerDirs(const wxString &cpp_compiler);
+    const wxArrayString& GetGCCCompilerDirs(const wxString& cpp_path, const wxString& cpp_executable);
 
     /** Add the collected default GCC compiler include search paths to a parser */
     void AddGCCCompilerDirs(const wxString& masterPath, const wxString& compilerCpp, ParserBase* parser);
@@ -414,6 +399,9 @@ private:
      * "base" is not empty. Replaces macros.
      */
     void AddIncludeDirsToParser(const wxArrayString& dirs, const wxString& base, ParserBase* parser);
+
+    /** Runs an app safely (protected against re-entry) and returns output and error */
+    bool SafeExecute(const wxString& app_path, const wxString& app, const wxString& args, wxArrayString &output, wxArrayString &error);
 
     /** Event handler when the batch parse starts, print some log information */
     void OnParserStart(wxCommandEvent& event);
@@ -475,12 +463,9 @@ private:
     /** if true, which means m_ClassBrowser is floating (not docked) */
     bool                         m_ClassBrowserIsFloating;
 
-    /** a map: project pointer -> C/C++ parser search paths for this project, this is the
-     * per-project code completion search-dirs.
-     */
-    ProjectSearchDirsMap         m_ProjectSearchDirsMap;
-    int                          m_HookId;    //!< project loader hook ID
-    wxImageList*                 m_ImageList; //!< Images for class browser
+    /// Stores image lists for different sizes. See GetImageList.
+    typedef std::unordered_map<int, std::unique_ptr<wxImageList>> SizeToImageList;
+    SizeToImageList m_ImageListMap;
 
     /** all the files which opened, but does not belong to any cbp */
     wxArrayString                m_StandaloneFiles;

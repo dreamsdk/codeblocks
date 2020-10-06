@@ -18,7 +18,7 @@
 *
 * $Revision: 7616 $
 * $Id: resultmap.cpp 7616 2011-11-26 15:17:58Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/resultmap.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/resultmap.cpp $
 */
 
 #include <wx/arrstr.h>

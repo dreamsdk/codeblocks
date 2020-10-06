@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10097 $
- * $Id: sc_dialog.cpp 10097 2015-02-06 22:13:36Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_dialog.cpp $
+ * $Revision: 11399 $
+ * $Id: sc_dialog.cpp 11399 2018-05-08 21:54:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_dialog.cpp $
  */
 
 #include <sdk_precomp.h>
@@ -41,7 +41,7 @@ namespace ScriptBindings
                     cbThrow(wxEmptyString);
                 }
             }
-            ~XrcDialog(){ }
+            ~XrcDialog() override{ }
             void OnButton(wxCommandEvent& event);
     };
 

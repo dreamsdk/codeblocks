@@ -28,12 +28,13 @@ GraphNassiBrick::GraphNassiBrick(NassiView *view, NassiBrick *brick, BricksMap *
     m_map(bmap)
 {
 }
-GraphNassiBrick::~GraphNassiBrick(void){}
+GraphNassiBrick::~GraphNassiBrick(){}
 
 bool GraphNassiBrick::IsVisible()
 {
     return m_visible;
 }
+
 void GraphNassiBrick::SetInvisible(bool vis)
 {
     m_visible = vis;
@@ -58,31 +59,41 @@ void GraphNassiBrick::SetInvisible(bool vis)
     }
 
 }
+
 wxUint32 GraphNassiBrick::GetWidth()
 {
     return m_size.x;
 }
+
 wxPoint GraphNassiBrick::GetOffset()
 {
     return m_offset;
 }
+
 wxUint32 GraphNassiBrick::GetHeight()
 {
     return m_size.y;
 }
+
 wxUint32 GraphNassiBrick::GetMinimumWidth()
 {
     return m_minimumsize.x;
 }
+
 wxUint32 GraphNassiBrick::GetMinimumHeight()
 {
     return m_minimumsize.y;
 }
+
 void GraphNassiBrick::DrawActive(wxDC *dc)
 {
     if ( !IsActive() || !IsVisible() ) return;
     const NassiViewColors &colors = m_view->GetColors();
+#if wxCHECK_VERSION(3,1,0)
+    wxBrush *brush = new wxBrush(colors.selectionPen, wxBRUSHSTYLE_TRANSPARENT);
+#else
     wxBrush *brush = new wxBrush(colors.selectionPen, wxTRANSPARENT);
+#endif
     wxPen *pen = new wxPen(colors.selectionPen, 3);
     dc->SetBrush(*brush);
     dc->SetPen(*pen);
@@ -92,6 +103,7 @@ void GraphNassiBrick::DrawActive(wxDC *dc)
     delete brush;
     delete pen;
 }
+
 bool GraphNassiBrick::HasPoint(const wxPoint &pos)
 {
     if ( !IsVisible() ) return false;
@@ -102,6 +114,7 @@ bool GraphNassiBrick::HasPoint(const wxPoint &pos)
     return false;
 
 }
+
 void GraphNassiBrick::SetActive(bool act, bool withChilds)
 {
     m_active = act;
@@ -124,16 +137,19 @@ void GraphNassiBrick::SetActive(bool act, bool withChilds)
         }
     }
 }
+
 bool GraphNassiBrick::IsOverChild(const wxPoint & /*pos*/, wxRect * /*childRect*/, wxUint32 * /*childNumber*/)
 {
     return false;
 }
+
 GraphNassiBrick *GraphNassiBrick::GetGraphBrick(NassiBrick *brick)
 {
     if ( m_map->find(brick) == m_map->end() )
-        return (GraphNassiBrick *)0;
+        return nullptr;
     return (*m_map)[brick];
 }
+
 GraphNassiBrick::Position GraphNassiBrick::GetPosition(const wxPoint &pos)
 {
     GraphNassiBrick::Position res;
@@ -153,6 +169,7 @@ GraphNassiBrick::Position GraphNassiBrick::GetPosition(const wxPoint &pos)
 
     return res;
 }
+
 HooverDrawlet *GraphNassiBrick::GetDrawlet(const wxPoint &pos, bool HasNoBricks)
 {
     Position p = GetPosition(pos);
@@ -173,13 +190,13 @@ HooverDrawlet *GraphNassiBrick::GetDrawlet(const wxPoint &pos, bool HasNoBricks)
 //        offset.y += height - 1;
 //    return new RedLineDrawlet(offset, GetWidth());
 }
+
 void GraphNassiBrick::Draw(wxDC *dc)
 {
     const NassiViewColors &colors = m_view->GetColors();
     dc->SetBrush(colors.defaultBrush);
     dc->SetPen(colors.defaultPen);
 }
-
 
 
 GraphNassiMinimizableBrick::GraphNassiMinimizableBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
@@ -194,6 +211,7 @@ void GraphNassiMinimizableBrick::DrawMinMaxBox(wxDC *dc)
     else
         DrawMaxBox(dc);
 }
+
 void GraphNassiMinimizableBrick::DrawMinBox(wxDC *dc)
 {
 #if defined(__WXMSW__)
@@ -207,6 +225,7 @@ void GraphNassiMinimizableBrick::DrawMinBox(wxDC *dc)
     dc->DrawLine(m_offset.x+2, m_offset.y+9, m_offset.x+7, m_offset.y+5);
 #endif
 }
+
 void GraphNassiMinimizableBrick::DrawMaxBox(wxDC *dc)
 {
 #if defined(__WXMSW__)
@@ -218,6 +237,7 @@ void GraphNassiMinimizableBrick::DrawMaxBox(wxDC *dc)
     dc->DrawLine(m_offset.x+10, m_offset.y+2, m_offset.x+5, m_offset.y+7);
 #endif
 }
+
 bool GraphNassiMinimizableBrick::IsOverMinMaxBox(const wxPoint &pos)
 {
     if ( !m_visible ) return false;
@@ -226,6 +246,7 @@ bool GraphNassiMinimizableBrick::IsOverMinMaxBox(const wxPoint &pos)
         return true;
     return false;
 }
+
 HooverDrawlet *GraphNassiMinimizableBrick::GetDrawlet(const wxPoint & pos, bool HasNoBricks)
 {
     Position p = GetPosition(pos);
@@ -270,7 +291,6 @@ GraphNassiBrick::Position GraphNassiMinimizableBrick::GetPosition(const wxPoint 
 }
 
 
-
 GraphNassiInstructionBrick::GraphNassiInstructionBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiBrick(view, brick, bmap),
     comment(view, brick, 0 ),
@@ -279,7 +299,9 @@ GraphNassiInstructionBrick::GraphNassiInstructionBrick(NassiView *view, NassiBri
     //m_view->CreateTextGraph(m_brick, 0);
     //m_view->CreateTextGraph(m_brick, 1);
 }
+
 GraphNassiInstructionBrick::~GraphNassiInstructionBrick(){}
+
 void GraphNassiInstructionBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -300,6 +322,7 @@ void GraphNassiInstructionBrick::Draw(wxDC *dc)
         source.Draw(dc);
     }
 }
+
 void GraphNassiInstructionBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -335,6 +358,7 @@ void GraphNassiInstructionBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPo
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiInstructionBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont( m_view->GetCommentFont() );
@@ -378,6 +402,7 @@ void GraphNassiInstructionBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;
     }
 }
+
 TextGraph *GraphNassiInstructionBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -396,7 +421,9 @@ GraphNassiBreakBrick::GraphNassiBreakBrick(NassiView *view, NassiBrick *brick, B
     comment(view, brick, 0),
     m_b(0)
 {}
+
 GraphNassiBreakBrick::~GraphNassiBreakBrick(){}
+
 void GraphNassiBreakBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -415,6 +442,7 @@ void GraphNassiBreakBrick::Draw(wxDC *dc)
         comment.Draw( dc );
     }
 }
+
 void GraphNassiBreakBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -450,6 +478,7 @@ void GraphNassiBreakBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint si
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiBreakBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont( m_view->GetCommentFont() );
@@ -478,6 +507,7 @@ void GraphNassiBreakBrick::CalcMinSize(wxDC *dc, wxPoint &size)
     }
 
 }
+
 TextGraph *GraphNassiBreakBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -488,10 +518,6 @@ TextGraph *GraphNassiBreakBrick::IsOverText(const wxPoint &pos)
 }
 
 
-
-
-
-
 GraphNassiContinueBrick::GraphNassiContinueBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiBrick(view, brick, bmap),
     comment(view, brick, 0),
@@ -499,7 +525,9 @@ GraphNassiContinueBrick::GraphNassiContinueBrick(NassiView *view, NassiBrick *br
 {
     //m_view->CreateTextGraph(m_brick, 0);
 }
+
 GraphNassiContinueBrick::~GraphNassiContinueBrick(){}
+
 void GraphNassiContinueBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -518,6 +546,7 @@ void GraphNassiContinueBrick::Draw(wxDC *dc)
         comment.Draw( dc );
     }
 }
+
 void GraphNassiContinueBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -552,6 +581,7 @@ void GraphNassiContinueBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiContinueBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont( m_view->GetCommentFont() );
@@ -581,6 +611,7 @@ void GraphNassiContinueBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;
     }
 }
+
 TextGraph *GraphNassiContinueBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -589,9 +620,6 @@ TextGraph *GraphNassiContinueBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
-
-
-
 
 
 GraphNassiReturnBrick::GraphNassiReturnBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
@@ -603,7 +631,9 @@ GraphNassiReturnBrick::GraphNassiReturnBrick(NassiView *view, NassiBrick *brick,
 //    m_view->CreateTextGraph(m_brick, 0);
 //    m_view->CreateTextGraph(m_brick, 1);
 }
+
 GraphNassiReturnBrick::~GraphNassiReturnBrick(){}
+
 void GraphNassiReturnBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -633,6 +663,7 @@ void GraphNassiReturnBrick::Draw(wxDC *dc)
         source.Draw( dc );
     }
 }
+
 void GraphNassiReturnBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -680,6 +711,7 @@ void GraphNassiReturnBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint s
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiReturnBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont( m_view->GetCommentFont() );
@@ -719,6 +751,7 @@ void GraphNassiReturnBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;
     }
 }
+
 TextGraph *GraphNassiReturnBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -731,10 +764,6 @@ TextGraph *GraphNassiReturnBrick::IsOverText(const wxPoint &pos)
 }
 
 
-
-
-/// /////////////////////////////////////////////////////////////////////////
-
 GraphNassiIfBrick::GraphNassiIfBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiMinimizableBrick(view, brick, bmap),
     commentHead(view, brick, 0 ),
@@ -744,7 +773,9 @@ GraphNassiIfBrick::GraphNassiIfBrick(NassiView *view, NassiBrick *brick, BricksM
     m_p(0),
     m_hh(0)
 {}
+
 GraphNassiIfBrick::~GraphNassiIfBrick(){}
+
 void GraphNassiIfBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -813,6 +844,7 @@ void GraphNassiIfBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiIfBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -884,6 +916,7 @@ void GraphNassiIfBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiIfBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont(m_view->GetCommentFont() );
@@ -1043,6 +1076,7 @@ void GraphNassiIfBrick::CalcMinSize(wxDC *dc, wxPoint &size)
     }
 
 }
+
 bool GraphNassiIfBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -1066,6 +1100,7 @@ bool GraphNassiIfBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiIfBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -1090,6 +1125,7 @@ TextGraph *GraphNassiIfBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
+
 bool GraphNassiIfBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -1126,6 +1162,7 @@ bool GraphNassiIfBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUin
     }
     return false;
 }
+
 GraphNassiBrick::Position GraphNassiIfBrick::GetPosition(const wxPoint &pos)
 {
     GraphNassiBrick::Position res;
@@ -1153,8 +1190,6 @@ GraphNassiBrick::Position GraphNassiIfBrick::GetPosition(const wxPoint &pos)
 }
 
 
-
-
 GraphNassiWhileBrick::GraphNassiWhileBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiMinimizableBrick(view, brick, bmap),
     comment(view, brick, 0 ),
@@ -1162,7 +1197,9 @@ GraphNassiWhileBrick::GraphNassiWhileBrick(NassiView *view, NassiBrick *brick, B
     m_hh(0),
     m_bb(0)
 {}
+
 GraphNassiWhileBrick::~GraphNassiWhileBrick(){}
+
 void GraphNassiWhileBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -1221,6 +1258,7 @@ void GraphNassiWhileBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiWhileBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -1265,6 +1303,7 @@ void GraphNassiWhileBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint si
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiWhileBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont(m_view->GetCommentFont() );
@@ -1356,6 +1395,7 @@ void GraphNassiWhileBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;// thickness of the line between bricks is only 1
     }
 }
+
 bool GraphNassiWhileBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -1370,6 +1410,7 @@ bool GraphNassiWhileBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiWhileBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -1387,6 +1428,7 @@ TextGraph *GraphNassiWhileBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
+
 bool GraphNassiWhileBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -1416,7 +1458,9 @@ GraphNassiDoWhileBrick::GraphNassiDoWhileBrick(NassiView *view, NassiBrick *bric
     m_bb(0),
     m_hh(0)
 {}
+
 GraphNassiDoWhileBrick::~GraphNassiDoWhileBrick(){}
+
 void GraphNassiDoWhileBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -1478,6 +1522,7 @@ void GraphNassiDoWhileBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiDoWhileBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -1522,6 +1567,7 @@ void GraphNassiDoWhileBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint 
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 
 }
+
 void GraphNassiDoWhileBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont(m_view->GetCommentFont() );
@@ -1616,6 +1662,7 @@ void GraphNassiDoWhileBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;// thickness of the line between bricks is only 1
     }
 }
+
 bool GraphNassiDoWhileBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -1630,6 +1677,7 @@ bool GraphNassiDoWhileBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiDoWhileBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -1647,6 +1695,7 @@ TextGraph *GraphNassiDoWhileBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
+
 bool GraphNassiDoWhileBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -1669,7 +1718,6 @@ bool GraphNassiDoWhileBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, 
 }
 
 
-
 GraphNassiForBrick::GraphNassiForBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiMinimizableBrick(view, brick, bmap),
     comment(view, brick, 0),
@@ -1678,7 +1726,9 @@ GraphNassiForBrick::GraphNassiForBrick(NassiView *view, NassiBrick *brick, Brick
     m_bb(0),
     m_b(0)
 {}
+
 GraphNassiForBrick::~GraphNassiForBrick(){}
+
 void GraphNassiForBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -1737,6 +1787,7 @@ void GraphNassiForBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiForBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -1785,6 +1836,7 @@ void GraphNassiForBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiForBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     dc->SetFont(m_view->GetCommentFont() );
@@ -1875,6 +1927,7 @@ void GraphNassiForBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;// thickness of the line between bricks is only 1
     }
 }
+
 bool GraphNassiForBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -1890,6 +1943,7 @@ bool GraphNassiForBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiForBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -1907,6 +1961,7 @@ TextGraph *GraphNassiForBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
+
 bool GraphNassiForBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -1929,19 +1984,18 @@ bool GraphNassiForBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUi
 }
 
 
-
-
-
-
 GraphNassiBlockBrick::GraphNassiBlockBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiMinimizableBrick(view, brick, bmap),
     m_hh(0)
 {}
+
 GraphNassiBlockBrick::~GraphNassiBlockBrick(){}
+
 wxString GraphNassiBlockBrick::GetSource()
 {
     return _T("{}");
 }
+
 void GraphNassiBlockBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -2002,6 +2056,7 @@ void GraphNassiBlockBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiBlockBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -2028,6 +2083,7 @@ void GraphNassiBlockBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint si
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiBlockBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     ///set child invisible, if minimized
@@ -2108,6 +2164,7 @@ void GraphNassiBlockBrick::CalcMinSize(wxDC *dc, wxPoint &size)
         size.y--;// thickness of the line between bricks is only 1
     }
 }
+
 bool GraphNassiBlockBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -2125,10 +2182,12 @@ bool GraphNassiBlockBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiBlockBrick::IsOverText(const wxPoint & /*pos*/)
 {
     return 0;
 }
+
 bool GraphNassiBlockBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -2150,6 +2209,7 @@ bool GraphNassiBlockBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wx
     return false;
 }
 
+
 GraphNassiSwitchBrick::GraphNassiSwitchBrick(NassiView *view, NassiBrick *brick, BricksMap *bmap):
     GraphNassiMinimizableBrick(view, brick, bmap),
     comment(view, brick, 0),
@@ -2166,7 +2226,9 @@ GraphNassiSwitchBrick::GraphNassiSwitchBrick(NassiView *view, NassiBrick *brick,
     m_ChildIndicatorIsActive(false),
     m_ActiveChildIndicator(0)
 {}
+
 GraphNassiSwitchBrick::~GraphNassiSwitchBrick(){}
+
 void GraphNassiSwitchBrick::Draw(wxDC *dc)
 {
     if ( !m_visible ) return;
@@ -2230,6 +2292,7 @@ void GraphNassiSwitchBrick::Draw(wxDC *dc)
 
     this->DrawMinMaxBox(dc); // the box with + or -
 }
+
 void GraphNassiSwitchBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint size)
 {
     if ( !m_visible ) return;
@@ -2352,6 +2415,7 @@ void GraphNassiSwitchBrick::SetOffsetAndSize(wxDC *dc, wxPoint offset, wxPoint s
     if ( nextgbrick )
         nextgbrick->SetOffsetAndSize(dc, offset, size);
 }
+
 void GraphNassiSwitchBrick::CalcMinSize(wxDC *dc, wxPoint &size)
 {
     ///set all childs invisible, if minimized
@@ -2568,6 +2632,7 @@ void GraphNassiSwitchBrick::CalcMinSize(wxDC *dc, wxPoint &size)
     }
 
 }
+
 bool GraphNassiSwitchBrick::HasPoint(const wxPoint &pos)
 {
     if (!IsVisible() ) return false;
@@ -2591,6 +2656,7 @@ bool GraphNassiSwitchBrick::HasPoint(const wxPoint &pos)
     }
     return false;
 }
+
 TextGraph *GraphNassiSwitchBrick::IsOverText(const wxPoint &pos)
 {
     if ( !m_visible ) return 0;
@@ -2616,6 +2682,7 @@ TextGraph *GraphNassiSwitchBrick::IsOverText(const wxPoint &pos)
 
     return 0;
 }
+
 bool GraphNassiSwitchBrick::IsOverChild(const wxPoint &pos, wxRect *childRect, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -2653,6 +2720,7 @@ TextGraph *GraphNassiSwitchBrick::childcomments(wxUint32 n)
     }
     return 0;
 }
+
 TextGraph *GraphNassiSwitchBrick::childsources(wxUint32 n)
 {
     if ( n < childsource.size() )
@@ -2664,12 +2732,14 @@ TextGraph *GraphNassiSwitchBrick::childsources(wxUint32 n)
     }
     return 0;
 }
+
 bool GraphNassiSwitchBrick::HasActiveChildIndicator()
 {
     if ( !m_visible || IsMinimized() ) return false;
 
     return m_ChildIndicatorIsActive;
 }
+
 bool GraphNassiSwitchBrick::IsOverChildIndicator(const wxPoint & pos, wxUint32 *childNumber)
 {
     if ( !m_visible || IsMinimized() ) return false;
@@ -2708,6 +2778,7 @@ bool GraphNassiSwitchBrick::IsOverChildIndicator(const wxPoint & pos, wxUint32 *
     }
     return false;
 }
+
 void GraphNassiSwitchBrick::SetChildIndicatorActive(bool act, wxUint32 child)
 {
     if ( child < m_brick->GetChildCount() )
@@ -2720,6 +2791,7 @@ void GraphNassiSwitchBrick::SetChildIndicatorActive(bool act, wxUint32 child)
 
 
 }
+
 void GraphNassiSwitchBrick::DrawActive(wxDC *dc)
 {
     GraphNassiBrick::DrawActive(dc);
@@ -2727,7 +2799,11 @@ void GraphNassiSwitchBrick::DrawActive(wxDC *dc)
     if ( !m_ChildIndicatorIsActive || !IsVisible() ) return;
 
     const NassiViewColors &colors = m_view->GetColors();
+#if wxCHECK_VERSION(3,1,0)
+    wxBrush *brush = new wxBrush(colors.selectionPen, wxBRUSHSTYLE_TRANSPARENT);
+#else
     wxBrush *brush = new wxBrush(colors.selectionPen, wxTRANSPARENT);
+#endif
     wxPen *pen = new wxPen(colors.selectionPen, 3);
     dc->SetBrush(*brush);
     dc->SetPen(*pen);
@@ -2755,10 +2831,12 @@ void GraphNassiSwitchBrick::DrawActive(wxDC *dc)
     delete brush;
     delete pen;
 }
+
 wxUint32 GraphNassiSwitchBrick::ActiveChildIndicator()
 {
     return m_ActiveChildIndicator;
 }
+
 HooverDrawlet *GraphNassiSwitchBrick::GetDrawlet(const wxPoint & pos, bool /*HasNoBricks*/)
 {
 
@@ -2791,6 +2869,7 @@ HooverDrawlet *GraphNassiSwitchBrick::GetDrawlet(const wxPoint & pos, bool /*Has
         return new RedLineDrawlet(pt, m_offset.x + m_hw - pt.x );
     }
 }
+
 GraphNassiBrick::Position GraphNassiSwitchBrick::GetPosition(const wxPoint &pos)
 {
     GraphNassiBrick::Position res;
@@ -2840,11 +2919,3 @@ GraphNassiBrick::Position GraphNassiSwitchBrick::GetPosition(const wxPoint &pos)
 
     return res;
 }
-
-
-
-
-
-
-
-

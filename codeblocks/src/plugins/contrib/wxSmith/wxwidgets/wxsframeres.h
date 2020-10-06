@@ -17,7 +17,7 @@
 *
 * $Revision: 7109 $
 * $Id: wxsframeres.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsframeres.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsframeres.h $
 */
 
 #ifndef WXSFRAMERES_H

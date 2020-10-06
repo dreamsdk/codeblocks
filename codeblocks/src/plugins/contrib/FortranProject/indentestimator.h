@@ -1,19 +1,18 @@
 ///////////////////////////////////////////////////////////////////////////////
-// Name:        CMyWxFortranIndent.h
-// Purpose:     declaration of CMyWxFortranIndent class
 // Author:      YWX (wxFortranIndent@163.com)
-// Created:     2012-4-23
-// Copyright:   (c) YWX <wxFortranIndent@163.com>
 // Licence:     GNU General Public License, version 3
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef INDENTESTIMATOR_H
 #define INDENTESTIMATOR_H
 
-#include <wx/string.h>
-#include <wx/regex.h>
-#include <wx/hashmap.h>
-#include <wx/arrstr.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/regex.h>
+    #include <wx/hashmap.h>
+    #include <wx/arrstr.h>
+#endif
 #include <vector>
 
 class FormatIndentCodeTree

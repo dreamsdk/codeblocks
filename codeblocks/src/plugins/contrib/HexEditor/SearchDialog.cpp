@@ -17,7 +17,7 @@
 *
 * $Revision: 10975 $
 * $Id: SearchDialog.cpp 10975 2017-01-21 10:41:50Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/HexEditor/SearchDialog.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/SearchDialog.cpp $
 */
 
 #include "SearchDialog.h"

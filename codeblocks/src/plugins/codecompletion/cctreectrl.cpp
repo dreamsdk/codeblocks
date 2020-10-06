@@ -4,7 +4,7 @@
  *
  * $Revision: 9043 $
  * $Id: cctreectrl.cpp 9043 2013-05-04 04:39:36Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/cctreectrl.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/cctreectrl.cpp $
  */
 
 #include <sdk.h>

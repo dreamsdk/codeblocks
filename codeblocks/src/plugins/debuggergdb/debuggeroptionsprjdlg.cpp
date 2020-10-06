@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9231 $
- * $Id: debuggeroptionsprjdlg.cpp 9231 2013-07-25 18:58:24Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/debuggeroptionsprjdlg.cpp $
+ * $Revision: 11859 $
+ * $Id: debuggeroptionsprjdlg.cpp 11859 2019-09-29 12:53:55Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggeroptionsprjdlg.cpp $
  */
 
 #include <sdk.h>
@@ -38,8 +38,9 @@ DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, DebuggerG
     if (!wxXmlResource::Get()->LoadPanel(this, parent, _T("pnlDebuggerProjectOptions")))
         return;
 
-    m_OldPaths = m_pDBG->GetSearchDirs(project);
-    m_CurrentRemoteDebugging = m_pDBG->GetRemoteDebuggingMap(project);
+    m_OldPaths = DebuggerGDB::ParseSearchDirs(*project);
+    m_OldRemoteDebugging = DebuggerGDB::ParseRemoteDebuggingMap(*project);
+    m_CurrentRemoteDebugging = m_OldRemoteDebugging;
 
     wxListBox* control = XRCCTRL(*this, "lstSearchDirs", wxListBox);
     control->Clear();
@@ -55,7 +56,7 @@ DebuggerOptionsProjectDlg::DebuggerOptionsProjectDlg(wxWindow* parent, DebuggerG
     {
         control->Append(project->GetBuildTarget(i)->GetTitle());
     }
-    control->SetSelection(-1);
+    control->SetSelection(0);
 
     LoadCurrentRemoteDebuggingRecord();
     Manager::Get()->RegisterEventSink(cbEVT_BUILDTARGET_REMOVED, new cbEventFunctor<DebuggerOptionsProjectDlg, CodeBlocksEvent>(this, &DebuggerOptionsProjectDlg::OnBuildTargetRemoved));
@@ -168,7 +169,10 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         RemoteDebugging& rd = m_CurrentRemoteDebugging[bt];
         XRCCTRL(*this, "cmbConnType", wxChoice)->SetSelection((int)rd.connType);
         XRCCTRL(*this, "txtSerial", wxTextCtrl)->SetValue(rd.serialPort);
-        XRCCTRL(*this, "cmbBaud", wxChoice)->SetStringSelection(rd.serialBaud);
+
+        const wxString baud = (rd.serialBaud.empty() ? wxString(wxT("115200")) : rd.serialBaud);
+        XRCCTRL(*this, "cmbBaud", wxChoice)->SetStringSelection(baud);
+
         XRCCTRL(*this, "txtIP", wxTextCtrl)->SetValue(rd.ip);
         XRCCTRL(*this, "txtPort", wxTextCtrl)->SetValue(rd.ipPort);
         XRCCTRL(*this, "txtCmds", wxTextCtrl)->SetValue(rd.additionalCmds);
@@ -177,8 +181,6 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(rd.extendedRemote);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(rd.additionalShellCmdsAfter);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(rd.additionalShellCmdsBefore);
-        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(rd.loaderArguments);
-        XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue((int)rd.loaderWaitingTime);
     }
     else
     {
@@ -193,8 +195,6 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(false);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(wxEmptyString);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(wxEmptyString);
-        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(wxEmptyString);
-        XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue(LOADER_WAITING_TIME_DISABLED);
     }
 }
 
@@ -224,8 +224,6 @@ void DebuggerOptionsProjectDlg::SaveCurrentRemoteDebuggingRecord()
     rd.extendedRemote = XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->GetValue();
     rd.additionalShellCmdsAfter = XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->GetValue();
     rd.additionalShellCmdsBefore = XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->GetValue();
-    rd.loaderArguments = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
-    rd.loaderWaitingTime = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->GetValue();
 }
 
 void DebuggerOptionsProjectDlg::OnTargetSel(wxCommandEvent& WXUNUSED(event))
@@ -292,38 +290,43 @@ void DebuggerOptionsProjectDlg::OnUpdateUI(wxUpdateUIEvent& WXUNUSED(event))
 
     en = XRCCTRL(*this, "lstTargets", wxListBox)->GetSelection() != wxNOT_FOUND;
 
-    XRCCTRL(*this, "cmbConnType", wxChoice)->Enable(en);
-    XRCCTRL(*this, "txtSerial", wxTextCtrl)->Enable(en);
-    XRCCTRL(*this, "cmbBaud", wxChoice)->Enable(en);
-    XRCCTRL(*this, "txtIP", wxTextCtrl)->Enable(en);
-    XRCCTRL(*this, "txtPort", wxTextCtrl)->Enable(en);
+    wxChoice *cmbConnType = XRCCTRL(*this, "cmbConnType", wxChoice);
+
+    const bool serial = (cmbConnType->GetSelection() == 2);
+
+    cmbConnType->Enable(en);
+    XRCCTRL(*this, "txtSerial", wxTextCtrl)->Enable(en && serial);
+    XRCCTRL(*this, "cmbBaud", wxChoice)->Enable(en && serial);
+    XRCCTRL(*this, "txtIP", wxTextCtrl)->Enable(en && !serial);
+    XRCCTRL(*this, "txtPort", wxTextCtrl)->Enable(en && !serial);
     XRCCTRL(*this, "txtCmds", wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "txtCmdsBefore", wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "chkSkipLDpath", wxCheckBox)->Enable(en);
     XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->Enable(en);
-    wxTextCtrl* txt = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl);
-    txt->SetToolTip(_(LOADER_ARGUMENTS_TOOLTIP));
-    txt->Enable(en);
-    wxSpinCtrl* spn = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl);
-    spn->SetRange(LOADER_WAITING_TIME_DISABLED, LOADER_WAITING_TIME_MAX);
-    spn->SetToolTip(wxString::Format(_("%s\nSet it to 0 to use the system default"), _(LOADER_WAITING_TIME_TOOLTIP)));
-    spn->Enable(en);
 }
 
 void DebuggerOptionsProjectDlg::OnApply()
 {
     wxListBox* control = XRCCTRL(*this, "lstSearchDirs", wxListBox);
 
-    m_OldPaths.Clear();
+    wxArrayString  newPaths;
     for (int i = 0; i < (int)control->GetCount(); ++i)
     {
-        m_OldPaths.Add(control->GetString(i));
+        newPaths.Add(control->GetString(i));
     }
 
     SaveCurrentRemoteDebuggingRecord();
 
-    m_pDBG->GetSearchDirs(m_pProject) = m_OldPaths;
-    m_pDBG->GetRemoteDebuggingMap(m_pProject) = m_CurrentRemoteDebugging;
+    if (m_OldPaths != newPaths)
+    {
+        DebuggerGDB::SetSearchDirs(*m_pProject, newPaths);
+        m_pProject->SetModified(true);
+    }
+    if (m_OldRemoteDebugging != m_CurrentRemoteDebugging)
+    {
+        DebuggerGDB::SetRemoteDebuggingMap(*m_pProject, m_CurrentRemoteDebugging);
+        m_pProject->SetModified(true);
+    }
 }

@@ -112,11 +112,15 @@ class CodeBlocksApp : public wxApp
         virtual int OnRun();
         wxString GetAppPath() const;
         int ParseCmdLine(MainFrame* handlerFrame, const wxString& CmdLine = wxEmptyString);
+        #if wxCHECK_VERSION(3,0,0)
+        void OnCloseBatchBuildWindow(wxCloseEvent& evt);
+        #endif // wxCHECK_VERSION
         void OnAppActivate(wxActivateEvent& event);
         bool OnCmdLineParsed(wxCmdLineParser& parser);
         void OnFatalException();
         void LoadDelayedFiles(MainFrame* frame); // command line or DDE (if available) files
         void SetAutoFile(wxString& file); // method to set m_AutoFile
+        void AttachDebugger();
 #ifdef __WXMAC__
         // in response of an open-document apple event
         virtual void         MacOpenFile(const wxString &fileName) ;
@@ -139,6 +143,7 @@ class CodeBlocksApp : public wxApp
         wxArrayString m_DelayedFilesToOpen;
     private:
         void SetupPersonality(const wxString& personality);
+        void SetupImageSizes(wxToolBarAddOnXmlHandler *toolbarAddonHandler);
 
 
         wxString m_Prefix; // directory specified in --prefix switch
@@ -146,6 +151,8 @@ class CodeBlocksApp : public wxApp
         wxString m_BatchTarget;
         wxString m_Script;
         wxString m_AutoFile; // --file foo.cpp[:line]
+        wxString m_DebuggerAttach;
+        wxString m_DebuggerConfig;
 
         wxScrollingDialog* m_pBatchBuildDialog;
         MainFrame* m_Frame;

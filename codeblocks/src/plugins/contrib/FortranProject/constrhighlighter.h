@@ -2,18 +2,21 @@
 #ifndef CONSTR_HIGHLIGHTER_H_INCLUDED
 #define CONSTR_HIGHLIGHTER_H_INCLUDED
 
-#include "fconstruct.h"
-#include "tokenizerf.h"
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/wxscintilla.h>
+    #include <wx/string.h>
+    #include <wx/stopwatch.h>
+    #include <wx/colour.h>
 
-#include <wx/wxscintilla.h>
-#include <cbeditor.h>
-#include <wx/string.h>
-#include <wx/stopwatch.h>
-#include <wx/colour.h>
+    #include <cbeditor.h>
+#endif
 #include <set>
 #include <list>
 #include <map>
 
+#include "fconstruct.h"
+#include "tokenizerf.h"
 
 /** \brief Highlighting of Fortran constructs in the editor.
  */

@@ -6,6 +6,7 @@
 #ifndef SDK_GLOBALS_H
 #define SDK_GLOBALS_H
 
+#include <memory>
 #include <vector>
 
 #include <wx/string.h>
@@ -18,7 +19,9 @@
 
 #include "settings.h"
 
+class ConfigManager;
 class TiXmlDocument;
+class wxFileSystem;
 
 /// Known plugin types
 enum PluginType
@@ -113,7 +116,14 @@ enum FileVisualState
 class DLLIMPORT cbProjectTreeImages
 {
     public:
-        static wxImageList* MakeImageList();
+        /// Create an image list with images which could be used in file trees.
+        /// Currently used in the project manager and the file manager.
+        /// @param baseSize The size of the images at when scale factor is 1.
+        /// @param treeParent The parent of the tree where the image list would be used. It is used
+        ///        to query the scaling factor from it.
+        /// @return wxImageList object which contains images which could be indexed with the values
+        ///         from the FileVisualState enum.
+        static std::unique_ptr<wxImageList> MakeImageList(int baseSize, wxWindow &treeParent);
 
         /** @return The workspace icon index in the image list.
             @param  read_only Return the read-only icon for a workspace?
@@ -179,9 +189,12 @@ extern DLLIMPORT bool cbRead(wxFile& file, wxString& st, wxFontEncoding encoding
 extern DLLIMPORT wxString cbReadFileContents(wxFile& file, wxFontEncoding encoding = wxFONTENCODING_SYSTEM);
 /// Writes a wxString to a non-unicode file. File must be open. File is closed automatically.
 extern DLLIMPORT bool cbWrite(wxFile& file, const wxString& buff, wxFontEncoding encoding = wxFONTENCODING_SYSTEM);
-/// Writes a wxString to a file. Takes care of unicode and uses a temporary file
-/// to save first and then it copies it over the original.
-extern DLLIMPORT bool cbSaveToFile(const wxString& filename, const wxString& contents, wxFontEncoding encoding = wxFONTENCODING_SYSTEM, bool bom = false);
+/// Writes a wxString to a file. Takes care of unicode and could use a temporary file
+/// to save first and then it copies it over the original (this is controlled by the
+/// robust parameter).
+extern DLLIMPORT bool cbSaveToFile(const wxString& filename, const wxString& contents,
+                                   wxFontEncoding encoding = wxFONTENCODING_SYSTEM,
+                                   bool bom = false, bool robust = true);
 /// Saves a TinyXML document correctly, even if the path contains unicode characters.
 extern DLLIMPORT bool cbSaveTinyXMLDocument(TiXmlDocument* doc, const wxString& filename);
 /// Return @c str as a proper unicode-compatible string
@@ -271,11 +284,53 @@ extern DLLIMPORT wxMenu* CopyMenu(wxMenu* mnu, bool with_accelerators = false);
 /// Check if CommonControls version is at least 6 (XP and up)
 extern DLLIMPORT bool UsesCommonControls6();
 
-/** This function loads a bitmap from disk.
-  * Always use this to load bitmaps because it takes care of various
-  * issues with pre-XP windows (actually common controls < 6.00).
-  */
-extern DLLIMPORT wxBitmap cbLoadBitmap(const wxString& filename, wxBitmapType bitmapType = wxBITMAP_TYPE_PNG);
+/// This function loads a bitmap from disk.
+/// Always use this to load bitmaps because it takes care of various
+/// issues with pre-XP windows (actually common controls < 6.00).
+/// @param fs File system used to load the image from. If nullptr the default would be used.
+extern DLLIMPORT wxBitmap cbLoadBitmap(const wxString& filename,
+                                       wxBitmapType bitmapType = wxBITMAP_TYPE_PNG,
+                                       wxFileSystem *fs = nullptr);
+
+/// Loads bitmap from this. Use it when you need a bitmap which takes into account the scaling
+/// factor of the wx toolkit used. Toolkits which need this are GTK+3 and Cocoa.
+/// @param scaleFactor You can take this by calling GetContentScaleFactor on the window where
+/// the image would be drawn.
+/// @param fs File system used to load the image from. If nullptr the default would be used.
+/// @sa cbLoadBitmap
+extern DLLIMPORT wxBitmap cbLoadBitmapScaled(const wxString& filename, wxBitmapType bitmapType,
+                                             double scaleFactor, wxFileSystem *fs = nullptr);
+
+/// Wrapper function for wxWidnow::GetContentScaleFactor.
+/// It is defined only to hide its absence from wx2.8.
+extern DLLIMPORT double cbGetContentScaleFactor(const wxWindow &window);
+
+/// Similar to cbGetContentScaleFactor, but might return different results on
+/// GTK+ 2 and 3. It should be used to hide the odd behaviour of these to platforms.
+extern DLLIMPORT double cbGetActualContentScaleFactor(const wxWindow &window);
+
+/// Try to select the largest size that is available, but is smaller than targetSize.
+extern DLLIMPORT int cbFindMinSize(int targetSize, const int possibleSize[], int numWidths);
+
+/// Calls cbFindMinSize for the most common case for sizes from 16 to 64.
+extern DLLIMPORT int cbFindMinSize16to64(int targetSize);
+
+/// Cross platform way to create properly scaled image lists.
+extern DLLIMPORT std::unique_ptr<wxImageList> cbMakeScaledImageList(int size, double scaleFactor,
+                                                                    int &outActualSize);
+
+/// Add an bitmap to an image list. This is HiDPI aware and handles if the bitmap is not OK (it
+/// creates an read square bitmap).
+/// @param list The image list where the image is added.
+/// @param bitmap Bitmap to add.
+/// @param size This is the actual size of the image (scaling is applied to it).
+/// @param listSize The is the actual size of the image list (see the outActualSize parameter of
+///        cbMakeScaledImageList).
+/// @param scaleFactor This is the scaling factor returned by cbGetContentScaleFactor.
+/// @retval true If the image is OK.
+/// @retval false If the image wasn't OK and a red square image has been added to the list.
+extern DLLIMPORT bool cbAddBitmapToImageList(wxImageList &list, const wxBitmap &bitmap, int size,
+                                             int listSize, double scaleFactor);
 
 // compatibility function
 inline wxBitmap LoadPNGWindows2000Hack(const wxString& filename){ return cbLoadBitmap(filename); }
@@ -329,7 +384,31 @@ enum cbPlaceDialogMode
     pdlClip
 };
 
+enum class cbChildWindowPlacement
+{
+    CenterOnParent,
+    CenterOnDisplay,
+    LeaveToWM
+};
+
+/// @param appConfig Configuration manager pointing to the "app" namespace.
+/// @return The setting of the child window placement policy. It is used by PlaceWindow to decide
+///         where to place newly created child windows.
+cbChildWindowPlacement cbGetChildWindowPlacement(ConfigManager &appConfig);
+
+/** Fix the size and place of a window.
+  *
+  * If the window is on an invalid display move it to a valid display.
+  * If the size is larger then the current display the window is resized to a
+  * reasonable size and placed to the main screen. If possible the aspect ratio
+  * of the window is preserved.
+  */
+extern DLLIMPORT void cbFixWindowSizeAndPlace(wxTopLevelWindow* const w);
+
 extern DLLIMPORT void PlaceWindow(wxTopLevelWindow *w, cbPlaceDialogMode mode = pdlBest, bool enforce = false);
+
+/// @return The client area of the display the window is currently positioned at.
+extern DLLIMPORT wxRect cbGetMonitorRectForWindow(wxWindow *window);
 
 /** wxMessageBox wrapper.
   *
@@ -398,8 +477,10 @@ namespace platform
         winver_WindowsXP,
         winver_WindowsServer2003,
         winver_WindowsVista,
-        winver_Windows7
-    }windows_version_t;
+        winver_Windows7,
+        winver_Windows8,
+        winver_Windows10
+    } windows_version_t;
 
     extern DLLIMPORT windows_version_t WindowsVersion();
 }
@@ -408,5 +489,12 @@ namespace platform
 // not yet optimal but should do for now
 // one thing that's not checked yet are circular symlinks - watch out!
 extern DLLIMPORT wxString realpath(const wxString& path);
+
+/// Function which could be used to get the number of elements in a statically sized array.
+template<typename T, int N>
+constexpr int cbCountOf(const T (&)[N])
+{
+    return N;
+}
 
 #endif // SDK_GLOBALS_H

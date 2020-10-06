@@ -7,11 +7,13 @@
 #ifndef TOKENF_H
 #define TOKENF_H
 
-#include <wx/string.h>
-#include <wx/dynarray.h>
-#include <wx/thread.h>
-#include <wx/arrstr.h>
-
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/dynarray.h>
+    #include <wx/thread.h>
+    #include <wx/arrstr.h>
+#endif
 #include <list>
 
 WX_DEFINE_ARRAY_SIZE_T(size_t, ArrOfSizeT);
@@ -55,6 +57,7 @@ enum TokenKindF
     tkBindTo = 0x2000000,
     tkCallSubroutine = 0x4000000,
     tkCallFunction = 0x8000000,
+    tkMacroDefine = 0x10000000,
 };
 
 enum TokenAccessKind
@@ -156,5 +159,14 @@ class TokensArrayFlatClass
     private:
 };
 
+class FileTokenF : public TokenF
+{
+    public:
+        FileTokenF(){};
+        virtual ~FileTokenF(){};
+
+        wxString m_ProjectFilename;
+    private:
+};
 
 #endif // TOKENF_H

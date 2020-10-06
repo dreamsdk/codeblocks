@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10739 $
- * $Id: defaultmimehandler.cpp 10739 2016-01-28 18:01:46Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/defaultmimehandler/defaultmimehandler.cpp $
+ * $Revision: 11364 $
+ * $Id: defaultmimehandler.cpp 11364 2018-04-12 07:02:23Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/defaultmimehandler/defaultmimehandler.cpp $
  */
 
 #include "sdk.h"
@@ -176,26 +176,23 @@ int DefaultMimeHandler::OpenFile(const wxString& filename)
     else
     {
         // not yet supported. ask the user how to open it.
-        wxString choices[3] = {_("Select an external program to open it"),
-                               _("Open it with the associated application"),
-                               _("Open it inside the Code::Blocks editor")};
-        wxSingleChoiceDialog dlg(Manager::Get()->GetAppWindow(),
-                                _("Code::Blocks does not yet know how to open this kind of file.\n"
-                                  "Please select what you want to do with it:"),
-                                _("What to do?"),
-                                sizeof(choices) / sizeof(choices[0]),
-                                choices);
-        dlg.SetSelection(0);
-        PlaceWindow(&dlg);
-        int answer = dlg.ShowModal();
+        wxArrayString choices;
+        choices.push_back(_("Select an external program to open it"));
+        choices.push_back(_("Open it with the associated application"));
+        choices.push_back(_("Open it inside the Code::Blocks editor"));
 
-        if (answer == wxID_OK)
+        const wxString message = _("Code::Blocks does not yet know how to open this kind of file.\n"
+                                   "Please select what you want to do with it:");
+        const int answer = cbGetSingleChoiceIndex(message, _("What to do?"), choices,
+                                                  Manager::Get()->GetAppWindow(), wxSize(400, 300),
+                                                  0);
+        if (answer != -1)
         {
             wxString ext = the_file.GetExt().Lower();
             wxString wild = ext.IsEmpty()
                             ? the_file.GetName().Lower()
                             : wxString(_T("*.")) + ext;
-            switch (dlg.GetSelection())
+            switch (answer)
             {
                 case 0: // choose external program
                 {

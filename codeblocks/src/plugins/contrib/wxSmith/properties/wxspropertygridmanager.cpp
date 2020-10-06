@@ -17,7 +17,7 @@
 *
 * $Revision: 11053 $
 * $Id: wxspropertygridmanager.cpp 11053 2017-04-22 14:25:27Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.cpp $
 */
 
 #include "wxspropertygridmanager.h"

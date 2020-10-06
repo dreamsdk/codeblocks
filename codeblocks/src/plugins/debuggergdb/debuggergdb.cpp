@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11131 $
- * $Id: debuggergdb.cpp 11131 2017-08-06 11:31:46Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/debuggergdb.cpp $
+ * $Revision: 11877 $
+ * $Id: debuggergdb.cpp 11877 2019-10-16 07:24:24Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggergdb.cpp $
  */
 
 #include <sdk.h>
@@ -39,7 +39,6 @@
 
 #include <wx/tokenzr.h>
 #include "editarraystringdlg.h"
-#include "projectloader_hooks.h"
 #include "annoyingdialog.h"
 #include "cbstyledtextctrl.h"
 #include "compilercommandgenerator.h"
@@ -53,8 +52,6 @@
 #include "debuggeroptionsdlg.h"
 #include "debuggeroptionsprjdlg.h"
 #include "editwatchdlg.h"
-
-#define implement_debugger_toolbar
 
 // function pointer to DebugBreakProcess under windows (XP+)
 #if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0501)
@@ -207,18 +204,12 @@ void DebuggerGDB::OnAttachReal()
 {
     m_TimerPollDebugger.SetOwner(this, idTimerPollDebugger);
 
-    // hook to project loading procedure
-    ProjectLoaderHooks::HookFunctorBase* myhook = new ProjectLoaderHooks::HookFunctor<DebuggerGDB>(this, &DebuggerGDB::OnProjectLoadingHook);
-    m_HookId = ProjectLoaderHooks::RegisterHook(myhook);
-
     // register event sink
     Manager::Get()->RegisterEventSink(cbEVT_BUILDTARGET_SELECTED, new cbEventFunctor<DebuggerGDB, CodeBlocksEvent>(this, &DebuggerGDB::OnBuildTargetSelected));
 }
 
 void DebuggerGDB::OnReleaseReal(cb_unused bool appShutDown)
 {
-    ProjectLoaderHooks::UnregisterHook(m_HookId, true);
-
     //Close debug session when appShutDown
     if (m_State.HasDriver())
     {
@@ -327,62 +318,83 @@ void DebuggerGDB::OnConfigurationChange(cb_unused bool isActive)
         RequestUpdate(cbDebuggerPlugin::Watches);
 }
 
-wxArrayString& DebuggerGDB::GetSearchDirs(cbProject* prj)
+wxArrayString DebuggerGDB::ParseSearchDirs(const cbProject &project)
 {
-    SearchDirsMap::iterator it = m_SearchDirs.find(prj);
-    if (it == m_SearchDirs.end()) // create an empty set for this project
-        it = m_SearchDirs.insert(m_SearchDirs.begin(), std::make_pair(prj, wxArrayString()));
-
-    return it->second;
-}
-
-RemoteDebuggingMap& DebuggerGDB::GetRemoteDebuggingMap(cbProject* project)
-{
-    if (!project)
-        project = m_pProject;
-
-    ProjectRemoteDebuggingMap::iterator it = m_RemoteDebugging.find(project);
-    if (it == m_RemoteDebugging.end()) // create an empty set for this project
-        it = m_RemoteDebugging.insert(m_RemoteDebugging.begin(), std::make_pair(project, RemoteDebuggingMap()));
-
-    return it->second;
-}
-
-
-void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading)
-{
-    wxArrayString& pdirs = GetSearchDirs(project);
-    RemoteDebuggingMap& rdprj = GetRemoteDebuggingMap(project);
-
-    if (loading)
+    wxArrayString dirs;
+    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+    if (elem)
     {
-        rdprj.clear();
-
-        // Hook called when loading project file.
-        TiXmlElement* conf = elem->FirstChildElement("debugger");
+        const TiXmlElement* conf = elem->FirstChildElement("debugger");
         if (conf)
         {
-            TiXmlElement* pathsElem = conf->FirstChildElement("search_path");
+            const TiXmlElement* pathsElem = conf->FirstChildElement("search_path");
             while (pathsElem)
             {
                 if (pathsElem->Attribute("add"))
                 {
-                    wxString dir = cbC2U(pathsElem->Attribute("add"));
-                    if (pdirs.Index(dir) == wxNOT_FOUND)
-                        pdirs.Add(dir);
+                    const wxString &dir = cbC2U(pathsElem->Attribute("add"));
+                    if (dirs.Index(dir) == wxNOT_FOUND)
+                        dirs.Add(dir);
                 }
-
                 pathsElem = pathsElem->NextSiblingElement("search_path");
             }
+        }
+    }
 
-            TiXmlElement* rdElem = conf->FirstChildElement("remote_debugging");
+    return dirs;
+}
+
+TiXmlElement* GetElementForSaving(cbProject &project, const char *elementsToClear)
+{
+    TiXmlElement *elem = static_cast<TiXmlElement*>(project.GetExtensionsNode());
+
+    // since rev4332, the project keeps a copy of the <Extensions> element
+    // and re-uses it when saving the project (so to avoid losing entries in it
+    // if plugins that use that element are not loaded atm).
+    // so, instead of blindly inserting the element, we must first check it's
+    // not already there (and if it is, clear its contents)
+    TiXmlElement* node = elem->FirstChildElement("debugger");
+    if (!node)
+        node = elem->InsertEndChild(TiXmlElement("debugger"))->ToElement();
+
+    for (TiXmlElement* child = node->FirstChildElement(elementsToClear);
+         child;
+         child = node->FirstChildElement(elementsToClear))
+    {
+        node->RemoveChild(child);
+    }
+    return node;
+}
+
+void DebuggerGDB::SetSearchDirs(cbProject &project, const wxArrayString &dirs)
+{
+    TiXmlElement* node = GetElementForSaving(project, "search_path");
+    if (dirs.GetCount() > 0)
+    {
+        for (size_t i = 0; i < dirs.GetCount(); ++i)
+        {
+            TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
+            path->SetAttribute("add", cbU2C(dirs[i]));
+        }
+    }
+}
+
+RemoteDebuggingMap DebuggerGDB::ParseRemoteDebuggingMap(cbProject &project)
+{
+    RemoteDebuggingMap map;
+    const TiXmlElement* elem = static_cast<const TiXmlElement*>(project.GetExtensionsNode());
+    if (elem)
+    {
+        const TiXmlElement* conf = elem->FirstChildElement("debugger");
+        if (conf)
+        {
+            const TiXmlElement* rdElem = conf->FirstChildElement("remote_debugging");
             while (rdElem)
             {
                 wxString targetName = cbC2U(rdElem->Attribute("target"));
-                ProjectBuildTarget* bt = project->GetBuildTarget(targetName);
+                ProjectBuildTarget* bt = project.GetBuildTarget(targetName);
 
-                TiXmlElement* rdOpt = rdElem->FirstChildElement("options");
-
+                const TiXmlElement* rdOpt = rdElem->FirstChildElement("options");
                 if (rdOpt)
                 {
                     RemoteDebugging rd;
@@ -391,8 +403,12 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                         rd.connType = (RemoteDebugging::ConnectionType)atol(rdOpt->Attribute("conn_type"));
                     if (rdOpt->Attribute("serial_port"))
                         rd.serialPort = cbC2U(rdOpt->Attribute("serial_port"));
+
                     if (rdOpt->Attribute("serial_baud"))
                         rd.serialBaud = cbC2U(rdOpt->Attribute("serial_baud"));
+                    if (rd.serialBaud.empty())
+                        rd.serialBaud = wxT("115200");
+
                     if (rdOpt->Attribute("ip_address"))
                         rd.ip = cbC2U(rdOpt->Attribute("ip_address"));
                     if (rdOpt->Attribute("ip_port"))
@@ -409,88 +425,76 @@ void DebuggerGDB::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, b
                         rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
                         rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
-                    if (rdOpt->Attribute("loader_arguments"))
-                        rd.loaderArguments = cbC2U(rdOpt->Attribute("loader_arguments"));
-                    if (rdOpt->Attribute("loader_waiting_time"))
-                        rd.loaderWaitingTime = atol(rdOpt->Attribute("loader_waiting_time"));
 
-                    rdprj.insert(rdprj.end(), std::make_pair(bt, rd));
+                    map.insert(map.end(), std::make_pair(bt, rd));
                 }
 
                 rdElem = rdElem->NextSiblingElement("remote_debugging");
             }
         }
     }
-    else
+    return map;
+}
+
+void DebuggerGDB::SetRemoteDebuggingMap(cbProject &project, const RemoteDebuggingMap &rdMap)
+{
+    TiXmlElement* node = GetElementForSaving(project, "remote_debugging");
+
+    if (!rdMap.empty())
     {
-        // Hook called when saving project file.
+        typedef std::map<wxString, const RemoteDebugging*> MapTargetNameToRD;
+        MapTargetNameToRD mapTargetNameToRD;
 
-        // since rev4332, the project keeps a copy of the <Extensions> element
-        // and re-uses it when saving the project (so to avoid losing entries in it
-        // if plugins that use that element are not loaded atm).
-        // so, instead of blindly inserting the element, we must first check it's
-        // not already there (and if it is, clear its contents)
-        TiXmlElement* node = elem->FirstChildElement("debugger");
-        if (!node)
-            node = elem->InsertEndChild(TiXmlElement("debugger"))->ToElement();
-        node->Clear();
-
-        if (pdirs.GetCount() > 0)
+        for (RemoteDebuggingMap::const_iterator it = rdMap.begin(); it != rdMap.end(); ++it)
         {
-            for (size_t i = 0; i < pdirs.GetCount(); ++i)
-            {
-                TiXmlElement* path = node->InsertEndChild(TiXmlElement("search_path"))->ToElement();
-                path->SetAttribute("add", cbU2C(pdirs[i]));
-            }
+            wxString targetName = (it->first ? it->first->GetTitle() : wxString());
+            const RemoteDebugging& rd = it->second;
+            mapTargetNameToRD.emplace(targetName, &rd);
         }
 
-        if (rdprj.size())
+        for (MapTargetNameToRD::const_iterator it = mapTargetNameToRD.begin();
+             it != mapTargetNameToRD.end();
+             ++it)
         {
-            for (RemoteDebuggingMap::iterator it = rdprj.begin(); it != rdprj.end(); ++it)
+            const RemoteDebugging& rd = *it->second;
+
+            // if no different than defaults, skip it
+            if (rd.serialPort.IsEmpty() && rd.serialBaud == wxT("115200")
+                && rd.ip.IsEmpty() && rd.ipPort.IsEmpty()
+                && !rd.skipLDpath && !rd.extendedRemote
+                && rd.additionalCmds.IsEmpty() && rd.additionalCmdsBefore.IsEmpty()
+                && rd.additionalShellCmdsAfter.IsEmpty()
+                && rd.additionalShellCmdsBefore.IsEmpty())
             {
-//                // valid targets only
-//                if (!it->first)
-//                    continue;
-
-                RemoteDebugging& rd = it->second;
-
-                // if no different than defaults, skip it
-                if (rd.serialPort.IsEmpty() && rd.ip.IsEmpty() &&
-                    rd.additionalCmds.IsEmpty() && rd.additionalCmdsBefore.IsEmpty() &&
-                    !rd.skipLDpath && !rd.extendedRemote)
-                {
-                    continue;
-                }
-
-                TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("remote_debugging"))->ToElement();
-                if (it->first)
-                    rdnode->SetAttribute("target", cbU2C(it->first->GetTitle()));
-
-                TiXmlElement* tgtnode = rdnode->InsertEndChild(TiXmlElement("options"))->ToElement();
-                tgtnode->SetAttribute("conn_type", (int)rd.connType);
-                if (!rd.serialPort.IsEmpty())
-                    tgtnode->SetAttribute("serial_port", cbU2C(rd.serialPort));
-                if (!rd.serialBaud.IsEmpty())
-                    tgtnode->SetAttribute("serial_baud", cbU2C(rd.serialBaud));
-                if (!rd.ip.IsEmpty())
-                    tgtnode->SetAttribute("ip_address", cbU2C(rd.ip));
-                if (!rd.ipPort.IsEmpty())
-                    tgtnode->SetAttribute("ip_port", cbU2C(rd.ipPort));
-                if (!rd.additionalCmds.IsEmpty())
-                    tgtnode->SetAttribute("additional_cmds", cbU2C(rd.additionalCmds));
-                if (!rd.additionalCmdsBefore.IsEmpty())
-                    tgtnode->SetAttribute("additional_cmds_before", cbU2C(rd.additionalCmdsBefore));
-                if (rd.skipLDpath)
-                    tgtnode->SetAttribute("skip_ld_path", "1");
-                if (rd.extendedRemote)
-                    tgtnode->SetAttribute("extended_remote", "1");
-                if (!rd.additionalShellCmdsAfter.IsEmpty())
-                    tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
-                if (!rd.additionalShellCmdsBefore.IsEmpty())
-                    tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
-                tgtnode->SetAttribute("loader_arguments", cbU2C(rd.loaderArguments));
-                tgtnode->SetAttribute("loader_waiting_time", (int)rd.loaderWaitingTime);
+                continue;
             }
+
+            TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("remote_debugging"))->ToElement();
+            if (!it->first.empty())
+                rdnode->SetAttribute("target", cbU2C(it->first));
+
+            TiXmlElement* tgtnode = rdnode->InsertEndChild(TiXmlElement("options"))->ToElement();
+            tgtnode->SetAttribute("conn_type", (int)rd.connType);
+            if (!rd.serialPort.IsEmpty())
+                tgtnode->SetAttribute("serial_port", cbU2C(rd.serialPort));
+            if (rd.serialBaud != wxT("115200"))
+                tgtnode->SetAttribute("serial_baud", cbU2C(rd.serialBaud));
+            if (!rd.ip.IsEmpty())
+                tgtnode->SetAttribute("ip_address", cbU2C(rd.ip));
+            if (!rd.ipPort.IsEmpty())
+                tgtnode->SetAttribute("ip_port", cbU2C(rd.ipPort));
+            if (!rd.additionalCmds.IsEmpty())
+                tgtnode->SetAttribute("additional_cmds", cbU2C(rd.additionalCmds));
+            if (!rd.additionalCmdsBefore.IsEmpty())
+                tgtnode->SetAttribute("additional_cmds_before", cbU2C(rd.additionalCmdsBefore));
+            if (rd.skipLDpath)
+                tgtnode->SetAttribute("skip_ld_path", "1");
+            if (rd.extendedRemote)
+                tgtnode->SetAttribute("extended_remote", "1");
+            if (!rd.additionalShellCmdsAfter.IsEmpty())
+                tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
+            if (!rd.additionalShellCmdsBefore.IsEmpty())
+                tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
         }
     }
 }
@@ -504,7 +508,6 @@ void DebuggerGDB::DoWatches()
 
     bool locals = config.GetFlag(DebuggerConfiguration::WatchLocals);
     bool funcArgs = config.GetFlag(DebuggerConfiguration::WatchFuncArgs);
-
 
     if (locals)
     {
@@ -530,66 +533,49 @@ void DebuggerGDB::DoWatches()
         }
     }
 
-    m_State.GetDriver()->UpdateWatches(m_localsWatch, m_funcArgsWatch, m_watches);
+    m_State.GetDriver()->UpdateWatches(m_localsWatch, m_funcArgsWatch, m_watches, false);
 }
 
-int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
+static wxString GetShellString()
 {
-    int result = GetActiveConfigEx().GetLoaderWaitingTime();
-
-    if (waitingTime != LOADER_WAITING_TIME_DISABLED &&
-        waitingTime >= LOADER_WAITING_TIME_MIN &&
-        waitingTime <= LOADER_WAITING_TIME_MAX)
-    {
-        result = waitingTime;
-    }
-
-    return result;
+    if (platform::windows)
+        return wxEmptyString;
+    wxString shell = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/console_shell"),
+                                                                       DEFAULT_CONSOLE_SHELL);
+    // GDB expects the SHELL variable's value to be a path to the shell's executable, so we need to
+    // remove all parameters and do some trimming.
+    shell.Trim(false);
+    wxString::size_type pos = shell.find(wxT(' '));
+    if (pos != wxString::npos)
+        shell.erase(pos);
+    shell.Trim();
+    return shell;
 }
 
-bool DebuggerGDB::LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime)
+int DebuggerGDB::LaunchProcessWithShell(const wxString &cmd, wxProcess *process,
+                                        const wxString &cwd)
 {
-    bool loaderStartedSuccessfully = false;
-
-    wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
-    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee); // Read from default DebuggerGDB panel
-    if (!projectLoaderArguments.empty()) {
-        loaderArgs = ParseLoaderArguments(projectLoaderArguments, debuggee);
-    }
-
-    wxString cmd = loaderPath;
-    if (!loaderArgs.empty())
+    wxString shell = GetShellString();
+#if wxCHECK_VERSION(3, 0, 0)
+    wxExecuteEnv execEnv;
+    execEnv.cwd = cwd;
+    // Read the current environment variables and then make changes to them.
+    wxGetEnvMap(&execEnv.env);
+    if (!shell.empty())
     {
-        cmd += _(" ") + loaderArgs;
+        Log(wxString::Format(wxT("Setting SHELL to '%s'"), shell.wx_str()));
+        execEnv.env["SHELL"] = shell;
     }
-
-    // start the loader process
-    Log(_("Starting loader: ") + cmd);
-
-    long pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_NOHIDE);
-
-    loaderStartedSuccessfully = (pid);
-    if (loaderStartedSuccessfully)
+    return wxExecute(cmd, wxEXEC_ASYNC, process, &execEnv);
+#else
+    if (!shell.empty())
     {
-        DebugLog(wxString::Format( _("Loader Process ID: %d"), pid ) );
-
-        int waitingTime = ValidateLoaderWaitingTime(projectWaitingTime);
-
-        Log(wxString::Format(_("Loader started successfully. Waiting %d second(s) before starting the debugger..."), waitingTime));
-        for(int i = 0; i < waitingTime; i++)
-        {
-            DebugLog(wxString::Format( _("%d second(s) elapsed..."), (i + 1) ) );
-            wxMilliSleep(1000);
-            Manager::Yield();
-        }
-        DebugLog(wxString::Format( _("Ready to start the debugger!") ) );
+        Log(wxString::Format(wxT("Setting SHELL to '%s'"), shell.wx_str()));
+        wxSetEnv(wxT("SHELL"), shell);
     }
-    else
-    {
-        Log(_("Failed to start the loader..."), Logger::error);
-    }
-
-    return loaderStartedSuccessfully;
+    (void)cwd;
+    return wxExecute(cmd, wxEXEC_ASYNC, process);
+#endif // !wxCHECK_VERSION(3, 0, 0)
 }
 
 int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
@@ -600,7 +586,7 @@ int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
     // start the gdb process
     m_pProcess = new PipedProcess(&m_pProcess, this, idGDBProcess, true, cwd);
     Log(_("Starting debugger: ") + cmd);
-    m_Pid = wxExecute(cmd, wxEXEC_ASYNC, m_pProcess);
+    m_Pid = LaunchProcessWithShell(cmd, m_pProcess, cwd);
 
 #ifdef __WXMAC__
     if (m_Pid == -1)
@@ -726,47 +712,6 @@ bool DebuggerGDB::Debug(bool breakOnEntry)
     return true;
 }
 
-bool DebuggerGDB::IsDebugTarget(ProjectBuildTarget *target)
-{
-    bool result = false;
-
-//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
-
-    wxArrayString targetOpts = target->GetCompilerOptions();
-
-    size_t i = 0;
-    while (!result && i < targetOpts.GetCount())
-    {
-        wxString opt = targetOpts[i].Upper();
-        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
-        i++;
-    }
-
-//    wxString resultStr = result ? _("YES") : _("NO");
-//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
-
-    return result;
-}
-
-ProjectBuildTarget* DebuggerGDB::GetCurrentTarget()
-{
-    ProjectBuildTarget* target = NULL;
-    if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
-    {
-        int tgtIdx = m_pProject->SelectTarget();
-        if (tgtIdx == -1)
-        {
-            return NULL;
-        }
-        target = m_pProject->GetBuildTarget(tgtIdx);
-        m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
-    }
-    else
-        target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
-
-    return target;
-}
-
 int DebuggerGDB::DoDebug(bool breakOnEntry)
 {
     // set this to true before every error exit point in this function
@@ -782,13 +727,20 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     if ( (m_PidToAttach == 0) && m_pProject)
     {
         Log(_("Selecting target: "));
-        target = GetCurrentTarget();
-        if (!target)
+        if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
         {
-            Log(_("canceled"));
-            m_Canceled = true;
-            return 3;
+            int tgtIdx = m_pProject->SelectTarget();
+            if (tgtIdx == -1)
+            {
+                Log(_("canceled"));
+                m_Canceled = true;
+                return 3;
+            }
+            target = m_pProject->GetBuildTarget(tgtIdx);
+            m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
         }
+        else
+            target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
 
         // make sure it's not a commands-only target
         if (target && target->GetTargetType() == ttCommandsOnly)
@@ -798,35 +750,6 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(_("aborted"));
             return 3;
         }
-
-        // make sure it's a native and loaded target...
-        if (target && target->GetTargetType() == ttNative && !GetActiveConfigEx().GetLoaderExecutable().empty())
-        {
-            if (!IsDebugTarget(target))
-            {
-                // We are trying to debug a Release target: impossible
-
-                cbMessageBox(_("The selected target is a Release target.\n"
-                    "Please select the Debug target if you want to launch a debugging session on this project."), _("Warning"), wxICON_WARNING);
-                Log(_("aborted"));
-                m_Canceled = true;
-                return 3;
-            }
-            else
-            {
-                // We are trying to debug a Debug target: OK
-
-                AnnoyingDialog dlg(_("About debugging through a loader"),
-                   F(_("The loader will now run the Debug target remotely and wait %d second(s) before starting the debugger.\n"
-                       "This delay is essential in order to wait the upload and the execution on the remote system.\n"
-                       "You may adapt this delay in Project > Properties... > Debugger > Debug > Waiting time."),
-                     GetActiveConfigEx().GetLoaderWaitingTime()),
-                   wxART_INFORMATION,
-                   AnnoyingDialog::dStyle::OK);
-                dlg.ShowModal();
-            }
-        }
-
         if (target) Log(target->GetTitle());
 
         // find the target's compiler (to see which debugger to use)
@@ -894,7 +817,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     wxString cmd;
 
     // prepare the driver
-    wxString debuggee, cmdline;
+    wxString cmdline;
     if (m_PidToAttach == 0)
     {
         m_State.GetDriver()->ClearDirectories();
@@ -913,8 +836,11 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
                 AddSourceDir(it->GetCommonTopLevelPath());
             }
         }
+
+        // Note: I've done some testing and parsing 1000 strings takes 2-3ms, so this isn't really
+        // a problem. The code adding the source dirs to the debugger driver is a lot slower!
         // now add all per-project user-set search dirs
-        wxArrayString& pdirs = GetSearchDirs(m_pProject);
+        const wxArrayString& pdirs = ParseSearchDirs(*m_pProject);
         for (size_t i = 0; i < pdirs.GetCount(); ++i)
             AddSourceDir(pdirs[i]);
 
@@ -926,7 +852,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         }
 
         // set the file to debug (depends on the target type)
-        wxString path;
+        wxString debuggee, path;
         if ( !GetDebuggee(debuggee, path, target) )
         {
             m_Canceled = true;
@@ -951,11 +877,26 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     else // m_PidToAttach != 0
         cmdline = m_State.GetDriver()->GetCommandLine(cmdexe, m_PidToAttach, GetActiveConfigEx().GetUserArguments());
 
-    RemoteDebuggingMap& rdprj = GetRemoteDebuggingMap();
-    RemoteDebugging rd = rdprj[0]; // project settings
-    RemoteDebuggingMap::iterator it = rdprj.find(target); // target settings
-    if (it != rdprj.end())
-        rd.MergeWith(it->second);
+    RemoteDebugging rd;
+
+    if (m_pProject)
+    {
+        // Note: This is parsing the remote debugging info on every start. It is not fast but it is
+        //       not slow - parsing the info for 500 targets takes 2-3ms, which is fine.
+        //       One easy optimization is to parse  the info only for the project and the target
+        //       which is being debugged.
+        const RemoteDebuggingMap &remoteDebuggingMap = ParseRemoteDebuggingMap(*m_pProject);
+        // project settings
+        RemoteDebuggingMap::const_iterator it = remoteDebuggingMap.find(nullptr);
+        if (it != remoteDebuggingMap.end())
+            rd = it->second;
+
+        // target settings
+        it = remoteDebuggingMap.find(target);
+        if (it != remoteDebuggingMap.end())
+            rd.MergeWith(it->second);
+    }
+
 //////////////////killerbot : most probably here : execute the shell commands (we could access the per target debugger settings)
     wxString oldLibPath; // keep old PATH/LD_LIBRARY_PATH contents
     if (!rd.skipLDpath)
@@ -981,23 +922,11 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         }
     }
 
-    // start the loader if necessary
-    if (GetActiveConfigEx().IsLoaderNecessary()) {
-        if (!LaunchLoader(debuggee, rd.loaderArguments, rd.loaderWaitingTime)) {
-            Log(_("An issue occurred when starting the loader..."), Logger::error);
-            Log(_("Starting the debugger anyway..."));
-        }
-    }
-
     #ifdef __WXMSW__
     if (!m_State.GetDriver()->UseDebugBreakProcess())
     {
-        DebugLog(_("UseDebugBreakProcess is enabled!"));
-        if (!AllocConsole())
-        {
-            DebugLog(wxString::Format(_("AllocConsole failed: %d"), GetLastError()));
-        }
-        SetConsoleTitleA("Code::Blocks Debug Console - DO NOT CLOSE!");
+        AllocConsole();
+        SetConsoleTitleA("Codeblocks debug console - DO NOT CLOSE!");
         SetConsoleCtrlHandler(HandlerRoutine, TRUE);
         m_bIsConsole = true;
 
@@ -1006,15 +935,12 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             ShowWindow(windowHandle, SW_HIDE);
     }
     #endif
-
-    // prepare the debugger
+    // start the gdb process
     wxString wdir = m_State.GetDriver()->GetDebuggersWorkingDirectory();
     if (wdir.empty())
         wdir = m_pProject ? m_pProject->GetBasePath() : _T(".");
     DebugLog(_T("Command-line: ") + cmdline);
     DebugLog(_T("Working dir : ") + wdir);
-
-    // start the gdb process
     int ret = LaunchProcess(cmdline, wdir);
 
     if (!rd.skipLDpath)
@@ -1048,7 +974,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         return -1;
 
     bool isConsole = (target && target->GetTargetType() == ttConsoleOnly);
-    m_State.GetDriver()->Prepare(isConsole, m_printElements);
+    m_State.GetDriver()->Prepare(isConsole, m_printElements, rd);
     m_State.ApplyBreakpoints();
 
    #ifndef __WXMSW__
@@ -1090,38 +1016,8 @@ void DebuggerGDB::AddSourceDir(const wxString& dir)
     wxString filename = dir;
     Manager::Get()->GetMacrosManager()->ReplaceEnvVars(filename); // apply env vars
     Log(_("Adding source dir: ") + filename);
-
-    // Convert paths to 8.3 format
-    wxString filename83 = filename;
-    ConvertToGDBDirectory(filename83, _T(""), false);
-    m_State.GetDriver()->AddDirectory(filename83);
-
-    // Handle paths with spaces
-    // GDB supports spaces in directories so we must do that
-    // If not, the "break" cmd with spaces in filenames will NOT work...
-    if (filename.Contains(wxT(" ")))
-    {
-        ConvertToGDBFriendly(filename);
-        m_State.GetDriver()->AddDirectory(filename);
-    }
-}
-
-// static
-wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee)
-{
-    wxString result = loaderArguments;
-
-    if (!result.empty())
-    {
-        // This is dirty!
-        result.Replace(wxT("${DEBUGGEE}"), debuggee);
-        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
-
-        // Normal procedure
-        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
-    }
-
-    return result;
+    ConvertToGDBDirectory(filename, _T(""), false);
+    m_State.GetDriver()->AddDirectory(filename);
 }
 
 // static
@@ -1289,6 +1185,9 @@ void DebuggerGDB::RequestUpdate(DebugWindows window)
         case ExamineMemory:
             RunCommand(CMD_MEMORYDUMP);
             break;
+        case MemoryRange:
+            m_State.GetDriver()->UpdateMemoryRangeWatches(m_memoryRanges, false);
+            break;
         case Threads:
             RunCommand(CMD_RUNNINGTHREADS);
             break;
@@ -1307,6 +1206,8 @@ void DebuggerGDB::RunCommand(int cmd)
     if (!m_pProcess)
         return;
 
+    bool debuggerContinued = false;
+
     switch (cmd)
     {
         case CMD_CONTINUE:
@@ -1317,6 +1218,7 @@ void DebuggerGDB::RunCommand(int cmd)
                 Log(_("Continuing..."));
                 m_State.GetDriver()->Continue();
                 m_State.GetDriver()->ResetCurrentFrame();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1328,6 +1230,7 @@ void DebuggerGDB::RunCommand(int cmd)
             {
                 m_State.GetDriver()->Step();
                 m_State.GetDriver()->ResetCurrentFrame();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1345,6 +1248,7 @@ void DebuggerGDB::RunCommand(int cmd)
                 m_State.GetDriver()->StepInstruction();
                 m_State.GetDriver()->ResetCurrentFrame();
                 m_State.GetDriver()->NotifyCursorChanged();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1362,6 +1266,7 @@ void DebuggerGDB::RunCommand(int cmd)
                 m_State.GetDriver()->StepIntoInstruction();
                 m_State.GetDriver()->ResetCurrentFrame();
                 m_State.GetDriver()->NotifyCursorChanged();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1373,6 +1278,7 @@ void DebuggerGDB::RunCommand(int cmd)
             {
                 m_State.GetDriver()->StepIn();
                 m_State.GetDriver()->ResetCurrentFrame();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1384,6 +1290,7 @@ void DebuggerGDB::RunCommand(int cmd)
             {
                 m_State.GetDriver()->StepOut();
                 m_State.GetDriver()->ResetCurrentFrame();
+                debuggerContinued = true;
             }
             break;
         }
@@ -1436,6 +1343,14 @@ void DebuggerGDB::RunCommand(int cmd)
         }
 
         default: break;
+    }
+
+    if (debuggerContinued)
+    {
+        PluginManager *plm = Manager::Get()->GetPluginManager();
+        CodeBlocksEvent evt(cbEVT_DEBUGGER_CONTINUED);
+        evt.SetPlugin(this);
+        plm->NotifyPlugins(evt);
     }
 }
 
@@ -1750,7 +1665,6 @@ void DebuggerGDB::DoBreak(bool temporary)
     if (m_pProcess && m_Pid && !IsStopped())
     {
         long childPid = m_State.GetDriver()->GetChildPID();
-		DebugLog(wxString::Format(_("childPid: %d"), childPid));
         long pid = childPid;
     #ifndef __WXMSW__
         if (pid > 0 && !wxProcess::Exists(pid))
@@ -2108,7 +2022,8 @@ bool DebuggerGDB::ShowValueTooltip(int style)
     if (!GetActiveConfigEx().GetFlag(DebuggerConfiguration::EvalExpression))
         return false;
     if (style != wxSCI_C_DEFAULT && style != wxSCI_C_OPERATOR && style != wxSCI_C_IDENTIFIER &&
-        style != wxSCI_C_WORD2 && style != wxSCI_C_GLOBALCLASS)
+        style != wxSCI_C_WORD2 && style != wxSCI_C_GLOBALCLASS  && style != wxSCI_C_WXSMITH &&
+        style != wxSCI_F_IDENTIFIER)
     {
         return false;
     }
@@ -2122,13 +2037,6 @@ void DebuggerGDB::OnValueTooltip(const wxString &token, const wxRect &evalRect)
 
 void DebuggerGDB::CleanupWhenProjectClosed(cbProject *project)
 {
-    // remove all search dirs stored for this project so we don't have conflicts
-    // if a newly opened project happens to use the same memory address
-    GetSearchDirs(project).clear();
-
-    // the same for remote debugging
-    GetRemoteDebuggingMap(project).clear();
-
     // remove all breakpoints belonging to the closed project
     DeleteAllProjectBreakpoints(project);
     // FIXME (#obfuscated): Optimize this when multiple projects are closed
@@ -2228,17 +2136,38 @@ void DebuggerGDB::OnCursorChanged(wxCommandEvent& WXUNUSED(event))
             // update running threads
             if (dbg_manager->UpdateThreads())
                 RunCommand(CMD_RUNNINGTHREADS);
+
+            // Notify everybody that the debugger cursor has changed.
+            // This might be used by some view windows to request the debugger plugin to update some
+            // data.
+            CodeBlocksEvent cursorChangeEvent(cbEVT_DEBUGGER_CURSOR_CHANGED);
+            cursorChangeEvent.SetPlugin(this);
+            Manager::Get()->ProcessEvent(cursorChangeEvent);
         }
     }
 }
 
-cb::shared_ptr<cbWatch> DebuggerGDB::AddWatch(const wxString& symbol)
+cb::shared_ptr<cbWatch> DebuggerGDB::AddWatch(const wxString& symbol, bool update)
 {
     cb::shared_ptr<GDBWatch> watch(new GDBWatch(CleanStringValue(symbol)));
     m_watches.push_back(watch);
+    m_mapWatchesToType[watch] = WatchType::Normal;
 
-    if (m_pProcess)
+    if (m_pProcess && update)
         m_State.GetDriver()->UpdateWatch(m_watches.back());
+
+    return watch;
+}
+
+cb::shared_ptr<cbWatch> DebuggerGDB::AddMemoryRange(uint64_t address, uint64_t size,
+                                                    const wxString &symbol, bool update)
+{
+    cb::shared_ptr<GDBMemoryRangeWatch> watch(new GDBMemoryRangeWatch(address, size, symbol));
+    m_memoryRanges.push_back(watch);
+    m_mapWatchesToType[watch] = WatchType::MemoryRange;
+
+    if (m_pProcess && update)
+        m_State.GetDriver()->UpdateMemoryRangeWatch(m_memoryRanges.back());
 
     return watch;
 }
@@ -2246,28 +2175,63 @@ cb::shared_ptr<cbWatch> DebuggerGDB::AddWatch(const wxString& symbol)
 void DebuggerGDB::AddWatchNoUpdate(const cb::shared_ptr<GDBWatch> &watch)
 {
     m_watches.push_back(watch);
+    m_mapWatchesToType[watch] = WatchType::Normal;
 }
 
 void DebuggerGDB::DeleteWatch(cb::shared_ptr<cbWatch> watch)
 {
-    WatchesContainer::iterator it = std::find(m_watches.begin(), m_watches.end(), watch);
-    if (it != m_watches.end())
-        m_watches.erase(it);
+    MapWatchesToType::iterator itType = m_mapWatchesToType.find(watch);
+    if (itType == m_mapWatchesToType.end())
+        return;
+
+    switch (itType->second)
+    {
+    case WatchType::Normal:
+        {
+            WatchesContainer::iterator it = std::find(m_watches.begin(), m_watches.end(), watch);
+            if (it != m_watches.end())
+            {
+                m_watches.erase(it);
+                return;
+            }
+        }
+        break;
+    case WatchType::MemoryRange:
+        {
+            MemoryRangeWatchesContainer::iterator it = std::find(m_memoryRanges.begin(),
+                                                                 m_memoryRanges.end(), watch);
+            if (it != m_memoryRanges.end())
+            {
+                m_memoryRanges.erase(it);
+                return;
+            }
+            break;
+        }
+    }
+
 }
 
 bool DebuggerGDB::HasWatch(cb::shared_ptr<cbWatch> watch)
 {
-    WatchesContainer::iterator it = std::find(m_watches.begin(), m_watches.end(), watch);
-    if (it != m_watches.end())
+    if (watch == m_localsWatch || watch == m_funcArgsWatch)
         return true;
+
+    return m_mapWatchesToType.find(watch) != m_mapWatchesToType.end();
+}
+
+bool DebuggerGDB::IsMemoryRangeWatch(const cb::shared_ptr<cbWatch> &watch)
+{
+    MapWatchesToType::const_iterator it = m_mapWatchesToType.find(watch);
+    if (it == m_mapWatchesToType.end())
+        return false;
     else
-        return watch == m_localsWatch || watch == m_funcArgsWatch;
+        return it->second == WatchType::MemoryRange;
 }
 
 void DebuggerGDB::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 {
-    // not supported for child nodes!
-    if (watch->GetParent())
+    // not supported for child nodes or memory ranges!
+    if (watch->GetParent() || IsMemoryRangeWatch(watch))
         return;
 
     cb::shared_ptr<GDBWatch> real_watch = cb::static_pointer_cast<GDBWatch>(watch);
@@ -2278,31 +2242,77 @@ void DebuggerGDB::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 
 bool DebuggerGDB::SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString &value)
 {
-    if (!HasWatch(cbGetRootWatch(watch)))
-        return false;
-
     if (!m_State.HasDriver())
         return false;
 
-    wxString full_symbol;
-    cb::shared_ptr<cbWatch> temp_watch = watch;
-    while (temp_watch)
+    cb::shared_ptr<cbWatch> rootWatch = cbGetRootWatch(watch);
+    MapWatchesToType::const_iterator itType = m_mapWatchesToType.find(rootWatch);
+    if (itType == m_mapWatchesToType.end())
+        return false;
+
+    const WatchType type = itType->second;
+    if (type == WatchType::MemoryRange)
     {
-        wxString symbol;
-        temp_watch->GetSymbol(symbol);
-        temp_watch = temp_watch->GetParent();
+        cb::shared_ptr<GDBMemoryRangeWatch> temp_watch = std::static_pointer_cast<GDBMemoryRangeWatch>(watch);
+        uint64_t addr = temp_watch->GetAddress();
 
-        if (symbol.find(wxT('*')) != wxString::npos || symbol.find(wxT('&')) != wxString::npos)
-            symbol = wxT('(') + symbol + wxT(')');
+        DebuggerDriver* driver = m_State.GetDriver();
+        driver->SetMemoryRangeValue(addr, value);
+    }
+    else
+    {
+        wxString full_symbol;
+        cb::shared_ptr<cbWatch> temp_watch = watch;
+        if (g_DebugLanguage == dl_Cpp)
+        {
+            while (temp_watch)
+            {
+                wxString symbol;
+                temp_watch->GetSymbol(symbol);
+                temp_watch = temp_watch->GetParent();
 
-        if (full_symbol.empty())
-            full_symbol = symbol;
-        else
-            full_symbol = symbol + wxT('.') + full_symbol;
+                if (symbol.find(wxT('*')) != wxString::npos || symbol.find(wxT('&')) != wxString::npos)
+                    symbol = wxT('(') + symbol + wxT(')');
+
+                if (full_symbol.empty())
+                    full_symbol = symbol;
+                else
+                    full_symbol = symbol + wxT('.') + full_symbol;
+            }
+        }
+        else // Fortran language
+        {
+            while (temp_watch)
+            {
+                wxString symbol;
+                temp_watch->GetSymbol(symbol);
+                temp_watch = temp_watch->GetParent();
+
+                if (full_symbol.empty())
+                    full_symbol = symbol;
+                else
+                {
+                    if (full_symbol.at(0) == '(' && symbol.at(0) == '(')
+                    {
+                        size_t sec = full_symbol.find(')');
+                        if (sec != wxString::npos && symbol.at(symbol.size()-1) == ')')
+                        {
+                            full_symbol = full_symbol.substr(0,sec) + wxT(',') + symbol.substr(1,symbol.size()-2) +
+                                          full_symbol.substr(sec);
+                        }
+                    }
+                    else if (full_symbol.at(0) == '(')
+                        full_symbol = symbol + full_symbol;
+                    else
+                        full_symbol = symbol + wxT('%') + full_symbol;
+                }
+            }
+        }
+
+        DebuggerDriver* driver = m_State.GetDriver();
+        driver->SetVarValue(full_symbol, value);
     }
 
-    DebuggerDriver* driver = m_State.GetDriver();
-    driver->SetVarValue(full_symbol, value);
     DoWatches();
     return true;
 }
@@ -2317,18 +2327,75 @@ void DebuggerGDB::CollapseWatch(cb_unused cb::shared_ptr<cbWatch> watch)
 
 void DebuggerGDB::UpdateWatch(cb::shared_ptr<cbWatch> watch)
 {
-    if (!HasWatch(watch))
+    DebuggerDriver *driver = m_State.GetDriver();
+    if (driver == nullptr)
         return;
 
+    if (watch == m_localsWatch)
+        driver->UpdateWatchLocalsArgs(cb::static_pointer_cast<GDBWatch>(watch), true);
+    else if (watch == m_funcArgsWatch)
+        driver->UpdateWatchLocalsArgs(cb::static_pointer_cast<GDBWatch>(watch), false);
+    else
+    {
+        MapWatchesToType::const_iterator itType = m_mapWatchesToType.find(watch);
+        if (itType == m_mapWatchesToType.end())
+            return;
+        const WatchType type = itType->second;
+        switch (type)
+        {
+        case WatchType::Normal:
+            driver->UpdateWatch(cb::static_pointer_cast<GDBWatch>(watch));
+            break;
+        case WatchType::MemoryRange:
+            driver->UpdateMemoryRangeWatch(cb::static_pointer_cast<GDBMemoryRangeWatch>(watch));
+            break;
+        }
+    }
+}
+
+void DebuggerGDB::UpdateWatches(const std::vector<cb::shared_ptr<cbWatch>> &watches)
+{
     if (!m_State.HasDriver())
         return;
-    cb::shared_ptr<GDBWatch> real_watch = cb::static_pointer_cast<GDBWatch>(watch);
-    if (real_watch == m_localsWatch)
-        m_State.GetDriver()->UpdateWatchLocalsArgs(real_watch, true);
-    else if (real_watch == m_funcArgsWatch)
-        m_State.GetDriver()->UpdateWatchLocalsArgs(real_watch, false);
-    else
-        m_State.GetDriver()->UpdateWatch(real_watch);
+
+    WatchesContainer normalWatches;
+    MemoryRangeWatchesContainer memoryRanges;
+
+    cb::shared_ptr<GDBWatch> localsToUpdate, funcArgsToUpdate;
+
+    for (const cb::shared_ptr<cbWatch> &watch : watches)
+    {
+        if (watch == m_localsWatch)
+        {
+            localsToUpdate = m_localsWatch;
+            continue;
+        }
+        if (watch == m_funcArgsWatch)
+        {
+            funcArgsToUpdate = m_funcArgsWatch;
+            continue;
+        }
+
+        MapWatchesToType::const_iterator itType = m_mapWatchesToType.find(watch);
+        if (itType == m_mapWatchesToType.end())
+            continue;
+
+        const WatchType type = itType->second;
+        switch (type)
+        {
+        case WatchType::Normal:
+            normalWatches.push_back(cb::static_pointer_cast<GDBWatch>(watch));
+            break;
+        case WatchType::MemoryRange:
+            memoryRanges.push_back(cb::static_pointer_cast<GDBMemoryRangeWatch>(watch));
+            break;
+        }
+    }
+
+    if (!normalWatches.empty())
+        m_State.GetDriver()->UpdateWatches(localsToUpdate, funcArgsToUpdate, normalWatches, true);
+    if (!memoryRanges.empty())
+        m_State.GetDriver()->UpdateMemoryRangeWatches(memoryRanges, true);
 }
 
 void DebuggerGDB::MarkAllWatchesAsUnchanged()
@@ -2413,4 +2480,10 @@ void DebuggerGDB::OnBuildTargetSelected(CodeBlocksEvent& event)
     // and that a project is loaded
     if (m_pProject && event.GetProject() == m_pProject)
         m_ActiveBuildTarget = event.GetBuildTargetName();
+}
+
+void DebuggerGDB::DetermineLanguage()
+{
+    if (m_State.HasDriver())
+        m_State.GetDriver()->DetermineLanguage();
 }

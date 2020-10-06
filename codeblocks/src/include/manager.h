@@ -43,17 +43,10 @@ class FileManager;
 class ColourManager;
 class CCManager;
 class cbSearchResultsLog;
-
+class wxToolBarAddOnXmlHandler;
 
 class DLLIMPORT Manager
 {
-    wxFrame*               m_pAppWindow;
-    static bool            m_AppShuttingDown;
-    static bool            m_AppStartedUp;
-    static bool            m_BlockYields;
-    static bool            m_IsBatch;
-    static wxCmdLineParser m_CmdLineParser;
-
      Manager();
     ~Manager();
 
@@ -127,9 +120,6 @@ public:
     CCManager*           GetCCManager()                               const;
 
 
-    /////// XML Resource functions ///////
-    /// Inits XML Resource system
-    static void InitXRC(bool force=false);
     /// Loads XRC file(s) using data_path
     static void LoadXRC(wxString relpath);
     static bool LoadResource(const wxString& file);
@@ -138,15 +128,35 @@ public:
     static wxMenuBar* LoadMenuBar(wxString resid, bool createonfailure = false);
     /// Loads Menu from XRC
     static wxMenu*    LoadMenu(wxString menu_id, bool createonfailure = false);
-    /// Loads ToolBar from XRC
-    static wxToolBar* LoadToolBar(wxFrame *parent, wxString resid, bool defaultsmall = true);
 
     // Do not use this, use Get()
     static Manager* Get(wxFrame* appWindow);
 
     wxToolBar* CreateEmptyToolbar();
     static void AddonToolBar(wxToolBar* toolBar,wxString resid);
-    static bool isToolBar16x16(wxToolBar* toolBar);
+    static void SetToolbarHandler(wxToolBarAddOnXmlHandler *handler);
+
+    enum UIComponent
+    {
+        Toolbars,
+        Menus,
+        InfoPaneNotebooks,
+        Main,
+
+        Last // Just a marker for the last element
+    };
+
+    /// Sets the global variable which stores the size of images for the given UI component.
+    /// @note If you're not in app.cpp or main.cpp DO NOT call this!
+    void SetImageSize(int size, UIComponent component);
+    /// @return The size in pixels of images in the specified UI component.
+    int GetImageSize(UIComponent component) const;
+
+    /// Sets the global variable which stores the scale factor for the given UI component.
+    /// @note If you're not in app.cpp or main.cpp DO NOT call this!
+    void SetUIScaleFactor(double scaleFactor, UIComponent component);
+    /// @return The scale factor of the specified UI component.
+    double GetUIScaleFactor(UIComponent component) const;
 
     static wxCmdLineParser* GetCmdLineParser();
 
@@ -163,6 +173,17 @@ public:
     void SetSearchResultLogger(cbSearchResultsLog *log) { m_SearchResultLog = log; }
 
 private:
+    wxFrame*               m_pAppWindow;
+    static bool            m_AppShuttingDown;
+    static bool            m_AppStartedUp;
+    static bool            m_BlockYields;
+    static bool            m_IsBatch;
+    static wxCmdLineParser m_CmdLineParser;
+    static wxToolBarAddOnXmlHandler *m_ToolbarHandler;
+
+    int m_ImageSizes[UIComponent::Last];
+    double m_UIScaleFactor[UIComponent::Last];
+
     // event sinks
     typedef std::vector< IEventFunctorBase<CodeBlocksEvent>* >       EventSinksArray;
     typedef std::map< wxEventType, EventSinksArray >                 EventSinksMap;

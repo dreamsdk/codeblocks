@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8679 $
- * $Id: loghacker.cpp 8679 2012-12-16 14:10:32Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/loghacker/loghacker.cpp $
+ * $Revision: 11954 $
+ * $Id: loghacker.cpp 11954 2020-01-09 18:26:46Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/loghacker/loghacker.cpp $
  */
 
 #include "sdk.h"
@@ -97,7 +97,7 @@ void CfgPanel::Create(wxWindow* parent)
     wxArrayString loggerStrings = LogManager::Get()->ListAvailable();
     loggerStrings.Insert(_T("<application default>"), 0);
 
-    wxFlexGridSizer* flex = new wxFlexGridSizer(2, 2, 0, 0);
+    wxFlexGridSizer* flex = new wxFlexGridSizer(3, 2, 0, 0);
     flex->AddGrowableRow(1);
     flex->AddGrowableCol(0);
     flex->AddGrowableCol(1);

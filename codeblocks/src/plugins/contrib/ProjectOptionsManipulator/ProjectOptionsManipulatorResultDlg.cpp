@@ -4,7 +4,7 @@
  *
  * $Revision: 10861 $
  * $Id: ProjectOptionsManipulatorResultDlg.cpp 10861 2016-06-08 19:24:21Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulatorResultDlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulatorResultDlg.cpp $
  */
 
 #include "ProjectOptionsManipulatorResultDlg.h"

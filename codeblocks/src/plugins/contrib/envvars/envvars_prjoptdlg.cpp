@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7787 $
- * $Id: envvars_prjoptdlg.cpp 7787 2012-02-10 11:48:47Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/envvars/envvars_prjoptdlg.cpp $
+ * $Revision: 11873 $
+ * $Id: envvars_prjoptdlg.cpp 11873 2019-10-07 18:30:38Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/envvars/envvars_prjoptdlg.cpp $
  */
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
@@ -34,7 +34,6 @@ END_EVENT_TABLE()
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
 EnvVarsProjectOptionsDlg::EnvVarsProjectOptionsDlg(wxWindow* parent, EnvVars* plugin, cbProject* project) :
-  m_pPlugin(plugin),
   m_pProject(project)
 {
   wxXmlResource::Get()->LoadPanel(this, parent, _T("pnlProjectEnvVarsOptions"));
@@ -50,7 +49,7 @@ EnvVarsProjectOptionsDlg::EnvVarsProjectOptionsDlg(wxWindow* parent, EnvVars* pl
   wxCheckBox* checkbox_control = XRCCTRL(*this, "chkEnvvarSet", wxCheckBox);
   if (checkbox_control && choice_control->GetCount())
   {
-    wxString envvar_set = m_pPlugin->GetProjectEnvvarSet(project);
+    wxString envvar_set = EnvVars::ParseProjectEnvvarSet(project);
     if (envvar_set.IsEmpty())
     {
       checkbox_control->SetValue(false);
@@ -106,9 +105,9 @@ void EnvVarsProjectOptionsDlg::OnApply()
     {
       wxString envvar_set = choice_control->GetStringSelection();
       if (!envvar_set.IsEmpty())
-        m_pPlugin->SetProjectEnvvarSet(m_pProject, envvar_set);
+        EnvVars::SaveProjectEnvvarSet(*m_pProject, envvar_set);
     }
   }
   else
-    m_pPlugin->SetProjectEnvvarSet(m_pProject, wxEmptyString);
+    EnvVars::SaveProjectEnvvarSet(*m_pProject, wxEmptyString);
 }// OnApply

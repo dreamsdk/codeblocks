@@ -17,7 +17,7 @@
 *
 * $Revision: 8704 $
 * $Id: wxsfloatproperty.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxsfloatproperty.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsfloatproperty.cpp $
 */
 
 #include "wxsfloatproperty.h"

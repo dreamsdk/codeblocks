@@ -2,14 +2,15 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11134 $
- * $Id: watchesdlg.cpp 11134 2017-08-06 11:31:53Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/watchesdlg.cpp $
+ * $Revision: 11840 $
+ * $Id: watchesdlg.cpp 11840 2019-09-08 18:12:30Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/watchesdlg.cpp $
  */
 
 #include "sdk.h"
 #ifndef CB_PRECOMP
     #include <wx/app.h>
+    #include <wx/dcclient.h>
     #include <wx/dnd.h>
     #include <wx/fontutil.h>
     #include <wx/menu.h>
@@ -27,6 +28,7 @@
 #include <algorithm>
 
 #include <wx/propgrid/propgrid.h>
+#include <wx/propgrid/editors.h>
 
 #include "watchesdlg.h"
 
@@ -96,23 +98,28 @@ public:
         return wxT("cbDummyEditor");
     }
 
-    wxPGWindowList CreateControls(wxPropertyGrid* propgrid, wxPGProperty* property,
-                                  const wxPoint& pos, const wxSize& sz) const override
+    wxPGWindowList CreateControls(cb_unused wxPropertyGrid* propgrid,
+                                  cb_unused wxPGProperty* property,
+                                  cb_unused const wxPoint& pos,
+                                  cb_unused const wxSize& sz) const override
     {
         wxPGWindowList const list;
         return list;
     }
-    void UpdateControl(wxPGProperty* property, wxWindow* ctrl) const override {}
-    bool OnEvent(wxPropertyGrid* propgrid, wxPGProperty* property, wxWindow* wnd_primary, wxEvent& event) const override
+    void UpdateControl(cb_unused wxPGProperty* property, cb_unused wxWindow* ctrl) const override {}
+    bool OnEvent(cb_unused wxPropertyGrid* propgrid, cb_unused wxPGProperty* property,
+                 cb_unused wxWindow* wnd_primary, cb_unused wxEvent& event) const override
     {
         return false;
     }
 
-    bool GetValueFromControl( wxVariant& variant, wxPGProperty* property, wxWindow* ctrl ) const override
+    bool GetValueFromControl(cb_unused wxVariant& variant, cb_unused wxPGProperty* property,
+                             cb_unused wxWindow* ctrl ) const override
     {
         return false;
     }
-    void SetValueToUnspecified( wxPGProperty* property, wxWindow* ctrl ) const override {}
+    void SetValueToUnspecified(cb_unused wxPGProperty* property,
+                               cb_unused wxWindow* ctrl) const override {}
 };
 
 IMPLEMENT_DYNAMIC_CLASS(cbDummyEditor, wxPGEditor);
@@ -123,13 +130,13 @@ class cbTextCtrlAndButtonTooltipEditor : public wxPGTextCtrlAndButtonEditor
 {
     DECLARE_DYNAMIC_CLASS(cbTextCtrlAndButtonTooltipEditor)
 public:
-    virtual wxPG_CONST_WXCHAR_PTR GetName() const
+    wxPG_CONST_WXCHAR_PTR GetName() const override
     {
         return wxT("cbTextCtrlAndButtonTooltipEditor");
     }
 
-    virtual wxPGWindowList CreateControls(wxPropertyGrid* propgrid, wxPGProperty* property,
-                                          const wxPoint& pos, const wxSize& sz) const
+    wxPGWindowList CreateControls(wxPropertyGrid* propgrid, wxPGProperty* property,
+                                          const wxPoint& pos, const wxSize& sz) const override
     {
         wxPGWindowList const &list = wxPGTextCtrlAndButtonEditor::CreateControls(propgrid, property, pos, sz);
 
@@ -158,13 +165,13 @@ class WatchesProperty : public wxStringProperty
         }
 
         // Set editor to have button
-        virtual const wxPGEditor* DoGetEditorClass() const
+        const wxPGEditor* DoGetEditorClass() const override
         {
             return m_readonly ? watchesDummyEditor : watchesPropertyEditor;
         }
 
         // Set what happens on button click
-        virtual wxPGEditorDialogAdapter* GetEditorDialog() const;
+        wxPGEditorDialogAdapter* GetEditorDialog() const override;
 
         cb::shared_ptr<cbWatch> GetWatch() { return m_watch; }
         cb::shared_ptr<const cbWatch> GetWatch() const { return m_watch; }
@@ -183,7 +190,7 @@ class WatchRawDialogAdapter : public wxPGEditorDialogAdapter
         {
         }
 
-        virtual bool DoShowDialog(wxPropertyGrid* WXUNUSED(propGrid), wxPGProperty* property);
+        bool DoShowDialog(wxPropertyGrid* WXUNUSED(propGrid), wxPGProperty* property) override;
 
     protected:
 };
@@ -346,19 +353,19 @@ wxPGEditorDialogAdapter* WatchesProperty::GetEditorDialog() const
 class WatchesDropTarget : public wxTextDropTarget
 {
 public:
-    virtual bool OnDropText(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), const wxString& text)
+    bool OnDropText(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), const wxString& text) override
     {
         cbDebuggerPlugin *activeDebugger = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
         if (!activeDebugger->SupportsFeature(cbDebuggerFeature::Watches))
             return false;
-        cb::shared_ptr<cbWatch> watch = activeDebugger->AddWatch(text);
+        cb::shared_ptr<cbWatch> watch = activeDebugger->AddWatch(text, true);
         if (watch.get())
             Manager::Get()->GetDebuggerManager()->GetWatchesDialog()->AddWatch(watch);
         // we return false here to veto the operation, otherwise the dragged text might get cut,
         // because we use wxDrag_DefaultMove in ScintillaWX::StartDrag (seems to happen only on windows)
         return false;
     }
-    virtual wxDragResult OnDragOver(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), wxDragResult WXUNUSED(def))
+    wxDragResult OnDragOver(wxCoord WXUNUSED(x), wxCoord WXUNUSED(y), wxDragResult WXUNUSED(def)) override
     {
         return wxDragCopy;
     }
@@ -414,8 +421,14 @@ WatchesDlg::WatchesDlg() :
 
     m_grid->Connect(idGrid, wxEVT_KEY_DOWN, wxKeyEventHandler(WatchesDlg::OnKeyDown), nullptr, this);
 
-    ColourManager *colours = Manager::Get()->GetColourManager();
+    Manager *manager = Manager::Get();
+
+    ColourManager *colours = manager->GetColourManager();
     colours->RegisterColour(_("Debugger"), _("Watches changed value"), wxT("dbg_watches_changed"), *wxRED);
+
+    typedef cbEventFunctor<WatchesDlg, CodeBlocksEvent> Functor;
+    manager->RegisterEventSink(cbEVT_DEBUGGER_UPDATED,
+                               new Functor(this, &WatchesDlg::OnDebuggerUpdated));
 }
 
 inline void AppendChildren(wxPropertyGrid &grid, wxPGProperty &property, cbWatch &watch,
@@ -521,8 +534,11 @@ inline void SetValue(WatchesProperty *prop)
     }
 }
 
-void WatchesDlg::UpdateWatches()
+void WatchesDlg::OnDebuggerUpdated(CodeBlocksEvent &event)
 {
+    if (cbDebuggerPlugin::DebugWindows(event.GetInt()) != cbDebuggerPlugin::DebugWindows::Watches)
+        return;
+
     for (WatchItems::iterator it = m_watches.begin(); it != m_watches.end(); ++it)
         UpdateWatch(m_grid, it->property, it->watch, it->readonly);
     m_grid->Refresh();
@@ -998,7 +1014,7 @@ void WatchesDlg::RenameWatch(wxObject *prop, const wxString &newSymbol)
         cbDebuggerPlugin *old_plugin = Manager::Get()->GetDebuggerManager()->GetDebuggerHavingWatch(old_watch);
         watchesProp->SetWatch(cb::shared_ptr<cbWatch>());
         old_plugin->DeleteWatch(old_watch);
-        cb::shared_ptr<cbWatch> new_watch = active_plugin->AddWatch(newSymbol);
+        cb::shared_ptr<cbWatch> new_watch = active_plugin->AddWatch(newSymbol, true);
         watchesProp->SetWatch(new_watch);
 
         for (WatchItems::iterator it = m_watches.begin(); it != m_watches.end(); ++it)
@@ -1014,7 +1030,7 @@ void WatchesDlg::RenameWatch(wxObject *prop, const wxString &newSymbol)
     {
         WatchItem item;
         item.property = watchesProp;
-        item.watch = active_plugin->AddWatch(newSymbol);
+        item.watch = active_plugin->AddWatch(newSymbol, true);
         watchesProp->SetWatch(item.watch);
         m_watches.push_back(item);
         watchesProp->SetExpanded(item.watch->IsExpanded());

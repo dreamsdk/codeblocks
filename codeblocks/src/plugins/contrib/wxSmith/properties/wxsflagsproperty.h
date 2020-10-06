@@ -17,7 +17,7 @@
 *
 * $Revision: 9300 $
 * $Id: wxsflagsproperty.h 9300 2013-09-10 21:52:39Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxsflagsproperty.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsflagsproperty.h $
 */
 
 #ifndef WXSFLAGSPROPERTY_H

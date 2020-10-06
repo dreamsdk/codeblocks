@@ -4,7 +4,7 @@
  *
  * $Revision: 10286 $
  * $Id: execution.cpp 10286 2015-05-15 10:58:20Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/headerfixup/execution.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/execution.cpp $
  */
 
 //(*InternalHeaders(Execution)

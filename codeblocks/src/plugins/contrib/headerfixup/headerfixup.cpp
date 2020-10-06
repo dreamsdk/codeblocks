@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10034 $
- * $Id: headerfixup.cpp 10034 2014-11-16 14:42:45Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/headerfixup/headerfixup.cpp $
+ * $Revision: 11535 $
+ * $Id: headerfixup.cpp 11535 2018-12-20 11:16:02Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/headerfixup.cpp $
  */
 
 #include <wx/window.h>
@@ -30,8 +30,6 @@ namespace
 
 HeaderFixup::HeaderFixup()
 {
-  if ( !Manager::LoadResource(_T("headerfixup.zip")) )
-    NotifyMissingFile(_T("headerfixup.zip"));
 }// HeaderFixup
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----

@@ -17,7 +17,7 @@
 *
 * $Revision: 10686 $
 * $Id: wxsmith.cpp 10686 2016-01-22 10:53:43Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxsmith.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsmith.cpp $
 */
 
 #include "wxsmith.h"

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10950 $
- * $Id: dlgformattersettings.cpp 10950 2016-12-29 06:16:39Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/astyle/dlgformattersettings.cpp $
+ * $Revision: 11266 $
+ * $Id: dlgformattersettings.cpp 11266 2018-01-15 17:54:23Z jenslody $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/dlgformattersettings.cpp $
  */
 
 #include "dlgformattersettings.h"
@@ -39,8 +39,8 @@ void DlgFormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
     formatter.setFormattingStyle(astyle::STYLE_WHITESMITH);
   else if (XRCCTRL(*m_dlg, "rbVTK", wxRadioButton)->GetValue())
     formatter.setFormattingStyle(astyle::STYLE_VTK);
-  else if (XRCCTRL(*m_dlg, "rbBanner", wxRadioButton)->GetValue())
-    formatter.setFormattingStyle(astyle::STYLE_BANNER);
+  else if (XRCCTRL(*m_dlg, "rbRatliff", wxRadioButton)->GetValue())
+    formatter.setFormattingStyle(astyle::STYLE_RATLIFF);
   else if (XRCCTRL(*m_dlg, "rbGNU", wxRadioButton)->GetValue())
     formatter.setFormattingStyle(astyle::STYLE_GNU);
   else if (XRCCTRL(*m_dlg, "rbLinux", wxRadioButton)->GetValue())
@@ -58,10 +58,11 @@ void DlgFormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
   else if (XRCCTRL(*m_dlg, "rbLisp", wxRadioButton)->GetValue())
     formatter.setFormattingStyle(astyle::STYLE_LISP);
 
-  formatter.setAttachClass(XRCCTRL(*m_dlg,     "chkAttachClasses",    wxCheckBox)->GetValue());
-  formatter.setAttachExternC(XRCCTRL(*m_dlg,   "chkAttachExternC",    wxCheckBox)->GetValue());
-  formatter.setAttachNamespace(XRCCTRL(*m_dlg, "chkAttachNamespaces", wxCheckBox)->GetValue());
-  formatter.setAttachInline(XRCCTRL(*m_dlg,    "chkAttachInlines",    wxCheckBox)->GetValue());
+  formatter.setAttachClass(XRCCTRL(*m_dlg,        "chkAttachClasses",       wxCheckBox)->GetValue());
+  formatter.setAttachExternC(XRCCTRL(*m_dlg,      "chkAttachExternC",       wxCheckBox)->GetValue());
+  formatter.setAttachNamespace(XRCCTRL(*m_dlg,    "chkAttachNamespaces",    wxCheckBox)->GetValue());
+  formatter.setAttachInline(XRCCTRL(*m_dlg,       "chkAttachInlines",       wxCheckBox)->GetValue());
+  formatter.setAttachClosingWhile(XRCCTRL(*m_dlg, "chkAttachClosingWhiles", wxCheckBox)->GetValue());
 
   bool value = XRCCTRL(*m_dlg, "chkForceUseTabs", wxCheckBox)->GetValue();
   int spaceNum = XRCCTRL(*m_dlg, "spnIndentation", wxSpinCtrl)->GetValue();
@@ -79,6 +80,7 @@ void DlgFormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
   formatter.setLabelIndent(XRCCTRL(*m_dlg,              "chkIndentLabels",        wxCheckBox)->GetValue());
   formatter.setModifierIndent(XRCCTRL(*m_dlg,           "chkIndentModifiers",     wxCheckBox)->GetValue());
   formatter.setNamespaceIndent(XRCCTRL(*m_dlg,          "chkIndentNamespaces",    wxCheckBox)->GetValue());
+  formatter.setAfterParenIndent(XRCCTRL(*m_dlg,         "chkIndentAfterParens",   wxCheckBox)->GetValue());
   formatter.setSwitchIndent(XRCCTRL(*m_dlg,             "chkIndentSwitches",      wxCheckBox)->GetValue());
   formatter.setPreprocBlockIndent(XRCCTRL(*m_dlg,       "chkIndentPreprocBlock",  wxCheckBox)->GetValue());
   formatter.setPreprocDefineIndent(XRCCTRL(*m_dlg,      "chkIndentPreprocDefine", wxCheckBox)->GetValue());
@@ -88,11 +90,15 @@ void DlgFormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
   formatter.setMinConditionalIndentOption(minConditionalEvent);
   formatter.setMaxInStatementIndentLength( wxAtoi(XRCCTRL(*m_dlg, "txtMaxInStatementIndent", wxTextCtrl)->GetValue()) );
 
-  formatter.setBreakClosingHeaderBracketsMode(XRCCTRL(*m_dlg, "chkBreakClosing", wxCheckBox)->GetValue());
+  formatter.setBreakClosingHeaderBracesMode(XRCCTRL(*m_dlg, "chkBreakClosing",   wxCheckBox)->GetValue());
   formatter.setBreakElseIfsMode(XRCCTRL(*m_dlg, "chkBreakElseIfs",               wxCheckBox)->GetValue());
-  formatter.setAddBracketsMode(XRCCTRL(*m_dlg, "chkAddBrackets",                 wxCheckBox)->GetValue());
-  formatter.setAddOneLineBracketsMode(XRCCTRL(*m_dlg, "chkAddOneLineBrackets",   wxCheckBox)->GetValue());
-  formatter.setRemoveBracketsMode(XRCCTRL(*m_dlg, "chkRemoveBrackets",           wxCheckBox)->GetValue());
+  formatter.setAddBracesMode(XRCCTRL(*m_dlg, "chkAddBrackets",                   wxCheckBox)->GetValue());
+  formatter.setAddOneLineBracesMode(XRCCTRL(*m_dlg, "chkAddOneLineBrackets",     wxCheckBox)->GetValue());
+  formatter.setRemoveBracesMode(XRCCTRL(*m_dlg, "chkRemoveBrackets",             wxCheckBox)->GetValue());
+  formatter.setBreakReturnType(XRCCTRL(*m_dlg, "chkBreakReturnType",             wxCheckBox)->GetValue());
+  formatter.setBreakReturnTypeDecl(XRCCTRL(*m_dlg, "chkBreakReturnTypeDecl",     wxCheckBox)->GetValue());
+  formatter.setAttachReturnType(XRCCTRL(*m_dlg, "chkAttachReturnType",           wxCheckBox)->GetValue());
+  formatter.setAttachReturnTypeDecl(XRCCTRL(*m_dlg, "chkAttachReturnTypeDecl",   wxCheckBox)->GetValue());
   formatter.setBreakOneLineBlocksMode(!XRCCTRL(*m_dlg, "chkKeepBlocks",          wxCheckBox)->GetValue());
   formatter.setBreakOneLineHeadersMode(!XRCCTRL(*m_dlg, "chkKeepHeaders",        wxCheckBox)->GetValue());
   formatter.setBreakOneLineStatementsMode(!XRCCTRL(*m_dlg, "chkKeepStatements",  wxCheckBox)->GetValue());

@@ -2,7 +2,11 @@
 #define Tab2Space_H
 
 #include <sdk.h> // Code::Blocks SDK
-#include "scrollingdialog.h"
+#ifndef CB_PRECOMP
+    #include "scrollingdialog.h"
+#endif
+
+
 class cbEditor;
 
 //(*Headers(Tab2Space)

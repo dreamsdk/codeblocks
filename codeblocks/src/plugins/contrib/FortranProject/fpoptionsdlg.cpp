@@ -2,26 +2,34 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  */
+#include "fpoptionsdlg.h"
 
 #include <sdk.h>
-#include "fpoptionsdlg.h"
-#include "fortranproject.h"
-#include <wx/intl.h>
-#include <wx/listbox.h>
-#include <wx/xrc/xmlres.h>
-#include <wx/spinctrl.h>
-#include <wx/checkbox.h>
-#include <wx/combobox.h>
-#include <wx/treectrl.h>
-#include <wx/slider.h>
-#include <wx/button.h>
-#include <wx/stattext.h>
-#include <wx/regex.h>
-#include <wx/colordlg.h>
-#include <configmanager.h>
-#include <manager.h>
-#include <globals.h>
+#ifndef CB_PRECOMP
+    #include <wx/intl.h>
+    #include <wx/listbox.h>
+    #include <wx/xrc/xmlres.h>
+    #include <wx/spinctrl.h>
+    #include <wx/checkbox.h>
+    #include <wx/combobox.h>
+    #include <wx/radiobox.h>
+    #include <wx/radiobut.h>
+    #include <wx/treectrl.h>
+    #include <wx/slider.h>
+    #include <wx/button.h>
+    #include <wx/stattext.h>
+    #include <wx/regex.h>
+    #include <wx/colordlg.h>
+    #include <wx/choice.h>
 
+    #include <configmanager.h>
+    #include <manager.h>
+    #include <globals.h>
+#endif
+#include <algorithm>
+#include <vector>
+
+#include "fortranproject.h"
 
 BEGIN_EVENT_TABLE(FPOptionsDlg, wxPanel)
     EVT_UPDATE_UI(-1, FPOptionsDlg::OnUpdateUI)
@@ -106,10 +114,18 @@ void FPOptionsDlg::FillAutoInsert()
 {
     const std::map<wxString,wxString>* ainames = m_AInsert.GetNameMap();
     std::map<wxString,wxString>::const_iterator it;
+    std::vector<wxString> vecnames;
 
     for (it = ainames->begin(); it != ainames->end(); ++it)
     {
-        XRCCTRL(*this, "lbAIStatements", wxListBox)->Append(it->second);
+        vecnames.push_back(it->second);
+    }
+
+    std::sort(vecnames.begin(), vecnames.end());
+
+    for (size_t i=0; i<vecnames.size(); ++i)
+    {
+        XRCCTRL(*this, "lbAIStatements", wxListBox)->Append(vecnames[i]);
     }
     m_AISelIdx = 0;
     XRCCTRL(*this, "lbAIStatements", wxListBox)->SetSelection(m_AISelIdx);

@@ -4,7 +4,7 @@
  *
  * $Revision: 8680 $
  * $Id: msvcloader.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/projectsimporter/msvcloader.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvcloader.cpp $
  */
 
 #include "sdk.h"

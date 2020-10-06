@@ -18,21 +18,147 @@
 		</object>
 	</object>
 
-	<object class="wxToolBarAddOn" name="fortran_project_toolbar">
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_20x20">
 		<object class="tool" name="idFortProjBack">
 			<tooltip>Jump back</tooltip>
 			<longhelp>Jump back</longhelp>
-			<bitmap>images/fprojectjumpback.png</bitmap>
+			<bitmap>images/20x20/fprojectjumpback.png</bitmap>
 		</object>
 		<object class="tool" name="idFortProjHome">
 			<tooltip>Last jump</tooltip>
 			<longhelp>Last jump</longhelp>
-			<bitmap>images/fprojectjumphome.png</bitmap>
+			<bitmap>images/20x20/fprojectjumphome.png</bitmap>
 		</object>
 		<object class="tool" name="idFortProjForward">
 			<tooltip>Jump forward</tooltip>
 			<longhelp>Jump forward</longhelp>
-			<bitmap>images/fprojectjumpforward.png</bitmap>
+			<bitmap>images/20x20/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_24x24">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/24x24/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/24x24/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/24x24/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_28x28">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/28x28/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/28x28/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/28x28/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_32x32">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/32x32/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/32x32/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/32x32/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_40x40">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/40x40/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/40x40/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/40x40/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_48x48">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/48x48/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/48x48/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/48x48/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_56x56">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/56x56/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/56x56/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/56x56/fprojectjumpforward.png</bitmap>
+		</object>
+	</object>
+
+	<object class="wxToolBarAddOn" name="fortran_project_toolbar_64x64">
+		<object class="tool" name="idFortProjBack">
+			<tooltip>Jump back</tooltip>
+			<longhelp>Jump back</longhelp>
+			<bitmap>images/64x64/fprojectjumpback.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjHome">
+			<tooltip>Last jump</tooltip>
+			<longhelp>Last jump</longhelp>
+			<bitmap>images/64x64/fprojectjumphome.png</bitmap>
+		</object>
+		<object class="tool" name="idFortProjForward">
+			<tooltip>Jump forward</tooltip>
+			<longhelp>Jump forward</longhelp>
+			<bitmap>images/64x64/fprojectjumpforward.png</bitmap>
 		</object>
 	</object>
 

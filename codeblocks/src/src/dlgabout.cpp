@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11004 $
- * $Id: dlgabout.cpp 11004 2017-02-07 23:35:46Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/dlgabout.cpp $
+ * $Revision: 11929 $
+ * $Id: dlgabout.cpp 11929 2019-12-11 08:14:05Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/dlgabout.cpp $
  */
 
 #include "sdk.h"
@@ -20,9 +20,13 @@
     #include <wx/string.h>
     #include <wx/textctrl.h>
     #include <wx/xrc/xmlres.h>
+    #if wxCHECK_VERSION(3, 0, 0)
+        #include <wx/versioninfo.h>
+    #endif // wxCHECK_VERSION
 
     #include "licenses.h"
     #include "configmanager.h"
+    #include "wx/wxscintilla.h"
 #endif
 
 #include <wx/bitmap.h>
@@ -60,7 +64,11 @@ dlgAbout::dlgAbout(wxWindow* parent)
                                    "plugins...\n");
 
     wxString file = ConfigManager::ReadDataPath() + _T("/images/splash_1312.png");
-    wxImage im; im.LoadFile(file, wxBITMAP_TYPE_PNG); im.ConvertAlphaToMask();
+
+    wxImage im;
+    im.LoadFile(file, wxBITMAP_TYPE_PNG);
+    im.ConvertAlphaToMask();
+
     wxBitmap bmp(im);
     wxMemoryDC dc;
     dc.SelectObject(bmp);
@@ -71,8 +79,12 @@ dlgAbout::dlgAbout(wxWindow* parent)
     bmpControl->SetBitmap(bmp);
 
     XRCCTRL(*this, "lblBuildTimestamp", wxStaticText)->SetLabel(wxString(_("Build: ")) + appglobals::AppBuildTimestamp);
-    XRCCTRL(*this, "txtDescription",    wxTextCtrl)->SetValue(description);
-    XRCCTRL(*this, "txtThanksTo",       wxTextCtrl)->SetValue(_(
+
+    wxTextCtrl *txtDescription = XRCCTRL(*this, "txtDescription", wxTextCtrl);
+    txtDescription->SetValue(description);
+
+    wxTextCtrl *txtThanksTo = XRCCTRL(*this, "txtThanksTo", wxTextCtrl);
+    txtThanksTo->SetValue(_(
         "Developers:\n"
         "--------------\n"
         "Yiannis Mandravellos: Developer - Project leader\n"
@@ -128,25 +140,68 @@ dlgAbout::dlgAbout(wxWindow* parent)
         "Squirrel scripting language (http://www.squirrel-lang.org).\n"
         "The GNU Software Foundation (http://www.gnu.org).\n"
         "Last, but not least, the open-source community."));
-    XRCCTRL(*this, "txtLicense", wxTextCtrl)->SetValue(LICENSE_GPL);
+    wxTextCtrl *txtLicense = XRCCTRL(*this, "txtLicense", wxTextCtrl);
+    txtLicense->SetValue(LICENSE_GPL);
 
-    XRCCTRL(*this, "lblName",    wxStaticText)->SetLabel(appglobals::AppName);
-    XRCCTRL(*this, "lblVersion", wxStaticText)->SetLabel(appglobals::AppActualVersionVerb);
-    XRCCTRL(*this, "lblSDK",     wxStaticText)->SetLabel(appglobals::AppSDKVersion);
-    XRCCTRL(*this, "lblAuthor",  wxStaticText)->SetLabel(_("The Code::Blocks Team"));
-    XRCCTRL(*this, "lblEmail",   wxStaticText)->SetLabel(appglobals::AppContactEmail);
-    XRCCTRL(*this, "lblWebsite", wxStaticText)->SetLabel(appglobals::AppUrl);
+#if wxCHECK_VERSION(3, 0, 0)
+    const wxVersionInfo scintillaVersion = wxScintilla::GetLibraryVersionInfo();
+    const wxString scintillaStr = wxString::Format(wxT("%d.%d.%d"),
+                                                   scintillaVersion.GetMajor(),
+                                                   scintillaVersion.GetMinor(),
+                                                   scintillaVersion.GetMicro());
+#else
+    const wxString scintillaStr = wxSCINTILLA_VERSION;
+#endif // wxCHECK_VERSION
+
+    struct Item
+    {
+        wxString name, value;
+    };
+    std::vector<Item> items;
+    items.push_back({_("Name"), appglobals::AppName});
+    items.push_back({_("Version"), appglobals::AppActualVersion});
+    items.push_back({_("SDK Version"), appglobals::AppSDKVersion});
+    items.push_back({_("Scintilla Version"), scintillaStr});
+    items.push_back({_("Author"), _("The Code::Blocks Team")});
+    items.push_back({_("E-mail"), appglobals::AppContactEmail});
+    items.push_back({_("Website"), appglobals::AppUrl});
+
+    int maxNameLength = 0;
+    for (const Item &item : items)
+    {
+        maxNameLength = std::max(maxNameLength, int(item.name.length()));
+    }
+
+    wxString information;
+    for (const Item &item : items)
+    {
+        information += item.name;
+        information += wxString(wxT(' '), maxNameLength - int(item.name.length()));
+        information += wxT(": ") + item.value + wxT("\n");
+    }
+
+#if wxCHECK_VERSION(3, 0, 0)
+    information += wxT("\n") + wxGetLibraryVersionInfo().GetDescription();
+#endif // wxCHECK_VERSION(3, 0, 0)
+
+    wxTextCtrl *txtInformation = XRCCTRL(*this, "txtInformation", wxTextCtrl);
+    txtInformation->SetValue(information);
 
 #ifdef __WXMAC__
     // Courier 8 point is not readable on Mac OS X, increase font size:
-    wxFont font1 = XRCCTRL(*this, "txtThanksTo", wxTextCtrl)->GetFont();
+    wxFont font1 = txtThanksTo->GetFont();
     font1.SetPointSize(10);
-    XRCCTRL(*this, "txtThanksTo", wxTextCtrl)->SetFont(font1);
+    txtThanksTo->SetFont(font1);
 
-    wxFont font2 = XRCCTRL(*this, "txtLicense", wxTextCtrl)->GetFont();
+    wxFont font2 = txtLicense->GetFont();
     font2.SetPointSize(10);
-    XRCCTRL(*this, "txtLicense", wxTextCtrl)->SetFont(font2);
+    txtLicense->SetFont(font2);
+
+    wxFont font3 = txtInformation->GetFont();
+    font3.SetPointSize(10);
+    txtInformation->SetFont(font3);
 #endif
+
     Fit();
     CentreOnParent();
 }

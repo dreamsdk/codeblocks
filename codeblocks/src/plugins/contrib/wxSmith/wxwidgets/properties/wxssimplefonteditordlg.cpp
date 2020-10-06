@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10681 $
-* $Id: wxssimplefonteditordlg.cpp 10681 2016-01-22 10:45:30Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssimplefonteditordlg.cpp $
+* $Revision: 11517 $
+* $Id: wxssimplefonteditordlg.cpp 11517 2018-12-11 14:52:48Z ollydbg $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssimplefonteditordlg.cpp $
 */
 
 #include "wxssimplefonteditordlg.h"
@@ -163,7 +163,7 @@ void wxsSimpleFontEditorDlg::UpdateFontDescription()
             {
                 case wxFONTSTYLE_ITALIC: Description << _("Italic\n"); break;
                 case wxFONTSTYLE_SLANT:  Description << _("Slant\n"); break;
-                case wxFONTWEIGHT_NORMAL: // fall-through
+                case wxFONTSTYLE_NORMAL: // fall-through
                 default:                 Description << _("Normal\n");
             }
         }

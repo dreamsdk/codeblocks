@@ -2,14 +2,15 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10665 $
- * $Id: coderefactoring.cpp 10665 2016-01-17 13:58:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/coderefactoring.cpp $
+ * $Revision: 11789 $
+ * $Id: coderefactoring.cpp 11789 2019-07-14 15:00:57Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/coderefactoring.cpp $
  */
 
 #include <sdk.h>
 
 #ifndef CB_PRECOMP
+    #include <wx/artprov.h>
     #include <wx/button.h>
     #include <wx/image.h>
     #include <wx/sizer.h>
@@ -71,8 +72,10 @@ public:
     {
         wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
         wxBoxSizer* infoSizer = new wxBoxSizer(wxHORIZONTAL);
-        wxString findImgFile = ConfigManager::GetDataFolder() + _T("/images/filefind.png");
-        wxStaticBitmap* findIco = new wxStaticBitmap(this, wxID_ANY, wxBitmap(wxImage(findImgFile)));
+        const wxBitmap iconBmp = wxArtProvider::GetBitmap(wxT("core/find"), wxART_BUTTON);
+        wxStaticBitmap* findIco = new wxStaticBitmap(this, wxID_ANY, iconBmp, wxDefaultPosition,
+                                                     wxSize(iconBmp.GetWidth(),
+                                                            iconBmp.GetHeight()));
         infoSizer->Add(findIco, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
         wxStaticText* scopeText = new wxStaticText(this, wxID_ANY, _("Please choose the find scope for search tokens"));
         infoSizer->Add(scopeText, 1, wxALL | wxALIGN_CENTER_VERTICAL,
@@ -86,7 +89,10 @@ public:
         m_ProjectFiles = new wxButton(this, ID_PROJECT_FILES, _("&Project files"), wxDefaultPosition,
                                       wxDefaultSize, 0, wxDefaultValidator, _T("ID_PROJECT_FILES"));
         btnSizer->Add(m_ProjectFiles, 1, wxALL | wxALIGN_CENTER_VERTICAL, 5);
-        sizer->Add(btnSizer, 1, wxBOTTOM | wxLEFT | wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
+        wxButton *closeButton = new wxButton(this, wxID_CANCEL, _("&Cancel"), wxDefaultPosition,
+                                      wxDefaultSize);
+        btnSizer->Add(closeButton, 1, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+        sizer->Add(btnSizer, 1, wxBOTTOM | wxLEFT | wxRIGHT | wxALIGN_CENTER_HORIZONTAL, 5);
         SetSizer(sizer);
         sizer->Fit(this);
         sizer->SetSizeHints(this);
@@ -344,7 +350,7 @@ size_t CodeRefactoring::VerifyResult(const TokenIdxSet& targetResult, const wxSt
         }
 
         // apply the corlor setting
-        edColSet.Apply(editor->GetLanguage(), control);
+        edColSet.Apply(editor->GetLanguage(), control, false, true);
 
         ccSearchData searchData = { control, it->first };
         for (SearchDataList::iterator itList = it->second.begin(); itList != it->second.end();)
@@ -437,11 +443,11 @@ void CodeRefactoring::Find(cbStyledTextCtrl* control, const wxString& file, cons
 
     for (;;)
     {
-        int lengthFound;
-        int pos = control->FindText(start, end, target, wxSCI_FIND_WHOLEWORD | wxSCI_FIND_MATCHCASE, &lengthFound);
+        int endPos;
+        int pos = control->FindText(start, end, target, wxSCI_FIND_WHOLEWORD | wxSCI_FIND_MATCHCASE, &endPos);
         if (pos != wxSCI_INVALID_POSITION)
         {
-            start = pos + lengthFound;
+            start = endPos;
             const int line = control->LineFromPosition(pos);
             wxString text = control->GetLine(line).Trim(true).Trim(false);
             m_SearchDataMap[file].push_back(crSearchData(pos, line + 1, text));

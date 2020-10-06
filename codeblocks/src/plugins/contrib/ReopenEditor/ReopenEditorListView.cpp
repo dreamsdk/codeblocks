@@ -4,7 +4,7 @@
  *
  * $Revision: 8562 $
  * $Id: ReopenEditorListView.cpp 8562 2012-11-14 22:31:40Z killerbot $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ReopenEditor/ReopenEditorListView.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/ReopenEditorListView.cpp $
  */
 
 #include "sdk.h"

@@ -4,7 +4,7 @@
  *
  * $Revision: 10549 $
  * $Id: cbprofilerexec.cpp 10549 2015-10-31 11:21:01Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/profiler/cbprofilerexec.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/profiler/cbprofilerexec.cpp $
  */
 
 #include "sdk.h"

@@ -4,9 +4,9 @@
  *
  * Copyright: 2010 Jens Lody
  *
- * $Revision: 10771 $
- * $Id: ReopenEditor.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ReopenEditor/ReopenEditor.cpp $
+ * $Revision: 11770 $
+ * $Id: ReopenEditor.cpp 11770 2019-07-04 22:15:32Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/ReopenEditor.cpp $
  */
 
 #include "sdk.h"
@@ -83,6 +83,13 @@ void ReopenEditor::OnAttach()
 
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
     m_IsManaged = cfg->ReadBool(_T("/reopen_editor/managed"),true);
+
+    const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
+    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
+    const wxString undoImgFile = ConfigManager::GetDataFolder()
+                               + wxString::Format(_T("/resources.zip#zip:/images/%dx%d/undo.png"),
+                                                  uiSize, uiSize);
+    m_LogIcon = cbLoadBitmapScaled(undoImgFile, wxBITMAP_TYPE_PNG, uiScaleFactor);
 
     ShowList();
 }
@@ -325,10 +332,8 @@ void ReopenEditor::ShowList()
 
     if(m_IsManaged)
     {
-        wxString prefix = ConfigManager::GetDataFolder() + _T("/images/16x16/");
-        wxBitmap * bmp = new wxBitmap(cbLoadBitmap(prefix + _T("undo.png"), wxBITMAP_TYPE_PNG));
-
-        CodeBlocksLogEvent evt3(cbEVT_ADD_LOG_WINDOW, m_pListLog, _("Closed files list"), bmp);
+        CodeBlocksLogEvent evt3(cbEVT_ADD_LOG_WINDOW, m_pListLog, _("Closed files list"),
+                                &m_LogIcon);
         Manager::Get()->ProcessEvent(evt3);
         CodeBlocksLogEvent evt4(cbEVT_SWITCH_TO_LOG_WINDOW, m_pListLog);
         Manager::Get()->ProcessEvent(evt4);

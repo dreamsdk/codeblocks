@@ -1,9 +1,12 @@
 #ifndef MODULETOKENF_H
 #define MODULETOKENF_H
 
-#include "tokenf.h"
-#include <wx/arrstr.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/arrstr.h>
+#endif
 
+#include "tokenf.h"
 
 class ModuleTokenF : public TokenF
 {

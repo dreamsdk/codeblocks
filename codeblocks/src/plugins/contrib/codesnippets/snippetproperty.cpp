@@ -17,7 +17,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetproperty.cpp 10362 2015-07-26 08:13:33Z jenslody $
+// RCS-ID: $Id: snippetproperty.cpp 11353 2018-03-29 13:58:32Z pecanh $
 // ----------------------------------------------------------------------------
 //  SnippetProperty.cpp                                         //(pecan 2006/9/12)
 // ----------------------------------------------------------------------------
@@ -38,7 +38,6 @@
 #include "codesnippetswindow.h"
 #include "snippetitemdata.h"
 #include "menuidentifiers.h"
-#include "GenericMessageBox.h"
 #include "snippetsconfig.h"
 #include "snippetproperty.h"
 ////-#include "defsext.h"
@@ -74,6 +73,8 @@ bool SnippetDropTarget::OnDropText(wxCoord x, wxCoord y, const wxString& data)
 // ----------------------------------------------------------------------------
 {
     // Put dragged text into SnippetTextCtrl
+
+    wxUnusedVar(x); wxUnusedVar(y);
     #ifdef LOGGING
      LOGIT( _T("Dragged Data[%s]"), data.GetData() );
     #endif //LOGGING
@@ -178,21 +179,24 @@ SnippetProperty::~SnippetProperty()
 void SnippetProperty::OnOk(wxCommandEvent& event)
 // ----------------------------------------------------------------------------
 {
+    wxUnusedVar(event);
+
      LOGIT( _T("SnippetProperty::OnOK") );
     // set data to edited snippet
     m_pSnippetDataItem->SetSnippetString( m_SnippetEditCtrl->GetText() );
     // label may have been edited
     m_pTreeCtrl->SetItemText( m_TreeItemId, m_ItemLabelTextCtrl->GetValue() );
     if (m_pWaitingSemaphore) m_pWaitingSemaphore->Post();
-    this->EndModal(wxID_OK);
+    m_retCode = wxID_OK;
 }
 // ----------------------------------------------------------------------------
 void SnippetProperty::OnCancel(wxCommandEvent& event)
 // ----------------------------------------------------------------------------
 {
-     LOGIT( _T("SnippetProperty::OnCancel") );
+    wxUnusedVar(event);
+    LOGIT( _T("SnippetProperty::OnCancel") );
     if (m_pWaitingSemaphore) m_pWaitingSemaphore->Post();
-    this->EndModal(wxID_CANCEL);
+    m_retCode = wxID_CANCEL;
 }
 // ----------------------------------------------------------------------------
 void SnippetProperty::OnSnippetButton(wxCommandEvent& event)
@@ -200,6 +204,7 @@ void SnippetProperty::OnSnippetButton(wxCommandEvent& event)
 {
     // Snippet button clicked from OpenAsFile context menu
 
+    wxUnusedVar(event);
     if ( GetActiveMenuId() == idMnuConvertToFileLink )
     {       // let user choose a file to hold snippet
         wxString ChosenFileName = wxFileSelector(wxT("Choose a Link target"));
@@ -217,7 +222,8 @@ void SnippetProperty::OnSnippetButton(wxCommandEvent& event)
         )
     {
         if ( GetConfig()->SettingsExternalEditor.IsEmpty())
-        {   GenericMessageBox(wxT("Use Menu/Settings/Options to specify an external editor.") );
+        {
+            wxMessageBox(wxT("Use Menu/Settings/Options to specify an external editor.") );
             return;
         }
             // let user edit the snippet text
@@ -229,7 +235,6 @@ void SnippetProperty::OnSnippetButton(wxCommandEvent& event)
         else InvokeEditOnSnippetText();
 
     }//fi
-    return;
 }
 // ----------------------------------------------------------------------------
 void SnippetProperty::OnFileSelectButton(wxCommandEvent& event)
@@ -237,12 +242,11 @@ void SnippetProperty::OnFileSelectButton(wxCommandEvent& event)
 {
     // Properties File Select button clicked
 
+    wxUnusedVar(event);
     // let choose a file name to insert into snippet property
     wxString ChosenFileName = wxFileSelector(wxT("Choose a file"));
     if (not ChosenFileName.IsEmpty())
         m_SnippetEditCtrl-> SetText( ChosenFileName );
-    return;
-
 }//OnFileSelectButton
 // ----------------------------------------------------------------------------
 void SnippetProperty::InvokeEditOnSnippetText()
@@ -258,8 +262,8 @@ void SnippetProperty::InvokeEditOnSnippetText()
         wxFile tmpFile( tmpFileName.GetFullPath(), wxFile::write);
         if (not tmpFile.IsOpened() )
         {
-            //wxMessageBox(wxT("Open failed for:")+tmpFileName.GetFullPath());
-            GenericMessageBox(wxT("Open failed for:")+tmpFileName.GetFullPath());
+            // Let user know that attempt to edit file failed
+            wxMessageBox(wxT("Open failed for:")+tmpFileName.GetFullPath());
             return ;
         }
         wxString snippetData( GetSnippetString() );
@@ -269,9 +273,11 @@ void SnippetProperty::InvokeEditOnSnippetText()
             // file name must be surrounded with quotes when using wxExecute
         wxString externalEditor = GetConfig()->SettingsExternalEditor;
         if ( externalEditor == _T("Enter filename of external editor") )
-        {   GenericMessageBox(wxT("No external editor specified.\n Check settings.\n"));
+        {
+            wxMessageBox(wxT("No external editor specified.\n Check settings.\n"));
             return;
         }
+        //wxString execString = GetConfig()->SettingsExternalEditor + wxT(" \"") + tmpFileName.GetFullPath() + wxT("\"");
         wxString execString = GetConfig()->SettingsExternalEditor + wxT(" \"") + tmpFileName.GetFullPath() + wxT("\"");
 
         #ifdef LOGGING
@@ -283,7 +289,8 @@ void SnippetProperty::InvokeEditOnSnippetText()
             // Read the edited data back into the snippet text
         tmpFile.Open(tmpFileName.GetFullPath(), wxFile::read);
         if (not tmpFile.IsOpened() )
-        {   GenericMessageBox(wxT("Abort.Error reading temp data file."));
+        {
+            wxMessageBox(wxT("Abort. Error reading temp data file."));
             return;
         }
         unsigned long fileSize = tmpFile.Length();
@@ -296,7 +303,7 @@ void SnippetProperty::InvokeEditOnSnippetText()
         char pBuf[fileSize+1];
         size_t nResult = tmpFile.Read( pBuf, fileSize );
         if ( wxInvalidOffset == (int)nResult )
-            GenericMessageBox(wxT("InvokeEditOnSnippetText()\nError reading temp file"));
+            wxMessageBox(wxT("InvokeEditOnSnippetText()\nError reading temp file"));
         pBuf[fileSize] = 0;
         tmpFile.Close();
 
@@ -345,5 +352,4 @@ void SnippetProperty::InvokeEditOnSnippetFile()
      LOGIT( _T("InvokeEditOnSnippetFile[%s]"), execString.GetData() );
     #endif //LOGGING
     ::wxExecute( execString);
-    return;
 }//InvokeEditOnSnippetFile

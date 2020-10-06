@@ -23,6 +23,8 @@
 #include <wxwidgets/wxsflags.h>
 #include <logmanager.h>
 
+#include <functional>
+
 #include <wx/dcclient.h>
 
 using namespace wxsFlags;
@@ -640,8 +642,9 @@ bool wxsAuiManager::OnCanAddToParent(wxsParent* Parent,bool ShowMessage)
             wxMessageBox(_("wxAuiManager can't be added to a sizer. Add panels first."));
         return false;
     }
-
-    if ( !wxDynamicCast(Parent->BuildPreview(new wxFrame(0,-1,wxEmptyString),0),wxWindow) )
+    std::unique_ptr<wxFrame, std::function<void(wxFrame*)>> shortLiveFrame(new wxFrame(nullptr, wxID_ANY, wxEmptyString),
+                                                                           [](wxFrame* frame){ frame->Destroy(); });  // deleter
+    if ( !wxDynamicCast(Parent->BuildPreview(shortLiveFrame.get(),0),wxWindow) )
     {
         if ( ShowMessage )
             wxMessageBox(_("wxAuiManager can only be added to a wxWindow descendant."));
@@ -665,7 +668,15 @@ void wxsAuiManager::OnAddChildQPP(wxsItem* Child,wxsAdvQPP* QPP)
     if ( ChildExtra->m_FirstAdd )
     {
         ChildExtra->m_FirstAdd = false;
-        if ( wxDynamicCast(Child->BuildPreview(new wxFrame(0,-1,wxEmptyString),0),wxAuiToolBar) )
+
+        // Every name of an wxAUI Item needs an unique name
+        // This name is generated from the default name and the current index.
+        // The index is incremented automatically for each child
+        ChildExtra->m_Name = ChildExtra->m_Name + wxString::Format(wxT("%d"), Index);
+
+        std::unique_ptr<wxFrame, std::function<void(wxFrame*)>> shortLiveFrame(new wxFrame(nullptr, wxID_ANY, wxEmptyString),
+                                                                               [](wxFrame* frame){ frame->Destroy(); });  // deleter
+        if ( wxDynamicCast(Child->BuildPreview(shortLiveFrame.get(),0),wxAuiToolBar) )
         {
             ChildExtra->m_StandardPane = wxsAuiPaneInfoExtra::ToolbarPane;
             ChildExtra->m_DockableFlags  = wxsAuiDockableProperty::Dockable;

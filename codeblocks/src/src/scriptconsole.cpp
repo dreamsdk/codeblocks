@@ -4,7 +4,7 @@
  *
  * $Revision: 10260 $
  * $Id: scriptconsole.cpp 10260 2015-05-15 10:56:23Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/scriptconsole.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/scriptconsole.cpp $
  */
 
 #include <sdk.h>

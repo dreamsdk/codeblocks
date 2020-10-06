@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10245 $
- * $Id: cb_koders.cpp 10245 2015-05-02 14:45:07Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/cb_koders/cb_koders.cpp $
+ * $Revision: 11313 $
+ * $Id: cb_koders.cpp 11313 2018-03-10 11:00:49Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/cb_koders/cb_koders.cpp $
  */
 
 #include "sdk.h" // Code::Blocks SDK
@@ -106,8 +106,9 @@ void CB_Koders::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
 
 	if (type == mtEditorManager)
 	{
-		menu->AppendSeparator();
-		menu->Append(idSearchKoders, _("Search at BlackDuck..."), _("Search keyword at BlackDuck webpage..."));
+		const wxString label = _("Search at BlackDuck...");
+		const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+		menu->Insert(position, idSearchKoders, label , _("Search keyword at BlackDuck webpage..."));
 	}
 }
 

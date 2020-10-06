@@ -15,14 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxslistbox.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbox.cpp $
+* $Revision: 11840 $
+* $Id: wxslistbox.cpp 11840 2019-09-08 18:12:30Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbox.cpp $
 */
 
 #include "wxslistbox.h"
 
 #include <prep.h>
+#include <wx/listbox.h>
 
 namespace
 {

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10900 $
- * $Id: parserthread.cpp 10900 2016-09-09 21:18:40Z ollydbg $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/parserthread.cpp $
+ * $Revision: 11572 $
+ * $Id: parserthread.cpp 11572 2019-02-16 06:52:30Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parserthread.cpp $
  */
 
 #include <sdk.h>
@@ -1028,7 +1028,6 @@ void ParserThread::DoParse()
                         break;
                 }
                 HandleFunction(func, true);
-                m_Str.Clear();
             }
             else
                 switchHandled = false;
@@ -1131,7 +1130,6 @@ void ParserThread::DoParse()
                                 HandleFunction(/*function name*/ arg,
                                                /*isOperator*/    false,
                                                /*isPointer*/     true);
-                                m_Str.Clear();
                             }
                         }
                         else // wxString arg = m_Tokenizer.GetToken(); // eat args ()
@@ -1143,11 +1141,14 @@ void ParserThread::DoParse()
                     // else
                     //     m_Tokenizer.GetToken(); // eat args when parsing block
 
+                    // list of function ptrs
+                    // eg: void (*fun1)(void), (*fun2)(size_t size);
+                    // where, m_Str=void, token=(*fun2), peek=(size_t size)
+
                     // function ptr with pointer return type
                     // eg: void *(*Alloc)(void *p, size_t size);
                     // where, m_Str=void, token=(*Alloc), peek=(void *p, size_t size)
-                    else if (   (m_LastToken == ParserConsts::ptr_chr) //(m_PointerOrRef)
-                             && (token.GetChar(0) == ParserConsts::opbracket_chr) )
+                    else if (token.GetChar(0) == ParserConsts::opbracket_chr)
                     {
                         int pos = token.find(ParserConsts::ptr);
                         if (pos != wxNOT_FOUND)
@@ -1156,8 +1157,16 @@ void ParserThread::DoParse()
                             HandleFunction(/*function name*/ arg,
                                            /*isOperator*/    false,
                                            /*isPointer*/     true);
-                            m_Str.Clear();
                         }
+                    }
+                    else if (   m_Options.useBuffer
+                             && m_Str.GetChar(0) == ParserConsts::opbracket_chr
+                             && m_Str.GetChar(m_Str.Len() - 2) == ParserConsts::clbracket_chr)
+                    {
+                        // pattern: (void) fun (...)
+                        // m_Str="(void) " token="fun" peek="(...)"
+                        // this is a return value cast, we should reset the m_Str with fun
+                        m_Str = token;
                     }
                     else
                     {
@@ -1198,7 +1207,6 @@ void ParserThread::DoParse()
                             }
                             m_Tokenizer.GetToken(); // eat args when parsing block
                         }
-                        m_Str.Clear();
                     }
                 }
                 else if (   (peek  == ParserConsts::colon)
@@ -2230,14 +2238,30 @@ void ParserThread::HandleClass(EClassType ct)
 
                     m_Tokenizer.GetToken(); // go ahead of identifier
                     farnext = m_Tokenizer.PeekToken();
-
-                    if (farnext == ParserConsts::semicolon)
+                    //  struct Point p1, p2;
+                    //  current="Point", next="p1"
+                    if (farnext == ParserConsts::semicolon || farnext == ParserConsts::comma)
                     {
-                        if (m_Options.handleVars)
+                        while (m_Options.handleVars
+                               &&  (   farnext == ParserConsts::semicolon
+                                    || farnext == ParserConsts::comma ))
                         {
-                            m_Str = current;
+                            if (m_Str.IsEmpty())
+                                m_Str = current;
                             DoAddToken(tkVariable, next, m_Tokenizer.GetLineNumber());
-                            m_Str.Clear();
+
+                            if (farnext == ParserConsts::comma)
+                            {
+                                m_Tokenizer.GetToken(); // eat the ","
+                                next = m_Tokenizer.GetToken(); // next = "p2"
+                                farnext = m_Tokenizer.PeekToken(); // farnext = "," or the final ";"
+                                continue;
+                            }
+                            else // we meet a ";", so break the loop
+                            {
+                                m_Str.Clear();
+                                break;
+                            }
                         }
 
                         m_Tokenizer.GetToken(); // eat semi-colon
@@ -2263,6 +2287,9 @@ void ParserThread::HandleFunction(wxString& name, bool isOperator, bool isPointe
     wxString peek = m_Tokenizer.PeekToken();
     TRACE(_T("HandleFunction() : name='")+name+_T("', args='")+args+_T("', peek='")+peek+_T("'"));
 
+    // NOTE: Avoid using return, because m_Str needs to be cleared
+    // at the end of this function.
+
     // special case for function pointers
     if (isPointer)
     {
@@ -2270,7 +2297,9 @@ void ParserThread::HandleFunction(wxString& name, bool isOperator, bool isPointe
 
         // pattern: m_Str AAA (*BBB) (...);
         // pattern: m_Str AAA (*BBB) (...) = some_function;
-        if (pos != wxNOT_FOUND && (peek == ParserConsts::semicolon || peek == ParserConsts::equals))
+        if (pos != wxNOT_FOUND && (   peek == ParserConsts::semicolon
+                                   || peek == ParserConsts::equals
+                                   || peek == ParserConsts::comma))
         {
             name.RemoveLast();  // remove ")"
             name.Remove(0, pos+1).Trim(false); // remove "(* "
@@ -2296,10 +2325,8 @@ void ParserThread::HandleFunction(wxString& name, bool isOperator, bool isPointe
             }
             m_TemplateArgument.Clear();
         }
-        return;
     }
-
-    if (!m_Str.StartsWith(ParserConsts::kw_friend))
+    else if (!m_Str.StartsWith(ParserConsts::kw_friend))
     {
         int lineStart = 0;
         int lineEnd = 0;
@@ -2363,7 +2390,9 @@ void ParserThread::HandleFunction(wxString& name, bool isOperator, bool isPointe
                 lineEnd = m_Tokenizer.GetLineNumber();
                 break;
             }
-            else if (peek == ParserConsts::clbrace || peek == ParserConsts::semicolon)
+            else if (   peek == ParserConsts::clbrace
+                     || peek == ParserConsts::semicolon
+                     || peek == ParserConsts::comma)
                 break; // function decl
             else if (peek == ParserConsts::kw_const)
                 isConst = true;
@@ -2437,6 +2466,12 @@ void ParserThread::HandleFunction(wxString& name, bool isOperator, bool isPointe
         }
         m_TemplateArgument.Clear();
     }
+
+    // NOTE: If we peek an equals or comma, this could be a list of function
+    // declarations. In that case, don't clear return type (m_Str).
+    peek = m_Tokenizer.PeekToken();
+    if (peek != ParserConsts::equals && peek != ParserConsts::comma)
+        m_Str.Clear();
 }
 
 void ParserThread::HandleConditionalArguments()
@@ -2554,6 +2589,11 @@ void ParserThread::HandleForLoopArguments()
         if (token.empty())
             break;
 
+        // pattern  for (; ...)
+        // the first token is a ';'
+        if (token == ParserConsts::semicolon)
+            break;
+
         wxString peek = smallTokenizer.PeekToken();
 
         bool createNewToken = false;
@@ -2635,10 +2675,21 @@ void ParserThread::HandleEnum()
     bool isEnumClass = false;
     int lineNr = m_Tokenizer.GetLineNumber();
     wxString token = m_Tokenizer.GetToken();
+
+    // C++11 has some enhanced enumeration declaration
+    // see: http://en.cppreference.com/w/cpp/language/enum
     if (token == ParserConsts::kw_class)
     {
         token = m_Tokenizer.GetToken();
         isEnumClass = true;
+    }
+    else if (token == ParserConsts::colon)
+    {
+        // enum : int {...}
+        SkipToOneOfChars(ParserConsts::semicolonopbrace); // jump to the "{" or ";"
+        // note in this case, the "{" or ";" is already eaten, so we need to go back one step
+        m_Tokenizer.UngetToken();
+        token = m_Tokenizer.PeekToken();
     }
 
     if (token.IsEmpty())
@@ -2657,13 +2708,29 @@ void ParserThread::HandleEnum()
         isUnnamed = true;
     }
 
+    // the token is now the expected enum name
     Token* newEnum = 0L;
     unsigned int level = 0;
     if (   wxIsalpha(token.GetChar(0))
         || (token.GetChar(0) == ParserConsts::underscore_chr) )
     {
-        if (m_Tokenizer.PeekToken().GetChar(0) != ParserConsts::opbrace_chr)
+        // we have such pattern: enum    name     {
+        //                               ^^^^
+        //                               token    peek
+        wxString peek = m_Tokenizer.PeekToken();
+        if (peek == ParserConsts::colon) // enum    name  : type    {
         {
+            m_Tokenizer.GetToken(); // eat the ":"
+            SkipToOneOfChars(ParserConsts::semicolonopbrace); // jump to the "{" or ";"
+            // note in this case, the "{" or ";" is already eaten, so we need to go back one step
+            m_Tokenizer.UngetToken();
+            peek = m_Tokenizer.PeekToken();
+        }
+
+        if (peek.GetChar(0) != ParserConsts::opbrace_chr)
+        {
+            // pattern:  enum E var;
+            // now peek=var, so we try to see it is a variable definition
             if (TokenExists(token, m_LastParent, tkEnum))
             {
                 if (!TokenExists(m_Tokenizer.PeekToken(), m_LastParent, tkVariable) )
@@ -2682,10 +2749,18 @@ void ParserThread::HandleEnum()
                         m_Tokenizer.GetToken(); // eat semi-colon
                     }
                     else
+                    {   // peek is not ";", mostly it is some pattern like:
+                        // enum E fun (..) ;
+                        // enum E fun (..) {...};
+                        // so we just push the "E" to the m_Str, and return
+                        // this make the just like:
+                        // E fun (..) ;
+                        // E fun (..) {...};
+                        m_Str = token;
                         m_Tokenizer.UngetToken(); // restore the identifier
+                    }
                 }
             }
-
             return;
         }
 
@@ -3161,6 +3236,11 @@ bool ParserThread::ReadClsNames(wxString& ancestor)
 
         if (token==ParserConsts::comma)          // another class name
             continue;
+        else if (token==ParserConsts::kw_attribute)
+        {
+            m_Tokenizer.GetToken();  // eat (( whatever ))
+            continue;
+        }
         else if (token==ParserConsts::semicolon) // end of class name(s)
         {
             m_Tokenizer.UngetToken();
@@ -3215,7 +3295,7 @@ bool ParserThread::ReadClsNames(wxString& ancestor)
 
 bool ParserThread::GetBaseArgs(const wxString& args, wxString& baseArgs)
 {
-    const wxChar* ptr = args;  // pointer to current char in args string
+    const wxChar* ptr = args.wx_str();  // pointer to current char in args string
     wxString word;             // compiled word of last arg
     bool skip = false;         // skip the next char (do not add to stripped args)
     bool sym  = false;         // current char symbol

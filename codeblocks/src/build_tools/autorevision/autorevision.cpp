@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10922 $
- * $Id: autorevision.cpp 10922 2016-11-17 11:48:57Z thomas-denk $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/build_tools/autorevision/autorevision.cpp $
+ * $Revision: 11489 $
+ * $Id: autorevision.cpp 11489 2018-10-03 14:22:40Z mortenmacfly $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/build_tools/autorevision/autorevision.cpp $
  */
 
 #include <stdio.h>
@@ -311,11 +311,10 @@ bool WriteOutput(const string& outputFile, string& revision, string& date)
         fprintf(header, "\tconst wxString svnDate(%s);\n", date.c_str());
 
     if(do_int || do_std || do_wx)
-        fprintf(header, "}\n\n");
+        fprintf(header, "}");
 
     fprintf(header, "\n\n#endif\n");
     fclose(header);
 
     return true;
 }
-

@@ -77,6 +77,7 @@ enum BuildAction
     baBuildFile
 };
 
+class cbArtProvider;
 class wxComboBox;
 class wxGauge;
 class wxStaticText;
@@ -117,7 +118,7 @@ class CompilerGCC : public cbCompilerPlugin
         virtual int KillProcess();
         virtual bool IsRunning() const;
         virtual int GetExitCode() const { return m_LastExitCode; }
-        virtual int Configure(cbProject* project, ProjectBuildTarget* target = 0L); // this is NOT the obsolete cbPlugin::Configure! Do not remove!!!
+        virtual int Configure(cbProject* project, ProjectBuildTarget* target, wxWindow *parent);
 
         int GetConfigurationPriority() const { return 0; }
         int GetConfigurationGroup() const { return cgCompiler; }
@@ -151,13 +152,8 @@ class CompilerGCC : public cbCompilerPlugin
         void OnClearErrors(wxCommandEvent& event);
         void OnUpdateUI(wxUpdateUIEvent& event);
         void OnConfig(wxCommandEvent& event);
-
-        void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
     private:
         friend class CompilerOptionsDlg;
-
-        wxString GetLoaderCommand(ProjectBuildTarget* target);
-        bool IsDebugTarget(ProjectBuildTarget *target);
 
         void Dispatcher(wxCommandEvent& event);
         void TextURL(wxTextUrlEvent& event);
@@ -175,6 +171,7 @@ class CompilerGCC : public cbCompilerPlugin
         void OnProjectActivated(CodeBlocksEvent& event);
         void OnProjectLoaded(CodeBlocksEvent& event);
         void OnProjectUnloaded(CodeBlocksEvent& event);
+        void OnWorkspaceClosed(CodeBlocksEvent& event);
         void OnCompileFileRequest(CodeBlocksEvent& event);
         void OnGCCOutput(CodeBlocksEvent& event);
         void OnGCCError(CodeBlocksEvent& event);
@@ -194,7 +191,7 @@ class CompilerGCC : public cbCompilerPlugin
         FileTreeData* DoSwitchProjectTemporarily();
         ProjectBuildTarget* DoAskForTarget();
         int DoGUIAskForTarget();
-        void ClearLog();
+        void ClearLog(bool switchToLog);
         void PrepareCompileFile(wxFileName& file);
         void PrepareCompileFilePM(wxFileName& file);
         bool CheckProject();
@@ -331,7 +328,7 @@ class CompilerGCC : public cbCompilerPlugin
         size_t m_CurrentProgress;
         bool   m_LogBuildProgressPercentage;
 
-        int m_HookId; // project loader hook ID
+        cbArtProvider *m_pArtProvider;
 
         DECLARE_EVENT_TABLE()
 };

@@ -49,13 +49,10 @@
 			<Add option="-Wl,--no-undefined" />
 			<Add library="codeblocks" />
 			<Add directory="../../../devel30" />
-			<Add directory="../../../base/tinyxml" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="./update30" />
 		</ExtraCommands>
-		<Unit filename="GenericMessageBox.cpp" />
-		<Unit filename="GenericMessageBox.h" />
 		<Unit filename="Makefile.am" />
 		<Unit filename="codesnippets.cpp" />
 		<Unit filename="codesnippets.h" />

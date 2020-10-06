@@ -32,7 +32,7 @@ private:
 
   // Somewhat special operations:
   void ProcessFiles(cbProject* prj, wxArrayString& result);
-  void ProcessChangeCompiler(cbProject* prj, const wxString& src, const wxString& dst);
+  void ProcessChangeCompiler(cbProject* prj, const wxString& src, const wxString& dst, wxArrayString& result);
 
   // Default options:
   void ProcessCompilerOptions   (cbProject* prj, const wxString& opt, const wxString& opt_new, wxArrayString& result);
@@ -49,7 +49,7 @@ private:
 
   // Helper functions:
   bool HasOption(const wxArrayString& opt_array, const wxString& opt);
-  bool HasOption(const wxArrayString& opt_array, const wxString& opt, wxString& full_opt);
+  bool HasOption(const wxArrayString& opt_array, const wxString& opt, wxArrayString& full_opt);
 
   bool IsValidTarget(const ProjectBuildTarget* tgt);
 

@@ -17,7 +17,7 @@
 *
 * $Revision: 10874 $
 * $Id: wxwidgetsresfactory.cpp 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsresfactory.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsresfactory.cpp $
 */
 #include "wxwidgetsresfactory.h"
 #include "wxsdialogres.h"

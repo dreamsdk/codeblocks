@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7109 $
- * $Id: scrooge.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/build_tools/scrooge/scrooge.cpp $
+ * $Revision$
+ * $Id$
+ * $HeadURL$
  */
 
 #include <stdio.h>

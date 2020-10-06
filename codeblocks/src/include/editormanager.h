@@ -23,7 +23,6 @@
 DLLIMPORT extern int ID_NBEditorManager;
 DLLIMPORT extern int ID_EditorManager;
 DLLIMPORT extern int idEditorManagerCheckFiles;
-DLLIMPORT extern int ID_EditorManagerCloseButton;
 
 // forward decls
 class EditorBase;
@@ -108,6 +107,7 @@ class DLLIMPORT EditorManager : public Mgr<EditorManager>, public wxEvtHandler
         bool UpdateProjectFiles(cbProject* project);
         bool SwapActiveHeaderSource();
         bool OpenContainingFolder();
+        void CopyFullPath();
         bool CloseActive(bool dontsave = false);
         bool Close(const wxString& filename, bool dontsave = false);
         bool Close(EditorBase* editor, bool dontsave = false);
@@ -125,6 +125,10 @@ class DLLIMPORT EditorManager : public Mgr<EditorManager>, public wxEvtHandler
         bool CloseAllInTabCtrl(bool dontsave = false);
         /** Closes all editors in the same tab control as the active editor, except the editor passed as parameter. */
         bool CloseAllInTabCtrlExcept(EditorBase* editor, bool dontsave = false);
+        /// Closes all editors in the same tab control which are on the left of the passed editor.
+        bool CloseAllInTabCtrlToTheLeft(EditorBase* editor, bool dontsave = false);
+        /// Closes all editors in the same tab control which are on the right of the passed editor.
+        bool CloseAllInTabCtrlToTheRight(EditorBase* editor, bool dontsave = false);
         bool Save(const wxString& filename);
         bool Save(int index);
         bool SaveActive();
@@ -161,6 +165,7 @@ class DLLIMPORT EditorManager : public Mgr<EditorManager>, public wxEvtHandler
         void OnSaveAll(wxCommandEvent& event);
         void OnSwapHeaderSource(wxCommandEvent& event);
         void OnOpenContainingFolder(wxCommandEvent& event);
+        void OnCopyFullPath(wxCommandEvent& event);
         void OnTabPosition(wxCommandEvent& event);
         void OnProperties(wxCommandEvent& event);
         void OnAddFileToProject(wxCommandEvent& event);
@@ -185,7 +190,7 @@ class DLLIMPORT EditorManager : public Mgr<EditorManager>, public wxEvtHandler
         EditorManager(cb_unused const EditorManager& rhs); // prevent copy construction
 
         EditorManager();
-        ~EditorManager();
+        ~EditorManager() override;
         void OnCheckForModifiedFiles(wxCommandEvent& event);
         bool IsHeaderSource(const wxFileName& candidateFile, const wxFileName& activeFile, FileType ftActive, bool& isCandidate);
         wxFileName FindHeaderSource(const wxArrayString& candidateFilesArray, const wxFileName& activeFile, bool& isCandidate);

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7109 $
- * $Id: compiler_defs.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compiler_defs.cpp $
+ * $Revision: 11435 $
+ * $Id: compiler_defs.cpp 11435 2018-08-07 07:13:14Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compiler_defs.cpp $
  */
 
 #include <sdk.h>
@@ -54,30 +54,27 @@ void CompilerQueue::Add(CompilerCommand* cmd)
 
 void CompilerQueue::Add(CompilerQueue* queue)
 {
-    wxCompilerCommandsNode* node = queue->m_Commands.GetFirst();
-    while (node)
+    for (CompilerCommands::iterator it = queue->m_Commands.begin(); it != queue->m_Commands.end(); ++it)
     {
-        if (node->GetData())
-            Add(new CompilerCommand(*(node->GetData())));
-        node = node->GetNext();
+        if (*it)
+            Add(new CompilerCommand(**it));
     }
 }
 
 CompilerCommand* CompilerQueue::Peek()
 {
-    wxCompilerCommandsNode* node = m_Commands.GetFirst();
-    if (!node)
-        return 0;
-    return node->GetData();
+    if (m_Commands.empty())
+        return nullptr;
+    else
+        return m_Commands.front();
 }
 
 CompilerCommand* CompilerQueue::Next()
 {
-    wxCompilerCommandsNode* node = m_Commands.GetFirst();
-    if (!node)
-        return 0;
-    CompilerCommand* cmd = node->GetData();
-    m_Commands.Erase(node);
+    if (m_Commands.empty())
+        return nullptr;
+    CompilerCommand* cmd = m_Commands.front();
+    m_Commands.pop_front();
     m_LastWasRun = cmd ? cmd->isRun : false;
     return cmd;
 }

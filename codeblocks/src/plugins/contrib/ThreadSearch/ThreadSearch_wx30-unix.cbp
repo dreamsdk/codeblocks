@@ -54,7 +54,6 @@
 			<Add directory="../../../devel30" />
 		</Linker>
 		<ExtraCommands>
-			<Add after="zip -j9 ../../../devel30/share/codeblocks/ThreadSearch.zip manifest.xml" />
 			<Add after="./update30" />
 			<Mode after="always" />
 		</ExtraCommands>
@@ -72,6 +71,7 @@
 		<Unit filename="TextFileSearcherText.h" />
 		<Unit filename="ThreadSearch.cpp" />
 		<Unit filename="ThreadSearch.h" />
+		<Unit filename="ThreadSearchCommon.h" />
 		<Unit filename="ThreadSearchConfPanel.cpp" />
 		<Unit filename="ThreadSearchConfPanel.h" />
 		<Unit filename="ThreadSearchControlIds.cpp" />

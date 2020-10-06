@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10665 $
- * $Id: envvars_cfgdlg.cpp 10665 2016-01-17 13:58:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/envvars/envvars_cfgdlg.cpp $
+ * $Revision: 11391 $
+ * $Id: envvars_cfgdlg.cpp 11391 2018-05-01 09:12:31Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/envvars/envvars_cfgdlg.cpp $
  */
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
@@ -23,6 +23,7 @@
   #include "manager.h"
   #include "configmanager.h"
   #include "logmanager.h"
+  #include "projectmanager.h"
 #endif
 
 #include "editpairdlg.h"
@@ -61,11 +62,23 @@ END_EVENT_TABLE()
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
-EnvVarsConfigDlg::EnvVarsConfigDlg(wxWindow* parent)
+EnvVarsConfigDlg::EnvVarsConfigDlg(wxWindow* parent, EnvVars* plugin) : m_plugin(plugin)
 {
   wxXmlResource::Get()->LoadPanel(this, parent, _T("dlgEnvVars"));
   LoadSettings();
 }// EnvVarsConfigDlg
+
+// ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
+
+EnvVarsConfigDlg::~EnvVarsConfigDlg()
+{
+   if (m_plugin->IsAttached())
+   {
+     ProjectManager* ProjMan = Manager::Get()->GetProjectManager();
+     //set active project environnement variables set
+     m_plugin->DoProjectActivate(ProjMan->GetActiveProject());
+   }
+}
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
@@ -626,11 +639,11 @@ void EnvVarsConfigDlg::OnSetEnvVarsClick(wxCommandEvent& WXUNUSED(event))
 #if CHECK_LIST_BOX_CLIENT_DATA==1
       nsEnvVars::EnvVariableListClientData *data;
       data = static_cast<nsEnvVars::EnvVariableListClientData*>(lstEnvVars->GetClientObject(i));
-      const wxString &key = data->key;
-      const wxString &value = data->value;
+      const wxString key   = data->key;
+      const wxString value = data->value;
 #else
-      const wxString &key   = lstEnvVars->GetString(i).BeforeFirst(_T('=')).Trim(true).Trim(false);
-      const wxString &value = lstEnvVars->GetString(i).AfterFirst(_T('=')).Trim(true).Trim(false);
+      const wxString key   = lstEnvVars->GetString(i).BeforeFirst(_T('=')).Trim(true).Trim(false);
+      const wxString value = lstEnvVars->GetString(i).AfterFirst(_T('=')).Trim(true).Trim(false);
 #endif
       if (!key.IsEmpty())
       {

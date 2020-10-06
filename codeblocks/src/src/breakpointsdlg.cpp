@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10677 $
- * $Id: breakpointsdlg.cpp 10677 2016-01-22 05:38:20Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/breakpointsdlg.cpp $
+ * $Revision: 11752 $
+ * $Id: breakpointsdlg.cpp 11752 2019-06-29 13:46:53Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/breakpointsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -67,8 +67,7 @@ BEGIN_EVENT_TABLE(BreakpointsDlg, wxPanel)
 END_EVENT_TABLE()
 
 BreakpointsDlg::BreakpointsDlg() :
-    wxPanel(Manager::Get()->GetAppWindow(), -1),
-    m_icons(16, 16, true)
+    wxPanel(Manager::Get()->GetAppWindow(), -1)
 {
     wxBoxSizer* bs = new wxBoxSizer(wxVERTICAL);
     m_pList = new wxListCtrl(this, idList, wxDefaultPosition, wxDefaultSize,
@@ -77,15 +76,39 @@ BreakpointsDlg::BreakpointsDlg() :
     SetAutoLayout(TRUE);
     SetSizer(bs);
 
+    wxWindow *parent = Manager::Get()->GetAppWindow();
+    wxString sizeStr;
+    int selectedHeight;
+    {
+
+        const int targetHeight = floor(12.0 * cbGetActualContentScaleFactor(*parent));
+        const int possibleHeights[] = { 12, 16, 20, 24, 28, 32, 40, 48, 56, 64 };
+        selectedHeight = cbFindMinSize(targetHeight, possibleHeights, cbCountOf(possibleHeights));
+
+        sizeStr = wxString::Format(wxT("%dx%d/"), selectedHeight, selectedHeight);
+    }
+    const double scaleFactor = cbGetContentScaleFactor(*parent);
+
     // Setup the image list for the enabled/disabled icons.
-    const wxString &basepath = ConfigManager::GetDataFolder() + wxT("/manager_resources.zip#zip:/images/16x16/");
-    wxBitmap icon = cbLoadBitmap(basepath + wxT("breakpoint.png"), wxBITMAP_TYPE_PNG);
+#ifdef __WXMSW__
+    m_icons.Create(selectedHeight, selectedHeight, true);
+#else
+    m_icons.Create(floor(selectedHeight / scaleFactor), floor(selectedHeight / scaleFactor), true);
+#endif // __WXMSW__
+
+    const wxString &basepath = ConfigManager::GetDataFolder()
+                             + wxT("/manager_resources.zip#zip:/images/")
+                             + sizeStr;
+    wxBitmap icon = cbLoadBitmapScaled(basepath + wxT("breakpoint.png"), wxBITMAP_TYPE_PNG,
+                                       scaleFactor);
     if (icon.IsOk())
         m_icons.Add(icon);
-    icon = cbLoadBitmap(basepath + wxT("breakpoint_disabled.png"), wxBITMAP_TYPE_PNG);
+    icon = cbLoadBitmapScaled(basepath + wxT("breakpoint_disabled.png"), wxBITMAP_TYPE_PNG,
+                              scaleFactor);
     if (icon.IsOk())
         m_icons.Add(icon);
-    icon = cbLoadBitmap(basepath + wxT("breakpoint_other.png"), wxBITMAP_TYPE_PNG);
+    icon = cbLoadBitmapScaled(basepath + wxT("breakpoint_other.png"), wxBITMAP_TYPE_PNG,
+                              scaleFactor);
     if (icon.IsOk())
         m_icons.Add(icon);
     m_pList->SetImageList(&m_icons, wxIMAGE_LIST_SMALL);

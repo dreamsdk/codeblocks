@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9426 $
- * $Id: sc_progress.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_progress.cpp $
+ * $Revision: 11399 $
+ * $Id: sc_progress.cpp 11399 2018-05-08 21:54:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_progress.cpp $
  */
 
 #include <sdk_precomp.h>
@@ -30,7 +30,7 @@ class ProgressDialog : public wxProgressDialog
         {
         }
 
-        ~ProgressDialog()
+        ~ProgressDialog() override
         {
         }
 

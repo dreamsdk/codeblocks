@@ -1,8 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Name:        pdftemplate.h
-// Purpose:     
+// Purpose:
 // Author:      Ulrich Telle
-// Modified by:
 // Created:     2006-07-13
 // Copyright:   (c) Ulrich Telle
 // Licence:     wxWindows licence
@@ -81,6 +80,7 @@ private:
   wxPdfFontHashMap*    m_fonts;             ///< array of used fonts
   wxPdfImageHashMap*   m_images;            ///< array of used images
   wxPdfTemplatesMap*   m_templates;         ///< array of templates
+  wxPdfExtGStateMap*   m_extGStates;        ///< array of extended graphics states
 
   wxPdfParser*         m_parser;            ///< Associated parser
   wxPdfObject*         m_resources;         ///< Array of page resource objects

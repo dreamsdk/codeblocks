@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: toolsmanager.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/toolsmanager.cpp $
+ * $Revision: 11435 $
+ * $Id: toolsmanager.cpp 11435 2018-08-07 07:13:14Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/toolsmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -20,7 +20,6 @@
     #include "macrosmanager.h"
     #include "configmanager.h"
     #include "logmanager.h"
-    #include "configmanager.h"
     #include "pipedprocess.h"
     #include "globals.h"
     #include "sdk_events.h"
@@ -214,31 +213,23 @@ void ToolsManager::InsertTool(int position, const cbTool* tool, bool save)
 void ToolsManager::RemoveToolByIndex(int index)
 {
     int idx = 0;
-    for (ToolsList::Node* node = m_Tools.GetFirst(); node; node = node->GetNext())
+    for (ToolsList::iterator it = m_Tools.begin(); it != m_Tools.end(); ++it)
     {
         if (idx == index)
         {
-            DoRemoveTool(node);
+            m_Tools.erase(it);
+            SaveTools();
             return;
         }
         ++idx;
     }
 }
 
-void ToolsManager::DoRemoveTool(ToolsList::Node* node)
-{
-    if (node)
-    {
-        m_Tools.DeleteNode(node);
-        SaveTools();
-    }
-}
-
 cbTool* ToolsManager::GetToolByMenuId(int id)
 {
-    for (ToolsList::Node* node = m_Tools.GetFirst(); node; node = node->GetNext())
+    for (ToolsList::iterator it = m_Tools.begin(); it != m_Tools.end(); ++it)
     {
-        cbTool* tool = node->GetData();
+        cbTool* tool = *it;
         if (tool->GetMenuId() == id)
             return tool;
     }
@@ -248,9 +239,9 @@ cbTool* ToolsManager::GetToolByMenuId(int id)
 cbTool* ToolsManager::GetToolByIndex(int index)
 {
     int idx = 0;
-    for (ToolsList::Node* node = m_Tools.GetFirst(); node; node = node->GetNext())
+    for (ToolsList::iterator it = m_Tools.begin(); it != m_Tools.end(); ++it)
     {
-        cbTool* tool = node->GetData();
+        cbTool* tool = *it;
         if (idx == index)
             return tool;
         ++idx;
@@ -290,9 +281,9 @@ void ToolsManager::SaveTools()
     }
 
     int count = 0;
-    for (ToolsList::Node* node = m_Tools.GetFirst(); node; node = node->GetNext())
+    for (ToolsList::iterator it = m_Tools.begin(); it != m_Tools.end(); ++it)
     {
-        cbTool* tool = node->GetData();
+        cbTool* tool = *it;
         wxString elem;
 
         // prepend a 0-padded 2-digit number to keep ordering
@@ -320,9 +311,9 @@ void ToolsManager::BuildToolsMenu(wxMenu* menu)
         m_ItemsManager.Add(menu, wxID_SEPARATOR, _T(""), _T(""));
     }
 
-    for (ToolsList::Node* node = m_Tools.GetFirst(); node; node = node->GetNext())
+    for (ToolsList::iterator it = m_Tools.begin(); it != m_Tools.end(); ++it)
     {
-        cbTool* tool = node->GetData();
+        cbTool* tool = *it;
         if (tool->GetName() == CB_TOOLS_SEPARATOR)
         {
             m_ItemsManager.Add(menu, wxID_SEPARATOR, _T(""), _T(""));

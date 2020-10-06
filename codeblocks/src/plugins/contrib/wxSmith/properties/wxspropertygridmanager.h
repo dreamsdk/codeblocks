@@ -17,7 +17,7 @@
 *
 * $Revision: 11149 $
 * $Id: wxspropertygridmanager.h 11149 2017-08-15 21:52:26Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.h $
 */
 
 #ifndef WXSPROPERTYGRIDMANAGER_H

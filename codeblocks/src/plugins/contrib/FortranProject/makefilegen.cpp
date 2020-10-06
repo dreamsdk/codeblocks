@@ -1,11 +1,17 @@
 
 #include "makefilegen.h"
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/file.h>
+
+    #include <cbproject.h>
+    #include <compiler.h>
+    #include <compilerfactory.h>
+#endif
+
 #include "makefiledlg.h"
 #include "nativeparserf.h"
-#include "cbproject.h"
-#include "compiler.h"
-#include <compilerfactory.h>
-#include <wx/file.h>
 
 void MakefileGen::GenerateMakefile(cbProject* project, ProjectDependencies* projDep, NativeParserF* pNativeParser)
 {

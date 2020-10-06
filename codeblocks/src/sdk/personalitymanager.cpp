@@ -4,7 +4,7 @@
  *
  * $Revision: 10104 $
  * $Id: personalitymanager.cpp 10104 2015-02-08 00:49:58Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/personalitymanager.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/personalitymanager.cpp $
  */
 
 #include "sdk_precomp.h"

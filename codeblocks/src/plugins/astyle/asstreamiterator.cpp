@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9995 $
- * $Id: asstreamiterator.cpp 9995 2014-10-16 09:01:46Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/astyle/asstreamiterator.cpp $
+ * $Revision: 11266 $
+ * $Id: asstreamiterator.cpp 11266 2018-01-15 17:54:23Z jenslody $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/asstreamiterator.cpp $
  */
 
 #include "asstreamiterator.h"
@@ -53,8 +53,10 @@ std::string ASStreamIterator::nextLine(cb_unused bool emptyLineWasDeleted)
 
 std::string ASStreamIterator::peekNextLine()
 {
-    if (!m_SavedCharPtr)
+    if (!m_SavedCharPtr){
         m_SavedCharPtr = m_CharPtr;
+        m_SavedCurChar = m_CurChar;
+    }
 
     return readLine();
 }
@@ -62,6 +64,7 @@ std::string ASStreamIterator::peekNextLine()
 void ASStreamIterator::peekReset()
 {
     m_CharPtr = m_SavedCharPtr;
+    m_CurChar = m_SavedCurChar;
     m_SavedCharPtr = 0;
 }
 

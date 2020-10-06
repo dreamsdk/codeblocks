@@ -17,7 +17,7 @@
 *
 * $Revision: 8335 $
 * $Id: wxsitemeditor.h 8335 2012-09-03 07:43:04Z ollydbg $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditor.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditor.h $
 */
 
 #ifndef WXSITEMEDITOR_H

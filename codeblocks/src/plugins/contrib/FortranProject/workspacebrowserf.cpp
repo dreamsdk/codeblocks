@@ -4,70 +4,79 @@
  *
  */
 
-#include <sdk.h>
 #include "workspacebrowserf.h" // class's header file
-#include "nativeparserf.h"
-#include "fortranproject.h"
-#include <wx/intl.h>
-#include <wx/treectrl.h>
-#include <wx/listctrl.h>
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/choice.h>
-#include <wx/menu.h>
-#include <wx/splitter.h>
-#include <wx/button.h>
-#include <wx/utils.h> // wxBusyCursor
-#include <wx/xrc/xmlres.h>
-#include <wx/tipwin.h>
-#include <wx/tokenzr.h>
-#include <manager.h>
-#include <configmanager.h>
-#include <pluginmanager.h>
-#include <editormanager.h>
-#include <projectmanager.h>
-#include <cbeditor.h>
-#include <globals.h>
-#include "cbstyledtextctrl.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
-#include "cbproject.h"
+    #include <wx/intl.h>
+    #include <wx/treectrl.h>
+    #include <wx/listctrl.h>
+    #include <wx/sizer.h>
+    #include <wx/stattext.h>
+    #include <wx/choice.h>
+    #include <wx/menu.h>
+    #include <wx/splitter.h>
+    #include <wx/button.h>
+    #include <wx/utils.h> // wxBusyCursor
+    #include <wx/tipwin.h>
+    #include <wx/tokenzr.h>
+    #include <wx/combobox.h>
+    #include <wx/settings.h>
+    #include <wx/choicdlg.h>
+
+    #include <cbproject.h>
+    #include <cbeditor.h>
+    #include <configmanager.h>
+    #include <editormanager.h>
+    #include <globals.h>
+    #include <manager.h>
+    #include <pluginmanager.h>
+    #include <projectmanager.h>
+    #include <cbstyledtextctrl.h>
 #endif
 
+#include "nativeparserf.h"
+#include "fortranproject.h"
 
-int idMenuJumpToImplementation = wxNewId();
-int idMenuRefreshTree = wxNewId();
-int idMenuForceReparse = wxNewId();
-int idMenuDoNotSort = wxNewId();
-int idMenuSortAlphabetically = wxNewId();
-int idMenuBottomTree = wxNewId();
+namespace {
+    int idMenuJumpToImplementation = wxNewId();
+    int idMenuRefreshTree = wxNewId();
+    int idMenuForceReparse = wxNewId();
+    int idMenuDoNotSort = wxNewId();
+    int idMenuSortAlphabetically = wxNewId();
+    int idMenuTopTree = wxNewId();
+    int idMenuBottomTree = wxNewId();
+    int idCmbSearch = wxNewId();
+    int idBtnHome = wxNewId();
+    int idCmbView = wxNewId();
+}
 
 BEGIN_EVENT_TABLE(WorkspaceBrowserF, wxPanel)
     // m_TreeBottom
-    EVT_TREE_ITEM_ACTIVATED(XRCID("treeMembersWBF"), WorkspaceBrowserF::OnTreeItemDoubleClick)
-    EVT_TREE_ITEM_RIGHT_CLICK(XRCID("treeMembersWBF"), WorkspaceBrowserF::OnTreeItemRightClick)
+    EVT_TREE_ITEM_ACTIVATED(idMenuBottomTree, WorkspaceBrowserF::OnTreeItemDoubleClick)
+    EVT_TREE_ITEM_RIGHT_CLICK(idMenuBottomTree, WorkspaceBrowserF::OnTreeItemRightClick)
     // m_TreeTop
-    EVT_TREE_ITEM_ACTIVATED(XRCID("treeAllWBF"), WorkspaceBrowserF::OnTreeItemDoubleClick)
-    EVT_TREE_ITEM_RIGHT_CLICK(XRCID("treeAllWBF"), WorkspaceBrowserF::OnTreeItemRightClick)
-    EVT_TREE_SEL_CHANGED(XRCID("treeAllWBF"), WorkspaceBrowserF::OnTreeItemSelected)
-    EVT_TREE_ITEM_EXPANDING(XRCID("treeAllWBF"), WorkspaceBrowserF::OnTreeItemExpanding)
-    EVT_TREE_ITEM_COLLAPSING(XRCID("treeAllWBF"), WorkspaceBrowserF::OnTreeItemCollapsing)
+    EVT_TREE_ITEM_ACTIVATED(idMenuTopTree, WorkspaceBrowserF::OnTreeItemDoubleClick)
+    EVT_TREE_ITEM_RIGHT_CLICK(idMenuTopTree, WorkspaceBrowserF::OnTreeItemRightClick)
+    EVT_TREE_SEL_CHANGED(idMenuTopTree, WorkspaceBrowserF::OnTreeItemSelected)
+    EVT_TREE_ITEM_EXPANDING(idMenuTopTree, WorkspaceBrowserF::OnTreeItemExpanding)
+    EVT_TREE_ITEM_COLLAPSING(idMenuTopTree, WorkspaceBrowserF::OnTreeItemCollapsing)
 
-    EVT_TEXT_ENTER(XRCID("cmbSearchWBF"), WorkspaceBrowserF::OnSearch)
-    EVT_COMBOBOX(XRCID("cmbSearchWBF"), WorkspaceBrowserF::OnSearch)
+    EVT_TEXT_ENTER(idCmbSearch, WorkspaceBrowserF::OnSearch)
+    EVT_COMBOBOX(idCmbSearch, WorkspaceBrowserF::OnSearch)
 
-    EVT_BUTTON(XRCID("btnHome"), WorkspaceBrowserF::OnMakeVisible)
+    EVT_BUTTON(idBtnHome, WorkspaceBrowserF::OnMakeVisible)
 
     EVT_MENU(idMenuJumpToImplementation, WorkspaceBrowserF::OnJumpTo)
     EVT_MENU(idMenuRefreshTree, WorkspaceBrowserF::OnRefreshTree)
     EVT_MENU(idMenuForceReparse, WorkspaceBrowserF::OnForceReparse)
-    EVT_CHOICE(XRCID("cmbViewWBF"), WorkspaceBrowserF::OnViewScope)
-    EVT_BUTTON(XRCID("btnSearch"), WorkspaceBrowserF::OnSearch)
+    EVT_CHOICE(idCmbView, WorkspaceBrowserF::OnViewScope)
 
     EVT_MENU(idMenuDoNotSort, WorkspaceBrowserF::OnChangeSort)
     EVT_MENU(idMenuSortAlphabetically, WorkspaceBrowserF::OnChangeSort)
     EVT_MENU(idMenuBottomTree, WorkspaceBrowserF::OnChangeMode)
 END_EVENT_TABLE()
+
 
 // class constructor
 WorkspaceBrowserF::WorkspaceBrowserF(wxWindow* parent, NativeParserF* np, ParserF* par)
@@ -84,31 +93,84 @@ WorkspaceBrowserF::WorkspaceBrowserF(wxWindow* parent, NativeParserF* np, Parser
     m_BrowserOptions.showLocalVariables = cfg->ReadBool(_T("/browser_show_local_variables"), true);
     m_BrowserOptions.showIncludeSeparately = cfg->ReadBool(_T("/browser_show_include_files_separately"), true);
 
-    wxXmlResource::Get()->LoadPanel(this, parent, _T("pnlWBF"));
-    m_Search = XRCCTRL(*this, "cmbSearchWBF", wxComboBox);
+    Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("WorkspaceBrowserF"));
+    CreateControlsWBF();
 
     if (platform::windows)
         m_Search->SetWindowStyle(wxTE_PROCESS_ENTER); // it's a must on windows to catch EVT_TEXT_ENTER
 
-    m_TreeTop = XRCCTRL(*this, "treeAllWBF", wxTreeCtrl);
-    m_TreeBottom = XRCCTRL(*this, "treeMembersWBF", wxTreeCtrl);
-
     int filter = cfg->ReadInt(_T("/browser_display_filter"), bdfWorkspace);
-    XRCCTRL(*this, "cmbViewWBF", wxChoice)->SetSelection(filter);
+    m_CmbViewWBF->SetSelection(filter);
     m_BrowserOptions.displayFilter = (BrowserDisplayFilter)filter;
 
     // if the classbrowser is put under the control of a wxFlatNotebook,
     // somehow the main panel is like "invisible" :/
     // so we force the correct color for the panel here...
-    XRCCTRL(*this, "WBFMainPanel", wxPanel)->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+    m_WBFMainPanel->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+}
+
+
+void WorkspaceBrowserF::CreateControlsWBF()
+{
+    const int imageSize = Manager::Get()->GetImageSize(Manager::UIComponent::Main);
+    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::Main);
+    wxString prefix = ConfigManager::GetDataFolder() +
+                      wxString::Format(wxT("/FortranProject.zip#zip:images/%dx%d/"), imageSize, imageSize);
+    wxBitmap bmp_makevisible = cbLoadBitmapScaled(prefix + _T("fprojectmakevisible.png"), wxBITMAP_TYPE_PNG, uiScaleFactor);
+
+    wxBoxSizer* BoxSizer1;
+    wxBoxSizer* BoxSizer2;
+    wxBoxSizer* BoxSizer3;
+    wxBoxSizer* BoxSizer4;
+    wxFlexGridSizer* FlexGridSizer1;
+    wxStaticText* StaticText1;
+    wxStaticText* StaticText2;
+
+    BoxSizer1 = new wxBoxSizer(wxVERTICAL);
+    m_WBFMainPanel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("WBFMainPanel"));
+    BoxSizer2 = new wxBoxSizer(wxVERTICAL);
+    FlexGridSizer1 = new wxFlexGridSizer(2, 2, 2, 2);
+    FlexGridSizer1->AddGrowableCol(1);
+    StaticText1 = new wxStaticText(m_WBFMainPanel, wxID_ANY, _("View:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
+    FlexGridSizer1->Add(StaticText1, 1, wxALL|wxALIGN_LEFT|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
+    m_CmbViewWBF = new wxChoice(m_WBFMainPanel, idCmbView, wxDefaultPosition, wxDefaultSize, 0, 0, 0, wxDefaultValidator, _T("cmbViewWBF"));
+    m_CmbViewWBF->Append(_("Current file\'s symbols"));
+    m_CmbViewWBF->Append(_("Active project\'s symbols"));
+    m_CmbViewWBF->SetSelection( m_CmbViewWBF->Append(_("All local symbols (workspace)")) );
+    BoxSizer3->Add(m_CmbViewWBF, 1, wxEXPAND, 0);
+    m_BtnHome = new wxBitmapButton(m_WBFMainPanel, idBtnHome, bmp_makevisible, wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW, wxDefaultValidator, _T("btnHome"));
+    m_BtnHome->SetDefault();
+    BoxSizer3->Add(m_BtnHome, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 0);
+    FlexGridSizer1->Add(BoxSizer3, 1, wxALL|wxEXPAND, 0);
+    StaticText2 = new wxStaticText(m_WBFMainPanel, wxID_ANY, _("Search:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT2"));
+    FlexGridSizer1->Add(StaticText2, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+    BoxSizer4 = new wxBoxSizer(wxHORIZONTAL);
+    m_Search = new wxComboBox(m_WBFMainPanel, idCmbSearch, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, 0, wxCB_DROPDOWN|wxTE_PROCESS_ENTER, wxDefaultValidator, _T("cmbSearchWBF"));
+    BoxSizer4->Add(m_Search, 1, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 0);
+    FlexGridSizer1->Add(BoxSizer4, 1, wxALL|wxEXPAND, 0);
+    BoxSizer2->Add(FlexGridSizer1, 0, wxALL|wxEXPAND, 4);
+    m_SplitterWin = new wxSplitterWindow(m_WBFMainPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSP_LIVE_UPDATE, _T("splitterWinWBF"));
+    m_SplitterWin->SetSashGravity(0.5);
+    m_TreeTop = new wxTreeCtrl(m_SplitterWin, idMenuTopTree, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE, wxDefaultValidator, _T("treeAllWBF"));
+    m_TreeBottom = new wxTreeCtrl(m_SplitterWin, idMenuBottomTree, wxDefaultPosition, wxDefaultSize, wxTR_HIDE_ROOT|wxTR_DEFAULT_STYLE, wxDefaultValidator, _T("treeMembersWBF"));
+    m_SplitterWin->SplitHorizontally(m_TreeTop, m_TreeBottom);
+    BoxSizer2->Add(m_SplitterWin, 1, wxALL|wxEXPAND, 0);
+    m_WBFMainPanel->SetSizer(BoxSizer2);
+    BoxSizer2->Fit(m_WBFMainPanel);
+    BoxSizer2->SetSizeHints(m_WBFMainPanel);
+    BoxSizer1->Add(m_WBFMainPanel, 1, wxALL|wxEXPAND, 0);
+    SetSizer(BoxSizer1);
+    BoxSizer1->Fit(this);
+    BoxSizer1->SetSizeHints(this);
 }
 
 // class destructor
 WorkspaceBrowserF::~WorkspaceBrowserF()
 {
-    int pos = XRCCTRL(*this, "splitterWinWBF", wxSplitterWindow)->GetSashPosition();
+    int pos = m_SplitterWin->GetSashPosition();
     Manager::Get()->GetConfigManager(_T("fortran_project"))->Write(_T("/splitter_pos"), pos);
-    int filter = XRCCTRL(*this, "cmbViewWBF", wxChoice)->GetSelection();
+    int filter = m_CmbViewWBF->GetSelection();
     Manager::Get()->GetConfigManager(_T("fortran_project"))->Write(_T("/browser_display_filter"), filter);
 
     if (m_pBrowserBuilder)
@@ -120,7 +182,7 @@ WorkspaceBrowserF::~WorkspaceBrowserF()
 void WorkspaceBrowserF::UpdateSash()
 {
     int pos = Manager::Get()->GetConfigManager(_T("fortran_project"))->ReadInt(_T("/splitter_pos"), 250);
-    XRCCTRL(*this, "splitterWinWBF", wxSplitterWindow)->SetSashPosition(pos, false);
+    m_SplitterWin->SetSashPosition(pos, false);
 }
 
 void WorkspaceBrowserF::UpdateView()
@@ -128,30 +190,26 @@ void WorkspaceBrowserF::UpdateView()
     m_pActiveProject = 0;
     m_ActiveFilename.Clear();
     if (Manager::IsAppShuttingDown())
-    {
         return;
-    }
+
     if (m_pParser)
     {
         m_pActiveProject = Manager::Get()->GetProjectManager()->GetActiveProject();
         cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
         if (ed)
-        {
             m_ActiveFilename = ed->GetFilename();
-        }
+
         if (m_pActiveProject)
             BuildTree();
         else if (m_pBrowserBuilder)
-        {
             m_pBrowserBuilder->DeleteTopRootChildren();
-        }
     }
     else
         m_TreeTop->DeleteAllItems();
 
 }
 
-void WorkspaceBrowserF::ShowMenu(wxTreeCtrl* tree, wxTreeItemId id, const wxPoint& pt)
+void WorkspaceBrowserF::ShowMenu(wxTreeCtrl* tree, wxTreeItemId id, cb_unused const wxPoint& pt)
 {
 // NOTE: local variables are tricky! If you build two local menus
 // and attach menu B to menu A, on function exit both menu A and menu B
@@ -256,7 +314,7 @@ void WorkspaceBrowserF::JumpToToken(TokenF* pToken)
     }
 }
 
-void WorkspaceBrowserF::OnJumpTo(wxCommandEvent& event)
+void WorkspaceBrowserF::OnJumpTo(cb_unused wxCommandEvent& event)
 {
     wxTreeCtrl* tree = m_TreeForPopupMenu;
     wxTreeItemId id = tree->GetSelection();
@@ -278,12 +336,12 @@ void WorkspaceBrowserF::OnTreeItemDoubleClick(wxTreeEvent& event)
     }
 }
 
-void WorkspaceBrowserF::OnRefreshTree(wxCommandEvent& event)
+void WorkspaceBrowserF::OnRefreshTree(cb_unused wxCommandEvent& event)
 {
     UpdateView();
 }
 
-void WorkspaceBrowserF::OnForceReparse(wxCommandEvent& event)
+void WorkspaceBrowserF::OnForceReparse(cb_unused wxCommandEvent& event)
 {
     if (m_NativeParser)
     {
@@ -304,7 +362,10 @@ void WorkspaceBrowserF::OnForceReparse(wxCommandEvent& event)
         }
         case bdfFile:
         {
-            m_NativeParser->ReparseFile(m_ActiveFilename);
+            wxString pFN;
+            if (m_pActiveProject)
+                pFN = m_pActiveProject->GetFilename();
+            m_NativeParser->ReparseFile(pFN, m_ActiveFilename);
             UpdateView();
             break;
         }
@@ -379,7 +440,7 @@ size_t WorkspaceBrowserF::FindMatchTokens(wxString search, TokensArrayF& result)
     return count;
 }
 
-void WorkspaceBrowserF::OnSearch(wxCommandEvent& event)
+void WorkspaceBrowserF::OnSearch(cb_unused wxCommandEvent& event)
 {
     wxString search = m_Search->GetValue();
     if (search.IsEmpty())
@@ -392,7 +453,9 @@ void WorkspaceBrowserF::OnSearch(wxCommandEvent& event)
     size_t j=0;
     while (j < count)
     {
-        if (result.Item(j)->m_TokenKind == tkVariable)
+        if ((result.Item(j)->m_TokenKind == tkVariable) ||
+            (result.Item(j)->m_TokenKind == tkCallFunction) ||
+            (result.Item(j)->m_TokenKind == tkCallSubroutine))
         {
             result.RemoveAt(j);
             count--;
@@ -448,15 +511,14 @@ void WorkspaceBrowserF::BuildTree()
         m_pBrowserBuilder = new WorkspaceBrowserBuilder(m_pParser, m_TreeTop, m_TreeBottom);
     }
 
-    wxSplitterWindow* splitter = XRCCTRL(*this, "splitterWinWBF", wxSplitterWindow);
     if (m_BrowserOptions.visibleBottomTree)
     {
-        splitter->SplitHorizontally(m_TreeTop, m_TreeBottom);
+        m_SplitterWin->SplitHorizontally(m_TreeTop, m_TreeBottom);
         m_TreeBottom->Show(true);
     }
     else
     {
-        splitter->Unsplit();
+        m_SplitterWin->Unsplit();
         m_TreeBottom->Show(false);
     }
 
@@ -507,13 +569,6 @@ void WorkspaceBrowserF::OnTreeItemCollapsing(wxTreeEvent& event)
     //event.Allow();
 }
 
-wxImageList* WorkspaceBrowserF::GetImageList()
-{
-    if (m_pBrowserBuilder)
-        return m_pBrowserBuilder->GetImageList();
-    return 0;
-}
-
 int WorkspaceBrowserF::GetTokenKindImageIdx(TokenF* token)
 {
     if (m_pBrowserBuilder)
@@ -526,6 +581,14 @@ void WorkspaceBrowserF::MarkSymbol(wxString filename, int line)
     if (m_pBrowserBuilder)
     {
         m_pBrowserBuilder->MarkSymbol(filename, line);
+    }
+}
+
+void WorkspaceBrowserF::SelectSymbol(wxString filename, int line)
+{
+    if (m_pBrowserBuilder)
+    {
+        m_pBrowserBuilder->SelectSymbol(filename, line);
     }
 }
 
@@ -548,7 +611,7 @@ void WorkspaceBrowserF::DeleteAllItems()
     m_TreeBottom->DeleteAllItems();
 }
 
-void WorkspaceBrowserF::OnMakeVisible(wxCommandEvent& event)
+void WorkspaceBrowserF::OnMakeVisible(cb_unused wxCommandEvent& event)
 {
     if (m_pBrowserBuilder)
     {

@@ -1,7 +1,11 @@
 #include "autoinsert.h"
-#include "fortranfileext.h"
+
+#ifndef CB_PRECOMP
+    #include <configmanager.h>
+#endif
 #include <algorithm>
-#include <configmanager.h>
+
+#include "fortranfileext.h"
 
 extern FortranFileExt g_FortranFileExt;
 
@@ -24,6 +28,7 @@ AutoInsert::AutoInsert()
     m_NameMap[_T("enum")] = _T("enum");
     m_NameMap[_T("forall")] = _T("forall (...)");
     m_NameMap[_T("submodule")] = _T("submodule");
+    m_NameMap[_T("team")] = _T("change team (...)");
 
     int opt = wxRE_ADVANCED | wxRE_ICASE | wxRE_NOSUB;
     m_RegMap[_T("if")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*):(\\s*))?(if)(\\s*)(\\(.*\\))(\\s*)then\\y.*"), opt);
@@ -58,6 +63,8 @@ AutoInsert::AutoInsert()
     m_RegMap[_T("endforall")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(forall)\\y"), opt);
     m_RegMap[_T("submodule")] = new wxRegEx(_T("^[\\s\\t]*(submodule)(\\s*)(\\([a-z0-9_]+\\))(\\s*)([a-z0-9_]+)"), opt);
     m_RegMap[_T("endsubmodule")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(submodule)\\y"), opt);
+    m_RegMap[_T("team")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change)(\\s*)(team)(\\s*)(\\(.*\\))"), opt);
+    m_RegMap[_T("endteam")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(team)\\y"), opt);
 
     m_RegMap[_T("end")] = new wxRegEx(_T("^[\\s\\t]*[0-9]*[\\s\\t]*\\y(end)\\y(([\\s\\t]*)!(.*))?([\\s\\t]*)$"), opt);
     m_RegMap[_T("endunit")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(subroutine|function|program)\\y"), opt);
@@ -261,6 +268,13 @@ bool AutoInsert::GetItemChoices(const wxString& statementName, wxArrayString& ai
 
         alignStrArr.Empty();
     }
+    else if(key == _T("team"))
+    {
+        aiTypeStrArr.Add(_T("end team"));
+        aiTypeStrArr.Add(_T("endteam"));
+        aiTypeStrArr.Add(_T("EndTeam"));
+        aiTypeStrArr.Add(_T("--none--"));
+    }
     return true;
 }
 
@@ -307,7 +321,7 @@ wxString AutoInsert::FindKey(const wxString& statementName)
 void AutoInsert::MakeAutoInsert(cbEditor* ed)
 {
     // Function should be called after 'Enter' only.
-    // Is assumed that current line is empty (or spaces only).
+    // Is assumed that current line is empty (or only spaces).
     cbStyledTextCtrl* stc = ed->GetControl();
     if (!stc)
         return;
@@ -369,7 +383,10 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
     }
 
     if ( key.IsSameAs(_T("module")) || // take care for "module subroutine Name()"
-         (key.IsEmpty() && (wordLw.IsSameAs(_T("pure")) || wordLw.IsSameAs(_T("elemental")))) )
+         (key.IsEmpty() &&
+          (wordLw.IsSameAs(_T("pure")) || wordLw.IsSameAs(_T("impure"))
+           || wordLw.IsSameAs(_T("elemental"))
+           || wordLw.IsSameAs(_T("recursive")) || wordLw.IsSameAs(_T("non_recursive")))) )
     {
         wxString reststr = statementLineStrLw.Mid(wordLw.Length()+1).Trim(false);
         wxString secword = GetWord(reststr,0);
@@ -405,6 +422,13 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
             key = wxEmptyString;
     }
 
+    if (key.IsEmpty() && wordLw.IsSameAs(_T("change")))
+    {
+        wxString secword = GetWord(statementLineStrLw,7);
+        if (secword.IsSameAs(_T("team")))
+            key = _T("team");
+    }
+
     if (key.IsEmpty())
         return;
 
@@ -413,7 +437,12 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
         && !key.IsSameAs(_T("do")) && !key.IsSameAs(_T("program")))
         return; // unfinished statements or something else
 
-    if (key.IsSameAs(_T("where")) || key.IsSameAs(_T("forall")))
+    if (key.IsSameAs(_T("team")))
+    {
+        lineRest = lineStr.Mid(keyStartPos+6).Trim(false).Mid(4).Trim(false);
+    }
+
+    if (key.IsSameAs(_T("where")) || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("team")))
     {
         if (!lineRest.StartsWith(_T("(")))
             return; // something is wrong with syntax
@@ -426,8 +455,7 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
                 return; // there are some symbols after "where (bla bla)". It is not "where" construct
         }
     }
-
-    if (key.IsSameAs(_T("type")))
+    else if (key.IsSameAs(_T("type")))
     {
         if (lineRest.StartsWith(_T("(")))
             return; // here is declaration
@@ -497,7 +525,8 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
             (  key.IsSameAs(_T("do")) || key.IsSameAs(_T("if"))
             || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block"))
             || key.IsSameAs(_T("critical")) || key.IsSameAs(_T("select"))
-            || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where")))
+            || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where"))
+            || key.IsSameAs(_T("team")) )
                  )
         {
             addStr << _T(" ") << firstName;
@@ -509,7 +538,8 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
         (  key.IsSameAs(_T("do")) || key.IsSameAs(_T("if"))
         || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block"))
         || key.IsSameAs(_T("critical")) || key.IsSameAs(_T("select"))
-        || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where")))
+        || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where"))
+        || key.IsSameAs(_T("team")) )
         )
     {
         nspace = firstNameIndent;
@@ -532,7 +562,7 @@ wxString AutoInsert::GetWord(const wxString& line, size_t posStart)
     size_t idx = 0;
     if (posStart > 0)
     {
-        for (size_t i=posStart-1; i>=0; i--)
+        for (size_t i=posStart-1; true; i--)
         {
             if (!isalnum(line.GetChar(i)) && (line.GetChar(i) != '_'))
             {
@@ -540,6 +570,8 @@ wxString AutoInsert::GetWord(const wxString& line, size_t posStart)
                 idx = i+1;
                 break;
             }
+            else if (i == 0)
+                break;
         }
         if (found)
             wordBefore = line.Mid(idx,posStart-idx);
@@ -598,7 +630,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
     if (key.IsSameAs(_T("if")) || key.IsSameAs(_T("do"))
         || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block")) || key.IsSameAs(_T("critical"))
         || key.IsSameAs(_T("select")) || key.IsSameAs(_T("where"))
-        || key.IsSameAs(_T("forall")) )
+        || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("change")))
     {
         // limit search until the end of unit
         reFinish1 = m_RegMap[_T("end")];
@@ -709,6 +741,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
         wxRegEx* reFin12 = m_RegMap[_T("select")];
         wxRegEx* reFin13 = m_RegMap[_T("where")];
         wxRegEx* reFin14 = m_RegMap[_T("forall")];
+        wxRegEx* reFin15 = m_RegMap[_T("team")];
 
         while (line < lcount)
         {
@@ -717,7 +750,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
             if (reFin1->Matches(str) || reFin2->Matches(str) || reFin3->Matches(str) || reFin4->Matches(str)
                 || reFin6->Matches(str) || reFin7->Matches(str) || reFin8->Matches(str)
                 || reFin9->Matches(str) || reFin10->Matches(str) || reFin11->Matches(str) || reFin12->Matches(str)
-                || reFin13->Matches(str) || reFin14->Matches(str)
+                || reFin13->Matches(str) || reFin14->Matches(str) || reFin15->Matches(str)
                 )
                 break;
             else if (reEndCur1->Matches(str))

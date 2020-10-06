@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11153 $
- * $Id: abbreviationsconfigpanel.cpp 11153 2017-08-15 21:52:36Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/abbreviations/abbreviationsconfigpanel.cpp $
+ * $Revision: 11350 $
+ * $Id: abbreviationsconfigpanel.cpp 11350 2018-03-27 22:00:39Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/abbreviations/abbreviationsconfigpanel.cpp $
  */
 
 #include <sdk.h>
@@ -102,7 +102,8 @@ void AbbreviationsConfigPanel::ApplyColours()
         if (m_AutoCompTextControl)
         {
             m_AutoCompTextControl->StyleSetFont(wxSCI_STYLE_DEFAULT, tmpFont);
-            colour_set->Apply(colour_set->GetHighlightLanguage(_T("C/C++")), m_AutoCompTextControl);
+            colour_set->Apply(colour_set->GetHighlightLanguage(_T("C/C++")), m_AutoCompTextControl,
+                              false, true);
         }
     }
 }

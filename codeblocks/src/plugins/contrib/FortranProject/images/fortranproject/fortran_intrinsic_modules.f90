@@ -104,8 +104,19 @@ module iso_fortran_env
     integer, parameter :: stat_locked_other_image
     integer, parameter :: stat_stopped_image
     integer, parameter :: stat_unlocked
+    integer, parameter :: initial_team
+    integer, parameter :: parent_team
+    integer, parameter :: stat_failed_image
+    integer, parameter :: stat_unlocked_failed_image
+    
 
     type lock_type
+    end type
+    
+    type event_type
+    end type
+    
+    type team_type
     end type
 
     character(len=*) function compiler_options()
@@ -125,6 +136,9 @@ module ieee_exceptions
 
     type ieee_status_type
     end type
+    
+    type ieee_modes_type
+    end type
 
     type(ieee_flag_type), parameter :: ieee_invalid
     type(ieee_flag_type), parameter :: ieee_overflow
@@ -132,7 +146,7 @@ module ieee_exceptions
     type(ieee_flag_type), parameter :: ieee_underflow
     type(ieee_flag_type), parameter :: ieee_inexact
     type(ieee_flag_type), parameter :: ieee_usual(3) = [ieee_overflow, ieee_devide_by_zero, ieee_invalid]
-    type(ieee_flag_type), parameter :: ieee_all(5) = [ieee_usual, ieee_underflow, ieee_inexact]
+    type(ieee_flag_type), parameter :: ieee_all(3) = [ieee_usual, ieee_underflow, ieee_inexact]
 
     subroutine ieee_get_flag(flag, flag_value)
     end subroutine
@@ -152,11 +166,22 @@ module ieee_exceptions
     subroutine ieee_set_status(status_value)
     end subroutine
 
-    function ieee_support_flag(flag [,x])
+    function ieee_support_flag(flag [, x])
     end function
 
     function ieee_support_halting(flag)
     end function
+    
+    subroutine ieee_get_modes(modes)
+        ! Get floating-point modes.
+        type(ieee_modes_type), intent(out) :: modes
+    end subroutine
+    
+    subroutine ieee_set_modes(modes)
+        ! Set floating-point modes.
+        type(ieee_modes_type) :: modes
+    end subroutine
+    
 
 end module ieee_exceptions
 
@@ -181,11 +206,14 @@ module ieee_arithmetic
     type(ieee_class_type), parameter :: ieee_positive_normal
     type(ieee_class_type), parameter :: ieee_positive_inf
     type(ieee_class_type), parameter :: ieee_other_value
+    type(ieee_class_type), parameter :: ieee_negative_subnormal
+    type(ieee_class_type), parameter :: ieee_positive_subnormal
 
     type(ieee_round_type), parameter :: ieee_nearest
     type(ieee_round_type), parameter :: ieee_to_zero
     type(ieee_round_type), parameter :: ieee_up
     type(ieee_round_type), parameter :: ieee_down
+    type(ieee_round_type), parameter :: ieee_away
     type(ieee_round_type), parameter :: ieee_other
 
     type(ieee_class_type) function ieee_class(x)
@@ -197,8 +225,10 @@ module ieee_arithmetic
         ! Copy sign.
     end function
 
-    subroutine ieee_get_rounding_mode(round_value)
+    subroutine ieee_get_rounding_mode(round_value[, radix])
         ! Get rounding mode.
+        type(ieee_round_type), intent(out) :: round_value
+        integer, optional :: radix
     end subroutine
 
     subroutine ieee_get_underflow_mode(gradual)
@@ -293,6 +323,149 @@ module ieee_arithmetic
 
     function ieee_value(x, class)
     end function
+    
+    function ieee_support_subnormal([x])
+        ! Query subnormalized number support.
+    end function
+    
+    function ieee_real(a [, kind])
+        ! Converts to real type
+        integer or real :: a
+        integer, optional :: kind
+    end function
+    
+    real function ieee_fma(a,b,c)
+        ! Performes fused multiply-add operation "(a*b)+c"
+        real :: a
+        real :: b
+        real :: c
+    end function
+    
+    logical function ieee_signbit(x)
+        ! Test sign bit. Returns .true. if and only if the sign bit of X is nonzero.
+        real :: x
+    end function
+    
+    integer function ieee_int(a, round [, kind]) 
+        ! Converts to integer type
+        real :: a
+        type(ieee_round_type) :: round
+        integer, optional :: kind
+    end function
+    
+    real function ieee_max_num(x, y)
+        ! Returns maximum numerical value of two arguments:
+        ! if(x<y) returns y
+        ! if(x>y) returns x
+        real :: x
+        real :: y
+    end function
+    
+    real function ieee_max_num_mag(x, y)
+        ! Returns maximum magnitude numerical value of two arguments:
+        ! if(abs(x) < abs(y)) returns y
+        ! if(abs(x) > abs(y)) returns x
+        real :: x
+        real :: y
+    end function
+    
+    real function ieee_min_num(x, y)
+        ! Returns minimum numerical value of two arguments:
+        ! if(x<y) returns x
+        ! if(x>y) returns y
+        real :: x
+        real :: y
+    end function
+    
+    real function ieee_min_num_mag(x, y)
+        ! Returns minimum magnitude numerical value of two arguments:
+        ! if(abs(x) < abs(y)) returns x
+        ! if(abs(x) > abs(y)) returns y
+        real :: x
+        real :: y
+    end function
+    
+    real function ieee_next_down(x)
+        ! Returns adjacent lower machine number.
+        real :: x
+    end function
+    
+    real function ieee_next_up(x)
+        ! Returns adjacent higher machine number.
+        real :: x
+    end function
+    
+    logical function ieee_quiet_eq(a, b)
+        ! Quiet compares equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_quiet_ge(a, b)
+        ! Quiet compares greater than or equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_quiet_gt(a, b)
+        ! Quiet compares greater than.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_quiet_le(a, b)
+        ! Quiet compares less than or equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_quiet_lt(a, b)
+        ! Quiet compares less than.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_quiet_ne(a, b)
+        ! Quiet compares not equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_eq(a, b)
+        ! Signaling compares equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_ge(a, b)
+        ! Signaling compares greater than or equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_gt(a, b)
+        ! Signaling compares greater than.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_le(a, b)
+        ! Signaling compares less than or equal.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_lt(a, b)
+        ! Signaling compares less than.
+        real :: a
+        real :: b
+    end function
+    
+    logical function ieee_signaling_ne(a, b)
+        ! Signaling compares not equal.
+        real :: a
+        real :: b
+    end function
 
 end module ieee_arithmetic
 
@@ -311,6 +484,7 @@ module ieee_features
     type(ieee_features_type), parameter :: ieee_rounding
     type(ieee_features_type), parameter :: ieee_sqrt
     type(ieee_features_type), parameter :: ieee_underflow_flag
+    type(ieee_features_type), parameter :: ieee_subnormal
 end module
 
 

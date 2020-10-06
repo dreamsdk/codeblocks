@@ -336,7 +336,9 @@ FileExplorer::FileExplorer(wxWindow *parent,wxWindowID id,
 
     SetAutoLayout(TRUE);
 
-    SetImages();
+    m_TreeImages = cbProjectTreeImages::MakeImageList(16, *this);
+    m_Tree->SetImageList(m_TreeImages.get());
+
     ReadConfig();
     if(m_Loc->GetCount()>m_favdirs.GetCount())
     {
@@ -698,15 +700,6 @@ void FileExplorer::OnUpdateTreeItems(wxCommandEvent &/*e*/)
     m_updatetimer->Start(10,true);
     // Restart the monitor (TODO: move this elsewhere??)
     ResetDirMonitor();
-}
-
-void FileExplorer::SetImages()
-{
-    wxImageList *m_pImages = cbProjectTreeImages::MakeImageList();
-    m_Tree->SetImageList(m_pImages);
-
-//    // make sure tree is not "frozen"
-//    UnfreezeTree(true);
 }
 
 wxString FileExplorer::GetFullPath(const wxTreeItemId &ti)
@@ -1643,8 +1636,11 @@ void FileExplorer::OnParseBZR(wxCommandEvent &/*event*/)
 void FileExplorer::OnUpButton(wxCommandEvent &/*event*/)
 {
     wxFileName loc(m_root);
-    loc.RemoveLastDir();
-    SetRootFolder(loc.GetFullPath()); //TODO: Check if this is always the root folder
+    if (loc.GetDirCount())
+    {
+        loc.RemoveLastDir();
+        SetRootFolder(loc.GetFullPath());
+    }
 }
 
 void FileExplorer::OnRefresh(wxCommandEvent &/*event*/)

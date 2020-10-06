@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10912 $
- * $Id: editarrayorderdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/editarrayorderdlg.cpp $
+ * $Revision: 11846 $
+ * $Id: editarrayorderdlg.cpp 11846 2019-09-08 22:37:55Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editarrayorderdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -29,8 +29,11 @@ EditArrayOrderDlg::EditArrayOrderDlg(wxWindow* parent, const wxArrayString& arra
     : m_Array(array)
 {
     wxXmlResource::Get()->LoadObject(this, parent, _T("dlgEditArrayOrder"),_T("wxScrollingDialog"));
-    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
     DoFillList();
+
+    XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
+    wxListBox* list = XRCCTRL(*this, "lstItems", wxListBox);
+    list->SetFocus();
 }
 
 // class destructor

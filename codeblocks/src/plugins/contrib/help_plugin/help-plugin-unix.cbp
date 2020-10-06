@@ -8,7 +8,7 @@
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="bzip2">
-				<Option output="bzip2/libbzip2" prefix_auto="0" extension_auto="1" />
+				<Option output="../../../devel/libbz2_help" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="../../../.objs/plugins/contrib/help_plugin/bzip2" />
 				<Option type="2" />
@@ -20,7 +20,7 @@
 				</Compiler>
 			</Target>
 			<Target title="zlib">
-				<Option output="zlib/libz" prefix_auto="0" extension_auto="1" />
+				<Option output="../../../devel/libz" prefix_auto="0" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="../../../.objs/plugins/contrib/help_plugin/zlib" />
 				<Option type="2" />
@@ -45,8 +45,8 @@
 					<Add option="$(#CB_RELEASE_TYPE)" />
 				</Compiler>
 				<Linker>
-					<Add library="bzip2/libbzip2.a" />
-					<Add library="zlib/libz.a" />
+					<Add library="bz2_help" />
+					<Add library="z" />
 				</Linker>
 			</Target>
 		</Build>
@@ -75,14 +75,14 @@
 		<Linker>
 			<Add option="`wx-config --version=2.8 --libs`" />
 			<Add option="-Wl,--no-undefined" />
-			<Add library="libcodeblocks.a" />
+			<Add library="codeblocks" />
 			<Add directory="../../../devel" />
-			<Add directory="../../../sdk/scripting/lib" />
-			<Add directory="bzip2" />
-			<Add directory="zlib" />
 		</Linker>
 		<ExtraCommands>
-			<Add after="zip -j9 ../../../devel/share/codeblocks/help_plugin.zip manifest.xml *.xrc *.png" />
+			<Add after="zip -j9 ../../../devel/share/codeblocks/help_plugin.zip manifest.xml *.xrc" />
+			<Add after="zip -Rq9 ../../../devel/share/codeblocks/help_plugin.zip images/16x16/*.png images/20x20/*.png images/24x24/*.png" />
+			<Add after="zip -Rq9 ../../../devel/share/codeblocks/help_plugin.zip images/28x28/*.png images/32x32/*.png images/40x40/*.png" />
+			<Add after="zip -Rq9 ../../../devel/share/codeblocks/help_plugin.zip images/48x48/*.png images/56x56/*.png images/64x64/*.png" />
 		</ExtraCommands>
 		<Unit filename="HelpConfigDialog.cpp">
 			<Option target="help_plugin" />

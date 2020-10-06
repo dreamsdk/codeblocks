@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: HexEditor.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/HexEditor/HexEditor.cpp $
+* $Revision: 11822 $
+* $Id: HexEditor.cpp 11822 2019-08-01 22:04:41Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/HexEditor.cpp $
 */
 
 #include <sdk.h>
@@ -135,20 +135,16 @@ void HexEditor::BuildMenu(wxMenuBar* menuBar)
     for ( wxMenuItemList::iterator i = list.begin(); i != list.end(); ++i, ++pos )
     {
         wxMenuItem* item = *i;
-        #if wxCHECK_VERSION(3, 0, 0)
         wxString label = item->GetItemLabelText();
-        #else
-        wxString label = item->GetLabel();
-        #endif
         label.Replace( _T("_"), _T("") );
         if ( label.Contains( _("Open...")) )
         {
-            fileMenu->Insert( pos+1, idOpenWithHE, _("Open with hex editor"), _("Open file using hex editor") );
+            fileMenu->Insert( pos+1, idOpenWithHE, _("Open With Hex Editor"), _("Open file using hex editor") );
             return;
         }
     }
 
-    fileMenu->Append( idOpenWithHE, _("Open with hex editor"), _("Open file using hex editor") );
+    fileMenu->Append( idOpenWithHE, _("Open With Hex Editor"), _("Open file using hex editor") );
 }
 
 void HexEditor::OnOpenHexEditFileBrowser( wxCommandEvent& /*event*/ )

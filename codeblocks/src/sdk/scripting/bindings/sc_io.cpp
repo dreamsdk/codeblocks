@@ -4,7 +4,7 @@
  *
  * $Revision: 9426 $
  * $Id: sc_io.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/scripting/bindings/sc_io.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_io.cpp $
  */
 
 #include <sdk_precomp.h>

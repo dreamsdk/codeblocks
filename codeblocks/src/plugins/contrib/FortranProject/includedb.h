@@ -1,10 +1,11 @@
 #ifndef INCLUDEDB_H
 #define INCLUDEDB_H
 
-//#include "projectdependencies.h"
-
-#include <wx/string.h>
-#include <wx/arrstr.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/arrstr.h>
+#endif
 #include <map>
 #include <set>
 

@@ -17,7 +17,7 @@
 *
 * $Revision: 10684 $
 * $Id: wxsdeleteitemres.cpp 10684 2016-01-22 10:49:37Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdeleteitemres.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdeleteitemres.cpp $
 */
 
 #include "wxsdeleteitemres.h"

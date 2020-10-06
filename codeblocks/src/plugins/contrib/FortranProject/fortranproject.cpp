@@ -8,61 +8,46 @@
  */
 
 #include <sdk.h> // Code::Blocks SDK
+#ifndef CB_PRECOMP
+    #include <wx/filename.h>
+    #include <wx/tokenzr.h>
+    #include <wx/gdicmn.h>
+    #include <wx/xrc/xmlres.h>
+    #include <wx/event.h>
+    #include <wx/menu.h>
+    #include <wx/toolbar.h>
+    #include <wx/choicdlg.h>
+
+    #include <configurationpanel.h>
+    #include <manager.h>
+    #include <ccmanager.h>
+    #include <editorcolourset.h>
+    #include <editormanager.h>
+    #include <logmanager.h>
+    #include <projectmanager.h>
+    #include <cbstyledtextctrl.h>
+    #include <projectloader_hooks.h>
+    #include <editor_hooks.h>
+    #include <cbeditor.h>
+#endif
+#include <vector>
+
 #include "fortranproject.h"
 #include "fpoptionsdlg.h"
+#include "fpoptionsprjdlg.h"
 #include "jumptracker.h"
 #include "changecase.h"
 #include "tab2space.h"
 #include "docblock.h"
 #include "formatindent.h"
 #include "bindto.h"
-#include <configurationpanel.h>
-#include <manager.h>
-#include <ccmanager.h>
-#include <editorcolourset.h>
-#include <editormanager.h>
-#include <logmanager.h>
-#include <projectmanager.h>
-#include <cbstyledtextctrl.h>
-#include <wx/filename.h>
-#include <wx/tokenzr.h>
-#include <wx/xrc/xmlres.h>
-#include <vector>
-
-#include "editor_hooks.h"
-#include "cbeditor.h"
-
-#include <wx/event.h>
-
+#include "ccsmartfilter.h"
 
 // this auto-registers the plugin
 namespace
 {
     PluginRegistrant<FortranProject> reg(_T("FortranProject"));
 }
-
-// empty bitmap for use as Fortran keywords icon in code-completion list
-/* XPM */
-static const char * fortran_keyword_xpm[] = {
-"16 16 2 1",
-"     c None",
-".    c #04049B",
-"                ",
-"                ",
-"   .........    ",
-"   .........    ",
-"   ..           ",
-"   ..           ",
-"   ........     ",
-"   ........     ",
-"   ..           ",
-"   ..           ",
-"   ..           ",
-"   ..           ",
-"   ..           ",
-"                ",
-"                ",
-"                "};
 
 
 int idGotoDeclaration      = wxNewId();
@@ -123,6 +108,7 @@ FortranProject::FortranProject() :
     m_WasCallTipActive(false),
     m_IsAutoPopup(false),
     m_ActiveCalltipsNest(0),
+    m_ActiveCalltipsPosition(-1),
     m_CurrentLine(0),
     m_pFortranLog(0L),
     m_TimerReparseEditor(this, idReparseEditorTimer)
@@ -152,6 +138,12 @@ void FortranProject::OnAttach()
     m_pCallTree = new CallTree(this);
 
     RereadOptions();
+    LoadFortranKeywordImages();
+
+    // hook to project loading procedure
+    ProjectLoaderHooks::HookFunctorBase* fp_hook =
+        new ProjectLoaderHooks::HookFunctor<FortranProject>(this, &FortranProject::OnProjectLoadingHook);
+    m_ProjectLoadingHookID = ProjectLoaderHooks::RegisterHook(fp_hook);
 
     // hook to editors
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<FortranProject>(this, &FortranProject::EditorEventHook);
@@ -189,6 +181,7 @@ void FortranProject::OnRelease(bool appShutDown)
 {
     // unregister hook
     // 'true' will delete the functor too
+    ProjectLoaderHooks::UnregisterHook(m_ProjectLoadingHookID, true);
     EditorHooks::UnregisterHook(m_EditorHookId, true);
 
     // remove registered event sinks
@@ -307,6 +300,12 @@ void FortranProject::OnProjectClosed(CodeBlocksEvent& event)
 //    {
 //        m_pNativeParser->RemoveFromParser(event.GetProject());
 //    }
+
+    if (!ProjectManager::IsBusy() && IsAttached() && m_InitDone)
+    {
+        m_pNativeParser->DelProjectSearchDirs(event.GetProject());
+    }
+
     event.Skip();
 }
 
@@ -320,8 +319,13 @@ void FortranProject::OnProjectFileAdded(CodeBlocksEvent& event)
 {
     if (IsAttached() && m_InitDone)
     {
-        m_pNativeParser->AddFileToParser(event.GetString());
-        m_pNativeParser->UpdateWorkspaceBrowser();
+        cbProject* cbp = event.GetProject();
+        if (cbp)
+        {
+            wxString pfn = cbp->GetFilename();
+            m_pNativeParser->AddFileToParser(pfn, event.GetString());
+            m_pNativeParser->UpdateWorkspaceBrowser();
+        }
     }
     event.Skip();
 }
@@ -340,10 +344,18 @@ void FortranProject::OnEditorSave(CodeBlocksEvent& event)
 {
     if (!ProjectManager::IsBusy() && IsAttached() && m_InitDone)
     {
-        EditorBase* ed = event.GetEditor();
-        if (ed)
+        EditorBase* eb = event.GetEditor();
+        cbEditor* editor = (eb && eb->IsBuiltinEditor()) ? static_cast<cbEditor*>(eb) : 0;
+        if (editor)
         {
-            m_pNativeParser->ReparseFile(ed->GetFilename());
+            wxString projFN;
+            ProjectFile* pf = editor->GetProjectFile();
+            if (pf)
+            {
+                cbProject* cbp = pf->GetParentProject();
+                projFN = cbp->GetFilename();
+            }
+            m_pNativeParser->ReparseFile(projFN, editor->GetFilename());
             m_pNativeParser->UpdateWorkspaceBrowser();
         }
     }
@@ -487,11 +499,14 @@ void FortranProject::BuildMenu(wxMenuBar* menuBar)
     {
         wxMenu* submenuJump = new wxMenu();
         submenuJump->Append(idMenuGotoDeclaration, _("Jump to declaration"));
+        const int imageSize = Manager::Get()->GetImageSize(Manager::UIComponent::Menus);
+        const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::Menus);
+        wxString prefix = ConfigManager::GetDataFolder() +
+                          wxString::Format(_T("/images/fortranproject/%dx%d/"), imageSize, imageSize);
 
-        wxString prefix = ConfigManager::GetDataFolder() + _T("/images/fortranproject/");
-        wxBitmap bmp_back = cbLoadBitmap(prefix + _T("fprojectjumpback.png"), wxBITMAP_TYPE_PNG);
-        wxBitmap bmp_home = cbLoadBitmap(prefix + _T("fprojectjumphome.png"), wxBITMAP_TYPE_PNG);
-        wxBitmap bmp_forward = cbLoadBitmap(prefix + _T("fprojectjumpforward.png"), wxBITMAP_TYPE_PNG);
+        wxBitmap bmp_back = cbLoadBitmapScaled(prefix + _T("fprojectjumpback.png"), wxBITMAP_TYPE_PNG, uiScaleFactor);
+        wxBitmap bmp_home = cbLoadBitmapScaled(prefix + _T("fprojectjumphome.png"), wxBITMAP_TYPE_PNG, uiScaleFactor);
+        wxBitmap bmp_forward = cbLoadBitmapScaled(prefix + _T("fprojectjumpforward.png"), wxBITMAP_TYPE_PNG, uiScaleFactor);
         wxMenuItem* itemJumpBack = new wxMenuItem(submenuJump, idMenuJumpBack, _("Jump back"));
         itemJumpBack->SetBitmap(bmp_back);
         wxMenuItem* itemJumpHome = new wxMenuItem(submenuJump, idMenuJumpHome, _("Jump last"));
@@ -514,9 +529,17 @@ void FortranProject::BuildMenu(wxMenuBar* menuBar)
     }
 }
 
+static int CalcStcFontSize(cbStyledTextCtrl *stc)
+{
+    wxFont defaultFont = stc->StyleGetFont(wxSCI_STYLE_DEFAULT);
+    defaultFont.SetPointSize(defaultFont.GetPointSize() + stc->GetZoom());
+    int fontSize;
+    stc->GetTextExtent(wxT("A"), nullptr, &fontSize, nullptr, nullptr, &defaultFont);
+    return fontSize;
+}
 
 // invariant : on return true : NameUnderCursor is NOT empty
-bool EditorHasNameUnderCursor(wxString& NameUnderCursor, bool& isOperator)
+static bool EditorHasNameUnderCursor(wxString& NameUnderCursor, bool& isOperator)
 {
     if(cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor())
     {
@@ -591,6 +614,7 @@ void FortranProject::BuildModuleMenu(const ModuleType type, wxMenu* menu, const 
             menu->Insert(0, idGotoDeclaration, msg);
 
             menu->Insert(1, wxID_SEPARATOR, wxEmptyString);
+            Manager::Get()->GetPluginManager()->RegisterFindMenuItems(true, 2);
 
             if (!isOperator)
             {
@@ -598,6 +622,7 @@ void FortranProject::BuildModuleMenu(const ModuleType type, wxMenu* menu, const 
                 showsubmenu->Append(idShowCallTree, _T("Call tree"));
                 showsubmenu->Append(idShowCalledByTree, _T("Called-By tree"));
                 menu->Insert(1, wxID_ANY, _("Show"), showsubmenu);
+                Manager::Get()->GetPluginManager()->RegisterFindMenuItems(true, 1);
             }
         }
     }
@@ -787,16 +812,18 @@ void FortranProject::CodeCompletePreprocessor(int tknStart, int tknEnd, cbEditor
     macros.push_back(wxT("line"));
     macros.push_back(wxT("pragma"));
     macros.push_back(wxT("undef"));
-    const wxString idxStr = F(wxT("\n%d"), iidx);
     for (size_t i = 0; i < macros.size(); ++i)
     {
         if (text.IsEmpty() || macros[i][0] == text[0]) // ignore tokens that start with a different letter
             tokens.push_back(CCToken(wxNOT_FOUND, macros[i], iidx));
     }
     stc->ClearRegisteredImages();
-    wxImageList* ilist = m_pNativeParser->GetImageList();
+    int fontSize = CalcStcFontSize(stc);
+    FPImageList fpImList(fontSize);
+    wxImageList* ilist = fpImList.GetImageList();
     if (!ilist)
         return;
+
     stc->RegisterImage(iidx, ilist->GetBitmap(iidx));
 }
 
@@ -883,14 +910,37 @@ void FortranProject::DoAutocomplete(const CCToken& token, cbEditor* ed)
 {
     cbStyledTextCtrl* control = ed->GetControl();
 
-    wxString itemText = token.name;
+    wxString itemText = token.displayName.BeforeFirst(':');
     control->AutoCompCancel();
     int pos = control->GetCurrentPos();
     int start = control->WordStartPosition(pos, true);
     int endPos = control->WordEndPosition(pos, true);
-    const wxString& text = control->GetTextRange(start, endPos);
-    if (text.IsEmpty() || !text.IsSameAs(itemText))
+    const wxString& textUnder = control->GetTextRange(start, endPos);
+    bool replaceWord = false;
+    if (!textUnder.IsEmpty() && (start != pos || (pos != 0 && control->GetCharAt(pos-1) == _T('%'))))
     {
+        TokensArrayFlat* ts = m_TokensCCList.GetTokens();
+        for (size_t i=0; i < ts->size(); ++i)
+        {
+            if (ts->Item(i)->m_DisplayName.IsSameAs(textUnder, false))
+            {
+                replaceWord = true;
+                break;
+            }
+        }
+    }
+    if (!replaceWord && pos != endPos)
+    {
+        const wxString& textUnderEnd = control->GetTextRange(pos, endPos);
+        if (itemText.EndsWith(textUnderEnd))
+        {
+            replaceWord = true;
+        }
+    }
+    if (textUnder.IsEmpty() || !textUnder.IsSameAs(itemText))
+    {
+        if (!replaceWord)
+            endPos = pos;
         control->SetTargetStart(start);
         control->SetTargetEnd(endPos);
         control->ReplaceTarget(itemText);
@@ -922,8 +972,9 @@ void FortranProject::EditorEventHook(cbEditor* editor, wxScintillaEvent& event)
     }
 
     cbStyledTextCtrl* control = editor->GetControl();
+    wxEventType etyp = event.GetEventType();
 
-    if (   (event.GetEventType() == wxEVT_SCI_CHARADDED)
+    if (   (etyp == wxEVT_SCI_CHARADDED)
         && (!control->AutoCompActive()) ) // not already active autocompletion
     {
         wxChar ch = event.GetKey();
@@ -949,17 +1000,56 @@ void FortranProject::EditorEventHook(cbEditor* editor, wxScintillaEvent& event)
             }
         }
     }
+    else if (etyp != wxEVT_SCI_CHARADDED && etyp != wxEVT_SCI_MODIFIED)
+    {
+        if (control->CallTipActive())
+        {
+            int curPos = control->GetCurrentPos();
+            if (m_ActiveCalltipsPosition == -1)
+            {
+                m_ActiveCalltipsPosition = curPos;
+            }
+            else if (m_ActiveCalltipsPosition != curPos)
+            {
+                bool ctipsUpdate = true;
+                if (m_ActiveCalltipsPosition+1 == curPos)
+                {
+                    wxChar prevChar = control->GetCharAt(m_ActiveCalltipsPosition);
+                    wxChar curChar  = control->GetCharAt(curPos);
+                    if (isalpha(prevChar) || prevChar == '_' || isdigit(prevChar))
+                        ctipsUpdate = false;
+                    else if (prevChar == ' ' && curChar == ' ')
+                        ctipsUpdate = false;
+                }
+                else if (m_ActiveCalltipsPosition-1 == curPos)
+                {
+                    wxChar curChar  = control->GetCharAt(curPos);
+                    if (isalpha(curChar) || curChar == '_' || isdigit(curChar) || curChar == ' ')
+                        ctipsUpdate = false;
+                }
+
+                m_ActiveCalltipsPosition = curPos;
+                if (ctipsUpdate)
+                {
+                    CodeBlocksEvent evt(cbEVT_SHOW_CALL_TIP);
+                    Manager::Get()->ProcessEvent(evt);
+                }
+            }
+        }
+        else
+            m_ActiveCalltipsPosition = -1;
+    }
 
     if( control->GetCurrentLine() != m_CurrentLine )
     {
         m_CurrentLine = control->GetCurrentLine();
-        m_pNativeParser->MarkCurrentSymbol();
+        m_pNativeParser->MarkCurrentSymbol(false);
     }
 
-    if (event.GetEventType() == wxEVT_SCI_MODIFIED && !m_TimerReparseEditor.IsRunning())
+    if (etyp == wxEVT_SCI_MODIFIED && !m_TimerReparseEditor.IsRunning())
         m_TimerReparseEditor.Start(1500, wxTIMER_ONE_SHOT);
 
-    if (m_AutoInsertEnabled && event.GetEventType() == wxEVT_SCI_CHARADDED)
+    if (m_AutoInsertEnabled && etyp == wxEVT_SCI_CHARADDED)
     {
         wxChar ch = event.GetKey();
         if ((ch == _T('\n')) || ( (control->GetEOLMode() == wxSCI_EOL_CR) && (ch == _T('\r')) ))
@@ -1000,8 +1090,29 @@ bool FortranProject::BuildToolBar(wxToolBar* toolBar)
     {
         return false;
     }
-    wxString is16x16 = Manager::isToolBar16x16(toolBar) ? _T("_16x16") : _T("");
-    Manager::Get()->AddonToolBar(toolBar,_T("fortran_project_toolbar") + is16x16);
+    int imSize = Manager::Get()->GetImageSize(Manager::UIComponent::Toolbars);
+    wxString tbSStr;
+    if (imSize <= 16)
+        tbSStr = _T("_16x16");
+    else if (imSize <= 20)
+        tbSStr = _T("_20x20");
+    else if (imSize <= 24)
+        tbSStr = _T("_24x24");
+    else if (imSize <= 28)
+        tbSStr = _T("_28x28");
+    else if (imSize <= 32)
+        tbSStr = _T("_32x32");
+    else if (imSize <= 40)
+        tbSStr = _T("_40x40");
+    else if (imSize <= 48)
+        tbSStr = _T("_48x48");
+    else if (imSize <= 56)
+        tbSStr = _T("_56x56");
+    else
+        tbSStr = _T("_64x64");
+
+
+    Manager::Get()->AddonToolBar(toolBar,_T("fortran_project_toolbar") + tbSStr);
     toolBar->Realize();
     m_pToolbar = toolBar;
     m_pToolbar->EnableTool(XRCID("idFortProjBack"), false);
@@ -1070,6 +1181,13 @@ void FortranProject::CodeComplete(const int pos, cbEditor* ed, std::vector<CCTok
 
     if (curLine.StartsWith(_T("!$")))
     {
+        if ((NameUnderCursorLw.IsSameAs(_T("omp")) || NameUnderCursorLw.IsSameAs(_T("acc"))) && start >= 2)
+        {
+            // Check if cursor is not direct after !$omp or !$acc
+            wxString word = control->GetTextRange(start-2,pos).Lower();
+            if (word.IsSameAs(_T("!$omp")) || word.IsSameAs(_T("!$acc")))
+                return;
+        }
         if (curLine.StartsWith(_T("!$omp")))
             pdir = cdOpenMP;
         else if (curLine.StartsWith(_T("!$acc")))
@@ -1080,17 +1198,24 @@ void FortranProject::CodeComplete(const int pos, cbEditor* ed, std::vector<CCTok
 
     bool isAfterPercent;
     int tokenKind;
+    wxArrayString firstWords;
 
     if (!pParser->FindMatchTokensForCodeCompletion(m_UseSmartCC, m_LogOnlyUseAssoc, m_LogOnlyPublicNames,
-                                                   NameUnderCursor, ed, *result, isAfterPercent, tokenKind))
+                                                   NameUnderCursor, ed, *result, isAfterPercent, tokenKind, firstWords))
         return;
 
     if (result->size() <= m_MaxMatch)
     {
-        wxImageList* ilist = m_pNativeParser->GetImageList();
+        int fontSize = CalcStcFontSize(control);
+
+        FPImageList fpImList(fontSize);
+        wxImageList* ilist = fpImList.GetImageList();
         if (!ilist)
             return;
         control->ClearRegisteredImages();
+        int ilistImWidth = 0;
+        int ilistImHeight = 0;
+        ilist->GetSize(0, ilistImWidth, ilistImHeight);
 
         tokens.reserve(result->size());
         wxArrayString items; items.Alloc(result->size());
@@ -1138,7 +1263,7 @@ void FortranProject::CodeComplete(const int pos, cbEditor* ed, std::vector<CCTok
         if (theme && !isAfterPercent && (pdir == cdNone || pdir == cdOther) )
         {
             int iidx = ilist->GetImageCount();
-            control->RegisterImage(iidx, wxBitmap(fortran_keyword_xpm));
+            control->RegisterImage(iidx, GetFortranKeywordImage(ilistImHeight));
             // theme keywords
             HighlightLanguage lang = theme->GetLanguageForFilename(_T(".")+wxFileName(ed->GetFilename()).GetExt());
 
@@ -1155,7 +1280,8 @@ void FortranProject::CodeComplete(const int pos, cbEditor* ed, std::vector<CCTok
                 {
                     wxString kw = tkz.GetNextToken();
 
-                    if ( (m_UseSmartCC && kw.Lower().StartsWith(NameUnderCursorLw) && m_pKeywordsParser->HasTokenSuitableKind(kw,tokenKind))
+                    if ( (m_UseSmartCC && kw.Lower().StartsWith(NameUnderCursorLw) && m_pKeywordsParser->HasTokenSuitableKind(kw,tokenKind) &&
+                          CCSmartFilter::FitsToContext(kw, firstWords))
                          || (!m_UseSmartCC && kw.Lower().StartsWith(NameUnderCursorLw)) )
                     {
                         // check for unique_strings
@@ -1201,7 +1327,7 @@ void FortranProject::CodeComplete(const int pos, cbEditor* ed, std::vector<CCTok
         else if (pdir == cdOpenMP || pdir == cdOpenACC)
         {
             int iidx = ilist->GetImageCount();
-            control->RegisterImage(iidx, wxBitmap(fortran_keyword_xpm));
+            control->RegisterImage(iidx, GetFortranKeywordImage(ilistImHeight));
 
             int kwcase = cfg->ReadInt(_T("/keywords_case"), 0);
             const wxArrayString* kwOMP = m_pKeywordsParser->GetKeywords(pdir);
@@ -1308,7 +1434,6 @@ std::vector<FortranProject::CCCallTip> FortranProject::GetCallTips(int pos, int 
     int hlEnd   = wxSCI_INVALID_POSITION;
     int commas; // how many commas has the user typed so far?
     int commasPos; // how many commas until current position?
-    bool isempt;
     wxArrayString callTips;
     wxArrayInt idxFuncSub;
     TokensArrayFlatClass tokensTmp;
@@ -1317,18 +1442,19 @@ std::vector<FortranProject::CCCallTip> FortranProject::GetCallTips(int pos, int 
     bool isAfterPercent = false;
 
     wxString lastName;
-    m_pNativeParser->CollectInformationForCallTip(commas, commasPos, lastName, isempt, isAfterPercent, argsPos, result);
+    wxString argNameUnderCursor;
+    m_pNativeParser->CollectInformationForCallTip(commas, commasPos, argNameUnderCursor, lastName, isAfterPercent, argsPos, result);
 
-    if (isAfterPercent)
+    if (isAfterPercent && result->GetCount() > 0)
     {
-        if (result->GetCount() > 0 && result->Item(0)->m_TokenKind == tkProcedure)
+        if (result->Item(0)->m_TokenKind == tkProcedure)
         {
             m_pNativeParser->GetCallTipsForTypeBoundProc(result, callTips);
             idxFuncSub.Add(1);
         }
-        else if (result->GetCount() > 0 && result->Item(0)->m_TokenKind == tkInterface)
+        else if (result->Item(0)->m_TokenKind == tkInterface)
             m_pNativeParser->GetCallTipsForGenericTypeBoundProc(result, callTips, idxFuncSub);
-        else if (result->GetCount() > 0 && result->Item(0)->m_TokenKind == tkVariable &&
+        else if (result->Item(0)->m_TokenKind == tkVariable &&
                  Manager::Get()->GetConfigManager(_T("fortran_project"))->ReadBool(_T("/call_tip_arrays"), true))
         {
             wxString callTip;
@@ -1340,17 +1466,20 @@ std::vector<FortranProject::CCCallTip> FortranProject::GetCallTips(int pos, int 
     else if (!lastName.IsEmpty())
     {
         m_pNativeParser->GetCallTips(lastName, m_LogOnlyUseAssoc, m_LogOnlyPublicNames, callTips, result);
-        m_pKeywordsParser->GetCallTips(lastName, callTips, result);
+
+        wxString kwName;
+        if (lastName.IsSameAs(_T("open")))
+            kwName = _T("__fortran_statement_") + lastName;
+        else
+            kwName = lastName;
+        m_pKeywordsParser->GetCallTips(kwName, callTips, result);
     }
 
     bool isUnique = true;
     wxString definition;
     for (unsigned int i = 0; i < callTips.GetCount(); ++i)
     {
-        bool empOk = true;
-
-        if (!callTips[i].IsEmpty() && // non-empty
-            empOk)
+        if (!callTips[i].IsEmpty()) // non-empty
         {
             if (!definition.IsEmpty())
             {
@@ -1373,6 +1502,15 @@ std::vector<FortranProject::CCCallTip> FortranProject::GetCallTips(int pos, int 
         }
     }
 
+    if (isUnique && !argNameUnderCursor.IsEmpty())
+    {
+        // Determine number of commas before argNameUnderCursor
+        int argidx = definition.Lower().Find(argNameUnderCursor.Lower());
+        if (argidx != wxNOT_FOUND)
+        {
+            commasPos = m_pNativeParser->CountCommas(definition.Mid(0, argidx), 1, false);
+        }
+    }
 
     if (!definition.IsEmpty() && isUnique && token && token->m_TokenKind == tkVariable)
     {
@@ -1486,6 +1624,7 @@ std::vector<FortranProject::CCCallTip> FortranProject::GetCallTips(int pos, int 
 
 std::vector<FortranProject::CCToken> FortranProject::GetTokenAt(int position, cbEditor* ed, bool& allowCallTip)
 {
+    // Get tokens for tooltip.
     std::vector<CCToken> tokens;
     if (!IsAttached() || !m_InitDone)
         return tokens;
@@ -1699,6 +1838,56 @@ cbConfigurationPanel* FortranProject::GetConfigurationPanel(wxWindow* parent)
     return dlg;
 }
 
+cbConfigurationPanel* FortranProject::GetProjectConfigurationPanel(wxWindow* parent, cbProject* project)
+{
+    if (!m_pNativeParser)
+        return nullptr;
+
+    if (m_pNativeParser->HasFortranFiles(project))
+    {
+        FPOptionsProjectDlg* dlg = new FPOptionsProjectDlg(parent, project, m_pNativeParser);
+        return dlg;
+    }
+    return nullptr;
+}
+
+void FortranProject::OnProjectLoadingHook(cbProject* prj, TiXmlElement* elem, bool loading)
+{
+    if (!prj || !elem)
+        return; // ?! Should actually NOT happen...
+
+    if (loading)
+    {
+        // Project is loaded
+        wxArrayString adirs;
+        TiXmlElement* node = elem->FirstChildElement("fortran_project");
+        if (node)
+        {
+            for(TiXmlElement* e = node->FirstChildElement("additional_dir"); e != NULL; e = e->NextSiblingElement("additional_dir"))
+            {
+                adirs.Add(cbC2U(e->Attribute("dir")));
+            }
+        }
+        m_pNativeParser->SetProjectSearchDirs(prj, adirs);
+    }
+    else
+    {
+        // Hook called when saving project file
+
+        TiXmlElement* node = elem->FirstChildElement("fortran_project");
+        if (!node)
+            node = elem->InsertEndChild(TiXmlElement("fortran_project"))->ToElement();
+        node->Clear();
+
+        wxArrayString adirs = m_pNativeParser->GetProjectSearchDirs(prj);
+        for (size_t i=0; i<adirs.size(); ++i)
+        {
+            TiXmlElement* e = node->InsertEndChild(TiXmlElement("additional_dir"))->ToElement();
+            e->SetAttribute("dir", cbU2C(adirs.Item(i)));
+        }
+    }
+}
+
 void FortranProject::RereadOptions()
 {
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
@@ -1772,7 +1961,6 @@ void FortranProject::RemoveLogWindow(bool appShutDown)
     if (m_pFortranLog)
     {
         m_pFortranLog->RemoveFromNotebook();
-        m_pFortranLog->Destroy();
         m_pFortranLog = 0L;
     }
 }
@@ -2045,4 +2233,40 @@ void FortranProject::ShowCallTree(bool showCallTree)
 
     ParserF* pParser = m_pNativeParser->GetParser();
     m_pCallTree->BuildCallTree(ed, NameUnderCursor, pParser, keywordSet, showCallTree);
+}
+
+void FortranProject::LoadFortranKeywordImages()
+{
+    wxString prefix = ConfigManager::GetDataFolder() + _T("/images/fortranproject/");
+    m_FKImages[16] = cbLoadBitmap(prefix + _T("16x16/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[20] = cbLoadBitmap(prefix + _T("20x20/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[24] = cbLoadBitmap(prefix + _T("24x24/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[28] = cbLoadBitmap(prefix + _T("28x28/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[32] = cbLoadBitmap(prefix + _T("32x32/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[40] = cbLoadBitmap(prefix + _T("40x40/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[48] = cbLoadBitmap(prefix + _T("48x48/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[56] = cbLoadBitmap(prefix + _T("56x56/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+    m_FKImages[64] = cbLoadBitmap(prefix + _T("64x64/fortran_keyword.png"), wxBITMAP_TYPE_PNG);
+}
+
+wxBitmap FortranProject::GetFortranKeywordImage(int height)
+{
+    if (height <= 16)
+        return m_FKImages[16];
+    else if (height <= 20)
+        return m_FKImages[20];
+    else if (height <= 24)
+        return m_FKImages[24];
+    else if (height <= 28)
+        return m_FKImages[28];
+    else if (height <= 32)
+        return m_FKImages[32];
+    else if (height <= 40)
+        return m_FKImages[40];
+    else if (height <= 48)
+        return m_FKImages[48];
+    else if (height <= 56)
+        return m_FKImages[56];
+
+    return m_FKImages[64];
 }

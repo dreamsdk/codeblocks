@@ -17,7 +17,7 @@
 *
 * $Revision: 10680 $
 * $Id: wxslistbook.cpp 10680 2016-01-22 10:43:35Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbook.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbook.cpp $
 */
 
 #include "wxslistbook.h"

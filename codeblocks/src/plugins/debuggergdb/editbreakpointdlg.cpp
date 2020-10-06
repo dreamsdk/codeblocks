@@ -4,7 +4,7 @@
  *
  * $Revision: 10912 $
  * $Id: editbreakpointdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/editbreakpointdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/editbreakpointdlg.cpp $
  */
 
 #include <sdk.h>

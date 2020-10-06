@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10901 $
- * $Id: tokenizer.cpp 10901 2016-09-09 22:05:13Z ollydbg $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/tokenizer.cpp $
+ * $Revision: 11555 $
+ * $Id: tokenizer.cpp 11555 2019-01-23 00:11:34Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/tokenizer.cpp $
  */
 
 #include <sdk.h>
@@ -85,7 +85,7 @@ namespace TokenizerConsts
     const wxString kw_undef     (_T("undef"));
 }// namespace TokenizerConsts
 
-// maximun macro replacement stack size
+// maximum macro replacement stack size
 static const size_t s_MaxMacroReplaceDepth = 5;
 
 Tokenizer::Tokenizer(TokenTree* tokenTree, const wxString& filename) :
@@ -274,6 +274,20 @@ bool Tokenizer::SkipWhiteSpace()
     return true;
 }
 
+bool Tokenizer::SkipBackslashBeforeEOL()
+{
+    if (CurrentChar() == _T('\\'))
+    {
+        wxChar next = NextChar();
+        if (next == _T('\r') || next == _T('\n'))
+        {
+            MoveToNextChar();
+            return true;
+        }
+    }
+    return false;
+}
+
 // only be called when we are in a C-string,
 // To check whether the current character is the real end of C-string
 // See SkipToStringEnd() for more details
@@ -399,7 +413,6 @@ wxString Tokenizer::ReadToEOL(bool stripUnneeded)
             // this while statement end up in one physical EOL '\n'
             while (NotEOF() && CurrentChar() != _T('\n'))
             {
-
                 // a macro definition has ending C++ comments, we should stop the parsing before
                 // the "//" chars, so that the doxygen document can be added correctly to previous
                 // added Macro definition token.
@@ -513,7 +526,6 @@ void Tokenizer::ReadParentheses(wxString& str)
             str << token;
             if (level == 0)
                 break;
-
         }
         else if (token == _T("*") || token == _T("&") )
         {
@@ -1117,7 +1129,12 @@ bool Tokenizer::CalcConditionExpression()
         // we run the while loop explicitly before calling the DoGetToken() function.
         // if m_TokenIndex pass the EOL, we should stop the calculating of preprocessor
         // condition
-        while (SkipWhiteSpace() || SkipComment())
+        // The SkipBackslashBeforeEOL() function call is needed here, because we want to
+        // handle multiply lines of #if xxxx condition, such as:
+        // /* line 0 */ #if defined(xxx) && backslash
+        // /* line 1 */ defined (yyy)
+        // the backslash in the line 0 should be skipped
+        while (SkipWhiteSpace() || SkipBackslashBeforeEOL() || SkipComment())
             ;
 
         if (m_TokenIndex >= m_BufferLen - untouchedBufferLen)
@@ -1609,12 +1626,12 @@ bool Tokenizer::ReplaceBufferText(const wxString& target, const Token* macro)
     }
 
     // Replacement backward
-    wxChar* p = const_cast<wxChar*>((const wxChar*)m_Buffer) + m_TokenIndex - len;
+    wxChar* p = const_cast<wxChar*>(m_Buffer.wx_str()) + m_TokenIndex - len;
     TRACE(_T("ReplaceBufferText() : <FROM>%s<TO>%s"), wxString(p, len).wx_str(), substitute.wx_str());
     // NOTE (ollydbg#1#): This function should be changed to a native wx function if wxString (wxWidgets
     // library) is built with UTF8 encoding for wxString. Luckily, both wx2.8.12 and wx 3.0 use the fixed length
     // (wchar_t) for the wxString encoding unit, so memcpy is safe here.
-    memcpy(p, (const wxChar*)target, len * sizeof(wxChar));
+    memcpy(p, target.wx_str(), len * sizeof(wxChar));
 
     // move the token index to the beginning of the substituted text
     m_TokenIndex -= len;
@@ -1651,27 +1668,30 @@ bool Tokenizer::ReplaceMacroUsage(const Token* tk)
     return false;
 }
 
-void Tokenizer::KMP_GetNextVal(const wxChar* pattern, int next[])
+void Tokenizer::KMP_GetNextVal(const wxChar* pattern, const int patternLen, int next[])
 {
-    int j = 0, k = -1;
+    int i = 0, j = -1;
     next[0] = -1;
-    while (pattern[j] != _T('\0'))
+    while (i < patternLen)
     {
-        if (k == -1 || pattern[j] == pattern[k])
+        if (j == -1 || pattern[i] == pattern[j])
         {
+            ++i;
             ++j;
-            ++k;
-            if (pattern[j] != pattern[k])
-                next[j] = k;
+            if( i>=patternLen )
+                return;
+
+            if (pattern[i] == pattern[j])
+                next[i] = next[j];
             else
-                next[j] = next[k];
+                next[i] = j;
         }
         else
-            k = next[k];
+            j = next[j];
     }
 }
 
-int Tokenizer::KMP_Find(const wxChar* text, const wxChar* pattern, const int patternLen)
+int Tokenizer::KMP_Find(const wxChar* text, const int textLen, const wxChar* pattern, const int patternLen)
 {
     if (!text || !pattern || pattern[0] == _T('\0') || text[0] == _T('\0'))
         return -1;
@@ -1688,31 +1708,22 @@ int Tokenizer::KMP_Find(const wxChar* text, const wxChar* pattern, const int pat
     }
 
     int next[patternLen];
-    KMP_GetNextVal(pattern, next);
+    KMP_GetNextVal(pattern, patternLen, next);
 
-    int index = 0, i = 0, j = 0;
-    while (text[i] != _T('\0') && pattern[j] != _T('\0'))
+    int i = 0, j = 0;
+    while (i < textLen && j < patternLen)
     {
-        if (text[i] == pattern[j])
+        if (j == -1 || text[i] == pattern[j])
         {
             ++i;
             ++j;
         }
         else
-        {
-            index += j - next[j];
-            if (next[j] != -1)
-                j = next[j];
-            else
-            {
-                j = 0;
-                ++i;
-            }
-        }
+            j = next[j];
     }
 
-    if (pattern[j] == _T('\0'))
-        return index;
+    if (j == patternLen)
+        return i - patternLen;
     else
         return -1;
 }
@@ -1912,26 +1923,36 @@ int Tokenizer::GetFirstTokenPosition(const wxChar* buffer, const size_t bufferLe
     int pos = -1;
     wxChar* p = const_cast<wxChar*>(buffer);
     const wxChar* endBuffer = buffer + bufferLen;
+    int searchLength = bufferLen; // the remaining search buffer length, since we may move p forward
     for (;;)
     {
-        const int ret = KMP_Find(p, key, keyLen);
+        const int ret = KMP_Find(p, searchLength, key, keyLen);
         if (ret == -1)
             break;
 
+        // KMP search algorithm blindly matches text, for example:
+        // if we search "aa" in the macro definition "aab + aa + c", the first hit happens in the
+        // identifier "aab", but note that "aab" is a single identifier, we can't replace its
+        // sub-string, so we should check whether the char before and after the hit is an identifier
+        // like char, if true, we need to skip this hit, and continue search on the remaining buffer.
+
         // check previous char
         p += ret;
+        searchLength -= ret;
         if (p > buffer)
         {
             const wxChar ch = *(p - 1);
             if (ch == _T('_') || wxIsalnum(ch))
             {
                 p += keyLen;
+                searchLength -= keyLen;
                 continue;
             }
         }
 
         // check next char
         p += keyLen;
+        searchLength -= keyLen;
         if (p < endBuffer)
         {
             const wxChar ch = *p;
@@ -1956,6 +1977,20 @@ void Tokenizer::HandleDefines()
     wxString token = m_Lex; // read the token after #define
     if (token.IsEmpty())
         return;
+
+    // in case we have such macro definition, we need to skip the first backslash
+    // #define backslash
+    // MACROFUNCTION(x,y) backslash
+    // x y
+    if (token == _T("\\"))
+    {
+        while (SkipWhiteSpace() || SkipComment())
+            ;
+        Lex();
+        token = m_Lex; // read the token after "\\", this should be in the next line
+        if (token.IsEmpty())
+            return;
+    }
 
     // do *NOT* use m_Tokenizer.GetToken()
     // e.g.

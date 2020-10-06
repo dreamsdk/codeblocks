@@ -4,7 +4,7 @@
  *
  * $Revision: 9819 $
  * $Id: compileroptions.cpp 9819 2014-06-22 13:37:24Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/compileroptions.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compileroptions.cpp $
  */
 
 #include "sdk_precomp.h"

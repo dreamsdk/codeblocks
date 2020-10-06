@@ -5,7 +5,11 @@
  */
 
 #include "tokenf.h"
-#include <wx/intl.h>
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/intl.h>
+#endif
 
 wxCriticalSection s_CritSect;
 
@@ -84,6 +88,7 @@ wxString TokenF::GetTokenKindString()
         case tkBindTo: return _("BindTo");
         case tkCallSubroutine: return _("subroutine call");
         case tkCallFunction: return _("function call");
+        case tkMacroDefine: return _("macro define");
 	}
 	return _("other");
 }
@@ -259,3 +264,5 @@ void TokensArrayFlatClass::DelTokensWithName(const wxString& name)
         }
     }
 }
+
+//--------------------------------------------------------------------

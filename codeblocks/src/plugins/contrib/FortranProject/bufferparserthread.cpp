@@ -1,10 +1,12 @@
 
 #include "bufferparserthread.h"
+
+#ifndef CB_PRECOMP
+    #include <logmanager.h>
+#endif
+
 #include "parserthreadf.h"
 #include "nativeparserf.h"
-
-#include <logmanager.h>
-
 
 int BufferParserThread::s_BPTInstances = 0;
 
@@ -23,15 +25,16 @@ int BufferParserThread::Execute()
 {
     wxString buffer;
     wxString filename;
-    m_pNativeParser->GetCurrentBuffer(buffer, filename);
+    wxString projFilename;
+    m_pNativeParser->GetCurrentBuffer(buffer, filename, projFilename);
 
-    ParseBuffer(buffer, filename);
+    ParseBuffer(buffer, filename, projFilename);
 
     BufferParserThread::s_BPTInstances--;
     return 0;
 }
 
-void BufferParserThread::ParseBuffer(wxString& buffer, wxString& filename)
+void BufferParserThread::ParseBuffer(wxString& buffer, wxString& filename, wxString& projFilename)
 {
     FortranSourceForm fsForm;
     if (!m_pNativeParser->GetParser()->IsFileFortran(filename, fsForm))
@@ -39,7 +42,7 @@ void BufferParserThread::ParseBuffer(wxString& buffer, wxString& filename)
     TokensArrayF* pTokens = new TokensArrayF();
     IncludeDB* pIncludeDB = new IncludeDB();
 
-    ParserThreadF thread(UnixFilename(filename), pTokens, fsForm, pIncludeDB, buffer);
+    ParserThreadF thread(projFilename, UnixFilename(filename), pTokens, fsForm, pIncludeDB, buffer);
     thread.Parse();
     delete pIncludeDB;
 

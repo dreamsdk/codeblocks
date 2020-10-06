@@ -6,7 +6,7 @@
  *
  * $Revision: 7443 $
  * $Id: IncrementalSearchConfDlg.h 7443 2011-09-01 16:29:16Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearchConfDlg.h $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearchConfDlg.h $
  */
 
 #ifndef INCREMENTALSEARCHCONFDLG_H

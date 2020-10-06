@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10874 $
- * $Id: workspaceloader.cpp 10874 2016-07-16 20:00:28Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/workspaceloader.cpp $
+ * $Revision: 11706 $
+ * $Id: workspaceloader.cpp 11706 2019-05-25 21:39:45Z bluehazzard $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/workspaceloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -96,6 +96,7 @@ bool WorkspaceLoader::Open(const wxString& filename, wxString& Title)
         return false;
     }
 
+    int failedProjects = 0;
     // first loop to load projects
     while (proj)
     {
@@ -114,8 +115,10 @@ bool WorkspaceLoader::Open(const wxString& filename, wxString& Title)
             cbProject* pProject = GetpMan()->LoadProject(fname.GetFullPath(), false); // don't activate it
             if (!pProject)
             {
-                cbMessageBox(_("Unable to open ") + projectFilename,
-                 _("Opening WorkSpace") + filename, wxICON_WARNING);
+                GetpMsg()->LogError(wxString::Format(_("Unable to open \"%s\" during opening workspace \"%s\" "),
+                                                       projectFilename.c_str(),
+                                                       filename.c_str()));
+                failedProjects++;
             }
         }
         proj = proj->NextSiblingElement("Project");
@@ -155,6 +158,12 @@ bool WorkspaceLoader::Open(const wxString& filename, wxString& Title)
             }
         }
         proj = proj->NextSiblingElement("Project");
+    }
+
+    if (failedProjects > 0)
+    {
+        cbMessageBox(wxString::Format(_("%d projects could not be loaded.\nPlease see the Log window for details"), failedProjects),
+                     _("Opening WorkSpace"), wxICON_WARNING);
     }
 
     return true;

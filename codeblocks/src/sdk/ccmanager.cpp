@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11214 $
- * $Id: ccmanager.cpp 11214 2017-10-22 07:52:07Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/ccmanager.cpp $
+ * $Revision: 11922 $
+ * $Id: ccmanager.cpp 11922 2019-11-16 19:30:27Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/ccmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -145,13 +145,6 @@ enum TooltipMode
  */
 #define FROM_TIMER 1
 
-enum ACLaunchState
-{
-    lsTknStart,
-    lsCaretStart
-};
-
-
 //{ Unfocusable popup
 
 // imported with small changes from PlatWX.cpp
@@ -183,12 +176,12 @@ public:
         Hide();
     }
 
-    bool Destroy();
+    bool Destroy() override;
     void OnFocus(wxFocusEvent& event);
     void ActivateParent();
 
-    virtual void DoSetSize(int x, int y, int width, int height, int sizeFlags = wxSIZE_AUTO);
-    virtual bool Show(bool show = true);
+    void DoSetSize(int x, int y, int width, int height, int sizeFlags = wxSIZE_AUTO) override;
+    bool Show(bool show = true) override;
 
 private:
     DECLARE_EVENT_TABLE()
@@ -283,7 +276,8 @@ CCManager::CCManager() :
     m_CallTipChars[nullptr] = std::set<wxChar>(ctChars.begin(), ctChars.end());
     const wxString alChars = wxT(".:<>\"#/"); // default set
     m_AutoLaunchChars[nullptr] = std::set<wxChar>(alChars.begin(), alChars.end());
-    m_LastACLaunchState[lsCaretStart] = wxSCI_INVALID_POSITION;
+
+    m_LastACLaunchState.init(wxSCI_INVALID_POSITION, wxSCI_INVALID_POSITION, 0);
 
     // init documentation popup
     m_pPopup = new UnfocusablePopupWindow(Manager::Get()->GetAppFrame());
@@ -306,7 +300,7 @@ CCManager::CCManager() :
     wxMenuBar* menuBar = mainFrame->GetMenuBar();
     if (menuBar)
     {
-        int idx = menuBar->FindMenu(wxT("&Edit"));
+        int idx = menuBar->FindMenu(_("&Edit"));
         wxMenu* edMenu = menuBar->GetMenu(idx < 0 ? 0 : idx);
         const wxMenuItemList& itemsList = edMenu->GetMenuItems();
         size_t insertPos = itemsList.GetCount();
@@ -320,8 +314,8 @@ CCManager::CCManager() :
         }
         // insert after Edit->Complete code
         edMenu->Insert(insertPos,     idShowTooltip,     _("Show tooltip\tShift-Alt-Space"));
-        edMenu->Insert(insertPos + 1, idCallTipNext,     _("Next call tip\tCtrl-N"));
-        edMenu->Insert(insertPos + 2, idCallTipPrevious, _("Previous call tip\tCtrl-P"));
+        edMenu->Insert(insertPos + 1, idCallTipNext,     _("Next call tip"));
+        edMenu->Insert(insertPos + 2, idCallTipPrevious, _("Previous call tip"));
     }
     mainFrame->Connect(idShowTooltip,     wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CCManager::OnMenuSelect), nullptr, this);
     mainFrame->Connect(idCallTipNext,     wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CCManager::OnMenuSelect), nullptr, this);
@@ -373,7 +367,7 @@ cbCodeCompletionPlugin* CCManager::GetProviderFor(cbEditor* ed)
 
     m_pLastEditor = ed;
     m_pLastCCPlugin = nullptr;
-    m_LastACLaunchState[lsCaretStart] = wxSCI_INVALID_POSITION;
+    m_LastACLaunchState.caretStart = wxSCI_INVALID_POSITION;
     const PluginsArray& pa = Manager::Get()->GetPluginManager()->GetCodeCompletionOffers();
     for (size_t i = 0; i < pa.GetCount(); ++i)
     {
@@ -518,7 +512,7 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
 
     cbStyledTextCtrl* stc = ed->GetControl();
     int tknEnd = stc->GetCurrentPos();
-    if (tknEnd == m_LastACLaunchState[lsCaretStart] && !m_AutocompTokens.empty())
+    if (tknEnd == m_LastACLaunchState.caretStart && stc->GetZoom() == m_LastACLaunchState.editorZoom && !m_AutocompTokens.empty())
     {
         DoBufferedCC(stc);
         return;
@@ -539,9 +533,7 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
             m_CallTipActive = wxSCI_INVALID_POSITION;
 
         m_OwnsAutocomp = true;
-        m_LastACLaunchState[lsTknStart] = tknStart;
-        m_LastACLaunchState[lsCaretStart] = tknEnd;
-
+        m_LastACLaunchState.init(tknEnd, tknStart, stc->GetZoom());
         m_LastAutocompIndex = 0;
 
         wxScintillaEvent autoCompFinishEvt(wxEVT_SCI_AUTOCOMP_SELECTION);
@@ -592,8 +584,8 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
         if (tknIt != m_AutocompTokens.end() && tknIt->displayName.StartsWith(contextStr))
             stc->AutoCompSelect(tknIt->displayName);
     }
-    m_LastACLaunchState[lsTknStart] = tknStart;
-    m_LastACLaunchState[lsCaretStart] = tknEnd;
+
+    m_LastACLaunchState.init(tknEnd, tknStart, stc->GetZoom());
 }
 
 // cbEVT_APP_DEACTIVATED
@@ -864,26 +856,6 @@ void CCManager::OnEditorHook(cbEditor* ed, wxScintillaEvent& event)
                 if (CCManagerHelper::IsPosVisible(m_AutocompPosition, stc))
                     m_AutoLaunchTimer.Start(SCROLL_REFRESH_DELAY, wxTIMER_ONE_SHOT);
             }
-        }
-    }
-    else if (evtType == wxEVT_SCI_KEY)
-    {
-        cbStyledTextCtrl* stc = ed->GetControl();
-        switch (event.GetKey())
-        {
-            case wxSCI_KEY_LEFT:
-            case wxSCI_KEY_RIGHT:
-                if (!stc->CallTipActive() && !stc->AutoCompActive())
-                    m_CallTipActive = wxSCI_INVALID_POSITION;
-                // fall through
-            case wxSCI_KEY_UP:
-            case wxSCI_KEY_DOWN:
-                if (m_CallTipActive != wxSCI_INVALID_POSITION && !stc->AutoCompActive())
-                    m_CallTipTimer.Start(CALLTIP_REFRESH_DELAY, wxTIMER_ONE_SHOT);
-                break;
-
-            default:
-                break;
         }
     }
     else if (evtType == wxEVT_SCI_MODIFIED)
@@ -1254,10 +1226,13 @@ void CCManager::DoBufferedCC(cbStyledTextCtrl* stc)
     if (!stc->CallTipActive())
         m_CallTipActive = wxSCI_INVALID_POSITION;
     // display
-    stc->AutoCompShow(m_LastACLaunchState[lsCaretStart] - m_LastACLaunchState[lsTknStart], items);
+    stc->AutoCompShow(m_LastACLaunchState.caretStart - m_LastACLaunchState.tokenStart, items);
     m_OwnsAutocomp = true;
-    if (   m_LastAutocompIndex != wxNOT_FOUND
-        && m_LastAutocompIndex < (int)m_AutocompTokens.size() )
+
+    // We need to check if the auto completion is active, because if there are no matches scintilla will close
+    // the popup and any call to AutoCompSelect will result in a crash.
+    if (stc->AutoCompActive() &&
+        (m_LastAutocompIndex != wxNOT_FOUND && m_LastAutocompIndex < (int)m_AutocompTokens.size()))
     {
         // re-select last selected entry
         const cbCodeCompletionPlugin::CCToken& token = m_AutocompTokens[m_LastAutocompIndex];

@@ -1,5 +1,7 @@
+%global svnrev             @REVISION@
+
 Name:       codeblocks
-Version:	17.12
+Version:	20.03
 Release:	1%{?dist}
 Summary:	An open source, cross platform, free C++ IDE
 License:    GPLv3+
@@ -199,8 +201,6 @@ fi
 %{pkgdatadir}/icons
 %dir %{pkgdatadir}/images
 %{pkgdatadir}/images/*.png
-%{pkgdatadir}/images/16x16
-%{pkgdatadir}/images/codecompletion
 %{pkgdatadir}/images/settings
 %{pkgdatadir}/lexers
 %{pkgdatadir}/scripts
@@ -253,8 +253,6 @@ fi
 %files contrib
 %{_mandir}/man1/codesnippets.*.gz
 
-%{pkgdatadir}/images/DoxyBlocks
-
 %{pkgdatadir}/AutoVersioning.zip
 %{pkgdatadir}/BrowseTracker.zip
 %{pkgdatadir}/Cccc.zip
@@ -285,12 +283,12 @@ fi
 %{pkgdatadir}/Profiler.zip
 %{pkgdatadir}/ProjectOptionsManipulator.zip
 %{pkgdatadir}/RegExTestbed.zip
+%{pkgdatadir}/rndgen.zip
 %{pkgdatadir}/ReopenEditor.zip
 %{pkgdatadir}/SymTab.zip
 %{pkgdatadir}/wxsmith.zip
 %{pkgdatadir}/wxSmithAui.zip
 %{pkgdatadir}/wxsmithcontribitems.zip
-%{pkgdatadir}/images/ThreadSearch
 %{pkgdatadir}/images/codesnippets
 %{pkgdatadir}/images/wxsmith
 %{pkgdatadir}/lib_finder
@@ -330,6 +328,7 @@ fi
 %{plugindir}/libProjectOptionsManipulator.so
 %{plugindir}/libRegExTestbed.so
 %{plugindir}/libReopenEditor.so
+%{plugindir}/librndgen.so
 %{plugindir}/libSymTab.so
 %{plugindir}/libwxsmith.so
 %{plugindir}/libwxSmithAui.so
@@ -341,6 +340,12 @@ fi
 
 
 %changelog
+* Thu Feb 20 2020 Teodor Petrov <tpetrov@codeblocks.org> - 20.03-1
+- New release.
+
+* Wed Jan 17 2018 Jens Lody <fedora@jenslody.de> - 17.12.svn.11269-1
+- New upstream.
+
 * Thu Dec 28 2017 Jens Lody <jens@codeblocks.org> - 17.12-1
 - New release.
 

@@ -2,14 +2,15 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7920 $
- * $Id: debuggerdriver.cpp 7920 2012-04-07 09:15:28Z tpetrov $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/debuggerdriver.cpp $
+ * $Revision: 11830 $
+ * $Id: debuggerdriver.cpp 11830 2019-08-28 22:59:36Z pecanh $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggerdriver.cpp $
  */
 
 #include <sdk.h>
 #include "debuggerdriver.h"
 #include "debuggergdb.h"
+#include "macrosmanager.h"
 
 #include <cbdebugger_interfaces.h>
 
@@ -60,6 +61,8 @@ void DebuggerDriver::SetWorkingDirectory(const wxString& dir)
 
 wxString DebuggerDriver::GetDebuggersWorkingDirectory() const
 {
+    if (m_WorkingDir.empty())
+        return wxEmptyString;
     wxString oldDir = wxGetCwd();
     wxSetWorkingDirectory(m_WorkingDir);
     wxString newDir = wxGetCwd();
@@ -70,6 +73,7 @@ wxString DebuggerDriver::GetDebuggersWorkingDirectory() const
 void DebuggerDriver::SetArguments(const wxString& args)
 {
     m_Args = args;
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(m_Args);
 }
 
 void DebuggerDriver::ShowFile(const wxString& file, int line)

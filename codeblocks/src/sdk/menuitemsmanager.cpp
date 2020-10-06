@@ -4,7 +4,7 @@
  *
  * $Revision: 10322 $
  * $Id: menuitemsmanager.cpp 10322 2015-06-05 07:57:16Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/menuitemsmanager.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/menuitemsmanager.cpp $
  */
 
 #ifndef CB_PRECOMP

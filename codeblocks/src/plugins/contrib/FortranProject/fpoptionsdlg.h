@@ -6,9 +6,14 @@
 #ifndef FPOPTIONSDLG_H
 #define FPOPTIONSDLG_H
 
-#include <wx/intl.h>
-#include "configurationpanel.h"
-#include <settings.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/intl.h>
+
+    #include <configurationpanel.h>
+    #include <settings.h>
+#endif
+
 #include "fortranproject.h"
 #include "workspacebrowserf.h"
 #include "autoinsert.h"

@@ -19,7 +19,7 @@ class CDB_driver : public DebuggerDriver
                                         const wxString &userArguments);
         virtual wxString GetCommandLine(const wxString& debugger, int pid, const wxString &userArguments);
         virtual void SetTarget(ProjectBuildTarget* target);
-        virtual void Prepare(bool isConsole, int printElements);
+        virtual void Prepare(bool isConsole, int printElements, const RemoteDebugging &remoteDebugging);
         virtual void Start(bool breakOnEntry);
         virtual void Stop();
 
@@ -35,6 +35,7 @@ class CDB_driver : public DebuggerDriver
         virtual void CPURegisters();
         virtual void SwitchToFrame(size_t number);
         virtual void SetVarValue(const wxString& var, const wxString& value);
+        virtual void SetMemoryRangeValue(uint64_t addr, const wxString& value);
         virtual void MemoryDump();
         virtual void Attach(int pid);
         virtual void Detach();
@@ -53,9 +54,13 @@ class CDB_driver : public DebuggerDriver
         virtual void AddBreakpoint(cb::shared_ptr<DebuggerBreakpoint> bp);
         virtual void RemoveBreakpoint(cb::shared_ptr<DebuggerBreakpoint> bp);
         virtual void EvaluateSymbol(const wxString& symbol, const wxRect& tipRect);
-        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_ptr<GDBWatch> funcArgsWatch,
-                                   WatchesContainer &watches);
+        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch,
+                                   cb::shared_ptr<GDBWatch> funcArgsWatch,
+                                   WatchesContainer &watches, bool ignoreAutoUpdate);
         virtual void UpdateWatch(cb::shared_ptr<GDBWatch> const &watch);
+        virtual void UpdateMemoryRangeWatches(MemoryRangeWatchesContainer &watches,
+                                              bool ignoreAutoUpdate);
+        virtual void UpdateMemoryRangeWatch(const cb::shared_ptr<GDBMemoryRangeWatch> &watch);
         virtual void UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bool locals);
         virtual void ParseOutput(const wxString& output);
         virtual bool IsDebuggingStarted() const;

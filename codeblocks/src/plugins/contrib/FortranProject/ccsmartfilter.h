@@ -9,14 +9,19 @@
 #ifndef CCSMARTFILTER_H
 #define CCSMARTFILTER_H
 
-#include <wx/string.h>
-#include <wx/event.h>
-#include <wx/file.h>
-#include "tokenf.h"
-#include "tokenizerf.h"
-#include "cbeditor.h"
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/event.h>
+    #include <wx/file.h>
+
+    #include <cbeditor.h>
+#endif
 #include <set>
 #include <vector>
+
+#include "tokenizerf.h"
+#include "tokenf.h"
 
 typedef std::vector<FortranSourceForm> ArrayOfFortranSourceForm;
 typedef std::set<wxString> StringSet;
@@ -33,8 +38,12 @@ class CCSmartFilter
 {
     public:
         static void GetTokenKind(wxArrayString& words, int& kindFilter, bool& allowVariables, kindOfCCList& kindCC);
+        static bool FitsToContext(const wxString& kw, const wxArrayString& firstWords);
+
     protected:
     private:
+        static bool hasWord(const wxString& word, const wxArrayString& wordArr);
+
 };
 
 #endif // CCSMARTFILTER_H

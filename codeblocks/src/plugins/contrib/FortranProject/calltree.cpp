@@ -1,15 +1,26 @@
+
 #include "calltree.h"
+
+#ifndef CB_PRECOMP
+    #include <manager.h>
+#endif
+
 #include "tokenf.h"
+#include "submoduletokenf.h"
 #include "calledbydict.h"
-#include <manager.h>
-
-
 
 CallTree::CallTree(FortranProject* forproj)
 {
     m_pCallTreeView = new CallTreeView(Manager::Get()->GetAppWindow(), forproj);
-    CodeBlocksDockEvent evt(cbEVT_ADD_DOCK_WINDOW);
 
+    m_FortranIntrinsicModules.insert(_T("iso_c_binding"));
+    m_FortranIntrinsicModules.insert(_T("iso_fortran_env"));
+    m_FortranIntrinsicModules.insert(_T("ieee_exceptions"));
+    m_FortranIntrinsicModules.insert(_T("ieee_arithmetic"));
+    m_FortranIntrinsicModules.insert(_T("ieee_features"));
+    m_FortranIntrinsicModules.insert(_T("omp_lib"));
+
+    CodeBlocksDockEvent evt(cbEVT_ADD_DOCK_WINDOW);
     evt.name = _T("FCallTree");
     evt.title = _("Fortran Call/Called-By Tree");
     evt.pWindow = m_pCallTreeView;
@@ -39,11 +50,13 @@ void CallTree::BuildCallTree(cbEditor* ed, const wxString& NameUnderCursor, Pars
 
     pParser->FindMatchTokensForJump(ed, true, true, *pRoot);
 
-    int tokenKindMask = tkFunction | tkSubroutine | tkProgram | tkInterface | tkInterfaceExplicit | tkProcedure;
+    int tokenKindMask = tkFunction | tkSubroutine | tkProgram | tkInterface | tkInterfaceExplicit | tkProcedure
+                        | tkModule | tkSubmodule;
+
     if (pRoot->GetCount() > 1)
     {
-        // Remove non-procedures
-        for (size_t i=0; i < pRoot->GetCount(); i++)
+        // Remove not-procedures
+        for (size_t i=0; i < pRoot->GetCount(); )
         {
             if (!(pRoot->Item(i)->m_TokenKind & tokenKindMask))
             {
@@ -53,18 +66,20 @@ void CallTree::BuildCallTree(cbEditor* ed, const wxString& NameUnderCursor, Pars
                 if (pRoot->GetCount() == 1)
                     break;
             }
+            else
+                i++;
         }
     }
 
     if (pRoot->GetCount() == 1 && !(pRoot->Item(0)->m_TokenKind & tokenKindMask))
     {
-        wxString msg = _T("\"") + NameUnderCursor + _("\" is not a procedure.");
+        wxString msg = _T("\"") + NameUnderCursor + _("\" is not a procedure or a module.");
         cbMessageBox(msg, _("Error"), wxICON_ERROR);
         return;
     }
     else if (pRoot->GetCount() == 0)
     {
-        wxString msg = _("No procedure with name \"") + NameUnderCursor + _("\" was found.");
+        wxString msg = _("Procedure \"") + NameUnderCursor + _("\" was not found.");
         cbMessageBox(msg, _("Not found"), wxICON_WARNING);
         return;
     }
@@ -100,14 +115,7 @@ void CallTree::BuildCallTree(cbEditor* ed, const wxString& NameUnderCursor, Pars
             continue; // take only explicitInterface if such exist
 
         TokenFlat* tf = pRoot->Item(i);
-        TokenF* tok = new TokenF();
-        tok->m_TokenKind   = tf->m_TokenKind;
-        tok->m_DisplayName = tf->m_DisplayName;
-        tok->m_Name        = tf->m_Name;
-        tok->m_Filename    = tf->m_Filename;
-        tok->m_LineStart   = tf->m_LineStart;
-        tok->m_LineEnd     = tf->m_LineEnd;
-        tok->m_TokenAccess = tf->m_TokenAccess;
+        CallTreeToken* tok = new CallTreeToken(tf);
         tokAll->Add(tok);
 
         if (showCallTree)
@@ -122,6 +130,10 @@ void CallTree::BuildCallTree(cbEditor* ed, const wxString& NameUnderCursor, Pars
             {
                 // it is type-bound procedure
                 ManageTBProceduresForCallTree(pParser, tf, tok, keywordSet);
+            }
+            else if (tf->m_TokenKind == tkModule || tf->m_TokenKind == tkSubmodule)
+            {
+                FindUsedModules(pParser, tok);
             }
             else
             {
@@ -139,10 +151,108 @@ void CallTree::BuildCallTree(cbEditor* ed, const wxString& NameUnderCursor, Pars
         m_pCallTreeView->ShowCallTree(tokAll);
     else
         m_pCallTreeView->ShowCalledByTree(tokAll);
+
 }
 
+void CallTree::FindUsedModules(ParserF* pParser, CallTreeToken* token)
+{
+    if (token->m_TokenKind == tkSubmodule)
+    {
+        TokenFlat ctF(token);
+        TokenF* tokSub = pParser->FindToken(ctF);
+        if (tokSub && tokSub->m_TokenKind == tkSubmodule)
+        {
+            SubmoduleTokenF* submod = static_cast<SubmoduleTokenF*>(tokSub);
+            wxString parentModName = submod->m_AncestorModuleName;
 
-void CallTree::FindCalledTokens(ParserF* pParser, TokenF* token, std::set< wxString>& keywordSet)
+            TokensArrayFlatClass tokensMod;
+            TokensArrayFlat* resultMod = tokensMod.GetTokens();
+            int noChildrenOf = tkInterface | tkFunction | tkSubroutine | tkProgram | tkModule | tkSubmodule;
+            pParser->FindMatchTokensDeclared(parentModName, *resultMod, tkModule | tkSubmodule, false, noChildrenOf, true);
+
+            if (resultMod->size() == 0)
+            {
+                // Ancestor module | submodule was not found
+                TokenFlat modFT(ctF);
+                modFT.m_Name = parentModName;
+                modFT.m_DisplayName = parentModName;
+                modFT.m_TokenKind = tkModule;
+
+                if (!HasCallChildToken(token, &modFT))
+                {
+                    CallTreeToken* tok2  = new CallTreeToken(&modFT, token);
+                    tok2->m_CallFilename = modFT.m_Filename;
+                    tok2->m_CallLine     = modFT.m_LineStart;
+                    tok2->m_TokenKind    = tkCallSubroutine; // to get "unknown" icon, which shows that the ancestor was not found
+
+                    token->AddChild(tok2);
+                }
+            }
+            else
+            {
+                TokenFlat* tf2 = resultMod->Item(0); // take just first result
+                if (!HasChildToken(token, tf2) && !HasInHerarchy(token, tf2))
+                {
+                    CallTreeToken* tok2 = new CallTreeToken(tf2, token);
+                    tok2->m_CallFilename = ctF.m_Filename;
+                    tok2->m_CallLine     = ctF.m_LineStart;
+                    token->AddChild(tok2);
+
+                    FindUsedModules(pParser, tok2);
+                }
+            }
+        }
+    }
+
+    TokensArrayFlatClass tokensTmp;
+    TokensArrayFlat* callChildren = tokensTmp.GetTokens();
+
+    int callFilter = tkUse | tkInclude ;
+    TokenFlat tf = TokenFlat(token);
+    pParser->GetChildren(&tf, callFilter, *callChildren, 8);  // here levelMax should be more than enough
+    size_t ncChild = callChildren->size();
+    for (size_t j=0; j<ncChild; j++)
+    {
+        TokenFlat* oneCall = callChildren->Item(j);
+        if (oneCall->m_TokenKind == tkUse && m_FortranIntrinsicModules.count(oneCall->m_Name) != 0)
+            continue;
+        TokensArrayFlatClass tokClTmp;
+        TokensArrayFlat* resToks = tokClTmp.GetTokens();
+        FindTokenFromCall(pParser, &tf, oneCall, resToks);
+
+        if (resToks->size() == 0)
+        {
+            if (!HasCallChildToken(token, oneCall))
+            {
+                CallTreeToken* tok2 = new CallTreeToken(oneCall, token);
+                tok2->m_CallFilename = oneCall->m_Filename;
+                tok2->m_CallLine     = oneCall->m_LineStart;
+                tok2->m_TokenKind    = tkCallSubroutine; // just to get "unknown" icon
+
+                token->AddChild(tok2);
+            }
+        }
+        else
+        {
+            for (size_t k=0; k<resToks->size(); k++)
+            {
+                TokenFlat* tf2 = resToks->Item(k);
+                if (!HasChildToken(token, tf2) && !HasInHerarchy(token, tf2))
+                {
+                    CallTreeToken* tok2 = new CallTreeToken(tf2, token);
+                    tok2->m_CallFilename = oneCall->m_Filename;
+                    tok2->m_CallLine     = oneCall->m_LineStart;
+                    token->AddChild(tok2);
+
+                    FindUsedModules(pParser, tok2);
+                    break; // take just first suitable result
+                }
+            }
+        }
+    }
+}
+
+void CallTree::FindCalledTokens(ParserF* pParser, CallTreeToken* token, std::set< wxString>& keywordSet)
 {
     TokensArrayFlatClass tokensTmp;
     TokensArrayFlat* callChildren = tokensTmp.GetTokens();
@@ -154,9 +264,10 @@ void CallTree::FindCalledTokens(ParserF* pParser, TokenF* token, std::set< wxStr
         callFilter = tkCallSubroutine | tkCallFunction;
 
     TokenFlat tf = TokenFlat(token);
-    pParser->GetChildren(&tf, callFilter, *callChildren); // why don't take 'token' children directly?
+    pParser->GetChildren(&tf, callFilter, *callChildren);
+    size_t ncChild = callChildren->size();
 
-    for (size_t j=0; j<callChildren->size(); j++)
+    for (size_t j=0; j<ncChild; j++)
     {
         TokenFlat* oneCall = callChildren->Item(j);
         if (keywordSet.count(oneCall->m_Name) != 0)
@@ -169,34 +280,29 @@ void CallTree::FindCalledTokens(ParserF* pParser, TokenF* token, std::set< wxStr
         {
             if (!HasCallChildToken(token, oneCall))
             {
-                TokenF* tok2 = new TokenF();
-                tok2->m_TokenKind   = oneCall->m_TokenKind;
-                tok2->m_DisplayName = oneCall->m_DisplayName;
-                tok2->m_Name        = oneCall->m_Name;
-                tok2->m_Filename    = oneCall->m_Filename;
-                tok2->m_LineStart   = oneCall->m_LineStart;
-                tok2->m_LineEnd     = oneCall->m_LineEnd;
-                tok2->m_TokenAccess = oneCall->m_TokenAccess;
-                tok2->m_pParent     = token;
+                CallTreeToken* tok2 = new CallTreeToken(oneCall, token);
+                tok2->m_CallFilename = oneCall->m_Filename;
+                tok2->m_CallLine     = oneCall->m_LineStart;
+
                 token->AddChild(tok2);
             }
         }
         else
         {
+            TokenFlat* tokType = NULL;
             for (size_t k=0; k<resToks->size(); k++)
             {
                 TokenFlat* tf2 = resToks->Item(k);
-                if ((tf2->m_TokenKind != tkVariable) && !HasChildToken(token, tf2) && !HasInHerarchy(token, tf2))
+                if (tf2->m_TokenKind == tkType)
                 {
-                    TokenF* tok2 = new TokenF();
-                    tok2->m_TokenKind   = tf2->m_TokenKind;
-                    tok2->m_DisplayName = tf2->m_DisplayName;
-                    tok2->m_Name        = tf2->m_Name;
-                    tok2->m_Filename    = tf2->m_Filename;
-                    tok2->m_LineStart   = tf2->m_LineStart;
-                    tok2->m_LineEnd     = tf2->m_LineEnd;
-                    tok2->m_TokenAccess = tf2->m_TokenAccess;
-                    tok2->m_pParent     = token;
+                    tokType = tf2;
+                }
+                else if ((tf2->m_TokenKind != tkVariable) && !HasChildToken(token, tf2) && !HasInHerarchy(token, tf2))
+                {
+                    CallTreeToken* tok2 = new CallTreeToken(tf2, token);
+                    tok2->m_CallFilename = oneCall->m_Filename;
+                    tok2->m_CallLine     = oneCall->m_LineStart;
+
                     token->AddChild(tok2);
 
                     if (tf2->m_ParentTokenKind == tkInterfaceExplicit)
@@ -212,8 +318,18 @@ void CallTree::FindCalledTokens(ParserF* pParser, TokenF* token, std::set< wxStr
                     {
                         FindCalledTokens(pParser, tok2, keywordSet);
                     }
+                    tokType = NULL;
                     break; // take just first suitable result
                 }
+            }
+
+            if (tokType && !HasChildToken(token, tokType) && !HasInHerarchy(token, tokType))
+            {
+                CallTreeToken* tok2 = new CallTreeToken(tokType, token);
+                tok2->m_CallFilename = oneCall->m_Filename;
+                tok2->m_CallLine     = oneCall->m_LineStart;
+
+                token->AddChild(tok2);
             }
         }
     }
@@ -222,7 +338,7 @@ void CallTree::FindCalledTokens(ParserF* pParser, TokenF* token, std::set< wxStr
 
 void CallTree::FindTokenFromCall(ParserF* pParser, TokenFlat* parentTok, TokenFlat* oneCall, TokensArrayFlat* result)
 {
-    int tokenKindMask = tkFunction | tkSubroutine | tkInterface | tkInterfaceExplicit | tkVariable;
+    int tokenKindMask = tkFunction | tkSubroutine | tkInterface | tkInterfaceExplicit | tkVariable | tkType;
 
     if (oneCall->m_Name.Find('%') != wxNOT_FOUND && parentTok)
     {
@@ -245,6 +361,7 @@ void CallTree::FindTokenFromCall(ParserF* pParser, TokenFlat* parentTok, TokenFl
 
     // Try to find global procedures
     int noChildrenOf = tkInterface | tkFunction | tkSubroutine | tkProgram | tkModule | tkSubmodule;
+    tokenKindMask = tokenKindMask | tkModule;
     pParser->FindMatchTokensDeclared(oneCall->m_Name, *result, tokenKindMask, false, noChildrenOf, false, true);
 }
 
@@ -301,7 +418,7 @@ bool CallTree::HasInHerarchy(TokenF* tokParent, TokenF* tok)
     return false;
 }
 
-void CallTree::ManageInterfaceExplicit(ParserF* pParser, TokenFlat* origFT, TokenF* token, std::set<wxString>& keywordSet)
+void CallTree::ManageInterfaceExplicit(ParserF* pParser, TokenFlat* origFT, CallTreeToken* token, std::set<wxString>& keywordSet)
 {
     // Try to find global procedures
     TokensArrayFlatClass tokGlobTmp;
@@ -321,15 +438,10 @@ void CallTree::ManageInterfaceExplicit(ParserF* pParser, TokenFlat* origFT, Toke
         TokenFlat* tfGlob = resGlobOrSumb->Item(l);
         if (!HasChildToken(token, tfGlob))
         {
-            TokenF* tg = new TokenF();
-            tg->m_TokenKind   = tfGlob->m_TokenKind;
-            tg->m_DisplayName = tfGlob->m_DisplayName;
-            tg->m_Name        = tfGlob->m_Name;
-            tg->m_Filename    = tfGlob->m_Filename;
-            tg->m_LineStart   = tfGlob->m_LineStart;
-            tg->m_LineEnd     = tfGlob->m_LineEnd;
-            tg->m_TokenAccess = tfGlob->m_TokenAccess;
-            tg->m_pParent     = token;
+            CallTreeToken* tg = new CallTreeToken(tfGlob, token);
+            tg->m_CallFilename = token->m_Filename;
+            tg->m_CallLine     = token->m_LineStart;
+
             token->AddChild(tg);
 
             FindCalledTokens(pParser, tg, keywordSet);
@@ -337,7 +449,7 @@ void CallTree::ManageInterfaceExplicit(ParserF* pParser, TokenFlat* origFT, Toke
     }
 }
 
-void CallTree::FindCallingTokens(ParserF* pParser, TokenF* token, CalledByDict& cByDict)
+void CallTree::FindCallingTokens(ParserF* pParser, CallTreeToken* token, CalledByDict& cByDict)
 {
     std::list<TokenF*>* tokList = cByDict.GetCallingTokens(token->m_Name);
     if (!tokList)
@@ -347,7 +459,10 @@ void CallTree::FindCallingTokens(ParserF* pParser, TokenF* token, CalledByDict& 
     {
         TokenF* pCTok = *li;
         TokenFlat oneCall(pCTok);
-
+        if (oneCall.m_TokenKind == tkSubmodule)
+        {
+            oneCall.m_Name = oneCall.m_Name.BeforeLast(':');
+        }
         TokensArrayFlatClass tokClTmp;
         TokensArrayFlat* resToks = tokClTmp.GetTokens();
         TokenFlat parTokF = TokenFlat(pCTok->m_pParent);
@@ -361,37 +476,52 @@ void CallTree::FindCallingTokens(ParserF* pParser, TokenF* token, CalledByDict& 
                 tf2->m_Filename == token->m_Filename &&
                 tf2->m_LineStart == token->m_LineStart)
             {
-                TokenF* parTok;
-                if (pCTok->m_pParent->m_TokenKind == tkInterfaceExplicit)
-                    parTok = pCTok;
-                else if (pCTok->m_pParent->m_TokenKind == tkType)
-                    parTok = pCTok;
-                else
-                    parTok = pCTok->m_pParent;
-
-                if (!HasChildToken(token, parTok) && !HasInHerarchy(token, parTok))
+                TokenF* parTok = NULL;
+                if (pCTok->m_TokenKind == tkSubmodule)
                 {
-                    TokenF* tok2 = new TokenF();
-                    tok2->m_TokenKind   = parTok->m_TokenKind;
-                    tok2->m_DisplayName = parTok->m_DisplayName;
-                    tok2->m_Name        = parTok->m_Name;
-                    tok2->m_Filename    = parTok->m_Filename;
-                    tok2->m_LineStart   = parTok->m_LineStart;
-                    tok2->m_LineEnd     = parTok->m_LineEnd;
-                    tok2->m_TokenAccess = parTok->m_TokenAccess;
-                    tok2->m_pParent     = token;
+                    parTok = pCTok;
+                }
+                else if (pCTok->m_pParent)
+                {
+                    if (pCTok->m_pParent->m_TokenKind == tkInterfaceExplicit)
+                        parTok = pCTok;
+                    else if (pCTok->m_pParent->m_TokenKind == tkType)
+                        parTok = pCTok;
+                    else if (pCTok->m_pParent->m_TokenKind == tkAssociateConstruct)
+                    {
+                        parTok = pCTok->m_pParent;
+                        while (parTok)
+                        {
+                            if (parTok->m_TokenKind == tkAssociateConstruct)
+                            {
+                                parTok = parTok->m_pParent;
+                            }
+                            else
+                                break;
+                        }
+                    }
+                    else
+                        parTok = pCTok->m_pParent;
+                }
+
+                if (parTok && !HasChildToken(token, parTok) && !HasInHerarchy(token, parTok))
+                {
+                    CallTreeToken* tok2 = new CallTreeToken(parTok, token);
+                    tok2->m_CallFilename = pCTok->m_Filename;
+                    tok2->m_CallLine     = pCTok->m_LineStart;
+
                     token->AddChild(tok2);
 
                     FindCallingTokens(pParser, tok2, cByDict);
                 }
 
-                break;
+                break; // take only first suitable item
             }
         }
     }
 }
 
-void CallTree::ManageTBProceduresForCallTree(ParserF* pParser, TokenFlat* origFT, TokenF* token, std::set<wxString>& keywordSet)
+void CallTree::ManageTBProceduresForCallTree(ParserF* pParser, TokenFlat* origFT, CallTreeToken* token, std::set<wxString>& keywordSet)
 {
     TokensArrayFlatClass resultTmp;
     TokensArrayFlat* result = resultTmp.GetTokens();
@@ -402,15 +532,10 @@ void CallTree::ManageTBProceduresForCallTree(ParserF* pParser, TokenFlat* origFT
         TokenFlat* tf = result->Item(l);
         if (!HasChildToken(token, tf))
         {
-            TokenF* tg = new TokenF();
-            tg->m_TokenKind   = tf->m_TokenKind;
-            tg->m_DisplayName = tf->m_DisplayName;
-            tg->m_Name        = tf->m_Name;
-            tg->m_Filename    = tf->m_Filename;
-            tg->m_LineStart   = tf->m_LineStart;
-            tg->m_LineEnd     = tf->m_LineEnd;
-            tg->m_TokenAccess = tf->m_TokenAccess;
-            tg->m_pParent     = token;
+            CallTreeToken* tg = new CallTreeToken(tf, token);
+            tg->m_CallFilename = token->m_Filename;
+            tg->m_CallLine     = token->m_LineStart;
+
             token->AddChild(tg);
 
             FindCalledTokens(pParser, tg, keywordSet);

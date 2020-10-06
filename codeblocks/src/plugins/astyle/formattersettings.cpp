@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10950 $
- * $Id: formattersettings.cpp 10950 2016-12-29 06:16:39Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/astyle/formattersettings.cpp $
+ * $Revision: 11443 $
+ * $Id: formattersettings.cpp 11443 2018-08-12 06:23:37Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/formattersettings.cpp $
  */
 
 #include <sdk.h>
@@ -54,8 +54,8 @@ void FormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
       formatter.setFormattingStyle(astyle::STYLE_VTK);
       break;
 
-    case aspsBanner: // Banner
-      formatter.setFormattingStyle(astyle::STYLE_BANNER);
+    case aspsRatliff: // Ratliff
+      formatter.setFormattingStyle(astyle::STYLE_RATLIFF);
       break;
 
     case aspsGnu: // GNU
@@ -123,13 +123,13 @@ void FormatterSettings::ApplyTo(astyle::ASFormatter& formatter)
   formatter.setMinConditionalIndentOption(cfg->ReadInt(_T("/min_conditional_indent"), 2));
   formatter.setMaxInStatementIndentLength(cfg->ReadInt(_T("/max_instatement_indent"), 40));
 
-  formatter.setBreakClosingHeaderBracketsMode(cfg->ReadBool(_T("/break_closing")));
+  formatter.setBreakClosingHeaderBracesMode(cfg->ReadBool(_T("/break_closing")));
   formatter.setBreakElseIfsMode(cfg->ReadBool(_T("/break_elseifs")));
   formatter.setAddBracketsMode(cfg->ReadBool(_T("/add_brackets")));
   formatter.setAddOneLineBracketsMode(cfg->ReadBool(_T("/add_one_line_brackets")));
   formatter.setRemoveBracketsMode(cfg->ReadBool(_T("/remove_brackets")));
   formatter.setBreakOneLineBlocksMode(!cfg->ReadBool(_T("/keep_blocks")));
-  formatter.setBreakOneLineHeadersMode(!cfg->ReadBool(_T("/keep_headers")));
+  formatter.setBreakOneLineHeadersMode(cfg->ReadBool(_T("/keep_headers")));
   formatter.setBreakOneLineStatementsMode(!cfg->ReadBool(_T("/keep_statements")));
   formatter.setTabSpaceConversionMode(cfg->ReadBool(_T("/convert_tabs")));
   formatter.setCloseTemplatesMode(cfg->ReadBool(_T("/close_templates")));

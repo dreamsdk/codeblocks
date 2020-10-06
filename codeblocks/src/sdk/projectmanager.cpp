@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11071 $
- * $Id: projectmanager.cpp 11071 2017-05-28 15:26:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projectmanager.cpp $
+ * $Revision: 11898 $
+ * $Id: projectmanager.cpp 11898 2019-11-04 19:35:16Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -49,26 +49,27 @@ END_EVENT_TABLE()
 class NullProjectManagerUI : public cbProjectManagerUI
 {
     public:
-        cbAuiNotebook* GetNotebook() { return nullptr; }
-        cbTreeCtrl* GetTree() { return nullptr; }
-        void RebuildTree() {}
-        void FreezeTree() {}
-        void UnfreezeTree(bool force = false) { (void)force; }
-        wxTreeItemId GetTreeSelection() { return wxTreeItemId(); }
-        void UpdateActiveProject(cbProject* WXUNUSED(oldProject), cbProject* WXUNUSED(newProject), bool WXUNUSED(refresh)) {}
-        void RemoveProject(cbProject* WXUNUSED(project)) {}
-        void BeginLoadingWorkspace() {}
-        void CloseWorkspace() {}
-        void FinishLoadingProject(cbProject* WXUNUSED(project), bool WXUNUSED(newAddition), FilesGroupsAndMasks* WXUNUSED(fileGroups)) {}
-        void FinishLoadingWorkspace(cbProject* WXUNUSED(activeProject), const wxString& WXUNUSED(workspaceTitle)) {}
-        void ShowFileInTree(ProjectFile& WXUNUSED(projectFile)) {}
-        bool QueryCloseAllProjects() { return true; }
-        bool QueryCloseProject(cbProject* WXUNUSED(proj), bool dontsavefiles = false)  { (void)dontsavefiles; return true; }
-        bool QueryCloseWorkspace()  { return true; }
-        int AskForBuildTargetIndex(cbProject* project = nullptr) { (void)project; return -1; }
-        wxArrayInt AskForMultiBuildTargetIndex(cbProject* project = nullptr) { (void)project; return wxArrayInt(); }
-        void ConfigureProjectDependencies(cbProject* base = nullptr) { (void)base; }
-        void SwitchToProjectsPage() {}
+        cbAuiNotebook* GetNotebook() override { return nullptr; }
+        cbTreeCtrl* GetTree() override { return nullptr; }
+        void RebuildTree() override {}
+        void FreezeTree() override {}
+        void UnfreezeTree(bool force = false) override { (void)force; }
+        wxTreeItemId GetTreeSelection() override { return wxTreeItemId(); }
+        void UpdateActiveProject(cbProject* WXUNUSED(oldProject), cbProject* WXUNUSED(newProject), bool WXUNUSED(refresh)) override {}
+        void RemoveProject(cbProject* WXUNUSED(project)) override {}
+        void BeginLoadingWorkspace() override {}
+        void CloseWorkspace() override {}
+        void FinishLoadingProject(cbProject* WXUNUSED(project), bool WXUNUSED(newAddition), FilesGroupsAndMasks* WXUNUSED(fileGroups)) override {}
+        void FinishLoadingWorkspace(cbProject* WXUNUSED(activeProject), const wxString& WXUNUSED(workspaceTitle)) override {}
+        void ShowFileInTree(ProjectFile& WXUNUSED(projectFile)) override {}
+        bool QueryCloseAllProjects() override { return true; }
+        bool QueryCloseProject(cbProject* WXUNUSED(proj), bool dontsavefiles = false) override  { (void)dontsavefiles; return true; }
+        bool QueryCloseWorkspace() override  { return true; }
+        int AskForBuildTargetIndex(cbProject* project = nullptr) override { (void)project; return -1; }
+        wxArrayInt AskForMultiBuildTargetIndex(cbProject* project = nullptr) override { (void)project; return wxArrayInt(); }
+        void ConfigureProjectDependencies(cb_unused cbProject* base,
+                                          cb_unused wxWindow *parent) override {}
+        void SwitchToProjectsPage() override {}
 };
 
 // class constructor
@@ -119,8 +120,11 @@ ProjectManager::~ProjectManager()
     }
     m_pProjects->Clear();
 
-    delete m_pProjects;m_pProjects = nullptr;
-    delete m_pFileGroups;m_pFileGroups = nullptr;
+    delete m_pProjects;
+    m_pProjects = nullptr;
+
+    delete m_pFileGroups;
+    m_pFileGroups = nullptr;
 
     delete m_ui;
     m_ui = nullptr;
@@ -168,6 +172,8 @@ void ProjectManager::SetProject(cbProject* project, bool refresh)
     else
         return; // already active
 
+    wxStopWatch timer;
+
     cbProject *oldActiveProject = m_pActiveProject;
     m_pActiveProject = project;
 
@@ -179,6 +185,11 @@ void ProjectManager::SetProject(cbProject* project, bool refresh)
     CodeBlocksEvent event(cbEVT_PROJECT_ACTIVATE);
     event.SetProject(m_pActiveProject);
     Manager::Get()->GetPluginManager()->NotifyPlugins(event);
+
+    long time = timer.Time();
+    if (time >= 50)
+        Manager::Get()->GetLogManager()->Log(F(wxT("ProjectManager::SetProject took: %.3f seconds."),
+                                               time / 1000.0f));
 }
 
 cbProject* ProjectManager::IsOpen(const wxString& filename)
@@ -209,6 +220,7 @@ cbProject* ProjectManager::IsOpen(const wxString& filename)
 
 cbProject* ProjectManager::LoadProject(const wxString& filename, bool activateIt)
 {
+    wxStopWatch timer;
     cbProject* result = nullptr;
     if (!wxFileExists(filename) || !BeginLoadingProject())
     {
@@ -273,6 +285,13 @@ cbProject* ProjectManager::LoadProject(const wxString& filename, bool activateIt
             // This is already done in the EndLoadingProject call.
             SetProject(result, false);
         }
+    }
+
+    long time = timer.Time();
+    if (time >= 100)
+    {
+        LogManager *log = Manager::Get()->GetLogManager();
+        log->Log(F(wxT("ProjectManager::LoadProject took: %.3f seconds."), time / 1000.0f));
     }
 
     return result;
@@ -381,6 +400,8 @@ cbProject* ProjectManager::NewProject(const wxString& filename)
 
 bool ProjectManager::CloseAllProjects(bool dontsave)
 {
+    wxStopWatch timer;
+
     if (!dontsave)
     {
         if (!m_ui->QueryCloseAllProjects())
@@ -409,6 +430,13 @@ bool ProjectManager::CloseAllProjects(bool dontsave)
         wxFileName::SetCwd(m_InitialDir);
     m_IsClosingProject = false;
     WorkspaceChanged();
+
+    long time = timer.Time();
+    if (time >= 100)
+    {
+        LogManager *log = Manager::Get()->GetLogManager();
+        log->Log(F(wxT("ProjectManager::CloseAllProjects took: %.3f seconds."), time / 1000.0f));
+    }
 
     return true;
 }
@@ -444,6 +472,7 @@ bool ProjectManager::CloseProject(cbProject* project, bool dontsave, bool refres
         m_pWorkspace->SetModified(true);
 
     RemoveProjectFromAllDependencies(project);
+    ClearProjectDependencies(project);
     m_pProjects->Remove(project);
 
     // moved here from cbProject's destructor, because by then
@@ -545,7 +574,14 @@ bool ProjectManager::LoadWorkspace(const wxString& filename)
     if ( !BeginLoadingWorkspace() )
         return false;
 
-    m_pWorkspace = new cbWorkspace(filename);
+    cbWorkspace *temp = new cbWorkspace(filename);
+
+    // Do this after the c-tor call, because the c-tor calls methods which use call GetWorkspace
+    // and if the pointer is equal to nullptr the GetWorkspace will create a new one and we'll have
+    // a leak.
+    delete m_pWorkspace;
+    m_pWorkspace = temp;
+
     EndLoadingWorkspace();
 
     if (m_pProjects->GetCount() > 0 && !m_pActiveProject)

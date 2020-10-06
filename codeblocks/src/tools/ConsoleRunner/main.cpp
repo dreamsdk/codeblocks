@@ -4,7 +4,7 @@
  *
  * $Revision: 7107 $
  * $Id: main.cpp 7107 2011-04-15 11:19:11Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/tools/ConsoleRunner/main.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/tools/ConsoleRunner/main.cpp $
  */
 
 #include <stdio.h>

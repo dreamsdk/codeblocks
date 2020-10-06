@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11222 $
- * $Id: manager.cpp 11222 2017-10-31 07:56:18Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/manager.cpp $
+ * $Revision: 11797 $
+ * $Id: manager.cpp 11797 2019-07-21 16:56:22Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/manager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -111,15 +111,24 @@ static wxString GetCodeblocksEventName(wxEventType type)
     else if (type==cbEVT_CLEAN_WORKSPACE_STARTED) name = _T("cbEVT_CLEAN_WORKSPACE_STARTED");
     else if (type==cbEVT_DEBUGGER_STARTED) name = _T("cbEVT_DEBUGGER_STARTED");
     else if (type==cbEVT_DEBUGGER_PAUSED) name = _T("cbEVT_DEBUGGER_PAUSED");
+    else if (type==cbEVT_DEBUGGER_CONTINUED) name = _T("cbEVT_DEBUGGER_CONTINUED");
     else if (type==cbEVT_DEBUGGER_FINISHED) name = _T("cbEVT_DEBUGGER_FINISHED");
+    else if (type==cbEVT_DEBUGGER_CURSOR_CHANGED) name = _T("cbEVT_DEBUGGER_CURSOR_CHANGED");
+    else if (type==cbEVT_DEBUGGER_UPDATED) name = _T("cbEVT_DEBUGGER_UPDATED");
     else name = _("unknown CodeBlocksEvent");
 
     return name;
 }
 #endif // PPRCESS_EVENT_PERFORMANCE_MEASURE
 
-Manager::Manager() : m_pAppWindow(nullptr), m_SearchResultLog(nullptr)
+Manager::Manager() :
+    m_pAppWindow(nullptr),
+    m_SearchResultLog(nullptr)
 {
+    for (int &size : m_ImageSizes)
+        size = 0;
+    for (double &factor : m_UIScaleFactor)
+        factor = 0;
 }
 
 Manager::~Manager()
@@ -340,19 +349,6 @@ bool Manager::IsAppStartedUp()
     return m_AppStartedUp;
 }
 
-void Manager::InitXRC(bool force)
-{
-    static bool xrcok = false;
-    if (!xrcok || force)
-    {
-        wxFileSystem::AddHandler(new wxZipFSHandler);
-        wxXmlResource::Get()->InsertHandler(new wxToolBarAddOnXmlHandler);
-        wxXmlResource::Get()->InitAllHandlers();
-
-        xrcok = true;
-    }
-}
-
 void Manager::LoadXRC(wxString relpath)
 {
     LoadResource(relpath);
@@ -372,32 +368,20 @@ wxMenu *Manager::LoadMenu(wxString menu_id,bool createonfailure)
     return m;
 }
 
-wxToolBar *Manager::LoadToolBar(wxFrame *parent,wxString resid,bool defaultsmall)
-{
-    if (!parent)
-        return nullptr;
-    wxToolBar *tb = wxXmlResource::Get()->LoadToolBar(parent,resid);
-    if (!tb)
-    {
-        int flags = wxTB_HORIZONTAL;
-
-        if (platform::WindowsVersion() < platform::winver_WindowsXP)
-            flags |= wxTB_FLAT;
-
-        tb = parent->CreateToolBar(flags, wxID_ANY);
-        tb->SetToolBitmapSize(defaultsmall ? wxSize(16, 16) : wxSize(22, 22));
-    }
-
-    return tb;
-}
-
 wxToolBar* Manager::CreateEmptyToolbar()
 {
-    bool smallToolBar = Manager::Get()->GetConfigManager(_T("app"))->ReadBool(_T("/environment/toolbar_size"), true);
+    const wxSize size(m_ImageSizes[UIComponent::Toolbars], m_ImageSizes[UIComponent::Toolbars]);
+    wxWindow *appFrame = GetAppFrame();
 
-    wxSize size = smallToolBar ? wxSize(16, 16) : (platform::macosx ? wxSize(32, 32) : wxSize(22, 22));
-    wxToolBar* toolbar = new wxToolBar(GetAppFrame(), -1, wxDefaultPosition, size, wxTB_FLAT | wxTB_NODIVIDER);
-    toolbar->SetToolBitmapSize(size);
+#ifdef __WXMSW__
+    const double scaleFactor = 1.0;
+#else
+    const double scaleFactor = cbGetContentScaleFactor(*appFrame);
+#endif // __WXMSW__
+    const wxSize scaledSize(size.x/scaleFactor, size.y/scaleFactor);
+
+    wxToolBar* toolbar = new wxToolBar(appFrame, -1, wxDefaultPosition, scaledSize, wxTB_FLAT | wxTB_NODIVIDER);
+    toolbar->SetToolBitmapSize(scaledSize);
 
     return toolbar;
 }
@@ -406,14 +390,48 @@ void Manager::AddonToolBar(wxToolBar* toolBar,wxString resid)
 {
     if (!toolBar)
         return;
+    if (m_ToolbarHandler)
+        m_ToolbarHandler->SetCurrentResourceID(resid);
     wxXmlResource::Get()->LoadObject(toolBar,nullptr,resid,_T("wxToolBarAddOn"));
+    if (m_ToolbarHandler)
+        m_ToolbarHandler->SetCurrentResourceID(wxString());
 }
 
-bool Manager::isToolBar16x16(wxToolBar* toolBar)
+void Manager::SetImageSize(int size, UIComponent component)
 {
-    if (!toolBar) return true; // Small by default
-    wxSize mysize=toolBar->GetToolBitmapSize();
-    return (mysize.GetWidth()<=16 && mysize.GetHeight()<=16);
+    cbAssert(component>=0 && component < UIComponent::Last);
+    m_ImageSizes[component] = size;
+
+    if (component == UIComponent::Toolbars)
+    {
+        cbAssert(m_ToolbarHandler);
+        m_ToolbarHandler->SetToolbarImageSize(size);
+    }
+}
+
+int Manager::GetImageSize(UIComponent component) const
+{
+    cbAssert(component>=0 && component < UIComponent::Last);
+    cbAssert(m_ImageSizes[component] > 0);
+    return m_ImageSizes[component];
+}
+
+void Manager::SetUIScaleFactor(double scaleFactor, UIComponent component)
+{
+    cbAssert(component>=0 && component < UIComponent::Last);
+    m_UIScaleFactor[component] = scaleFactor;
+}
+
+double Manager::GetUIScaleFactor(UIComponent component) const
+{
+    cbAssert(component>=0 && component < UIComponent::Last);
+    cbAssert(m_UIScaleFactor[component] >= 1.0);
+    return m_UIScaleFactor[component];
+}
+
+void Manager::SetToolbarHandler(wxToolBarAddOnXmlHandler *handler)
+{
+    m_ToolbarHandler = handler;
 }
 
 wxFrame* Manager::GetAppFrame() const
@@ -647,3 +665,4 @@ bool            Manager::m_AppStartedUp    = false;
 bool            Manager::m_BlockYields     = false;
 bool            Manager::m_IsBatch         = false;
 wxCmdLineParser Manager::m_CmdLineParser;
+wxToolBarAddOnXmlHandler* Manager::m_ToolbarHandler = nullptr;

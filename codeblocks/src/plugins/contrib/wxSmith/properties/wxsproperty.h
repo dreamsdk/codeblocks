@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11150 $
-* $Id: wxsproperty.h 11150 2017-08-15 21:52:29Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxsproperty.h $
+* $Revision: 11783 $
+* $Id: wxsproperty.h 11783 2019-07-08 19:39:27Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsproperty.h $
 */
 
 #ifndef WXSPROPERTY_H
@@ -48,7 +48,7 @@ class wxsPropertyContainer;
 #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
 #define wxPGVariant                     wxVariant
 #define wxPGId                          wxPGProperty*
-#define wxParentProperty                wxPGProperty
+#define wxParentProperty                wxStringProperty
 #define wxCustomPropertyClass           wxPGProperty
 #define wxEnumPropertyClass             wxEnumProperty
 #define wxPG_VALUETYPE(T)               wxT(#T)

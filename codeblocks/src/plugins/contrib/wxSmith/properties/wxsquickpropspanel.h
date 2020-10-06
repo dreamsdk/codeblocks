@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsquickpropspanel.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxsquickpropspanel.h $
+* $Revision: 11383 $
+* $Id: wxsquickpropspanel.h 11383 2018-04-29 15:36:24Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsquickpropspanel.h $
 */
 
 #ifndef WXSQUICKPROPSPANEL_H
@@ -37,7 +37,7 @@ class wxsPropertyContainer;
  * else than text editor or combo box).
  *
  * Important thing is that when reading / writing properties to panel,
- * GetPropertiesContaier method should be used. And it must always be compared
+ * GetPropertiesContainer method should be used. And it must always be compared
  * to 0. If it's null, it does mean that property container has already been
  * deleted but quick properties window still remains.
  *

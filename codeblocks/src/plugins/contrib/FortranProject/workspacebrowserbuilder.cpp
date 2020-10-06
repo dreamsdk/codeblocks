@@ -5,16 +5,18 @@
  */
 
 #include <sdk.h>
-#include "workspacebrowserbuilder.h"
-#include <globals.h>
-#include <manager.h>
-#include <projectmanager.h>
-#include <cbproject.h>
+#ifndef CB_PRECOMP
+    #include <wx/settings.h>
+    #include <wx/utils.h>
+    #include <wx/string.h>
 
-#include <wx/settings.h>
-#include <wx/utils.h>
-#include <wx/string.h>
-#include <string>
+    #include <globals.h>
+    #include <manager.h>
+    #include <projectmanager.h>
+    #include <cbproject.h>
+#endif
+
+#include "workspacebrowserbuilder.h"
 
 WorkspaceBrowserBuilder::WorkspaceBrowserBuilder(ParserF* parser, wxTreeCtrl* treeTop, wxTreeCtrl* treeBottom)
     : m_pActiveProject(0),
@@ -25,13 +27,16 @@ WorkspaceBrowserBuilder::WorkspaceBrowserBuilder(ParserF* parser, wxTreeCtrl* tr
     m_pParser = parser;
     m_pTreeTop = treeTop;
     m_pTreeBottom = treeBottom;
-    m_pTreeTop->SetImageList(m_Imlist.GetImageList());
-    m_pTreeBottom->SetImageList(m_Imlist.GetImageList());
+    int targetHeight = floor(16 * cbGetActualContentScaleFactor(*m_pTreeTop));
+    m_pImlist = new FPImageList(targetHeight);
+    m_pTreeTop->SetImageList(m_pImlist->GetImageList());
+    m_pTreeBottom->SetImageList(m_pImlist->GetImageList());
 }
 
 WorkspaceBrowserBuilder::~WorkspaceBrowserBuilder()
 {
     //dtor
+    delete m_pImlist;
 }
 
 void WorkspaceBrowserBuilder::Init(const wxString& active_filename,
@@ -50,12 +55,15 @@ void WorkspaceBrowserBuilder::BuildTree()
     if (Manager::IsAppShuttingDown())
         return;
 
+    if (!m_pParser)
+        return;
+
     m_AtWork = true;
 
     wxTreeItemId root = m_pTreeTop->GetRootItem();
     if (!root.IsOk())
     {
-        root = m_pTreeTop->AddRoot(_("Symbols"), m_Imlist.GetImageIdx("symbols_folder"), m_Imlist.GetImageIdx("symbols_folder"), new TreeDataF(sfRoot));
+        root = m_pTreeTop->AddRoot(_("Symbols"), m_pImlist->GetImageIdx("symbols_folder"), m_pImlist->GetImageIdx("symbols_folder"), new TreeDataF(sfRoot));
         m_pTreeTop->SetItemHasChildren(root);
     }
 
@@ -204,7 +212,8 @@ void WorkspaceBrowserBuilder::ExpandBottomNodes(wxArrayString &expandedBottomNod
 bool WorkspaceBrowserBuilder::HasChildren(TokenF* tokenParent, int tokenKindMask)
 {
     bool has = false;
-    for (size_t j=0; j < tokenParent->m_Children.GetCount(); ++j)
+    size_t chilCount = tokenParent->m_Children.GetCount();
+    for (size_t j=0; j<chilCount; ++j)
     {
         TokenF* tok1 = tokenParent->m_Children.Item(j);
         if (tok1->m_TokenKind & tokenKindMask)
@@ -328,6 +337,8 @@ void WorkspaceBrowserBuilder::AddTreeChildren(wxTreeCtrl* tree, wxTreeItemId par
         case bdfWorkspace:
         {
             TokensArrayF* pTokens = m_pParser->GetTokens();
+            if (!pTokens)
+                break;
             for (size_t i=0; i< pTokens->GetCount(); ++i)
             {
                 TokenF* token = pTokens->Item(i);
@@ -347,7 +358,8 @@ bool WorkspaceBrowserBuilder::AddFileNodes(wxTreeCtrl* tree, wxTreeItemId parent
 {
     TokensArrayF* pTokens = m_pParser->GetTokens();
 
-    for (size_t i=0; i< pTokens->GetCount(); ++i)
+    size_t tokCount = pTokens->GetCount();
+    for (size_t i=0; i<tokCount; ++i)
     {
         TokenF* token = pTokens->Item(i);
 
@@ -362,7 +374,7 @@ bool WorkspaceBrowserBuilder::AddFileNodes(wxTreeCtrl* tree, wxTreeItemId parent
 bool WorkspaceBrowserBuilder::AddChildrenNodes(wxTreeCtrl* tree, wxTreeItemId parent, TokenF* parToken, int tokenKindMask)
 {
     int count = 0;
-    bool sorted = m_Options.sortAlphabetically;
+    bool sorted = m_Options.sortAlphabetically || (tree == m_pTreeTop && parToken->m_TokenKind == tkFile);
     TokensArrayF* pTokens = &parToken->m_Children;
 
     if (parToken->m_TokenKind == tkType)
@@ -383,7 +395,8 @@ bool WorkspaceBrowserBuilder::AddChildrenNodes(wxTreeCtrl* tree, wxTreeItemId pa
             tokenKindMask = tokenKindMask ^ tkVariable;
     }
 
-    for (size_t i=0; i< pTokens->GetCount(); ++i)
+    size_t tokCount = pTokens->GetCount();
+    for (size_t i=0; i<tokCount; ++i)
     {
         TokenF* token = pTokens->Item(i);
         if (token->m_TokenKind & tokenKindMask)
@@ -456,16 +469,16 @@ int WorkspaceBrowserBuilder::AddInterfaceNode(wxTreeCtrl* tree, wxTreeItemId par
                     if (token->m_TokenKind == tkFunction)
                     {
                         if (token->m_TokenAccess == taPublic)
-                            imageIdx = m_Imlist.GetImageIdx("interface_function");
+                            imageIdx = m_pImlist->GetImageIdx("interface_function");
                         else
-                            imageIdx = m_Imlist.GetImageIdx("interface_function_private");
+                            imageIdx = m_pImlist->GetImageIdx("interface_function_private");
                     }
                     else
                     {
                         if (token->m_TokenAccess == taPublic)
-                            imageIdx = m_Imlist.GetImageIdx("interface_subroutine");
+                            imageIdx = m_pImlist->GetImageIdx("interface_subroutine");
                         else
-                            imageIdx = m_Imlist.GetImageIdx("interface_subroutine_private");
+                            imageIdx = m_pImlist->GetImageIdx("interface_subroutine_private");
                     }
                     AddNodeIfNotThere(tree, parent, token->m_DisplayName, imageIdx, new TreeDataF(sfToken, token), sorted);
                     count++;
@@ -483,7 +496,8 @@ int WorkspaceBrowserBuilder::AddTypeChildren(wxTreeCtrl* tree, wxTreeItemId pare
     TokensArrayF varTokens;
     TokensArrayF otherTokens;
 
-    for (size_t i=0; i<pTokens->GetCount(); ++i)
+    size_t tokCount = pTokens->GetCount();
+    for (size_t i=0; i<tokCount; ++i)
     {
         TokenF* token = pTokens->Item(i);
         if (token->m_TokenKind == tkVariable)
@@ -527,7 +541,8 @@ int WorkspaceBrowserBuilder::AddTypeChildren(wxTreeCtrl* tree, wxTreeItemId pare
         }
     }
 
-    for (size_t i=0; i<varTokens.GetCount(); ++i)
+    tokCount = varTokens.GetCount();
+    for (size_t i=0; i<tokCount; ++i)
     {
         wxString nameDisp;
         nameDisp << varTokens.Item(i)->m_DisplayName << _T(" : ") << varTokens.Item(i)->m_PartFirst;
@@ -536,7 +551,8 @@ int WorkspaceBrowserBuilder::AddTypeChildren(wxTreeCtrl* tree, wxTreeItemId pare
         count++;
     }
 
-    for (size_t i=0; i<otherTokens.GetCount(); ++i)
+    tokCount = otherTokens.GetCount();
+    for (size_t i=0; i<tokCount; ++i)
     {
         wxString name;
         if (otherTokens.Item(i)->m_DisplayName.StartsWith(_T("%%")))
@@ -582,15 +598,18 @@ bool WorkspaceBrowserBuilder::SelectNode(wxTreeItemId node)
             }
             case sfToken:
             {
-				wxTreeItemId rootFuncs = m_pTreeBottom->AppendItem(root, _("Procedures"), m_Imlist.GetImageIdx("function_folder"));
-				wxTreeItemId rootOthers = m_pTreeBottom->AppendItem(root, _("Others"), m_Imlist.GetImageIdx("others_folder"));
+				wxTreeItemId rootTypes = m_pTreeBottom->AppendItem(root, _("Types"), m_pImlist->GetImageIdx("typedefs_folder"));
+				wxTreeItemId rootOthers = m_pTreeBottom->AppendItem(root, _("Others"), m_pImlist->GetImageIdx("others_folder"));
+				wxTreeItemId rootFuncs = m_pTreeBottom->AppendItem(root, _("Procedures"), m_pImlist->GetImageIdx("function_folder"));
 
                 TokenF* pToken = data->m_pToken;
+                AddChildrenNodes(m_pTreeBottom, rootTypes, pToken, tkType);
+                AddChildrenNodes(m_pTreeBottom, rootOthers, pToken, tkInterface | tkInterfaceExplicit | tkAccessList | tkVariable);
                 AddChildrenNodes(m_pTreeBottom, rootFuncs, pToken, tkFunction | tkSubroutine | tkProcedure);
-                AddChildrenNodes(m_pTreeBottom, rootOthers, pToken, tkType | tkInterface | tkInterfaceExplicit | tkAccessList | tkVariable);
 
-                m_pTreeBottom->Expand(rootFuncs);
+                m_pTreeBottom->Expand(rootTypes);
                 m_pTreeBottom->Expand(rootOthers);
+                m_pTreeBottom->Expand(rootFuncs);
                 //ExpandAll();
 
                 break;
@@ -663,8 +682,8 @@ wxTreeItemId WorkspaceBrowserBuilder::AddNodeIfNotThere(wxTreeCtrl* tree, wxTree
 void WorkspaceBrowserBuilder::CreateSpecialFolders()
 {
     wxTreeItemId parent = m_pTreeTop->GetRootItem();
-    wxTreeItemId gfuncs = AddNodeIfNotThere(m_pTreeTop, parent, _("Global procedures"), m_Imlist.GetImageIdx("function_folder"), new TreeDataF(sfGFuncs, 0));
-    wxTreeItemId others = AddNodeIfNotThere(m_pTreeTop, parent, _("Others"), m_Imlist.GetImageIdx("others_folder"), new TreeDataF(sfOthers, 0));
+    wxTreeItemId gfuncs = AddNodeIfNotThere(m_pTreeTop, parent, _("Global procedures"), m_pImlist->GetImageIdx("function_folder"), new TreeDataF(sfGFuncs, 0));
+    wxTreeItemId others = AddNodeIfNotThere(m_pTreeTop, parent, _("Others"), m_pImlist->GetImageIdx("others_folder"), new TreeDataF(sfOthers, 0));
 
     if (!m_Options.visibleBottomTree)
     {
@@ -849,12 +868,131 @@ wxTreeItemId WorkspaceBrowserBuilder::FindItemByName(wxTreeCtrl* tree, wxString 
 
 int WorkspaceBrowserBuilder::GetTokenKindImageIdx(TokenF* token)
 {
-    return m_Imlist.GetTokenKindImageIdx(token);
+    return m_pImlist->GetTokenKindImageIdx(token);
 }
 
-wxImageList* WorkspaceBrowserBuilder::GetImageList()
+void WorkspaceBrowserBuilder::SelectSymbol(const wxString& filename, int line)
 {
-    return m_Imlist.GetImageList();
+    if (Manager::IsAppShuttingDown() || m_AtWork)
+        return;
+
+    bool found = false;
+    wxTreeItemIdValue cookie;
+    wxTreeItemId root = m_pTreeTop->GetRootItem();
+    if(!root.IsOk())
+        return;
+    wxTreeItemId item = m_pTreeTop->GetFirstChild(root, cookie);
+    wxTreeItemId itemGlob;
+    bool haveGlob = false;
+    wxTreeItemId itemOthers;
+    while (item.IsOk())
+    {
+        TreeDataF* data = (TreeDataF*)m_pTreeTop->GetItemData(item);
+        if (data)
+        {
+            switch (data->m_SpecialFolder)
+            {
+                case sfGFuncs:
+                {
+                    itemGlob = item;
+                    haveGlob = true;
+                    break;
+                }
+                case sfToken:
+                {
+                    if (data->m_pToken->m_Filename.IsSameAs(filename))
+                    {
+                        if (((int)data->m_pToken->m_LineStart <= line) && ((int)data->m_pToken->m_LineEnd >= line))
+                        {
+                            m_pTreeTop->SelectItem(item);
+                            if (m_Options.visibleBottomTree)
+                            {
+                                SelectBottomSymbol(filename, line);
+                            }
+                            found = true;
+                        }
+                    }
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+            if (found)
+                break;
+        }
+        item = m_pTreeTop->GetNextChild(root, cookie);
+    }
+
+    if (!found && haveGlob)
+    {
+        if (m_Options.visibleBottomTree)
+        {
+            m_pTreeTop->SelectItem(itemGlob);
+            SelectBottomSymbol(filename, line);
+        }
+    }
+}
+
+bool WorkspaceBrowserBuilder::SelectBottomSymbol(const wxString& filename, int line)
+{
+    wxTreeItemIdValue cookie;
+    wxTreeItemId root = m_pTreeBottom->GetRootItem();
+    if (!root.IsOk())
+        return false;
+    wxTreeItemId item = m_pTreeBottom->GetFirstChild(root, cookie);
+    while (item.IsOk())
+    {
+        TreeDataF* data = (TreeDataF*)m_pTreeBottom->GetItemData(item);
+        if (data)
+        {
+            if (data->m_SpecialFolder == sfToken)
+            {
+                if (data->m_pToken->m_Filename.IsSameAs(filename))
+                {
+                    if (((int)data->m_pToken->m_LineStart <= line) && ((int)data->m_pToken->m_LineEnd >= line))
+                    {
+                        m_pTreeBottom->SelectItem(item);
+                        return true;
+                    }
+                }
+            }
+            else if(data->m_SpecialFolder == sfFile)
+            {
+                if (data->m_pToken->m_Filename.IsSameAs(filename))
+                {
+                    m_pTreeBottom->SelectItem(item);
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            wxTreeItemIdValue cookie2;
+            wxTreeItemId item2 = m_pTreeBottom->GetFirstChild(item, cookie2);
+            while (item2.IsOk())
+            {
+                TreeDataF* data2 = (TreeDataF*)m_pTreeBottom->GetItemData(item2);
+                if (data2)
+                {
+                    if (data2->m_SpecialFolder == sfToken)
+                    {
+                        if (data2->m_pToken->m_Filename.IsSameAs(filename)
+                            && (int)data2->m_pToken->m_LineStart <= line
+                            && (int)data2->m_pToken->m_LineEnd >= line)
+                        {
+                            m_pTreeBottom->SelectItem(item2);
+                            return true;
+                        }
+                    }
+                }
+                item2 = m_pTreeBottom->GetNextChild(item, cookie2);
+            }
+        }
+        item = m_pTreeBottom->GetNextChild(root, cookie);
+    }
+    return false;
 }
 
 void WorkspaceBrowserBuilder::MarkSymbol(const wxString& filename, int line)
@@ -1335,6 +1473,8 @@ bool WorkspaceBrowserBuilder::MarkGlobalSymbol(wxTreeCtrl* tree, wxTreeItemId& r
 
 bool WorkspaceBrowserBuilder::IsLineInGlobals(const wxString& file, int line)
 {
+    if (!m_pParser)
+        return false;
     if (m_Options.showIncludeSeparately && m_pParser->IsIncludeFile(file))
         return false;
 
@@ -1472,10 +1612,10 @@ void WorkspaceBrowserBuilder::AddIncludeFiles(wxTreeCtrl* tree, wxTreeItemId par
                 TokenF* fileToken= m_pParser->FindFile(m_ActiveFilename);
                 if (fileToken)
                 {
-                    wxFileName fn(m_ActiveFilename);
+                    wxChar sep = wxFileName::GetPathSeparator();
                     wxString tn = _("include '");
-                    tn << fn.GetFullName() << _("'");
-                    wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_Imlist.GetImageIdx("symbols_folder"), new TreeDataF(sfFile, fileToken), sorted);
+                    tn << m_ActiveFilename.AfterLast(sep) << _("'");
+                    wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_pImlist->GetImageIdx("symbols_folder"), new TreeDataF(sfFile, fileToken), sorted);
                     AddFileNodes(tree, idni, UnixFilename(m_ActiveFilename), tokenKindMask);
                 }
             }
@@ -1493,7 +1633,7 @@ void WorkspaceBrowserBuilder::AddIncludeFiles(wxTreeCtrl* tree, wxTreeItemId par
                     {
                         wxString tn = _("include '");
                         tn << pf->file.GetFullName() << _("'");
-                        wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_Imlist.GetImageIdx("symbols_folder"), new TreeDataF(sfFile, fileToken), sorted);
+                        wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_pImlist->GetImageIdx("symbols_folder"), new TreeDataF(sfFile, fileToken), sorted);
                         AddFileNodes(tree, idni, UnixFilename(pf->file.GetFullPath()), tokenKindMask);
                     }
                 }
@@ -1511,7 +1651,7 @@ void WorkspaceBrowserBuilder::AddIncludeFiles(wxTreeCtrl* tree, wxTreeItemId par
                 {
                     wxString tn = _("include '");
                     tn << token->m_DisplayName << _("'");
-                    wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_Imlist.GetImageIdx("symbols_folder"), new TreeDataF(sfFile, token), sorted);
+                    wxTreeItemId idni = AddNodeIfNotThere(tree, parent, tn, m_pImlist->GetImageIdx("symbols_folder"), new TreeDataF(sfFile, token), sorted);
                     AddChildrenNodes(tree, idni, token, tokenKindMask);
                 }
             }

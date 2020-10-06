@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11183 $
- * $Id: editorbase.cpp 11183 2017-10-05 22:33:14Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/editorbase.cpp $
+ * $Revision: 11313 $
+ * $Id: editorbase.cpp 11313 2018-03-10 11:00:49Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editorbase.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -281,6 +281,9 @@ void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
 
     wxMenu* popup = new wxMenu;
 
+    PluginManager *pluginManager = Manager::Get()->GetPluginManager();
+    pluginManager->ResetModuleMenu();
+
     if (!noeditor && wxGetKeyState(WXK_CONTROL))
     {
         cbStyledTextCtrl* control = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor()->GetControl();
@@ -323,13 +326,28 @@ void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
         // ask other editors / plugins if they need to add any entries in this menu...
         FileTreeData* ftd = new FileTreeData(nullptr, FileTreeData::ftdkUndefined);
         ftd->SetFolder(m_Filename);
-        Manager::Get()->GetPluginManager()->AskPluginsForModuleMenu(type, popup, ftd);
+        pluginManager->AskPluginsForModuleMenu(type, popup, ftd);
         delete ftd;
 
         popup->AppendSeparator();
         // Extended functions, part 2 (virtual)
         AddToContextMenu(popup, type, true);
     }
+
+    // Check if the last item is a separator and remove it.
+    const wxMenuItemList &popupItems = popup->GetMenuItems();
+    if (popupItems.GetCount() > 0)
+    {
+        wxMenuItem *last = popupItems[popupItems.GetCount() - 1];
+        if (last && last->IsSeparator())
+            popup->Remove(last);
+    }
+
+    // Insert a separator at the end of the "Find XXX" menu group of items.
+    const int lastFind = pluginManager->GetFindMenuItemFirst() + pluginManager->GetFindMenuItemCount();
+    if (lastFind > 0)
+        popup->Insert(lastFind, wxID_SEPARATOR, wxEmptyString);
+
     // inform the editors we 're done creating a context menu (just about to show it)
     OnAfterBuildContextMenu(type);
 

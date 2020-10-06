@@ -4,7 +4,7 @@
  *
  * $Revision: 9426 $
  * $Id: projectloader_hooks.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projectloader_hooks.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectloader_hooks.cpp $
  */
 
 #include "sdk_precomp.h"

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11255 $
-* $Id: wxscolourproperty.cpp 11255 2017-12-28 10:44:03Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxscolourproperty.cpp $
+* $Revision: 11738 $
+* $Id: wxscolourproperty.cpp 11738 2019-06-11 20:55:08Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxscolourproperty.cpp $
 */
 
 #include "wxscolourproperty.h"
@@ -416,10 +416,14 @@ namespace
         {
             ind = GetIndexForValue(cpv.m_type);
         }
+        else if (cpv.m_type == wxPG_COLOUR_CUSTOM)
+        {
+            ind = GetCustomColourIndex();
+        }
         else
         {
-            cpv.m_type = wxPG_COLOUR_CUSTOM;
-            ind = GetCustomColourIndex();
+            cpv.m_type = wxsCOLOUR_DEFAULT;
+            ind = 0;
         }
     }
     else

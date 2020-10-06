@@ -8,13 +8,18 @@
  */
 
 #include "projectdependencies.h"
-#include <projectmanager.h>
-#include <logmanager.h>
-#include <compiler.h>
-#include <compilerfactory.h>
-#include <macrosmanager.h>
-#include <wx/filefn.h>
-#include <wx/dir.h>
+
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/dir.h>
+    #include <wx/filefn.h>
+
+    #include <compiler.h>
+    #include <compilerfactory.h>
+    #include <logmanager.h>
+    #include <macrosmanager.h>
+    #include <projectmanager.h>
+#endif
 
 #include "nativeparserf.h"
 
@@ -289,7 +294,8 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
     for (pos = fileDeclaredModules->begin(); pos != fileDeclaredModules->end(); ++pos)
     {
         wxString modName = *pos;
-        for (size_t k=0; k < m_pUseModules.size(); ++k)
+        size_t nUseModules = m_pUseModules.size();
+        for (size_t k=0; k < nUseModules; ++k)
         {
             if (fileIndex==k)
                 continue; // declared and used in the same file
@@ -315,7 +321,8 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
             }
         }
 
-        for (size_t k=0; k < m_pExtendsSModules.size(); ++k)
+        size_t nExtendsSMod = m_pExtendsSModules.size();
+        for (size_t k=0; k < nExtendsSMod; ++k)
         {
             if (fileIndex==k)
                 continue; // declared and used in the same file
@@ -346,7 +353,8 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
     for (pos = fileDeclaredSubmodules->begin(); pos != fileDeclaredSubmodules->end(); ++pos)
     {
         wxString submodName = *pos;
-        for (size_t k=0; k < m_pExtendsSModules.size(); ++k)
+        size_t nExtendsSMod = m_pExtendsSModules.size();
+        for (size_t k=0; k < nExtendsSMod; ++k)
         {
             if (fileIndex==k)
                 continue; // declared and used in the same file
@@ -376,7 +384,8 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
     ProjectFile* pf = m_prFilesArr[fileIndex];
     wxString fname = pf->file.GetName();
     wxString fnameExt = fname + _T(".") + pf->file.GetExt();
-    for (size_t k=0; k < m_pIncludes.size(); ++k)
+    size_t nIncludes = m_pIncludes.size();
+    for (size_t k=0; k < nIncludes; ++k)
     {
         if (fileIndex==k)
             continue;
@@ -405,73 +414,42 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
 
 void ProjectDependencies::EnsureUpToDateObjs()
 {
-    int btc = m_Project->GetBuildTargetsCount();
-    for (int it=0; it<btc; ++it)
+    size_t nfile = m_prFilesArr.size();
+    for (size_t j=0; j<nfile; ++j)
     {
-        ProjectBuildTarget* bTarget = m_Project->GetBuildTarget(it);
-        Compiler* compiler = CompilerFactory::GetCompiler(bTarget->GetCompilerID());
-        if(!compiler)
+        ProjectFile* pf = m_prFilesArr[j];
+        const wxArrayString& btarr = pf->GetBuildTargets();
+        if (btarr.IsEmpty())
             continue;
-        for (size_t j=0; j<m_prFilesArr.size(); ++j)
+        ProjectBuildTarget* bTarget = m_Project->GetBuildTarget(btarr[0]);
+        const pfDetails& pfd = pf->GetFileDetails(bTarget);
+        time_t time_src = wxFileModificationTime(pfd.source_file_absolute_native);
+
+        IntSet* children = m_ChildrenTable[j];
+        IntSet::iterator pos;
+        for (pos=children->begin(); pos != children->end(); ++pos)
         {
-            ProjectFile* pf = m_prFilesArr[j];
+            ProjectFile* pfChild = m_prFilesArr[*pos];
 
-            const wxArrayString& btarr = pf->GetBuildTargets();
-            if (btarr.Index(bTarget->GetTitle()) == wxNOT_FOUND)
-                continue;
-
-            const pfDetails& pfd = pf->GetFileDetails(bTarget);
-            wxString objectAbs = (compiler->GetSwitches().UseFlatObjects)?pfd.object_file_flat_absolute_native:pfd.object_file_absolute_native;
-
-            time_t time_src = wxFileModificationTime(pfd.source_file_absolute_native);
-            bool delChildren = false;
-            bool onlyOlder = false;
-            if (wxFileExists(objectAbs))
+            const wxArrayString& btChild_arr = pfChild->GetBuildTargets();
+            size_t nChTag = btChild_arr.size();
+            for (size_t iCh=0; iCh < nChTag; ++iCh)
             {
-                time_t time_obj = wxFileModificationTime(objectAbs);
-                if (time_src > time_obj)
+                ProjectBuildTarget* bTargetChild = m_Project->GetBuildTarget(btChild_arr[iCh]);
+                Compiler* compilerChild = CompilerFactory::GetCompiler(bTargetChild->GetCompilerID());
+                if(!compilerChild)
+                    continue;
+
+                const pfDetails& pfdChild = pfChild->GetFileDetails(bTargetChild);
+                wxString objectAbsChild = (compilerChild->GetSwitches().UseFlatObjects)?
+                                       pfdChild.object_file_flat_absolute_native : pfdChild.object_file_absolute_native;
+
+                if (wxFileExists(objectAbsChild))
                 {
-                    delChildren = true;
-                }
-            }
-            else
-            {
-                delChildren = true;
-                if(!pf->compile)
-                {
-                    onlyOlder = true;
-                }
-            }
-
-            if (delChildren)
-            {
-                IntSet* children = m_ChildrenTable[j];
-                IntSet::iterator pos;
-                for (pos=children->begin(); pos != children->end(); ++pos)
-                {
-                    ProjectFile* pfChild = m_prFilesArr[*pos];
-
-                    const wxArrayString& btChild_arr = pfChild->GetBuildTargets();
-                    if (btChild_arr.Index(bTarget->GetTitle()) == wxNOT_FOUND)
-                        continue;
-
-                    const pfDetails& pfdChild = pfChild->GetFileDetails(bTarget);
-                    wxString objectAbsChild = (compiler->GetSwitches().UseFlatObjects)?pfdChild.object_file_flat_absolute_native:pfdChild.object_file_absolute_native;
-
-                    if (wxFileExists(objectAbsChild))
+                    time_t time_obj = wxFileModificationTime(objectAbsChild);
+                    if (time_src > time_obj)
                     {
-                        if (onlyOlder)
-                        {
-                            time_t time_obj = wxFileModificationTime(objectAbsChild);
-                            if (time_src > time_obj)
-                            {
-                                wxRemoveFile(objectAbsChild);
-                            }
-                        }
-                        else
-                        {
-                            wxRemoveFile(objectAbsChild);
-                        }
+                        wxRemoveFile(objectAbsChild);
                     }
                 }
             }
@@ -507,7 +485,7 @@ void ProjectDependencies::RemoveModFiles(cbProject* pr, ProjectBuildTarget* bTar
             return;
     }
 
-    wxString objDir = bTarget->GetObjectOutput();
+    wxString objDir = bTarget->GetBasePath() + bTarget->GetObjectOutput();
     wxDir odir;
     if (odir.Open(objDir))
     {

@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: BrowseMarks.h 10361 2015-07-26 08:13:26Z jenslody $
+// RCS-ID: $Id: BrowseMarks.h 11347 2018-03-26 14:24:13Z pecanh $
 #ifndef BROWSEMARKS_H
 #define BROWSEMARKS_H
 
@@ -55,10 +55,7 @@ class BrowseMarks
         void        RebuildBrowse_Marks(cbEditor* cbed, bool addedLines);
         wxString    GetStringOfBrowse_Marks() const;
         wxString    GetFilePath(){return m_filePath;}
-        void        ToggleBook_MarksFrom(BrowseMarks& otherBook_Marks);
-        void        GetBook_MarksFromEditor(wxString filename);
         void        ImportBrowse_Marks();
-        void        ImportBook_Marks();
         void        SetBrowseMarksStyle( int style);
         void        OnEditorEventHookIgnoreMarkerChanges( bool trueOrfalse);
         void        Dump();

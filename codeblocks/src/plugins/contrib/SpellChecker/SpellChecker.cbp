@@ -22,16 +22,9 @@
 					<Add option="-fexceptions" />
 					<Add option="-Winvalid-pch" />
 					<Add option="-DHUNSPELL_STATIC" />
-					<Add directory="wxspellchecker/include" />
-					<Add directory="$(#wx.include)" />
-					<Add directory="$(#wx.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 					<Add directory="hunspell/src/hunspell" />
 					<Add directory="hunspell/" />
 				</Compiler>
-				<Linker>
-					<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
-					<Add directory="$(#wx.lib)/gcc_dll$(WX_CFG)" />
-				</Linker>
 			</Target>
 			<Target title="wxSpellChecker">
 				<Option output="../../../devel/wxSpellChecker" prefix_auto="1" extension_auto="1" />
@@ -48,7 +41,7 @@
 					<Add option="-pipe" />
 					<Add option="-mthreads" />
 					<Add option="-DHUNSPELL_STATIC" />
-					<Add directory="hunspell/src" />
+					<Add directory="hunspell/src/hunspell" />
 					<Add directory="wxspellchecker/include" />
 					<Add directory="$(#wx.include)" />
 					<Add directory="$(#wx.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
@@ -59,6 +52,11 @@
 					<Add directory="../../../devel" />
 					<Add directory="$(#wx.lib)/gcc_dll$(WX_CFG)" />
 				</Linker>
+				<Environment>
+					<Variable name="WX_CFG" value="" />
+					<Variable name="WX_SUFFIX" value="u" />
+					<Variable name="WX_VERSION" value="28" />
+				</Environment>
 			</Target>
 			<Target title="plugin">
 				<Option output="../../../devel/share/CodeBlocks/plugins/SpellChecker" prefix_auto="1" extension_auto="1" />
@@ -96,18 +94,7 @@
 					<Add directory="$(#wx.lib)/gcc_dll$(WX_CFG)" />
 				</Linker>
 				<ExtraCommands>
-					<Add after="cmd /c if not exist ..\..\..\devel\share\CodeBlocks\SpellChecker mkdir ..\..\..\devel\share\CodeBlocks\SpellChecker" />
-					<Add after="cmd /c if not exist ..\..\..\devel\share\CodeBlocks\images\settings mkdir ..\..\..\devel\share\CodeBlocks\images\settings" />
-					<Add after="zip -j9 ..\..\..\devel\share\CodeBlocks\SpellChecker.zip manifest.xml SpellCheckSettingsPanel.xrc" />
-					<Add after='xcopy /D /Y *.png &quot;..\..\..\devel\share\Codeblocks\images\settings\*&quot;' />
-					<Add after='xcopy /D /Y *.png &quot;..\..\..\output\share\Codeblocks\images\settings\*&quot;' />
-					<Add after='xcopy /D /Y OnlineSpellChecking.xml  &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y dictionaries\*.aff &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y dictionaries\*.dic &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y dictionaries\th_*.dat &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y dictionaries\th_*.idx &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y rc\*.png &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\&quot;' />
-					<Add after='xcopy /D /Y &quot;..\..\..\devel\share\CodeBlocks\SpellChecker\*&quot; &quot;..\..\..\output\share\CodeBlocks\SpellChecker\*&quot;' />
+					<Add after="update.bat" />
 					<Mode after="always" />
 				</ExtraCommands>
 				<Environment>
@@ -224,12 +211,6 @@
 		<Unit filename="hunspell/src/hunspell/csutil.hxx">
 			<Option target="hunspell" />
 		</Unit>
-		<Unit filename="hunspell/src/hunspell/dictmgr.cxx">
-			<Option target="hunspell" />
-		</Unit>
-		<Unit filename="hunspell/src/hunspell/dictmgr.hxx">
-			<Option target="hunspell" />
-		</Unit>
 		<Unit filename="hunspell/src/hunspell/filemgr.cxx">
 			<Option target="hunspell" />
 		</Unit>
@@ -284,16 +265,49 @@
 		<Unit filename="hunspell/src/hunspell/suggestmgr.hxx">
 			<Option target="hunspell" />
 		</Unit>
-		<Unit filename="hunspell/src/hunspell/utf_info.cxx">
+		<Unit filename="hunspell/src/hunspell/utf_info.hxx">
 			<Option target="hunspell" />
 		</Unit>
 		<Unit filename="hunspell/src/hunspell/w_char.hxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/firstparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/firstparser.hxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/htmlparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/htmlparser.hxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/latexparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/latexparser.hxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/manparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/manparser.hxx">
 			<Option target="hunspell" />
 		</Unit>
 		<Unit filename="hunspell/src/parsers/odfparser.cxx">
 			<Option target="hunspell" />
 		</Unit>
 		<Unit filename="hunspell/src/parsers/odfparser.hxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/testparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/textparser.cxx">
+			<Option target="hunspell" />
+		</Unit>
+		<Unit filename="hunspell/src/parsers/textparser.hxx">
 			<Option target="hunspell" />
 		</Unit>
 		<Unit filename="hunspell/src/parsers/xmlparser.cxx">

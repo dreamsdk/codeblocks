@@ -4,7 +4,7 @@
  *
  * $Revision: 9263 $
  * $Id: recentitemslist.cpp 9263 2013-08-17 09:20:28Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/recentitemslist.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/recentitemslist.cpp $
  */
 
 

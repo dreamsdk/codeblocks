@@ -4,7 +4,7 @@
  *
  * $Revision: 6950 $
  * $Id: importers_globals.cpp 6950 2011-02-01 07:13:54Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/importers_globals.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/importers_globals.cpp $
  */
 
 #include "sdk_precomp.h"

@@ -4,7 +4,7 @@
  *
  * $Revision: 10205 $
  * $Id: token.cpp 10205 2015-04-11 05:53:28Z ollydbg $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/token.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/token.cpp $
  */
 
 #include <wx/event.h>

@@ -4,7 +4,7 @@
  *
  * $Revision: 7608 $
  * $Id: projecttemplateloader.cpp 7608 2011-11-25 20:50:28Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projecttemplateloader.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projecttemplateloader.cpp $
  */
 
 #include "sdk_precomp.h"

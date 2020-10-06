@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10963 $
- * $Id: editpathdlg.cpp 10963 2017-01-14 22:41:04Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/editpathdlg.cpp $
+ * $Revision: 11365 $
+ * $Id: editpathdlg.cpp 11365 2018-04-12 07:02:34Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editpathdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -66,6 +66,7 @@ EditPathDlg::EditPathDlg(wxWindow* parent,
     XRCCTRL(*this, "txtPath", wxTextCtrl)->SetFocus();
 
     // Limit vertical resizing.
+    SetMinSize(wxSize(400, GetMinHeight()));
     SetMaxSize(wxSize(-1, GetMinHeight()));
 }
 
@@ -185,7 +186,7 @@ void EditPathDlg::OnBrowse(cb_unused wxCommandEvent& event)
     XRCCTRL(*this, "txtPath", wxTextCtrl)->SetValue(result);
 }
 
-void EditPathDlg::OnOther(wxCommandEvent& event)
+void EditPathDlg::OnOther(cb_unused wxCommandEvent& event)
 {
     UserVariableManager *userMgr = Manager::Get()->GetUserVariableManager();
     wxTextCtrl *txtPath = XRCCTRL(*this, "txtPath", wxTextCtrl);

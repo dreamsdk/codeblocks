@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10739 $
- * $Id: todolist.cpp 10739 2016-01-28 18:01:46Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/todo/todolist.cpp $
+ * $Revision: 11313 $
+ * $Id: todolist.cpp 11313 2018-03-10 11:00:49Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/todo/todolist.cpp $
  */
 
 #include "sdk.h"
@@ -195,8 +195,9 @@ void ToDoList::BuildModuleMenu(const ModuleType type, wxMenu* menu, cb_unused co
         return;
     if (type == mtEditorManager)
     {
-        menu->AppendSeparator();
-        menu->Append(idAddTodo, _("Add Todo item..."), _("Add new Todo item..."));
+        const wxString label =  _("Add Todo item...");
+        const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+        menu->Insert(position, idAddTodo, label, _("Add new Todo item..."));
     }
 }
 

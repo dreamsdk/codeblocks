@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11106 $
- * $Id: highlighter.cpp 11106 2017-07-01 21:19:44Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/occurrenceshighlighting/highlighter.cpp $
+ * $Revision: 11356 $
+ * $Id: highlighter.cpp 11356 2018-03-31 21:50:19Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/occurrenceshighlighting/highlighter.cpp $
  */
 
 #include "highlighter.h"
@@ -20,6 +20,13 @@
 
 #include <cbstyledtextctrl.h>
 #include <cbcolourmanager.h>
+
+enum Indicator : int {
+    Background = 10,
+    TextBackground,
+    Selection,
+    TextSelection
+};
 
 Highlighter::Highlighter(std::set<wxString> &texts):
     m_Texts(texts),
@@ -63,23 +70,6 @@ void Highlighter::Call(cbEditor* ctrl, wxScintillaEvent &event) const
         }
     }
 
-}
-
-void Highlighter::OnEditorChange(cbEditor* ctrl) const
-{
-    // clear internal states to force a refresh at next UpdateUI;
-    m_AlreadyChecked = false;
-}
-
-const int Highlighter::GetIndicator()const
-{
-    const int theIndicator = 12;
-    return theIndicator;
-}
-
-const wxColor Highlighter::GetIndicatorColor()const
-{
-    return Manager::Get()->GetColourManager()->GetColour(wxT("editor_highlight_occurrence_permanently"));
 }
 
 void Highlighter::OnEditorUpdateUI(cbEditor* ctrl) const
@@ -142,18 +132,31 @@ void Highlighter::TextsChanged()const
     }
 }
 
-static void SetupIndicator(cbStyledTextCtrl *control, int indicator, const wxColor &colour)
+static void SetupIndicator(cbStyledTextCtrl *control, int indicator, const wxColor &colour,
+                           int alpha, int borderAlpha, bool overrideText)
 {
     control->IndicatorSetForeground(indicator, colour);
     control->IndicatorSetStyle(indicator, wxSCI_INDIC_ROUNDBOX);
-    control->IndicatorSetAlpha(indicator, 100);
-    control->IndicatorSetOutlineAlpha(indicator, 255);
+    control->IndicatorSetAlpha(indicator, alpha);
+    control->IndicatorSetOutlineAlpha(indicator, borderAlpha);
+    if (overrideText)
+        control->IndicatorSetUnder(indicator, true); // make sure the box is below the text
+    else
+    {
 #ifndef wxHAVE_RAW_BITMAP
-    // If wxWidgets is build without rawbitmap-support, the indicators become opaque
-    // and hide the text, so we show them under the text.
-    // Not enabled as default, because the readability is a little bit worse.
-    control->IndicatorSetUnder(indicator, true);
+        // If wxWidgets is build without rawbitmap-support, the indicators become opaque
+        // and hide the text, so we show them under the text.
+        // Not enabled as default, because the readability is a little bit worse.
+        control->IndicatorSetUnder(indicator, true);
 #endif
+    }
+}
+
+static void SetupTextIndicator(cbStyledTextCtrl *control, int indicator, const wxColor &colour)
+{
+    control->IndicatorSetForeground(indicator, colour);
+    control->IndicatorSetStyle(indicator, wxSCI_INDIC_TEXTFORE);
+    control->IndicatorSetUnder(indicator, false);
 }
 
 void Highlighter::DoSetIndications(cbEditor* ctrl)const
@@ -180,25 +183,33 @@ void Highlighter::DoSetIndications(cbEditor* ctrl)const
     m_AlreadyChecked = true;
 
     // Set Styling:
-    stc->SetIndicatorCurrent(GetIndicator());
 
     //if(stc->SelectionIsRectangle() || (stcr && stcr->SelectionIsRectangle())) return;
 
-    if (m_OldCtrl != ctrl)
-        SetupIndicator(stc, GetIndicator(), GetIndicatorColor());
+    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));// /highlight_occurrence"));
 
-    if (stcr)
+    const int alpha = cfg->ReadInt(_T("/highlight_occurrence/alpha_permanently"), 100);
+    const int borderAlpha = cfg->ReadInt(_T("/highlight_occurrence/border_alpha_permanently"), 255);
+    const bool overrideText = cfg->ReadBool(_T("/highlight_occurrence/override_text_permanently"), false);
+
+    if (m_OldCtrl != ctrl)
     {
-        if (m_OldCtrl != ctrl)
+        ColourManager *colourManager = Manager::Get()->GetColourManager();
+        const wxColour background = colourManager->GetColour(wxT("editor_highlight_occurrence_permanently"));
+        const wxColour text = colourManager->GetColour(wxT("editor_highlight_occurrence_permanently_text"));
+
+        SetupIndicator(stc, Indicator::Background, background, alpha, borderAlpha, overrideText);
+        SetupTextIndicator(stc, Indicator::TextBackground, text);
+
+        if (stcr)
         {
-            stcr->SetIndicatorCurrent(GetIndicator());
-            SetupIndicator(stcr, GetIndicator(), GetIndicatorColor());
+            SetupIndicator(stcr, Indicator::Background, background, alpha, borderAlpha, overrideText);
+            SetupTextIndicator(stcr, Indicator::TextBackground, text);
         }
     }
 
     m_OldCtrl = ctrl;
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
     int flag = 0;
     if (cfg->ReadBool(_T("/highlight_occurrence/case_sensitive_permanently"), true))
         flag |= wxSCI_FIND_MATCHCASE;
@@ -220,7 +231,11 @@ void Highlighter::DoSetIndications(cbEditor* ctrl)const
         if (start != end)
         {
             //remove styling:
+            stc->SetIndicatorCurrent(Indicator::Background);
             stc->IndicatorClearRange(start, end - start);
+            stc->SetIndicatorCurrent(Indicator::TextBackground);
+            stc->IndicatorClearRange(start, end - start);
+            stc->SetIndicatorCurrent(Indicator::Background);
 
             for (std::set<wxString>::iterator it = m_Texts.begin();
                  it != m_Texts.end(); it++ )
@@ -231,12 +246,21 @@ void Highlighter::DoSetIndications(cbEditor* ctrl)const
                 int startpos = start;
                 int endpos = end;
 
-                int lengthFound = 0; // we need this to work properly with multibyte characters
-                for ( int pos = stc->FindText(startpos, endpos, text, flag, &lengthFound);
+                int endPos = 0; // we need this to work properly with multibyte characters
+                for ( int pos = stc->FindText(startpos, endpos, text, flag, &endPos);
                     pos != wxSCI_INVALID_POSITION ;
-                    pos = stc->FindText(pos+=text.Len(), endpos, text, flag, &lengthFound) )
+                    pos = stc->FindText(pos+=text.Len(), endpos, text, flag, &endPos) )
                 {
-                    stc->IndicatorFillRange(pos, lengthFound);
+                    if (overrideText)
+                    {
+                        stc->SetIndicatorCurrent(Indicator::Background);
+                        stc->IndicatorFillRange(pos, endPos - pos);
+
+                        stc->SetIndicatorCurrent(Indicator::TextBackground);
+                        stc->IndicatorFillRange(pos, endPos - pos);
+                    }
+                    else
+                        stc->IndicatorFillRange(pos, endPos - pos);
                 }
             }
         }
@@ -249,7 +273,9 @@ void Highlighter::ClearAllIndications(cbStyledTextCtrl* stc)const
 {
     if ( stc )
     {
-        stc->SetIndicatorCurrent(GetIndicator());
+        stc->SetIndicatorCurrent(Indicator::Background);
+        stc->IndicatorClearRange(0, stc->GetLength());
+        stc->SetIndicatorCurrent(Indicator::TextBackground);
         stc->IndicatorClearRange(0, stc->GetLength());
     }
 }
@@ -270,12 +296,9 @@ void Highlighter::HighlightOccurrencesOfSelection(cbEditor* ctrl)const
     // chosen a high value for indicator, hoping not to interfere with the indicators used by some lexers
     // if they get updated from deprecated oldstyle indicators somedays.
     cbStyledTextCtrl *control = ctrl->GetControl();
-    const int theIndicator = 10;
 
     std::pair<long, long> curr;
     control->GetSelection(&curr.first, &curr.second);
-
-    control->SetIndicatorCurrent(theIndicator);
 
     if (m_OldHighlightSelectionCtrl == control && m_HighlightSelectedOccurencesLastPos == curr) // whatever the current state is, we've already done it once
         return;
@@ -287,6 +310,9 @@ void Highlighter::HighlightOccurrencesOfSelection(cbEditor* ctrl)const
 
     // Set Styling:
     // clear all style indications set in a previous run (is also done once after text gets unselected)
+    control->SetIndicatorCurrent(Indicator::Selection);
+    control->IndicatorClearRange(0, eof);
+    control->SetIndicatorCurrent(Indicator::TextSelection);
     control->IndicatorClearRange(0, eof);
 
     // if there is no text selected, it stops here and does not hog the cpu further
@@ -307,12 +333,28 @@ void Highlighter::HighlightOccurrencesOfSelection(cbEditor* ctrl)const
     wxString::size_type minLength = std::max(cfg->ReadInt(_T("/highlight_occurrence/min_length"), 3), 1);
     if (selectedText.length() >= minLength)
     {
-        wxColour highlightColour(Manager::Get()->GetColourManager()->GetColour(wxT("editor_highlight_occurrence")));
+        ColourManager *colourManager = Manager::Get()->GetColourManager();
+        const wxColour highlightColour(colourManager->GetColour(wxT("editor_highlight_occurrence")));
+        const wxColour highlightTextColour(colourManager->GetColour(wxT("editor_highlight_occurrence_text")));
+
+        const int alpha = cfg->ReadInt(_T("/highlight_occurrence/alpha"), 100);
+        const int borderAlpha = cfg->ReadInt(_T("/highlight_occurrence/border_alpha"), 255);
+        const bool overrideText = cfg->ReadBool(_T("/highlight_occurrence/override_text"), false);
+        if (!overrideText)
+            control->SetIndicatorCurrent(Indicator::Selection);
 
         if ( auto *stc = ctrl->GetLeftSplitViewControl() )
-            SetupIndicator(stc, theIndicator, highlightColour);
-        if ( auto stc = ctrl->GetRightSplitViewControl() )
-            SetupIndicator(stc, theIndicator, highlightColour);
+        {
+            SetupIndicator(stc, Indicator::Selection, highlightColour, alpha, borderAlpha,
+                           overrideText);
+            SetupTextIndicator(stc, Indicator::TextSelection, highlightTextColour);
+        }
+        if ( auto *stc = ctrl->GetRightSplitViewControl() )
+        {
+            SetupIndicator(stc, Indicator::Selection, highlightColour, alpha, borderAlpha,
+                           overrideText);
+            SetupTextIndicator(stc, Indicator::TextSelection, highlightTextColour);
+        }
 
         int flag = 0;
         if (cfg->ReadBool(_T("/highlight_occurrence/case_sensitive"), true))
@@ -337,10 +379,10 @@ void Highlighter::HighlightOccurrencesOfSelection(cbEditor* ctrl)const
         Selections::const_iterator currSelection = selections.begin();
 
         // search for every occurence
-        int lengthFound = 0; // we need this to work properly with multibyte characters
-        for ( int pos = control->FindText(0, eof, selectedText, flag, &lengthFound);
+        int endPos = 0; // we need this to work properly with multibyte characters
+        for ( int pos = control->FindText(0, eof, selectedText, flag, &endPos);
             pos != wxSCI_INVALID_POSITION ;
-            pos = control->FindText(pos+=selectedText.Len(), eof, selectedText, flag, &lengthFound) )
+            pos = control->FindText(pos+=selectedText.Len(), eof, selectedText, flag, &endPos) )
         {
             // check if the found text is selected
             // if it is don't add indicator for it, because it looks ugly
@@ -352,16 +394,22 @@ void Highlighter::HighlightOccurrencesOfSelection(cbEditor* ctrl)const
                     continue;
                 // if the end of the found text is not before the current selection start
                 // then it must match and it should be skipped
-                if (pos + lengthFound >= currSelection->first)
+                if (endPos >= currSelection->first)
                     skip = true;
                 break;
             }
             if (skip)
                 continue;
 
-            // does not make sense anymore: check that the found occurrence is not the same as the selected,
-            // since it is not selected in the second view -> so highlight it
-            control->IndicatorFillRange(pos, lengthFound);
+            if (overrideText)
+            {
+                control->SetIndicatorCurrent(Indicator::Selection);
+                control->IndicatorFillRange(pos, endPos - pos);
+                control->SetIndicatorCurrent(Indicator::TextSelection);
+                control->IndicatorFillRange(pos, endPos - pos);
+            }
+            else
+                control->IndicatorFillRange(pos, endPos - pos);
         }
     }
 }

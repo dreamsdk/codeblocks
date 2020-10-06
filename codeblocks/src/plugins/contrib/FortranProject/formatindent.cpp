@@ -1,15 +1,19 @@
 
 #include "formatindent.h"
-#include "formatindentdlg.h"
-#include "fortranfileext.h"
-#include <projectmanager.h>
-#include <cbproject.h>
-#include <editormanager.h>
-#include "cbeditor.h"
-#include <configmanager.h>
-#include <wx/tokenzr.h>
+
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
+
+    #include <projectmanager.h>
+    #include <cbproject.h>
+    #include <editormanager.h>
+    #include <configmanager.h>
+    #include "cbeditor.h"
+#endif
 #include <vector>
 
+#include "formatindentdlg.h"
+#include "fortranfileext.h"
 
 extern FortranFileExt g_FortranFileExt;
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: cbauibook.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/cbauibook.cpp $
+ * $Revision: 11431 $
+ * $Id: cbauibook.cpp 11431 2018-08-04 05:40:37Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbauibook.cpp $
  */
 
 
@@ -312,10 +312,7 @@ bool cbAuiNotebook::IsFocusStored(wxWindow* page)
     while (win)
     {
         if (win == page)
-        {
             return true;
-            break;
-        }
         win = win->GetParent();
     }
     return false;

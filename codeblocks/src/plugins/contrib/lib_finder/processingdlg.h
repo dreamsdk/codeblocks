@@ -18,7 +18,7 @@
 *
 * $Revision: 10299 $
 * $Id: processingdlg.h 10299 2015-05-15 12:41:59Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/processingdlg.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/processingdlg.h $
 */
 
 #ifndef PROCESSINGDLG_H

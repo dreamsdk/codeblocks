@@ -4,7 +4,7 @@
  *
  * $Revision: 10927 $
  * $Id: mainframe.cpp 10927 2016-12-04 06:14:19Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/tools/cb_share_config/mainframe.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/tools/cb_share_config/mainframe.cpp $
  */
 
 #include "mainframe.h"

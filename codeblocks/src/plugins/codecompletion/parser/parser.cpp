@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10854 $
- * $Id: parser.cpp 10854 2016-05-18 22:20:45Z d_anselmi $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/parser.cpp $
+ * $Revision: 11505 $
+ * $Id: parser.cpp 11505 2018-10-20 14:29:48Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parser.cpp $
  */
 
 #include <sdk.h>
@@ -545,6 +545,7 @@ void Parser::TerminateAllThreads()
     // In fact cbThreadPool maintains it's own mutex, so m_Pool is probably threadsafe.
     AbortParserThreads();
     m_Pool.AbortAllTasks();
+    // wait for the running pool finishes, hopefully we exit the while loop quickly
     while (!m_Pool.Done())
         wxMilliSleep(1);
 }
@@ -577,6 +578,7 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
     if (m_IgnoreThreadEvents || Manager::IsAppShuttingDown())
         return;
 
+    // only the m_Pool (thread pool) can send such message, so do sanity check here
     if (event.GetId() != m_Pool.GetId())
     {
         CCLogger::Get()->DebugLog(_T("Parser::OnAllThreadsDone(): Why is event.GetId() not equal m_Pool.GetId()?"));
@@ -592,7 +594,7 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
         return;
     }
 
-    // Do next task
+    // Do next task in BatchTimer's event handler, so start the m_BatchTimer
     if (!m_PredefinedMacros.IsEmpty()
         || !m_BatchParseFiles.empty() )
     {
@@ -622,7 +624,7 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
         // since the last stage: mark project files as local is done, we finish all the stages now.
         m_IgnoreThreadEvents = true;
         m_NeedsReparse       = false;
-        m_IsParsing          = false;
+        m_IsParsing          = false; // not parsing, so clear the status
         m_IsBatchParseDone   = true;
 
         EndStopWatch(); // stop counting the time we take for parsing the files
@@ -728,8 +730,9 @@ void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
 
         ParserThreadedTask* thread = new ParserThreadedTask(this, ParserCommon::s_ParserMutex);
         TRACE(_T("Parser::OnBatchTimer(): Adding a ParserThreadedTask thread to m_Pool."));
-        m_Pool.AddTask(thread, true); //once this function is called, the thread will be executed from the pool.
 
+        // once this function is called, the thread will be executed from the pool immediately
+        m_Pool.AddTask(thread, true);
         if (ParserCommon::s_CurrentParser)
             send_event = false;
         else // Have not done any batch parsing yet -> assign parser
@@ -830,7 +833,8 @@ bool Parser::IsFileParsed(const wxString& filename)
         CC_LOCKER_TRACK_P_MTX_LOCK(ParserCommon::s_ParserMutex)
 
         StringList::iterator it = std::find(m_BatchParseFiles.begin(), m_BatchParseFiles.end(), filename);
-        isParsed = it != m_BatchParseFiles.end();
+        if (it != m_BatchParseFiles.end())
+            isParsed = true;
 
         CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
     }

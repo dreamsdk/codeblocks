@@ -4,7 +4,7 @@
  *
  * $Revision: 10548 $
  * $Id: compilerpanel.cpp 10548 2015-10-25 11:37:05Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/scriptedwizard/compilerpanel.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/compilerpanel.cpp $
  */
 
 #include "sdk.h"

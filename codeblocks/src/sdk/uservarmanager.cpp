@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10965 $
- * $Id: uservarmanager.cpp 10965 2017-01-14 22:41:08Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/uservarmanager.cpp $
+ * $Revision: 11359 $
+ * $Id: uservarmanager.cpp 11359 2018-04-01 17:11:54Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/uservarmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -392,25 +392,25 @@ void GetUserVariableDialog::Load()
     m_treectrl->Expand(root);
 }
 
-void GetUserVariableDialog::OnOK(wxCommandEvent& evt)
+void GetUserVariableDialog::OnOK(cb_unused wxCommandEvent& evt)
 {
     m_SelectedVar = GetSelectedVariable();
     EndModal(wxID_OK);
 }
 
-void GetUserVariableDialog::OnActivated(wxTreeEvent& event)
+void GetUserVariableDialog::OnActivated(cb_unused wxTreeEvent& event)
 {
     m_SelectedVar = GetSelectedVariable();
     EndModal(wxID_OK);
 }
 
-void GetUserVariableDialog::OnCancel(wxCommandEvent& evt)
+void GetUserVariableDialog::OnCancel(cb_unused wxCommandEvent& evt)
 {
     m_SelectedVar = wxEmptyString;
     EndModal(wxID_CANCEL);
 }
 
-void GetUserVariableDialog::OnConfig(wxCommandEvent& evt)
+void GetUserVariableDialog::OnConfig(cb_unused wxCommandEvent& evt)
 {
     Manager::Get()->GetUserVariableManager()->Configure();
     Load();

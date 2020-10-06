@@ -1,10 +1,14 @@
 #ifndef AUTOINSERT_H
 #define AUTOINSERT_H
 
-#include <wx/string.h>
-#include <wx/regex.h>
-#include "cbeditor.h"
-#include <cbstyledtextctrl.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/regex.h>
+
+    #include <cbeditor.h>
+    #include <cbstyledtextctrl.h>
+#endif
 #include <map>
 
 

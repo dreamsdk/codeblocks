@@ -432,11 +432,6 @@ void ToolsPlus::OnRunTarget(wxCommandEvent& event)
 // constructor
 ToolsPlus::ToolsPlus()
 {
-    // Make sure our resources are available.
-    // In the generated boilerplate code we have no resources but when
-    // we add some, it will be nice that this code is in place already ;)
-    if (!Manager::LoadResource(_T("ToolsPlus.zip")))
-        NotifyMissingFile(_T("ToolsPlus.zip"));
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("ShellExtensions"));
     m_ReUseToolsPage = cfg->ReadBool(_T("ReuseToolsPage"), false);
 }
@@ -552,7 +547,7 @@ void ToolsPlus::CreateMenu()
     m_ToolMenu->Append(ID_ToolMenu_Configure,_("&Configure Tools..."),_T(""));
 }
 
-void ToolsPlus::AddModuleMenuEntry(wxMenu *modmenu,int entrynum, int idref)
+void ToolsPlus::AddModuleMenuEntry(wxMenu *modmenu,int entrynum, int idref, ModuleType type)
 {
     wxString menuloc=m_ic.interps[entrynum].cmenu;
     if (menuloc==_T("."))
@@ -569,15 +564,27 @@ void ToolsPlus::AddModuleMenuEntry(wxMenu *modmenu,int entrynum, int idref)
         if (!submenu)
         {
             submenu=new wxMenu();
-            menu->Append(wxID_ANY,newmenutext,submenu); //TODO: insert into correct position determined by priority
+
+            if (menu == modmenu && type == mtEditorManager)
+            {
+                const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, newmenutext);
+                menu->Insert(position, wxID_ANY, newmenutext, submenu);
+            }
+            else
+                menu->Append(wxID_ANY,newmenutext,submenu); //TODO: insert into correct position determined by priority
         }
         menu=submenu;
         newmenutext=menuloc.BeforeFirst('/');
     }
-    if (menuloc.IsEmpty())
-        menu->Append(ID_ContextMenu_0+idref,m_ic.interps[entrynum].name);
+
+    const wxString label = (menuloc.IsEmpty() ? m_ic.interps[entrynum].name : menuloc);
+    if (menu == modmenu && type == mtEditorManager)
+    {
+        const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+        menu->Insert(position, ID_ContextMenu_0+idref, label);
+    }
     else
-        menu->Append(ID_ContextMenu_0+idref,menuloc);
+        menu->Append(ID_ContextMenu_0+idref, label);
 }
 
 
@@ -685,7 +692,7 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                         {
                             wxString menutext=m_ic.interps[i].name;
                             m_contextvec.Add(i);
-                            AddModuleMenuEntry(menu,i,added);
+                            AddModuleMenuEntry(menu,i,added, type);
                             added++;
                         }
                     }
@@ -717,7 +724,7 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                             {
                                 wxString menutext=m_ic.interps[i].name;
                                 m_contextvec.Add(i);
-                                AddModuleMenuEntry(menu,i,added);
+                                AddModuleMenuEntry(menu,i,added, type);
                                 added++;
                             }
                         }
@@ -734,7 +741,6 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
         wxFileName activefile(edMan->GetActiveEditor()->GetFilename());
         wxString filename=activefile.GetFullPath();
         wxString name=activefile.GetFullName();
-        size_t sep_pos=menu->GetMenuItemCount();
         size_t added=0;
         for (unsigned int i=0;i<m_ic.interps.size();i++)
         {
@@ -751,13 +757,11 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                     {
                         wxString menutext=m_ic.interps[i].name;
                         m_contextvec.Add(i);
-                        AddModuleMenuEntry(menu,i,added);
+                        AddModuleMenuEntry(menu,i,added, type);
                         added++;
                     }
             }
         }
-        if (added>0)
-            menu->InsertSeparator(sep_pos);
 	}
     if (type==mtUnknown) //Assuming file explorer -- fileexplorer fills the filetreedata with ftdkFile or ftdkFolder as "kind", the folder is the full path of the entry
     {
@@ -785,7 +789,7 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                         {
                             wxString menutext=m_ic.interps[i].name;
                             m_contextvec.Add(i);
-                            AddModuleMenuEntry(menu,i,added);
+                            AddModuleMenuEntry(menu,i,added, type);
                             added++;
                         }
                     }
@@ -809,7 +813,7 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                         {
                             wxString menutext=m_ic.interps[i].name;
                             m_contextvec.Add(i);
-                            AddModuleMenuEntry(menu,i,added);
+                            AddModuleMenuEntry(menu,i,added, type);
                             added++;
                         }
                     }
@@ -842,7 +846,7 @@ void ToolsPlus::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
                         {
                             wxString menutext=m_ic.interps[i].name;
                             m_contextvec.Add(i);
-                            AddModuleMenuEntry(menu,i,added);
+                            AddModuleMenuEntry(menu,i,added, type);
                             added++;
                         }
                     }

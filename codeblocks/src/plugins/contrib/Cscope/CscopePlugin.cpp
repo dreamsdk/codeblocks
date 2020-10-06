@@ -9,6 +9,7 @@
     #include "projectmanager.h"
 #endif
 #include <configurationpanel.h>
+#include <configmanager.h>
 #include <cbstyledtextctrl.h>
 #include "CscopePlugin.h"
 
@@ -41,16 +42,14 @@ CscopePlugin::CscopePlugin()
 m_pProcess(0),
 m_thrd(0)
 {
-    // Make sure our resources are available.
-    // In the generated boilerplate code we have no resources but when
-    // we add some, it will be nice that this code is in place already ;)
-    if(!Manager::LoadResource(_T("Cscope.zip")))
-        NotifyMissingFile(_T("Cscope.zip"));
     m_cfg = new CscopeConfig();
 }
 
 // destructor
-CscopePlugin::~CscopePlugin(){}
+CscopePlugin::~CscopePlugin()
+{
+    delete m_cfg;
+}
 
 void CscopePlugin::OnAttach()
 {
@@ -131,6 +130,14 @@ void CscopePlugin::OnRelease(bool appShutDown)
 }
 
 
+cbConfigurationPanel* CscopePlugin::GetConfigurationPanel(wxWindow* parent)
+{
+    if ( !IsAttached() )
+        return NULL;
+
+    return new CscopeConfigPanel(parent);
+}
+
 void CscopePlugin::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* /*data*/)
 {
     if ( !IsAttached() || m_pProcess) return;
@@ -151,50 +158,11 @@ void CscopePlugin::BuildModuleMenu(const ModuleType type, wxMenu* menu, const Fi
     wxString word = GetWordAtCaret();
     if ( word.IsEmpty() ) return;
 
-
-    // Looks after the "Find implementation of:" menu item
-    const wxMenuItemList ItemsList = menu->GetMenuItems();
-    int idximp=-1;
-    int idxocc=-1;
-    for (int idx = 0; idx < (int)ItemsList.GetCount(); ++idx)
-    {
-        #if wxCHECK_VERSION(3, 0, 0)
-        if (ItemsList[idx]->GetItemLabelText().StartsWith(_("Find implementation of:")) )
-        #else
-        if (ItemsList[idx]->GetLabel().StartsWith(_("Find implementation of:")) )
-        #endif
-        {
-            idximp = idx;
-        }
-        #if wxCHECK_VERSION(3, 0, 0)
-        if (ItemsList[idx]->GetItemLabelText().StartsWith(_("Find occurrences of:")) )
-        #else
-        if (ItemsList[idx]->GetLabel().StartsWith(_("Find occurrences of:")) )
-        #endif
-        {
-            idxocc = idx;
-        }
-    }
-
-    if ( idxocc == -1 && idximp == -1 )
-    {
-        //for consistency, add a separator as the first item:
-        menu->AppendSeparator();
-
-        //menu->Append(idOnFindSymbol,                       _T("Find C symbol '") + word + _T("'"));
-        //menu->Append(idOnFindGlobalDefinition,             _T("Find '") + word + _T("' global definition"));
-        menu->Append(idOnFindFunctionsCalledByThisFuncion, _("Find functions called by '") + word + _T("'"));
-        menu->Append(idOnFindFunctionsCallingThisFunction, _("Find functions calling '") + word + _T("'"));
-    }
-    else
-    {
-        if ( idxocc >= 0 ) // if find occurences
-            idximp = idxocc;
-        //menu->Insert(++idximp,idOnFindSymbol,                       _T("Find C symbol '") + word + _T("'"));
-        //menu->Insert(++idximp,idOnFindGlobalDefinition,             _T("Find '") + word + _T("' global definition"));
-        menu->Insert(++idximp,idOnFindFunctionsCalledByThisFuncion, _("Find functions called by '") + word + _T("'"));
-        menu->Insert(++idximp,idOnFindFunctionsCallingThisFunction, _("Find functions calling '") + word + _T("'"));
-    }
+    PluginManager *pluginManager = Manager::Get()->GetPluginManager();
+    int idximp = pluginManager->GetFindMenuItemFirst() + pluginManager->GetFindMenuItemCount();
+    menu->Insert(idximp++, idOnFindFunctionsCalledByThisFuncion, _("Find functions called by '") + word + _T("'"));
+    menu->Insert(idximp++, idOnFindFunctionsCallingThisFunction, _("Find functions calling '") + word + _T("'"));
+    pluginManager->RegisterFindMenuItems(false, 2);
 }
 
 void CscopePlugin::MakeOutputPaneVisible()
@@ -278,7 +246,10 @@ void CscopePlugin::DoCscopeCommand(const wxString &cmd, const wxString &endMsg)
     {
         delete m_pProcess;
         m_pProcess = NULL;
-        m_view->GetWindow()->SetMessage(_T("Error while calling cscope occurred!"), 0);
+        wxString errorMessage = _T("Error while calling cscope executable occurred! You maybe have to fix the executable in Settings->Environment->CScope.");
+        m_view->GetWindow()->SetMessage(errorMessage, 0);
+        Manager::Get()->GetLogManager()->LogError(_T("CScope: ") + errorMessage);
+        Manager::Get()->GetLogManager()->LogError(_T("CScope: Failed CScope command:") + cmd);
     }
 
     //set environment variables back
@@ -369,6 +340,13 @@ void CscopePlugin::OnFind(wxCommandEvent &event)
 }
 wxString CscopePlugin::GetCscopeBinaryName()
 {
+    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("cscope"));
+    if (cfg)
+    {
+       return cfg->Read(_T("cscope_app"), _T("cscope"));
+    }
+
+    Manager::Get()->GetLogManager()->LogError(_T("cscope: Could not load config manager for cscope! Could not lookup for executable name."));
 	return _T("cscope");
 }
 void CscopePlugin::OnCscopeUI(wxUpdateUIEvent &event)

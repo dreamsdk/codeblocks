@@ -1,14 +1,21 @@
-
-#ifndef CB_PRECOMP
-    #include <editormanager.h>
-    #include <logmanager.h>
-#endif
-
-#include <algorithm>
-#include <cbstyledtextctrl.h>
-#include <configmanager.h>
+/*
+ * This file is part of the FortranProject plugin for Code::Blocks IDE
+ * and licensed under the GNU General Public License, version 3
+ * http://www.gnu.org/licenses/gpl-3.0.html
+ *
+ * Author: Darius Markauskas
+ *
+ */
 #include "constrhighlighter.h"
 
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <configmanager.h>
+    #include <editormanager.h>
+    #include <logmanager.h>
+    #include <cbstyledtextctrl.h>
+#endif
+#include <algorithm>
 
 ConstrHighlighter::ConstrHighlighter():
     m_MakeHighlight(true),
@@ -304,19 +311,16 @@ void ConstrHighlighter::DoWork(cbEditor* editor, FortranSourceForm fsForm)
     if (m_Watch.Time() > m_TimeMax)
         return;
 
-    control->SetIndicatorCurrent(m_IndicFound);
-    control->IndicatorSetStyle(m_IndicFound, wxSCI_INDIC_HIGHLIGHT);
     if (foundFull)
         control->IndicatorSetForeground(m_IndicFound, m_FullColour);
     else
         control->IndicatorSetForeground(m_IndicFound, m_UnfinColour);
-
-    //control->IndicatorSetAlpha(m_IndicFound, 255);
-
+    control->IndicatorSetStyle(m_IndicFound, wxSCI_INDIC_ROUNDBOX);
+    control->IndicatorSetAlpha(m_IndicFound, 100);
+    control->IndicatorSetOutlineAlpha(m_IndicFound, 255);
     control->IndicatorSetUnder(m_IndicFound,true);
-#ifndef wxHAVE_RAW_BITMAP
-    control->IndicatorSetUnder(m_IndicFound,true);
-#endif
+    control->SetIndicatorCurrent(m_IndicFound);
+
     m_WasCleared = false;
 
     for (KeywordList::iterator it = myPairs.begin(); it != myPairs.end(); ++it)

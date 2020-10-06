@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11180 $
- * $Id: debuggermanager.cpp 11180 2017-09-29 23:33:46Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/debuggermanager.cpp $
+ * $Revision: 11770 $
+ * $Id: debuggermanager.cpp 11770 2019-07-04 22:15:32Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/debuggermanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -512,7 +512,7 @@ public:
         return TextCtrlLogger::CreateControl(parent);
     }
 
-    virtual wxWindow* CreateControl(wxWindow* parent);
+    wxWindow* CreateControl(wxWindow* parent) override;
 
 private:
     wxPanel *m_panel;
@@ -617,11 +617,11 @@ public:
         {
             plugin->SendCommand(cmd, m_debug_log);
 
-            //If it already exists in the list, remove it and add it back at the end
+            // If it already exists in the list, remove it and add it as the first element of the wxComboBox list
             int index = m_command_entry->FindString(cmd);
             if (index != wxNOT_FOUND)
                 m_command_entry->Delete(index);
-            m_command_entry->Append(cmd);
+            m_command_entry->Insert(cmd, 0);
 
             m_command_entry->SetValue(wxEmptyString);
         }
@@ -964,8 +964,13 @@ TextCtrlLogger* DebuggerManager::GetLogger(int &index)
         LogSlot &slot = msgMan->Slot(m_loggerIndex);
         slot.title = _("Debugger");
         // set log image
-        wxString prefix = ConfigManager::GetDataFolder() + _T("/images/");
-        wxBitmap* bmp = new wxBitmap(cbLoadBitmap(prefix + _T("misc_16x16.png"), wxBITMAP_TYPE_PNG));
+        const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
+        const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
+        const wxString prefix = ConfigManager::GetDataFolder()
+                              + wxString::Format(_T("/resources.zip#zip:/images/infopane/%dx%d/"),
+                                                 uiSize, uiSize);
+        wxBitmap* bmp = new wxBitmap(cbLoadBitmapScaled(prefix + _T("misc.png"), wxBITMAP_TYPE_PNG,
+                                                        uiScaleFactor));
         slot.icon = bmp;
 
         CodeBlocksLogEvent evtAdd(cbEVT_ADD_LOG_WINDOW, m_logger, slot.title, slot.icon);
@@ -984,6 +989,14 @@ TextCtrlLogger* DebuggerManager::GetLogger()
 
 void DebuggerManager::HideLogger()
 {
+    LogManager *logManager = Manager::Get()->GetLogManager();
+    if (logManager)
+    {
+        // TODO: This is wrong. We need some automatic way for this to happen!!!
+        LogSlot &slot = logManager->Slot(m_loggerIndex);
+        delete slot.icon;
+        slot.icon = nullptr;
+    }
 
     CodeBlocksLogEvent evt(cbEVT_REMOVE_LOG_WINDOW, m_logger);
     Manager::Get()->ProcessEvent(evt);

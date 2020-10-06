@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11193 $
- * $Id: astyleplugin.cpp 11193 2017-10-08 21:31:56Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/astyle/astyleplugin.cpp $
+ * $Revision: 11437 $
+ * $Id: astyleplugin.cpp 11437 2018-08-07 07:13:40Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/astyleplugin.cpp $
  */
 
 #include <sdk.h>
@@ -88,9 +88,13 @@ void AStylePlugin::BuildModuleMenu( const ModuleType type, wxMenu* menu, const F
     switch ( type )
     {
         case mtEditorManager:
-            menu->AppendSeparator();
-            menu->Append( idCodeFormatterActiveFile, _( "Format use AStyle" ), _( "Format the selected source code (selected line) in the current file" ) );
+        {
+            const wxString label = _("Format use AStyle");
+            const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+
+            menu->Insert(position, idCodeFormatterActiveFile, label, _( "Format the selected source code (selected line) in the current file" ) );
             break;
+        }
 
         case mtProjectManager:
             if ( data ) switch ( data->GetKind() )
@@ -340,7 +344,7 @@ bool AStylePlugin::FormatEditor( cbEditor *ed )
     if (edText.size() && edText.Last() != _T('\r') && edText.Last() != _T('\n') && !onlySelected)
         edText += eolChars;
 
-    ASStreamIterator *asi = new ASStreamIterator(ed, edText);
+    ASStreamIterator *asi = new ASStreamIterator(ed, edText.wx_str());
 
     formatter.init(asi);
 

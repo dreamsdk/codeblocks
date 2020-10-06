@@ -4,7 +4,7 @@
  *
  * $Revision: 8649 $
  * $Id: compilerMSVC.cpp 8649 2012-12-12 19:18:18Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compilerMSVC.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerMSVC.cpp $
  */
 
 #include <sdk.h>

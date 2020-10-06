@@ -10,10 +10,14 @@
 #ifndef PROJECTDEPENDENCIES_H
 #define PROJECTDEPENDENCIES_H
 
-#include <cbproject.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <cbproject.h>
+#endif
 #include <set>
 #include <vector>
 #include <map>
+
 #include "parserf.h"
 
 typedef std::vector<StringSet*> StringSetPVector;

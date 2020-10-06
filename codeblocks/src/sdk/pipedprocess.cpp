@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11212 $
- * $Id: pipedprocess.cpp 11212 2017-10-21 19:19:02Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/pipedprocess.cpp $
+ * $Revision: 11282 $
+ * $Id: pipedprocess.cpp 11282 2018-01-31 23:48:23Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/pipedprocess.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -115,6 +115,7 @@ PipedProcess::PipedProcess(PipedProcess** pvThis, wxEvtHandler* parent, int id, 
     m_Id(id),
     m_Pid(0),
     m_Index(index),
+    m_Stopped(false),
     m_pvThis(pvThis)
 {
     const wxString &unixDir = UnixFilename(dir);
@@ -132,7 +133,8 @@ PipedProcess::~PipedProcess()
 
 int PipedProcess::Launch(const wxString& cmd, cb_unused unsigned int pollingInterval)
 {
-    m_Pid = wxExecute(cmd, wxEXEC_ASYNC, this);
+    m_Stopped = false;
+    m_Pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_MAKE_GROUP_LEADER, this);
     if (m_Pid)
     {
 //        m_timerPollProcess.SetOwner(this, idTimerPollProcess);
@@ -155,6 +157,7 @@ void PipedProcess::SendString(const wxString& text)
 
 void PipedProcess::ForfeitStreams()
 {
+    m_Stopped = true;
     char buf[4096];
     if ( IsErrorAvailable() )
     {
@@ -179,6 +182,9 @@ bool PipedProcess::HasInput()
         wxString msg;
         msg << serr.ReadLine();
 
+        if (m_Stopped)
+            return true;
+
         CodeBlocksEvent event(cbEVT_PIPEDPROCESS_STDERR, m_Id);
         event.SetString(msg);
         event.SetX(m_Index);
@@ -193,6 +199,9 @@ bool PipedProcess::HasInput()
 
         wxString msg;
         msg << sout.ReadLine();
+
+        if (m_Stopped)
+            return true;
 
         CodeBlocksEvent event(cbEVT_PIPEDPROCESS_STDOUT, m_Id);
         event.SetString(msg);

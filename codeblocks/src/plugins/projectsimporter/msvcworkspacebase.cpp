@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8680 $
- * $Id: msvcworkspacebase.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/projectsimporter/msvcworkspacebase.cpp $
+ * $Revision: 11850 $
+ * $Id: msvcworkspacebase.cpp 11850 2019-09-17 06:12:03Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvcworkspacebase.cpp $
  */
 
 #include "sdk.h"
@@ -194,7 +194,6 @@ void MSVCWorkspaceBase::updateProjects()
                     }
                     else if (type==ttStaticLib) fname = targetDep->GetOutputFilename();
                     targetProj->AddLinkLib(fname.GetFullPath());
-                    targetProj->AddTargetDep(targetDep);
                     // TO REMOVE
                     wxString deps = targetProj->GetExternalDeps();
                     deps << fname.GetFullPath() << _T(';');

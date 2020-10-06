@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9426 $
- * $Id: infopane.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/infopane.cpp $
+ * $Revision: 11770 $
+ * $Id: infopane.cpp 11770 2019-07-04 22:15:32Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/infopane.cpp $
  */
 
 #include <sdk.h>
@@ -55,11 +55,20 @@ END_EVENT_TABLE()
 
 InfoPane::InfoPane(wxWindow* parent) : cbAuiNotebook(parent, idNB, wxDefaultPosition, wxDefaultSize, infopane_flags)
 {
-    m_DefaultBitmap = cbLoadBitmap(ConfigManager::GetDataFolder() + _T("/images/edit_16x16.png"), wxBITMAP_TYPE_PNG);
+    const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
+    const wxString path = ConfigManager::GetDataFolder()
+                          + wxString::Format(_T("/resources.zip#zip:/images/infopane/%dx%d/edit.png"),
+                                             uiSize, uiSize);
+    m_DefaultBitmap = cbLoadBitmapScaled(path, wxBITMAP_TYPE_PNG, cbGetContentScaleFactor(*parent));
 }
 
 InfoPane::~InfoPane()
 {
+    for (size_t i = 0; i < m_Pages.GetCount(); ++i)
+    {
+        Page *page = m_Pages[i];
+        delete page;
+    }
 }
 
 wxString InfoPane::SaveTabOrder()

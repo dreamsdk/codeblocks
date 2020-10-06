@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11216 $
- * $Id: main.cpp 11216 2017-10-23 08:22:25Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/main.cpp $
+ * $Revision: 11866 $
+ * $Id: main.cpp 11866 2019-09-29 16:10:16Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/main.cpp $
  */
 
 #include <sdk.h>
@@ -12,6 +12,7 @@
 #include "app.h"
 #include "appglobals.h"
 #include "batchbuild.h"
+#include "cbart_provider.h"
 #include "cbauibook.h"
 #include "cbstyledtextctrl.h"
 #include "compilersettingsdlg.h"
@@ -75,7 +76,7 @@ class cbFileDropTarget : public wxFileDropTarget
 {
 public:
     cbFileDropTarget(MainFrame *frame):m_frame(frame){}
-    virtual bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
+    bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames) override
     {
         if (!m_frame) return false;
         return m_frame->OnDropFiles(x,y,filenames);
@@ -295,6 +296,8 @@ int idHelpPlugins = XRCID("idHelpPlugins");
 int idLeftSash              = XRCID("idLeftSash");
 int idBottomSash            = XRCID("idBottomSash");
 int idCloseFullScreen       = XRCID("idCloseFullScreen");
+
+int idGetGlobalAccels   = XRCID("idGetGlobalAccels");
 
 int idFileNext              = wxNewId();
 int idFilePrev              = wxNewId();
@@ -547,6 +550,9 @@ BEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(idShiftTab,   MainFrame::OnShiftTab)
     EVT_MENU(idCtrlAltTab, MainFrame::OnCtrlAltTab)
 
+    // Let plugins get copy of global accelerators
+    EVT_MENU(idGetGlobalAccels,       MainFrame::OnGetGlobalAccels)
+
     /// Used for mouse right click in the free area of MainFrame
     EVT_RIGHT_UP(MainFrame::OnMouseRightUp)
 
@@ -587,16 +593,17 @@ MainFrame::MainFrame(wxWindow* parent)
     SetDropTarget(new cbFileDropTarget(this));
 
     // Accelerator table
-    wxAcceleratorEntry entries[8];
-    entries[0].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  (int) 'W', idFileCloseAll);
-    entries[1].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  WXK_F4,    idFileCloseAll);
-    entries[2].Set(wxACCEL_CTRL,                  (int) 'W', idFileClose);
-    entries[3].Set(wxACCEL_CTRL,                  WXK_F4,    idFileClose);
-    entries[4].Set(wxACCEL_CTRL,                  WXK_F6,    idFileNext);
-    entries[5].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  WXK_F6,    idFilePrev);
-    entries[6].Set(wxACCEL_SHIFT,                 WXK_TAB,   idShiftTab);
-    entries[7].Set(wxACCEL_CTRL | wxACCEL_ALT,    WXK_TAB,   idCtrlAltTab);
-    m_pAccel = new wxAcceleratorTable(8, entries);
+    m_AccelCount = 8;
+    m_pAccelEntries.reset(new wxAcceleratorEntry[m_AccelCount]);
+    m_pAccelEntries[0].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  (int) 'W', idFileCloseAll);
+    m_pAccelEntries[1].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  WXK_F4,    idFileCloseAll);
+    m_pAccelEntries[2].Set(wxACCEL_CTRL,                  (int) 'W', idFileClose);
+    m_pAccelEntries[3].Set(wxACCEL_CTRL,                  WXK_F4,    idFileClose);
+    m_pAccelEntries[4].Set(wxACCEL_CTRL,                  WXK_F6,    idFileNext);
+    m_pAccelEntries[5].Set(wxACCEL_CTRL | wxACCEL_SHIFT,  WXK_F6,    idFilePrev);
+    m_pAccelEntries[6].Set(wxACCEL_SHIFT,                 WXK_TAB,   idShiftTab);
+    m_pAccelEntries[7].Set(wxACCEL_CTRL | wxACCEL_ALT,    WXK_TAB,   idCtrlAltTab);
+    m_pAccel.reset(new wxAcceleratorTable(m_AccelCount, m_pAccelEntries.get()));
 
     SetAcceleratorTable(*m_pAccel);
 
@@ -604,13 +611,12 @@ MainFrame::MainFrame(wxWindow* parent)
     FileFilters::AddDefaultFileFilters();
 
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("app"));
-    m_SmallToolBar = cfg->ReadBool(_T("/environment/toolbar_size"), true);
     CreateIDE();
 
 #ifdef __WXMSW__
     SetIcon(wxICON(A_MAIN_ICON));
 #else
-    SetIcon(wxIcon(app));
+    SetIcon(wxIcon(app_xpm));
 #endif // __WXMSW__
 
     // even it is possible that the statusbar is not visible at the moment, create the statusbar so the plugins can create their own fields on the it:
@@ -633,7 +639,6 @@ MainFrame::MainFrame(wxWindow* parent)
     wxString deflayout = cfg->Read(_T("/main_frame/layout/default"));
     if (deflayout.IsEmpty())
         cfg->Write(_T("/main_frame/layout/default"), gDefaultLayout);
-    DoFixToolbarsLayout();
     gDefaultLayoutData = m_LayoutManager.SavePerspective(); // keep the "hardcoded" layout handy
     gDefaultMessagePaneLayoutData = m_pInfoPane->SaveTabOrder();
     SaveViewLayout(gDefaultLayout, gDefaultLayoutData, gDefaultMessagePaneLayoutData);
@@ -663,7 +668,6 @@ MainFrame::MainFrame(wxWindow* parent)
 MainFrame::~MainFrame()
 {
     SetAcceleratorTable(wxNullAcceleratorTable);
-    delete m_pAccel;
 
     DeInitPrinting();
 
@@ -750,9 +754,102 @@ void MainFrame::CreateIDE()
         m_pPrjManUI = new BatchProjectManagerUI;
     m_pPrjMan->SetUI(m_pPrjManUI);
 
-    // logs manager
-    SetupGUILogging();
+    const double actualScaleFactor = cbGetActualContentScaleFactor(*this);
+    const int targetHeight = floor(16 * actualScaleFactor);
+    const int uiSize16 = cbFindMinSize16to64(targetHeight);
+
+    // All message posted before this call are either lost or sent to stdout/stderr.
+    // On windows stdout and stderr aren't accessible.
+    SetupGUILogging(uiSize16);
+
+    {
+        wxString msg = wxString::Format(wxT("Loaded config file '%s'"),
+                                        CfgMgrBldr::Get()->GetConfigFile().wx_str());
+        Manager::Get()->GetLogManager()->Log(msg);
+    }
+
     SetupDebuggerUI();
+
+    {
+        // Setup the art provider with the images stored in manager_resources.zip
+        const wxString prefix = ConfigManager::GetDataFolder()
+                              + wxT("/manager_resources.zip#zip:/images");
+        cbArtProvider *provider = new cbArtProvider(prefix);
+
+        provider->AddMapping(wxT("sdk/select_target"), wxT("select_target.png"));
+        provider->AddMapping(wxT("sdk/missing_icon"), wxT("missing_icon.png"));
+
+        wxArtProvider::Push(provider);
+    }
+
+    {
+        // Setup the art provider for the main menu. Use scaling factor detection to determine the
+        // size of the images. Also do this here when we have a main window (probably this doesn't
+        // help us much, because the window hasn't been shown yet).
+
+        Manager::Get()->SetImageSize(uiSize16, Manager::UIComponent::Menus);
+        Manager::Get()->SetUIScaleFactor(cbGetContentScaleFactor(*this),
+                                         Manager::UIComponent::Menus);
+
+        Manager::Get()->SetImageSize(uiSize16, Manager::UIComponent::Main);
+        Manager::Get()->SetUIScaleFactor(cbGetContentScaleFactor(*this),
+                                         Manager::UIComponent::Main);
+
+        const wxString prefix = ConfigManager::GetDataFolder() + wxT("/resources.zip#zip:/images");
+        cbArtProvider *provider = new cbArtProvider(prefix);
+
+        provider->AddMapping(wxT("core/file_open"), wxT("fileopen.png"));
+        provider->AddMapping(wxT("core/file_new"), wxT("filenew.png"));
+        provider->AddMapping(wxT("core/history_clear"), wxT("history_clear.png"));
+        provider->AddMapping(wxT("core/file_save"), wxT("filesave.png"));
+        provider->AddMapping(wxT("core/file_save_as"), wxT("filesaveas.png"));
+        provider->AddMapping(wxT("core/file_save_all"), wxT("filesaveall.png"));
+        provider->AddMapping(wxT("core/file_close"), wxT("fileclose.png"));
+        provider->AddMapping(wxT("core/file_print"), wxT("fileprint.png"));
+        provider->AddMapping(wxT("core/exit"), wxT("exit.png"));
+        provider->AddMapping(wxT("core/undo"), wxT("undo.png"));
+        provider->AddMapping(wxT("core/redo"), wxT("redo.png"));
+        provider->AddMapping(wxT("core/edit_cut"), wxT("editcut.png"));
+        provider->AddMapping(wxT("core/edit_copy"), wxT("editcopy.png"));
+        provider->AddMapping(wxT("core/edit_paste"), wxT("editpaste.png"));
+        provider->AddMapping(wxT("core/bookmark_add"), wxT("bookmark_add.png"));
+        provider->AddMapping(wxT("core/find"), wxT("filefind.png"));
+        provider->AddMapping(wxT("core/find_in_files"), wxT("findf.png"));
+        provider->AddMapping(wxT("core/find_next"), wxT("filefindnext.png"));
+        provider->AddMapping(wxT("core/find_prev"), wxT("filefindprev.png"));
+        provider->AddMapping(wxT("core/search_replace"), wxT("searchreplace.png"));
+        provider->AddMapping(wxT("core/search_replace_in_files"), wxT("searchreplacef.png"));
+        provider->AddMapping(wxT("core/goto"), wxT("goto.png"));
+        provider->AddMapping(wxT("core/manage_plugins"), wxT("plug.png"));
+        provider->AddMapping(wxT("core/help_info"), wxT("info.png"));
+        provider->AddMapping(wxT("core/help_idea"), wxT("idea.png"));
+
+        provider->AddMapping(wxT("core/dbg/run"), wxT("dbgrun.png"));
+        provider->AddMapping(wxT("core/dbg/pause"), wxT("dbgpause.png"));
+        provider->AddMapping(wxT("core/dbg/stop"), wxT("dbgstop.png"));
+        provider->AddMapping(wxT("core/dbg/run_to"), wxT("dbgrunto.png"));
+        provider->AddMapping(wxT("core/dbg/next"), wxT("dbgnext.png"));
+        provider->AddMapping(wxT("core/dbg/step"), wxT("dbgstep.png"));
+        provider->AddMapping(wxT("core/dbg/step_out"), wxT("dbgstepout.png"));
+        provider->AddMapping(wxT("core/dbg/next_inst"), wxT("dbgnexti.png"));
+        provider->AddMapping(wxT("core/dbg/step_inst"), wxT("dbgstepi.png"));
+        provider->AddMapping(wxT("core/dbg/window"), wxT("dbgwindow.png"));
+        provider->AddMapping(wxT("core/dbg/info"), wxT("dbginfo.png"));
+
+        provider->AddMappingF(wxT("core/folder_open"), wxT("tree/%dx%d/folder_open.png"));
+        provider->AddMappingF(wxT("core/gear"), wxT("infopane/%dx%d/misc.png"));
+
+        wxArtProvider::Push(provider);
+    }
+
+    {
+        // Setup toolbar sizes
+        const int configSize = cbHelpers::ReadToolbarSizeFromConfig();
+        const int scaledSize = cbFindMinSize16to64(configSize * actualScaleFactor);
+        Manager::Get()->SetImageSize(scaledSize, Manager::UIComponent::Toolbars);
+        Manager::Get()->SetUIScaleFactor(cbGetContentScaleFactor(*this),
+                                         Manager::UIComponent::Toolbars);
+    }
 
     CreateMenubar();
 
@@ -780,7 +877,7 @@ void MainFrame::CreateIDE()
 }
 
 
-void MainFrame::SetupGUILogging()
+void MainFrame::SetupGUILogging(int uiSize16)
 {
     // allow new docked windows to use be 3/4 of the available space, the default (0.3) is sometimes too small, especially for "Logs & others"
     m_LayoutManager.SetDockSizeConstraint(0.75,0.75);
@@ -789,6 +886,9 @@ void MainFrame::SetupGUILogging()
     wxSize clientsize = GetClientSize();
 
     LogManager* mgr = Manager::Get()->GetLogManager();
+    Manager::Get()->SetImageSize(uiSize16, Manager::UIComponent::InfoPaneNotebooks);
+    Manager::Get()->SetUIScaleFactor(cbGetContentScaleFactor(*this),
+                                     Manager::UIComponent::InfoPaneNotebooks);
 
     if (!Manager::IsBatchBuild())
     {
@@ -965,7 +1065,7 @@ void MainFrame::CreateMenubar()
 
     int tmpidx;
     wxMenuBar* mbar=nullptr;
-    wxMenu *hl=nullptr, *tools=nullptr, *plugs=nullptr, *pluginsM=nullptr;
+    wxMenu *tools=nullptr, *plugs=nullptr, *pluginsM=nullptr;
     wxMenuItem *tmpitem=nullptr;
 
     wxXmlResource* xml_res = wxXmlResource::Get();
@@ -983,6 +1083,7 @@ void MainFrame::CreateMenubar()
     tmpidx = mbar->FindMenu(_("&Edit"));
     if (tmpidx!=wxNOT_FOUND)
     {
+        wxMenu *hl = nullptr;
         mbar->FindItem(idEditHighlightModeText, &hl);
         if (hl)
         {
@@ -1100,17 +1201,13 @@ void MainFrame::CreateToolbars()
         m_pToolbar = nullptr;
     }
 
-    wxString xrcToolbarName(_T("main_toolbar"));
-    if (m_SmallToolBar) // Insert logic here
-        xrcToolbarName += _T("_16x16");
-
     wxXmlResource* xml_res = wxXmlResource::Get();
     wxString resPath = ConfigManager::GetDataFolder();
-    xml_res->Load(resPath + _T("/resources.zip#zip:") + xrcToolbarName + _T("*.xrc"));
+    xml_res->Load(resPath + _T("/resources.zip#zip:main_toolbar.xrc"));
     Manager::Get()->GetLogManager()->DebugLog(_T("Loading toolbar..."));
 
     m_pToolbar = Manager::Get()->CreateEmptyToolbar();
-    Manager::Get()->AddonToolBar(m_pToolbar, xrcToolbarName);
+    Manager::Get()->AddonToolBar(m_pToolbar, _T("main_toolbar"));
 
     m_pToolbar->Realize();
 
@@ -1237,11 +1334,7 @@ wxMenuItem* MainFrame::AddPluginInMenus(wxMenu* menu, cbPlugin* plugin, wxObject
 
     while(!item)
     {
-#if wxCHECK_VERSION(3, 0, 0)
         if (!pos || title.CmpNoCase(menu->FindItemByPosition(pos - 1)->GetItemLabelText()) > 0)
-#else
-        if (!pos || title.CmpNoCase(menu->FindItemByPosition(pos - 1)->GetLabel()) > 0)
-#endif
             item = menu->Insert(pos, id, title, wxEmptyString, checkable ? wxITEM_CHECK : wxITEM_NORMAL);
 
         --pos;
@@ -1272,6 +1365,128 @@ void MainFrame::AddPluginInHelpPluginsMenu(cbPlugin* plugin)
                     (wxObjectEventFunction)(wxEventFunction)(wxCommandEventFunction)&MainFrame::OnHelpPluginMenu);
 }
 
+
+namespace
+{
+struct ToolbarFitInfo
+{
+    int row;
+    wxRect rect;
+    wxWindow *window;
+
+    bool operator<(const ToolbarFitInfo &r) const
+    {
+        if (row < r.row)
+            return true;
+        else if (row == r.row)
+            return rect.x < r.rect.x;
+        else
+            return false;
+    }
+};
+
+static void CollectToolbars(std::set<ToolbarFitInfo> &result, wxAuiManager &layoutManager)
+{
+    const wxAuiPaneInfoArray &panes = layoutManager.GetAllPanes();
+    for (size_t ii = 0; ii < panes.GetCount(); ++ii)
+    {
+        const wxAuiPaneInfo &info = panes[ii];
+        if (info.IsToolbar() && info.IsShown())
+        {
+            ToolbarFitInfo f;
+            f.row = info.dock_row;
+            f.rect = info.rect;
+            f.window = info.window;
+            result.insert(f);
+        }
+    }
+}
+
+struct ToolbarRowInfo
+{
+    ToolbarRowInfo() {}
+    ToolbarRowInfo(int width_, int position_) : width(width_), position(position_) {}
+
+    int width, position;
+};
+
+// Function which tries to make all toolbars visible.
+static void FitToolbars(wxAuiManager &layoutManager, wxWindow *mainFrame)
+{
+    std::set<ToolbarFitInfo> sorted;
+    CollectToolbars(sorted, layoutManager);
+    if (sorted.empty())
+        return;
+
+    int maxWidth = mainFrame->GetSize().x;
+    int gripperSize =  layoutManager.GetArtProvider()->GetMetric(wxAUI_DOCKART_GRIPPER_SIZE);
+
+    // move all toolbars to the left as possible and add the non-fitting to a list
+    std::vector<ToolbarRowInfo> rows;
+    std::vector<wxWindow*> nonFitingToolbars;
+    for (std::set<ToolbarFitInfo>::const_iterator it = sorted.begin(); it != sorted.end(); ++it)
+    {
+        wxAuiPaneInfo &pane = layoutManager.GetPane(it->window);
+        int row = pane.dock_row;
+        while (static_cast<int>(rows.size()) <= row)
+            rows.push_back(ToolbarRowInfo(0, 0));
+
+        int maxX = rows[row].width + it->window->GetBestSize().x + gripperSize;
+        if (maxX > maxWidth)
+            nonFitingToolbars.push_back(it->window);
+        else
+        {
+            rows[row].width = maxX;
+            pane.Position(rows[row].position++);
+        }
+    }
+
+    // move the non-fitting toolbars at the bottom
+    int lastRow = rows.empty() ? 0 : (rows.size() - 1);
+    int position = rows.back().position, maxX = rows.back().width;
+    for (std::vector<wxWindow*>::iterator it = nonFitingToolbars.begin(); it != nonFitingToolbars.end(); ++it)
+    {
+        maxX += (*it)->GetBestSize().x;
+        maxX += gripperSize;
+        if (maxX > maxWidth)
+        {
+            position = 0;
+            lastRow++;
+            maxX = (*it)->GetBestSize().x + gripperSize;
+        }
+        layoutManager.GetPane(*it).Position(position++).Row(lastRow);
+    }
+}
+
+// Function which tries to minimize the space used by the toolbars.
+// Also it can be used to show toolbars which have gone outside the window.
+static void OptimizeToolbars(wxAuiManager &layoutManager, wxWindow *mainFrame)
+{
+    std::set<ToolbarFitInfo> sorted;
+    CollectToolbars(sorted, layoutManager);
+    if (sorted.empty())
+        return;
+
+    int maxWidth = mainFrame->GetSize().x;
+    int lastRow = 0, position = 0, maxX = 0;
+    int gripperSize =  layoutManager.GetArtProvider()->GetMetric(wxAUI_DOCKART_GRIPPER_SIZE);
+
+    for (std::set<ToolbarFitInfo>::const_iterator it = sorted.begin(); it != sorted.end(); ++it)
+    {
+        maxX += it->window->GetBestSize().x;
+        maxX += gripperSize;
+        if (maxX > maxWidth)
+        {
+            position = 0;
+            lastRow++;
+            maxX = it->window->GetBestSize().x + gripperSize;
+        }
+        layoutManager.GetPane(it->window).Position(position++).Row(lastRow);
+    }
+}
+
+} // anomymous namespace
+
 void MainFrame::LoadWindowState()
 {
     wxArrayString subs = Manager::Get()->GetConfigManager(_T("app"))->EnumerateSubPaths(_T("/main_frame/layout"));
@@ -1285,6 +1500,12 @@ void MainFrame::LoadWindowState()
     wxString deflayout = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/main_frame/layout/default"));
     LoadViewLayout(deflayout);
 
+    DoFixToolbarsLayout();
+
+    // Fit toolbars on load to prevent gaps if toolbar sizes have changed. The most common reason
+    // for toolbar change would be change of the size of the icons in the toolbar.
+    FitToolbars(m_LayoutManager, this);
+
     // load manager and messages selected page
     if (m_pPrjManUI->GetNotebook())
         m_pPrjManUI->GetNotebook()->SetSelection(Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/main_frame/layout/left_block_selection"), 0));
@@ -1294,7 +1515,6 @@ void MainFrame::LoadWindowState()
     // Moved here as this seems like a resonable place to do UI setup. Feel free to move it elsewhere.
     if (Manager::Get()->GetConfigManager(_T("app"))->ReadBool(_T("/environment/infopane_tabs_bottom"), false))
         m_pInfoPane->SetWindowStyleFlag(m_pInfoPane->GetWindowStyleFlag() | wxAUI_NB_BOTTOM);
-
 }
 
 void MainFrame::LoadWindowSize()
@@ -1417,7 +1637,21 @@ void MainFrame::LoadViewLayout(const wxString& name, bool isTemp)
 
     // first load taborder of MessagePane, so LoadPerspective can restore the last selected tab
     m_pInfoPane->LoadTabOrder(layoutMP);
-    m_LayoutManager.LoadPerspective(layout, false);
+
+    // We have to force an update here, because the m_LayoutManager.GetAllPanes()
+    // would not report correct values if not updated here.
+    m_LayoutManager.LoadPerspective(layout, true);
+
+    // If we load a layout we have to check if the window is on a valid display
+    // and has valid size. This can happen if a user moves a layout file from a
+    // multi display setup to a single display setup. The size has to be checked
+    // because it is possible that the target display has a lower resolution then
+    // the source display.
+    const wxAuiPaneInfoArray& windowArray = m_LayoutManager.GetAllPanes();
+    for (size_t i = 0; i < windowArray.GetCount(); ++i)
+    {
+        cbFixWindowSizeAndPlace(windowArray.Item(i).frame);
+    }
 
     DoUpdateLayout();
 
@@ -1564,17 +1798,46 @@ bool MainFrame::DoCheckCurrentLayoutForChanges(bool canCancel)
 
 void MainFrame::DoFixToolbarsLayout()
 {
-    // because the user might change the toolbar icons size, we must cater for it...
-    wxAuiPaneInfoArray& panes = m_LayoutManager.GetAllPanes();
+    // The AUI layout system remembers toolbar sizes. In most circumstances we don't want this
+    // feature. So we want to disable it and this is what is done in this function.
+    // This function has effect after a toolbar size change.
+    //
+    // To do it we need to do two passes:
+    // 1. reset the best/min sizes loaded from the layout file.
+    // 2. set new best size
+    //
+    // The reset operation is needed because wxAUI does nothing when the values for min/best sizes
+    // aren't equal to wxDefaultSize.
+    // I'm not really sure why we need the second pass. :(
+
+    wxAuiPaneInfoArray &panes = m_LayoutManager.GetAllPanes();
+    for (size_t ii = 0; ii < panes.GetCount(); ++ii)
+    {
+        wxAuiPaneInfo &info = panes[ii];
+        if (info.IsToolbar() && info.IsShown())
+        {
+            info.best_size = wxDefaultSize;
+            info.min_size = wxDefaultSize;
+        }
+    }
+
+    // This is needed in order to auto shrink the toolbars to fit the icons with as little space as
+    // possible.
+    m_LayoutManager.Update();
+
     for (size_t i = 0; i < panes.GetCount(); ++i)
     {
         wxAuiPaneInfo& info = panes[i];
-        if (info.state & wxAuiPaneInfo::optionToolbar)
+        if (info.IsToolbar())
         {
             info.best_size = info.window->GetBestSize();
             info.floating_size = wxDefaultSize;
         }
     }
+
+    // If we don't do this toolbars would be empty during initial startup or after
+    // View -> Perspective -> Save current.
+    m_LayoutManager.Update();
 }
 
 void MainFrame::DoSelectLayout(const wxString& name)
@@ -1730,8 +1993,12 @@ bool MainFrame::Open(const wxString& filename, bool addToHistory)
     wxFileName fn(filename);
     fn.Normalize(); // really important so that two same files with different names are not loaded twice
     wxString name = fn.GetFullPath();
-    Manager::Get()->GetLogManager()->DebugLog(_T("Opening file ") + name);
+    LogManager *logger = Manager::Get()->GetLogManager();
+    logger->DebugLog(_T("Opening file ") + name);
     bool ret = OpenGeneric(name, addToHistory);
+    if (!ret)
+        logger->LogError(wxString::Format(wxT("Opening file '%s' failed!"), name.wx_str()));
+
     return ret;
 }
 
@@ -1886,14 +2153,14 @@ void MainFrame::DoCreateStatusBar()
     wxCoord widths[16]; // 16 max
     widths[num++] = -1; // main field
 
-    dc.GetTextExtent(_(" Highlight Button "), &widths[num++], &h);
-    dc.GetTextExtent(_(" Windows (CR+LF) "), &widths[num++], &h);
-    dc.GetTextExtent(_(" WINDOWS-1252 "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Highlight Button "),                &widths[num++], &h);
+    dc.GetTextExtent(_(" Windows (CR+LF) "),                 &widths[num++], &h);
+    dc.GetTextExtent(_(" WINDOWS-1252 "),                    &widths[num++], &h);
     dc.GetTextExtent(_(" Line 12345, Col 123, Pos 123456 "), &widths[num++], &h);
-    dc.GetTextExtent(_(" Overwrite "), &widths[num++], &h);
-    dc.GetTextExtent(_(" Modified "), &widths[num++], &h);
-    dc.GetTextExtent(_(" Read/Write "), &widths[num++], &h);
-    dc.GetTextExtent(_(" name_of_profile "), &widths[num++], &h);
+    dc.GetTextExtent(_(" Overwrite "),                       &widths[num++], &h);
+    dc.GetTextExtent(_(" Modified "),                        &widths[num++], &h);
+    dc.GetTextExtent(_(" Read/Write "),                      &widths[num++], &h);
+    dc.GetTextExtent(_(" name_of_profile "),                 &widths[num++], &h);
 
     wxStatusBar* sb = CreateStatusBar(num);
     if (!sb)
@@ -1926,6 +2193,8 @@ static void changeButtonLabel(wxButton &button, const wxString &text)
 void MainFrame::DoUpdateStatusBar()
 {
     if (!GetStatusBar())
+        return;
+    if (Manager::IsAppShuttingDown())
         return;
 
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
@@ -2101,7 +2370,6 @@ void MainFrame::DoUpdateLayout()
         return;
 
     DoFixToolbarsLayout();
-    m_LayoutManager.Update();
 }
 
 void MainFrame::DoUpdateAppTitle()
@@ -2717,7 +2985,6 @@ void MainFrame::OnApplicationClose(wxCloseEvent& event)
 
     CodeBlocksEvent evt(cbEVT_APP_START_SHUTDOWN);
     Manager::Get()->ProcessEvent(evt);
-    Manager::Yield();
 
     m_InitiatedShutdown = true;
     Manager::BlockYields(true);
@@ -2844,7 +3111,7 @@ void MainFrame::OnEditBookmarksPrevious(cb_unused wxCommandEvent& event)
         static_cast<cbEditor*>(ed)->GotoPreviousBookmark();
 }
 
-void MainFrame::OnEditBookmarksClearAll(wxCommandEvent& event)
+void MainFrame::OnEditBookmarksClearAll(cb_unused wxCommandEvent& event)
 {
     EditorBase* ed = Manager::Get()->GetEditorManager()->GetActiveEditor();
     if (ed && ed->IsBuiltinEditor())
@@ -3163,12 +3430,12 @@ static void InsertNewLine(bool below)
     }
 }
 
-void MainFrame::OnEditInsertNewLineBelow(wxCommandEvent& event)
+void MainFrame::OnEditInsertNewLineBelow(cb_unused wxCommandEvent& event)
 {
     InsertNewLine(true);
 }
 
-void MainFrame::OnEditInsertNewLineAbove(wxCommandEvent& event)
+void MainFrame::OnEditInsertNewLineAbove(cb_unused wxCommandEvent& event)
 {
     InsertNewLine(false);
 }
@@ -3206,17 +3473,18 @@ bool SelectNext(cbStyledTextCtrl *control, const wxString &selectedText, long se
     if (selectedText.find_first_of(wxT(";:\"'`~@#$%^,-+*/\\=|!?&*(){}[]")) == wxString::npos)
         flag |= wxSCI_FIND_WHOLEWORD;
 
-    int lengthFound = 0; // we need this to work properly with multibyte characters
+    int endPos = 0; // we need this to work properly with multibyte characters
     int eof = control->GetLength();
-    int pos = control->FindText(selectionEnd, eof, selectedText, flag, &lengthFound);
+    int pos = control->FindText(selectionEnd, eof, selectedText, flag, &endPos);
     if (pos != wxSCI_INVALID_POSITION)
     {
         control->SetAdditionalSelectionTyping(true);
-        control->IndicatorClearRange(pos, lengthFound);
+        control->SetMultiPaste(true);
+        control->IndicatorClearRange(pos, endPos - pos);
         if (reversed)
-            control->AddSelection(pos, pos + lengthFound);
+            control->AddSelection(pos, endPos);
         else
-            control->AddSelection(pos + lengthFound, pos);
+            control->AddSelection(endPos, pos);
         control->MakeNearbyLinesVisible(control->LineFromPosition(pos));
         return true;
     }
@@ -3732,17 +4000,13 @@ void MainFrame::OnEditHighlightMode(wxCommandEvent& event)
         {
             wxMenuItem* item = hl->FindItem(event.GetId());
             if (item)
-#if wxCHECK_VERSION(3, 0, 0)
                 lang = colour_set->GetHighlightLanguage(item->GetItemLabelText());
-#else
-                lang = colour_set->GetHighlightLanguage(item->GetLabel());
-#endif
         }
     }
     // Highlightbutton
     if (m_pHighlightButton)
         changeButtonLabel(*m_pHighlightButton, colour_set->GetLanguageName(lang));
-    ed->SetLanguage(lang);
+    ed->SetLanguage(lang, true);
     Manager::Get()->GetCCManager()->NotifyPluginStatus();
 }
 
@@ -4226,7 +4490,11 @@ void MainFrame::OnEditMenuUpdateUI(wxUpdateUIEvent& event)
         {
             EditorColourSet* colour_set = ed->GetColourSet();
             if (colour_set)
-                mbar->Check(hl->FindItem(colour_set->GetLanguageName(ed->GetLanguage())), true);
+            {
+                int item = hl->FindItem(colour_set->GetLanguageName(ed->GetLanguage()));
+                if (item != wxNOT_FOUND)
+                    mbar->Check(item, true);
+            }
         }
     }
 
@@ -4321,131 +4589,18 @@ void MainFrame::OnEditorUpdateUI(CodeBlocksEvent& event)
     }
 
     if (Manager::Get()->GetEditorManager() && event.GetEditor() == Manager::Get()->GetEditorManager()->GetActiveEditor())
+    {
+#if wxCHECK_VERSION(3, 0, 0)
+        // Execute the code to update the status bar outside of the paint event for scintilla.
+        // Executing this function directly in the event handler causes redraw problems on Windows.
+        CallAfter(&MainFrame::DoUpdateStatusBar);
+#else
         DoUpdateStatusBar();
+#endif // defined(__wxMSW__) && wxCHECK_VERSION(3, 0, 0)
+    }
 
     event.Skip();
 }
-
-namespace
-{
-struct ToolbarFitInfo
-{
-    int row;
-    wxRect rect;
-    wxWindow *window;
-
-    bool operator<(const ToolbarFitInfo &r) const
-    {
-        if (row < r.row)
-            return true;
-        else if (row == r.row)
-            return rect.x < r.rect.x;
-        else
-            return false;
-    }
-};
-
-static void CollectToolbars(std::set<ToolbarFitInfo> &result, wxAuiManager &layoutManager)
-{
-    const wxAuiPaneInfoArray &panes = layoutManager.GetAllPanes();
-    for (size_t ii = 0; ii < panes.GetCount(); ++ii)
-    {
-        const wxAuiPaneInfo &info = panes[ii];
-        if (info.IsToolbar() && info.IsShown())
-        {
-            ToolbarFitInfo f;
-            f.row = info.dock_row;
-            f.rect = info.rect;
-            f.window = info.window;
-            result.insert(f);
-        }
-    }
-}
-
-struct ToolbarRowInfo
-{
-    ToolbarRowInfo() {}
-    ToolbarRowInfo(int width_, int position_) : width(width_), position(position_) {}
-
-    int width, position;
-};
-
-// Function which tries to make all toolbars visible.
-static void FitToolbars(wxAuiManager &layoutManager, wxWindow *mainFrame)
-{
-    std::set<ToolbarFitInfo> sorted;
-    CollectToolbars(sorted, layoutManager);
-    if (sorted.empty())
-        return;
-
-    int maxWidth = mainFrame->GetSize().x;
-    int gripperSize =  layoutManager.GetArtProvider()->GetMetric(wxAUI_DOCKART_GRIPPER_SIZE);
-
-    // move all toolbars to the left as possible and add the non-fitting to a list
-    std::vector<ToolbarRowInfo> rows;
-    std::vector<wxWindow*> nonFitingToolbars;
-    for (std::set<ToolbarFitInfo>::const_iterator it = sorted.begin(); it != sorted.end(); ++it)
-    {
-        wxAuiPaneInfo &pane = layoutManager.GetPane(it->window);
-        int row = pane.dock_row;
-        while (static_cast<int>(rows.size()) <= row)
-            rows.push_back(ToolbarRowInfo(0, 0));
-
-        int maxX = rows[row].width + it->window->GetBestSize().x + gripperSize;
-        if (maxX > maxWidth)
-            nonFitingToolbars.push_back(it->window);
-        else
-        {
-            rows[row].width = maxX;
-            pane.Position(rows[row].position++);
-        }
-    }
-
-    // move the non-fitting toolbars at the bottom
-    int lastRow = rows.empty() ? 0 : (rows.size() - 1);
-    int position = rows.back().position, maxX = rows.back().width;
-    for (std::vector<wxWindow*>::iterator it = nonFitingToolbars.begin(); it != nonFitingToolbars.end(); ++it)
-    {
-        maxX += (*it)->GetBestSize().x;
-        maxX += gripperSize;
-        if (maxX > maxWidth)
-        {
-            position = 0;
-            lastRow++;
-            maxX = (*it)->GetBestSize().x + gripperSize;
-        }
-        layoutManager.GetPane(*it).Position(position++).Row(lastRow);
-    }
-}
-
-// Function which tries to minimize the space used by the toolbars.
-// Also it can be used to show toolbars which have gone outside the window.
-static void OptimizeToolbars(wxAuiManager &layoutManager, wxWindow *mainFrame)
-{
-    std::set<ToolbarFitInfo> sorted;
-    CollectToolbars(sorted, layoutManager);
-    if (sorted.empty())
-        return;
-
-    int maxWidth = mainFrame->GetSize().x;
-    int lastRow = 0, position = 0, maxX = 0;
-    int gripperSize =  layoutManager.GetArtProvider()->GetMetric(wxAUI_DOCKART_GRIPPER_SIZE);
-
-    for (std::set<ToolbarFitInfo>::const_iterator it = sorted.begin(); it != sorted.end(); ++it)
-    {
-        maxX += it->window->GetBestSize().x;
-        maxX += gripperSize;
-        if (maxX > maxWidth)
-        {
-            position = 0;
-            lastRow++;
-            maxX = it->window->GetBestSize().x + gripperSize;
-        }
-        layoutManager.GetPane(it->window).Position(position++).Row(lastRow);
-    }
-}
-
-} // anomymous namespace
 
 void MainFrame::OnViewToolbarsFit(cb_unused wxCommandEvent& event)
 {
@@ -4493,11 +4648,15 @@ void MainFrame::OnToggleBar(wxCommandEvent& event)
 
     if (win)
     {
+        // For checked menu items, event.IsChecked() will not reflect the actual status of the menu item
+        //  when this event was previously event.Skip()'ed after the menu item change.
+        bool isShown = m_LayoutManager.GetPane(win).IsShown();
+
         // use last visible size as BestSize, Logs & others does no longer "forget" it's size
-        if (!event.IsChecked())
+        if (!isShown)
              m_LayoutManager.GetPane(win).BestSize(win->GetSize());
 
-        m_LayoutManager.GetPane(win).Show(event.IsChecked());
+        m_LayoutManager.GetPane(win).Show(not isShown); //toggle
         if (toolbar)
             FitToolbars(m_LayoutManager, this);
         DoUpdateLayout();
@@ -4698,8 +4857,8 @@ void MainFrame::OnPluginUnloaded(CodeBlocksEvent& event)
 
 void MainFrame::OnSettingsEnvironment(cb_unused wxCommandEvent& event)
 {
-    bool tbarsmall = m_SmallToolBar;
     bool needRestart = false;
+    const int originalToolbarSize = cbHelpers::ReadToolbarSizeFromConfig();
 
     EnvironmentSettingsDlg dlg(this, m_LayoutManager.GetArtProvider());
     PlaceWindow(&dlg);
@@ -4708,8 +4867,13 @@ void MainFrame::OnSettingsEnvironment(cb_unused wxCommandEvent& event)
         DoUpdateEditorStyle();
         DoUpdateLayoutColours();
 
-        m_SmallToolBar = Manager::Get()->GetConfigManager(_T("app"))->ReadBool(_T("/environment/toolbar_size"), true);
-        needRestart = m_SmallToolBar != tbarsmall;
+        {
+            ConfigManager *cfg = Manager::Get()->GetConfigManager(_T("app"));
+            const int newToolbarSize = cfg->ReadInt(_T("/environment/toolbar_size"),
+                                                    cbHelpers::defaultToolbarSize);
+            needRestart = (newToolbarSize != originalToolbarSize);
+        }
+
         Manager::Get()->GetLogManager()->NotifyUpdate();
         Manager::Get()->GetEditorManager()->RecreateOpenEditorStyles();
         Manager::Get()->GetCCManager()->UpdateEnvSettings();
@@ -4967,7 +5131,6 @@ void MainFrame::OnDockWindowVisibility(cb_unused CodeBlocksDockEvent& event)
 
 void MainFrame::OnLayoutUpdate(cb_unused CodeBlocksLayoutEvent& event)
 {
-    DoFixToolbarsLayout();
     DoUpdateLayout();
 }
 
@@ -5003,7 +5166,7 @@ void MainFrame::OnRemoveLogWindow(CodeBlocksLogEvent& event)
     if (Manager::IsAppShuttingDown())
         return;
     if (event.window)
-        m_pInfoPane->RemoveNonLogger(event.window);
+        m_pInfoPane->DeleteNonLogger(event.window);
     else
         m_pInfoPane->DeleteLogger(event.logger);
 }
@@ -5087,28 +5250,25 @@ void MainFrame::OnHighlightMenu(cb_unused wxCommandEvent& event)
 
     wxMenu* hl = nullptr;
     GetMenuBar()->FindItem(idEditHighlightModeText, &hl);
-    wxArrayString langs = colour_set->GetAllHighlightLanguages();
+    if (!hl)
+        return;
 
     wxMenu mm;
-    mm.AppendRadioItem(idEditHighlightModeText, _("Plain text"),
-                       _("Switch highlighting mode for current document to \"Plain text\""));
-    Connect(hl->FindItem(_("Plain text")), -1, wxEVT_COMMAND_MENU_SELECTED,
-                (wxObjectEventFunction) (wxEventFunction) (wxCommandEventFunction)
-                &MainFrame::OnEditHighlightMode);
-    for (size_t i = 0; i < langs.GetCount(); ++i)
+    const wxMenuItemList &menuItems = hl->GetMenuItems();
+
+    const wxString selectLanguageName = colour_set->GetLanguageName(ed->GetLanguage());
+
+    for (size_t ii = 0; ii < menuItems.GetCount(); ++ii)
     {
-        if (i > 0 && !(i % 20))
+        if (ii > 0 && (ii % 20) == 0)
             mm.Break(); // break into columns every 20 items
-        mm.AppendRadioItem(hl->FindItem(langs[i]), langs[i],
-                    wxString::Format(_("Switch highlighting mode for current document to \"%s\""), langs[i].wx_str()));
-        Connect(hl->FindItem(langs[i]), -1, wxEVT_COMMAND_MENU_SELECTED,
-                (wxObjectEventFunction) (wxEventFunction) (wxCommandEventFunction)
-                &MainFrame::OnEditHighlightMode);
+
+        const wxMenuItem *item = menuItems[ii];
+        wxMenuItem *newItem = mm.Append(item->GetId(), item->GetItemLabel(), item->GetHelp(),
+                                        item->GetKind());
+        if (item->GetItemLabel() == selectLanguageName)
+            newItem->Check(true);
     }
-    int checkeditem = -1;
-    checkeditem = hl->FindItem(colour_set->GetLanguageName(ed->GetLanguage()));
-    if (checkeditem!=wxNOT_FOUND)
-        mm.Check(checkeditem,true);
 
     wxRect rect;
     GetStatusBar()->GetFieldRect(1, rect);
@@ -5185,4 +5345,17 @@ void MainFrame::SetChecksForViewToolbarsMenu(wxMenu &menu)
 
     menu.Check(idViewToolMain,     m_LayoutManager.GetPane(m_pToolbar).IsShown());
     menu.Check(idViewToolDebugger, m_LayoutManager.GetPane(m_debuggerToolbarHandler->GetToolbar(false)).IsShown());
+}
+
+void MainFrame::OnGetGlobalAccels(wxCommandEvent& event)
+{
+    event.SetInt(m_AccelCount);
+    void* pUserVector = event.GetClientData();
+
+    // vector<MyClass*>& v = *reinterpret_cast<vector<MyClass*> *>(voidPointerName);
+    std::vector<wxAcceleratorEntry>& globalAccels = *reinterpret_cast<std::vector<wxAcceleratorEntry> *>(pUserVector);
+    event.SetInt(m_AccelCount);
+    for (size_t ii=0; ii < m_AccelCount; ++ii)
+        globalAccels.push_back(m_pAccelEntries[ii]);
+    return;
 }

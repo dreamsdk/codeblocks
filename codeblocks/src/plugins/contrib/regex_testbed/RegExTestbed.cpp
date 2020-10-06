@@ -4,7 +4,7 @@
  *
  * $Revision: 7593 $
  * $Id: RegExTestbed.cpp 7593 2011-11-13 19:04:12Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/regex_testbed/RegExTestbed.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/regex_testbed/RegExTestbed.cpp $
  */
 
 #include <sdk.h> // Code::Blocks SDK

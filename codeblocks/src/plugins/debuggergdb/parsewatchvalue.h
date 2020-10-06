@@ -5,7 +5,6 @@
 
 #ifndef _PARSE_WATCH_VALUE_H_
 #define _PARSE_WATCH_VALUE_H_
-#endif // _PARSE_WATCH_VALUE_H_
 
 #include "debugger_defs.h"
 
@@ -24,3 +23,11 @@ struct GDBLocalVariable
 
 
 void TokenizeGDBLocals(std::vector<GDBLocalVariable> &results, wxString const &value);
+
+/// Parse a line returned by the examine memory command.
+/// @return true on success and false on failure. Upon success resultAddr and resultValues
+/// have valid values. On failure they are empty.
+bool ParseGDBExamineMemoryLine(wxString &resultAddr, std::vector<uint8_t> &resultValues,
+                               const wxString &outputLine);
+
+#endif // _PARSE_WATCH_VALUE_H_

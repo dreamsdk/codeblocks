@@ -4,12 +4,14 @@
  *
  * Copyright: 2008 Jens Lody
  *
- * $Revision: 11104 $
- * $Id: IncrementalSearch.cpp 11104 2017-07-01 21:19:40Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.cpp $
+ * $Revision: 11790 $
+ * $Id: IncrementalSearch.cpp 11790 2019-07-14 15:03:15Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.cpp $
  */
 
 #include "sdk.h"
+
+#include "IncrementalSearch.h"
 
 #ifndef CB_PRECOMP
     #include <wx/menu.h>
@@ -26,8 +28,9 @@
 
 #include <wx/combo.h>
 #include <wx/listbox.h>
-#include <cbstyledtextctrl.h>
-#include "IncrementalSearch.h"
+
+#include "cbart_provider.h"
+#include "cbstyledtextctrl.h"
 #include "IncrementalSearchConfDlg.h"
 
 // Register the plugin with Code::Blocks.
@@ -186,6 +189,19 @@ void IncrementalSearch::OnAttach()
     // You should check for it in other functions, because if it
     // is FALSE, it means that the application did *not* "load"
     // (see: does not need) this plugin...
+
+    {
+        const wxString prefix = ConfigManager::GetDataFolder() + wxT("/IncrementalSearch.zip#zip:/images");
+        m_ArtProvider = new cbArtProvider(prefix);
+
+        m_ArtProvider->AddMapping(wxT("incremental_search/highlight"), wxT("incsearchhighlight.png"));
+        m_ArtProvider->AddMapping(wxT("incremental_search/selected_only"), wxT("incsearchselectedonly.png"));
+        m_ArtProvider->AddMapping(wxT("incremental_search/case"), wxT("incsearchcase.png"));
+        m_ArtProvider->AddMapping(wxT("incremental_search/regex"), wxT("incsearchregex.png"));
+
+        wxArtProvider::Push(m_ArtProvider);
+    }
+
     m_pEditor = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     wxMenuBar* mbar = Manager::Get()->GetAppFrame()->GetMenuBar();
     if (mbar->FindItem(idIncSearchFocus)) // if BuildMenu is called afterwards this may not exist yet
@@ -236,6 +252,9 @@ void IncrementalSearch::OnRelease(bool /*appShutDown*/)
     m_pTextCtrl->Disconnect(wxEVT_KEY_DOWN);
     m_pTextCtrl->Disconnect(wxEVT_KILL_FOCUS);
 
+    wxArtProvider::Delete(m_ArtProvider);
+    m_ArtProvider = nullptr;
+
     // TODO : KILLERBOT : menu entries should be removed, right ?????
     // TODO : JENS : no, the menubar gets recreated after a plugin changes (install, uninstall or unload), see MainFrame::PluginsUpdated(plugin, status)
 }
@@ -269,7 +288,15 @@ void IncrementalSearch::BuildMenu(wxMenuBar* menuBar)
                                                 _("&Incremental search\tCtrl-I"),
                                                 _("Set focus on Incremental Search input and show the toolbar, if hidden") );
 
-        itemTmp->SetBitmap(wxBitmap(wxXmlResource::Get()->LoadBitmap(_T("MenuBitmap"))));
+        const int imageSize = Manager::Get()->GetImageSize(Manager::UIComponent::Menus);
+        const double uiScale = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::Menus);
+        const wxString prefix = ConfigManager::GetDataFolder()
+                              + wxString::Format(wxT("/IncrementalSearch.zip#zip:/images/%dx%d/"),
+                                                imageSize, imageSize);
+        wxBitmap image = cbLoadBitmapScaled(prefix + wxT("incsearchfocus.png"), wxBITMAP_TYPE_PNG,
+                                            uiScale);
+        itemTmp->SetBitmap(image);
+
         // find "Find previous" and insert after it
         size_t i = 0;
         for (i = 0; i < items.GetCount(); ++i)
@@ -331,15 +358,15 @@ bool IncrementalSearch::BuildToolBar(wxToolBar* toolBar)
     {
         return false;
     }
-    wxString is16x16 = Manager::isToolBar16x16(toolBar) ? _T("_16x16") : _T("");
-    Manager::Get()->AddonToolBar(toolBar,_T("incremental_search_toolbar") + is16x16);
-    m_pToolbar  = toolBar;
+    Manager::Get()->AddonToolBar(toolBar, _T("incremental_search_toolbar"));
+    m_pToolbar = toolBar;
     m_pToolbar->EnableTool(XRCID("idIncSearchClear"), false);
     m_pToolbar->EnableTool(XRCID("idIncSearchPrev"), false);
     m_pToolbar->EnableTool(XRCID("idIncSearchNext"), false);
     m_pToolbar->SetInitialSize();
 
-    m_pComboCtrl = new wxComboCtrl(toolBar, idIncSearchCombo, wxEmptyString, wxDefaultPosition, wxSize(160,-1),wxTE_PROCESS_ENTER);
+    m_pComboCtrl = new wxComboCtrl(toolBar, idIncSearchCombo, wxEmptyString, wxDefaultPosition,
+                                   wxSize(160,-1), wxTE_PROCESS_ENTER);
     if (m_pComboCtrl)
     {
 #if !wxCHECK_VERSION(3, 0, 0) || WXWIN_COMPATIBILITY_2_8
@@ -545,12 +572,16 @@ void IncrementalSearch::OnTextChanged(wxCommandEvent& /*event*/)
     SearchText();
 }
 
-void IncrementalSearch::OnKillFocus(wxCommandEvent& /*event*/)
+void IncrementalSearch::OnKillFocus(wxCommandEvent& event)
 {
+    if (!m_SearchText.empty())
+        m_pChoice->SetStringValue(m_SearchText);
+
     if(m_pTextCtrl)
     {
         m_LastInsertionPoint = m_pTextCtrl->GetInsertionPoint();
     }
+    event.Skip();
 }
 
 void IncrementalSearch::VerifyPosition()
@@ -604,7 +635,6 @@ void IncrementalSearch::SearchText()
         m_pToolbar->EnableTool(XRCID("idIncSearchClear"), true);
         m_pToolbar->EnableTool(XRCID("idIncSearchPrev"), (m_flags & wxSCI_FIND_REGEXP) == 0);
         m_pToolbar->EnableTool(XRCID("idIncSearchNext"), true);
-        m_pChoice->SetStringValue(m_SearchText);
         DoSearch(m_NewPos);
     }
     else
@@ -631,6 +661,9 @@ void IncrementalSearch::OnClearText(wxCommandEvent& /*event*/)
 
 void IncrementalSearch::DoClearText()
 {
+    if (!m_SearchText.empty())
+        m_pChoice->SetStringValue(m_SearchText);
+
     m_pTextCtrl->Clear();
     SearchText();
 }
@@ -642,6 +675,9 @@ void IncrementalSearch::OnSearchPrev(wxCommandEvent& /*event*/)
 
 void IncrementalSearch::DoSearchPrev()
 {
+    if (!m_SearchText.empty())
+        m_pChoice->SetStringValue(m_SearchText);
+
     VerifyPosition();
     // (re-)define m_MinPos and m_MaxPos, they might have changed
     SetRange();
@@ -657,6 +693,9 @@ void IncrementalSearch::OnSearchNext(wxCommandEvent& /*event*/)
 
 void IncrementalSearch::DoSearchNext()
 {
+    if (!m_SearchText.empty())
+        m_pChoice->SetStringValue(m_SearchText);
+
     VerifyPosition();
     // start search from the next character
     // (re-)define m_MinPos and m_MaxPos, they might have changed
@@ -732,17 +771,17 @@ void IncrementalSearch::HighlightText()
             SetupIndicator(ctrlLeft, m_IndicHighlight, colourTextHighlight);
             if(ctrlRight)
                 SetupIndicator(ctrlRight, m_IndicHighlight, colourTextHighlight);
-            int actualLength=0; // needed for regex-search, because the length of found text can vary
-            for ( int pos = control->FindText(m_MinPos, m_MaxPos, m_SearchText, m_flags, &actualLength);
-                    pos != wxSCI_INVALID_POSITION && actualLength > 0;
-                    pos = control->FindText(pos+=1, m_MaxPos, m_SearchText, m_flags, &actualLength) )
+            int endPos=0; // needed for regex-search, because the length of found text can vary
+            for ( int pos = control->FindText(m_MinPos, m_MaxPos, m_SearchText, m_flags, &endPos);
+                    pos != wxSCI_INVALID_POSITION && endPos > 0;
+                    pos = control->FindText(pos+=1, m_MaxPos, m_SearchText, m_flags, &endPos) )
             {
                 // check that this occurrence is not the same as the one we just found
                 if ( pos > (m_NewPos + m_LengthFound) || pos < m_NewPos )
                 {
                     // highlight it
                     control->EnsureVisible(control->LineFromPosition(pos)); // make sure line is Visible, if it was folded
-                    control->IndicatorFillRange(pos, actualLength);
+                    control->IndicatorFillRange(pos, endPos - pos);
                 }
             }
         }
@@ -769,7 +808,9 @@ void IncrementalSearch::DoSearch(int fromPos, int startPos, int endPos)
     // reset the backgroundcolor of the text-control
     m_pTextCtrl->SetBackgroundColour(m_textCtrlBG_Default);
 
-    m_NewPos=control->FindText(fromPos, endPos, m_SearchText, m_flags, &m_LengthFound);
+    int newEndPos;
+    m_NewPos=control->FindText(fromPos, endPos, m_SearchText, m_flags, &newEndPos);
+    m_LengthFound = newEndPos - m_NewPos;
 
     if (m_NewPos == wxSCI_INVALID_POSITION || m_LengthFound == 0)
     {
@@ -779,7 +820,8 @@ void IncrementalSearch::DoSearch(int fromPos, int startPos, int endPos)
         // show that search wrapped, by colouring the textCtrl
         m_pTextCtrl->SetBackgroundColour(colourTextCtrlBG_Wrapped);
         // search again
-        m_NewPos=control->FindText(startPos, endPos, m_SearchText, m_flags, &m_LengthFound);
+        m_NewPos=control->FindText(startPos, endPos, m_SearchText, m_flags, &newEndPos);
+        m_LengthFound = newEndPos - m_NewPos;
         if (m_NewPos == wxSCI_INVALID_POSITION  || m_LengthFound == 0)
         {
             wxColour colourTextCtrlBG_NotFound(cfg->ReadColour(_T("/incremental_search/text_not_found_colour"), wxColour(255, 127, 127)));

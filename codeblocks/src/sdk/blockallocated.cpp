@@ -4,7 +4,7 @@
  *
  * $Revision: 8948 $
  * $Id: blockallocated.cpp 8948 2013-04-06 17:15:49Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/blockallocated.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/blockallocated.cpp $
  */
 
 #include "sdk_precomp.h"

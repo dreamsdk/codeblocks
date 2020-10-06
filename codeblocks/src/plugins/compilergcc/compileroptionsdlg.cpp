@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11175 $
- * $Id: compileroptionsdlg.cpp 11175 2017-09-17 23:04:58Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compileroptionsdlg.cpp $
+ * $Revision: 11883 $
+ * $Id: compileroptionsdlg.cpp 11883 2019-10-26 09:11:12Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compileroptionsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -102,8 +102,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_UPDATE_UI(            XRCID("btnResComp"),                      CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("txtMake"),                         CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnMake"),                         CompilerOptionsDlg::OnUpdateUI)
-    EVT_UPDATE_UI(            XRCID("txtLoader"),                       CompilerOptionsDlg::OnUpdateUI)
-    EVT_UPDATE_UI(            XRCID("btnLoader"),                       CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("cmbCompiler"),                     CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreAdd"),                    CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreRemove"),                 CompilerOptionsDlg::OnUpdateUI)
@@ -153,7 +151,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_BUTTON(                XRCID("btnLibLinker"),                   CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnResComp"),                     CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnMake"),                        CompilerOptionsDlg::OnSelectProgramClick)
-    EVT_BUTTON(                XRCID("btnLoader"),                      CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnAdvanced"),                    CompilerOptionsDlg::OnAdvancedClick)
     EVT_BUTTON(                XRCID("btnIgnoreAdd"),                   CompilerOptionsDlg::OnIgnoreAddClick)
     EVT_BUTTON(                XRCID("btnIgnoreRemove"),                CompilerOptionsDlg::OnIgnoreRemoveClick)
@@ -163,6 +160,7 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_CHOICE(                XRCID("cmbLibDirsPolicy"),               CompilerOptionsDlg::OnDirty)
     EVT_CHOICE(                XRCID("cmbResDirsPolicy"),               CompilerOptionsDlg::OnDirty)
     EVT_CHOICE(                XRCID("cmbLogging"),                     CompilerOptionsDlg::OnDirty)
+    EVT_CHOICE(                XRCID("chLinkerExe"),                    CompilerOptionsDlg::OnDirty)
     EVT_CHECKBOX(              XRCID("chkAlwaysRunPost"),               CompilerOptionsDlg::OnDirty)
     EVT_CHECKBOX(              XRCID("chkNonPlatComp"),                 CompilerOptionsDlg::OnDirty)
     EVT_TEXT(                  XRCID("txtCompilerOptions"),             CompilerOptionsDlg::OnDirty)
@@ -189,8 +187,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_PG_CHANGED(            XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionChanged)
     EVT_PG_RIGHT_CLICK(        XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnFlagsPopup)
     EVT_PG_DOUBLE_CLICK(       XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionDoubleClick)
-
-    EVT_TEXT(                  XRCID("txtLoaderArguments"),             CompilerOptionsDlg::OnDirty)
 END_EVENT_TABLE()
 
 class ScopeTreeData : public wxTreeItemData
@@ -287,7 +283,6 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
         wxWindow* win = XRCCTRL(*this, "btnAddCompiler", wxButton);
         wxSizer* sizer2 = win->GetContainingSizer();
         sizer2->Clear(true);
-        sizer2->RecalcSizes();
         sizer2->Layout();
 
         // disable "Make" elements, if project is not using custom makefile
@@ -298,8 +293,6 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
         XRCCTRL(*this, "txtMakeCmd_DistClean", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->Enable(en);
-
-        XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetToolTip(wxT("Leave the field blank to use the default"));
     }
 
     // let's start filling in all the panels of the configuration dialog
@@ -482,7 +475,6 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
     const CompilerPrograms& progs = compiler->GetPrograms();
 
     XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->SetValue(compiler->GetMasterPath());
-    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(compiler->GetLoaderArguments());
     XRCCTRL(*this, "txtCcompiler", wxTextCtrl)->SetValue(progs.C);
     XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->SetValue(progs.CPP);
     XRCCTRL(*this, "txtLinker", wxTextCtrl)->SetValue(progs.LD);
@@ -514,7 +506,6 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
 
     XRCCTRL(*this, "txtResComp", wxTextCtrl)->SetValue(progs.WINDRES);
     XRCCTRL(*this, "txtMake", wxTextCtrl)->SetValue(progs.MAKE);
-    XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(progs.LOADER);
 
     const wxArrayString& extraPaths = compiler->GetExtraPaths();
     ArrayString2ListBox(extraPaths, XRCCTRL(*this, "lstExtraPaths", wxListBox));
@@ -830,6 +821,7 @@ void CompilerOptionsDlg::DoLoadOptions()
     wxArrayString IncludeDirs;
     wxArrayString LibDirs;
     wxArrayString ResDirs;
+
     if (!m_pProject && !m_pTarget)
     {
         // global options
@@ -844,11 +836,14 @@ void CompilerOptionsDlg::DoLoadOptions()
             m_LinkerOptions = compiler->GetLinkerOptions();
             m_LinkLibs = compiler->GetLinkLibs();
 
-            wxChoice* cmb = XRCCTRL(*this, "cmbLogging", wxChoice);
-            if (cmb)
-                cmb->SetSelection((int)compiler->GetSwitches().logging);
+            wxChoice* cmbLogging = XRCCTRL(*this, "cmbLogging", wxChoice);
+            if (cmbLogging)
+                cmbLogging->SetSelection((int)compiler->GetSwitches().logging);
 
-            m_LoaderArgs = compiler->GetLoaderArguments();
+            wxChoice *cmbLinkerExe = XRCCTRL(*this, "chLinkerExe", wxChoice);
+            cmbLinkerExe->Show(false);
+            wxStaticText *txtLinkerExe = XRCCTRL(*this, "txtLinkerExe", wxStaticText);
+            txtLinkerExe->Show(false);
         }
     }
     else
@@ -864,6 +859,7 @@ void CompilerOptionsDlg::DoLoadOptions()
             m_ResourceCompilerOptions = m_pProject->GetResourceCompilerOptions();
             m_LinkerOptions = m_pProject->GetLinkerOptions();
             m_LinkLibs = m_pProject->GetLinkLibs();
+
             CommandsAfterBuild = m_pProject->GetCommandsAfterBuild();
             CommandsBeforeBuild = m_pProject->GetCommandsBeforeBuild();
             AlwaysUsePost = m_pProject->GetAlwaysRunPostBuildSteps();
@@ -874,8 +870,6 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_DistClean",        wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcDistClean));
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcSilentBuild));
-
-            m_LoaderArgs = m_pProject->GetLoaderArguments();
         }
         else
         {
@@ -904,7 +898,8 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcSilentBuild));
 
-            m_LoaderArgs = m_pTarget->GetLoaderArguments();
+            const LinkerExecutableOption linkerExecutable = m_pTarget->GetLinkerExecutable();
+            XRCCTRL(*this, "chLinkerExe", wxChoice)->SetSelection(int(linkerExecutable));
         }
     }
     TextToOptions();
@@ -924,8 +919,6 @@ void CompilerOptionsDlg::DoLoadOptions()
         ArrayString2TextCtrl(CommandsAfterBuild, XRCCTRL(*this, "txtCmdAfter", wxTextCtrl));
         XRCCTRL(*this, "chkAlwaysRunPost", wxCheckBox)->SetValue(AlwaysUsePost);
     }
-
-    XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(m_LoaderArgs);
 } // DoLoadOptions
 
 void CompilerOptionsDlg::OptionsToText()
@@ -1019,8 +1012,6 @@ void CompilerOptionsDlg::DoSaveOptions()
     DoGetCompileOptions(m_LinkerOptions,           XRCCTRL(*this, "txtLinkerOptions",           wxTextCtrl));
     OptionsToText();
 
-    wxString LoaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
-
     if (!m_pProject && !m_pTarget)
     {
         // global options
@@ -1077,8 +1068,6 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pProject->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
-
-            m_pProject->SetLoaderArguments(LoaderArgs);
         }
         else
         {
@@ -1090,6 +1079,17 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pTarget->SetResourceCompilerOptions(m_ResourceCompilerOptions);
             m_pTarget->SetLinkerOptions(m_LinkerOptions);
             m_pTarget->SetLinkLibs(m_LinkLibs);
+
+            {
+                int value = XRCCTRL(*this, "chLinkerExe", wxChoice)->GetSelection();
+                LinkerExecutableOption linkerExe;
+                if (value >= 0 && value < int(LinkerExecutableOption::Last))
+                    linkerExe = LinkerExecutableOption(value);
+                else
+                    linkerExe = LinkerExecutableOption::AutoDetect;
+                m_pTarget->SetLinkerExecutable(linkerExe);
+            }
+
             m_pTarget->SetOptionRelation(ortCompilerOptions, OptionsRelation(XRCCTRL(*this, "cmbCompilerPolicy", wxChoice)->GetSelection()));
             m_pTarget->SetOptionRelation(ortLinkerOptions, OptionsRelation(XRCCTRL(*this, "cmbLinkerPolicy", wxChoice)->GetSelection()));
             m_pTarget->SetOptionRelation(ortIncludeDirs, OptionsRelation(XRCCTRL(*this, "cmbIncludesPolicy", wxChoice)->GetSelection()));
@@ -1106,8 +1106,6 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pTarget->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
-
-            m_pTarget->SetLoaderArguments(LoaderArgs);
         }
     }
 } // DoSaveOptions
@@ -1120,14 +1118,12 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
 
     CompilerPrograms progs;
     wxString masterPath = XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue();
-    wxString loaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
     progs.C       = (XRCCTRL(*this, "txtCcompiler",   wxTextCtrl)->GetValue()).Trim();
     progs.CPP     = (XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->GetValue()).Trim();
     progs.LD      = (XRCCTRL(*this, "txtLinker",      wxTextCtrl)->GetValue()).Trim();
     progs.LIB     = (XRCCTRL(*this, "txtLibLinker",   wxTextCtrl)->GetValue()).Trim();
     progs.WINDRES = (XRCCTRL(*this, "txtResComp",     wxTextCtrl)->GetValue()).Trim();
     progs.MAKE    = (XRCCTRL(*this, "txtMake",        wxTextCtrl)->GetValue()).Trim();
-    progs.LOADER  = (XRCCTRL(*this, "txtLoader",      wxTextCtrl)->GetValue()).Trim();
     wxChoice *cmbDebugger = XRCCTRL(*this, "cmbDebugger", wxChoice);
     if (cmbDebugger)
     {
@@ -1137,7 +1133,6 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
     }
     compiler->SetPrograms(progs);
     compiler->SetMasterPath(masterPath);
-    compiler->SetLoaderArguments(loaderArgs);
     // and the extra paths
     wxListBox* control = XRCCTRL(*this, "lstExtraPaths", wxListBox);
     if (control)
@@ -1219,11 +1214,7 @@ void CompilerOptionsDlg::DoSaveCompilerDefinition()
     node = node->GetNext();
     node->AddAttribute(name, wxT("MAKE"));
     node->AddAttribute(value, compiler->GetPrograms().MAKE);
-    node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Program")));
-    node = node->GetNext();
-    node->AddAttribute(name, wxT("LOADER"));
-    node->AddAttribute(value, compiler->GetPrograms().LOADER);
-    node->AddAttribute(wxT("args"), compiler->GetLoaderArguments());
+
 
     node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Switch")));
     node = node->GetNext();
@@ -1577,6 +1568,16 @@ void CompilerOptionsDlg::OnTreeSelectionChange(wxTreeEvent& event)
             if (wxNotebook* nb = XRCCTRL(*this, "nbMain", wxNotebook))
                 nb->Disable();
         }
+    }
+
+    {
+        const bool show = (m_pTarget != nullptr);
+
+        // Hide linker executable because it doesn't make sense to change it in the project.
+        wxChoice *cmbLinkerExe = XRCCTRL(*this, "chLinkerExe", wxChoice);
+        cmbLinkerExe->Show(show);
+        wxStaticText *txtLinkerExe = XRCCTRL(*this, "txtLinkerExe", wxStaticText);
+        txtLinkerExe->Show(show);
     }
 } // OnTreeSelectionChange
 
@@ -2643,8 +2644,6 @@ void CompilerOptionsDlg::OnAutoDetectClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
 {
-    bool bSetWithFullPath = false;
-
     // see who called us
     wxTextCtrl* obj = 0L;
     if (event.GetId() == XRCID("btnCcompiler"))
@@ -2659,23 +2658,14 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
         obj = XRCCTRL(*this, "txtResComp", wxTextCtrl);
     else if (event.GetId() == XRCID("btnMake"))
         obj = XRCCTRL(*this, "txtMake", wxTextCtrl);
-    else if (event.GetId() == XRCID("btnLoader"))
-    {
-        obj = XRCCTRL(*this, "txtLoader", wxTextCtrl);
-        bSetWithFullPath = true;
-    }
-
 
     if (!obj)
         return; // called from invalid caller
 
     // common part follows
-    wxString file_selection = wxEmptyString;
+    wxString file_selection = _("All files (*)|*");
     if (platform::windows)
-    {
-        file_selection = _("Executable files (*.exe;*.cmd)|*.exe;*.cmd|");
-    }
-    file_selection += _("All files (*)|*");
+        file_selection = _("Executable files (*.exe)|*.exe");
     wxFileDialog dlg(this,
                      _("Select file"),
                      XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue() + _T("/bin"),
@@ -2688,7 +2678,7 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
     if (dlg.ShowModal() != wxID_OK)
         return;
     wxFileName fname(dlg.GetPath());
-    obj->SetValue(bSetWithFullPath ? fname.GetFullPath() : fname.GetFullName());
+    obj->SetValue(fname.GetFullName());
     m_bDirty = true;
 } // OnSelectProgramClick
 

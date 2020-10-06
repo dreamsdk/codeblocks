@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: BrowseTracker.h 10361 2015-07-26 08:13:26Z jenslody $
+// RCS-ID: $Id: BrowseTracker.h 11849 2019-09-16 20:44:32Z pecanh $
 
 
 #ifndef BROWSETRACKER_H_INCLUDED
@@ -167,13 +167,14 @@ class BrowseTracker : public cbPlugin
         void        RemoveEditor(EditorBase* eb);
         void        ClearEditor(int index);
         void        RecordBrowseMark(EditorBase* eb);
-        //-void        RecordBrowseMarkPosition(EditorBase*, int pos);
         void        ClearLineBrowseMark(bool removeScreenMark);
-        //-void        ClearLineBrowseMark(int posn);
+        void        ClearLineBrowseMark(int line, bool removeScreenMark);
         void        ImportBrowse_Marks(cbEditor* ed);
         void        RebuildBrowse_Marks(cbEditor* ed, bool addedlines);
         bool        IsBrowseMarksEnabled(){return m_BrowseMarksEnabled;}
         bool        IsWrapJumpEntriesEnabled(){return m_WrapJumpEntries;}
+        bool        IsViewToolbarEnabled();
+        void        ShowBrowseTrackerToolBar(const bool onOrOff);
 
         // Book Marks recording
         void        ToggleBook_Mark(EditorBase* eb);
@@ -183,7 +184,7 @@ class BrowseTracker : public cbPlugin
         void        ReadUserOptions(wxString configFullPath);
         void        SaveUserOptions(wxString configFullPath);
         wxFileConfig* GetBrowseTrackerCfgFile(){return m_pCfgFile; }
-        wxString    GetBrowseTrackerCfgFilename(){return m_CfgFilenameStr;}
+        wxString      GetBrowseTrackerCfgFilename(){return m_CfgFilenameStr;}
 
         int         m_UpdateUIEditorIndex;
 
@@ -192,6 +193,8 @@ class BrowseTracker : public cbPlugin
         int             m_OldUserMarksStyle;
         bool            m_OldBrowseMarksEnabled;
         bool            m_WrapJumpEntries;    //wrap jump entries when top or botton reached
+        bool            m_ToolbarIsShown;     // Show BrowseTracker toolbar
+        bool            m_ConfigShowToolbar;  // Show BrowseTracker toolbar
 
 	private:
 
@@ -219,7 +222,10 @@ class BrowseTracker : public cbPlugin
         void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
 
         void OnStartShutdown(CodeBlocksEvent& event);
+        void OnAppStartupDone(CodeBlocksEvent& event);
+
         //-void OnPageChanged(wxAuiNotebookEvent& event);
+        void AppShuttingDown(CodeBlocksEvent& event); //2017/12/7
 
         void OnMenuBrowseMarkPrevious(wxCommandEvent& event);
         void OnMenuBrowseMarkNext(wxCommandEvent& event);
@@ -249,15 +255,12 @@ class BrowseTracker : public cbPlugin
         void MarkLine(cbStyledTextCtrl* pControl, int line);
         void MarkRemove(cbStyledTextCtrl* pControl, int line);
         BrowseMarks* HashAddBrowse_Marks( const wxString fullPath);
-        BrowseMarks* HashAddBook_Marks( const wxString fullPath);
         void SetBrowseMarksStyle( int userStyle);
         //-int  GetBrowseMarkerId(){return gBrowse_MarkerId;}
         //-int  GetBrowseMarkerStyle(){return gBrowse_MarkerStyle;}
 
         BrowseMarks* GetBrowse_MarksFromHash( EditorBase* eb);
-        BrowseMarks* GetBook_MarksFromHash( EditorBase* eb);
         BrowseMarks* GetBrowse_MarksFromHash( wxString filePath);
-        BrowseMarks* GetBook_MarksFromHash( wxString filePath);
         ProjectData* GetProjectDataFromHash(cbProject* pProject);
         ProjectData* GetProjectDataByProjectName( wxString filePath);
         ProjectData* GetProjectDataByEditorName( wxString filePath);
@@ -278,7 +281,7 @@ class BrowseTracker : public cbPlugin
         wxToolBar*      m_pToolBar;
 
         wxString        m_ConfigFolder;
-        wxString        m_ExecuteFolder;
+        //-wxString        m_ExecuteFolder;
         wxString        m_AppName;
         wxString        TrackerCfgFullPath;
         bool            m_bProjectIsLoading;
@@ -299,7 +302,6 @@ class BrowseTracker : public cbPlugin
         int             m_nBrowseMarkNextSentry;
         bool            m_OnEditorEventHookIgnoreMarkerChanges;
 
-        EbBrowse_MarksHash m_EdBook_MarksHash;
         EbBrowse_MarksHash m_EbBrowse_MarksHash;
 
         ProjectDataHash m_ProjectDataHash;

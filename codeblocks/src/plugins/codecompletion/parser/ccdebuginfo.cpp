@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10664 $
- * $Id: ccdebuginfo.cpp 10664 2016-01-17 13:58:33Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/parser/ccdebuginfo.cpp $
+ * $Revision: 11440 $
+ * $Id: ccdebuginfo.cpp 11440 2018-08-07 07:14:06Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/ccdebuginfo.cpp $
  */
 
 #include <sdk.h>
@@ -493,7 +493,12 @@ void CCDebugInfo::DisplayTokenInfo()
     txtIsConst->SetLabel(m_Token->m_IsConst ? _("Yes") : _("No"));
     txtIsNoExcept->SetLabel(m_Token->m_IsNoExcept ? _("Yes") : _("No"));
     txtNamespace->SetLabel(m_Token->GetNamespace());
-    txtParent->SetLabel(wxString::Format(_T("%s (%d)"), parent ? parent->m_Name.c_str() : (const wxChar*)_("<Global namespace>"), m_Token->m_ParentIndex));
+    wxString label;
+    if (parent)
+        label = parent->m_Name;
+    else
+        label = _("<Global namespace>");
+    txtParent->SetLabel(wxString::Format(_T("%s (%d)"), label.wx_str(), m_Token->m_ParentIndex));
 
     FillChildren();
     FillAncestors();

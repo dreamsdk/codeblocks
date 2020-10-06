@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsstyle.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsstyle.h $
+* $Revision: 11434 $
+* $Id: wxsstyle.h 11434 2018-08-07 07:12:59Z fuscated $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsstyle.h $
 */
 
 #ifndef __WXSSTYLE_H
@@ -196,12 +196,12 @@ class wxsStyleSet
 /** adding all default window's style */
 #define WXS_ST_DEFAULTS()                       \
     WXS_ST_CATEGORY("wxWindow")                 \
-    WXS_ST(wxSIMPLE_BORDER)                     \
-    WXS_ST(wxDOUBLE_BORDER)                     \
-    WXS_ST(wxSUNKEN_BORDER)                     \
-    WXS_ST(wxRAISED_BORDER)                     \
-    WXS_ST(wxSTATIC_BORDER)                     \
-    WXS_ST(wxNO_BORDER)                         \
+    WXS_ST(wxBORDER_SIMPLE)                     \
+    WXS_ST(wxBORDER_DOUBLE)                     \
+    WXS_ST(wxBORDER_SUNKEN)                     \
+    WXS_ST(wxBORDER_RAISED)                     \
+    WXS_ST(wxBORDER_STATIC)                     \
+    WXS_ST(wxBORDER_NONE)                       \
     WXS_ST(wxTRANSPARENT_WINDOW)                \
     WXS_ST(wxTAB_TRAVERSAL)                     \
     WXS_ST(wxWANTS_CHARS)                       \

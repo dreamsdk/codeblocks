@@ -26,12 +26,9 @@ class Highlighter
         virtual ~Highlighter();
         void Call(cbEditor*, wxScintillaEvent&) const;
 
-        const int     GetIndicator()      const;
-        const wxColor GetIndicatorColor() const;
-        void          TextsChanged()      const;
+        void TextsChanged() const;
 
     private:
-        void OnEditorChange(cbEditor* ctrl)   const;
         void OnEditorUpdateUI(cbEditor *ctrl) const;
 
         void ClearAllIndications(cbStyledTextCtrl* stc)const;

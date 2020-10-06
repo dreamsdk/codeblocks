@@ -4,7 +4,7 @@
  *
  * $Revision: 10655 $
  * $Id: databreakpointdlg.cpp 10655 2016-01-17 13:58:05Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/debuggergdb/databreakpointdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/databreakpointdlg.cpp $
  */
 
 #include "databreakpointdlg.h"

@@ -126,8 +126,12 @@ void FindReplace::CreateSearchLog()
     widths.Add(48);
     widths.Add(640);
 
-    wxString prefix = ConfigManager::GetDataFolder() + _T("/images/16x16/");
-    wxBitmap * bmp = new wxBitmap(cbLoadBitmap(prefix + _T("filefind.png"), wxBITMAP_TYPE_PNG));
+    const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
+    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
+    const wxString imgFile = ConfigManager::GetDataFolder()
+                          + wxString::Format(_T("/resources.zip#zip:/images/%dx%d/filefind.png"),
+                                             uiSize, uiSize);
+    wxBitmap * bmp = new wxBitmap(cbLoadBitmapScaled(imgFile, wxBITMAP_TYPE_PNG, uiScaleFactor));
 
     m_pSearchLog = new cbSearchResultsLog(titles, widths);
     CodeBlocksLogEvent evt(cbEVT_ADD_LOG_WINDOW, m_pSearchLog, _("Search results"), bmp);
@@ -484,7 +488,10 @@ int FindReplace::Replace(cbStyledTextCtrl* control, cbFindReplaceData* data)
     {
         int lengthFound = 0;
         if (!advRegex)
+        {
             pos = control->FindText(data->start, data->end, data->findText, flags, &lengthFound);
+            lengthFound -= pos;
+        }
         else
         {
             wxString text=control->GetTextRange(data->start, data->end);
@@ -932,7 +939,10 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
         {
             int lengthFound = 0;
             if (!advRegex)
+            {
                 pos = control->FindText(data->start, data->end, data->findText, flags, &lengthFound);
+                lengthFound -= pos;
+            }
             else
             {
                 wxString text=control->GetTextRange(data->start, data->end);
@@ -1161,7 +1171,10 @@ int FindReplace::Find(cbStyledTextCtrl* control, cbFindReplaceData* data)
     {
         int lengthFound = 0;
         if (!advRegex)
+        {
             pos = control->FindText(data->start, data->end, data->findText, flags, &lengthFound);
+            lengthFound -= pos;
+        }
         else
         {
             wxString text = control->GetTextRange(data->start, data->end);

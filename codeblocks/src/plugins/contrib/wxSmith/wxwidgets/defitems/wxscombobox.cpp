@@ -18,7 +18,7 @@
 *
 * $Revision: 11000 $
 * $Id: wxscombobox.cpp 11000 2017-02-06 19:12:28Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscombobox.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscombobox.cpp $
 */
 
 #include <wx/combobox.h>

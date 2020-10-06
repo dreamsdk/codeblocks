@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10770 $
- * $Id: nativeparser_base.cpp 10770 2016-02-06 14:27:56Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/nativeparser_base.cpp $
+ * $Revision: 11509 $
+ * $Id: nativeparser_base.cpp 11509 2018-11-04 02:49:39Z ollydbg $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/nativeparser_base.cpp $
  */
 
 #include <sdk.h>
@@ -370,6 +370,10 @@ void NativeParserBase::GetCallTipHighlight(const wxString& calltip,
     int commas = 0;
     *start = FindFunctionOpenParenthesis(calltip) + 1;
     *end = 0;
+
+    // for a function call tip string like below
+    // void f(int a, map<int, float>b)
+    // we have to take care the <> pair
     while (true)
     {
         wxChar c = calltip.GetChar(pos++);
@@ -393,6 +397,10 @@ void NativeParserBase::GetCallTipHighlight(const wxString& calltip,
             }
             *start = pos;
         }
+        else if (c =='<')
+            ++nest;
+        else if (c == '>')
+            --nest;
     }
     if (*end == 0)
         *end = paramsCloseBracket;
@@ -682,16 +690,16 @@ size_t NativeParserBase::BreakUpComponents(const wxString&              actual,
                                            std::queue<ParserComponent>& components)
 {
     ParserTokenType tokenType;
-    wxString tmp = actual;
+    wxString statement = actual;
     OperatorType tokenOperatorType;
     // break up components of phrase
     if (s_DebugSmartSense)
-        CCLogger::Get()->DebugLog(F(_T("BreakUpComponents() Breaking up '%s'"), tmp.wx_str()));
+        CCLogger::Get()->DebugLog(F(_T("BreakUpComponents() Breaking up '%s'"), statement.wx_str()));
     TRACE(_T("NativeParserBase::BreakUpComponents()"));
 
     while (true)
     {
-        wxString tok = GetCCToken(tmp, tokenType, tokenOperatorType);
+        wxString tok = GetCCToken(statement, tokenType, tokenOperatorType);
 
         ParserComponent pc;
         pc.component         = tok;

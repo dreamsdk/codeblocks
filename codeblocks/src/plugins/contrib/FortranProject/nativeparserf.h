@@ -6,16 +6,20 @@
 #ifndef NATIVEPARSERF_H
 #define NATIVEPARSERF_H
 
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/event.h>
+
+    #include <cbthreadpool.h>
+#endif
 #include <map>
 #include <set>
-#include <wx/string.h>
-#include <wx/event.h>
-#include "parserf.h"
-#include "workspacebrowserf.h"
-#include "projectdependencies.h"
-#include "jumptracker.h"
 
-#include <cbthreadpool.h>
+#include "jumptracker.h"
+#include "parserf.h"
+#include "projectdependencies.h"
+#include "workspacebrowserf.h"
 #include "workspaceparserthread.h"
 
 typedef std::map<wxString,ProjectDependencies*>  WSDependencyMap;
@@ -35,9 +39,9 @@ class NativeParserF : public wxEvtHandler
         void AddParser(cbProject* project);
         void ClearParser();
         void RemoveFromParser(cbProject* project);
-        void AddFileToParser(const wxString& filename);
+        void AddFileToParser(const wxString& projectFilename, const wxString& filename);
         void RemoveFileFromParser(const wxString& filename);
-        void ReparseFile(const wxString& filename);
+        void ReparseFile(const wxString& projectFilename, const wxString& filename);
         void ReparseProject(cbProject* project);
         void ParseProject(cbProject* project);
         void ForceReparseWorkspace();
@@ -49,8 +53,7 @@ class NativeParserF : public wxEvtHandler
         void CreateWorkspaceBrowser();
         WorkspaceBrowserF* GetWorkspaceBrowser();
         void RemoveWorkspaceBrowser();
-        void UpdateWorkspaceBrowser();
-        wxImageList* GetImageList();
+        void UpdateWorkspaceBrowser(bool selectCurrentSymbol=false);
         int GetTokenKindImageIdx(TokenF* token);
         void GetCallTips(const wxString& name, bool onlyUseAssoc, bool onlyPublicNames, wxArrayString& callTips, TokensArrayFlat* result);
         void GetCallTipsForGenericTypeBoundProc(TokensArrayFlat* result, wxArrayString& callTips, wxArrayInt& idxFuncSub);
@@ -58,18 +61,27 @@ class NativeParserF : public wxEvtHandler
         void GetCallTipsForVariable(TokenFlat* token, wxString& callTip);
         void GetCallTipsForType(TokenFlat* token, wxString& callTip);
         int CountCommas(const wxString& lineText, int start, bool nesting=true);
-        void CollectInformationForCallTip(int& commasAll, int& commasUntilPos, wxString& lastName, bool& isempty, bool& isAfterPercent, int& argsPos, TokensArrayFlat* result);
-        void CountCommasInEditor(int& commasAll, int& commasUntilPos, wxString& lastName, bool& isempty, wxString& lineText, int& pos);
+        void CollectInformationForCallTip(int& commasAll, int& commasUntilPos, wxString& argNameUnderCursor, wxString& lastName, bool& isAfterPercent, int& argsPos, TokensArrayFlat* result);
+        void CountCommasInEditor(int& commasAll, int& commasUntilPos, wxString& lastName, wxString& lineText, int& pos);
         void GetCallTipHighlight(const wxString& calltip, int commasWas, int& start, int& end);
-        void MarkCurrentSymbol();
+        void MarkCurrentSymbol(bool selectCurrentSymbol);
         void RereadOptions();
         JumpTracker* GetJumpTracker();
         FortranProject* GetFortranProject();
         void GenMakefile();
         wxArrayString* GetWSFiles();
         ArrayOfFortranSourceForm* GetWSFileForms();
-        void GetCurrentBuffer(wxString& buffer, wxString& filename);
+        wxArrayString* GetWSFileProjFilenames();
+        wxArrayString* GetADirFiles();
+        ArrayOfFortranSourceForm* GetADirFileForms();
+        void GetCurrentBuffer(wxString& buffer, wxString& filename, wxString& projFilename);
         void ReparseCurrentEditor();
+        wxArrayString GetProjectSearchDirs(cbProject* project);
+        void SetProjectSearchDirs(cbProject* project, wxArrayString& searchDirs);
+        bool HasFortranFiles(cbProject* project);
+        void DelProjectSearchDirs(cbProject* project);
+        void ForceReparseProjectSearchDirs();
+        void OnASearchDirsReparseTimer(wxTimerEvent& event);
 
     protected:
     private:
@@ -87,9 +99,13 @@ class NativeParserF : public wxEvtHandler
         wxString GetLastName(const wxString& line);
 
         void MakeWSFileList();
+        void MakeADirFileList();
 
         void OnUpdateWorkspaceBrowser(wxCommandEvent& event);
+        void OnUpdateADirTokens(wxCommandEvent& event);
         void OnUpdateCurrentFileTokens(wxCommandEvent& event);
+
+        void GetDummyVarName(cbEditor* ed, wxString& lastDummyVar);
 
         ParserF m_Parser;
         WorkspaceBrowserF* m_pWorkspaceBrowser;
@@ -103,11 +119,20 @@ class NativeParserF : public wxEvtHandler
 
         cbThreadPool m_ThreadPool;
 
-        wxArrayString m_WSFiles;
-        ArrayOfFortranSourceForm m_WSFileForms;
+        wxArrayString m_WSFiles;                   ///<  list of workspace filenames
+        ArrayOfFortranSourceForm m_WSFileForms;    ///<  sorce form of each WS file
+        wxArrayString m_WSFilePFN;                 ///<  to which project depands each WS file
+
+        wxArrayString m_ADirFiles;                 ///<  list of filenames from additional directories
+        ArrayOfFortranSourceForm m_ADirFileForms;  ///<  sorce form of each additional file
+        wxTimer m_ASearchDirsReparseTimer;
 
         wxString m_CurrentEditorBuffer;
         wxString m_CurrentEditorFilename;
+        wxString m_CurrentEditorProjectFN;
+
+        std::map<wxString,wxArrayString> m_ASearchDirs;
+        std::map<wxString,wxArrayString> m_ADirFNameToProjMap;
 
         DECLARE_EVENT_TABLE();
 };

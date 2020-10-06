@@ -21,7 +21,7 @@ class GDB_driver : public DebuggerDriver
                                         const wxString &userArguments);
         virtual wxString GetCommandLine(const wxString& debugger, int pid, const wxString &userArguments);
         virtual void SetTarget(ProjectBuildTarget* target);
-        virtual void Prepare(bool isConsole, int printElements);
+        virtual void Prepare(bool isConsole, int printElements, const RemoteDebugging &remoteDebugging);
         virtual void Start(bool breakOnEntry);
         virtual void Stop();
 
@@ -37,6 +37,7 @@ class GDB_driver : public DebuggerDriver
         virtual void CPURegisters();
         virtual void SwitchToFrame(size_t number);
         virtual void SetVarValue(const wxString& var, const wxString& value);
+        virtual void SetMemoryRangeValue(uint64_t addr, const wxString& value);
         virtual void MemoryDump();
         virtual void Attach(int pid);
         virtual void Detach();
@@ -55,12 +56,18 @@ class GDB_driver : public DebuggerDriver
         virtual void AddBreakpoint(cb::shared_ptr<DebuggerBreakpoint> bp);
         virtual void RemoveBreakpoint(cb::shared_ptr<DebuggerBreakpoint> bp);
         virtual void EvaluateSymbol(const wxString& symbol, const wxRect& tipRect);
-        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch, cb::shared_ptr<GDBWatch> funcArgsWatch,
-                                   WatchesContainer &watches);
+        virtual void UpdateWatches(cb::shared_ptr<GDBWatch> localsWatch,
+                                   cb::shared_ptr<GDBWatch> funcArgsWatch,
+                                   WatchesContainer &watches, bool ignoreAutoUpdate);
+        virtual void UpdateMemoryRangeWatches(MemoryRangeWatchesContainer &watches,
+                                              bool ignoreAutoUpdate);
         virtual void UpdateWatch(const cb::shared_ptr<GDBWatch> &watch);
+        virtual void UpdateMemoryRangeWatch(const cb::shared_ptr<GDBMemoryRangeWatch> &watch);
         virtual void UpdateWatchLocalsArgs(cb::shared_ptr<GDBWatch> const &watch, bool locals);
         virtual void ParseOutput(const wxString& output);
         virtual bool IsDebuggingStarted() const { return m_IsStarted; }
+
+        virtual void DetermineLanguage();
 #ifdef __WXMSW__
         virtual bool UseDebugBreakProcess();
 #endif
@@ -74,9 +81,6 @@ class GDB_driver : public DebuggerDriver
         // win/Cygwin platform checking
         void DetectCygwinMount(void);
         void CorrectCygwinPath(wxString& path);
-
-        // remote debugging
-        RemoteDebugging* GetRemoteDebuggingInfo();
 
         bool m_CygwinPresent;
         wxString m_CygdrivePrefix;
@@ -106,8 +110,8 @@ class GDB_driver : public DebuggerDriver
         // for remote debugging usage (mainly)
         ProjectBuildTarget* m_pTarget;
 
-        // merged remote debugging (project-level + target-level)
-        RemoteDebugging m_MergedRDInfo;
+        // True if we're running remote debugging session.
+        bool m_isRemoteDebugging;
 
         int m_catchThrowIndex;
 

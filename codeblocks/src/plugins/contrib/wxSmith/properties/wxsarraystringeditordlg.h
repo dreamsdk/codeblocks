@@ -17,7 +17,7 @@
 *
 * $Revision: 10972 $
 * $Id: wxsarraystringeditordlg.h 10972 2017-01-21 10:41:43Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/properties/wxsarraystringeditordlg.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsarraystringeditordlg.h $
 */
 
 #ifndef WXSARRAYSTRINGEDITORDLG_H

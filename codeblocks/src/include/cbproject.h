@@ -99,7 +99,9 @@ class DLLIMPORT cbProject : public CompileTargetBase
         /// Constructor
         cbProject(const wxString& filename = wxEmptyString);
         /// Destructor
-        ~cbProject();
+        ~cbProject() override;
+
+        cbProject& operator=(const cbProject &p);
 
         /** @return True if the project fully loaded, false if not. */
         bool IsLoaded() const { return m_Loaded; }
@@ -117,12 +119,12 @@ class DLLIMPORT cbProject : public CompileTargetBase
         wxString GetCommonTopLevelPath() const;
 
         /** @return True if the project is modified in any way. */
-        bool GetModified() const;
+        bool GetModified() const override;
 
         /** Mark the project as modified or not.
           * @param modified If true, the project is marked as modified. If false, as not-modified.
           */
-        void SetModified(bool modified = true);
+        void SetModified(bool modified = true) override;
 
         /** Access a file of the project.
           * @param index The index of the file. Must be greater or equal than zero and less than GetFilesCount().
@@ -148,7 +150,7 @@ class DLLIMPORT cbProject : public CompileTargetBase
         void SetMakefile(const wxString& makefile){ m_Makefile = makefile; SetModified(true); }
 
         /** @return The filename for the Makefile. */
-        const wxString& GetMakefile();
+        const wxString& GetMakefile() const;
 
         /** Mark if the project should use a custom Makefile for compilation.
           * @param custom If true, use a custom Makefile for compilation. If false, use direct C::B build mode.
@@ -197,7 +199,7 @@ class DLLIMPORT cbProject : public CompileTargetBase
         void SetDefaultExecuteTarget(const wxString& name);
 
         /** @return The number of build targets this project contains. */
-        int GetBuildTargetsCount() { return m_Targets.GetCount(); }
+        int GetBuildTargetsCount() const { return m_Targets.GetCount(); }
 
         /** Access a build target.
           * @param index The build target index. Must be greater or equal to zero and less than GetBuildTargetsCount().
@@ -206,10 +208,22 @@ class DLLIMPORT cbProject : public CompileTargetBase
         ProjectBuildTarget* GetBuildTarget(int index);
 
         /** Access a build target.
+          * @param index The build target index. Must be greater or equal to zero and less than GetBuildTargetsCount().
+          * @return The build target or NULL if not found.
+          */
+        const ProjectBuildTarget* GetBuildTarget(int index) const;
+
+        /** Access a build target.
           * @param targetName The build target name.
           * @return The build target or NULL if not found.
           */
         ProjectBuildTarget* GetBuildTarget(const wxString& targetName);
+
+        /** Access a build target.
+          * @param targetName The build target name.
+          * @return The build target or NULL if not found.
+          */
+        const ProjectBuildTarget* GetBuildTarget(const wxString& targetName) const;
 
         /** Add a new build target.
           * @param targetName The build target name.
@@ -305,7 +319,7 @@ class DLLIMPORT cbProject : public CompileTargetBase
           */
         void SetModeForPCH(PCHMode mode){ m_PCHMode = mode; SetModified(true); }
 
-        void SetCompilerID(const wxString& id); // overriden
+        void SetCompilerID(const wxString& id) override; // overriden
 
         /** @return The root item of this project in the project manager's tree. */
         wxTreeItemId GetProjectNode(){ return m_ProjectNode; }
@@ -477,6 +491,15 @@ class DLLIMPORT cbProject : public CompileTargetBase
           */
         ProjectBuildTarget* GetCurrentlyCompilingTarget() { return m_CurrentlyCompilingTarget; }
 
+        /** Get a pointer to the currently compiling target.
+          * @return While the project is being built, this function returns the currently building
+          * target. For all other times, NULL is returned.
+          */
+        const ProjectBuildTarget* GetCurrentlyCompilingTarget() const
+        {
+            return m_CurrentlyCompilingTarget;
+        }
+
         /** Set the currently compiling target.
           * @note This function is for internal use by compilers only.
           * Using this function in any other place results in undefined behaviour!
@@ -642,7 +665,7 @@ class DLLIMPORT cbProject : public CompileTargetBase
           * It sends additional notification event to plugins
           * and than calls base function.
           */
-        virtual void SetTitle(const wxString& title);
+        void SetTitle(const wxString& title) override;
 
         /** Access the \<Extensions\> XML node of this project
           *
@@ -653,6 +676,16 @@ class DLLIMPORT cbProject : public CompileTargetBase
           * @note This function will never return NULL.
           */
         virtual TiXmlNode* GetExtensionsNode();
+
+        /** Access the \<Extensions\> XML node of this project
+          *
+          * This function is for advanced users only. Use at your own risk
+          * (and respect other plugins authors work under this node).
+          *
+          * @return The \<Extensions\> XML node.
+          * @note This function will return NULL if the object is not created.
+          */
+        virtual const TiXmlNode* GetExtensionsNode() const;
 
         /** Convenience function (mainly for scripts) to add nodes/attributes
           * under the \<Extensions\> node.
@@ -682,7 +715,12 @@ class DLLIMPORT cbProject : public CompileTargetBase
         /** Provides an easy way to iterate all the files belonging in this target.
           * @return A list of files belonging in this target.
           */
-        virtual FilesList& GetFilesList(){ return m_Files; }
+        virtual FilesList& GetFilesList() { return m_Files; }
+
+        /** Provides an easy way to iterate all the files belonging in this target.
+          * @return A list of files belonging in this target.
+          */
+        virtual const FilesList& GetFilesList() const { return m_Files; }
 
     private:
         void Open();
@@ -698,7 +736,7 @@ class DLLIMPORT cbProject : public CompileTargetBase
         wxString               m_ActiveTarget;
         wxString               m_LastSavedActiveTarget;
         wxString               m_DefaultExecuteTarget;
-        wxString               m_Makefile;
+        mutable wxString       m_Makefile;
         bool                   m_CustomMakefile;
         mutable wxString       m_MakefileExecutionDir;
 

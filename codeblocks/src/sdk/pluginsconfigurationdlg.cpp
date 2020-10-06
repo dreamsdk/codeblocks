@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11135 $
- * $Id: pluginsconfigurationdlg.cpp 11135 2017-08-06 15:53:03Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/pluginsconfigurationdlg.cpp $
+ * $Revision: 11437 $
+ * $Id: pluginsconfigurationdlg.cpp 11437 2018-08-07 07:13:40Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/pluginsconfigurationdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -74,7 +74,7 @@ inline int wxCALLBACK sortByTitle(long item1, long item2, cb_unused long sortDat
     const PluginElement* elem1 = (const PluginElement*)item1;
     const PluginElement* elem2 = (const PluginElement*)item2;
 
-    return elem1->info.title.CompareTo(elem2->info.title);
+    return elem1->info.title.CompareTo(elem2->info.title.wx_str());
 }
 
 BEGIN_EVENT_TABLE(PluginsConfigurationDlg, wxScrollingDialog)
@@ -334,7 +334,7 @@ void PluginsConfigurationDlg::OnExport(cb_unused wxCommandEvent& event)
             break;
 
         const PluginElement* elem = (const PluginElement*)list->GetItemData(sel);
-        if (!elem && !elem->plugin)
+        if (!elem || !elem->plugin)
         {
             failure << list->GetItemText(sel) << _T('\n');
             continue;

@@ -1,6 +1,9 @@
-#include "docblock.h"
-#include "cbcolourmanager.h"
 
+#include "docblock.h"
+
+#ifndef CB_PRECOMP
+    #include "cbcolourmanager.h"
+#endif
 #include <iostream>
 
 DocBlock::DocBlock():
@@ -267,8 +270,8 @@ wxString HtmlDoc::GetDocShort(const wxString& tokDoc)
         else if (bre_idx < tokDoc.size())
         {
             doc = tokDoc.substr(bre_idx);
-            if (doc.size() > 80) // limit length of doc
-                doc = doc.substr(0,80) + _T("...");
+            if (doc.size() > 120) // limit length of doc
+                doc = doc.substr(0,120) + _T("...");
         }
     }
     return doc;

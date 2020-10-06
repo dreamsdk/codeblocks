@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10502 $
- * $Id: sdk_events.cpp 10502 2015-09-26 09:17:37Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/sdk_events.cpp $
+ * $Revision: 11631 $
+ * $Id: sdk_events.cpp 11631 2019-04-20 16:54:57Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/sdk_events.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -156,7 +156,10 @@ const wxEventType cbEVT_COMPILE_FILE_REQUEST = wxNewEventType();
 // debugger-related events
 const wxEventType cbEVT_DEBUGGER_STARTED = wxNewEventType();
 const wxEventType cbEVT_DEBUGGER_PAUSED = wxNewEventType();
+const wxEventType cbEVT_DEBUGGER_CONTINUED = wxNewEventType();
 const wxEventType cbEVT_DEBUGGER_FINISHED = wxNewEventType();
+const wxEventType cbEVT_DEBUGGER_CURSOR_CHANGED = wxNewEventType();
+const wxEventType cbEVT_DEBUGGER_UPDATED = wxNewEventType();
 
 // logger-related events
 const wxEventType cbEVT_ADD_LOG_WINDOW = wxNewEventType();

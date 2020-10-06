@@ -4,7 +4,7 @@
  *
  * $Revision: 10907 $
  * $Id: configmanager-revision.cpp 10907 2016-09-25 16:09:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/configmanager-revision.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/configmanager-revision.cpp $
  */
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ wxString ConfigManager::GetRevisionString()
 {
     static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
 
-    return autorevision::svnRevision + wxT("-DreamSDK");
+    return autorevision::svnRevision;
 }
 
 unsigned int ConfigManager::GetRevisionNumber()

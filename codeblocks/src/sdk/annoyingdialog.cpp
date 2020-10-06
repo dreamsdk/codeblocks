@@ -4,7 +4,7 @@
  *
  * $Revision: 10907 $
  * $Id: annoyingdialog.cpp 10907 2016-09-25 16:09:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/annoyingdialog.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/annoyingdialog.cpp $
  */
 
 #include "sdk_precomp.h"

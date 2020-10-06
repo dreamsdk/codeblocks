@@ -1,16 +1,74 @@
-#include "fpimagelist.h"
-#include <configmanager.h>
-#include <wx/string.h>
-#include <wx/bitmap.h>
 
-FPImageList::FPImageList()
+#include "fpimagelist.h"
+
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/bitmap.h>
+
+    #include <configmanager.h>
+#endif
+
+FPImageList::FPImageList(int imSize)
 {
     //ctor
+    CreateImageList(imSize);
+}
 
-    m_pImlist = new wxImageList(16, 16);
-    wxBitmap bmp;
+FPImageList::~FPImageList()
+{
+    //dtor
+    delete m_pImlist;
+}
+
+void FPImageList::CreateImageList(int imSize)
+{
     wxString prefix2;
-    prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/");
+    if (imSize <= 19)
+    {
+        m_pImlist = new wxImageList(16, 16);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/16x16/");
+    }
+    else if (imSize <= 23)
+    {
+        m_pImlist = new wxImageList(20, 20);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/20x20/");
+    }
+    else if (imSize <= 27)
+    {
+        m_pImlist = new wxImageList(24, 24);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/24x24/");
+    }
+    else if (imSize <= 31)
+    {
+        m_pImlist = new wxImageList(28, 28);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/28x28/");
+    }
+    else if (imSize <= 39)
+    {
+        m_pImlist = new wxImageList(32, 32);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/32x32/");
+    }
+    else if (imSize <= 47)
+    {
+        m_pImlist = new wxImageList(40, 40);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/40x40/");
+    }
+    else if (imSize <= 55)
+    {
+        m_pImlist = new wxImageList(48, 48);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/48x48/");
+    }
+    else if (imSize <= 63)
+    {
+        m_pImlist = new wxImageList(56, 56);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/56x56/");
+    }
+    else
+    {
+        m_pImlist = new wxImageList(64, 64);
+        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/64x64/");
+    }
+    wxBitmap bmp;
 
     bmp = cbLoadBitmap(prefix2 + _T("ctor_public.png"), wxBITMAP_TYPE_PNG);
     m_pImlist->Add(bmp);
@@ -130,18 +188,15 @@ FPImageList::FPImageList()
     bmp = cbLoadBitmap(prefix2 + _T("function_calledby.png"), wxBITMAP_TYPE_PNG);
     m_pImlist->Add(bmp);
     m_ImgNr["function_calledby"] = 38;
+    bmp = cbLoadBitmap(prefix2 + _T("typedefs_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImlist->Add(bmp);
+    m_ImgNr["typedefs_folder"] = 39;
 
     bmp = cbLoadBitmap(prefix2 + _T("unknown.png"), wxBITMAP_TYPE_PNG);
     m_pImlist->Add(bmp);
-    m_ImgNr["unknown"] = 39;
+    m_ImgNr["unknown"] = 40;
 
     m_ImgNr["none"] = -1;
-}
-
-FPImageList::~FPImageList()
-{
-    //dtor
-    delete m_pImlist;
 }
 
 int FPImageList::GetImageIdx(const std::string& name)

@@ -1,8 +1,10 @@
 #ifndef CHANGECASE_H
 #define CHANGECASE_H
 
-#include <sdk.h> // Code::Blocks SDK
-#include "scrollingdialog.h"
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include "scrollingdialog.h"
+#endif
 
 class cbEditor;
 

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7443 $
-* $Id: cbEditorPanel.cpp 7443 2011-09-01 16:29:16Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/NassiShneiderman/cbEditorPanel.cpp $
+* $Revision: 11371 $
+* $Id: cbEditorPanel.cpp 11371 2018-04-23 00:53:05Z d_anselmi $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/NassiShneiderman/cbEditorPanel.cpp $
 */
 
 #include <wx/cmdproc.h>
@@ -44,20 +44,24 @@ cbEditorPanel::cbEditorPanel( const wxString& fileName, const wxString& /*title*
         m_IsOK = false;
     }
 }
+
 cbEditorPanel::~cbEditorPanel()
 {
     if ( m_filecontent ) delete m_filecontent;
 }
+
 bool cbEditorPanel::GetModified() const
 {
     if ( !m_filecontent ) return false;
     return m_filecontent->GetModified();
 }
+
 void cbEditorPanel::SetModified(bool modified)
 {
     if ( !m_filecontent ) return;
     m_filecontent->SetModified(modified);
 }
+
 bool cbEditorPanel::Save()
 {
     if ( !m_filecontent ) return false;
@@ -108,15 +112,18 @@ bool cbEditorPanel::CanUndo()const
 {
     return m_filecontent->GetCommandProcessor()->CanUndo();
 }
+
 bool cbEditorPanel::CanRedo()const
 {
     return m_filecontent->GetCommandProcessor()->CanRedo();
 }
+
 void cbEditorPanel::Undo()
 {
     m_filecontent->GetCommandProcessor()->Undo();
     //UpdateModified();
 }
+
 void cbEditorPanel::Redo()
 {
     m_filecontent->GetCommandProcessor()->Redo();

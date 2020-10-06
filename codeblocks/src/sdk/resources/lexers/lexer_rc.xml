@@ -36,23 +36,9 @@
 				<Style name="Operator"
 						index="10"
 						fg="255,0,0"/>
-				<Style name="Selection"
-						index="-99"
-						bg="192,192,192"/>
-				<Style name="Active line"
-						index="-98"
-						bg="255,255,160"/>
 				<Style name="Compiler error line"
 						index="-4"
 						bg="255,128,0"/>
-				<Style name="Matching brace highlight"
-						index="34"
-						fg="255,0,0"
-						bold="1"
-						underlined="1"/>
-				<Style name="No matching brace highlight"
-						index="35"
-						bg="255,0,0"/>
 				<Keywords>
                         <Set index="0"
                             value="ACCELERATORS ALT AUTO3STATE AUTOCHECKBOX AUTORADIOBUTTON
@@ -61,7 +47,7 @@
                                    DISCARDABLE EDITTEXT END EXSTYLE FONT GROUPBOX ICON LANGUAGE
                                    LISTBOX LTEXT MENU MENUEX MENUITEM MESSAGETABLE POPUP PUSHBUTTON
                                    RADIOBUTTON RCDATA RTEXT SCROLLBAR SEPARATOR SHIFT STATE3
-                                   STRINGTABLE STYLE TEXTINCLUDE VALUE VERSION VERSIONINFO VIRTKEY"/>
+                                   STRINGTABLE STYLE TEXTINCLUDE VALUE VERSION VERSIONINFO VIRTKEY WAVE"/>
 				</Keywords>
 				<SampleCode value="lexer_rc.sample"
 						error_line="9"/>

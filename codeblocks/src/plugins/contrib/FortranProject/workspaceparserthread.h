@@ -1,10 +1,14 @@
 #ifndef WORKSPACEPARSERTHREAD_H
 #define WORKSPACEPARSERTHREAD_H
 
-#include <wx/thread.h>
-#include <wx/event.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/thread.h>
+    #include <wx/event.h>
 
-#include <cbthreadpool.h>
+    #include <cbthreadpool.h>
+#endif
+
 
 extern wxMutex s_WorkspaceParserMutex;
 extern wxMutex s_NewTokensMutex;

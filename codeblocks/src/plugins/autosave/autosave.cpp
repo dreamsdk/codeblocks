@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8680 $
- * $Id: autosave.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/autosave/autosave.cpp $
+ * $Revision: 11540 $
+ * $Id: autosave.cpp 11540 2018-12-20 20:07:27Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/autosave/autosave.cpp $
  */
 
 #include "sdk.h"
@@ -123,7 +123,8 @@ void Autosave::SaveProject(cbProject *p, int method)
             break;
         }
         case 2:
-        case 3: // doesn't really make sense to keep so many versions of a project file
+        case 3:
+        case 4: // doesn't really make sense to keep so many versions of a project file
         {
             if (p->IsLoaded() == false)
                 return;
@@ -159,9 +160,11 @@ void Autosave::OnTimer(wxTimerEvent& e)
 {
     if(e.GetId() == 10000)
     {
-        int method = Manager::Get()->GetConfigManager(_T("autosave"))->ReadInt(_T("method"));
-        bool allProjects = Manager::Get()->GetConfigManager(_T("autosave"))->ReadBool(_T("all_projects"), true);
-        bool doWorkspace = Manager::Get()->GetConfigManager(_T("autosave"))->ReadBool(_T("do_workspace"), true);
+        ConfigManager *cfg = Manager::Get()->GetConfigManager(wxT("autosave"));
+
+        const int method = cfg->ReadInt(_T("method"));
+        const bool allProjects = cfg->ReadBool(_T("all_projects"), true);
+        const bool doWorkspace = cfg->ReadBool(_T("do_workspace"), true);
         ProjectManager *pm = Manager::Get()->GetProjectManager();
         if(pm)// && pm->GetActiveProject())
         {
@@ -188,6 +191,7 @@ void Autosave::OnTimer(wxTimerEvent& e)
                         break;
                     case 2:
                     case 3:
+                    case 4:
                     {
                         WorkspaceLoader loader;
                         loader.Save(workspace->GetTitle(), workspace->GetFilename() + wxT(".save"));
@@ -207,6 +211,9 @@ void Autosave::OnTimer(wxTimerEvent& e)
 
         if(em)
         {
+            ConfigManager *cfg = Manager::Get()->GetConfigManager(wxT("app"));
+            const bool robustSave = cfg->ReadBool(wxT("/environment/robust_save"), true);
+
             for(int i = 0; i < em->GetEditorsCount(); ++i)
             {
                 cbEditor* ed = em->GetBuiltinEditor(em->GetEditor(i));
@@ -218,7 +225,8 @@ void Autosave::OnTimer(wxTimerEvent& e)
                         case 0:
                         {
                             if(::wxRenameFile(fn.GetFullPath(), fn.GetFullPath() + _T(".bak")))
-                                cbSaveToFile(fn.GetFullPath(), ed->GetControl()->GetText(), ed->GetEncoding(), ed->GetUseBom());
+                                cbSaveToFile(fn.GetFullPath(), ed->GetControl()->GetText(),
+                                             ed->GetEncoding(), ed->GetUseBom(), robustSave);
                             break;
                         }
                         case 1:
@@ -228,19 +236,32 @@ void Autosave::OnTimer(wxTimerEvent& e)
                         }
                         case 2:
                         {
-                            cbSaveToFile(fn.GetFullPath() + _T(".save"), ed->GetControl()->GetText(), ed->GetEncoding(), ed->GetUseBom());
+                            cbSaveToFile(fn.GetFullPath() + _T(".save"),
+                                         ed->GetControl()->GetText(), ed->GetEncoding(),
+                                         ed->GetUseBom(), robustSave);
                             ed->SetModified(); // the "real" file has not been saved!
                             break;
                         }
                         case 3:
+                        case 4:
                         {
                             wxString tmp1;
                             wxString tmp2;
-
-                            for(unsigned int revisions = 8; revisions; --revisions)
+                            wxString backupDir = fn.GetPath();
+                            if (method==4)
                             {
-                                tmp1.Printf(_T("%s/%s.%u.%s"), fn.GetPath().c_str(), fn.GetName().c_str(), revisions,   fn.GetExt().c_str());
-                                tmp2.Printf(_T("%s/%s.%u.%s"), fn.GetPath().c_str(), fn.GetName().c_str(), revisions+1, fn.GetExt().c_str());
+                                backupDir += wxT("/.bak");
+                                if (!wxDirExists(backupDir) && !wxMkdir(backupDir))
+                                {
+                                    // Fallback if the backup directory cannot be created.
+                                    backupDir = fn.GetPath();
+                                }
+                            }
+
+                            for (unsigned int revisions = 8; revisions; --revisions)
+                            {
+                                tmp1.Printf(_T("%s/%s.%u.%s"), backupDir.c_str(), fn.GetName().c_str(), revisions,   fn.GetExt().c_str());
+                                tmp2.Printf(_T("%s/%s.%u.%s"), backupDir.c_str(), fn.GetName().c_str(), revisions+1, fn.GetExt().c_str());
 
                                 if(::wxFileExists(tmp2))
                                     ::wxRemoveFile(tmp2);
@@ -248,9 +269,10 @@ void Autosave::OnTimer(wxTimerEvent& e)
                                     ::wxRenameFile(tmp1, tmp2);
                             }
 
-                            tmp1.Printf(_T("%s/%s.1.%s"), fn.GetPath().c_str(), fn.GetName().c_str(), fn.GetExt().c_str());
+                            tmp1.Printf(_T("%s/%s.1.%s"), backupDir.c_str(), fn.GetName().c_str(), fn.GetExt().c_str());
 
-                            cbSaveToFile(tmp1, ed->GetControl()->GetText(), ed->GetEncoding(), ed->GetUseBom());
+                            cbSaveToFile(tmp1, ed->GetControl()->GetText(), ed->GetEncoding(),
+                                         ed->GetUseBom(), robustSave);
                             ed->SetModified(); // the "real" file has not been saved!
                             break;
                         }

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10982 $
- * $Id: virtualbuildtargetsdlg.cpp 10982 2017-01-28 16:02:00Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/virtualbuildtargetsdlg.cpp $
+ * $Revision: 11904 $
+ * $Id: virtualbuildtargetsdlg.cpp 11904 2019-11-07 19:14:33Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/virtualbuildtargetsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -84,13 +84,15 @@ void VirtualBuildTargetsDlg::SetVirtualTarget(const wxString& targetName)
     {
         cbMessageBox(_("This virtual build target is invalid.\n"
                        "A virtual target must have at least one active target.\n"
-                       "Did you want to remove the virtual build target?"), _("Error"), wxICON_ERROR, this);
+                       "Did you want to remove the virtual build target?"),
+                     _("Error"), wxICON_ERROR, this);
     }
     else if (checked.GetCount() > 0)
     {
         if ( !m_pProject->DefineVirtualBuildTarget(targetName, checked) )
             cbMessageBox(_("Failed to setup this virtual build target.\n"
-                           "Check the debug log for more info..."), _("Error"), wxICON_ERROR, this);
+                           "Check the debug log for more info..."),
+                         _("Error"), wxICON_ERROR, this);
     }
 }
 
@@ -123,16 +125,14 @@ void VirtualBuildTargetsDlg::OnAddClick(cb_unused wxCommandEvent& event)
     if (lstAliases->FindString(targetName, true) != wxNOT_FOUND)
     {
         cbMessageBox(_("A virtual build target with this name already exists in this project!"),
-                        _("Error"),
-                        wxOK | wxCENTRE | wxICON_ERROR, this);
+                     _("Error"), wxOK | wxCENTRE | wxICON_ERROR, this);
         return;
     }
 
     if (m_pProject->GetBuildTarget(targetName))
     {
         cbMessageBox(_("A real build target with this name already exists in this project!"),
-                        _("Error"),
-                        wxOK | wxCENTRE | wxICON_ERROR, this);
+                     _("Error"), wxOK | wxCENTRE | wxICON_ERROR, this);
         return;
     }
 
@@ -155,16 +155,14 @@ void VirtualBuildTargetsDlg::OnEditClick(cb_unused wxCommandEvent& event)
     if (lstAliases->FindString(targetName, true) != wxNOT_FOUND)
     {
         cbMessageBox(_("A virtual build target with this name already exists in this project!"),
-                        _("Error"),
-                        wxOK | wxCENTRE | wxICON_ERROR, this);
+                     _("Error"), wxOK | wxCENTRE | wxICON_ERROR, this);
         return;
     }
 
     if (m_pProject->GetBuildTarget(targetName))
     {
         cbMessageBox(_("A real build target with this name already exists in this project!"),
-                        _("Error"),
-                        wxOK | wxCENTRE | wxICON_ERROR, this);
+                     _("Error"), wxOK | wxCENTRE | wxICON_ERROR, this);
         return;
     }
 
@@ -175,11 +173,19 @@ void VirtualBuildTargetsDlg::OnEditClick(cb_unused wxCommandEvent& event)
 
 void VirtualBuildTargetsDlg::OnRemoveClick(cb_unused wxCommandEvent& event)
 {
-    if (cbMessageBox(_("Are you sure you want to remove this virtual build target?"), _("Confirmation"), wxYES_NO | wxICON_QUESTION, this) == wxID_NO)
+    if ( cbMessageBox(_("Are you sure you want to remove this virtual build target?"),
+                      _("Confirmation"), wxYES_NO | wxICON_QUESTION, this) == wxID_NO )
+    {
         return;
+    }
     m_pProject->RemoveVirtualBuildTarget(lstAliases->GetStringSelection());
-    lstAliases->Delete(lstAliases->GetSelection());
-    lstAliases->SetSelection(0);
+    int selection = lstAliases->GetSelection();
+    lstAliases->Delete(selection);
+    // Select the item after the deleted one. If there is none, select the previous item
+    // -1 is a valid value, meaning no selection
+    if (selection == int(lstAliases->GetCount()))
+        --selection;
+    lstAliases->SetSelection(selection);
     CheckTargets();
 }
 

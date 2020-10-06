@@ -22,6 +22,7 @@
 #include "cbstyledtextctrl.h"
 #include "ThreadSearch.h"
 #include "ThreadSearchView.h"
+#include "ThreadSearchCommon.h"
 #include "ThreadSearchConfPanel.h"
 #include "ThreadSearchControlIds.h"
 #include "logging.h" //(pecan 2007/7/26)
@@ -139,14 +140,6 @@ ThreadSearch::ThreadSearch()
               m_SplitterMode(wxSPLIT_VERTICAL),
               m_FileSorting(InsertIndexManager::SortByFilePath)
 {
-    // Make sure our resources are available.
-    // In the generated boilerplate code we have no resources but when
-    // we add some, it will be nice that this code is in place already ;)
-    // ThreadSearch plugin has no resources in zip
-    if(!Manager::LoadResource(_T("ThreadSearch.zip")))
-    {
-        NotifyMissingFile(_T("ThreadSearch.zip"));
-    }
 }
 
 // destructor
@@ -439,47 +432,16 @@ void ThreadSearch::BuildModuleMenu(const ModuleType type, wxMenu* pMenu, const F
         {
             wxString sText = _("Find occurrences of: '") + m_SearchedWord + wxT("'");
 
-            // Tries to find the 'Find implementation' item to adds the
-            // 'Find occurrences' item just after or appends it at the end
-            int dIndex = GetInsertionMenuIndex(pMenu);
-            if ( dIndex >= 0 )
-            {
-                pMenuItem = pMenu->Insert(dIndex, controlIDs.Get(ControlIDs::idMenuCtxThreadSearch), sText);
-            }
-            else
-            {
-                pMenu->AppendSeparator();
-                pMenuItem = pMenu->Append(controlIDs.Get(ControlIDs::idMenuCtxThreadSearch), sText);
-            }
+            PluginManager *pluginManager = Manager::Get()->GetPluginManager();
+            int dIndex = pluginManager->GetFindMenuItemFirst() + pluginManager->GetFindMenuItemCount();
+            pMenuItem = pMenu->Insert(dIndex, controlIDs.Get(ControlIDs::idMenuCtxThreadSearch), sText);
+            Manager::Get()->GetPluginManager()->RegisterFindMenuItems(false, 1);
 
             // Disables item if a threaded search is running
             pMenuItem->Enable(!m_pThreadSearchView->IsSearchRunning());
         }
     }
 }
-
-
-int ThreadSearch::GetInsertionMenuIndex(const wxMenu* const pCtxMenu)
-{
-    if ( !IsAttached() )
-        return -1;
-
-    // Looks after the "Find implementation of:" menu item
-    const wxMenuItemList ItemsList = pCtxMenu->GetMenuItems();
-    for (int i = 0; i < (int)ItemsList.GetCount(); ++i)
-    {
-        #if wxCHECK_VERSION(3, 0, 0)
-        if (ItemsList[i]->GetItemLabelText().StartsWith(_("Find implementation of:")) )
-        #else
-        if (ItemsList[i]->GetLabel().StartsWith(_("Find implementation of:")) )
-        #endif
-        {
-            return ++i;
-        }
-    }
-    return -1;
-}
-
 
 cbConfigurationPanel* ThreadSearch::GetConfigurationPanel(wxWindow* parent)
 {
@@ -612,7 +574,6 @@ void ThreadSearch::SaveConfig(bool showPanel, int sashPosition,
     pCfg->Write(wxT("/SearchMasks"),           searchMasks);
 }
 
-
 bool ThreadSearch::BuildToolBar(wxToolBar* toolBar)
 {
     if ( !IsAttached() || !toolBar )
@@ -621,26 +582,29 @@ bool ThreadSearch::BuildToolBar(wxToolBar* toolBar)
     m_pToolbar = toolBar;
     m_pThreadSearchView->SetToolBar(toolBar);
 
-    const wxString &prefix = m_pThreadSearchView->GetImagePrefix();
-
-    ConfigManager *cfg = Manager::Get()->GetConfigManager(_T("app"));
-    if (cfg->ReadBool(_T("/environment/toolbar_size"),true))
-        m_pToolbar->SetToolBitmapSize(wxSize(16,16));
-    else
-        m_pToolbar->SetToolBitmapSize(wxSize(22,22));
+    const wxString &prefix = GetImagePrefix(true);
 
     m_pCboSearchExpr = new wxComboBox(toolBar, controlIDs.Get(ControlIDs::idCboSearchExpr),
                                       wxEmptyString, wxDefaultPosition, wxSize(130, -1), 0, NULL, wxCB_DROPDOWN);
     m_pCboSearchExpr->SetToolTip(_("Text to search"));
 
+    const double scaleFactor = cbGetContentScaleFactor(*toolBar);
+
+    wxBitmap bmpFind = cbLoadBitmapScaled(prefix + wxT("findf.png"), wxBITMAP_TYPE_PNG,
+                                          scaleFactor);
+    wxBitmap bmpFindDisabled = cbLoadBitmapScaled(prefix + wxT("findfdisabled.png"),
+                                                  wxBITMAP_TYPE_PNG, scaleFactor);
+    wxBitmap bmpOptions = cbLoadBitmapScaled(prefix + wxT("options.png"), wxBITMAP_TYPE_PNG,
+                                             scaleFactor);
+    wxBitmap bmpOptionsDisabled = cbLoadBitmapScaled(prefix + wxT("optionsdisabled.png"),
+                                                     wxBITMAP_TYPE_PNG, scaleFactor);
+
     toolBar->AddControl(m_pCboSearchExpr);
     toolBar->AddTool(controlIDs.Get(ControlIDs::idBtnSearch), _(""),
-                     wxBitmap(prefix + wxT("findf.png"), wxBITMAP_TYPE_PNG),
-                     wxBitmap(prefix + wxT("findfdisabled.png"), wxBITMAP_TYPE_PNG),
+                     bmpFind, bmpFindDisabled,
                      wxITEM_NORMAL, _("Run search"));
     toolBar->AddTool(controlIDs.Get(ControlIDs::idBtnOptions), _(""),
-                     wxBitmap(prefix + wxT("options.png"), wxBITMAP_TYPE_PNG),
-                     wxBitmap(prefix + wxT("optionsdisabled.png"), wxBITMAP_TYPE_PNG),
+                     bmpOptions, bmpOptionsDisabled,
                      wxITEM_NORMAL, _("Show options window"));
     m_pThreadSearchView->UpdateOptionsButtonImage(m_FindData);
 
@@ -796,15 +760,7 @@ bool ThreadSearch::GetCursorWord(wxString& sWord)
         if (!word.IsEmpty()) // Avoid empty strings
         {
             sWord.Clear();
-            while (--ws > 0)
-            {
-                const wxChar ch = control->GetCharAt(ws);
-                if (ch <= _T(' '))
-                    continue;
-                else if (ch == _T('~'))
-                    sWord << _T("~");
-                break;
-            }
+
             // m_SearchedWord will be used if 'Find occurrences' ctx menu is clicked
             sWord << word;
             wordFound = true;

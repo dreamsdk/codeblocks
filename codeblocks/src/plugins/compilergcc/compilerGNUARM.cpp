@@ -4,7 +4,7 @@
  *
  * $Revision: 8757 $
  * $Id: compilerGNUARM.cpp 8757 2013-01-05 08:47:13Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/compilergcc/compilerGNUARM.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerGNUARM.cpp $
  */
 
 #include <sdk.h>

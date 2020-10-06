@@ -4,7 +4,7 @@
  *
  * $Revision: 9410 $
  * $Id: crashhandler.cpp 9410 2013-10-19 23:45:48Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/crashhandler.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/crashhandler.cpp $
  */
 
 #ifdef __WXMSW__

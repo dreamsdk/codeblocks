@@ -86,6 +86,10 @@ if BUILD_REOPENEDITOR
 MAYBE_REOPENEDITOR=ReopenEditor appdata
 endif
 
+if BUILD_RNDGEN
+MAYBE_RNDGEN=rndgen appdata
+endif
+
 if BUILD_EXPORTER
 MAYBE_EXPORTER=source_exporter appdata
 endif
@@ -186,6 +190,7 @@ SUBDIRS = $(MAYBE_AUTOVERSIONING) \
 		$(MAYBE_SPELLCHECKER) \
 		$(MAYBE_REGEX) \
 		$(MAYBE_REOPENEDITOR) \
+		$(MAYBE_RNDGEN) \
 		$(MAYBE_THREADSEARCH) \
 		$(MAYBE_TOOLSPLUS) \
 		$(MAYBE_VALGRIND) \
@@ -228,6 +233,7 @@ DIST_SUBDIRS = appdata \
 		symtab \
 		regex_testbed \
 		ReopenEditor \
+		rndgen \
 		ThreadSearch \
 		ToolsPlus \
 		Valgrind \
@@ -239,17 +245,34 @@ DIST_SUBDIRS = appdata \
 		wxSmithIExplore \
 		wxSmithSTC
 
-EXTRA_DIST = rndgen
+EXTRA_DIST =
 if ENABLE_FORTRAN
 EXTRA_DIST += $(srcdir)/FortranProject/*.h \
 		$(srcdir)/FortranProject/*.cpp \
 		$(srcdir)/FortranProject/*.xml \
 		$(srcdir)/FortranProject/*.cbp \
 		$(srcdir)/FortranProject/update* \
-		$(srcdir)/FortranProject/images/*.png \
 		$(srcdir)/FortranProject/images/16x16/*.png \
-		$(srcdir)/FortranProject/images/fortranproject/*.png \
+		$(srcdir)/FortranProject/images/20x20/*.png \
+		$(srcdir)/FortranProject/images/24x24/*.png \
+		$(srcdir)/FortranProject/images/28x28/*.png \
+		$(srcdir)/FortranProject/images/32x32/*.png \
+		$(srcdir)/FortranProject/images/40x40/*.png \
+		$(srcdir)/FortranProject/images/48x48/*.png \
+		$(srcdir)/FortranProject/images/56x56/*.png \
+		$(srcdir)/FortranProject/images/64x64/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/16x16/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/20x20/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/24x24/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/28x28/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/32x32/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/40x40/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/48x48/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/56x56/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/64x64/*.png \
 		$(srcdir)/FortranProject/images/fortranproject/*.f90 \
+		$(srcdir)/FortranProject/images/fortranproject/*.py \
+		$(srcdir)/FortranProject/images/fortranproject/*.dem \
 		$(srcdir)/FortranProject/resources/*.xrc
 endif
 

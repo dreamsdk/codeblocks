@@ -4,9 +4,9 @@
  *
  * Copyright: 2008 Jens Lody
  *
- * $Revision: 8710 $
- * $Id: IncrementalSearch.h 8710 2012-12-24 23:19:43Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.h $
+ * $Revision: 11790 $
+ * $Id: IncrementalSearch.h 11790 2019-07-14 15:03:15Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.h $
  */
 
 #ifndef INCREMENTAL_SEARCH_H_INCLUDED
@@ -15,6 +15,7 @@
 #include <cbplugin.h>
 #include <wx/wxscintilla.h>
 
+class cbArtProvider;
 class cbStyledTextCtrl;
 class wxComboCtrl;
 class cbIncSearchComboPopUp;
@@ -97,6 +98,7 @@ private:
     const int m_IndicHighlight;
     int m_LengthFound;
     long m_LastInsertionPoint;
+    cbArtProvider *m_ArtProvider = nullptr;
 
     DECLARE_EVENT_TABLE()
 };

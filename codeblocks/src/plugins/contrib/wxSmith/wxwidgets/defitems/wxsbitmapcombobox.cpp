@@ -17,7 +17,7 @@
 *
 * $Revision: 10977 $
 * $Id: wxsbitmapcombobox.cpp 10977 2017-01-21 10:41:56Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsbitmapcombobox.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsbitmapcombobox.cpp $
 */
 
 

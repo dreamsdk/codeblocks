@@ -2,10 +2,13 @@
 #ifndef FORTRANFILEEXT_H
 #define FORTRANFILEEXT_H
 
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <editorcolourset.h>
+#endif
+
 #include "tokenizerf.h"
 #include "includedb.h"
-#include <editorcolourset.h>
-
 
 class FortranFileExt
 {

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10771 $
- * $Id: help_plugin.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/help_plugin/help_plugin.cpp $
+ * $Revision: 11805 $
+ * $Id: help_plugin.cpp 11805 2019-07-22 19:41:27Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/help_plugin/help_plugin.cpp $
  */
 
 #include "sdk.h"
@@ -209,8 +209,16 @@ void HelpPlugin::OnAttach()
     // load configuration (only saved in our config dialog)
     HelpCommon::LoadHelpFilesVector(m_Vector);
 
-    wxBitmap zoominbmp = wxXmlResource::Get()->LoadBitmap(_T("ZoomInBitmap"));
-    wxBitmap zoomoutbmp = wxXmlResource::Get()->LoadBitmap(_T("ZoomOutBitmap"));
+    const int imageSize = Manager::Get()->GetImageSize(Manager::UIComponent::Main);
+    const double uiScale = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::Main);
+
+    const wxString bmpPrefix = ConfigManager::GetDataFolder()
+                             + wxString::Format(wxT("/help_plugin.zip#zip:/images/%dx%d/"),
+                                                imageSize, imageSize);
+    wxBitmap zoominbmp = cbLoadBitmapScaled(bmpPrefix + wxT("zoomin.png"), wxBITMAP_TYPE_PNG,
+                                            uiScale);
+    wxBitmap zoomoutbmp = cbLoadBitmapScaled(bmpPrefix + wxT("zoomout.png"), wxBITMAP_TYPE_PNG,
+                                             uiScale);
 
     m_manFrame = new MANFrame(Manager::Get()->GetAppWindow(), wxID_ANY, zoominbmp, zoomoutbmp);
     SetManPageDirs(m_manFrame);
@@ -315,9 +323,6 @@ void HelpPlugin::BuildModuleMenu(const ModuleType type, wxMenu *menu, const File
 
   if (type == mtEditorManager)
   {
-    if (m_Vector.size() != 0)
-      menu->AppendSeparator();
-
     // add entries in popup menu
     int counter = 0;
     HelpCommon::HelpFilesVector::iterator it;
@@ -326,10 +331,12 @@ void HelpPlugin::BuildModuleMenu(const ModuleType type, wxMenu *menu, const File
     for (it = m_Vector.begin(); it != m_Vector.end(); ++it)
       AddToPopupMenu(sub_menu, idHelpMenus[counter++], it->first, it->second.readFromIni);
 
-    wxMenuItem *locate_in_menu = new wxMenuItem(0, wxID_ANY, _("&Locate in"), _T(""), wxITEM_NORMAL);
+    const wxString label = _("&Locate in");
+    wxMenuItem *locate_in_menu = new wxMenuItem(0, wxID_ANY, label, _T(""), wxITEM_NORMAL);
     locate_in_menu->SetSubMenu(sub_menu);
 
-    menu->Append(locate_in_menu);
+    const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
+    menu->Insert(position, locate_in_menu);
   }
 }
 
@@ -338,37 +345,20 @@ bool HelpPlugin::BuildToolBar(wxToolBar * /*toolBar*/)
     return false;
 }
 
-void HelpPlugin::AddToHelpMenu(int id, const wxString &help, bool
-#ifdef __WXMSW__
-    fromIni
-#endif
-)
+void HelpPlugin::AddToHelpMenu(int id, const wxString &help, cb_unused bool fromIni)
 {
-  if (!m_pMenuBar)
-    return;
+    if (!m_pMenuBar)
+        return;
 
-  int pos = m_pMenuBar->FindMenu(_("&Help"));
-
-  if (pos != wxNOT_FOUND)
-  {
-    wxMenu *helpMenu = m_pMenuBar->GetMenu(pos);
-
-    if (id == idHelpMenus[0])
-      helpMenu->AppendSeparator();
-
-#ifdef __WXMSW__
-    if (fromIni)
+    const int pos = m_pMenuBar->FindMenu(_("&Help"));
+    if (pos != wxNOT_FOUND)
     {
-      wxMenuItem *mitem = new wxMenuItem(0, id, help);
-      wxFont &font = mitem->GetFont();
-      font.SetWeight(wxFONTWEIGHT_BOLD);
-      mitem->SetFont(font);
-      helpMenu->Append(mitem);
+        wxMenu *helpMenu = m_pMenuBar->GetMenu(pos);
+        if (id == idHelpMenus[0])
+            helpMenu->AppendSeparator();
+
+        helpMenu->Append(id, help);
     }
-    else
-#endif
-      helpMenu->Append(id, help);
-  }
 }
 
 void HelpPlugin::RemoveFromHelpMenu(int id, const wxString & /*help*/)
@@ -389,11 +379,7 @@ void HelpPlugin::RemoveFromHelpMenu(int id, const wxString & /*help*/)
     // remove separator too (if it's the last thing left)
     mi = helpMenu->FindItemByPosition(helpMenu->GetMenuItemCount() - 1);
 
-    #if wxCHECK_VERSION(3, 0, 0)
     if (mi && (mi->GetKind() == wxITEM_SEPARATOR || mi->GetItemLabelText().IsEmpty()))
-    #else
-    if (mi && (mi->GetKind() == wxITEM_SEPARATOR || mi->GetText().IsEmpty()))
-    #endif
     {
       helpMenu->Remove(mi);
       delete mi;

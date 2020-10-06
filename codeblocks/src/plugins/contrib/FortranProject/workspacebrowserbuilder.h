@@ -6,9 +6,12 @@
 #ifndef WORKSPACEBROWSERBUILDER_H
 #define WORKSPACEBROWSERBUILDER_H
 
-#include <wx/thread.h>
-#include <wx/treectrl.h>
-#include <wx/imaglist.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/thread.h>
+    #include <wx/treectrl.h>
+    #include <wx/imaglist.h>
+#endif
 
 #include "tokenf.h"
 #include "parserf.h"
@@ -68,13 +71,13 @@ class WorkspaceBrowserBuilder
         void DeleteTopRootChildren();
         void MakeExpandedNodesArray(wxArrayString &expandedBottomNodes);
         void ExpandBottomNodes(wxArrayString &expandedBottomNodes);
-        wxImageList* GetImageList();
-		int GetTokenKindImageIdx(TokenF* token);
-		void MarkSymbol(const wxString& filename, int line);
+        int GetTokenKindImageIdx(TokenF* token);
+        void SelectSymbol(const wxString& filename, int line);
+        void MarkSymbol(const wxString& filename, int line);
         void MakeVisibleCurrent();
         void SetActiveProject(cbProject* prj);
 
-		bool m_AtWork;
+        bool m_AtWork;
 
     protected:
         void BuildTree();
@@ -90,6 +93,7 @@ class WorkspaceBrowserBuilder
         bool HasGlobalFunctionsOthers(int tokenKindMask);
         bool HasChildren(TokenF* tokenParent, int tokenKindMask);
         void MarkItem(wxTreeCtrl* tree, wxTreeItemId& item, bool mark=true);
+        bool SelectBottomSymbol(const wxString& filename, int line);
         bool MarkBottomSymbol(const wxString& filename, int line);
         void UnmarkBottomSymbol();
         void MarkChildSymbol(wxTreeCtrl* tree, wxTreeItemId& root, int line, bool mark=true);
@@ -100,7 +104,7 @@ class WorkspaceBrowserBuilder
         ParserF* m_pParser;
         wxTreeCtrl* m_pTreeTop;
         wxTreeCtrl* m_pTreeBottom;
-        FPImageList m_Imlist;
+        FPImageList* m_pImlist;
 
         wxString m_ActiveFilename;
         cbProject* m_pActiveProject;

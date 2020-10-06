@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11208 $
- * $Id: pluginmanager.cpp 11208 2017-10-18 23:42:37Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/pluginmanager.cpp $
+ * $Revision: 11354 $
+ * $Id: pluginmanager.cpp 11354 2018-03-31 21:50:05Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/pluginmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -30,6 +30,8 @@
     #include "globals.h"
     #include "sdk_events.h"
 #endif
+
+#include <algorithm>
 
 #include <wx/dynlib.h>
 #include <wx/filesys.h>
@@ -1371,19 +1373,24 @@ PluginsArray PluginManager::GetOffersFor(PluginType type)
 
 void PluginManager::AskPluginsForModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data)
 {
+    std::map<wxString, cbPlugin*> sortedPlugins;
     for (unsigned int i = 0; i < m_Plugins.GetCount(); ++i)
     {
         cbPlugin* plug = m_Plugins[i]->plugin;
         if (plug && plug->IsAttached())
+            sortedPlugins[m_Plugins[i]->info.name] = plug;
+    }
+
+    // We want the order of iteration to be more stable, so there are fewer surprises on different machines.
+    for (auto &pair : sortedPlugins)
+    {
+        try
         {
-            try
-            {
-                plug->BuildModuleMenu(type, menu, data);
-            }
-            catch (cbException& exception)
-            {
-                exception.ShowErrorMessage(false);
-            }
+            pair.second->BuildModuleMenu(type, menu, data);
+        }
+        catch (cbException& exception)
+        {
+            exception.ShowErrorMessage(false);
         }
     }
 
@@ -1395,6 +1402,72 @@ void PluginManager::AskPluginsForModuleMenu(const ModuleType type, wxMenu* menu,
                 (wxObjectEventFunction) (wxEventFunction) (wxCommandEventFunction)
                 &PluginManager::OnScriptModuleMenu);
     }
+}
+
+void PluginManager::ResetModuleMenu()
+{
+    m_FindMenuItemCount = 0;
+    m_FindMenuItemFirst = 0;
+    m_LastNonPluginMenuId = 0;
+}
+
+void PluginManager::RegisterFindMenuItems(bool before, int count)
+{
+    if (before)
+        m_FindMenuItemFirst += count;
+    else
+        m_FindMenuItemCount += count;
+}
+
+int PluginManager::GetFindMenuItemCount() const
+{
+    return m_FindMenuItemCount;
+}
+
+int PluginManager::GetFindMenuItemFirst() const
+{
+    return m_FindMenuItemFirst;
+}
+
+void PluginManager::RegisterLastNonPluginMenuItem(int id)
+{
+    m_LastNonPluginMenuId = id;
+}
+
+int PluginManager::FindSortedMenuItemPosition(wxMenu &popup, const wxString& label) const
+{
+    wxString labelNoAmpersands = label;
+    // Remove ampersands, because they are not visible but affect the sorting if they are at the
+    // start of the label.
+    labelNoAmpersands.erase(std::remove(labelNoAmpersands.begin(), labelNoAmpersands.end(), '&'),
+                            labelNoAmpersands.end());
+
+    int position = -1;
+    const wxMenuItemList &items = popup.GetMenuItems();
+    const int count = int(items.size());
+    for (int ii = 0; ii < count; ++ii)
+    {
+        if (items[ii]->GetId() == m_LastNonPluginMenuId)
+        {
+            position = ii + 1;
+            break;
+        }
+    }
+
+    if (position == -1 || (position >= count))
+        return count;
+    if (items[position]->GetKind() == wxITEM_SEPARATOR)
+        position++;
+
+    // Linear search for now. The number of items isn't large, so it shouldn't be a performance
+    // problem.
+    for (int ii = position; ii < count; ++ii)
+    {
+        const wxString &itemLabel = items[ii]->GetItemLabelText();
+        if (labelNoAmpersands.CmpNoCase(itemLabel) <= 0)
+            return ii;
+    }
+    return count;
 }
 
 void PluginManager::OnScriptMenu(wxCommandEvent& event)

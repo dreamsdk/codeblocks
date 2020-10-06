@@ -55,8 +55,7 @@ void OnlineSpellChecker::OnEditorChange(cb_unused cbEditor* ctrl) const
 
 int OnlineSpellChecker::GetIndicator() const
 {
-    const int theIndicator = 11;
-    return theIndicator;
+    return 15;
 }
 
 const wxColor OnlineSpellChecker::GetIndicatorColor() const
@@ -104,31 +103,13 @@ void OnlineSpellChecker::OnEditorChangeTextRange(cbEditor* ctrl, int start, int 
         // find recheck range start:
         if (start > 0)
             start--;
-        while (start > 0)
-        {
-            EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
-            if (!colour_set)
-                break;
 
-            wxString lang = colour_set->GetLanguageName(ctrl->GetLanguage() );
-            wxChar   ch   = stc->GetCharAt(start - 1);
-            bool isEscape     = SpellCheckHelper::IsEscapeSequenceStart(ch, lang, stc->GetStyleAt(start-1));
-            bool isWhiteSpace = SpellCheckHelper::IsWhiteSpace(ch);
-            if (!isEscape && isWhiteSpace)
-                break;
-
-            start--;
-        }
-
-        // find recheck range end:
-        while (end < stc->GetLength())
-        {
-            wxChar ch = stc->GetCharAt(end);
-            // TODO: Breaks with Umlauts / Russian characters (Unicode in general) here
-            if ( SpellCheckHelper::IsWhiteSpace(ch) )
-                break;
-            end++;
-        }
+        // Find the start of the first word in the text range [start,stop]
+        start = stc->WordStartPosition(start, true);
+        if (start < 0)
+            return;     // we could not find word start
+        // Find the end of the last word in the text range [start,stop]
+        end = stc->WordEndPosition(end, true);
 
         if (   m_invalidatedRangesStart.GetCount() == 0
                 || m_invalidatedRangesStart.Last()     != start
@@ -197,6 +178,8 @@ void OnlineSpellChecker::DoSetIndications(cbEditor* ctrl) const
 
     // Manager::Get()->GetLogManager()->Log(wxT("OSC: update regions"));
 
+    int curspos = stc->GetCurrentPos();
+
     for (int i = 0; i < (int)m_invalidatedRangesStart.GetCount(); i++)
     {
         int start = m_invalidatedRangesStart[i];
@@ -217,45 +200,34 @@ void OnlineSpellChecker::DoSetIndications(cbEditor* ctrl) const
             // remove styling:
             stc->IndicatorClearRange(start, end - start);
 
-            int wordstart = start;
-            int wordend = wordstart;
-            for( int pos = wordstart ;  pos < end ; )
-            {
-                EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
-                if (!colour_set)
-                    break;
-                wxString lang = colour_set->GetLanguageName(ctrl->GetLanguage() );
-                wxChar ch = stc->GetCharAt(pos);
-                // treat chars which don't have the correct style as whitespace:
-                bool isEscape     = SpellCheckHelper::IsEscapeSequenceStart(ch, lang, stc->GetStyleAt(pos));
-                bool isWhiteSpace = SpellCheckHelper::IsWhiteSpace(ch);
-                if (isEscape || isWhiteSpace || !m_pSpellHelper->HasStyleToBeChecked(lang, stc->GetStyleAt(pos)))
-                {
-                    if (wordstart != wordend)
-                        DissectWordAndCheck(stc, wordstart, wordend);
+            EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
+            if (!colour_set)
+                break;
+            const wxString lang = colour_set->GetLanguageName(ctrl->GetLanguage() );
 
-                    pos++;
-                    if (isEscape)
-                        pos++;
-
-                    wordstart = pos;
-                    wordend   = pos;
-                }
-                else
-                {
-                    pos++;
-                    wordend = pos;
-                }
-            }
-            if (wordstart != wordend)
+            for ( int pos = start ;  pos < end ; pos++)
             {
-                EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
-                if (colour_set)
+                int wordstart = stc->WordStartPosition(pos, true);
+                if (wordstart < 0)
+                    continue;   // No valid word start found
+
+                int wordend = stc->WordEndPosition(wordstart, true);
+                if ( wordend > 0 &&             // Word end has to be > 0 to be valid (< 0 -> invalid pos, == 0 -> only 1 character)
+                     wordend != curspos &&      // If the cursor is at the end of the current word, the user is currently editing this word, so we skip it
+                     wordend != wordstart &&    // We do not check single letters...
+                     m_pSpellHelper->HasStyleToBeChecked(lang, stc->GetStyleAt(wordstart)) )
                 {
-                    wxString lang = colour_set->GetLanguageName(ctrl->GetLanguage() );
-                    if ( m_pSpellHelper->HasStyleToBeChecked(lang, stc->GetStyleAt(wordstart))  )
-                        DissectWordAndCheck(stc, wordstart, wordend);
+                    DissectWordAndCheck(stc, wordstart, wordend);
                 }
+                // wordend can point to a position before pos, so this can
+                // lead to an infinite loop. For example the combination
+                //  "\r\n"
+                // pos points to '\n' wordstart is then '\r' and wordend
+                // is also '\r'. So wordend points to a position prior
+                // to pos. To advance anyway we check if we have moved
+                // from the last iteration.
+                if(wordend > pos)
+                    pos = wordend;
             }
         }
     }
@@ -312,10 +284,11 @@ void OnlineSpellChecker::DissectWordAndCheck(cbStyledTextCtrl* stc, int wordstar
                 {
                     if (isMultibyte) // not perfect, so only try if necessary
                     {
-                        int len = 0;
-                        const int startPos = stc->FindText(wordstart + a, wordend, word.Mid(a, b - a), wxSCI_FIND_MATCHCASE, &len);
+                        int endPos = 0;
+                        const int startPos = stc->FindText(wordstart + a, wordend, word.Mid(a, b - a),
+                                                           wxSCI_FIND_MATCHCASE, &endPos);
                         if (startPos != wxNOT_FOUND)
-                            stc->IndicatorFillRange(startPos, len);
+                            stc->IndicatorFillRange(startPos, endPos - startPos);
                     }
                     else
                         stc->IndicatorFillRange(wordstart + a, b - a);
@@ -342,10 +315,10 @@ void OnlineSpellChecker::DissectWordAndCheck(cbStyledTextCtrl* stc, int wordstar
         {
             if (isMultibyte) // not perfect, so only try if necessary
             {
-                int len = 0;
-                const int startPos = stc->FindText(wordstart + a, wordend, spellcheck, wxSCI_FIND_MATCHCASE, &len);
+                int endPos = 0;
+                const int startPos = stc->FindText(wordstart + a, wordend, spellcheck, wxSCI_FIND_MATCHCASE, &endPos);
                 if (startPos != wxNOT_FOUND)
-                    stc->IndicatorFillRange(startPos, len);
+                    stc->IndicatorFillRange(startPos, endPos - startPos);
             }
             else
                 stc->IndicatorFillRange(wordstart + a, b - a);

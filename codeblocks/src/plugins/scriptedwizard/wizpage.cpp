@@ -4,7 +4,7 @@
  *
  * $Revision: 9832 $
  * $Id: wizpage.cpp 9832 2014-06-25 00:31:36Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/scriptedwizard/wizpage.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/wizpage.cpp $
  */
 
 #include <sdk.h>

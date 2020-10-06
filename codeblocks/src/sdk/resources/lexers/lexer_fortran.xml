@@ -43,12 +43,6 @@
 				<Style name="Operator"
 						index="6,12"
 						fg="255,0,0"/>
-				<Style name="Selection"
-						index="-99"
-						bg="192,192,192"/>
-				<Style name="Active line"
-						index="-98"
-						bg="255,255,160"/>
 				<Style name="Breakpoint line"
 						index="-2"
 						bg="255,160,160"/>
@@ -58,14 +52,6 @@
 				<Style name="Compiler error line"
 						index="-4"
 						bg="255,128,0"/>
-				<Style name="Matching brace highlight"
-						index="34"
-						fg="255,0,0"
-						bold="1"
-						underlined="1"/>
-				<Style name="No matching brace highlight"
-						index="35"
-						bg="255,0,0"/>
 				<Keywords>
                         <!-- Primary keywords and identifiers-->
                         <Set index="0"
@@ -94,7 +80,7 @@ null new_line  block abstract delegate static reference round deferred
 decorate extends generic non_overridable enum endenum enumerator typealias
 submodule endsubmodule concurrent contiguous re im endblock non_intrinsic
 codimension contiguous impure critical endcritical lock unlock error sync
-all memory images
+all memory images fail image event post change team endteam
 "/>
                         <!-- Intrinsic and Extended Functions-->
                         <Set index="1"
@@ -131,6 +117,9 @@ acosh asinh atanh c_sizeof bessel_j0 bessel_j1 bessel_jn bessel_y0 bessel_y1 bes
 gamma bge bgt ble blt dshiftl dshiftr maskl maskr shifta shiftl shiftr merge_bits iall iany iparity
 storage_size parity norm2 erfc erfc_scaled execute_command_line findloc ucobound lcobound 
 num_images this_image image_index atomic_define atomic_ref rank is_contiguous
+atomic_add atomic_and atomic_cas atomic_fetch_add atomic_fetch_and atomic_fetch_or
+atomic_fetch_xor atomic_or atomic_xor get_team co_broadcast co_max co_min co_reduce
+co_sum event_query failed_images image_status stopped_images team_number
 
 "/>
                         <!-- Non Standard, Extended and User-Defined -->
@@ -155,7 +144,8 @@ c_horizontal_tab c_vertical_tab
 atomic_int_kind atomic_logical_kind compiler_options compiler_version iostat_inquire_internal_unit lock_type
 stat_locked stat_locked_other_image stat_stopped_image stat_unlocked
 character_storage_size error_unit file_storage_size input_unit iostat_end iostat_eor
-numeric_storage_size output_unit "/>
+numeric_storage_size output_unit initial_team parent_team stat_failed_image
+stat_unlocked_failed_image team_type event_type"/>
 				</Keywords>
 				<SampleCode value="lexer_fortran.sample"
 						breakpoint_line="20"

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resource xmlns="http://www.wxwidgets.org/wxxrc" version="2.5.3.0">
+	<object class="wxPanel" name="pnlCallTreeView">
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<object class="wxPanel" name="CTVMainPanel">
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<object class="wxTreeCtrl" name="treeCallTreeView">
+								<image_list>&lt;none&gt;</image_list>
+								<tree_items>
+									<item>TreeCtrl1</item>
+									<item>&lt;none&gt;</item>
+								</tree_items>
+								<items_text>
+									<item2>TreeCtrl1</item2>
+									<item2>&lt;none&gt;</item2>
+								</items_text>
+								<style>wxTR_HIDE_ROOT|wxTR_DEFAULT_STYLE</style>
+							</object>
+							<flag>wxALL|wxEXPAND</flag>
+							<option>1</option>
+						</object>
+					</object>
+				</object>
+				<flag>wxEXPAND</flag>
+				<option>1</option>
+			</object>
+		</object>
+	</object>
+</resource>

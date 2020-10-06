@@ -18,8 +18,8 @@ class ProjectBuildTarget;
 class ProjectFile;
 class Compiler;
 
-typedef std::map<ProjectBuildTarget*, wxString> OptionsMap;
-typedef std::map<ProjectBuildTarget*, wxArrayString> SearchDirsMap;
+typedef std::map<const ProjectBuildTarget*, wxString> OptionsMap;
+typedef std::map<const ProjectBuildTarget*, wxArrayString> SearchDirsMap;
 
 /** Generate command-lines needed to produce a build.
   * This pre-generates everything when Init() is called.
@@ -36,14 +36,34 @@ class DLLIMPORT CompilerCommandGenerator
         /** Initialize for use with the specified @c project. */
         virtual void Init(cbProject* project);
 
+        struct Result
+        {
+            wxString *macro;
+            bool processedCppFile = false;
+
+            explicit Result(wxString *macro) : macro(macro) {}
+        };
+
+        struct Params
+        {
+            const ProjectBuildTarget* target = nullptr;
+            const ProjectFile* pf = nullptr;
+
+            wxString file;
+            wxString object;
+            wxString flatObject;
+            wxString deps;
+            bool hasCppFilesToLink = false;
+        };
+
         /** Get the command line to compile/link the specific file. */
-        virtual void GenerateCommandLine(wxString&          macro,
-                                         ProjectBuildTarget* target,
-                                         ProjectFile*        pf,
-                                         const wxString&     file,
-                                         const wxString&     object,
-                                         const wxString&     flat_object,
-                                         const wxString&     deps);
+        virtual void GenerateCommandLine(wxString& macro, const ProjectBuildTarget* target,
+                                         const ProjectFile* pf, const wxString& file,
+                                         const wxString& object, const wxString& flat_object,
+                                         const wxString& deps);
+
+        /** Get the command line to compile/link the specific file. */
+        virtual void GenerateCommandLine(Result &result, const Params &params);
 
         /** @brief Get the full include dirs used in the actual command line.
           *

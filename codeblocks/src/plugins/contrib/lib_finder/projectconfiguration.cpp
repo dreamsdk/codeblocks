@@ -18,7 +18,7 @@
 *
 * $Revision: 8561 $
 * $Id: projectconfiguration.cpp 8561 2012-11-14 22:25:50Z killerbot $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/projectconfiguration.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/projectconfiguration.cpp $
 */
 
 #include "projectconfiguration.h"

@@ -1,8 +1,11 @@
 #ifndef FCONSTRUCT_H
 #define FCONSTRUCT_H
 
-#include <wx/string.h>
-#include <wx/regex.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/regex.h>
+#endif
 #include <vector>
 #include <map>
 

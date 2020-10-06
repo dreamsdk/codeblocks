@@ -4,7 +4,7 @@
  *
  * $Revision: 10665 $
  * $Id: editmimetypesdlg.cpp 10665 2016-01-17 13:58:48Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/defaultmimehandler/editmimetypesdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/defaultmimehandler/editmimetypesdlg.cpp $
  */
 
 #include "sdk.h"

@@ -7,15 +7,20 @@
 #ifndef KEYWORDSPARSERF_H
 #define KEYWORDSPARSERF_H
 
-#include <wx/string.h>
-#include <wx/event.h>
-#include <wx/file.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/event.h>
+    #include <wx/file.h>
+
+    #include <cbeditor.h>
+#endif
+#include <set>
+#include <vector>
+
 #include "tokenf.h"
 #include "tokenizerf.h"
 #include "parserf.h"
-#include "cbeditor.h"
-#include <set>
-#include <vector>
 
 typedef std::vector<FortranSourceForm> ArrayOfFortranSourceForm;
 typedef std::set<wxString> StringSet;

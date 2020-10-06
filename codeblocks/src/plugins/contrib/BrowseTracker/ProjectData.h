@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: ProjectData.h 10361 2015-07-26 08:13:26Z jenslody $
+// RCS-ID: $Id: ProjectData.h 11347 2018-03-26 14:24:13Z pecanh $
 #ifndef PROJECTDATA_H
 #define PROJECTDATA_H
 
@@ -36,7 +36,6 @@ class ProjectData
 
         void            AddEditor( wxString filePath );
         BrowseMarks*    GetBrowse_MarksFromHash( wxString filePath);
-        BrowseMarks*    GetBook_MarksFromHash( wxString filePath);
         BrowseMarks*    GetPointerToBrowse_MarksArray(FileBrowse_MarksHash& hash ,wxString filePath);
         bool            FindFilename( const wxString filePath);
         void            IncrementActivationCount();
@@ -45,8 +44,6 @@ class ProjectData
         BrowseMarks*    HashAddBrowse_Marks( const wxString filePath );
 
 
-        BrowseMarks*    HashAddBook_Marks( wxString filePath);
-        BrowseMarks*    HashAddBook_Marks( EditorBase* eb);
         void            SaveLayout();
         void            LoadLayout();
         bool            IsLayoutLoaded(){return m_bLayoutLoaded;}
@@ -62,7 +59,6 @@ class ProjectData
         cbProject*      m_pCBProject;
 
         // Hash: filePath, BrowseMarks* array
-        FileBrowse_MarksHash m_FileBook_MarksArchive;
         FileBrowse_MarksHash m_FileBrowse_MarksArchive;
 
         int     m_CurrIndexEntry;

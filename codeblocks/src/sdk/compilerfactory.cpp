@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9426 $
- * $Id: compilerfactory.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/compilerfactory.cpp $
+ * $Revision: 11900 $
+ * $Id: compilerfactory.cpp 11900 2019-11-04 19:35:21Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compilerfactory.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -41,10 +41,9 @@ Compiler* CompilerFactory::GetCompiler(size_t index)
 
 Compiler* CompilerFactory::GetCompiler(const wxString& id)
 {
-    const wxString lid = id.Lower();
     for (size_t i = 0; i < Compilers.GetCount(); ++i)
     {
-        if (Compilers[i]->GetID().IsSameAs(lid))
+        if (Compilers[i]->GetID().IsSameAs(id, false))
             return Compilers[i];
     }
     // try again using previous id format
@@ -52,7 +51,7 @@ Compiler* CompilerFactory::GetCompiler(const wxString& id)
     {
         wxString oldId = Compilers[i]->GetID();
         oldId.Replace(wxT("-"), wxEmptyString);
-        if (oldId.IsSameAs(lid))
+        if (oldId.IsSameAs(id, false))
             return Compilers[i];
     }
     return nullptr;
@@ -301,7 +300,8 @@ Compiler* CompilerFactory::SelectCompilerUI(const wxString& message, const wxStr
     const wxString lid = preselectedID.Lower();
 
     // first build a list of available compilers
-    wxString* comps = new wxString[Compilers.GetCount()];
+    std::unique_ptr<wxString[]> comps(new wxString[Compilers.GetCount()]);
+
     for (size_t i = 0; i < Compilers.GetCount(); ++i)
     {
         comps[i] = Compilers[i]->GetName();
@@ -324,7 +324,7 @@ Compiler* CompilerFactory::SelectCompilerUI(const wxString& message, const wxStr
                              message,
                              _("Compiler selection"),
                              CompilerFactory::Compilers.GetCount(),
-                             comps);
+                             comps.get());
     dlg.SetSelection(selected);
     PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)

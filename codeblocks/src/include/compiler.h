@@ -203,7 +203,6 @@ struct CompilerPrograms
     wxString WINDRES;   // resource compiler
     wxString MAKE;      // make
     wxString DBGconfig; // debugger config name = "debugger_settings_name:config_name"
-    wxString LOADER;    // loader before running program - DreamSDK requirement!
 };
 
 /// Struct to keep switches
@@ -277,7 +276,7 @@ class DLLIMPORT Compiler : public CompileOptionsBase
     public:
         static const wxString FilePathWithSpaces;
         Compiler(const wxString& name, const wxString& ID, const wxString& parentID = wxEmptyString, int weight = 50);
-        virtual ~Compiler();
+        ~Compiler() override;
 
         /** @brief Check if the compiler is actually valid (installed). */
         virtual bool IsValid();
@@ -294,8 +293,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         virtual const wxString& GetName() const             { return m_Name; }
         /** @brief Get the compiler's master path (must contain "bin", "include" and "lib") */
         virtual const wxString& GetMasterPath() const       { return m_MasterPath; }
-        /** @brief Get the compiler's loader args (if any) */
-        virtual const wxString& GetLoaderArguments() const  { return m_LoaderArgs; }
         /** @brief Get the compiler's extra paths */
         virtual const wxArrayString& GetExtraPaths() const  { return m_ExtraPaths; }
         /** @brief Get the compiler's programs */
@@ -322,8 +319,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         virtual void SetName(const wxString& name){ m_Name = name; }
         /** @brief Set the compiler's master path (must contain "bin", "include" and "lib") */
         virtual void SetMasterPath(const wxString& path){ m_MasterPath = path; m_NeedValidityCheck = true; }
-        /** @brief Set the compiler's loader arguments (if any) */
-        virtual void SetLoaderArguments(const wxString& loaderArgs){ m_LoaderArgs = loaderArgs; }
         /** @brief Set the compiler's extra paths */
         virtual void SetExtraPaths(const wxArrayString& paths){ m_ExtraPaths = paths; m_NeedValidityCheck = true; }
         /** @brief Set the compiler's programs */
@@ -412,7 +407,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         // set the following members in your class
         wxString            m_Name;
         wxString            m_MasterPath;
-        wxString            m_LoaderArgs;
         wxArrayString       m_ExtraPaths;
         CompilerToolsVector m_Commands[ctCount];
         CompilerPrograms    m_Programs;
@@ -439,7 +433,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         {
             wxString         Name;
             wxString         MasterPath;
-            wxString         LoaderArgs;
             wxArrayString    ExtraPaths;
             CompilerPrograms Programs;
 

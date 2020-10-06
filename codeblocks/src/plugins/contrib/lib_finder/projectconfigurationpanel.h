@@ -18,7 +18,7 @@
 *
 * $Revision: 10290 $
 * $Id: projectconfigurationpanel.h 10290 2015-05-15 10:58:40Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/projectconfigurationpanel.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/projectconfigurationpanel.h $
 */
 
 #ifndef PROJECTCONFIGURATIONPANEL_H

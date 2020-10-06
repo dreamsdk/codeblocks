@@ -4,7 +4,7 @@
  *
  * $Revision: 11194 $
  * $Id: ccoptionsdlg.cpp 11194 2017-10-10 05:23:33Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/codecompletion/ccoptionsdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/ccoptionsdlg.cpp $
  */
 
 #include <sdk.h>

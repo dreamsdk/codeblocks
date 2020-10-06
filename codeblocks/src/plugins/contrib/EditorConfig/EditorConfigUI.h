@@ -3,18 +3,18 @@
 
 //(*Headers(EditorConfigUI)
 #include <wx/panel.h>
+class wxBoxSizer;
+class wxCheckBox;
 class wxChoice;
 class wxFlexGridSizer;
-class wxSpinEvent;
 class wxSpinCtrl;
-class wxBoxSizer;
+class wxSpinEvent;
 class wxStaticText;
-class wxCheckBox;
 //*)
 
-class wxEvtHandler;
 
 class cbProject;
+class EditorConfig;
 
 #include "configurationpanel.h"
 
@@ -23,17 +23,17 @@ class cbProject;
 class EditorConfigUI : public cbConfigurationPanel
 {
 	public:
-
-		EditorConfigUI(wxWindow* parent, wxEvtHandler* eh, cbProject* prj, const TEditorSettings& es);
+		EditorConfigUI(wxWindow* parent, EditorConfig* plugin, cbProject* prj,
+                       const EditorSettings& es);
 		virtual ~EditorConfigUI();
 
 		//(*Declarations(EditorConfigUI)
-		wxCheckBox* chkUseTabs;
-		wxSpinCtrl* spnIndent;
 		wxCheckBox* chkActive;
-		wxSpinCtrl* spnTabWidth;
 		wxCheckBox* chkTabIndents;
+		wxCheckBox* chkUseTabs;
 		wxChoice* choEOLMode;
+		wxSpinCtrl* spnIndent;
+		wxSpinCtrl* spnTabWidth;
 		//*)
 
   virtual wxString GetTitle() const          { return _("EditorConfig options"); };
@@ -50,8 +50,8 @@ class EditorConfigUI : public cbConfigurationPanel
 		static const long ID_CHO_EOL_MODE;
 		//*)
 
-    wxEvtHandler* m_NotifiedWindow;
-    cbProject*    m_Project;
+        EditorConfig* m_Plugin;
+        cbProject*    m_Project;
 
 	private:
 

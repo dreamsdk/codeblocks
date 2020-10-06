@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10777 $
- * $Id: findreplacedlg.cpp 10777 2016-02-07 11:15:55Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/findreplacedlg.cpp $
+ * $Revision: 11349 $
+ * $Id: findreplacedlg.cpp 11349 2018-03-27 21:59:55Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/findreplacedlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -32,7 +32,11 @@
     #include "projectmanager.h"
 #endif
 
+#include "incremental_select_helper.h"
+
 #define CONF_GROUP _T("/replace_options")
+
+const int maxTargetCount = 100;
 
 //On wxGTK changing the focus of widgets inside the notebook page change event doesn't work
 //so we create this custom event (and associated handler) to do the focus change after
@@ -49,8 +53,9 @@ BEGIN_EVENT_TABLE(FindReplaceDlg, wxScrollingDialog)
     EVT_CHECKBOX(XRCID("chkLimitTo1"),   FindReplaceDlg::OnLimitToChange)
     EVT_CHECKBOX(XRCID("chkLimitTo2"),   FindReplaceDlg::OnLimitToChange)
     EVT_RADIOBOX(XRCID("rbScope2"),      FindReplaceDlg::OnScopeChange)
-    EVT_BUTTON(  XRCID("btnBrowsePath"), FindReplaceDlg::OnBrowsePath)
-    EVT_CHOICE(  XRCID("chProject"),     FindReplaceDlg::OnSearchProject)
+    EVT_BUTTON(XRCID("btnBrowsePath"),   FindReplaceDlg::OnBrowsePath)
+    EVT_BUTTON(XRCID("btnSelectTarget"), FindReplaceDlg::OnSelectTarget)
+    EVT_CHOICE(XRCID("chProject"),       FindReplaceDlg::OnSearchProject)
 
     EVT_COMMAND(wxID_ANY, wxDEFERRED_FOCUS_EVENT, FindReplaceDlg::OnDeferredFocus)
 END_EVENT_TABLE()
@@ -83,8 +88,8 @@ FindReplaceDlg::FindReplaceDlg(wxWindow* parent, const wxString& initial, bool h
     bool flgWholeWord = cfg->ReadBool(CONF_GROUP _T("/match_word"), false);
     bool flgStartWord = cfg->ReadBool(CONF_GROUP _T("/start_word"), false);
     bool flgStartFile = cfg->ReadBool(CONF_GROUP _T("/start_file"), false);
-    XRCCTRL(*this, "chkLimitTo1", wxCheckBox)->SetValue(flgWholeWord | flgStartWord | flgStartFile);
-    XRCCTRL(*this, "rbLimitTo1",  wxRadioBox)->Enable((bool)(flgWholeWord | flgStartWord | flgStartFile));
+    XRCCTRL(*this, "chkLimitTo1", wxCheckBox)->SetValue(flgWholeWord || flgStartWord || flgStartFile);
+    XRCCTRL(*this, "rbLimitTo1",  wxRadioBox)->Enable(flgWholeWord || flgStartWord || flgStartFile);
     XRCCTRL(*this, "rbLimitTo1",  wxRadioBox)->SetSelection(flgStartFile ? 2 : (flgStartWord ? 1 : 0));
 
     XRCCTRL(*this, "chkMatchCase1", wxCheckBox)->SetValue(cfg->ReadBool(CONF_GROUP _T("/match_case"), false));
@@ -100,8 +105,8 @@ FindReplaceDlg::FindReplaceDlg(wxWindow* parent, const wxString& initial, bool h
     flgWholeWord = cfg->ReadBool(CONF_GROUP _T("/match_word2"), false);
     flgStartWord = cfg->ReadBool(CONF_GROUP _T("/start_word2"), false);
     flgStartFile = cfg->ReadBool(CONF_GROUP _T("/start_file2"), false);
-    XRCCTRL(*this, "chkLimitTo2", wxCheckBox)->SetValue(flgWholeWord | flgStartWord | flgStartFile);
-    XRCCTRL(*this, "rbLimitTo2",  wxRadioBox)->Enable((bool)(flgWholeWord | flgStartWord | flgStartFile));
+    XRCCTRL(*this, "chkLimitTo2", wxCheckBox)->SetValue(flgWholeWord || flgStartWord || flgStartFile);
+    XRCCTRL(*this, "rbLimitTo2",  wxRadioBox)->Enable(flgWholeWord || flgStartWord || flgStartFile);
     XRCCTRL(*this, "rbLimitTo2",  wxRadioBox)->SetSelection(flgStartFile ? 2 : (flgStartWord ? 1 : 0));
 
     XRCCTRL(*this, "cmbFind2",      wxComboBox)->SetValue(initial);
@@ -172,11 +177,30 @@ FindReplaceDlg::FindReplaceDlg(wxWindow* parent, const wxString& initial, bool h
             chProject->SetSelection(i);
             chTarget->Clear();
             chTarget->AppendString(_("All project files"));
-            for(int j=0;j<active_project->GetBuildTargetsCount();++j)
-                chTarget->AppendString(active_project->GetBuildTarget(j)->GetTitle());
-            const int targIdx = chTarget->FindString(active_project->GetActiveBuildTarget(), true);
-            chTarget->SetSelection(   cfg->ReadBool(CONF_GROUP _T("/target_scope_all"), true)
-                                   || targIdx < 0 ? 0 : targIdx );
+
+            const bool selectScopeAll = cfg->ReadBool(CONF_GROUP _T("/target_scope_all"), true);
+
+            const int targetCount = active_project->GetBuildTargetsCount();
+            if (targetCount < maxTargetCount)
+            {
+                wxArrayString targetNames;
+                for(int j=0;j<targetCount && j<maxTargetCount;++j)
+                    targetNames.push_back(active_project->GetBuildTarget(j)->GetTitle());
+                chTarget->Append(targetNames);
+                const int targIdx = chTarget->FindString(active_project->GetActiveBuildTarget(), true);
+                chTarget->SetSelection((selectScopeAll || targIdx < 0) ? 0 : targIdx );
+            }
+            else
+            {
+                if (selectScopeAll)
+                    chTarget->SetSelection(0);
+                else
+                {
+                    chTarget->Append(active_project->GetActiveBuildTarget());
+                    chTarget->SetSelection(1);
+                }
+                chTarget->Enable(false);
+            }
         }
     }
 
@@ -508,7 +532,22 @@ int FindReplaceDlg::GetProject() const
 
 int FindReplaceDlg::GetTarget() const
 {
-    return XRCCTRL(*this, "chTarget", wxChoice)->GetSelection()-1;
+    cbProject* activeProject = Manager::Get()->GetProjectManager()->GetActiveProject();
+    if (!activeProject)
+        return -1;
+
+    wxChoice *control = XRCCTRL(*this, "chTarget", wxChoice);
+
+    const wxString selectedString = control->GetString(control->GetSelection());
+
+    const int targetCount = activeProject->GetBuildTargetsCount();
+    for(int ii = 0; ii < targetCount; ++ii)
+    {
+        if (activeProject->GetBuildTarget(ii)->GetTitle() == selectedString)
+            return ii;
+    }
+
+    return -1;
 }
 
 bool FindReplaceDlg::IsMultiLine() const
@@ -745,4 +784,45 @@ void FindReplaceDlg::SaveComboValues(wxComboBox* combo, const wxString& configKe
     }
 
     Manager::Get()->GetConfigManager(_T("editor"))->Write(configKey, values);
+}
+
+void FindReplaceDlg::OnSelectTarget(cb_unused wxCommandEvent& event)
+{
+    cbProject* activeProject = Manager::Get()->GetProjectManager()->GetActiveProject();
+    if (!activeProject)
+        return;
+
+    wxArrayString targetNames;
+    const wxString strAllProjectFiles = _("All project files");
+    targetNames.push_back(strAllProjectFiles);
+
+    const int targetCount = activeProject->GetBuildTargetsCount();
+    for(int ii = 0; ii < targetCount; ++ii)
+        targetNames.push_back(activeProject->GetBuildTarget(ii)->GetTitle());
+
+    IncrementalSelectArrayIterator iterator(targetNames);
+    IncrementalSelectDialog dlg(this, &iterator, _("Select target..."), _("Choose target:"));
+    if (dlg.ShowModal() == wxID_OK)
+    {
+        wxChoice *chTarget = XRCCTRL(*this, "chTarget", wxChoice);
+
+        if (targetCount < maxTargetCount)
+            chTarget->SetSelection(dlg.GetSelection());
+        else
+        {
+            chTarget->Clear();
+            const int selection = dlg.GetSelection();
+            if (selection == 0)
+            {
+                chTarget->Append(targetNames[0]);
+                chTarget->SetSelection(0);
+            }
+            else
+            {
+                chTarget->Append(strAllProjectFiles);
+                chTarget->Append(targetNames[selection]);
+                chTarget->SetSelection(1);
+            }
+        }
+    }
 }

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10874 $
- * $Id: projectloader.cpp 10874 2016-07-16 20:00:28Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projectloader.cpp $
+ * $Revision: 11906 $
+ * $Id: projectloader.cpp 11906 2019-11-09 12:05:35Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -786,6 +786,32 @@ void ProjectLoader::DoLinkerOptions(TiXmlElement* parentNode, ProjectBuildTarget
 
         child = child->NextSiblingElement("Add");
     }
+
+    child = node->FirstChildElement("LinkerExe");
+    if (child)
+    {
+        const wxString value = cbC2U(child->Attribute("value"));
+
+        wxString str[int(LinkerExecutableOption::Last) - 1] = {
+            wxT("CCompiler"),
+            wxT("CppCompiler"),
+            wxT("Linker")
+        };
+
+        int index;
+        for (index = 0; index < cbCountOf(str); ++index)
+        {
+            if (value == str[index])
+                break;
+        }
+
+        LinkerExecutableOption linkerExe = LinkerExecutableOption::AutoDetect;
+        if (index < cbCountOf(str))
+            linkerExe = LinkerExecutableOption(index + 1);
+
+        if (target)
+            target->SetLinkerExecutable(linkerExe);
+    }
 }
 
 void ProjectLoader::DoIncludesOptions(TiXmlElement* parentNode, ProjectBuildTarget* target)
@@ -1130,20 +1156,12 @@ void ProjectLoader::DoUnitOptions(const TiXmlElement* parentNode, ProjectFile* f
         {
             file->AddBuildTarget(m_pProject->GetBuildTarget(i)->GetTitle());
         }
-
-        // use same targets for generated files
-        for (size_t n = 0; n < file->generatedFiles.size(); ++n)
-        {
-            for (int i = 0; i < m_pProject->GetBuildTargetsCount(); ++i)
-            {
-                file->generatedFiles[n]->AddBuildTarget(m_pProject->GetBuildTarget(i)->GetTitle());
-            }
-        }
     }
 }
 
 // convenience function, used in Save()
-TiXmlElement* ProjectLoader::AddElement(TiXmlElement* parent, const char* name, const char* attr, const wxString& attribute)
+static TiXmlElement* AddElement(TiXmlElement* parent, const char* name, const char* attr = nullptr,
+                                const wxString& attribute = wxEmptyString)
 {
     TiXmlElement elem(name);
 
@@ -1154,7 +1172,8 @@ TiXmlElement* ProjectLoader::AddElement(TiXmlElement* parent, const char* name, 
 }
 
 // convenience function, used in Save()
-TiXmlElement* ProjectLoader::AddElement(TiXmlElement* parent, const char* name, const char* attr, int attribute)
+static TiXmlElement* AddElement(TiXmlElement* parent, const char* name, const char* attr,
+                                int attribute)
 {
     TiXmlElement elem(name);
 
@@ -1165,7 +1184,8 @@ TiXmlElement* ProjectLoader::AddElement(TiXmlElement* parent, const char* name, 
 }
 
 // convenience function, used in Save()
-void ProjectLoader::AddArrayOfElements(TiXmlElement* parent, const char* name, const char* attr, const wxArrayString& array, bool isPath)
+static void AddArrayOfElements(TiXmlElement* parent, const char* name, const char* attr,
+                               const wxArrayString& array, bool isPath = false)
 {
     if (!array.GetCount())
         return;
@@ -1179,7 +1199,7 @@ void ProjectLoader::AddArrayOfElements(TiXmlElement* parent, const char* name, c
 }
 
 // convenience function, used in Save()
-void ProjectLoader::SaveEnvironment(TiXmlElement* parent, CompileOptionsBase* base)
+static void SaveEnvironment(TiXmlElement* parent, CompileOptionsBase* base)
 {
     if (!base)
         return;
@@ -1214,6 +1234,22 @@ bool ProjectLoader::Save(const wxString& filename, TiXmlElement* pExtensions)
         return true;
     }
     return false;
+}
+
+// convenience function, used in ExportTargetAsProject()
+static void SaveLinkerExecutable(TiXmlElement *linkerNode, const CompileOptionsBase &options)
+{
+    const LinkerExecutableOption linkerExe = options.GetLinkerExecutable();
+    if (linkerExe > LinkerExecutableOption::AutoDetect
+        && linkerExe < LinkerExecutableOption::Last)
+    {
+        wxString str[int(LinkerExecutableOption::Last) - 1] = {
+            wxT("CCompiler"),
+            wxT("CppCompiler"),
+            wxT("Linker")
+        };
+        AddElement(linkerNode, "LinkerExe", "value", str[int(linkerExe) - 1]);
+    }
 }
 
 bool ProjectLoader::ExportTargetAsProject(const wxString& filename, const wxString& onlyTarget, TiXmlElement* pExtensions)
@@ -1253,8 +1289,21 @@ bool ProjectLoader::ExportTargetAsProject(const wxString& filename, const wxStri
     if (!m_pProject->GetDefaultExecuteTarget().IsEmpty() && m_pProject->GetDefaultExecuteTarget() != m_pProject->GetFirstValidBuildTargetName())
         AddElement(prjnode, "Option", "default_target", m_pProject->GetDefaultExecuteTarget());
     AddElement(prjnode, "Option", "compiler", m_pProject->GetCompilerID());
-    if (m_pProject->GetVirtualFolders().GetCount() > 0)
-        AddElement(prjnode, "Option", "virtualFolders", GetStringFromArray(m_pProject->GetVirtualFolders(), _T(";")));
+
+    wxArrayString virtualFolders = m_pProject->GetVirtualFolders();
+    if (virtualFolders.GetCount() > 0)
+    {
+        wxString result; // the concatenated string
+        for (size_t i = 0; i < virtualFolders.GetCount(); i++)
+        {
+            if (!result.IsEmpty())
+                result << wxT(";"); // add the delimiter
+
+            result << UnixFilename(virtualFolders[i], wxPATH_UNIX); // append Unix format folder name
+        }
+        AddElement(prjnode, "Option", "virtualFolders", result);
+    }
+
     if (m_pProject->GetExtendedObjectNamesGeneration())
         AddElement(prjnode, "Option", "extended_obj_names", 1);
     if (m_pProject->GetShowNotesOnLoad() || !m_pProject->GetNotes().IsEmpty())
@@ -1421,6 +1470,7 @@ bool ProjectLoader::ExportTargetAsProject(const wxString& filename, const wxStri
         AddArrayOfElements(node, "Add", "option",    target->GetLinkerOptions());
         AddArrayOfElements(node, "Add", "library",   target->GetLinkLibs(), true);
         AddArrayOfElements(node, "Add", "directory", target->GetLibDirs(), true);
+        SaveLinkerExecutable(node, *target);
         if (node->NoChildren())
             tgtnode->RemoveChild(node);
 
@@ -1599,6 +1649,45 @@ bool ProjectLoader::ExportTargetAsProject(const wxString& filename, const wxStri
                             : AddElement(prjnode, "Extensions");
     if (ProjectLoaderHooks::HasRegisteredHooks() && extnode)
         ProjectLoaderHooks::CallHooks(m_pProject, extnode, false);
+
+    // Sort by tag name and if tag names are equal use the original index of the element in the
+    // extensions node. Do this because we assume the code which has inserted them has done so in
+    // some sorted manner.
+    // Ideally there would be no duplicates.
+
+    struct Key
+    {
+        std::string tagName;
+        int index;
+
+        bool operator<(const Key &o) const
+        {
+            if (tagName == o.tagName)
+                return index < o.index;
+            return tagName < o.tagName;
+        }
+    };
+    std::map<Key, TiXmlNode*> sortedExtensions;
+    int index = 0;
+    for (TiXmlNode *child = extnode->FirstChild(); child; child = child->NextSibling(), ++index)
+    {
+        TiXmlElement *element = child->ToElement();
+        if (!element)
+            continue;
+        // Skip empty elements, because we don't want to pollute the project file.
+        if (element->NoChildren() && element->FirstAttribute() == nullptr)
+            continue;
+
+        sortedExtensions.emplace(Key{element->Value(), index}, element->Clone());
+    }
+
+    // Clear the old node and place the elements in sorted order.
+    // We assume there are only element xml nodes, everything else would be lost.
+    extnode->Clear();
+    for (const std::map<Key, TiXmlNode*>::value_type &ext : sortedExtensions)
+    {
+        extnode->LinkEndChild(ext.second);
+    }
 
     return cbSaveTinyXMLDocument(&doc, filename);
 }

@@ -19,14 +19,6 @@
 #include "debuggerstate.h"
 #include "debugger_defs.h"
 
-#define LOADER_ARGUMENTS_TOOLTIP "Leave it empty to use the system default"
-
-#define LOADER_WAITING_TIME_MIN 1
-#define LOADER_WAITING_TIME_MAX 300
-#define LOADER_WAITING_TIME_DEFAULT 10
-#define LOADER_WAITING_TIME_DISABLED 0
-#define LOADER_WAITING_TIME_TOOLTIP "Waiting time (in seconds) before starting the debugger, just after executing the loader"
-
 extern const wxString g_EscapeChar;
 
 class cbProject;
@@ -96,14 +88,18 @@ class DebuggerGDB : public cbDebuggerPlugin
         bool IsTemporaryBreak() const {return m_TemporaryBreak;}
         int GetExitCode() const { return m_LastExitCode; }
 
-        cb::shared_ptr<cbWatch> AddWatch(const wxString& symbol);
+        cb::shared_ptr<cbWatch> AddWatch(const wxString& symbol, bool update);
+        cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size,
+                                               const wxString &symbol, bool update);
         void DeleteWatch(cb::shared_ptr<cbWatch> watch);
         bool HasWatch(cb::shared_ptr<cbWatch> watch);
+        bool IsMemoryRangeWatch(const cb::shared_ptr<cbWatch> &watch);
         void ShowWatchProperties(cb::shared_ptr<cbWatch> watch);
         bool SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString &value);
         void ExpandWatch(cb::shared_ptr<cbWatch> watch);
         void CollapseWatch(cb::shared_ptr<cbWatch> watch);
         void UpdateWatch(cb::shared_ptr<cbWatch> watch);
+        void UpdateWatches(const std::vector<cb::shared_ptr<cbWatch>> &watches);
 
         void AddWatchNoUpdate(const cb::shared_ptr<GDBWatch> &watch);
 
@@ -123,10 +119,11 @@ class DebuggerGDB : public cbDebuggerPlugin
 
         void OnConfigurationChange(bool isActive);
 
-        wxArrayString& GetSearchDirs(cbProject* prj);
-        RemoteDebuggingMap& GetRemoteDebuggingMap(cbProject* project = 0);
+        static wxArrayString ParseSearchDirs(const cbProject &project);
+        static void SetSearchDirs(cbProject &project, const wxArrayString &dirs);
 
-        void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
+        static RemoteDebuggingMap ParseRemoteDebuggingMap(cbProject &project);
+        static void SetRemoteDebuggingMap(cbProject &project, const RemoteDebuggingMap &map);
 
         void OnValueTooltip(const wxString &token, const wxRect &evalRect);
         bool ShowValueTooltip(int style);
@@ -138,7 +135,7 @@ class DebuggerGDB : public cbDebuggerPlugin
 
         void DebuggeeContinued();
 
-        static wxString ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee);
+        void DetermineLanguage();
 
     protected:
         cbProject* GetProject() { return m_pProject; }
@@ -152,11 +149,9 @@ class DebuggerGDB : public cbDebuggerPlugin
         void ParseOutput(const wxString& output);
         void DoWatches();
         void MarkAllWatchesAsUnchanged();
-        bool IsDebugTarget(ProjectBuildTarget *target);
-        int ValidateLoaderWaitingTime(int waitingTime);
-        bool LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime);
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
-        ProjectBuildTarget* GetCurrentTarget();
+        int LaunchProcessWithShell(const wxString &cmd, wxProcess *process, const wxString &cwd);
+
         int DoDebug(bool breakOnEntry);
         void DoBreak(bool temporary);
 
@@ -203,15 +198,6 @@ class DebuggerGDB : public cbDebuggerPlugin
         cbProject* m_pProject; // keep the currently debugged project handy
         wxString m_ActiveBuildTarget;
 
-        // per-project debugger search-dirs
-        typedef std::map<cbProject*, wxArrayString> SearchDirsMap;
-        SearchDirsMap m_SearchDirs;
-
-        typedef std::map<cbProject*, RemoteDebuggingMap> ProjectRemoteDebuggingMap;
-        ProjectRemoteDebuggingMap m_RemoteDebugging;
-
-        int m_HookId; // project loader hook ID
-
         // Linux console support
         bool     m_bIsConsole;
         bool     m_stopDebuggerConsoleClosed;
@@ -222,6 +208,9 @@ class DebuggerGDB : public cbDebuggerPlugin
         bool m_TemporaryBreak;
 
         WatchesContainer m_watches;
+        MemoryRangeWatchesContainer m_memoryRanges;
+        MapWatchesToType m_mapWatchesToType;
+
         cb::shared_ptr<GDBWatch> m_localsWatch, m_funcArgsWatch;
         wxString m_watchToDereferenceSymbol;
         wxObject *m_watchToDereferenceProperty;

@@ -2,15 +2,16 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11019 $
- * $Id: xtra_res.cpp 11019 2017-02-21 23:52:17Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/xtra_res.cpp $
+ * $Revision: 11811 $
+ * $Id: xtra_res.cpp 11811 2019-07-30 15:14:19Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/xtra_res.cpp $
  */
 
 #include "sdk_precomp.h"
 
 #ifndef CB_PRECOMP
     #include "xtra_res.h"
+    #include "logmanager.h"
     #include "scrollingdialog.h"
     #include <wx/wx.h>
 #endif
@@ -22,7 +23,7 @@
 // Purpose:     XRC resource for wxBoxSizer
 // Author:      Vaclav Slavik
 // Created:     2000/08/11
-// RCS-ID:      $Id: xtra_res.cpp 11019 2017-02-21 23:52:17Z fuscated $
+// RCS-ID:      $Id: xtra_res.cpp 11811 2019-07-30 15:14:19Z fuscated $
 // Copyright:   (c) 2000 Vaclav Slavik
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -31,8 +32,8 @@
 //          protected instead of private! >:(
 /////////////////////////////////////////////////////////////////////////////
 
-wxToolBarAddOnXmlHandler::wxToolBarAddOnXmlHandler()
-: wxXmlResourceHandler(), m_isInside(FALSE), m_isAddon(false), m_toolbar(NULL)
+wxToolBarAddOnXmlHandler::wxToolBarAddOnXmlHandler() :
+    m_isInside(FALSE), m_isAddon(false), m_toolbar(NULL), m_ImageSize(0)
 {
     XRC_ADD_STYLE(wxTB_FLAT);
     XRC_ADD_STYLE(wxTB_DOCKABLE);
@@ -44,17 +45,96 @@ wxToolBarAddOnXmlHandler::wxToolBarAddOnXmlHandler()
     XRC_ADD_STYLE(wxTB_NOALIGN);
 }
 
-wxBitmap wxToolBarAddOnXmlHandler::GetCenteredBitmap(const wxString& param,
-    const wxArtClient& defaultArtClient, wxSize size)
+void wxToolBarAddOnXmlHandler::SetToolbarImageSize(int size)
 {
-    wxBitmap bitmap = GetBitmap(param, defaultArtClient, wxDefaultSize);
-    if (!bitmap.Ok()) // == wxNullBitmap
-        return bitmap;
+    m_ImageSize = size;
+    m_PathReplaceString = wxString::Format(wxT("%dx%d"), size, size);
+}
+
+void wxToolBarAddOnXmlHandler::SetCurrentResourceID(const wxString &id)
+{
+    m_CurrentID = id;
+}
+
+// if 'param' has stock_id/stock_client, extracts them and returns true
+// Taken from wxWidgets.
+static bool GetStockArtAttrs(wxString &art_id, wxString &art_client, const wxXmlNode *paramNode,
+                             const wxString& defaultArtClient)
+{
+    if (paramNode)
+    {
+        art_id = paramNode->GetAttribute(wxT("stock_id"), wxString());
+
+        if (!art_id.empty())
+        {
+            art_id = wxART_MAKE_ART_ID_FROM_STR(art_id);
+
+            art_client = paramNode->GetAttribute(wxT("stock_client"), wxString());
+            if (art_client.empty())
+                art_client = defaultArtClient;
+            else
+                art_client = wxART_MAKE_CLIENT_ID_FROM_STR(art_client);
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+wxBitmap wxToolBarAddOnXmlHandler::GetCenteredBitmap(const wxString& param, wxSize size,
+                                                     double scaleFactor)
+{
+    wxXmlNode *paramNode = GetParamNode(param);
+    // If there is no such tag as requested it is best to return null bitmap, so default processing
+    // could have chance to work.
+    if (!paramNode)
+        return wxNullBitmap;
+
+    wxString artId, artClient;
+    if (GetStockArtAttrs(artId, artClient, paramNode, wxART_TOOLBAR))
+    {
+        wxBitmap stockArt = wxArtProvider::GetBitmap(artId, artClient, size * scaleFactor);
+        if (stockArt.IsOk())
+            return stockArt;
+    }
+
+#if wxCHECK_VERSION(3, 0, 0)
+    const wxString name = GetParamValue(paramNode);
+#else
+    const wxString name = GetParamValue(param);
+#endif
+    if (name.empty())
+        return wxArtProvider::GetBitmap(wxT("sdk/missing_icon"), wxART_TOOLBAR, size * scaleFactor);
+
+    wxString finalName = name;
+    finalName.Replace(wxT("22x22"), m_PathReplaceString);
+
+    wxBitmap bitmap = cbLoadBitmapScaled(finalName, wxBITMAP_TYPE_PNG, scaleFactor,
+                                         &GetCurFileSystem());
+    if (!bitmap.Ok())
+    {
+        LogManager *logger = Manager::Get()->GetLogManager();
+        logger->LogError(wxString::Format(wxT("(%s) Failed to load image: '%s'"),
+                                          m_CurrentID.wx_str(), finalName.wx_str()));
+
+        return wxArtProvider::GetBitmap(wxT("sdk/missing_icon"), wxART_TOOLBAR, size * scaleFactor);
+    }
 
     int bw = bitmap.GetWidth();
     int bh = bitmap.GetHeight();
-    if (size == wxSize(bw, bh))
+    if (size * scaleFactor == wxSize(bw, bh))
         return bitmap;
+
+    LogManager *logger = Manager::Get()->GetLogManager();
+    const wxString msg = wxString::Format(wxT("(%s): Image \"%s\" with size [%dx%d] doesn't match ")
+                                          wxT("requested size [%dx%d] resizing (scale factor ")
+                                          wxT("%.3f)!"),
+                                          m_CurrentID.wx_str(), finalName.wx_str(), bw, bh,
+                                          int(size.x * scaleFactor), int(size.y * scaleFactor),
+                                          scaleFactor);
+    logger->LogWarning(msg);
 
     wxImage image = bitmap.ConvertToImage();
 
@@ -63,7 +143,11 @@ wxBitmap wxToolBarAddOnXmlHandler::GetCenteredBitmap(const wxString& param,
     int x = (w - bw) / 2;
     int y = (h - bh) / 2;
 
-    if (image.HasAlpha()) // Resize doesn't handle Alpha... :-(
+    // If the image is bigger than the current size our code for resizing would do overflow the
+    // buffers. Until the code is made to handle such cases just rescale the image.
+    if (size.x < bw || size.y < bh)
+        image.Rescale(size.x, size.y, wxIMAGE_QUALITY_HIGH);
+    else if (image.HasAlpha()) // Resize doesn't handle Alpha... :-(
     {
         const unsigned char *data = image.GetData();
         const unsigned char *alpha = image.GetAlpha();
@@ -92,7 +176,12 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
     {
         wxCHECK_MSG(m_toolbar, NULL, _("Incorrect syntax of XRC resource: tool not within a toolbar!"));
 
-        wxSize bitmapSize = m_toolbar->GetToolBitmapSize();
+        const wxSize bitmapSize = m_toolbar->GetToolBitmapSize();
+#ifdef __WXMSW__
+        const double scaleFactor = 1.0;
+#else
+        const double scaleFactor = cbGetContentScaleFactor(*m_toolbar);
+#endif // __WXMSW__
 
         if (GetPosition() != wxDefaultPosition)
         {
@@ -100,8 +189,8 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
             #if wxCHECK_VERSION(3, 0, 0)
                                wxEmptyString,
             #endif
-                               GetCenteredBitmap(_T("bitmap"), wxART_TOOLBAR, bitmapSize),
-                               GetCenteredBitmap(_T("bitmap2"), wxART_TOOLBAR, bitmapSize),
+                               GetCenteredBitmap(_T("bitmap"), bitmapSize, scaleFactor),
+                               GetCenteredBitmap(_T("bitmap2"), bitmapSize, scaleFactor),
             #if !wxCHECK_VERSION(3, 0, 0)
                                GetBool(_T("toggle")),
                                GetPosition().x,
@@ -112,11 +201,6 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
             #endif
                                GetText(_T("tooltip")),
                                GetText(_T("longhelp")));
-           if (GetBool(_T("disabled")))
-           {
-               m_toolbar->Realize();
-               m_toolbar->EnableTool(GetID(),false);
-           }
         }
         else
         {
@@ -131,17 +215,16 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
             }
             m_toolbar->AddTool(GetID(),
                                GetText(_T("label")),
-                               GetCenteredBitmap(_T("bitmap"), wxART_TOOLBAR, bitmapSize),
-                               GetCenteredBitmap(_T("bitmap2"), wxART_TOOLBAR, bitmapSize),
+                               GetCenteredBitmap(_T("bitmap"), bitmapSize, scaleFactor),
+                               GetCenteredBitmap(_T("bitmap2"), bitmapSize, scaleFactor),
                                kind,
                                GetText(_T("tooltip")),
                                GetText(_T("longhelp")));
-           if (GetBool(_T("disabled")))
-           {
-               m_toolbar->Realize();
-               m_toolbar->EnableTool(GetID(),false);
-           }
         }
+
+        if (GetBool(_T("disabled")))
+            m_toolbar->EnableTool(GetID(),false);
+
         return m_toolbar; // must return non-NULL
     }
 
@@ -151,7 +234,6 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
         m_toolbar->AddSeparator();
         return m_toolbar; // must return non-NULL
     }
-
     else /*<object class="wxToolBar">*/
     {
         m_isAddon=(m_class == _T("wxToolBarAddOn"));
@@ -179,9 +261,6 @@ wxObject *wxToolBarAddOnXmlHandler::DoCreateResource()
                              GetSize(),
                              style,
                              GetName());
-            wxSize bmpsize = GetSize(_T("bitmapsize"));
-            if (!(bmpsize == wxDefaultSize))
-                toolbar->SetToolBitmapSize(bmpsize);
             wxSize margins = GetSize(_T("margins"));
             if (!(margins == wxDefaultSize))
                 toolbar->SetMargins(margins.x, margins.y);

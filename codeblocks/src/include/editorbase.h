@@ -32,7 +32,7 @@ class DLLIMPORT EditorBase : public wxPanel
     DECLARE_EVENT_TABLE()
     public:
         EditorBase(wxWindow* parent, const wxString& filename);
-        virtual ~EditorBase();
+        ~EditorBase() override;
 
         /** Don't use this. It throws an exception if you do. */
 
@@ -284,7 +284,7 @@ class DLLIMPORT EditorBase : public wxPanel
 
         /** one event handler for all popup menu entries */
         void OnContextMenuEntry(wxCommandEvent& event);
-        void BasicAddToContextMenu(wxMenu* popup, ModuleType type); //pecan 2006/03/22
+        void BasicAddToContextMenu(wxMenu* popup, ModuleType type);
         SwitchToMap m_SwitchTo;
         wxString m_WinTitle;
         wxString lastWord;

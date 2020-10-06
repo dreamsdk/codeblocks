@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8190 $
- * $Id: man2html.cpp 8190 2012-08-05 09:40:35Z killerbot $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/help_plugin/man2html.cpp $
+ * $Revision: 11301 $
+ * $Id: man2html.cpp 11301 2018-02-22 23:39:54Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/help_plugin/man2html.cpp $
  */
 
 /*
@@ -3545,7 +3545,10 @@ static char *scan_request(char *c)
                             c++;
                         }
                         else if (*c=='+')
-                            j=1;c++;
+                        {
+                            j=1;
+                            c++;
+                        }
                         c=scan_expression(c, &i);
                         if (!j)
                         {

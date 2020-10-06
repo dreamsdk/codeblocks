@@ -15,8 +15,7 @@
 function list_of_other_fortran_keywords()
 	! This pseudo function contains fortran keywords, which should be included in code-completion list, but
 	! they are not functions or subroutines. The keywords are defined as variables of the type 'other'.
-	type(other) :: logical, real, access, action, advance, allocatable, allocate, &
-                    access, action, advance, allocatable, allocate, &
+	type(other) :: access, action, advance, allocatable, allocate, &
                 apostrophe, assign, assignment, associate, asynchronous, backspace, &
                 bind, blank, blockdata, call, case, character, class, close, common, &
                 complex, contains, continue, cycle, data, deallocate, decimal, delim, &
@@ -25,11 +24,11 @@ function list_of_other_fortran_keywords()
                 endfile, endforall, endfunction, endif, endinterface, endmodule, endprocedure, endprogram, &
                 endselect, endsubroutine, endtype, endwhere, entry, eor, equivalence, &
                 err, errmsg, exist, exit, external, final, file, flush, fmt, forall, form, format, &
-                formatted, function, go, goto, id, if, implicit, in, include, inout, &
+                formatted, function, go, goto, if, implicit, in, include, inout, &
                 integer, inquire, intent, interface, intrinsic, iomsg, iolength, &
                 iostat, kind, len, logical, module, named, namelist, nextrec, nml, &
                 none, nopass, nullify, number, only, open, opened, operator, optional, out, pad, &
-                parameter, pass, pause, pending, pointer, pos, position, precision, &
+                parameter, pass, pending, pointer, pos, position, precision, &
                 print, private, program, protected, public, quote, read, readwrite, &
                 real, rec, recl, recursive, result, return, rewind, save, select, &
                 selectcase, selecttype, sequential, stat, status, stop, stream, &
@@ -38,8 +37,9 @@ function list_of_other_fortran_keywords()
                 import, is, &
                 null, new_line,  block, abstract, delegate, static, reference, round, &
                 decorate, extends, generic, non_overridable, enum, endenum, enumerator, typealias, &
-                submodule, endsubmodule, concurrent, contiguous, re, im, endblock, non_intrinsic, codimension, &
-                impure, critical, endcritical, lock, unlock, error, sync, all, memory, images, deferred
+                submodule, endsubmodule, concurrent, contiguous, endblock, non_intrinsic, codimension, &
+                impure, critical, endcritical, lock, unlock, error, sync, all, memory, images, deferred, &
+                fail, image, event, post, wait, change, team, endteam, non_recursive
 
 end function
 
@@ -1876,7 +1876,7 @@ function MODULO(A, P)
     integer or real :: A, P, MODULO
 end function
 
-subroutine MOVE_ALLOC(FROM, TO)
+subroutine MOVE_ALLOC(FROM, TO[, STAT, ERRMSG])
 	! Moves the allocation from FROM to TO. FROM will become deallocated in the process.
     ! Arguments:
     !    FROM   -ALLOCATABLE, INTENT(INOUT), may be of any type and kind.
@@ -1884,6 +1884,8 @@ subroutine MOVE_ALLOC(FROM, TO)
     ! Standard:
     !    Fortran 2003 and later
     type(any_type), allocatable :: FROM(:[,:,...]), TO(:[,:,...])
+    integer, optional, intent(out) :: STAT
+    character(len=*), optional, intent(inout) :: ERRMSG
 end subroutine
 
 subroutine MVBITS(FROM, FROMPOS, LEN, TO, TOPOS)
@@ -2094,6 +2096,20 @@ subroutine RANDOM_SEED([SIZE, PUT, GET])
     integer, optional, intent(out) :: SIZE
     integer, optional, intent(in) :: PUT(:)
     integer, optional, intent(out) :: GET(:)
+end subroutine
+
+subroutine RANDOM_INIT(REPEATABLE, IMAGE_DISTINCT)
+    ! Initialize the pseudorandom number generator.
+    ! If REPEATABLE is .true., the seed accessed by the pseudorandom number generator is set 
+    ! to a processor-dependent value that is the same each time RANDOM_INIT is called
+    ! from the same image. If it has the value .false., the seed is set to a processor-
+    ! dependent, unpredictably different value on each call.
+    ! If IMAGE_DISTINCT has the value .true., the seed accessed by the pseudorandom
+    ! number generator is set to a processor-dependent value that is distinct from the
+    ! value that would be set by a call to RANDOM_INIT by another image. If it has the
+    ! value .false., the value to which the seed is set does not depend on which image calls.
+    logical, intent(in) :: REPEATABLE
+    logical, intent(in) :: IMAGE_DISTINCT
 end subroutine
 
 function RANGE(X)
@@ -2432,7 +2448,7 @@ function SIZE(ARRAY[, DIM [, KIND]])
     !    is of default integer kind.
     ! Standard:
     !    Fortran 95 and later, with KIND argument Fortran 2003 and later
-    type(any_type) :: SOURCE[(:,...)]
+    type(any_type) :: ARRAY[(:,...)] ! array of any type
     integer, optional :: DIM, KIND
     integer :: SIZE
 end function
@@ -3070,7 +3086,7 @@ function FINDLOC (ARRAY, VALUE [, DIM, MASK, KIND, BACK])
     logical, optional :: BACK ! (Optional) shall be a logical scalar.
 end function
 
-function NUM_IMAGES ()
+integer function NUM_IMAGES ([TEAM] [TEAM_NUMBER])
     ! Retuns the number of images.
     ! Return value:
     !    Scalar default-kind integer.
@@ -3078,12 +3094,13 @@ function NUM_IMAGES ()
     !    Fortran 2008 and later
 end function
 
-function THIS_IMAGE ([COARRAY [, DIM]])
+function THIS_IMAGE ([COARRAY] [, DIM][, TEAM])
     ! Returns the cosubscript for this image.
     ! Standard:
     !    Fortan 2008 and later.
     type(*), optional :: COARRAY
     integer, optional :: DIM  ! Shall be an integer scalar with a value in the range 1<=DIM<=n.
+    type(team_type), optional :: TEAM
 end function
 
 function UCOBOUND (COARRAY [, DIM, KIND])
@@ -3104,12 +3121,14 @@ function LCOBOUND (COARRAY [, DIM, KIND])
     integer, optional :: KIND
 end function
 
-function IMAGE_INDEX (COARRAY, SUB)
+integer function IMAGE_INDEX (COARRAY, SUB [, TEAM] [, TEAM_NUMBER])
     ! Returns the image index belonging to a cosubscript.
     ! Standard:
     !    Fortan 2008 and later.
-    type(*), optional :: COARRAY
-    integer, optional :: SUB
+    type(*) :: COARRAY
+    integer :: SUB
+    type(team_type), optional :: TEAM
+    integer, optional :: TEAM_NUMBER
 end function
 
 subroutine ATOMIC_DEFINE (ATOM, VALUE)
@@ -3130,11 +3149,277 @@ subroutine ATOMIC_REF (ATOM, VALUE)
     !  VALUE  Scalar and of the same type as ATOM. If the kind is different, the value is converted to the kind of ATOM.
 end subroutine
 
+subroutine ATOMIC_ADD(ATOM, VALUE [, STAT])
+    ! Atomic addition.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_AND(ATOM, VALUE [, STAT])
+    ! Atomic bitwise AND.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_CAS(ATOM, OLD, COMPARE, NEW [, STAT])
+    ! Atomic compare and swap.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   OLD   Scalar of the same type and kind as ATOM.
+    !   COMPARE Scalar of the same type and kind as ATOM.
+    !   NEW   Scalar of the same type and kind as ATOM.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_OR(ATOM, VALUE [, STAT])
+    ! Atomic bitwise OR.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_XOR(ATOM, VALUE [, STAT])
+    ! Atomic bitwise exclusive OR.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_FETCH_ADD(ATOM, VALUE, OLD, [, STAT])
+    ! Atomic fetch and add.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   OLD  Scalar of the same type and kind as ATOM.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_FETCH_AND(ATOM, VALUE, OLD, [, STAT])
+    ! Atomic fetch and bitwise AND.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   OLD  Scalar of the same type and kind as ATOM.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_FETCH_OR(ATOM, VALUE, OLD, [, STAT])
+    ! Atomic fetch and bitwise OR.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   OLD  Scalar of the same type and kind as ATOM.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine ATOMIC_FETCH_XOR(ATOM, VALUE, OLD, [, STAT])
+    ! Atomic fetch and bitwise exclusive OR.
+    ! Arguments:
+    !   ATOM  Scalar coarray or coindexed variable.
+    !   VALUE Integer scalar.
+    !   OLD  Scalar of the same type and kind as ATOM.
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine CO_BROADCAST(A, SOURCE_IMAGE [, STAT, ERRMSG])
+    ! Braodcast value to images.
+    ! Arguments:
+    !   A  Becomes defined with the same values on all images in the current team.
+    !   SOURCE_IMAGE Integer scalar with value the same in all team.
+    !   STAT (optional) Noncoindexed integer scalar.
+    !   ERRMSG  Default character scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine CO_MAX(A [, RESULT_IMAGE, STAT, ERRMSG])
+    ! Compute maximum value across images.
+    ! Arguments:
+    !   A  Integer, real or character variable.
+    !   RESULT_IMAGE (optional) Integer scalar with value the same in all team.
+    !   STAT (optional) Noncoindexed integer scalar.
+    !   ERRMSG  Default character scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine CO_MIN(A [, RESULT_IMAGE, STAT, ERRMSG])
+    ! Compute minimum value across images.
+    ! Arguments:
+    !   A  Integer, real or character variable.
+    !   RESULT_IMAGE (optional) Integer scalar with value the same in all team.
+    !   STAT (optional) Noncoindexed integer scalar.
+    !   ERRMSG  Default character scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine CO_REDUCE(A, OPERATION [, RESULT_IMAGE, STAT, ERRMSG])
+    ! Reduction across images.
+    ! Arguments:
+    !   A  Non polimorphic scalar or array variable.
+    !   OPERATION  Pure function with two arguments.
+    !   RESULT_IMAGE (optional) Integer scalar with value the same in all team.
+    !   STAT (optional) Noncoindexed integer scalar.
+    !   ERRMSG  Default character scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine CO_SUM(A [, RESULT_IMAGE, STAT, ERRMSG])
+    ! Compute sum across images.
+    ! Arguments:
+    !   A  Integer, real or character variable.
+    !   RESULT_IMAGE (optional) Integer scalar with value the same in all team.
+    !   STAT (optional) Noncoindexed integer scalar.
+    !   ERRMSG (optional) Default character scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+subroutine EVENT_QUERY(EVENT, COUNT [, STAT])
+    ! Query event count.
+    ! Arguments:
+    !   EVENT (intent(in)) An event variable.
+    !   COUNT (intent(out)) Integer scalar
+    !   STAT (optional) Noncoindexed integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end subroutine
+
+function FAILED_IMAGES([TEAM, KIND])
+    ! Returns indices of failed images in an array of rank one.
+    ! Arguments:
+    !   TEAM (optional) Scalar of type TEAM_TYPE with value of the current or an ancestor team.
+    !   KIND (optional) Integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end function
+
+function IMAGE_STATUS(IMAGE [, TEAM])
+    ! Returns image execution state.
+    ! Arguments:
+    !   IMAGE Integer with an image index.
+    !   TEAM (optional) Scalar of type TEAM_TYPE with value of the current or an ancestor team.
+    ! Standard:
+    !   Fortran 2018 and later.
+end function
+
+function STOPPED_IMAGES([TEAM, KIND])
+    ! Returns indices of stopped images in an array of rank one.
+    ! Arguments:
+    !   TEAM (optional) Scalar of type TEAM_TYPE with value of the current or an ancestor team.
+    !   KIND (optional) Integer scalar.
+    ! Standard:
+    !   Fortran 2018 and later.
+end function
+
+function TEAM_NUMBER([TEAM])
+    ! Returns default integer with value that identifies the specified team within its parent team.
+    ! Arguments:
+    !   TEAM (optional) Scalar of type TEAM_TYPE with value of the current or an ancestor team.
+    ! Standard:
+    !   Fortran 2018 and later.
+end function
+
+function GET_TEAM([LEVEL])
+    ! Returns scalar of type TEAM_TYPE with value that identifies the team.
+    ! Arguments:
+    !   LEVEL (optional) Scalar integer with value INITIAL_TEAM, PARENT_TEAM, or CURRENT_TEAM.
+    ! Standard:
+    !   Fortran 2018 and later.
+end function
+
+integer function COSHAPE(COARRAY[, KIND])
+    ! Return sizes of codimensions of a coarray.
+    ! Arguments:
+    !   COARRAY shall be coarray of any type.
+    !   KIND (optional) shall be a scalar integer constant expression.
+    ! Return value:
+    !   The result has a value whose i_th element is equal to the size of the i_th codimension of COARRAY,
+    !   as given by UCOBOUND (COARRAY, i) − LCOBOUND (COARRAY, i) +1.
+end function
+
 function RANK(A)
     ! Determine the rank of a data object.
     integer :: RANK
     type(any_type) :: A ! data object
 end function
+
+logical function OUT_OF_RANGE(X, MOLD [, ROUND])
+    ! Returns .true. if X value cannot be converterd safely.
+    integer or real :: X
+    integer or real :: MOLD
+    logical, optional :: ROUND
+end function
+
+function REDUCE(ARRAY, OPERATION[, DIM][, MASK, IDENTITY, ORDERED])
+    ! General reduction of array.
+    type(any_type), dimension(..) :: ARRAY
+    interface
+        pure function OPERATION(A, B)
+        end function
+    end interface
+    integer, optional :: DIM
+    logical, (conformable with ARRAY), optional :: MASK
+    type(same as ARRAY, scalar), optional :: IDENTITY
+    logical, optional :: ORDERED
+end function
+
+logical function IS_CONTIGUOUS(ARRAY)
+    ! Array contiguity test.
+    ! Returns .true. if ARRAY has rank zero or is contiguous, and .false. otherwise.
+    type(any_type), dimension(..) :: ARRAY
+end function
+
+subroutine __fortran_statement_OPEN(UNIT, NEWUNIT, FILE, ACCESS, ACTION, ASYNCHRONOUS, BLANK, DECIMAL, DELIM, &
+                    ENCODING, ERR, FORM, IOSTAT, PAD, POSITION, RECL, ROUND, SIGN, STATUS)
+    ! Connect or reconnect an external file to an input/output unit.
+    
+    integer, intent(in) :: UNIT            ! External file unit number.
+    integer, intent(out) :: NEWUNIT        ! Automatially chosen unit number.
+    character(len=*), intent(in) :: FILE   ! The name of the file to be connected.
+    character(len=*), intent(in) :: ACCESS ! Access mode one from 'SEQUENTIAL' (default), 'DIRECT' or 'STREAM'
+    character(len=*), intent(in) :: ACTION ! File access: 'READWRITE' (default), 'READ' or 'WRITE'
+    character(len=*), intent(in) :: ASYNCHRONOUS ! 'YES' allows asynchronous i/o on the unit, 'NO' does not allow.
+    character(len=*), intent(in) :: BLANK   ! Controls how interpreted blanks. Values: 'NULL' (default) or 'ZERO'.
+    character(len=*), intent(in) :: DECIMAL ! Specifies the default decimal edit mode: 'POINT' (default) or 'COMMA'.
+    character(len=*), intent(in) :: DELIM   ! Specifies delimiter for character constants in namelist: 'APOSTROPHE', 'QUOTE' or 'NONE'.
+    character(len=*), intent(in) :: ENCODING ! Shall be: 'DEFAULT' or 'UTF-8'.
+    integer, intent(in)          :: ERR      ! Statement label to go if error occurs.
+    character(len=*), intent(in) :: FORM     ! Shall be: 'DEFAULT' or 'UTF-8'.
+    integer, intent(out) :: IOSTAT     ! Returns: a zero value if no error, a positive value if an error.
+    character(len=*), intent(in) :: PAD      ! Specifies if input records are padded with blanks: 'YES' (default) or 'NO'.
+    character(len=*), intent(in) :: POSITION ! Specifies the file position for a file connected: 'ASIS', 'REWIND', 'APPEND'.
+    integer, intent(in) :: RECL  ! Specifies specifies the length of record.
+    character(len=*), intent(in) :: ROUND ! Rounding mode to be used: 'UP', 'DOWN', 'ZERO', 'NEAREST', 'COMPATIBLE' or 'PROCESSOR_DEFINED' (default).
+    character(len=*), intent(in) :: SIGN ! Specifies the sign mode in effect: 'PLUS', 'SUPPRESS' or 'PROCESSOR_DEFINED' (default).
+    character(len=*), intent(in) :: STATUS ! Specifies the status of the file when it is opened: 'OLD', 'NEW', 'SCRATCH', 'REPLACE', or 'UNKNOWN'. 
+end subroutine
 
 module OpenMP
     type(keywords) ::  atomic, auto, barrier, capture, collapse, copyin, copyprivate, default, end, &

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: debuggermenu.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/debuggermenu.cpp $
+ * $Revision: 11639 $
+ * $Id: debuggermenu.cpp 11639 2019-04-20 16:58:16Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/debuggermenu.cpp $
  */
 #include "sdk.h"
 
@@ -160,7 +160,7 @@ struct CommonItem : cbDebuggerWindowMenuItem
         m_getWindowFunc(func)
     {}
 
-    void OnClick(bool enable)
+    void OnClick(bool enable) override
     {
         CodeBlocksDockEvent evt(enable ? cbEVT_SHOW_DOCK_WINDOW : cbEVT_HIDE_DOCK_WINDOW);
         DebuggerManager *manager = Manager::Get()->GetDebuggerManager();
@@ -174,11 +174,11 @@ struct CommonItem : cbDebuggerWindowMenuItem
         if (enable && manager->GetActiveDebugger())
             manager->GetActiveDebugger()->RequestUpdate(m_requestUpdate);
     }
-    virtual bool IsEnabled()
+    bool IsEnabled() override
     {
         return Support(Manager::Get()->GetDebuggerManager()->GetActiveDebugger(), m_enableFeature);
     }
-    virtual bool IsChecked()
+    bool IsChecked() override
     {
         DlgType *dialog = (Manager::Get()->GetDebuggerManager()->*(m_getWindowFunc))();
         return dialog && IsWindowReallyShown(dialog->GetWindow());
@@ -197,13 +197,13 @@ CommonItem<DlgType>* MakeItem(cbDebuggerFeature::Flags enableFeature,
     return new CommonItem<DlgType>(enableFeature, requestUpdate, func);
 }
 
-}
+} // anonymous namespace
 
 void DebuggerMenuHandler::RegisterDefaultWindowItems()
 {
     struct Breakpoints : cbDebuggerWindowMenuItem
     {
-        virtual void OnClick(bool enable)
+        void OnClick(bool enable) override
         {
             CodeBlocksDockEvent evt(enable ? cbEVT_SHOW_DOCK_WINDOW : cbEVT_HIDE_DOCK_WINDOW);
             cbBreakpointsDlg *dialog = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
@@ -213,11 +213,11 @@ void DebuggerMenuHandler::RegisterDefaultWindowItems()
                 Manager::Get()->ProcessEvent(evt);
             }
         }
-        virtual bool IsEnabled()
+        bool IsEnabled() override
         {
             return Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
         }
-        virtual bool IsChecked()
+        bool IsChecked() override
         {
             cbBreakpointsDlg *dialog = Manager::Get()->GetDebuggerManager()->GetBreakpointDialog();
             return dialog && IsWindowReallyShown(dialog->GetWindow());
@@ -229,7 +229,7 @@ void DebuggerMenuHandler::RegisterDefaultWindowItems()
             CommonItem<cbWatchesDlg>(cbDebuggerFeature::Watches, cbDebuggerPlugin::Watches, &DebuggerManager::GetWatchesDialog)
         {
         }
-        virtual bool IsEnabled()
+        bool IsEnabled() override
         {
             return Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
         }
@@ -408,7 +408,18 @@ void DebuggerMenuHandler::BuildContextMenu(wxMenu &menu, const wxString& word_at
     if (!plugin)
         return;
 
-    int item = 0;
+    PluginManager *pluginManager = Manager::Get()->GetPluginManager();
+
+    int initialItem;
+    if (is_running)
+    {
+        // we want debugger menu items to be at the top when debugging
+        initialItem = pluginManager->GetFindMenuItemFirst();
+    }
+    else
+        initialItem = pluginManager->GetFindMenuItemFirst() + pluginManager->GetFindMenuItemCount();
+    int item = initialItem;
+
     // Insert Run to Cursor
     if (plugin->SupportsFeature(cbDebuggerFeature::RunToCursor))
         menu.Insert(item++, idMenuRunToCursor, _("Run to cursor"));
@@ -435,8 +446,10 @@ void DebuggerMenuHandler::BuildContextMenu(wxMenu &menu, const wxString& word_at
         menu.Insert(item++, idMenuToggleBreakpoint, _("Toggle breakpoint"));
     if (item > 0)
         menu.InsertSeparator(item++);
-}
 
+    if (is_running)
+        pluginManager->RegisterFindMenuItems(true, item - initialItem);
+}
 
 void DebuggerMenuHandler::OnUpdateUI(wxUpdateUIEvent& event)
 {
@@ -715,7 +728,7 @@ void DebuggerMenuHandler::OnAddWatch(cb_unused wxCommandEvent& event)
     wxString const &src = m_activeDebugger->GetEditorWordAtCaret();
     if (!src.empty())
     {
-        cb::shared_ptr<cbWatch> watch = m_activeDebugger->AddWatch(src);
+        cb::shared_ptr<cbWatch> watch = m_activeDebugger->AddWatch(src, true);
         if (watch.get())
         {
             cbWatchesDlg *dialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
@@ -786,8 +799,7 @@ wxToolBar* DebuggerToolbarHandler::GetToolbar(bool create)
             return nullptr;
 
         m_Toolbar = Manager::Get()->CreateEmptyToolbar();
-        wxString my_16x16 = Manager::isToolBar16x16(m_Toolbar) ? _T("_16x16") : _T("");
-        Manager::AddonToolBar(m_Toolbar, wxString(_T("debugger_toolbar")) + my_16x16);
+        Manager::AddonToolBar(m_Toolbar, wxT("debugger_toolbar"));
 
         m_Toolbar->Realize();
         m_Toolbar->SetInitialSize();

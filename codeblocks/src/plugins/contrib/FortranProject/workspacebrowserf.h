@@ -6,10 +6,16 @@
 #ifndef WORKSPACEBROWSERF_H
 #define WORKSPACEBROWSERF_H
 
-#include <settings.h> // SDK
-#include <cbplugin.h>
-#include <manager.h>
-#include <wx/panel.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <wx/panel.h>
+    #include <wx/bmpbuttn.h>
+
+    #include <settings.h>
+    #include <cbplugin.h>
+    #include <manager.h>
+#endif
+
 #include "workspacebrowserbuilder.h"
 
 class NativeParserF;
@@ -23,14 +29,15 @@ class WorkspaceBrowserF : public wxPanel
     public:
         // class constructor
         WorkspaceBrowserF(wxWindow* parent, NativeParserF* np, ParserF* par);
+        void CreateControlsWBF();
         // class destructor
         ~WorkspaceBrowserF();
         BrowserDisplayFilter GetBrowserDisplayFilter() { return m_BrowserOptions.displayFilter; }
         void UpdateSash();
         void UpdateView();
-        wxImageList* GetImageList();
         int GetTokenKindImageIdx(TokenF* token);
         void MarkSymbol(wxString filename, int line);
+        void SelectSymbol(wxString filename, int line);
         void RereadOptions();
         void DeleteAllItems();
         void OnMenuEditPaste(wxCommandEvent& event);
@@ -60,6 +67,11 @@ class WorkspaceBrowserF : public wxPanel
         void OnTreeItemSelected(wxTreeEvent& event);
         void OnTreeItemExpanding(wxTreeEvent& event);
         void OnTreeItemCollapsing(wxTreeEvent& event);
+
+        wxBitmapButton* m_BtnHome;
+        wxChoice* m_CmbViewWBF;
+        wxPanel* m_WBFMainPanel;
+        wxSplitterWindow* m_SplitterWin;
 
         NativeParserF* m_NativeParser;
         wxTreeCtrl* m_TreeTop;

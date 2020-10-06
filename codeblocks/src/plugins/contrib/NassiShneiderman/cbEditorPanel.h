@@ -17,7 +17,7 @@
 *
 * $Revision: 7443 $
 * $Id: cbEditorPanel.h 7443 2011-09-01 16:29:16Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/NassiShneiderman/cbEditorPanel.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/NassiShneiderman/cbEditorPanel.h $
 */
 
 #ifndef __CB_EDITOR_PANEL_H__

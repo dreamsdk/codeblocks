@@ -4,7 +4,7 @@
  *
  * $Revision: 10769 $
  * $Id: cpuregistersdlg.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/cpuregistersdlg.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/cpuregistersdlg.cpp $
  */
 
 #include "sdk.h"

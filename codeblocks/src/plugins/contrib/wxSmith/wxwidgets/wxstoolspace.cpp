@@ -17,7 +17,7 @@
 *
 * $Revision: 10771 $
 * $Id: wxstoolspace.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxstoolspace.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxstoolspace.cpp $
 */
 
 #include <wx/settings.h>

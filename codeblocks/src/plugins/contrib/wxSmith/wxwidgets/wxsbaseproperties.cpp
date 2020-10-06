@@ -17,7 +17,7 @@
 *
 * $Revision: 10688 $
 * $Id: wxsbaseproperties.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsbaseproperties.cpp $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsbaseproperties.cpp $
 */
 
 #include "wxsbaseproperties.h"

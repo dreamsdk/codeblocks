@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11208 $
- * $Id: app.cpp 11208 2017-10-18 23:42:37Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/app.cpp $
+ * $Revision: 11903 $
+ * $Id: app.cpp 11903 2019-11-07 19:14:30Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/app.cpp $
  */
 
 #include <sdk.h>
@@ -28,6 +28,7 @@
 
 #include <cbexception.h>
 #include <configmanager.h>
+#include <debuggermanager.h>
 #include <editormanager.h>
 #include <globals.h>
 #include <loggers.h>
@@ -84,7 +85,7 @@ class DDEServer : public wxServer
 {
     public:
         DDEServer(MainFrame* frame) : m_Frame(frame) { ; }
-        wxConnectionBase *OnAcceptConnection(const wxString& topic);
+        wxConnectionBase *OnAcceptConnection(const wxString& topic) override;
         MainFrame* GetFrame()                 { return m_Frame;  }
         void       SetFrame(MainFrame* frame) { m_Frame = frame; }
     private:
@@ -96,11 +97,12 @@ class DDEConnection : public wxConnection
     public:
         DDEConnection(MainFrame* frame) : m_Frame(frame) { ; }
 #if wxCHECK_VERSION(3, 0, 0)
-        bool OnExecute(const wxString& topic, const void *data, size_t size, wxIPCFormat format);
+        bool OnExecute(const wxString& topic, const void *data, size_t size,
+                       wxIPCFormat format) override;
 #else
-        bool OnExecute(const wxString& topic, wxChar *data, int size, wxIPCFormat format);
+        bool OnExecute(const wxString& topic, wxChar *data, int size, wxIPCFormat format) override;
 #endif
-        bool OnDisconnect();
+        bool OnDisconnect() override;
     private:
         MainFrame* m_Frame;
 };
@@ -111,12 +113,16 @@ wxConnectionBase* DDEServer::OnAcceptConnection(const wxString& topic)
 }
 
 #if wxCHECK_VERSION(3, 0, 0)
-bool DDEConnection::OnExecute(cb_unused const wxString& topic, const void *data, cb_unused size_t size, cb_unused wxIPCFormat format)
-#else
-bool DDEConnection::OnExecute(cb_unused const wxString& topic, wxChar *data, cb_unused int size, cb_unused wxIPCFormat format)
-#endif
+bool DDEConnection::OnExecute(cb_unused const wxString& topic, const void *data, size_t size,
+                              wxIPCFormat format)
 {
-    wxString strData((wxChar*)data);
+    const wxString strData = wxConnection::GetTextFromData(data, size, format);
+#else
+bool DDEConnection::OnExecute(cb_unused const wxString& topic, wxChar *data, int size,
+                              wxIPCFormat format)
+{
+    const wxString strData((wxChar*)data);
+#endif
 
     if (strData.StartsWith(_T("[IfExec_Open(\"")))
         return false; // let Shell Open handle the request as we *know* that we have registered the Shell Open command, too
@@ -188,6 +194,7 @@ bool DDEConnection::OnDisconnect()
     {
         CodeBlocksApp* cb = (CodeBlocksApp*)wxTheApp;
         cb->LoadDelayedFiles(m_Frame);
+        cb->AttachDebugger();
     }
     return true;
 }
@@ -197,7 +204,7 @@ DDEServer* g_DDEServer = nullptr;
 class DDEClient: public wxClient {
     public:
         DDEClient(void) {}
-        wxConnectionBase *OnMakeConnection(void) { return new DDEConnection(nullptr); }
+        wxConnectionBase *OnMakeConnection(void) override { return new DDEConnection(nullptr); }
 };
 
 #if wxUSE_CMDLINE_PARSER
@@ -264,6 +271,10 @@ const wxCmdLineEntryDesc cmdLineDesc[] =
       wxCMD_LINE_VAL_STRING, wxCMD_LINE_NEEDS_SEPARATOR },
     { wxCMD_LINE_OPTION, CMD_ENTRY(""),   CMD_ENTRY("file"),                  CMD_ENTRY("open file and optionally jump to specific line (file[:line])"),
       wxCMD_LINE_VAL_STRING, wxCMD_LINE_NEEDS_SEPARATOR },
+    { wxCMD_LINE_OPTION, CMD_ENTRY(""),   CMD_ENTRY("dbg-config"),            CMD_ENTRY("selects the debugger config used for attaching (uses the current selected target if omitted) "),
+      wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
+    { wxCMD_LINE_OPTION, CMD_ENTRY(""),   CMD_ENTRY("dbg-attach"),            CMD_ENTRY("string passed to the debugger plugin which is used for attaching to a process"),
+      wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR },
     { wxCMD_LINE_PARAM,  CMD_ENTRY(""),   CMD_ENTRY(""),                      CMD_ENTRY("filename(s)"),
       wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_PARAM_MULTIPLE },
     { wxCMD_LINE_NONE }
@@ -278,7 +289,11 @@ class Splash
             if (show)
             {
                 wxBitmap bmp = cbLoadBitmap(ConfigManager::ReadDataPath() + _T("/images/splash_1312.png"));
-                m_pSplash = new cbSplashScreen(bmp, -1, nullptr, -1, wxNO_BORDER | wxFRAME_NO_TASKBAR | wxFRAME_SHAPED);
+                wxMemoryDC dc;
+                dc.SelectObject(bmp);
+                cbSplashScreen::DrawReleaseInfo(dc);
+                dc.SelectObject(wxNullBitmap);
+                m_pSplash = new cbSplashScreen(bmp);
                 Manager::Yield();
             }
         }
@@ -294,6 +309,7 @@ class Splash
                 m_pSplash = nullptr;
             }
         }
+
     private:
         cbSplashScreen* m_pSplash;
 };
@@ -308,7 +324,7 @@ public:
     #ifdef WX_ATTRIBUTE_PRINTF
     virtual void Printf(const wxChar* format, ...)  WX_ATTRIBUTE_PRINTF_2;
     #else
-    virtual void Printf(const wxChar* format, ...)  ATTRIBUTE_PRINTF_2;
+    void Printf(const wxChar* format, ...) override  ATTRIBUTE_PRINTF_2;
     #endif
 #endif // wxCHECK_VERSION
 };
@@ -397,6 +413,14 @@ bool CodeBlocksApp::LoadConfig()
     }
 
     data.append(_T("/share/codeblocks"));
+
+    // Make sure the path to our resources is always an absolute path, because resource loading
+    // would fail with a relative path if some part of the code changes the current working
+    // directory.
+    wxFileName filename(data);
+    if (filename.IsRelative())
+        filename.MakeAbsolute();
+    data = filename.GetFullPath();
 
     cfg->Write(_T("data_path"), data);
 
@@ -589,10 +613,13 @@ bool CodeBlocksApp::OnInit()
     // we'll do this once and for all at startup
     wxFileSystem::AddHandler(new wxZipFSHandler);
     wxFileSystem::AddHandler(new wxMemoryFSHandler);
-    wxXmlResource::Get()->InsertHandler(new wxToolBarAddOnXmlHandler);
+    wxToolBarAddOnXmlHandler *toolbarAddonHandler = new wxToolBarAddOnXmlHandler;
+    wxXmlResource::Get()->InsertHandler(toolbarAddonHandler);
     wxXmlResource::Get()->InsertHandler(new wxScrollingDialogXmlHandler);
     wxInitAllImageHandlers();
     wxXmlResource::Get()->InitAllHandlers();
+
+    Manager::SetToolbarHandler(toolbarAddonHandler);
 
     Manager::Get()->GetLogManager()->Log(F(wxT("Starting ") + appglobals::AppName + wxT(" ") +
                                            appglobals::AppActualVersionVerb + wxT(" ") +
@@ -649,12 +676,15 @@ bool CodeBlocksApp::OnInit()
                     connection->Execute(_T("[CmdLine({") + cmdLine + _T("})]"));
                 }
 
-                // On Linux, C::B has to be raised explicitely if it's wanted
+                // On Linux, C::B has to be raised explicitly if it's wanted
                 if (Manager::Get()->GetConfigManager(_T("app"))->ReadBool(_T("/environment/raise_via_ipc"), true))
                     connection->Execute(_T("[Raise]"));
                 connection->Disconnect();
                 delete connection;
                 delete client;
+
+                LogManager *log = Manager::Get()->GetLogManager();
+                log->Log(wxT("Ending application because another instance has been detected!"));
 
                 // return false to end the application
                 return false;
@@ -685,6 +715,7 @@ bool CodeBlocksApp::OnInit()
                 return false;
             }
         }
+
         // Splash screen moved to this place, otherwise it would be short visible, even if we only pass filenames via DDE/IPC
         // we also don't need it, if only a single instance is allowed
         Splash splash(!m_Batch && m_Script.IsEmpty() && m_Splash &&
@@ -696,6 +727,16 @@ bool CodeBlocksApp::OnInit()
         MainFrame* frame = nullptr;
         frame = InitFrame();
         m_Frame = frame;
+
+#if wxCHECK_VERSION(3, 0, 0)
+        {
+            const double scalingFactor = frame->GetContentScaleFactor();
+            const double actualScalingFactor = cbGetActualContentScaleFactor(*frame);
+            LogManager *log = Manager::Get()->GetLogManager();
+            log->Log(wxString::Format(wxT("Initial scaling factor is %.3f (actual: %.3f)"),
+                                      scalingFactor, actualScalingFactor));
+        }
+#endif // wxCHECK_VERSION(3, 0, 0)
 
         // plugins loaded -> check command line arguments again
         delete wxMessageOutput::Set(new wxMessageOutputBest); // warn about unknown options
@@ -719,8 +760,17 @@ bool CodeBlocksApp::OnInit()
             s_Loading = false;
             LoadDelayedFiles(frame);
 
+#if wxCHECK_VERSION(3,0,0)
+            // The OnInit function should only start the application but do no heavy work
+            // CallAfter will queue the function at the end of the event loop, so
+            // OnInit is finished before the build process is started.
+            // Starting the build process here will lead to crashes on linux
+            CallAfter([this]() { this->BatchJob(); });
+#else
             BatchJob();
             frame->Close();
+#endif // wxCHECK_VERSION
+
             return true;
         }
 
@@ -767,6 +817,7 @@ bool CodeBlocksApp::OnInit()
         s_Loading = false;
 
         LoadDelayedFiles(frame);
+        AttachDebugger();
         Manager::Get()->GetProjectManager()->WorkspaceChanged();
 
         // all done
@@ -936,13 +987,17 @@ int CodeBlocksApp::BatchJob()
             #ifdef __WXMSW__
                 wxICON(A_MAIN_ICON),
             #else
-                wxIcon(app),
+                wxIcon(app_xpm),
             #endif // __WXMSW__
                 title);
 
     wxString bb_title = m_pBatchBuildDialog->GetTitle();
     m_pBatchBuildDialog->SetTitle(bb_title + _T(" - ") + title);
     m_pBatchBuildDialog->Show();
+#if wxCHECK_VERSION(3,0,0)
+    // Clean up after the window is closed
+    m_pBatchBuildDialog->Bind(wxEVT_CLOSE_WINDOW, &CodeBlocksApp::OnCloseBatchBuildWindow, this);
+#endif // wxCHECK_VERSION
 
     if (m_ReBuild)
     {
@@ -965,7 +1020,8 @@ int CodeBlocksApp::BatchJob()
         else if (m_HasWorkSpace)
             compiler->CleanWorkspace(m_BatchTarget);
     }
-
+#if wxCHECK_VERSION(3,0,0)
+#else
     // The batch build log might have been deleted in
     // CodeBlocksApp::OnBatchBuildDone().
     // If it has not, it's still compiling.
@@ -985,7 +1041,7 @@ int CodeBlocksApp::BatchJob()
             m_pBatchBuildDialog = nullptr;
         }
     }
-
+#endif // wxCHECK_VERSION
     if (tbIcon)
     {
         tbIcon->RemoveIcon();
@@ -994,6 +1050,25 @@ int CodeBlocksApp::BatchJob()
 
     return 0;
 }
+
+#if wxCHECK_VERSION(3,0,0)
+void CodeBlocksApp::OnCloseBatchBuildWindow(wxCloseEvent& evt)
+{
+    cbCompilerPlugin *compiler = Manager::Get()->GetPluginManager()->GetFirstCompiler();
+    if(compiler != nullptr && compiler->IsRunning())
+    {
+        if( cbMessageBox(_T("Build still running. Do you want stop the build process?"), appglobals::AppName, wxICON_QUESTION | wxYES_NO, m_pBatchBuildDialog) == wxID_YES )
+        {
+            evt.Veto();
+            compiler->KillProcess();
+        }
+    }
+    else
+    {
+        m_Frame->Close();
+    }
+}
+#endif // wxCHECK_VERSION
 
 void CodeBlocksApp::OnBatchBuildDone(CodeBlocksEvent& event)
 {
@@ -1020,6 +1095,16 @@ void CodeBlocksApp::OnBatchBuildDone(CodeBlocksEvent& event)
     else
         wxBell();
 
+#if wxCHECK_VERSION(3,0,0)
+        // Clean up happens in in the close handler of the window
+        // We can not close the window here, because the origin of this event
+        // is the compiler plugin and the plugin will write messages to the log window after this call
+        // If we delete it here this will lead to memory corruption.
+        // The solution is to queue the call to close the log window to the end
+        // of the event loop with CallAfter. So the compiler plugin can finish its
+        // work and we close the window afterwards.
+        CallAfter([this]() { m_pBatchBuildDialog->Close(); });
+#else
     if (m_pBatchBuildDialog && m_BatchWindowAutoClose)
     {
         if (m_pBatchBuildDialog->IsModal())
@@ -1030,6 +1115,8 @@ void CodeBlocksApp::OnBatchBuildDone(CodeBlocksEvent& event)
             m_pBatchBuildDialog = nullptr;
         }
     }
+#endif // wxCHECK_VERSION
+
 }
 
 void CodeBlocksApp::OnTBIconLeftDown(wxTaskBarIconEvent& event)
@@ -1192,6 +1279,9 @@ int CodeBlocksApp::ParseCmdLine(MainFrame* handlerFrame, const wxString& CmdLine
                 Manager::Get()->GetLogManager()->SetLog(new FileLogger(_T("codeblocks-debug.log")), LogManager::debug_log);
         }
 
+        // Always parse the debugger attach parameters.
+        parser.Found(_T("dbg-attach"), &m_DebuggerAttach);
+        parser.Found(_T("dbg-config"), &m_DebuggerConfig);
     }
 #endif // wxUSE_CMDLINE_PARSER
     return filesInCmdLine ? 1 : 0;
@@ -1225,13 +1315,12 @@ void CodeBlocksApp::LoadDelayedFiles(MainFrame *const frame)
     if (!m_AutoFile.IsEmpty())
     {
         wxString linePart;
-        wxString filePart;
-        // wxString::Last is deprecated
+        // We always want to open the file no matter if there is a line number or not.
+        wxString filePart = m_AutoFile;
         long linePos = m_AutoFile.Find(_T(':'), true);
         if (linePos != wxNOT_FOUND)
         {
             linePart = m_AutoFile.Mid(linePos + 1, wxString::npos);
-            filePart = m_AutoFile;
             filePart.Remove(linePos);
         }
 
@@ -1247,18 +1336,122 @@ void CodeBlocksApp::LoadDelayedFiles(MainFrame *const frame)
                 filePart = m_AutoFile;
             }
         }
-        wxFileName fn(filePart);
-        fn.Normalize(); // really important so that two same files with different names are not loaded twice
-        if (frame->Open(fn.GetFullPath(), false))
+        // Make sure filePart is not empty, because if it is empty Normalize turns the full path in
+        // to the path of the current working folder.
+        if (!filePart.empty())
         {
-            EditorBase* eb = Manager::Get()->GetEditorManager()->GetEditor(fn.GetFullPath());
-            if (eb && (line != -1))
-                eb->GotoLine(line - 1, true);
+            wxFileName fn(filePart);
+            fn.Normalize(); // really important so that two same files with different names are not loaded twice
+            if (frame->Open(fn.GetFullPath(), false))
+            {
+                EditorBase* eb = Manager::Get()->GetEditorManager()->GetEditor(fn.GetFullPath());
+                if (eb && (line != -1))
+                    eb->GotoLine(line - 1, true);
+            }
         }
         m_AutoFile.Clear();
     }
 }
 
+void CodeBlocksApp::AttachDebugger()
+{
+    const wxString localAttach = m_DebuggerAttach;
+    const wxString localConfig = m_DebuggerConfig;
+    // Reset the values to prevent old values to be used when the user forgets to pass all required
+    // command line parameters.
+    m_DebuggerAttach = m_DebuggerConfig = wxString();
+
+    LogManager *logManager = Manager::Get()->GetLogManager();
+
+    if (localAttach.empty() || localConfig.empty())
+    {
+        if (localAttach.empty() != localConfig.empty())
+        {
+            logManager->LogError(
+                _("For attaching to work you need to provide both '--dbg-attach' and '--dbg-config'"));
+            logManager->Log(wxT("    --dbg-attach='") + localAttach + wxT("'"));
+            logManager->Log(wxT("    --dbg-config='") + localConfig + wxT("'"));
+        }
+        return;
+    }
+
+    logManager->Log(wxString::Format(_("Attach debugger '%s' to '%s'"), localConfig.wx_str(),
+                                     localAttach.wx_str()));
+
+    // Split the dbg-config to plugin name and config name
+    wxString::size_type pos = localConfig.find(wxT(':'));
+    if (pos == wxString::npos || pos == 0)
+    {
+        logManager->LogError(
+            _("No delimiter found. The --dbg-config format is 'plugin-name:config-name'"));
+        return;
+    }
+
+    const wxString pluginName = localConfig.substr(0, pos);
+    const wxString configName = localConfig.substr(pos + 1);
+
+    // Find the plugin and the config.
+    DebuggerManager *debuggerManager = Manager::Get()->GetDebuggerManager();
+    const DebuggerManager::RegisteredPlugins &debuggers = debuggerManager->GetAllDebuggers();
+    if (debuggers.empty())
+    {
+        logManager->LogError(_("No debugger plugins loaded!"));
+        return;
+    }
+
+    cbDebuggerPlugin *plugin = nullptr;
+    int configIndex = -1;
+    const DebuggerManager::PluginData *pluginData = nullptr;
+
+    for (const auto &info : debuggers)
+    {
+        if (info.first->GetSettingsName() == pluginName)
+        {
+            plugin = info.first;
+            pluginData = &info.second;
+            break;
+        }
+    }
+
+    if (!plugin)
+    {
+        logManager->LogError(wxString::Format(_("Debugger plugin '%s' not found!"),
+                                              pluginName.wx_str()));
+        logManager->Log(_("Available plugins:"));
+        for (const auto &info : debuggers)
+        {
+            cbDebuggerPlugin *p = info.first;
+            logManager->Log(wxString::Format(_("    '%s' (%s)"), p->GetSettingsName().wx_str(),
+                                             p->GetGUIName().wx_str()));
+        }
+        return;
+    }
+
+    const DebuggerManager::ConfigurationVector &configs = pluginData->GetConfigurations();
+    for (auto it = configs.begin(); it != configs.end(); ++it)
+    {
+        if ((*it)->GetName() == configName)
+        {
+            configIndex = std::distance(configs.begin(), it);
+            break;
+        }
+    }
+
+    if (configIndex == -1)
+    {
+        logManager->LogError(wxString::Format(_("Debugger configuration '%s' not found!"),
+                                              configName.wx_str()));
+        logManager->Log(_("Available configurations:"));
+        for (const cbDebuggerConfiguration *config : configs)
+            logManager->Log(wxString::Format(_("    '%s'"), config->GetName().wx_str()));
+        return;
+    }
+
+    // We have a debugger plugin and config, so lets try to attach...
+    logManager->Log(_("Debugger plugin and configuration found. Attaching!!!"));
+    plugin->SetActiveConfig(configIndex);
+    plugin->AttachToProcess(localAttach);
+}
 
 #ifdef __WXMAC__
 
@@ -1317,6 +1510,9 @@ void CodeBlocksApp::OnAppActivate(wxActivateEvent& event)
         // so : idEditorManagerCheckFiles, EditorManager::OnCheckForModifiedFiles just exist for this workaround
         wxCommandEvent evt(wxEVT_COMMAND_MENU_SELECTED, idEditorManagerCheckFiles);
         wxPostEvent(Manager::Get()->GetEditorManager(), evt);
+        // If event is close app, wxPostEvent() may have allowed OnApplicationClose() to free the Managers.
+        if ( Manager::IsAppShuttingDown())
+            return;
         cbProjectManagerUI *prjManUI = m_Frame->GetProjectManagerUI();
         if (prjManUI)
             static_cast<ProjectManagerUI*>(prjManUI)->CheckForExternallyModifiedProjects();

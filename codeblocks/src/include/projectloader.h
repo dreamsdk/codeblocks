@@ -26,17 +26,17 @@ class DLLIMPORT ProjectLoader : public IBaseLoader
           * @param project The project to handle (load/save). */
         ProjectLoader(cbProject* project);
         /// Destructor.
-        virtual ~ProjectLoader();
+        ~ProjectLoader() override;
 
         /** Open a file.
           * @param filename The file to open.
           * @return True on success, false on failure. */
-        bool Open(const wxString& filename);
+        bool Open(const wxString& filename) override;
 
         /** Save a file.
           * @param filename The file to save.
           * @return True on success, false on failure. */
-        bool Save(const wxString& filename);
+        bool Save(const wxString& filename) override;
 
         /** Open a file.
           * This version of Open, will return a copy of the \<Extensions\> element (if found).
@@ -90,12 +90,6 @@ class DLLIMPORT ProjectLoader : public IBaseLoader
     private:
         void ConvertVersion_Pre_1_1();
         void ConvertLibraries(CompileTargetBase* object);
-
-        // convenience functions, used in Save()
-        TiXmlElement* AddElement(TiXmlElement* parent, const char* name, const char* attr = nullptr, const wxString& attribute = wxEmptyString);
-        TiXmlElement* AddElement(TiXmlElement* parent, const char* name, const char* attr, int attribute);
-        void AddArrayOfElements(TiXmlElement* parent, const char* name, const char* attr, const wxArrayString& array, bool isPath = false);
-        void SaveEnvironment(TiXmlElement* parent, CompileOptionsBase* base);
 
         // accepts a questionable compiler index and returns a valid compiler index
         // (popping up a selection dialog if needed)

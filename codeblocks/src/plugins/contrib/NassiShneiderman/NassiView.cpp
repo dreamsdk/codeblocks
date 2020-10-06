@@ -75,7 +75,9 @@ NassiView::NassiView(NassiFileContent *nfc):
 
     m_colors.Init();
 }
+
 const wxPoint NassiView::offset = wxPoint(20,20);
+
 NassiView::~NassiView()
 {
     m_nfc->RemoveObserver(this);
@@ -93,44 +95,51 @@ NassiView::~NassiView()
     if(itsTask)
         delete itsTask;
 }
+
 bool NassiView::IsDrawingSource()
 {
     return m_DrawSource;
 }
+
 bool NassiView::IsDrawingComment()
 {
     return m_DrawComment;
 }
+
 void NassiView::EnableDrawSource(bool en )
 {
     m_DrawSource = en;
     UpdateSize();
 }
+
 void NassiView::EnableDrawComment(bool en )
 {
     m_DrawComment = en;
     UpdateSize();
 }
+
 void NassiView::ChangeToolTo(NassiTools tool)
 {
     SetTask( new InsertBrickTask(this, m_nfc, tool) );
 }
-void NassiView::ToolSelect(void)
-{
-    //m_tool = NASSI_TOOL_ESC;
 
+void NassiView::ToolSelect()
+{
     RemoveTask();
     m_diagramwindow->SetCursor(wxCursor(wxCURSOR_ARROW));
     ClearSelection();
 }
+
 bool NassiView::CanZoomIn()
 {
     return m_fontsize < 416;
 }
+
 bool NassiView::CanZoomOut()
 {
     return m_fontsize > 6;
 }
+
 void NassiView::ZoomIn()
 {
     if ( m_fontsize < 416 )
@@ -146,6 +155,7 @@ void NassiView::ZoomIn()
     }
     UpdateSize();
 }
+
 void NassiView::ZoomOut()
 {
     if ( m_fontsize > 6 )
@@ -161,6 +171,7 @@ void NassiView::ZoomOut()
     }
     UpdateSize();
 }
+
 const wxInt16 NassiView::FontSizes[] =
     { 6,  7,  8,  9, 10, 11,
      12, 14, 16, 18, 20, 22,
@@ -169,6 +180,7 @@ const wxInt16 NassiView::FontSizes[] =
      96,112,128,144,160,176,
     192,224,256,288,320,352,
     384,416};
+
 void NassiView::DeleteSelection()
 {
     if ( itsTask && itsTask->CanEdit() )
@@ -186,6 +198,7 @@ void NassiView::DeleteSelection()
         ClearSelection();
     }
 }
+
 wxCommand *NassiView::Delete()
 {
     if ( ChildIndicatorIsSelected )
@@ -212,6 +225,7 @@ wxCommand *NassiView::Delete()
 
     return 0;
 }
+
 void NassiView::Cut()
 {
     if ( itsTask && itsTask->CanEdit() )
@@ -223,6 +237,7 @@ void NassiView::Cut()
     CopyBricks();
     DeleteSelection();
 }
+
 void NassiView::Copy()
 {
     if ( itsTask && itsTask->CanEdit() )
@@ -235,6 +250,7 @@ void NassiView::Copy()
     /// /////////////////////////////////////////////
     CopyBricks();
 }
+
 void NassiView::CopyBricks()
 {
     wxClipboardLocker locker;
@@ -245,9 +261,9 @@ void NassiView::CopyBricks()
     NassiDataObject *ndo = 0;
     if ( HasSelectedBricks() )
     {
-        NassiBrick *first = (NassiBrick *)0,
-                    *last = (NassiBrick *)0,
-                     *tmp = (NassiBrick *)0;
+        NassiBrick *first = nullptr,
+                    *last = nullptr,
+                     *tmp = nullptr;
         //check the active Bricks
         first = firstSelectedGBrick->GetBrick();
         last = firstSelectedGBrick->GetBrick();
@@ -263,7 +279,7 @@ void NassiView::CopyBricks()
         }
 
         tmp = last->GetNext();
-        last->SetNext( (NassiBrick *)0 );
+        last->SetNext( nullptr );
 
 
         NassiBrick *parent = first->GetParent();
@@ -299,9 +315,8 @@ void NassiView::CopyBricks()
     else
         if ( ndo )
             delete ndo;
-
-
 }
+
 void NassiView::Paste()
 {
     if ( itsTask && itsTask->CanEdit() )
@@ -315,7 +330,7 @@ void NassiView::Paste()
     /// /////////////////////////////////////////////
     wxClipboardLocker locker;
     if ( !locker ) return;
-    NassiDataObject  dataobj( (NassiBrick *)0, this);
+    NassiDataObject  dataobj( nullptr, this);
 
     if ( wxTheClipboard->Open() )
     {
@@ -330,6 +345,7 @@ void NassiView::Paste()
         wxTheClipboard->Close();
     }
 }
+
 bool NassiView::CanPaste()const
 {
     if ( itsTask && itsTask->CanEdit())
@@ -337,12 +353,14 @@ bool NassiView::CanPaste()const
 
     return wxTheClipboard->IsSupported(wxDataFormat(NassiDataObject::NassiFormatId));
 }
+
 void NassiView::MoveTextCtrl(const wxPoint &pt )
 {
     wxPoint p;
     m_diagramwindow->CalcScrolledPosition(pt.x, pt.y, &p.x, &p.y);
     m_txt->Move(p);
 }
+
 bool NassiView::HasSelection()const
 {
     if ( itsTask && itsTask->CanEdit() )
@@ -350,10 +368,12 @@ bool NassiView::HasSelection()const
 
     return hasSelectedBricks || ChildIndicatorIsSelected;
 }
+
 bool NassiView::HasSelectedBricks()const
 {
     return hasSelectedBricks;
 }
+
 void NassiView::Update( wxObject* /*hint*/ )
 {
     for (BricksMap::iterator it = m_GraphBricks.begin() ; it != m_GraphBricks.end() ; it++ )
@@ -389,6 +409,7 @@ void NassiView::Update( wxObject* /*hint*/ )
 
     Updated(true);
 }
+
 void NassiView::UpdateSize()
 {
     wxPoint minsize(0,0);
@@ -426,14 +447,17 @@ void NassiView::UpdateSize()
     m_diagramwindow->Refresh();
     if ( itsTask ) itsTask->UpdateSize();
 }
+
 const wxFont &NassiView::GetCommentFont()
 {
     return m_commentfont;
 }
+
 const wxFont &NassiView::GetSourceFont()
 {
     return m_sourcefont;
 }
+
 NassiDiagramWindow *NassiView::CreateDiagramWindow(wxWindow *parent)
 {
     if ( !m_diagramwindow )
@@ -444,10 +468,12 @@ NassiDiagramWindow *NassiView::CreateDiagramWindow(wxWindow *parent)
     m_txt->Show(false);
     return m_diagramwindow;
 }
+
 const wxRect &NassiView::GetEmptyRootRect()
 {
     return m_EmptyRootRect;
 }
+
 void NassiView::DrawDiagram(wxDC *dc)
 {
     dc->SetFont( m_commentfont);
@@ -484,6 +510,7 @@ void NassiView::DrawDiagram(wxDC *dc)
             it->second->DrawActive(dc);
     }
 }
+
 HooverDrawlet *NassiView::OnMouseMove(wxMouseEvent &event, const wxPoint &pos)
 {
     cursorOverText = false;
@@ -491,7 +518,7 @@ HooverDrawlet *NassiView::OnMouseMove(wxMouseEvent &event, const wxPoint &pos)
     if ( itsTask )
         return itsTask->OnMouseMove(event, pos);
 
-    // if no Task is active, we check if hoovering over text
+    // if no Task is active, we check if hovering over text
     GraphNassiBrick *gbrick = GetBrickAtPosition(pos);
     if ( !HasSelection() && gbrick && gbrick->IsOverText(pos) != 0 )
     {
@@ -515,6 +542,7 @@ HooverDrawlet *NassiView::OnMouseMove(wxMouseEvent &event, const wxPoint &pos)
 
     return 0;
 }
+
 void NassiView::OnMouseLeftDown(wxMouseEvent &event, const wxPoint &pos)
 {
     DragPossible = false;
@@ -560,13 +588,13 @@ void NassiView::OnMouseLeftDown(wxMouseEvent &event, const wxPoint &pos)
         wxUint32 childN;
         if (!clickedIsActive && gbrick && gbrick->IsOverChildIndicator(pos, &childN) )
         {
-            //LoggerSingleton::exemplar()->Log( wxString::Format(_T("ChildIndicator %d"), childN ));
             SelectChildIndicator(gbrick, childN);
         }
         else
             if ( !clickedIsActive ) SelectFirst( gbrick );
     }
 }
+
 void NassiView::OnMouseLeftUp(wxMouseEvent &event, const wxPoint &pos)
 {
     if ( itsTask )
@@ -585,6 +613,7 @@ void NassiView::OnMouseLeftUp(wxMouseEvent &event, const wxPoint &pos)
 //    }
     DragPossible = false;
 }
+
 void NassiView::OnMouseRightDown(wxMouseEvent &event, const wxPoint &pos)
 {
     if ( itsTask )
@@ -593,15 +622,16 @@ void NassiView::OnMouseRightDown(wxMouseEvent &event, const wxPoint &pos)
         if ( itsTask->Done() ) RemoveTask();
     }
 }
+
 void NassiView::OnMouseRightUp(wxMouseEvent& event, const wxPoint &pos)
 {
-    //LoggerSingleton::exemplar()->Log(_T("View::OnMouseRightUp"));
     if ( itsTask )
     {
         itsTask->OnMouseRightUp(event, pos);
         if ( itsTask->Done() ) RemoveTask();
     }
 }
+
 void NassiView::OnKeyDown(wxKeyEvent &event)
 {
     if ( itsTask )
@@ -723,6 +753,7 @@ void NassiView::OnKeyDown(wxKeyEvent &event)
         }
     }
 }
+
 void NassiView::OnChar(wxKeyEvent &event)
 {
     if ( itsTask )
@@ -731,6 +762,7 @@ void NassiView::OnChar(wxKeyEvent &event)
         if ( itsTask->Done() ) RemoveTask();
     }
 }
+
 void NassiView::SetTask(Task* task)
 {
     SelectFirst(0);
@@ -741,6 +773,7 @@ void NassiView::SetTask(Task* task)
     if ( itsTask )
         m_diagramwindow->SetCursor(itsTask->Start());
 }
+
 void NassiView::RemoveTask()
 {
     if ( itsTask )
@@ -749,6 +782,7 @@ void NassiView::RemoveTask()
     ClearSelection();
     m_diagramwindow->SetCursor(wxCursor(wxCURSOR_ARROW));
 }
+
 void NassiView::ClearSelection()
 {
     hasSelectedBricks = false;
@@ -766,6 +800,7 @@ void NassiView::ClearSelection()
 
     m_diagramwindow->Refresh();
 }
+
 void NassiView::SelectFirst(GraphNassiBrick *gfirst)
 {
     ClearSelection();
@@ -782,6 +817,7 @@ void NassiView::SelectFirst(GraphNassiBrick *gfirst)
 
     m_diagramwindow->Refresh();
 }
+
 void NassiView::Select(GraphNassiBrick *gfirst, GraphNassiBrick *glast)
 {
     if ( !gfirst )
@@ -819,7 +855,6 @@ void NassiView::Select(GraphNassiBrick *gfirst, GraphNassiBrick *glast)
         first = first->GetParent();
         if ( !first )
         {
-            //LoggerSingleton::exemplar()->Log(_T("failure while checking for parents"));
             return;
         }
         flevel--;
@@ -831,7 +866,6 @@ void NassiView::Select(GraphNassiBrick *gfirst, GraphNassiBrick *glast)
         last = last->GetParent();
         if ( !last )
         {
-            //LoggerSingleton::exemplar()->Log(_T("failure while checking for parents"));
             return;
         }
         llevel--;
@@ -850,7 +884,6 @@ void NassiView::Select(GraphNassiBrick *gfirst, GraphNassiBrick *glast)
 
             if ( !last || !first ) // we have a problem
             {
-                //LoggerSingleton::exemplar()->Log(_T("failure while checking for siblings"));
                 return;
             }
         }
@@ -890,14 +923,14 @@ void NassiView::Select(GraphNassiBrick *gfirst, GraphNassiBrick *glast)
         }while ( first );
 
     }
-
-
     m_diagramwindow->Refresh();
 }
+
 void NassiView::SelectLast(GraphNassiBrick *gbrick)
 {
     Select(firstSelectedGBrick, gbrick);
 }
+
 void NassiView::SelectChildIndicator(GraphNassiBrick *gbrick, wxUint32 child)
 {
     ClearSelection();
@@ -925,7 +958,8 @@ void NassiView::SelectChildIndicator(GraphNassiBrick *gbrick, wxUint32 child)
 
     m_diagramwindow->Refresh();
 }
-void NassiView::SelectAll(void)
+
+void NassiView::SelectAll()
 {
     ChildIndicatorIsSelected = false;
     ChildIndicatorParent = 0;
@@ -949,11 +983,13 @@ void NassiView::SelectAll(void)
 
     m_diagramwindow->Refresh();
 }
+
 bool NassiView::CanSelectAll()
 {
     if ( m_nfc->GetFirstBrick() ) return true;
     return false;
 }
+
 NassiBrick *NassiView::GenerateNewBrick(NassiTools tool)
 {
     NassiBrick *brick;
@@ -1012,9 +1048,9 @@ NassiBrick *NassiView::GenerateNewBrick(NassiTools tool)
     }
     return brick;
 }
+
 void NassiView::DragStart()
 {
-
     wxString strc, strs;
 
     if ( ChildIndicatorIsSelected )
@@ -1032,9 +1068,9 @@ void NassiView::DragStart()
     if ( HasSelectedBricks() )
     {
         if ( !m_nfc->GetFirstBrick() ) return;
-        NassiBrick *first = (NassiBrick *)0,
-                    *last = (NassiBrick *)0,
-                     *tmp = (NassiBrick *)0;
+        NassiBrick *first = nullptr,
+                    *last = nullptr,
+                     *tmp = nullptr;
         //check the active Bricks
         first = firstSelectedGBrick->GetBrick();
         last = firstSelectedGBrick->GetBrick();
@@ -1050,7 +1086,7 @@ void NassiView::DragStart()
         }
 
         tmp = last->GetNext();
-        last->SetNext( (NassiBrick *)0 );
+        last->SetNext( nullptr );
 
         dataptr = new NassiDataObject(first, this, strc, strs);
 
@@ -1076,7 +1112,6 @@ void NassiView::DragStart()
 
         wxDropSource dndSource(m_diagramwindow, copycursor, movecursor, nonecursor);
         dndSource.SetData(*dataptr);
-        //dndSource.SetData(myData);
 
         ThisIsDnDSource = true;
         /*result = */dndSource.DoDragDrop(wxDrag_DefaultMove );
@@ -1084,24 +1119,14 @@ void NassiView::DragStart()
     ThisIsDnDSource = false;
 
     DragPossible = false;
-
-//    switch ( result )
-//    {
-//        case wxDragLink:
-//        case wxDragCopy:
-//            break;
-//        case wxDragMove:
-//            //DeleteSelection();
-//            break;
-//        default:
-//            break;
-//    }
-
 }
-void NassiView::OnDragLeave(void)
+
+void NassiView::OnDragLeave()
 {}
-void NassiView::OnDragEnter(void)
+
+void NassiView::OnDragEnter()
 {}
+
 wxDragResult NassiView::OnDrop(const wxPoint &pos, NassiBrick *brick, wxString strc, wxString strs, wxDragResult def)
 {
     wxDragResult res = def;
@@ -1112,7 +1137,7 @@ wxDragResult NassiView::OnDrop(const wxPoint &pos, NassiBrick *brick, wxString s
         if ( brick && rect.Contains(pos) )
             addcmd = new NassiInsertFirstBrick(m_nfc, brick);
         else
-            res = wxDragError;
+            res = wxDragNone;
     }
     else
     {
@@ -1136,10 +1161,10 @@ wxDragResult NassiView::OnDrop(const wxPoint &pos, NassiBrick *brick, wxString s
                 addcmd = new NassiAddChildIndicatorCommand(m_nfc, gbrick->GetBrick(), brick, ChildAddNumber, strc, strs);
             }
             else
-                res = wxDragError;
+                res = wxDragNone;
         }
         else
-            res = wxDragError;
+            res = wxDragNone;
     }
 
     if ( addcmd  && def == wxDragMove )
@@ -1160,6 +1185,7 @@ wxDragResult NassiView::OnDrop(const wxPoint &pos, NassiBrick *brick, wxString s
 
     return res;
 }
+
 HooverDrawlet *NassiView::OnDragOver(const wxPoint &pos, wxDragResult &def, bool HasNoBricks)
 {
     if ( !m_nfc->GetFirstBrick() )
@@ -1169,7 +1195,7 @@ HooverDrawlet *NassiView::OnDragOver(const wxPoint &pos, wxDragResult &def, bool
             return new RedHatchDrawlet(rect);
         else
         {
-            def = wxDragError;
+            def = wxDragNone;
             return 0;
         }
     }
@@ -1178,13 +1204,14 @@ HooverDrawlet *NassiView::OnDragOver(const wxPoint &pos, wxDragResult &def, bool
     if ( gbrick )
     {
         HooverDrawlet *drawlet = gbrick->GetDrawlet(pos, HasNoBricks);
-        if ( drawlet == 0 ) def = wxDragError;
+        if ( drawlet == 0 ) def = wxDragNone;
         return drawlet;
     }
 
-    def = wxDragError;
+    def = wxDragNone;
     return 0;
 }
+
 void NassiView::ExportCSource()
 {
     wxFileDialog dlg( m_diagramwindow, _("Choose a file to exporting into"), _T(""), _T(""), _("C sources (*.c)|*.c"), wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
@@ -1202,9 +1229,9 @@ void NassiView::ExportCSource()
 bool NassiView::ExportCSource(wxTextOutputStream &text_stream, wxUint32 n)
 {
     if ( !m_nfc->GetFirstBrick() ) return false;
-    NassiBrick *first = (NassiBrick *)0,
-                *last = (NassiBrick *)0,
-                 *tmp = (NassiBrick *)0;
+    NassiBrick *first = nullptr,
+                *last = nullptr,
+                 *tmp = nullptr;
 
     if ( firstSelectedGBrick )
     {
@@ -1231,7 +1258,7 @@ bool NassiView::ExportCSource(wxTextOutputStream &text_stream, wxUint32 n)
     }
 
     tmp = last->GetNext();
-    last->SetNext( (NassiBrick *)0 );
+    last->SetNext( nullptr );
 
     if ( first ) first->SaveSource(text_stream, n);
     else return false;
@@ -1244,10 +1271,8 @@ bool NassiView::ExportCSource(wxTextOutputStream &text_stream, wxUint32 n)
     return true;
 }
 
-void NassiView::ExportVHDLSource()
-{
+void NassiView::ExportVHDLSource(){}
 
-}
 void NassiView::ExportStrukTeX()
 {
     wxFileDialog dlg( m_diagramwindow, _("Choose a file to exporting into"), _T(""), _T(""), _("LaTeX files (*.tex)|*.tex"), wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
@@ -1256,9 +1281,9 @@ void NassiView::ExportStrukTeX()
     if ( filename.empty() ) return;
 
     if ( !m_nfc->GetFirstBrick() ) return;
-    NassiBrick *first = (NassiBrick *)0,
-                *last = (NassiBrick *)0,
-                 *tmp = (NassiBrick *)0;
+    NassiBrick *first = nullptr,
+                *last = nullptr,
+                 *tmp = nullptr;
 
     if ( firstSelectedGBrick )
     {
@@ -1285,7 +1310,7 @@ void NassiView::ExportStrukTeX()
     }
 
     tmp = last->GetNext();
-    last->SetNext( (NassiBrick *)0 );
+    last->SetNext( nullptr );
 
     // generate the code
 
@@ -1319,6 +1344,7 @@ void NassiView::ExportStrukTeX()
     if ( first && last && tmp )
         last->SetNext(tmp);
 }
+
 #if wxUSE_POSTSCRIPT
 void NassiView::ExportPS()
 {
@@ -1328,9 +1354,9 @@ void NassiView::ExportPS()
     if ( filename.empty() ) return;
 
     if ( !m_nfc->GetFirstBrick() ) return;
-    NassiBrick *first = (NassiBrick *)0,
-                *last = (NassiBrick *)0,
-                 *tmp = (NassiBrick *)0;
+    NassiBrick *first = nullptr,
+                *last = nullptr,
+                 *tmp = nullptr;
 
     if ( firstSelectedGBrick )
     {
@@ -1357,7 +1383,7 @@ void NassiView::ExportPS()
     }
 
     tmp = last->GetNext();
-    last->SetNext( (NassiBrick *)0 );
+    last->SetNext( nullptr );
 
 
     wxPrintData g_printData;
@@ -1406,6 +1432,7 @@ void NassiView::ExportPS()
     delete graphFabric;
 }
 #endif
+
 #if wxCHECK_VERSION(3, 0, 0)
 void NassiView::ExportSVG()
 {
@@ -1416,9 +1443,9 @@ void NassiView::ExportSVG()
 
 
     if ( !m_nfc->GetFirstBrick() ) return;
-    NassiBrick *first = (NassiBrick *)0,
-                *last = (NassiBrick *)0,
-                 *tmp = (NassiBrick *)0;
+    NassiBrick *first = nullptr,
+                *last = nullptr,
+                 *tmp = nullptr;
 
     if ( firstSelectedGBrick )
     {
@@ -1445,7 +1472,7 @@ void NassiView::ExportSVG()
     }
 
     tmp = last->GetNext();
-    last->SetNext( (NassiBrick *)0 );
+    last->SetNext( nullptr );
 
 
     wxSVGFileDC *svgdc = new wxSVGFileDC(filename, 10, 10);
@@ -1489,6 +1516,7 @@ void NassiView::ExportSVG()
     delete graphFabric;
 }
 #endif
+
 void NassiView::ExportBitmap()
 {
     wxFileDialog dlg( m_diagramwindow, _("Choose a file to exporting into"),_T(""),_T(""),_("PNG files (*.png)|*.png"), wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
@@ -1498,9 +1526,9 @@ void NassiView::ExportBitmap()
 
 
     if ( !m_nfc->GetFirstBrick() ) return;
-    NassiBrick *first = (NassiBrick *)0,
-                *last = (NassiBrick *)0,
-                 *tmp = (NassiBrick *)0;
+    NassiBrick *first = nullptr,
+                *last = nullptr,
+                 *tmp = nullptr;
 
     if ( firstSelectedGBrick )
     {
@@ -1527,7 +1555,7 @@ void NassiView::ExportBitmap()
     }
 
     tmp = last->GetNext();
-    last->SetNext( (NassiBrick *)0 );
+    last->SetNext( nullptr );
 
 
     wxMemoryDC *memdc = new wxMemoryDC();
@@ -1572,12 +1600,14 @@ void NassiView::ExportBitmap()
     }
     delete graphFabric;
 }
+
 GraphNassiBrick *NassiView::GetGraphBrick(NassiBrick *brick)
 {
     if ( m_GraphBricks.find(brick) == m_GraphBricks.end() )
-        return (GraphNassiBrick *)0;
+        return nullptr;
     return m_GraphBricks[brick];
 }
+
 GraphNassiBrick *NassiView::CreateGraphBrick(NassiBrick *brick)
 {
     BricksMap::iterator it = m_GraphBricks.find(brick);
@@ -1591,6 +1621,7 @@ GraphNassiBrick *NassiView::CreateGraphBrick(NassiBrick *brick)
     m_GraphBricks[brick] = m_graphFabric->CreateGraphBrick(brick);
     return m_GraphBricks[brick];
 }
+
 GraphNassiBrick *NassiView::GetBrickAtPosition(const wxPoint &pos)
 {
     for (BricksMap::iterator it = m_GraphBricks.begin() ; it != m_GraphBricks.end() ; ++it)
@@ -1601,11 +1632,13 @@ GraphNassiBrick *NassiView::GetBrickAtPosition(const wxPoint &pos)
     }
     return 0;
 }
+
 void NassiView::ShowCaret(bool show)
 {
     wxCaret *caret = m_diagramwindow->GetCaret();
     if ( caret ) caret->Show( show );
 }
+
 bool NassiView::IsCaretVisible()
 {
     wxCaret *caret = m_diagramwindow->GetCaret();
@@ -1613,6 +1646,7 @@ bool NassiView::IsCaretVisible()
         return caret->IsVisible();
     return false;
 }
+
 void NassiView::MoveCaret(const wxPoint& pt)
 {
     wxCaret *caret = m_diagramwindow->GetCaret();

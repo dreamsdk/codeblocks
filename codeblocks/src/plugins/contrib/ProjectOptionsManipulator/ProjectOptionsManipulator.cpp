@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11045 $
- * $Id: ProjectOptionsManipulator.cpp 11045 2017-04-05 19:19:55Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulator.cpp $
+ * $Revision: 11839 $
+ * $Id: ProjectOptionsManipulator.cpp 11839 2019-09-06 06:55:07Z mortenmacfly $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulator.cpp $
  */
 
 #include "ProjectOptionsManipulator.h"
@@ -181,7 +181,7 @@ bool ProjectOptionsManipulator::OperateProject(cbProject* prj, wxArrayString& re
   if      (scan_opt == ProjectOptionsManipulatorDlg::eFiles)
     ProcessFiles(prj, result);
   else if (scan_opt == ProjectOptionsManipulatorDlg::eChangeCompiler)
-    ProcessChangeCompiler(prj, src, dst);
+    ProcessChangeCompiler(prj, src, dst, result);
   else
   {
     if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eCompiler) )
@@ -252,7 +252,7 @@ void ProjectOptionsManipulator::ProcessFiles(cbProject* prj, wxArrayString& resu
 
 /* ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- */
 
-void ProjectOptionsManipulator::ProcessChangeCompiler(cbProject* prj, const wxString& src, const wxString& dst)
+void ProjectOptionsManipulator::ProcessChangeCompiler(cbProject* prj, const wxString& src, const wxString& dst, wxArrayString& result)
 {
   Compiler* dst_comp = CompilerFactory::GetCompilerByName(dst);
   Compiler* src_comp = nullptr;
@@ -274,15 +274,29 @@ void ProjectOptionsManipulator::ProcessChangeCompiler(cbProject* prj, const wxSt
     }
   }
 
+  bool changed = false;
+
   if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
   {
     if (nullptr != src_comp) // replace only if compiler match
     {
       if ( prj->GetCompilerID().IsSameAs(src_comp->GetID()) )
-        prj->SetCompilerID(dst_comp->GetID());
+      {
+          prj->SetCompilerID(dst_comp->GetID());
+          changed = true;
+      }
+
     }
     else
-      prj->SetCompilerID(dst_comp->GetID()); // replace every compiler of this target
+    {
+        prj->SetCompilerID(dst_comp->GetID()); // replace every compiler of this target
+        changed = true;
+    }
+
+    if(changed)
+        result.Add(wxString::Format(_("Project '%s': Changed compiler to '%s'."),
+                                        prj->GetTitle().wx_str(), dst_comp->GetName().wx_str()));
+
   }
 
   if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eTarget) )
@@ -296,10 +310,22 @@ void ProjectOptionsManipulator::ProcessChangeCompiler(cbProject* prj, const wxSt
       if (nullptr != src_comp) // replace only if compiler match
       {
         if ( tgt->GetCompilerID().IsSameAs(src_comp->GetID()) )
-          tgt->SetCompilerID(dst_comp->GetID());
+        {
+            tgt->SetCompilerID(dst_comp->GetID());
+            changed = true;
+        }
+
       }
       else
-        tgt->SetCompilerID(dst_comp->GetID()); // replace every compiler of this target
+      {
+          tgt->SetCompilerID(dst_comp->GetID()); // replace every compiler of this target
+          changed = true;
+      }
+
+
+      if(changed)
+        result.Add(wxString::Format(_("Project '%s', target '%s': Changed compiler to '%s'."),
+                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), dst_comp->GetName().wx_str()));
     }
   }
 }
@@ -355,14 +381,17 @@ void ProjectOptionsManipulator::ProcessCompilerOptions(cbProject* prj, const wxS
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetCompilerOptions(), opt, full_opt) )
         {
-          prj->RemoveCompilerOption(full_opt);
-          result.Add(wxString::Format(_("Project '%s': Removed compiler option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->RemoveCompilerOption( full_opt.Item(fo) );
+            result.Add(wxString::Format(_("Project '%s': Removed compiler option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -376,9 +405,12 @@ void ProjectOptionsManipulator::ProcessCompilerOptions(cbProject* prj, const wxS
 
           if ( HasOption(tgt->GetCompilerOptions(), opt, full_opt) )
           {
-            tgt->RemoveCompilerOption(opt);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed compiler option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->RemoveCompilerOption(opt);
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed compiler option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -418,14 +450,17 @@ void ProjectOptionsManipulator::ProcessCompilerOptions(cbProject* prj, const wxS
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetCompilerOptions(), opt, full_opt) )
         {
-          prj->ReplaceCompilerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced compiler option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->ReplaceCompilerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced compiler option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -439,9 +474,12 @@ void ProjectOptionsManipulator::ProcessCompilerOptions(cbProject* prj, const wxS
 
           if ( HasOption(tgt->GetCompilerOptions(), opt, full_opt) )
           {
-            tgt->ReplaceCompilerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced compiler option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->ReplaceCompilerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced compiler option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -507,14 +545,17 @@ void ProjectOptionsManipulator::ProcessLinkerOptions(cbProject* prj, const wxStr
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLinkerOptions(), opt, full_opt) )
         {
-          prj->RemoveLinkerOption(full_opt);
-          result.Add(wxString::Format(_("Project '%s': Removed linker option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->RemoveLinkerOption(full_opt.Item(fo));
+            result.Add(wxString::Format(_("Project '%s': Removed linker option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -528,9 +569,12 @@ void ProjectOptionsManipulator::ProcessLinkerOptions(cbProject* prj, const wxStr
 
           if ( HasOption(tgt->GetLinkerOptions(), opt, full_opt) )
           {
-            tgt->RemoveLinkerOption(opt);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->RemoveLinkerOption(full_opt.Item(fo));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -570,14 +614,17 @@ void ProjectOptionsManipulator::ProcessLinkerOptions(cbProject* prj, const wxStr
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLinkerOptions(), opt, full_opt) )
         {
-          prj->ReplaceLinkerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced linker option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->ReplaceLinkerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced linker option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -591,9 +638,12 @@ void ProjectOptionsManipulator::ProcessLinkerOptions(cbProject* prj, const wxStr
 
           if ( HasOption(tgt->GetLinkerOptions(), opt, full_opt) )
           {
-            tgt->ReplaceLinkerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->ReplaceLinkerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -658,14 +708,17 @@ void ProjectOptionsManipulator::ProcessResCompilerOptions(cbProject* prj, const 
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetResourceCompilerOptions(), opt, full_opt) )
         {
-          prj->RemoveResourceCompilerOption(full_opt);
-          result.Add(wxString::Format(_("Project '%s': Removed resource compiler option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->RemoveResourceCompilerOption(full_opt.Item(fo));
+            result.Add(wxString::Format(_("Project '%s': Removed resource compiler option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -679,9 +732,12 @@ void ProjectOptionsManipulator::ProcessResCompilerOptions(cbProject* prj, const 
 
           if ( HasOption(tgt->GetResourceCompilerOptions(), opt, full_opt) )
           {
-            tgt->RemoveResourceCompilerOption(opt);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed resource compiler option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->RemoveResourceCompilerOption(full_opt.Item(fo));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed resource compiler option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -721,14 +777,17 @@ void ProjectOptionsManipulator::ProcessResCompilerOptions(cbProject* prj, const 
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_opt;
+      wxArrayString full_opt;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetResourceCompilerOptions(), opt, full_opt) )
         {
-          prj->ReplaceResourceCompilerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced resource compiler option '%s'."),
-                                      prj->GetTitle().wx_str(), full_opt.wx_str()));
+          for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+          {
+            prj->ReplaceResourceCompilerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced resource compiler option '%s'."),
+                                        prj->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+          }
         }
       }
 
@@ -742,9 +801,12 @@ void ProjectOptionsManipulator::ProcessResCompilerOptions(cbProject* prj, const 
 
           if ( HasOption(tgt->GetResourceCompilerOptions(), opt, full_opt) )
           {
-            tgt->ReplaceResourceCompilerOption(full_opt, ManipulateOption(full_opt, opt, opt_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced resource compiler option '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.wx_str()));
+            for (size_t fo=0; fo<full_opt.GetCount(); fo++)
+            {
+              tgt->ReplaceResourceCompilerOption(full_opt.Item(fo), ManipulateOption(full_opt.Item(fo), opt, opt_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced resource compiler option '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_opt.Item(fo).wx_str()));
+            }
           }
         }
       }
@@ -809,14 +871,17 @@ void ProjectOptionsManipulator::ProcessCompilerPaths(cbProject* prj, const wxStr
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetIncludeDirs(), path, full_path) )
         {
-          prj->RemoveIncludeDir(full_path);
-          result.Add(wxString::Format(_("Project '%s': Removed compiler path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->RemoveIncludeDir(full_path.Item(fp));
+            result.Add(wxString::Format(_("Project '%s': Removed compiler path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -830,9 +895,12 @@ void ProjectOptionsManipulator::ProcessCompilerPaths(cbProject* prj, const wxStr
 
           if ( HasOption(tgt->GetIncludeDirs(), path, full_path) )
           {
-            tgt->RemoveIncludeDir(path);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed compiler path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->RemoveIncludeDir(full_path.Item(fp));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed compiler path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -872,14 +940,17 @@ void ProjectOptionsManipulator::ProcessCompilerPaths(cbProject* prj, const wxStr
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetIncludeDirs(), path, full_path) )
         {
-          prj->ReplaceIncludeDir(full_path, ManipulateOption(full_path, path, path_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced compiler path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->ReplaceIncludeDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced compiler path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -893,9 +964,12 @@ void ProjectOptionsManipulator::ProcessCompilerPaths(cbProject* prj, const wxStr
 
           if ( HasOption(tgt->GetIncludeDirs(), path, full_path) )
           {
-            tgt->ReplaceIncludeDir(full_path, ManipulateOption(full_path, path, path_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced compiler path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->ReplaceIncludeDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced compiler path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -960,14 +1034,17 @@ void ProjectOptionsManipulator::ProcessLinkerPaths(cbProject* prj, const wxStrin
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLibDirs(), path, full_path) )
         {
-          prj->RemoveLibDir(full_path);
-          result.Add(wxString::Format(_("Project '%s': Removed linker path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->RemoveLibDir(full_path.Item(fp));
+            result.Add(wxString::Format(_("Project '%s': Removed linker path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -981,9 +1058,12 @@ void ProjectOptionsManipulator::ProcessLinkerPaths(cbProject* prj, const wxStrin
 
           if ( HasOption(tgt->GetLibDirs(), path, full_path) )
           {
-            tgt->RemoveLibDir(path);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->RemoveLibDir(full_path.Item(fp));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -1023,14 +1103,17 @@ void ProjectOptionsManipulator::ProcessLinkerPaths(cbProject* prj, const wxStrin
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLibDirs(), path, full_path) )
         {
-          prj->ReplaceLibDir(full_path, ManipulateOption(full_path, path, path_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced linker path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->ReplaceLibDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced linker path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -1044,9 +1127,12 @@ void ProjectOptionsManipulator::ProcessLinkerPaths(cbProject* prj, const wxStrin
 
           if ( HasOption(tgt->GetLibDirs(), path, full_path) )
           {
-            tgt->ReplaceLibDir(full_path, ManipulateOption(full_path, path, path_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->ReplaceLibDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -1111,14 +1197,17 @@ void ProjectOptionsManipulator::ProcessResCompPaths(cbProject* prj, const wxStri
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetResourceIncludeDirs(), path, full_path) )
         {
-          prj->RemoveResourceIncludeDir(full_path);
-          result.Add(wxString::Format(_("Project '%s': Removed resource compiler path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->RemoveResourceIncludeDir(full_path.Item(fp));
+            result.Add(wxString::Format(_("Project '%s': Removed resource compiler path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -1132,9 +1221,12 @@ void ProjectOptionsManipulator::ProcessResCompPaths(cbProject* prj, const wxStri
 
           if ( HasOption(tgt->GetResourceIncludeDirs(), path, full_path) )
           {
-            tgt->RemoveResourceIncludeDir(path);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed resource compiler path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->RemoveResourceIncludeDir(full_path.Item(fp));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed resource compiler path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -1174,14 +1266,17 @@ void ProjectOptionsManipulator::ProcessResCompPaths(cbProject* prj, const wxStri
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_path;
+      wxArrayString full_path;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetResourceIncludeDirs(), path, full_path) )
         {
-          prj->ReplaceResourceIncludeDir(full_path, ManipulateOption(full_path, path, path_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced resource compiler path '%s'."),
-                                      prj->GetTitle().wx_str(), full_path.wx_str()));
+          for (size_t fp=0; fp<full_path.GetCount(); fp++)
+          {
+            prj->ReplaceResourceIncludeDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced resource compiler path '%s'."),
+                                        prj->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+          }
         }
       }
 
@@ -1195,9 +1290,12 @@ void ProjectOptionsManipulator::ProcessResCompPaths(cbProject* prj, const wxStri
 
           if ( HasOption(tgt->GetResourceIncludeDirs(), path, full_path) )
           {
-            tgt->ReplaceResourceIncludeDir(full_path, ManipulateOption(full_path, path, path_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced resource compiler path '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.wx_str()));
+            for (size_t fp=0; fp<full_path.GetCount(); fp++)
+            {
+              tgt->ReplaceResourceIncludeDir(full_path.Item(fp), ManipulateOption(full_path.Item(fp), path, path_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced resource compiler path '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_path.Item(fp).wx_str()));
+            }
           }
         }
       }
@@ -1262,14 +1360,17 @@ void ProjectOptionsManipulator::ProcessLinkerLibs(cbProject* prj, const wxString
 
     case ProjectOptionsManipulatorDlg::eRemove:
     {
-      wxString full_lib;
+      wxArrayString full_lib;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLinkLibs(), lib, full_lib) )
         {
-          prj->RemoveLinkLib(full_lib);
-          result.Add(wxString::Format(_("Project '%s': Removed linker lib '%s'."),
-                                      prj->GetTitle().wx_str(), full_lib.wx_str()));
+          for (size_t fl=0; fl<full_lib.GetCount(); fl++)
+          {
+            prj->RemoveLinkLib(full_lib.Item(fl));
+            result.Add(wxString::Format(_("Project '%s': Removed linker lib '%s'."),
+                                        prj->GetTitle().wx_str(), full_lib.Item(fl).wx_str()));
+          }
         }
       }
 
@@ -1283,9 +1384,12 @@ void ProjectOptionsManipulator::ProcessLinkerLibs(cbProject* prj, const wxString
 
           if ( HasOption(tgt->GetLinkLibs(), lib, full_lib) )
           {
-            tgt->RemoveLinkLib(lib);
-            result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker lib '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_lib.wx_str()));
+            for (size_t fl=0; fl<full_lib.GetCount(); fl++)
+            {
+              tgt->RemoveLinkLib(full_lib.Item(fl));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Removed linker lib '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_lib.Item(fl).wx_str()));
+            }
           }
         }
       }
@@ -1325,14 +1429,17 @@ void ProjectOptionsManipulator::ProcessLinkerLibs(cbProject* prj, const wxString
 
     case ProjectOptionsManipulatorDlg::eReplace:
     {
-      wxString full_lib;
+      wxArrayString full_lib;
       if ( m_Dlg->GetOptionActive(ProjectOptionsManipulatorDlg::eProject) )
       {
         if ( HasOption(prj->GetLinkLibs(), lib, full_lib) )
         {
-          prj->ReplaceLinkLib(full_lib, ManipulateOption(full_lib, lib, lib_new));
-          result.Add(wxString::Format(_("Project '%s': Replaced linker lib '%s'."),
-                                      prj->GetTitle().wx_str(), full_lib.wx_str()));
+          for (size_t fl=0; fl<full_lib.GetCount(); fl++)
+          {
+            prj->ReplaceLinkLib(full_lib.Item(fl), ManipulateOption(full_lib.Item(fl), lib, lib_new));
+            result.Add(wxString::Format(_("Project '%s': Replaced linker lib '%s'."),
+                                        prj->GetTitle().wx_str(), full_lib.Item(fl).wx_str()));
+          }
         }
       }
 
@@ -1346,9 +1453,12 @@ void ProjectOptionsManipulator::ProcessLinkerLibs(cbProject* prj, const wxString
 
           if ( HasOption(tgt->GetLinkLibs(), lib, full_lib) )
           {
-            tgt->ReplaceLinkLib(full_lib, ManipulateOption(full_lib, lib, lib_new));
-            result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker lib '%s'."),
-                                        prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_lib.wx_str()));
+            for (size_t fl=0; fl<full_lib.GetCount(); fl++)
+            {
+              tgt->ReplaceLinkLib(full_lib.Item(fl), ManipulateOption(full_lib.Item(fl), lib, lib_new));
+              result.Add(wxString::Format(_("Project '%s', target '%s': Replaced linker lib '%s'."),
+                                          prj->GetTitle().wx_str(), tgt->GetTitle().wx_str(), full_lib.Item(fl).wx_str()));
+            }
           }
         }
       }
@@ -1497,14 +1607,15 @@ void ProjectOptionsManipulator::ProcessCustomVars(cbProject* prj, const wxString
 
 bool ProjectOptionsManipulator::HasOption(const wxArrayString& opt_array, const wxString& opt)
 {
-  wxString dummy;
+  wxArrayString dummy;
   return HasOption(opt_array, opt, dummy);
 }
 
 /* ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- */
 
-bool ProjectOptionsManipulator::HasOption(const wxArrayString& opt_array, const wxString& opt, wxString& full_opt)
+bool ProjectOptionsManipulator::HasOption(const wxArrayString& opt_array, const wxString& opt, wxArrayString& full_opt)
 {
+  bool found_option = false;
   switch ( m_Dlg->GetSearchOption() )
   {
     case (ProjectOptionsManipulatorDlg::eContains):
@@ -1513,8 +1624,8 @@ bool ProjectOptionsManipulator::HasOption(const wxArrayString& opt_array, const 
       {
         if ( opt_array.Item(i).Contains(opt) )
         {
-          full_opt = opt_array.Item(i);
-          return true;
+          full_opt.Add( opt_array.Item(i) );
+          found_option= true;
         }
       }
     }
@@ -1526,14 +1637,14 @@ bool ProjectOptionsManipulator::HasOption(const wxArrayString& opt_array, const 
       int idx = opt_array.Index(opt);
       if (idx!=wxNOT_FOUND)
       {
-        full_opt = opt_array.Item(idx);
-        return true;
+        full_opt.Add( opt_array.Item(idx) );
+        found_option = true;
       }
     }
     break;
   }
 
-  return false;
+  return found_option;
 }
 
 /* ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- */

@@ -17,7 +17,7 @@
 *
 * $Revision: 10684 $
 * $Id: wxwidgetsguiconfigpanel.h 10684 2016-01-22 10:49:37Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsguiconfigpanel.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsguiconfigpanel.h $
 */
 
 #ifndef WXWIDGETSGUICONFIGPANEL_H

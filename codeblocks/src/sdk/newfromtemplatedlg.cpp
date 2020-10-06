@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10801 $
- * $Id: newfromtemplatedlg.cpp 10801 2016-03-08 23:27:33Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/newfromtemplatedlg.cpp $
+ * $Revision: 11437 $
+ * $Id: newfromtemplatedlg.cpp 11437 2018-08-07 07:13:40Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/newfromtemplatedlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -213,7 +213,7 @@ inline int wxCALLBACK SortTemplates(long item1, long item2, cb_unused long sortD
         wxString name1 = data1->pt ? data1->pt->m_Title : data1->plugin->GetTitle(data1->wizPluginIndex);
         wxString name2 = data2->pt ? data2->pt->m_Title : data2->plugin->GetTitle(data2->wizPluginIndex);
 
-        return name1.CompareTo(name2);
+        return name1.CompareTo(name2.wx_str());
     }
     return 0;
 }

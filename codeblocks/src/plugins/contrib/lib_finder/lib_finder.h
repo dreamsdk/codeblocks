@@ -18,7 +18,7 @@
 *
 * $Revision: 10874 $
 * $Id: lib_finder.h 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/lib_finder/lib_finder.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/lib_finder.h $
 */
 
 #ifndef LIB_AUTO_CONF_H

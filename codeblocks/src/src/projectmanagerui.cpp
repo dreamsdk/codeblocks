@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11210 $
- * $Id: projectmanagerui.cpp 11210 2017-10-18 23:42:42Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/src/projectmanagerui.cpp $
+ * $Revision: 11898 $
+ * $Id: projectmanagerui.cpp 11898 2019-11-04 19:35:16Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/projectmanagerui.cpp $
  */
 
 #include "sdk.h"
@@ -33,6 +33,8 @@
 #endif
 
 #include <unordered_map>
+#include <wx/dataobj.h>
+#include <wx/dnd.h>
 
 #include "cbauibook.h"
 #include "cbcolourmanager.h"
@@ -206,6 +208,7 @@ END_EVENT_TABLE()
 
 ProjectManagerUI::ProjectManagerUI() :
     m_pTree(nullptr),
+    m_pImages(nullptr),
     m_TreeFreezeCounter(0),
     m_isCheckingForExternallyModifiedProjects(false)
 {
@@ -242,8 +245,6 @@ ProjectManagerUI::ProjectManagerUI() :
 
 ProjectManagerUI::~ProjectManagerUI()
 {
-    delete m_pImages;
-    m_pImages = nullptr;
     m_pNotebook->Destroy();
 }
 
@@ -253,60 +254,13 @@ void ProjectManagerUI::InitPane()
         return;
     if (m_pTree)
         return;
-    BuildTree();
-    m_pNotebook->AddPage(m_pTree, _("Projects"));
-}
 
-void ProjectManagerUI::BuildTree()
-{
     m_pTree = new cbTreeCtrl(m_pNotebook, ID_ProjectManager);
 
-    static const wxString imgs[] =
-    {
-        // NOTE: Keep in sync with FileVisualState in globals.h!
+    m_pImages = cbProjectTreeImages::MakeImageList(16, *m_pNotebook);
+    m_pTree->SetImageList(m_pImages.get());
 
-        // The following are related to (editable, source-) file states
-        _T("file.png"),                  // fvsNormal
-        _T("file-missing.png"),          // fvsMissing,
-        _T("file-modified.png"),         // fvsModified,
-        _T("file-readonly.png"),         // fvsReadOnly,
-
-        // The following are related to version control systems (vc)
-        _T("rc-file-added.png"),         // fvsVcAdded,
-        _T("rc-file-conflict.png"),      // fvsVcConflict,
-        _T("rc-file-missing.png"),       // fvsVcMissing,
-        _T("rc-file-modified.png"),      // fvsVcModified,
-        _T("rc-file-outofdate.png"),     // fvsVcOutOfDate,
-        _T("rc-file-uptodate.png"),      // fvsVcUpToDate,
-        _T("rc-file-requireslock.png"),  // fvsVcRequiresLock,
-        _T("rc-file-external.png"),      // fvsVcExternal,
-        _T("rc-file-gotlock.png"),       // fvsVcGotLock,
-        _T("rc-file-lockstolen.png"),    // fvsVcLockStolen,
-        _T("rc-file-mismatch.png"),      // fvsVcMismatch,
-        _T("rc-file-noncontrolled.png"), // fvsVcNonControlled,
-
-        // The following are related to C::B workspace/project/folder/virtual
-        _T("workspace.png"),             // fvsWorkspace,         WorkspaceIconIndex()
-        _T("workspace-readonly.png"),    // fvsWorkspaceReadOnly, WorkspaceIconIndex(true)
-        _T("project.png"),               // fvsProject,           ProjectIconIndex()
-        _T("project-readonly.png"),      // fvsProjectReadOnly,   ProjectIconIndex(true)
-        _T("folder_open.png"),           // fvsFolder,            FolderIconIndex()
-        _T("vfolder_open.png"),          // fvsVirtualFolder,     VirtualFolderIconIndex()
-
-        wxEmptyString
-    };
-    wxBitmap bmp;
-    m_pImages = new wxImageList(16, 16);
-    wxString prefix = ConfigManager::ReadDataPath() + _T("/images/");
-
-    int i = 0;
-    while (!imgs[i].IsEmpty())
-    {
-        bmp = cbLoadBitmap(prefix + imgs[i], wxBITMAP_TYPE_PNG); // workspace
-        m_pImages->Add(bmp);
-        ++i;
-    }
-    m_pTree->SetImageList(m_pImages);
+    m_pNotebook->AddPage(m_pTree, _("Projects"));
 }
 
 void ProjectManagerUI::RebuildTree()
@@ -930,7 +884,10 @@ void ProjectManagerUI::OnTabPosition(wxCommandEvent& event)
 
 void ProjectManagerUI::OnTreeBeginDrag(wxTreeEvent& event)
 {
+    wxArrayString fileList;
+
     size_t count = m_pTree->GetSelections(m_DraggingSelection);
+
     for (size_t i = 0; i < count; i++)
     {
         //what item do we start dragging?
@@ -950,10 +907,52 @@ void ProjectManagerUI::OnTreeBeginDrag(wxTreeEvent& event)
             return;
 
         // allow only if the project approves
-        if (!ProjectCanDragNode(prj, m_pTree, id))
-            return;
+        if ( ! ProjectCanDragNode(prj, m_pTree, id))
+            continue;
 
+        // We allow drag and drop for normal files or projects,
+        // but not for mixed selection, or any other project items
+        if ( ftd->GetKind() == FileTreeData::ftdkFile )
+        {
+                fileList.Add(ftd->GetProjectFile()->file.GetLongPath());
+        }
+        else if ( ftd->GetKind() == FileTreeData::ftdkProject )
+        {
+            fileList.Add(ftd->GetProject()->GetFilename());
+        }
     }
+
+    // wxTreeCtrl Internal vs External DragAndDrop are incompatible.
+    // To do an external DnD here, we have to test the mouse position
+    // and verify that the cursor is outside the wxTreeCtrl
+    m_pTree->SetCursor(wxCursor(wxCURSOR_HAND)); //show feedback to user
+    bool isExternalDrag = false;
+    for (int ii=0; ii<8; ++ii)
+    {
+        // wait max 800 milliseconds for cursor move outside the tree
+        wxMilliSleep(100); //wait awhile for possible mouse move outside tree ctrl
+        wxWindow* pWin = ::wxFindWindowAtPoint(wxGetMousePosition());
+        wxString winName = pWin ? pWin->GetName().Lower(): _T("unkwn");
+        if ( (not pWin) or (_T("treectrl") != winName) )
+        {
+            isExternalDrag = true;
+            break;
+        }
+        if (not wxGetMouseState().LeftIsDown())
+            break; //internal tree drag
+    }
+    if ( (! fileList.IsEmpty()) and isExternalDrag )
+    {
+        // create a drop object of file paths
+        wxTextDataObject dropObject( GetStringFromArray(fileList , wxT("\n"), false));
+        wxDropSource dragSource(m_pTree);
+        dragSource.SetData(dropObject);
+        dragSource.DoDragDrop();
+        m_pTree->SetCursor(wxCursor(wxNullCursor));
+        return;
+    }
+
+    m_pTree->SetCursor(wxCursor(wxNullCursor));
 
     // allowed
     event.Allow();
@@ -961,6 +960,8 @@ void ProjectManagerUI::OnTreeBeginDrag(wxTreeEvent& event)
 
 void ProjectManagerUI::OnTreeEndDrag(wxTreeEvent& event)
 {
+    m_pTree->SetCursor(wxCursor(wxNullCursor));
+
     wxTreeItemId to = event.GetItem();
 
     // is the drag target valid?
@@ -1894,12 +1895,12 @@ void ProjectManagerUI::OnGotoFile(cb_unused wxCommandEvent& event)
         {
             return m_pfiles[index]->relativeFilename;
         }
-        wxString GetDisplayText(int index, int column) const override
+        wxString GetDisplayText(int index, cb_unused int column) const override
         {
             ProjectFile* pf = m_pfiles[m_indices[index]];
             return MakeDisplayName(*pf);
         }
-        int GetColumnWidth(int column) const override
+        int GetColumnWidth(cb_unused int column) const override
         {
             return m_ColumnWidth;
         }
@@ -2090,12 +2091,12 @@ void ProjectManagerUI::OnFindFile(cb_unused wxCommandEvent& event)
         {
             return m_files[index];
         }
-        wxString GetDisplayText(int index, int column) const override
+        wxString GetDisplayText(int index, cb_unused int column) const override
         {
             return m_files[m_indices[index]];
         }
 
-        int GetColumnWidth(int column) const override
+        int GetColumnWidth(cb_unused int column) const override
         {
             return m_ColumnWidth;
         }
@@ -2231,7 +2232,7 @@ void ProjectManagerUI::OnDeleteVirtualFolder(cb_unused wxCommandEvent& event)
     RebuildTree();
 }
 
-void ProjectManagerUI::OnRenameVirtualFolder(wxCommandEvent& event)
+void ProjectManagerUI::OnRenameVirtualFolder(cb_unused wxCommandEvent& event)
 {
     wxTreeItemId sel = GetTreeSelection();
     if (!sel.IsOk())
@@ -2452,6 +2453,7 @@ void ProjectManagerUI::MoveProjectUp(cbProject* project, bool warpAround)
     wxTreeItemId itemId = project->GetProjectNode();
     cbAssert(itemId.IsOk());
     m_pTree->SelectItem(itemId);
+    m_pTree->EnsureVisible(itemId);
 }
 
 void ProjectManagerUI::MoveProjectDown(cbProject* project, bool warpAround)
@@ -2482,6 +2484,7 @@ void ProjectManagerUI::MoveProjectDown(cbProject* project, bool warpAround)
     wxTreeItemId itemId = project->GetProjectNode();
     cbAssert(itemId.IsOk());
     m_pTree->SelectItem(itemId);
+    m_pTree->EnsureVisible(itemId);
 }
 
 
@@ -2609,9 +2612,9 @@ wxArrayInt ProjectManagerUI::AskForMultiBuildTargetIndex(cbProject* project)
     return indices;
 }
 
-void ProjectManagerUI::ConfigureProjectDependencies(cbProject* base)
+void ProjectManagerUI::ConfigureProjectDependencies(cbProject* base, wxWindow *parent)
 {
-    ProjectDepsDlg dlg(Manager::Get()->GetAppWindow(), base);
+    ProjectDepsDlg dlg(parent, base);
     PlaceWindow(&dlg);
     dlg.ShowModal();
 }
@@ -2620,6 +2623,7 @@ void ProjectManagerUI::CheckForExternallyModifiedProjects()
 {
     if (m_isCheckingForExternallyModifiedProjects) // for some reason, a mutex locker does not work???
         return;
+    wxStopWatch timer;
     m_isCheckingForExternallyModifiedProjects = true;
 
     // check also the projects (TO DO : what if we gonna reload while compiling/debugging)
@@ -2658,7 +2662,9 @@ void ProjectManagerUI::CheckForExternallyModifiedProjects()
                     if (win)
                         win->ReleaseMouse();
 
+                    timer.Pause();
                     ret = dlg.ShowModal();
+                    timer.Resume();
                     reloadAll = ret == crAll;
                 }
                 if (reloadAll || ret == crYes)
@@ -2669,6 +2675,14 @@ void ProjectManagerUI::CheckForExternallyModifiedProjects()
                     prj->Touch();
             }
         } // end for : idx : idxProject
+    }
+
+    long durationMS = timer.Time();
+    if (durationMS > 100)
+    {
+        LogManager *log = Manager::Get()->GetLogManager();
+        log->Log(F(wxT("Checking for externally modified projects took %.3lf seconds"),
+                   durationMS / 1000.0f));
     }
     m_isCheckingForExternallyModifiedProjects = false;
 }
@@ -2856,9 +2870,10 @@ bool ProjectCanDragNode(cbProject* project, wxTreeCtrl* tree, wxTreeItemId node)
     if (ftd->GetProject() != project)
         return false;
 
-    // allow only if it is a file or a virtual folder
+    // allow only if it is a file or a virtual folder or project file(.cbp)
     return (   (ftd->GetKind() == FileTreeData::ftdkFile)
-            || (ftd->GetKind() == FileTreeData::ftdkVirtualFolder) );
+            || (ftd->GetKind() == FileTreeData::ftdkVirtualFolder)
+            || (ftd->GetKind() == FileTreeData::ftdkProject) );
 }
 
 void ProjectCopyTreeNodeRecursively(wxTreeCtrl* tree, const wxTreeItemId& item, const wxTreeItemId& new_parent)

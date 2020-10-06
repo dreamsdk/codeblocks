@@ -6,7 +6,7 @@
 #
 # $Revision: 8917 $
 # $Id: updateChangeLog.sh 8917 2013-03-24 04:46:09Z biplab $
-# $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/updateChangeLog.sh $
+# $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/updateChangeLog.sh $
 #
 
 REV_TO=${1:-"HEAD"}

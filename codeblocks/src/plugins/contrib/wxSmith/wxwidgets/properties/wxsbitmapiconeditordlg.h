@@ -15,23 +15,23 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10681 $
-* $Id: wxsbitmapiconeditordlg.h 10681 2016-01-22 10:45:30Z mortenmacfly $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconeditordlg.h $
+* $Revision: 11855 $
+* $Id: wxsbitmapiconeditordlg.h 11855 2019-09-25 22:45:50Z bluehazzard $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconeditordlg.h $
 */
 
 #ifndef WXSBITMAPICONEDITORDLG_H
 #define WXSBITMAPICONEDITORDLG_H
 
 //(*Headers(wxsBitmapIconEditorDlg)
+#include "scrollingdialog.h"
+#include <wx/button.h>
+#include <wx/combobox.h>
+#include <wx/radiobut.h>
 #include <wx/sizer.h>
+#include <wx/statbmp.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
-#include <wx/radiobut.h>
-#include <wx/statbmp.h>
-#include <wx/button.h>
-#include "scrollingdialog.h"
-#include <wx/combobox.h>
 //*)
 #include <wx/timer.h>
 
@@ -74,24 +74,24 @@ class wxsBitmapIconEditorDlg: public wxScrollingDialog
         //*)
 
         //(*Declarations(wxsBitmapIconEditorDlg)
-        wxStaticBoxSizer* StaticBoxSizer2;
-        wxStaticBitmap* Preview;
-        wxRadioButton* ImageArt;
-        wxRadioButton* ImageCode;
-        wxStaticText* StaticText2;
-        wxTextCtrl* CodeText;
         wxButton* Button1;
-        wxTextCtrl* FileName;
-        wxFlexGridSizer* FlexGridSizer2;
-        wxStaticText* StaticText1;
         wxButton* Button2;
-        wxRadioButton* ImageFile;
         wxButton* Button3;
         wxComboBox* ArtClient;
-        wxRadioButton* NoImage;
         wxComboBox* ArtId;
-        wxStaticBoxSizer* StaticBoxSizer1;
         wxFlexGridSizer* FlexGridSizer1;
+        wxFlexGridSizer* FlexGridSizer2;
+        wxRadioButton* ImageArt;
+        wxRadioButton* ImageCode;
+        wxRadioButton* ImageFile;
+        wxRadioButton* NoImage;
+        wxStaticBitmap* Preview;
+        wxStaticBoxSizer* StaticBoxSizer1;
+        wxStaticBoxSizer* StaticBoxSizer2;
+        wxStaticText* StaticText1;
+        wxStaticText* StaticText2;
+        wxTextCtrl* CodeText;
+        wxTextCtrl* FileName;
         //*)
         wxTimer* Timer1;
 

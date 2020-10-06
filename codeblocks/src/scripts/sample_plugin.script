@@ -4,7 +4,7 @@
  *
  * $Revision: 7443 $
  * $Id: sample_plugin.script 7443 2011-09-01 16:29:16Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/scripts/sample_plugin.script $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/scripts/sample_plugin.script $
  */
 
 // Script plugins must extend cbScriptPlugin

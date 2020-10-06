@@ -17,7 +17,7 @@
 *
 * $Revision: 11085 $
 * $Id: wxsdrawingwindow.h 11085 2017-06-06 22:41:41Z fuscated $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdrawingwindow.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdrawingwindow.h $
 */
 
 #ifndef WXSDRAWINGWINDOW_H

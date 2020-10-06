@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11060 $
- * $Id: openfileslistplugin.cpp 11060 2017-05-08 17:56:03Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/openfileslist/openfileslistplugin.cpp $
+ * $Revision: 11761 $
+ * $Id: openfileslistplugin.cpp 11761 2019-06-29 13:52:56Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/openfileslist/openfileslistplugin.cpp $
  */
 
 #include "sdk.h"
@@ -85,23 +85,38 @@ void OpenFilesListPlugin::OnAttach()
                             wxTR_HAS_BUTTONS | wxNO_BORDER | wxTR_HIDE_ROOT);
 
     // load bitmaps
-    wxBitmap bmp;
-    m_pImages = new wxImageList(16, 16);
-    wxString prefix = ConfigManager::GetDataFolder() + _T("/images/");
+    {
+        const double scaleFactor = cbGetContentScaleFactor(*m_pTree);
+        const double actualScaleFactor = cbGetActualContentScaleFactor(*m_pTree);
+        const int targetHeight = floor(16 * actualScaleFactor);
+        const int size = cbFindMinSize16to64(targetHeight);
 
-    bmp = cbLoadBitmap(prefix + _T("folder_open.png"), wxBITMAP_TYPE_PNG); // folder
-    m_pImages->Add(bmp);
+        int imageListSize;
+        m_pImages = cbMakeScaledImageList(size, scaleFactor, imageListSize);
 
-    bmp = cbLoadBitmap(prefix + _T("ascii.png"), wxBITMAP_TYPE_PNG); // file
-    m_pImages->Add(bmp);
+        const wxString prefix = ConfigManager::GetDataFolder() + _T("/images/");
+        const wxString treePrefix = ConfigManager::GetDataFolder()
+                                  + wxString::Format(_T("/resources.zip#zip:images/tree/%dx%d/"),
+                                                     size, size);
 
-    bmp = cbLoadBitmap(prefix + _T("modified_file.png"), wxBITMAP_TYPE_PNG); // modified file
-    m_pImages->Add(bmp);
+        wxBitmap bmp;
+        bmp = cbLoadBitmapScaled(treePrefix + _T("folder_open.png"), wxBITMAP_TYPE_PNG,
+                                 scaleFactor);
+        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
 
-    bmp = cbLoadBitmap(prefix + _T("file-readonly.png"), wxBITMAP_TYPE_PNG); // read only file
-    m_pImages->Add(bmp);
+        bmp = cbLoadBitmapScaled(treePrefix + _T("file.png"), wxBITMAP_TYPE_PNG, scaleFactor);
+        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
 
-    m_pTree->SetImageList(m_pImages);
+        bmp = cbLoadBitmapScaled(treePrefix + _T("file-modified.png"), wxBITMAP_TYPE_PNG,
+                                 scaleFactor);
+        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
+
+        bmp = cbLoadBitmapScaled(treePrefix + _T("file-readonly.png"), wxBITMAP_TYPE_PNG,
+                                 scaleFactor);
+        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
+    }
+
+    m_pTree->SetImageList(m_pImages.get());
     m_pTree->AddRoot(_T("Opened Files"), 0, 0);
 
     // first build of the tree
@@ -135,15 +150,13 @@ void OpenFilesListPlugin::OnAttach()
     pm->RegisterEventSink(cbEVT_BUILDTARGET_SELECTED, new cbEventFunctor<OpenFilesListPlugin, CodeBlocksEvent>(this, &OpenFilesListPlugin::OnBuildTargetSelected));
 }
 
-void OpenFilesListPlugin::OnRelease(bool appShutDown)
+void OpenFilesListPlugin::OnRelease(cb_unused bool appShutDown)
 {
     // Write config
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("open_files_list"));
     if (cfg)
         cfg->Write(_T("preserve_open_editors"), m_PreserveOpenEditors);
 
-    if (appShutDown)
-        return;
     // remove registered event sinks
     Manager::Get()->RemoveAllEventSinksFor(this);
 
@@ -155,6 +168,8 @@ void OpenFilesListPlugin::OnRelease(bool appShutDown)
     // finally destroy the tree
     m_pTree->Destroy();
     m_pTree = nullptr;
+
+    m_pImages.reset();
 }
 
 void OpenFilesListPlugin::BuildMenu(wxMenuBar* menuBar)

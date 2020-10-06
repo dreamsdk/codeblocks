@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11208 $
- * $Id: cbplugin.cpp 11208 2017-10-18 23:42:37Z fuscated $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/cbplugin.cpp $
+ * $Revision: 11638 $
+ * $Id: cbplugin.cpp 11638 2019-04-20 16:57:54Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbplugin.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -716,7 +716,7 @@ void cbDebuggerPlugin::OnCompilerFinished(cb_unused CodeBlocksEvent& event)
     {
         m_WaitingCompilerToFinish = false;
         bool compilerFailed = false;
-        // only proceed if build succeeeded
+        // only proceed if build succeeded
         if (m_pCompiler && m_pCompiler->GetExitCode() != 0)
         {
             AnnoyingDialog dlg(_("Debug anyway?"), _("Build failed, do you want to debug the program?"),
@@ -817,7 +817,7 @@ struct ConsoleProcessTerminationInfo
 struct ConsoleProcess : wxProcess
 {
     ConsoleProcess(cb::shared_ptr<ConsoleProcessTerminationInfo> cptInfo) : info(cptInfo) {}
-    virtual void OnTerminate(int pid, int status)
+    void OnTerminate(int pid, int status) override
     {
         info->terminated = true;
         info->status = status;
@@ -915,6 +915,12 @@ void cbDebuggerPlugin::BringCBToFront()
     wxWindow* app = Manager::Get()->GetAppWindow();
     if (app)
         app->Raise();
+}
+
+void cbDebuggerPlugin::UpdateWatches(const std::vector<cb::shared_ptr<cbWatch>> &watches)
+{
+    for (const cb::shared_ptr<cbWatch>& watch : watches)
+        UpdateWatch(watch);
 }
 
 void cbDebuggerPlugin::RegisterValueTooltip()

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 8113 $
- * $Id: projectbuildtarget.cpp 8113 2012-07-14 07:53:51Z mortenmacfly $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/sdk/projectbuildtarget.cpp $
+ * $Revision: 11884 $
+ * $Id: projectbuildtarget.cpp 11884 2019-10-26 09:11:35Z fuscated $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectbuildtarget.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -32,12 +32,30 @@ ProjectBuildTarget::ProjectBuildTarget(cbProject* parentProject)
     m_FileArray.Clear();
 }
 
+ProjectBuildTarget::ProjectBuildTarget(const ProjectBuildTarget &bt, cbProject* parentProject) :
+    CompileTargetBase(bt),
+    m_Project(parentProject),
+    m_ExternalDeps(bt.m_ExternalDeps),
+    m_AdditionalOutputFiles(bt.m_AdditionalOutputFiles),
+    m_FileArray(ProjectFile::CompareProjectFiles),
+    m_BuildWithAll(bt.m_BuildWithAll),
+    m_CreateStaticLib(bt.m_CreateStaticLib),
+    m_CreateDefFile(bt.m_CreateDefFile),
+    m_UseConsoleRunner(bt.m_UseConsoleRunner)
+{
+}
+
 // class destructor
 ProjectBuildTarget::~ProjectBuildTarget()
 {
 }
 
 cbProject* ProjectBuildTarget::GetParentProject()
+{
+    return m_Project;
+}
+
+const cbProject* ProjectBuildTarget::GetParentProject() const
 {
     return m_Project;
 }
@@ -103,7 +121,7 @@ void ProjectBuildTarget::SetCreateDefFile(bool createIt)
     }
 }
 
-bool ProjectBuildTarget::GetCreateStaticLib()
+bool ProjectBuildTarget::GetCreateStaticLib() const
 {
     return m_CreateStaticLib;
 }
@@ -140,18 +158,6 @@ void ProjectBuildTarget::SetTargetType(TargetType pt)
     CompileTargetBase::SetTargetType(pt);
     if (ttold != GetTargetType() && GetTargetType() == ttConsoleOnly)
         SetUseConsoleRunner(true); // by default, use console runner
-}
-
-// target dependencies: targets to be compiled (if necessary) before this one
-void ProjectBuildTarget::AddTargetDep(ProjectBuildTarget* target)
-{
-    m_TargetDeps.Add(target);
-}
-
-// get the list of dependency targets of this target
-BuildTargets& ProjectBuildTarget::GetTargetDeps()
-{
-    return m_TargetDeps;
 }
 
 ProjectFile* ProjectBuildTarget::GetFile(int index)

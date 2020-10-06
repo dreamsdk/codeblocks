@@ -2,7 +2,11 @@
 #ifndef INDENTMAKER_H
 #define INDENTMAKER_H
 
-#include <cbstyledtextctrl.h>
+#include <sdk.h>
+#ifndef CB_PRECOMP
+    #include <cbstyledtextctrl.h>
+#endif
+
 #include "indentestimator.h"
 
 class IsMultiLines

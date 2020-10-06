@@ -1,10 +1,12 @@
+
 #include "fortranfileext.h"
-#include <configmanager.h>
-#include <wx/tokenzr.h>
 
-#include <editormanager.h>
-#include <logmanager.h>
-
+#ifndef CB_PRECOMP
+    #include <wx/tokenzr.h>
+    #include <configmanager.h>
+    #include <editormanager.h>
+    #include <logmanager.h>
+#endif
 
 FortranFileExt::FortranFileExt()
 {

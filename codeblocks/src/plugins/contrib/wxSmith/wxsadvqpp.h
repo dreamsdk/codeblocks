@@ -17,7 +17,7 @@
 *
 * $Revision: 8251 $
 * $Id: wxsadvqpp.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/contrib/wxSmith/wxsadvqpp.h $
+* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsadvqpp.h $
 */
 
 #ifndef WXSADVQPP_H

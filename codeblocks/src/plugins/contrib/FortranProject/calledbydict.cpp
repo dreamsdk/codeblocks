@@ -1,10 +1,14 @@
 
 #include "calledbydict.h"
-#include "tokenf.h"
-#include <wx/string.h>
-#include <wx/arrstr.h>
+
+#ifndef CB_PRECOMP
+    #include <wx/string.h>
+    #include <wx/arrstr.h>
+#endif
 #include <set>
 
+#include "tokenf.h"
+#include "submoduletokenf.h"
 
 CalledByDict::CalledByDict()
 {
@@ -21,7 +25,7 @@ CalledByDict::~CalledByDict()
 void CalledByDict::Build(TokensArrayF* allTokens)
 {
     std::set<wxString> definedNames;
-    int tokenMask = tkSubroutine | tkFunction | tkInterface | tkProcedure;
+    int tokenMask = tkSubroutine | tkFunction | tkInterface | tkProcedure | tkModule | tkSubmodule;
     FindChildrenNames(allTokens, tokenMask, definedNames);
     FillCalledByDict(allTokens, definedNames);
 }
@@ -46,13 +50,15 @@ void CalledByDict::FillCalledByDict(TokensArrayF* tokens, std::set<wxString> &de
     const int tokenCallMask = tkCallFunction | tkCallSubroutine;
     const int subfunMask = tkFunction | tkSubroutine;
     const int procMask = tkProcedure | tkProcedureFinal;
+    const int useMask = tkUse | tkSubmodule;
     for (size_t i=0; i<tokens->GetCount(); i++)
     {
         TokenF* pTok = tokens->Item(i);
         if (pTok->m_TokenKind & tokenCallMask ||
             (pTok->m_TokenKind & subfunMask && pTok->m_pParent->m_TokenKind == tkInterfaceExplicit) ||
             (pTok->m_TokenKind == tkOther && pTok->m_pParent->m_TokenKind == tkInterface) ||
-            (pTok->m_TokenKind & procMask && pTok->m_pParent->m_TokenKind == tkType))
+            (pTok->m_TokenKind & procMask && pTok->m_pParent->m_TokenKind == tkType) ||
+             pTok->m_TokenKind & useMask)
         {
             wxString name;
             int idx = pTok->m_Name.Find('%', true);
@@ -60,6 +66,25 @@ void CalledByDict::FillCalledByDict(TokensArrayF* tokens, std::set<wxString> &de
             {
                 // called type-bound procedure
                 name = pTok->m_Name.Mid(idx+1);
+            }
+            else if (pTok->m_TokenKind == tkProcedure)
+            {
+                if (!pTok->m_PartLast.IsEmpty())
+                    name = pTok->m_PartLast;
+                else
+                    name = pTok->m_Name;
+            }
+            else if (pTok->m_TokenKind == tkSubmodule)
+            {
+                SubmoduleTokenF* submod = static_cast<SubmoduleTokenF*>(pTok);
+                if (submod->m_ParentSubmoduleName.IsEmpty())
+                {
+                    name = submod->m_AncestorModuleName;
+                }
+                else
+                {
+                    name = submod->m_AncestorModuleName + _T(":") + submod->m_ParentSubmoduleName;
+                }
             }
             else
                 name = pTok->m_Name;

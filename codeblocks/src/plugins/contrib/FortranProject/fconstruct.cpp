@@ -203,7 +203,7 @@ void FConstruct::MakeFCLReMap()
     FCLReMap[fclFun_fun] = new wxRegEx(_T("^((.*[\\s\\t]+)|([\\s\\t]*))function(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)"), options);
     FCLReMap[fclFun_end_fun] = new wxRegEx(_T("^[\\s\\t]*(end|((endfunction|(end(\\s+)function))((\\s)+[a-z0-9_]+)?))(\\s*)$"), options);
 
-    FCLReMap[fclSub_sub] = new wxRegEx(_T("^[\\s\\t]*(module\\s+)?subroutine(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)?\\s*$"), options );
+    FCLReMap[fclSub_sub] = new wxRegEx(_T("^[\\s\\t]*((elemental|impure|module|non_recursive|pure|recursive)\\s+)*subroutine(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)?\\s*$"), options );
     FCLReMap[fclSub_end_sub] = new wxRegEx(_T("^[\\s\\t]*(end|((endsubroutine|(end(\\s+)subroutine))((\\s)+[a-z0-9_]+)?))(\\s*)$"), options);
 
     FCLReMap[fclProg_prog] = new wxRegEx(_T("^[\\s\\t]*program(\\s+)([a-z0-9_]+)([\\s\\t]*)$"), options );
@@ -242,7 +242,7 @@ void FConstruct::MakeFCLReMap()
     FCLReMap[fclBlock_block] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)\\s*:\\s*)?(block)(\\s*)$"), options);
     FCLReMap[fclBlock_end_block] = new wxRegEx(_T("^[\\s\\t]*([0-9]*)([\\s\\t]*)(end)(\\s*)(block)([\\s\\t]*)(([\\s\\t]+)([a-z0-9_]+)\\s*)?$"), options);
 
-    FCLReMap[fclTeam_change_team] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change\\s+team)\\(.*\\)(\\s*)$"), options);
+    FCLReMap[fclTeam_change_team] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change\\s+team)\\s*\\(.*\\)(\\s*)$"), options);
     FCLReMap[fclTeam_end_team] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(end\\s*team)\\y"), options);
 
     FCLReMap[fclBlockdata_blockdata] = new wxRegEx(_T("^([\\s\\t]*)(block\\s*data)(([\\s\\t]+)([a-z0-9_]+))?\\s*$"), options);

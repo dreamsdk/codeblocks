@@ -1,56 +1,91 @@
 #include "calltreeview.h"
-#include "fortranproject.h"
-#include "lineaddress.h"
-#include "cbeditor.h"
-#include <manager.h>
-#include <editormanager.h>
-#include <logmanager.h>
-#include <configmanager.h>
 
 #include <sdk.h>
-#include <sdk_events.h>
-#include <wx/sizer.h>
+#ifndef CB_PRECOMP
+    #include <wx/sizer.h>
+    #include <wx/xrc/xmlres.h>
+    #include <wx/menu.h>
+
+    #include <sdk_events.h>
+    #include <manager.h>
+    #include <editormanager.h>
+    #include <logmanager.h>
+    #include <configmanager.h>
+    #include <cbeditor.h>
+#endif
+#include <cmath>
+
+#include "fortranproject.h"
+#include "lineaddress.h"
+
+CallTreeToken::CallTreeToken(TokenFlat* tf, CallTreeToken* parent)
+{
+    m_TokenKind   = tf->m_TokenKind;
+    m_DisplayName = tf->m_DisplayName;
+    m_Name        = tf->m_Name;
+    m_Filename    = tf->m_Filename;
+    m_LineStart   = tf->m_LineStart;
+    m_LineEnd     = tf->m_LineEnd;
+    m_TokenAccess = tf->m_TokenAccess;
+
+    m_pParent     = parent;
+}
+
+CallTreeToken::CallTreeToken(TokenF* tf, CallTreeToken* parent)
+{
+    m_TokenKind   = tf->m_TokenKind;
+    m_DisplayName = tf->m_DisplayName;
+    m_Name        = tf->m_Name;
+    m_Filename    = tf->m_Filename;
+    m_LineStart   = tf->m_LineStart;
+    m_LineEnd     = tf->m_LineEnd;
+    m_TokenAccess = tf->m_TokenAccess;
+
+    m_pParent     = parent;
+}
 
 CTVData::CTVData(TokenF* token)
 {
     if (token)
     {
-        m_Filename  = token->m_Filename;
-        m_LineStart = token->m_LineStart;
-        m_TokenKind = token->m_TokenKind;
+        CallTreeToken* cttok = static_cast<CallTreeToken*>(token);
+        m_DefFilename  = cttok->m_Filename;
+        m_DefLineStart = cttok->m_LineStart;
+        m_DefTokenKind = cttok->m_TokenKind;
+
+        m_CallFilename = cttok->m_CallFilename;
+        m_CallLine     = cttok->m_CallLine;
     }
 }
 
 namespace
 {
-    int idTree = wxNewId();
     int idMenuRefreshTree = wxNewId();
     int idMenuDoNotSort = wxNewId();
     int idMenuSortAlphabetically = wxNewId();
-
+    int idMenuGoToProcedure = wxNewId();
+    int idMenuGoToCall = wxNewId();
 };
 
 BEGIN_EVENT_TABLE(CallTreeView, wxPanel)
-    EVT_TREE_ITEM_ACTIVATED(idTree, CallTreeView::OnTreeDoubleClick)
-    EVT_TREE_ITEM_RIGHT_CLICK(idTree, CallTreeView::OnTreeItemRightClick)
+    EVT_TREE_ITEM_ACTIVATED(XRCID("treeCallTreeView"), CallTreeView::OnTreeDoubleClick)
+    EVT_TREE_ITEM_RIGHT_CLICK(XRCID("treeCallTreeView"), CallTreeView::OnTreeItemRightClick)
 
     EVT_MENU(idMenuRefreshTree, CallTreeView::OnRefreshTree)
     EVT_MENU(idMenuDoNotSort, CallTreeView::OnChangeSort)
     EVT_MENU(idMenuSortAlphabetically, CallTreeView::OnChangeSort)
+    EVT_MENU(idMenuGoToProcedure, CallTreeView::OnGoToProcedure)
+    EVT_MENU(idMenuGoToCall, CallTreeView::OnGoToCall)
 END_EVENT_TABLE()
 
 CallTreeView::CallTreeView(wxWindow* parentWindow, FortranProject* forproj)
 {
+    wxXmlResource::Get()->LoadPanel(this, parentWindow, _T("pnlCallTreeView"));
+    m_pTree = XRCCTRL(*this, "treeCallTreeView", wxTreeCtrl);
 
-    this->Create(parentWindow);
-    this->SetInitialSize(wxSize(200,100));
-    this->SetMinSize(wxSize(200,100));
-
-    m_pTree = new wxTreeCtrl(this, idTree, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS|wxTR_LINES_AT_ROOT|wxTR_HIDE_ROOT);
-    m_pTree->SetImageList(m_ImgList.GetImageList());
-    wxBoxSizer* bs = new wxBoxSizer(wxHORIZONTAL);
-    bs->Add(m_pTree, 1, wxGROW | wxALL, 0);
-    this->SetSizer(bs);
+    int targetHeight = floor(16 * cbGetActualContentScaleFactor(*parentWindow));
+    m_pImgList = new FPImageList(targetHeight);
+    m_pTree->SetImageList(m_pImgList->GetImageList());
 
     m_pFortranProject = forproj;
     m_IsCallTree = true;
@@ -59,6 +94,7 @@ CallTreeView::CallTreeView(wxWindow* parentWindow, FortranProject* forproj)
 CallTreeView::~CallTreeView()
 {
     //dtor
+    delete m_pImgList;
 }
 
 void CallTreeView::ShowCallTree(TokensArrayF* tokArr)
@@ -94,21 +130,21 @@ void CallTreeView::ShowCallTreeChildren(TokensArrayF* tokArr, wxTreeItemId& pare
             if (m_IsCallTree)
             {
                 if (tokArr->Item(i)->m_TokenKind == tkFunction)
-                    iind = m_ImgList.GetImageIdx("function_call");
+                    iind = m_pImgList->GetImageIdx("function_call");
                 else
-                    iind = m_ImgList.GetImageIdx("subroutine_call");
+                    iind = m_pImgList->GetImageIdx("subroutine_call");
             }
             else // CalledBy tree
             {
                 if (tokArr->Item(i)->m_TokenKind == tkFunction)
-                    iind = m_ImgList.GetImageIdx("function_calledby");
+                    iind = m_pImgList->GetImageIdx("function_calledby");
                 else
-                    iind = m_ImgList.GetImageIdx("subroutine_calledby");
+                    iind = m_pImgList->GetImageIdx("subroutine_calledby");
             }
         }
         else
         {
-            iind = m_ImgList.GetTokenKindImageIdx(tokArr->Item(i));
+            iind = m_pImgList->GetTokenKindImageIdx(tokArr->Item(i));
         }
         wxTreeItemId addedId = InsertTreeItem(parent, tokArr->Item(i)->m_DisplayName, iind, tidata);
 
@@ -160,12 +196,17 @@ void CallTreeView::OnTreeDoubleClick(wxTreeEvent& event)
     if (!ctd)
         return;
 
-    if (ctd->m_Filename == wxEmptyString)
+    if (ctd->m_DefFilename == wxEmptyString)
         return;
 
+    GoToLine(ctd->m_DefFilename, ctd->m_DefLineStart);
+}
+
+void CallTreeView::GoToLine(wxString& filename, unsigned int line)
+{
     TokenFlat token;
-    token.m_Filename = ctd->m_Filename;
-    token.m_LineStart = ctd->m_LineStart;
+    token.m_Filename = filename;
+    token.m_LineStart = line;
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     m_pFortranProject->GotoToken(&token, ed);
 
@@ -182,7 +223,7 @@ void CallTreeView::OnTreeDoubleClick(wxTreeEvent& event)
     }
 }
 
-void CallTreeView::ShowMenu(wxTreeItemId id, const wxPoint& pt)
+void CallTreeView::ShowMenu(wxTreeItemId id, const wxPoint& pt, bool isFirstLevelItem)
 {
     if ( !id.IsOk() )
         return;
@@ -191,12 +232,20 @@ void CallTreeView::ShowMenu(wxTreeItemId id, const wxPoint& pt)
     wxString caption;
     wxMenu *menu=new wxMenu(wxEmptyString);
 
-    menu->Append(idMenuRefreshTree, _("&Refresh tree"));
+    if (isFirstLevelItem)
+    {
+        menu->Append(idMenuRefreshTree, _("&Refresh tree"));
 
-    menu->AppendCheckItem(idMenuDoNotSort, _("Do not sort"));
-    menu->Check(idMenuDoNotSort, !m_SortAlphabetically);
-    menu->AppendCheckItem(idMenuSortAlphabetically, _("Sort alphabetically"));
-    menu->Check(idMenuSortAlphabetically, m_SortAlphabetically);
+        menu->AppendCheckItem(idMenuDoNotSort, _("Do not sort"));
+        menu->Check(idMenuDoNotSort, !m_SortAlphabetically);
+        menu->AppendCheckItem(idMenuSortAlphabetically, _("Sort alphabetically"));
+        menu->Check(idMenuSortAlphabetically, m_SortAlphabetically);
+    }
+    else
+    {
+        menu->Append(idMenuGoToProcedure, _("Go to &procedure"));
+        menu->Append(idMenuGoToCall, _("Go to &caller"));
+    }
 
     if (menu->GetMenuItemCount() != 0)
         PopupMenu(menu);
@@ -223,11 +272,8 @@ void CallTreeView::OnTreeItemRightClick(wxTreeEvent& event)
         item = m_pTree->GetNextChild(idRoot, cookie);
     }
 
-    if (!isFirstLevelItem)
-        return;
-
     m_pTree->SelectItem(event.GetItem());
-    ShowMenu(event.GetItem(), event.GetPoint());
+    ShowMenu(event.GetItem(), event.GetPoint(), isFirstLevelItem);
 }
 
 void CallTreeView::OnRefreshTree(wxCommandEvent& event)
@@ -248,6 +294,38 @@ void CallTreeView::OnChangeSort(wxCommandEvent& event)
     UpdateView();
 }
 
+void CallTreeView::OnGoToProcedure(wxCommandEvent& event)
+{
+    wxTreeItemId id = m_pTree->GetSelection();
+    if (!id.IsOk())
+        return;
+
+    CTVData* ctd = (CTVData*)m_pTree->GetItemData(id);
+    if (!ctd)
+        return;
+
+    if (ctd->m_DefFilename == wxEmptyString)
+        return;
+
+    GoToLine(ctd->m_DefFilename, ctd->m_DefLineStart);
+}
+
+void CallTreeView::OnGoToCall(wxCommandEvent& event)
+{
+    wxTreeItemId id = m_pTree->GetSelection();
+    if (!id.IsOk())
+        return;
+
+    CTVData* ctd = (CTVData*)m_pTree->GetItemData(id);
+    if (!ctd)
+        return;
+
+    if (ctd->m_CallFilename == wxEmptyString)
+        return;
+
+    GoToLine(ctd->m_CallFilename, ctd->m_CallLine);
+}
+
 void CallTreeView::RereadOptions()
 {
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
@@ -265,17 +343,20 @@ void CallTreeView::UpdateView()
     if (!ctd)
         return;
 
-    if (ctd->m_Filename == wxEmptyString)
+    if (ctd->m_DefFilename == wxEmptyString)
         return;
 
     TokenFlat token;
-    token.m_Filename = ctd->m_Filename;
-    token.m_LineStart = ctd->m_LineStart;
+    token.m_Filename = ctd->m_DefFilename;
+    token.m_LineStart = ctd->m_DefLineStart;
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (!ed)
         return;
     m_pFortranProject->GotoToken(&token, ed);
 
+    ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
+    if (!ed)
+        return;
     cbStyledTextCtrl* control = ed->GetControl();
     const int pos = control->GetCurrentPos();
     int curLine = control->LineFromPosition(pos);

@@ -4,7 +4,7 @@
  *
  * $Revision: 10268 $
  * $Id: EmbeddedHtmlPanel.cpp 10268 2015-05-15 10:56:55Z jenslody $
- * $HeadURL: http://svn.code.sf.net/p/codeblocks/code/branches/release-17.xx/src/plugins/defaultmimehandler/EmbeddedHtmlPanel.cpp $
+ * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/defaultmimehandler/EmbeddedHtmlPanel.cpp $
  */
 
 #include "sdk.h"

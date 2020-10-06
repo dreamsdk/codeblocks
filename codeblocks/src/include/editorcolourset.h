@@ -21,6 +21,9 @@ class cbStyledTextCtrl;
 
 #define COLORSET_DEFAULT _T("default")
 
+const int cbHIGHLIGHT_LINE = -98; // highlight line under caret virtual style
+const int cbSELECTION      = -99; // selection virtual style
+
 struct OptionColour
 {
     wxString name;
@@ -108,8 +111,8 @@ class DLLIMPORT EditorColourSet
         wxString GetName(){ return m_Name; }
         void SetName(const wxString& name){ m_Name = name; }
 
-        HighlightLanguage Apply(cbEditor* editor, HighlightLanguage lang=HL_AUTO);
-        void Apply(HighlightLanguage lang, cbStyledTextCtrl* control, bool isC = false);
+        HighlightLanguage Apply(cbEditor* editor, HighlightLanguage lang, bool colourise);
+        void Apply(HighlightLanguage lang, cbStyledTextCtrl* control, bool isC, bool colourise);
         void Save();
         void Reset(HighlightLanguage lang);
 
@@ -143,6 +146,10 @@ class DLLIMPORT EditorColourSet
 
         wxString m_Name;
         OptionSetsMap m_Sets;
+
+        /// Stores the id of the plain text file lexer (see lexer_plain.xml). This is used for files
+        /// which don't have another more appropriate lexer.
+        wxString m_PlainTextLexerID;
 };
 
 #endif // EDITORCOLORSET_H

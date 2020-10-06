@@ -17,7 +17,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-// RCS-ID: $Id: editsnippetframe.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
+// RCS-ID: $Id$
 
 #include "editsnippetframe.h"
 
@@ -28,7 +28,6 @@
 
 #include "codesnippetswindow.h"
 #include "snippetsconfig.h"
-#include "GenericMessageBox.h"
 #include "version.h"
 
 #include "sdk.h"
@@ -1189,11 +1188,7 @@ void EditSnippetFrame::OnEditHighlightMode(wxCommandEvent& event)
                 {
                     wxMenuItem* item = hl->FindItem(event.GetId());
                     if (item)
-                    #if wxCHECK_VERSION(3, 0, 0)
                         lang = theme->GetHighlightLanguage(item->GetItemLabelText());
-                    #else
-                        lang = theme->GetHighlightLanguage(item->GetLabel());
-                    #endif
                 }
             }
             ed->SetLanguage(lang);

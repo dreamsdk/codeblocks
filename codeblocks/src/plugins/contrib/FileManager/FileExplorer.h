@@ -6,6 +6,7 @@
 #include <wx/combobox.h>
 #include <wx/dynarray.h>
 
+#include <memory>
 #include <vector>
 #include "FileExplorerSettings.h"
 #include "FileExplorerUpdater.h"
@@ -140,10 +141,10 @@ private:
     bool ValidateRoot();
     void Refresh(wxTreeItemId ti);
     void RefreshExpanded(wxTreeItemId ti);
-    void SetImages();
     wxString m_root;
     wxString m_commit;
     FileTreeCtrl *m_Tree; //the widget display the file tree from root defined by m_Loc
+    std::unique_ptr<wxImageList> m_TreeImages;
     wxComboBox *m_Loc; // the combo box maintaining a list of useful locations and the current location
     wxComboBox *m_WildCards; // the combo box maintaining a list of wildcard filters for files
     wxButton *m_UpButton;
