@@ -47,4 +47,6 @@ lib.dat
 sort.dat
 packager/dist/
 codeblocks-patcher-data.zip
+wxMSW/logs
+wxMSW/bin
 
