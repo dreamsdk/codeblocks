@@ -135,6 +135,7 @@
 			<Add alias="All" targets="wxFlatNoteBook;wxDateTimePicker;wxChartCtrl;wxCustomButton;wxImagePanel;wxSpeedButton;wxKWIC;wxLED;wxMathPlot;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -145,9 +146,8 @@
 			<Add option="-D_WIN64" />
 			<Add option="-DWXMAKINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
@@ -536,10 +536,6 @@
 		<Unit filename="wxthings/src/toggle.cpp">
 			<Option target="wxCustomButton" />
 		</Unit>
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

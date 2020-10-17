@@ -35,6 +35,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="-pipe" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
@@ -48,9 +49,8 @@
 			<Add option="-DBUILDING_PLUGIN" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DSUPPORT_UTF8" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
@@ -73,15 +73,12 @@
 		<Unit filename="regexdlg.cpp" />
 		<Unit filename="regexdlg.h" />
 		<Extensions>
-			<code_completion />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
 					<wxScrollingDialog wxs="wxsmith/RegExDlg.wxs" src="regexdlg.cpp" hdr="regexdlg.h" xrc="regexdlg.xrc" fwddecl="0" i18n="1" name="RegExDlg" language="CPP" />
 				</resources>
 			</wxsmith>
-			<envvars />
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

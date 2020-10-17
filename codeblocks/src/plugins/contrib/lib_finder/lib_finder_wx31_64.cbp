@@ -28,6 +28,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-fmessage-length=0" />
@@ -41,13 +42,11 @@
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-DBUILDING_PLUGIN" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
-			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../include/scripting/include" />
 			<Add directory="../../../include/scripting/sqplus" />
 			<Add directory="../../../include/scripting/squirrel" />
@@ -121,7 +120,6 @@
 		<Unit filename="wxsmith/ProjectConfigurationPanel.wxs" />
 		<Unit filename="wxsmith/ProjectMissingLibs.wxs" />
 		<Extensions>
-			<code_completion />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
@@ -135,8 +133,6 @@
 					<wxScrollingDialog wxs="wxsmith/ProjectMissingLibs.wxs" src="projectmissinglibs.cpp" hdr="projectmissinglibs.h" fwddecl="1" i18n="1" name="ProjectMissingLibs" language="CPP" />
 				</resources>
 			</wxsmith>
-			<envvars />
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

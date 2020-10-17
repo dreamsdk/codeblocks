@@ -73,6 +73,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -83,16 +84,15 @@
 			<Add option="-D_WIN64" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
-			<Add directory="../../../devel31_64" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
+			<Add directory="../../../devel31_64" />
 		</Linker>
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxSmithContribItems.cpp" />
@@ -215,10 +215,6 @@
 		<Unit filename="wxthings/wxcustombutton32.xpm" />
 		<Unit filename="wxthings/wxscustombutton.cpp" />
 		<Unit filename="wxthings/wxscustombutton.h" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

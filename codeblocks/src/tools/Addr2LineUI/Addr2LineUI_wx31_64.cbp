@@ -31,23 +31,24 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
+			<Add option="-m64" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
-			<Add option="-m64" />
 			<Add option="-D__GNUWIN32__" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
 			<Add option="-D_WIN64" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 		</ResourceCompiler>
 		<Linker>
+			<Add option="-m64" />
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
@@ -61,9 +62,6 @@
 		</Unit>
 		<Unit filename="wxsmith/Addr2LineUIDialog.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<lib_finder disable_auto="1" />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="Addr2LineUIApp.cpp" main="Addr2LineUIDialog" init_handlers="necessary" language="CPP" />

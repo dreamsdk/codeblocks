@@ -5,14 +5,14 @@
 		<Option title="wxWidgets - Contrib Items wx3.1.x" />
 		<Option platforms="Windows;" />
 		<Option pch_mode="2" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="wxFlatNoteBook">
 				<Option platforms="Windows;" />
 				<Option output="../../../devel31/wxflatnotebook" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxFlatNotebook" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add option="-DWXMAKINGDLL_FNB" />
@@ -24,7 +24,7 @@
 				<Option output="../../../devel31/wxdatetimepicker" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxDateTimePicker" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add directory="wxDateTimePicker/include" />
@@ -36,7 +36,7 @@
 				<Option output="../../../devel31/wxchartctrl" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxChartCtrl" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add option="-DWXMAKINGDLL_CHART" />
@@ -48,7 +48,7 @@
 				<Option output="../../../devel31/wxcustombutton" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxthings" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add option="-DWXMAKINGDLL_THINGS" />
@@ -60,7 +60,7 @@
 				<Option output="../../../devel31/wximagepanel" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxImagePanel" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add directory="wxImagePanel/include" />
@@ -74,7 +74,7 @@
 				<Option output="../../../devel31/wxspeedbutton" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxSpeedButton" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Linker>
 					<Add option="-Wl,--export-all-symbols" />
@@ -85,7 +85,7 @@
 				<Option output="../../../devel31/wxkwic" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/KWIC" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add directory="KWIC/include" />
@@ -99,7 +99,7 @@
 				<Option output="../../../devel31/wxled" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxled" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add directory="wxled/ledpanel/include" />
@@ -116,7 +116,7 @@
 				<Option output="../../../devel31/wxmathplot" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/wxContribItems/wxmathplot" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createStaticLib="1" />
 				<Compiler>
 					<Add directory="wxmathplot" />
@@ -135,6 +135,7 @@
 			<Add alias="All" targets="wxFlatNoteBook;wxDateTimePicker;wxChartCtrl;wxCustomButton;wxImagePanel;wxSpeedButton;wxKWIC;wxLED;wxMathPlot;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -144,9 +145,8 @@
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXMAKINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
@@ -535,10 +535,6 @@
 		<Unit filename="wxthings/src/toggle.cpp">
 			<Option target="wxCustomButton" />
 		</Unit>
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

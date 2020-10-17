@@ -27,6 +27,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-mthreads" />
 			<Add option="-fexceptions" />
@@ -38,12 +39,11 @@
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
-			<Add directory="$(#WX31_64.INCLUDE)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.INCLUDE)" />
 		</Compiler>
 		<ResourceCompiler>
 			<Add directory="$(#WX31_64.include)" />
@@ -53,8 +53,8 @@
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add library="codeblocks" />
-			<Add directory="../../../devel31_64" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
+			<Add directory="../../../devel31_64" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="zip -j9 ../../../devel31_64/share/codeblocks/CppCheck.zip resources/manifest.xml" />
@@ -68,9 +68,6 @@
 		<Unit filename="CppCheckListLog.h" />
 		<Unit filename="wxsmith/ConfigPanel.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/ConfigPanel.wxs" src="ConfigPanel.cpp" hdr="ConfigPanel.h" fwddecl="1" i18n="1" name="ConfigPanel" language="CPP" />

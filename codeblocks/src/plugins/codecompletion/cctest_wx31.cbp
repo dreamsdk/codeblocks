@@ -3,13 +3,13 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="CC Test wx3.1.x" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="cctest">
 				<Option output="../../devel31/cctest" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../.objs31/plugins/codecompletion/cctest" />
 				<Option type="0" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add directory="cctest" />
@@ -28,26 +28,26 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
 			<Add option="-mthreads" />
-			<Add option="-std=gnu++11" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 			<Add directory="../../include" />
 			<Add directory="../../include/tinyxml" />
 			<Add directory="../../sdk/wxscintilla/include" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 		</ResourceCompiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
@@ -92,15 +92,12 @@
 		<Unit filename="parser/tokentree.h" />
 		<Unit filename="wxsmith/CCTestFrame.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="cctest/cctest_app.cpp" main="-- None --" init_handlers="never" language="CPP" />
 				<resources>
 					<wxFrame wxs="wxsmith/CCTestFrame.wxs" src="cctest/cctest_frame.cpp" hdr="cctest/cctest_frame.h" fwddecl="0" i18n="1" name="CCTestFrame" language="CPP" />
 				</resources>
 			</wxsmith>
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

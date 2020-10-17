@@ -6,7 +6,7 @@
 		<Option platforms="Windows;" />
 		<Option pch_mode="2" />
 		<Option default_target="wxSmithContribItems" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="wxSmithContribItems">
 				<Option platforms="Windows;" />
@@ -14,7 +14,7 @@
 				<Option object_output="../../../.objs31/plugins/contrib/wxSmithContribItems" />
 				<Option external_deps="../../../devel31/wxsmithlib.dll;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --multiple-instance -na -ns -nd -p debug" />
 				<Option host_application="../../../devel31/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -73,6 +73,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -82,16 +83,15 @@
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
-			<Add directory="../../../devel31" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)" />
+			<Add directory="../../../devel31" />
 		</Linker>
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxSmithContribItems.cpp" />
@@ -214,10 +214,6 @@
 		<Unit filename="wxthings/wxcustombutton32.xpm" />
 		<Unit filename="wxthings/wxscustombutton.cpp" />
 		<Unit filename="wxthings/wxscustombutton.h" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

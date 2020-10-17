@@ -5,14 +5,14 @@
 		<Option title="SpellChecker wx3.1.x" />
 		<Option pch_mode="2" />
 		<Option default_target="plugin" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="hunspell">
 				<Option output="../../../devel31/hunspell" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output="../../../.objs31/plugins/contrib/SpellChecker/hunspell" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="$(#CB_RELEASE_TYPE)" />
@@ -30,7 +30,7 @@
 				<Option working_dir="" />
 				<Option object_output="../../../.objs31/plugins/contrib/SpellChecker/wxSpellChecker" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="$(#CB_RELEASE_TYPE)" />
@@ -60,7 +60,7 @@
 				<Option output="../../../devel31/share/CodeBlocks/plugins/SpellChecker" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/SpellChecker" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-check-associations -ns -nd --multiple-instance -p debug" />
 				<Option host_application="../../../devel31/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -105,11 +105,11 @@
 			<Add alias="All" targets="hunspell;wxSpellChecker;plugin;" />
 		</VirtualTargets>
 		<Compiler>
+			<Add option="-std=gnu++11" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
 		</Compiler>
 		<Unit filename="DictionariesNeededDialog.cpp">
 			<Option target="plugin" />
@@ -394,9 +394,6 @@
 			<Option target="wxSpellChecker" />
 		</Unit>
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/SpellCheckSettingsPanel.wxs" src="SpellCheckSettingsPanel.cpp" hdr="SpellCheckSettingsPanel.h" xrc="SpellCheckSettingsPanel.xrc" fwddecl="0" i18n="1" name="SpellCheckSettingsPanel" language="CPP" />

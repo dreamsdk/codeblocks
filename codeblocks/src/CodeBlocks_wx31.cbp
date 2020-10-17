@@ -4,14 +4,14 @@
 	<Project>
 		<Option title="Code::Blocks wx3.1.x" />
 		<Option default_target="src" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="tinyXML">
 				<Option output="devel31/txml" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add directory="include/tinyxml" />
 				</Compiler>
@@ -20,7 +20,7 @@
 				<Option output="$(TARGET_OBJECT_DIR)/autorevision" prefix_auto="1" extension_auto="1" />
 				<Option object_output=".objs31" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="-v +wx +int +t .. include/autorevision.h" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
@@ -36,7 +36,7 @@
 				<Option working_dir="tools/ConsoleRunner" />
 				<Option object_output=".objs31" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-Os" />
@@ -47,7 +47,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-fno-inline" />
 					<Add directory="include/scripting/include" />
@@ -60,7 +60,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libsquirrel.a;" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-fno-inline" />
 					<Add directory="include/scripting/include" />
@@ -73,7 +73,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libsquirrel.a;devel31/libsqstdlib.a;" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-fno-inline" />
 					<Add directory="include/scripting/include" />
@@ -85,7 +85,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-D__WX__" />
 					<Add option="-DWINVER=0x0501" />
@@ -113,7 +113,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libtxml.a;devel31/libsquirrel.a;devel31/libsqstdlib.a;devel31/libsqplus.a;devel31/libwxscintilla_cb.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --verbose -p debug" />
 				<Option createStaticLib="1" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -162,7 +162,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="0" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
@@ -220,7 +220,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -253,7 +253,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -285,7 +285,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -314,7 +314,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-DDEPSLIB_WINDOWS" />
 				</Compiler>
@@ -329,7 +329,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;devel31/libdepslib.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -366,7 +366,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -396,7 +396,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -433,7 +433,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -463,7 +463,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -493,7 +493,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -523,7 +523,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -553,7 +553,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -589,7 +589,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -621,7 +621,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -657,7 +657,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -694,27 +694,27 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
 			<Add option="-Winvalid-pch" />
-			<Add option="-std=gnu++11" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DCB_PRECOMP" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 			<Add directory="sdk/wxscintilla/include" />
 			<Add directory="include/tinyxml" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#WX31.include)" />
 			<Add directory="$(#WX31)/lib/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31.include)" />
 		</ResourceCompiler>
 		<Linker>
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
@@ -4349,8 +4349,6 @@
 			<Option target="src" />
 		</Unit>
 		<Extensions>
-			<code_completion />
-			<envvars />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
@@ -4373,7 +4371,6 @@
 					<wxDialog wxs="plugins/codecompletion/wxsmith/goto_function.wxs" src="plugins/codecompletion/gotofunctiondlg.cpp" hdr="plugins/codecompletion/gotofunctiondlg.h" fwddecl="1" i18n="1" name="GotoFunctionDlg" language="CPP" />
 				</resources>
 			</wxsmith>
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

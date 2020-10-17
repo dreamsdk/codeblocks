@@ -25,6 +25,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -38,9 +39,8 @@
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-std=gnu++11" />
-			<Add directory="$(#WX31_64.include)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add directory="$(#WX31_64.include)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
@@ -80,9 +80,6 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxsmith/CscopeConfigPanel.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/CscopeConfigPanel.wxs" src="CscopeConfigPanel.cpp" hdr="CscopeConfigPanel.h" fwddecl="0" i18n="1" name="CscopeConfigPanel" language="CPP" />
