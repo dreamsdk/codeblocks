@@ -36,28 +36,6 @@ X_PRJ_FILE_PROJ  ICON "src/resources/icons/proj.ico"
 #include <wx/msw/rcdefs.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-// Specify the processor architecture (wxWidgets seems not to do this correctly)
-#if defined(_M_AMD64)
-  #if  defined(WX_CPU_X86)
-    #undef WX_CPU_X86
-  #endif
-  #if !defined(WX_CPU_AMD64)
-    #define WX_CPU_AMD64
-  #endif
-#elif defined(_M_IA64)
-  #if  defined(WX_CPU_X86)
-    #undef WX_CPU_X86
-  #endif
-  #if !defined(WX_CPU_IA64)
-    #define WX_CPU_IA64
-  #endif
-#elif defined(_M_IX86) || defined(_X86_)
-  #if !defined(WX_CPU_X86)
-    #define WX_CPU_X86
-  #endif
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 // Version information
 VS_VERSION_INFO    VERSIONINFO
   FILEVERSION      20,03,0,0
