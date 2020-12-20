@@ -707,6 +707,7 @@
 			<Add option="-DcbDEBUG" />
 			<Add option="-DCB_PRECOMP" />
 			<Add option="-DwxUSE_UNICODE" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />
 			<Add directory="sdk/wxscintilla/include" />

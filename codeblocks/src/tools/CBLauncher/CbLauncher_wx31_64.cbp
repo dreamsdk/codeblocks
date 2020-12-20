@@ -30,6 +30,7 @@
 			<Add option="-DUNICODE" />
 			<Add option="-DWINVER=0x0500" />
 			<Add option="-D_WIN64" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Linker>
 			<Add library="gdi32" />
@@ -87,10 +88,6 @@
 		<Unit filename="launcher.cpp" />
 		<Unit filename="mainpage.h" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-			<lib_finder disable_auto="1" />
 			<DoxyBlocks>
 				<comment_style block="0" line="0" />
 				<doxyfile_project project_number="1.0" output_directory="doc" />
@@ -100,6 +97,7 @@
 				<doxyfile_dot have_dot="1" />
 				<general use_at_in_tags="1" />
 			</DoxyBlocks>
+			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

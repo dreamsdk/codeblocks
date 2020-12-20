@@ -34,6 +34,7 @@
 			<Add option="-fexceptions" />
 			<Add option="-fno-strict-aliasing" />
 			<Add option="-Wno-write-strings" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="lib" />
 			<Add directory="lib/tinyxml" />
 			<Add directory="src" />

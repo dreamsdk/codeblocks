@@ -106,6 +106,7 @@
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-DWXMAKINGDLL_PDFDOC" />
 			<Add option="-DwxPDF_USE_WXMODULE=0" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />
 			<Add directory="wxPdfDocument/include" />

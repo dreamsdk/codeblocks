@@ -30,10 +30,11 @@ const long Addr2LineUIDialog::ID_BTN_QUIT = wxNewId();
 
 BEGIN_EVENT_TABLE(Addr2LineUIDialog,wxDialog)
   //(*EventTable(Addr2LineUIDialog)
+    EVT_CLOSE(Addr2LineUIDialog::OnClose)
   //*)
 END_EVENT_TABLE()
 
-Addr2LineUIDialog::Addr2LineUIDialog(wxWindow* parent) :
+Addr2LineUIDialog::Addr2LineUIDialog(wxDialog* parent) :
   mFileConfig(),
   mCrashLog(),
   mCrashLogFileContent(),
@@ -133,6 +134,11 @@ Addr2LineUIDialog::~Addr2LineUIDialog()
 {
   //(*Destroy(Addr2LineUIDialog)
   //*)
+}
+
+void Addr2LineUIDialog::OnClose(wxCloseEvent &event)
+{
+    Destroy();
 }
 
 void Addr2LineUIDialog::OnCrashLogFile(wxFileDirPickerEvent& event)

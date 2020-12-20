@@ -61,6 +61,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="IncrementalSearch.cpp" />
 		<Unit filename="IncrementalSearch.h" />

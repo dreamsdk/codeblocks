@@ -53,6 +53,9 @@
 		<VirtualTargets>
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
+		<Compiler>
+			<Add option="-DwxDEBUG_LEVEL=0" />
+		</Compiler>
 		<ExtraCommands>
 			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip manifest.xml resources\settings.xrc resources\fortranprojecttoolbar.xrc" />
 			<Add after="zip -j9 ..\..\..\devel31_64\share\codeblocks\FortranProject.zip resources\changecase.xrc resources\tab2space.xrc" />

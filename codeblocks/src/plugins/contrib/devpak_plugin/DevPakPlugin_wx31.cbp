@@ -68,6 +68,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="bzip2" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />

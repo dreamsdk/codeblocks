@@ -64,6 +64,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="CParser.cpp" />
 		<Unit filename="DataObject.cpp" />
@@ -115,10 +116,6 @@
 		<Unit filename="nassi_shneiderman_toolbar.xrc" />
 		<Unit filename="parseactions.cpp" />
 		<Unit filename="parseactions.h" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

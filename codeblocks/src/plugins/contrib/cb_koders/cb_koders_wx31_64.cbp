@@ -44,6 +44,7 @@
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-D_WIN64" />
 			<Add option="-DBUILDING_PLUGIN" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
 			<Add directory="../../../include" />

@@ -57,6 +57,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="EditorConfig.cpp" />
 		<Unit filename="EditorConfig.h" />
@@ -66,14 +67,11 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxsmith/EditorConfigUI.wxs" />
 		<Extensions>
-			<code_completion />
-			<debugger />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/EditorConfigUI.wxs" src="EditorConfigUI.cpp" hdr="EditorConfigUI.h" fwddecl="1" i18n="1" name="EditorConfigUI" language="CPP" />
 				</resources>
 			</wxsmith>
-			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

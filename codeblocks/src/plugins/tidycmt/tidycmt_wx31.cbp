@@ -53,6 +53,9 @@
 		<VirtualTargets>
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
+		<Compiler>
+			<Add option="-DwxDEBUG_LEVEL=0" />
+		</Compiler>
 		<Unit filename="manifest.xml" />
 		<Unit filename="tidycmt.cpp" />
 		<Unit filename="tidycmt.h" />

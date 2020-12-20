@@ -57,6 +57,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="MouseSap.cpp" />
 		<Unit filename="MouseSap.h" />

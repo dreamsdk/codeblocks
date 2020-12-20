@@ -56,6 +56,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="EditorConfig.cpp" />
 		<Unit filename="EditorConfig.h" />

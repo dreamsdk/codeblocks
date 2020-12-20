@@ -46,6 +46,7 @@
 			<Add option="-Wall" />
 			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />

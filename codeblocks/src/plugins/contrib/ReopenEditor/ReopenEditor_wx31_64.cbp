@@ -58,6 +58,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="ReopenEditor.cpp" />
 		<Unit filename="ReopenEditor.h" />
@@ -68,9 +69,6 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxsmith/ReopenEditorConfDLg.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<lib_finder disable_auto="1" />
 			<wxsmith version="1">
 				<resources>

@@ -30,6 +30,7 @@
 			<Add option="-D_UNICODE" />
 			<Add option="-DUNICODE" />
 			<Add option="-DWINVER=0x0500" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Linker>
 			<Add library="gdi32" />

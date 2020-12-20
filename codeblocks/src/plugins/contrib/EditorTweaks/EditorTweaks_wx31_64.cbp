@@ -56,6 +56,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="EditorTweaks.cpp" />
 		<Unit filename="EditorTweaks.h" />
@@ -64,9 +65,6 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="wxsmith/EditorTweaksConfDlg.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/EditorTweaksConfDlg.wxs" src="EditorTweaksConfDlg.cpp" hdr="EditorTweaksConfDlg.h" xrc="EditorTweaksConfDlg.xrc" fwddecl="0" i18n="1" name="EditorTweaksConfDlg" language="CPP" />

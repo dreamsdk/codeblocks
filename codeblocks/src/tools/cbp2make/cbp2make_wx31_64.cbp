@@ -29,17 +29,21 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
+			<Add option="-m64" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-fexceptions" />
 			<Add option="-fno-strict-aliasing" />
 			<Add option="-Wno-write-strings" />
-			<Add option="-std=gnu++11" />
-			<Add option="-m64" />
 			<Add option="-D_WIN64" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="lib" />
 			<Add directory="lib/tinyxml" />
 			<Add directory="src" />
 		</Compiler>
+		<Linker>
+			<Add option="-m64" />
+		</Linker>
 		<Unit filename="lib/doc/macros.dox">
 			<Option target="Doxygen" />
 		</Unit>
@@ -227,9 +231,6 @@
 			<Option target="default" />
 		</Unit>
 		<Extensions>
-			<envvars />
-			<code_completion />
-			<debugger />
 			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>

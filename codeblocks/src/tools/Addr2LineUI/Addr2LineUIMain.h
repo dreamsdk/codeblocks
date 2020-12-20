@@ -20,7 +20,7 @@ class Addr2LineUIDialog: public wxDialog
 {
 public:
 
-  Addr2LineUIDialog(wxWindow* parent);
+  Addr2LineUIDialog(wxDialog* parent);
   virtual ~Addr2LineUIDialog();
 
 private:
@@ -32,6 +32,7 @@ private:
   void OnDirPrependDir(wxFileDirPickerEvent& event);
   void OnOperateClick(wxCommandEvent& event);
   void OnReplaceClick(wxCommandEvent& event);
+  void OnClose(wxCloseEvent& event);
   //*)
 
   //(*Identifiers(Addr2LineUIDialog)

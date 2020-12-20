@@ -54,13 +54,12 @@
 		<VirtualTargets>
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
+		<Compiler>
+			<Add option="-DwxDEBUG_LEVEL=0" />
+		</Compiler>
 		<Unit filename="headerguard.cpp" />
 		<Unit filename="headerguard.h" />
 		<Unit filename="manifest.xml" />
-		<Extensions>
-			<code_completion />
-			<debugger />
-			<envvars />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

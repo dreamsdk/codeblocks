@@ -86,6 +86,7 @@
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DNOPCH" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
@@ -125,8 +126,7 @@
 		<Unit filename="wxSmithAui.cpp" />
 		<Unit filename="wxSmithAui.h" />
 		<Extensions>
-			<code_completion />
-			<envvars />
+			<lib_finder disable_auto="1" />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
@@ -134,8 +134,6 @@
 					<wxPanel wxs="wxsmith/wxsAuiManagerParentQP.wxs" src="wxAuiManager/wxsAuiManagerParentQP.cpp" hdr="wxAuiManager/wxsAuiManagerParentQP.h" fwddecl="0" i18n="1" name="wxsAuiManagerParentQP" language="CPP" />
 				</resources>
 			</wxsmith>
-			<debugger />
-			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

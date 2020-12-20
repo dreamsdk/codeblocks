@@ -17,9 +17,10 @@ bool Addr2LineUIApp::OnInit()
   wxInitAllImageHandlers();
   if ( wxsOK )
   {
-  	Addr2LineUIDialog Dlg(0);
-  	SetTopWindow(&Dlg);
-  	Dlg.ShowModal();
+       Addr2LineUIDialog* Dlg = new Addr2LineUIDialog(0L);
+  //	Addr2LineUIDialog Dlg(0);
+  //	SetTopWindow(&Dlg);
+  	Dlg->ShowModal();
   	wxsOK = false;
   }
   //*)

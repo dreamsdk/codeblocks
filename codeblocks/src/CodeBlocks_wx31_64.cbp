@@ -701,6 +701,7 @@
 			<Add option="-mthreads" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
@@ -719,6 +720,7 @@
 		</ResourceCompiler>
 		<Linker>
 			<Add option="-m64" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="devel31_64" />

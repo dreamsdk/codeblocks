@@ -48,6 +48,7 @@
 			<Add option="-DBUILDING_PLUGIN" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DSUPPORT_UTF8" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />
 			<Add directory="../../../include" />

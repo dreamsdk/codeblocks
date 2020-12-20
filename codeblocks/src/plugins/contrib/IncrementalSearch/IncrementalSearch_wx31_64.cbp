@@ -62,6 +62,7 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
+			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="IncrementalSearch.cpp" />
 		<Unit filename="IncrementalSearch.h" />
@@ -71,9 +72,6 @@
 		<Unit filename="IncrementalSearchToolbar.xrc" />
 		<Unit filename="manifest.xml" />
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>
