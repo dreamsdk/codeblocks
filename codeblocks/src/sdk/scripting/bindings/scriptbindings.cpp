@@ -27,6 +27,9 @@
 #include <cbexception.h>
 #include "sc_base_types.h"
 
+// DreamSDK
+#include "projectloader_hooks.h"
+
 namespace ScriptBindings
 {
     extern void Register_Constants();
@@ -683,6 +686,25 @@ namespace ScriptBindings
         project->SetModified(true);
         return sa.Return();
     }
+	
+	// DreamSDK::Start
+	SQInteger cbProject_CallHooks(HSQUIRRELVM v)
+    {
+        StackHandler sa(v);
+        int paramCount = sa.GetParamCount();
+        if (paramCount == 2)
+        {
+            cbProject* prj = SqPlus::GetInstance<cbProject,false>(v, 1);
+            if (!prj)
+                return sa.ThrowError("Null project in \"cbProject::CallHooks\"");
+            bool isLoading = (sa.GetBool(2) != 0);
+
+            ProjectLoaderHooks::CallHooks(prj, prj->GetExtensionsNode()->ToElement(), isLoading);
+            return 1;
+        }
+        return sa.ThrowError("Invalid arguments to \"cbProject::CallHooks\"");
+    }
+	// DreamSDK::End	
 
     SQInteger ProjectManager_AddFileToProject(HSQUIRRELVM v)
     {
@@ -1003,6 +1025,9 @@ namespace ScriptBindings
                 func(&cbProject::GetCheckForExternallyModifiedFiles, "GetCheckForExternallyModifiedFiles").
                 func(&cbProject::ShowNotes, "ShowNotes").
                 func(&cbProject::AddToExtensions, "AddToExtensions").
+				// DreamSDK::Start
+				staticFuncVarArgs(cbProject_CallHooks, "CallHooks", "*").
+				// DreamSDK::End
                 staticFuncVarArgs(cbProject_ExtensionListNodes, "ExtensionListNodes", "*").
                 staticFuncVarArgs(cbProject_ExtensionListNodeAttributes, "ExtensionListNodeAttributes", "*").
                 staticFuncVarArgs(cbProject_ExtensionGetNodeAttribute, "ExtensionGetNodeAttribute", "*").

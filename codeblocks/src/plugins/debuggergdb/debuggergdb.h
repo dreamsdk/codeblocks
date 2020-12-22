@@ -19,6 +19,16 @@
 #include "debuggerstate.h"
 #include "debugger_defs.h"
 
+// DreamSDK::Start
+#define LOADER_ARGUMENTS_TOOLTIP "Leave it empty to use the system default"
+
+#define LOADER_WAITING_TIME_MIN 1
+#define LOADER_WAITING_TIME_MAX 300
+#define LOADER_WAITING_TIME_DEFAULT 10
+#define LOADER_WAITING_TIME_DISABLED 0
+#define LOADER_WAITING_TIME_TOOLTIP "Waiting time (in seconds) before starting the debugger, just after executing the loader"
+// DreamSDK::End
+
 extern const wxString g_EscapeChar;
 
 class cbProject;
@@ -134,6 +144,8 @@ class DebuggerGDB : public cbDebuggerPlugin
         static void StripQuotes(wxString& str);
 
         void DebuggeeContinued();
+		
+		static wxString ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee); // DreamSDK
 
         void DetermineLanguage();
 
@@ -149,6 +161,12 @@ class DebuggerGDB : public cbDebuggerPlugin
         void ParseOutput(const wxString& output);
         void DoWatches();
         void MarkAllWatchesAsUnchanged();
+		// DreamSDK::Start
+		bool IsDebugTarget(ProjectBuildTarget *target);
+        int ValidateLoaderWaitingTime(int waitingTime);
+        bool LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime);
+		ProjectBuildTarget* GetCurrentTarget();
+		// DreamSDK::End
         int LaunchProcess(const wxString& cmd, const wxString& cwd);
         int LaunchProcessWithShell(const wxString &cmd, wxProcess *process, const wxString &cwd);
 

@@ -123,6 +123,7 @@ Compiler::Compiler(const Compiler& other) :
     m_ID = now.Format(_T("%c"), wxDateTime::CET);
     MakeValidID();
 
+	m_LoaderArgs      = other.m_LoaderArgs; // DreamSDK
     m_MasterPath      = other.m_MasterPath;
     m_ExtraPaths      = other.m_ExtraPaths;
     m_Programs        = other.m_Programs;
@@ -368,6 +369,7 @@ void Compiler::MirrorCurrentSettings()
     // different from the defaults
 
     m_Mirror.Name             = m_Name;
+	m_Mirror.LoaderArgs       = m_LoaderArgs; // DreamSDK
     m_Mirror.MasterPath       = m_MasterPath;
     m_Mirror.ExtraPaths       = m_ExtraPaths;
     for (int i = 0; i < ctCount; ++i)
@@ -456,6 +458,11 @@ void Compiler::SaveSettings(const wxString& baseKey)
         cfg->Write(tmp + _T("/commands_after"),   key, true);
     }
 
+	// DreamSDK::Start
+	if (m_Mirror.LoaderArgs != m_LoaderArgs)
+        cfg->Write(tmp + _T("/loader_args"),     m_LoaderArgs,         true);
+	// DreamSDK::End
+	
     if (m_Mirror.MasterPath != m_MasterPath)
         cfg->Write(tmp + _T("/master_path"),     m_MasterPath,         true);
     if (m_Mirror.ExtraPaths != m_ExtraPaths)
@@ -474,6 +481,11 @@ void Compiler::SaveSettings(const wxString& baseKey)
         cfg->Write(tmp + _T("/make"),            m_Programs.MAKE,      true);
     if (m_Mirror.Programs.DBGconfig != m_Programs.DBGconfig)
         cfg->Write(tmp + _T("/debugger_config"), m_Programs.DBGconfig, true);
+	
+	// DreamSDK::Start
+	if (m_Mirror.Programs.LOADER != m_Programs.LOADER)
+        cfg->Write(tmp + _T("/loader"), m_Programs.LOADER, true);
+	// DreamSDK::End
 
     for (int i = 0; i < ctCount; ++i)
     {
@@ -625,6 +637,7 @@ void Compiler::LoadSettings(const wxString& baseKey)
 
     m_Name = cfg->Read(tmp + _T("/name"), m_Name);
 
+	m_LoaderArgs         = cfg->Read(tmp + _T("/loader_args"),     m_LoaderArgs); // DreamSDK
     m_MasterPath         = cfg->Read(tmp + _T("/master_path"),     m_MasterPath);
     m_ExtraPaths         = MakeUniqueArray(GetArrayFromString(cfg->Read(tmp + _T("/extra_paths"), _T("")), _T(";")), true);
     m_Programs.C         = cfg->Read(tmp + _T("/c_compiler"),      m_Programs.C);
@@ -633,7 +646,8 @@ void Compiler::LoadSettings(const wxString& baseKey)
     m_Programs.LIB       = cfg->Read(tmp + _T("/lib_linker"),      m_Programs.LIB);
     m_Programs.WINDRES   = cfg->Read(tmp + _T("/res_compiler"),    m_Programs.WINDRES);
     m_Programs.MAKE      = cfg->Read(tmp + _T("/make"),            m_Programs.MAKE);
-    m_Programs.DBGconfig = cfg->Read(tmp + _T("/debugger_config"), m_Programs.DBGconfig);
+	m_Programs.DBGconfig = cfg->Read(tmp + _T("/debugger_config"), m_Programs.DBGconfig);
+    m_Programs.LOADER    = cfg->Read(tmp + _T("/loader"),          m_Programs.LOADER); // DreamSDK
 
     // set member variable containing the version string with the configuration toolchain executables, not only
     // with the default ones, otherwise we might have an empty version-string
@@ -909,6 +923,16 @@ void Compiler::LoadDefaultOptions(const wxString& name, int recursion)
                 m_Programs.MAKE = cfg->Read(cmpKey + wxT("/make"), value);
                 m_Mirror.Programs.MAKE = value;
             }
+			// DreamSDK::Start
+			else if (prog == wxT("LOADER"))
+            {
+                const wxString loaderArgs = node->GetAttribute(wxT("args"), wxEmptyString);
+                m_Programs.LOADER = cfg->Read(cmpKey + wxT("/loader"), value);
+                m_LoaderArgs = loaderArgs;
+                m_Mirror.Programs.LOADER = value;
+                m_Mirror.LoaderArgs = loaderArgs;
+            }
+			// DreamSDK::End
         }
         else if (node->GetName() == wxT("Switch"))
         {
@@ -1090,6 +1114,7 @@ void Compiler::LoadDefaultOptions(const wxString& name, int recursion)
         m_Programs.LIB     = m_Mirror.Programs.LIB;
         m_Programs.WINDRES = m_Mirror.Programs.WINDRES;
         m_Programs.MAKE    = m_Mirror.Programs.MAKE;
+		m_Programs.LOADER  = m_Mirror.Programs.LOADER; // DreamSDK
     }
 }
 
@@ -1282,5 +1307,9 @@ wxString Compiler::GetExecName(const wxString& name)
         ret = m_Programs.WINDRES;
     else if (name == wxT("MAKE"))
         ret = m_Programs.MAKE;
+	// DreamSDK::Start
+	else if (name == wxT("LOADER"))
+        ret = m_Programs.LOADER;
+	// DreamSDK::End
     return ret;
 }

@@ -425,6 +425,12 @@ RemoteDebuggingMap DebuggerGDB::ParseRemoteDebuggingMap(cbProject &project)
                         rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
                         rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
+					// DreamSDK::Start
+					if (rdOpt->Attribute("loader_arguments"))
+                        rd.loaderArguments = cbC2U(rdOpt->Attribute("loader_arguments"));
+                    if (rdOpt->Attribute("loader_waiting_time"))
+                        rd.loaderWaitingTime = atol(rdOpt->Attribute("loader_waiting_time"));
+					// DreamSDK::End
 
                     map.insert(map.end(), std::make_pair(bt, rd));
                 }
@@ -495,6 +501,11 @@ void DebuggerGDB::SetRemoteDebuggingMap(cbProject &project, const RemoteDebuggin
                 tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
             if (!rd.additionalShellCmdsBefore.IsEmpty())
                 tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
+			// DreamSDK::Start
+			if (!rd.loaderArguments.IsEmpty())
+				tgtnode->SetAttribute("loader_arguments", cbU2C(rd.loaderArguments));			
+            tgtnode->SetAttribute("loader_waiting_time", (int)rd.loaderWaitingTime);
+			// DreamSDK::End
         }
     }
 }
@@ -551,6 +562,69 @@ static wxString GetShellString()
     shell.Trim();
     return shell;
 }
+
+// DreamSDK::Start
+
+int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
+{
+    int result = GetActiveConfigEx().GetLoaderWaitingTime();
+
+    if (waitingTime != LOADER_WAITING_TIME_DISABLED &&
+        waitingTime >= LOADER_WAITING_TIME_MIN &&
+        waitingTime <= LOADER_WAITING_TIME_MAX)
+    {
+        result = waitingTime;
+    }
+
+    return result;
+}
+
+bool DebuggerGDB::LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime)
+{
+    bool loaderStartedSuccessfully = false;
+
+    wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
+    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee); // Read from default DebuggerGDB panel
+    if (!projectLoaderArguments.empty()) {
+        loaderArgs = ParseLoaderArguments(projectLoaderArguments, debuggee);
+    }
+
+    wxString cmd = loaderPath;
+    if (!loaderArgs.empty())
+    {
+        cmd += _(" ") + loaderArgs;
+    }
+
+    // start the loader process
+    Log(_("Starting loader: ") + cmd);
+
+    long pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_NOHIDE);
+
+    loaderStartedSuccessfully = (pid);
+    if (loaderStartedSuccessfully)
+    {
+        DebugLog(wxString::Format( _("Loader Process ID: %d"), pid ) );
+
+        int waitingTime = ValidateLoaderWaitingTime(projectWaitingTime);
+
+        Log(wxString::Format(_("Loader started successfully. Waiting %d second(s) before starting the debugger..."), waitingTime));
+        for(int i = 0; i < waitingTime; i++)
+        {
+            DebugLog(wxString::Format( _("%d second(s) elapsed..."), (i + 1) ) );
+            wxMilliSleep(1000);
+            Manager::Yield();
+        }
+        DebugLog(wxString::Format( _("Ready to start the debugger!") ) );
+    }
+    else
+    {
+        Log(_("Failed to start the loader..."), Logger::error);
+    }
+
+    return loaderStartedSuccessfully;
+}
+
+// DreamSDK::End
 
 int DebuggerGDB::LaunchProcessWithShell(const wxString &cmd, wxProcess *process,
                                         const wxString &cwd)
@@ -712,6 +786,51 @@ bool DebuggerGDB::Debug(bool breakOnEntry)
     return true;
 }
 
+// DreamSDK::Start
+
+bool DebuggerGDB::IsDebugTarget(ProjectBuildTarget *target)
+{
+    bool result = false;
+
+//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
+
+    wxArrayString targetOpts = target->GetCompilerOptions();
+
+    size_t i = 0;
+    while (!result && i < targetOpts.GetCount())
+    {
+        wxString opt = targetOpts[i].Upper();
+        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
+        i++;
+    }
+
+//    wxString resultStr = result ? _("YES") : _("NO");
+//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
+
+    return result;
+}
+
+ProjectBuildTarget* DebuggerGDB::GetCurrentTarget()
+{
+    ProjectBuildTarget* target = NULL;
+    if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
+    {
+        int tgtIdx = m_pProject->SelectTarget();
+        if (tgtIdx == -1)
+        {
+            return NULL;
+        }
+        target = m_pProject->GetBuildTarget(tgtIdx);
+        m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
+    }
+    else
+        target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
+
+    return target;
+}
+
+// DreamSDK::End
+
 int DebuggerGDB::DoDebug(bool breakOnEntry)
 {
     // set this to true before every error exit point in this function
@@ -727,20 +846,16 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     if ( (m_PidToAttach == 0) && m_pProject)
     {
         Log(_("Selecting target: "));
-        if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
+		
+		// DreamSDK::Start (Altered)
+        target = GetCurrentTarget();
+        if (!target)
         {
-            int tgtIdx = m_pProject->SelectTarget();
-            if (tgtIdx == -1)
-            {
-                Log(_("canceled"));
-                m_Canceled = true;
-                return 3;
-            }
-            target = m_pProject->GetBuildTarget(tgtIdx);
-            m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
+            Log(_("canceled"));
+            m_Canceled = true;
+            return 3;
         }
-        else
-            target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
+		// DreamSDK::End (Altered)
 
         // make sure it's not a commands-only target
         if (target && target->GetTargetType() == ttCommandsOnly)
@@ -750,6 +865,37 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(_("aborted"));
             return 3;
         }
+		
+		// DreamSDK::Start
+		// make sure it's a native and loaded target...
+        if (target && target->GetTargetType() == ttNative && !GetActiveConfigEx().GetLoaderExecutable().empty())
+        {
+            if (!IsDebugTarget(target))
+            {
+                // We are trying to debug a Release target: impossible
+
+                cbMessageBox(_("The selected target is a Release target.\n"
+                    "Please select the Debug target if you want to launch a debugging session on this project."), _("Warning"), wxICON_WARNING);
+                Log(_("aborted"));
+                m_Canceled = true;
+                return 3;
+            }
+            else
+            {
+                // We are trying to debug a Debug target: OK
+
+                AnnoyingDialog dlg(_("About debugging through a loader"),
+                   F(_("The loader will now run the Debug target remotely and wait %d second(s) before starting the debugger.\n"
+                       "This delay is essential in order to wait the upload and the execution on the remote system.\n"
+                       "You may adapt this delay in Project > Properties... > Debugger > Debug > Waiting time."),
+                     GetActiveConfigEx().GetLoaderWaitingTime()),
+                   wxART_INFORMATION,
+                   AnnoyingDialog::dStyle::OK);
+                dlg.ShowModal();
+            }
+        }
+		// DreamSDK::End
+		
         if (target) Log(target->GetTitle());
 
         // find the target's compiler (to see which debugger to use)
@@ -818,6 +964,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
 
     // prepare the driver
     wxString cmdline;
+	wxString debuggee; // DreamSDK
     if (m_PidToAttach == 0)
     {
         m_State.GetDriver()->ClearDirectories();
@@ -851,8 +998,8 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             AddSourceDir(m_pProject->GetCommonTopLevelPath());
         }
 
-        // set the file to debug (depends on the target type)
-        wxString debuggee, path;
+        // set the file to debug (depends on the target type)		
+        wxString path;
         if ( !GetDebuggee(debuggee, path, target) )
         {
             m_Canceled = true;
@@ -921,12 +1068,28 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(wxString(_("Set variable: ")) + CB_LIBRARY_ENVVAR wxT("=") + newLibPath);
         }
     }
+	
+	// DreamSDK::Start
+	// start the loader if necessary
+    if (GetActiveConfigEx().IsLoaderNecessary()) {
+        if (!LaunchLoader(debuggee, rd.loaderArguments, rd.loaderWaitingTime)) {
+            Log(_("An issue occurred when starting the loader..."), Logger::error);
+            Log(_("Starting the debugger anyway..."));
+        }
+    }
+	// DreamSDK::End
 
     #ifdef __WXMSW__
     if (!m_State.GetDriver()->UseDebugBreakProcess())
     {
-        AllocConsole();
-        SetConsoleTitleA("Codeblocks debug console - DO NOT CLOSE!");
+        // DreamSDK::Start (Altered)
+		DebugLog(_("UseDebugBreakProcess is enabled!"));
+        if (!AllocConsole())
+        {
+            DebugLog(wxString::Format(_("AllocConsole failed: %d"), GetLastError()));
+        }
+        SetConsoleTitleA("Code::Blocks Debug Console - DO NOT CLOSE!");
+		// DreamSDK::End (Altered)
         SetConsoleCtrlHandler(HandlerRoutine, TRUE);
         m_bIsConsole = true;
 
@@ -935,12 +1098,15 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             ShowWindow(windowHandle, SW_HIDE);
     }
     #endif
-    // start the gdb process
+	
+    // prepare the debugger
     wxString wdir = m_State.GetDriver()->GetDebuggersWorkingDirectory();
     if (wdir.empty())
         wdir = m_pProject ? m_pProject->GetBasePath() : _T(".");
     DebugLog(_T("Command-line: ") + cmdline);
     DebugLog(_T("Working dir : ") + wdir);
+	
+	// start the gdb process
     int ret = LaunchProcess(cmdline, wdir);
 
     if (!rd.skipLDpath)
@@ -1016,9 +1182,43 @@ void DebuggerGDB::AddSourceDir(const wxString& dir)
     wxString filename = dir;
     Manager::Get()->GetMacrosManager()->ReplaceEnvVars(filename); // apply env vars
     Log(_("Adding source dir: ") + filename);
-    ConvertToGDBDirectory(filename, _T(""), false);
-    m_State.GetDriver()->AddDirectory(filename);
+    
+	// DreamSDK::Start (Altered)
+	// Convert paths to 8.3 format
+    wxString filename83 = filename;
+    ConvertToGDBDirectory(filename83, _T(""), false);
+    m_State.GetDriver()->AddDirectory(filename83);
+
+    // Handle paths with spaces
+    // GDB supports spaces in directories so we must do that
+    // If not, the "break" cmd with spaces in filenames will NOT work...
+    if (filename.Contains(wxT(" ")))
+    {
+        ConvertToGDBFriendly(filename);
+        m_State.GetDriver()->AddDirectory(filename);
+    }
+	// DreamSDK::End (Altered)
 }
+
+// DreamSDK::Start
+// static
+wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee)
+{
+    wxString result = loaderArguments;
+
+    if (!result.empty())
+    {
+        // This is dirty!
+        result.Replace(wxT("${DEBUGGEE}"), debuggee);
+        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
+
+        // Normal procedure
+        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
+    }
+
+    return result;
+}
+// DreamSDK::End
 
 // static
 void DebuggerGDB::StripQuotes(wxString& str)
@@ -1665,6 +1865,7 @@ void DebuggerGDB::DoBreak(bool temporary)
     if (m_pProcess && m_Pid && !IsStopped())
     {
         long childPid = m_State.GetDriver()->GetChildPID();
+		DebugLog(wxString::Format(_("childPid: %d"), childPid)); // DreamSDK
         long pid = childPid;
     #ifndef __WXMSW__
         if (pid > 0 && !wxProcess::Exists(pid))

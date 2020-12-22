@@ -102,6 +102,10 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_UPDATE_UI(            XRCID("btnResComp"),                      CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("txtMake"),                         CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnMake"),                         CompilerOptionsDlg::OnUpdateUI)
+	// DreamSDK::Start
+	EVT_UPDATE_UI(            XRCID("txtLoader"),                       CompilerOptionsDlg::OnUpdateUI)
+    EVT_UPDATE_UI(            XRCID("btnLoader"),                       CompilerOptionsDlg::OnUpdateUI)
+	// DreamSDK::End
     EVT_UPDATE_UI(            XRCID("cmbCompiler"),                     CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreAdd"),                    CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreRemove"),                 CompilerOptionsDlg::OnUpdateUI)
@@ -151,6 +155,9 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_BUTTON(                XRCID("btnLibLinker"),                   CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnResComp"),                     CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnMake"),                        CompilerOptionsDlg::OnSelectProgramClick)
+	// DreamSDK::Start
+	EVT_BUTTON(                XRCID("btnLoader"),                      CompilerOptionsDlg::OnSelectProgramClick)
+	// DreamSDK::End
     EVT_BUTTON(                XRCID("btnAdvanced"),                    CompilerOptionsDlg::OnAdvancedClick)
     EVT_BUTTON(                XRCID("btnIgnoreAdd"),                   CompilerOptionsDlg::OnIgnoreAddClick)
     EVT_BUTTON(                XRCID("btnIgnoreRemove"),                CompilerOptionsDlg::OnIgnoreRemoveClick)
@@ -187,6 +194,9 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_PG_CHANGED(            XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionChanged)
     EVT_PG_RIGHT_CLICK(        XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnFlagsPopup)
     EVT_PG_DOUBLE_CLICK(       XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionDoubleClick)
+
+	// DreamSDK
+	EVT_TEXT(                  XRCID("txtLoaderArguments"),             CompilerOptionsDlg::OnDirty)
 END_EVENT_TABLE()
 
 class ScopeTreeData : public wxTreeItemData
@@ -293,6 +303,9 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
         XRCCTRL(*this, "txtMakeCmd_DistClean", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->Enable(en);
+
+		// DreamSDK
+		XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetToolTip(wxT("Leave the field blank to use the default"));
     }
 
     // let's start filling in all the panels of the configuration dialog
@@ -474,6 +487,8 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
         return;
     const CompilerPrograms& progs = compiler->GetPrograms();
 
+	XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(compiler->GetLoaderArguments()); // DreamSDK
+
     XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->SetValue(compiler->GetMasterPath());
     XRCCTRL(*this, "txtCcompiler", wxTextCtrl)->SetValue(progs.C);
     XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->SetValue(progs.CPP);
@@ -506,6 +521,9 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
 
     XRCCTRL(*this, "txtResComp", wxTextCtrl)->SetValue(progs.WINDRES);
     XRCCTRL(*this, "txtMake", wxTextCtrl)->SetValue(progs.MAKE);
+
+	// DreamSDK
+	XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(progs.LOADER);
 
     const wxArrayString& extraPaths = compiler->GetExtraPaths();
     ArrayString2ListBox(extraPaths, XRCCTRL(*this, "lstExtraPaths", wxListBox));
@@ -840,6 +858,9 @@ void CompilerOptionsDlg::DoLoadOptions()
             if (cmbLogging)
                 cmbLogging->SetSelection((int)compiler->GetSwitches().logging);
 
+			// DreamSDK
+			m_LoaderArgs = compiler->GetLoaderArguments();
+
             wxChoice *cmbLinkerExe = XRCCTRL(*this, "chLinkerExe", wxChoice);
             cmbLinkerExe->Show(false);
             wxStaticText *txtLinkerExe = XRCCTRL(*this, "txtLinkerExe", wxStaticText);
@@ -870,6 +891,9 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_DistClean",        wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcDistClean));
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcSilentBuild));
+
+			// DreamSDK
+			m_LoaderArgs = m_pProject->GetLoaderArguments();
         }
         else
         {
@@ -898,6 +922,9 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcSilentBuild));
 
+			// DreamSDK
+			m_LoaderArgs = m_pTarget->GetLoaderArguments();
+
             const LinkerExecutableOption linkerExecutable = m_pTarget->GetLinkerExecutable();
             XRCCTRL(*this, "chLinkerExe", wxChoice)->SetSelection(int(linkerExecutable));
         }
@@ -919,6 +946,9 @@ void CompilerOptionsDlg::DoLoadOptions()
         ArrayString2TextCtrl(CommandsAfterBuild, XRCCTRL(*this, "txtCmdAfter", wxTextCtrl));
         XRCCTRL(*this, "chkAlwaysRunPost", wxCheckBox)->SetValue(AlwaysUsePost);
     }
+
+	// DreamSDK
+	XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(m_LoaderArgs);
 } // DoLoadOptions
 
 void CompilerOptionsDlg::OptionsToText()
@@ -1012,6 +1042,9 @@ void CompilerOptionsDlg::DoSaveOptions()
     DoGetCompileOptions(m_LinkerOptions,           XRCCTRL(*this, "txtLinkerOptions",           wxTextCtrl));
     OptionsToText();
 
+	// DreamSDK
+	wxString LoaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
+
     if (!m_pProject && !m_pTarget)
     {
         // global options
@@ -1068,6 +1101,9 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pProject->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
+
+			// DreamSDK
+			m_pProject->SetLoaderArguments(LoaderArgs);
         }
         else
         {
@@ -1106,6 +1142,9 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pTarget->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
+
+			// DreamSDK
+			m_pTarget->SetLoaderArguments(LoaderArgs);
         }
     }
 } // DoSaveOptions
@@ -1117,6 +1156,7 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
         return;
 
     CompilerPrograms progs;
+	wxString loaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue(); // DreamSDK
     wxString masterPath = XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue();
     progs.C       = (XRCCTRL(*this, "txtCcompiler",   wxTextCtrl)->GetValue()).Trim();
     progs.CPP     = (XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->GetValue()).Trim();
@@ -1124,6 +1164,7 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
     progs.LIB     = (XRCCTRL(*this, "txtLibLinker",   wxTextCtrl)->GetValue()).Trim();
     progs.WINDRES = (XRCCTRL(*this, "txtResComp",     wxTextCtrl)->GetValue()).Trim();
     progs.MAKE    = (XRCCTRL(*this, "txtMake",        wxTextCtrl)->GetValue()).Trim();
+	progs.LOADER  = (XRCCTRL(*this, "txtLoader",      wxTextCtrl)->GetValue()).Trim(); // DreamSDK
     wxChoice *cmbDebugger = XRCCTRL(*this, "cmbDebugger", wxChoice);
     if (cmbDebugger)
     {
@@ -1132,6 +1173,7 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
         progs.DBGconfig = data->string;
     }
     compiler->SetPrograms(progs);
+	compiler->SetLoaderArguments(loaderArgs); // DreamSDK
     compiler->SetMasterPath(masterPath);
     // and the extra paths
     wxListBox* control = XRCCTRL(*this, "lstExtraPaths", wxListBox);
@@ -1214,6 +1256,14 @@ void CompilerOptionsDlg::DoSaveCompilerDefinition()
     node = node->GetNext();
     node->AddAttribute(name, wxT("MAKE"));
     node->AddAttribute(value, compiler->GetPrograms().MAKE);
+
+	// DreamSDK::Start
+	 node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Program")));
+    node = node->GetNext();
+    node->AddAttribute(name, wxT("LOADER"));
+    node->AddAttribute(value, compiler->GetPrograms().LOADER);
+    node->AddAttribute(wxT("args"), compiler->GetLoaderArguments());
+	// DreamSDK::End
 
 
     node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Switch")));
@@ -2644,6 +2694,8 @@ void CompilerOptionsDlg::OnAutoDetectClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
 {
+	bool bSetWithFullPath = false; // DreamSDK
+
     // see who called us
     wxTextCtrl* obj = 0L;
     if (event.GetId() == XRCID("btnCcompiler"))
@@ -2658,14 +2710,24 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
         obj = XRCCTRL(*this, "txtResComp", wxTextCtrl);
     else if (event.GetId() == XRCID("btnMake"))
         obj = XRCCTRL(*this, "txtMake", wxTextCtrl);
+	// DreamSDK::Start
+	else if (event.GetId() == XRCID("btnLoader"))
+    {
+        obj = XRCCTRL(*this, "txtLoader", wxTextCtrl);
+        bSetWithFullPath = true;
+    }
+	// DreamSDK::End
 
     if (!obj)
         return; // called from invalid caller
 
-    // common part follows
-    wxString file_selection = _("All files (*)|*");
+    // common part follows -- DreamSDK altered
+    wxString file_selection = wxEmptyString;
     if (platform::windows)
-        file_selection = _("Executable files (*.exe)|*.exe");
+    {
+        file_selection = _("Executable files (*.exe;*.cmd)|*.exe;*.cmd|");
+    }
+    file_selection += _("All files (*)|*");
     wxFileDialog dlg(this,
                      _("Select file"),
                      XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue() + _T("/bin"),
@@ -2678,7 +2740,7 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
     if (dlg.ShowModal() != wxID_OK)
         return;
     wxFileName fname(dlg.GetPath());
-    obj->SetValue(fname.GetFullName());
+    obj->SetValue(bSetWithFullPath ? fname.GetFullPath() : fname.GetFullName()); // DreamSDK altered
     m_bDirty = true;
 } // OnSelectProgramClick
 

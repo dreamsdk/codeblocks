@@ -73,6 +73,9 @@
 #include "compilerG95.h"
 #include "compilerXML.h"
 
+// DreamSDK
+#include "projectloader_hooks.h"
+
 #include <scripting/bindings/sc_base_types.h>
 
 namespace ScriptBindings
@@ -441,10 +444,17 @@ void CompilerGCC::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_WORKSPACE_CLOSING_COMPLETE, new cbEventFunctor<CompilerGCC, CodeBlocksEvent>(this, &CompilerGCC::OnWorkspaceClosed));
 
     Manager::Get()->RegisterEventSink(cbEVT_COMPILE_FILE_REQUEST,     new cbEventFunctor<CompilerGCC, CodeBlocksEvent>(this, &CompilerGCC::OnCompileFileRequest));
+		
+	// hook to project loading procedure -- DreamSDK
+    ProjectLoaderHooks::HookFunctorBase* myhook = new ProjectLoaderHooks::HookFunctor<CompilerGCC>(this, &CompilerGCC::OnProjectLoadingHook);
+    m_HookId = ProjectLoaderHooks::RegisterHook(myhook);
 }
 
 void CompilerGCC::OnRelease(bool appShutDown)
 {
+	// DreamSDK
+	ProjectLoaderHooks::UnregisterHook(m_HookId, true);
+	
     // disable script functions
     ScriptBindings::gBuildLogId = -1;
 
@@ -1866,6 +1876,65 @@ int CompilerGCC::RunSingleFile(const wxString& filename)
     return 0;
 }
 
+// DreamSDK::Start
+
+wxString CompilerGCC::GetLoaderCommand(ProjectBuildTarget* target)
+{
+    wxString result = wxEmptyString;
+
+    // Get the right Compiler instance.
+    wxString compilerId = target ? target->GetCompilerID() : m_pProject->GetCompilerID();
+    if (!CompilerFactory::IsValidCompilerID(compilerId))
+        compilerId = CompilerFactory::GetDefaultCompilerID();
+    Compiler* compiler = CompilerFactory::GetCompiler(compilerId);
+
+    // Get the loader
+    wxString loader = compiler->GetPrograms().LOADER;
+
+    // Get the loader arguments
+    wxString loaderArgs = target->GetLoaderArguments();
+    if (loaderArgs.empty())
+        loaderArgs = m_pProject->GetLoaderArguments();
+    if (loaderArgs.empty())
+        loaderArgs = compiler->GetLoaderArguments();;
+
+    if (wxFileExists(loader))
+    {
+        result = loader;
+        if (!loaderArgs.empty())
+        {
+            Manager::Get()->GetMacrosManager()->ReplaceEnvVars(loaderArgs);
+            result += _T(" ") + loaderArgs;
+        }
+    }
+
+    return result;
+}
+
+bool CompilerGCC::IsDebugTarget(ProjectBuildTarget *target)
+{
+    bool result = false;
+
+//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
+
+    wxArrayString targetOpts = target->GetCompilerOptions();
+
+    size_t i = 0;
+    while (!result && i < targetOpts.GetCount())
+    {
+        wxString opt = targetOpts[i].Upper();
+        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
+        i++;
+    }
+
+//    wxString resultStr = result ? _("YES") : _("NO");
+//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
+
+    return result;
+}
+
+// DreamSDK::End
+
 int CompilerGCC::Run(const wxString& target)
 {
     if (!CheckProject())
@@ -2086,6 +2155,25 @@ int CompilerGCC::Run(ProjectBuildTarget* target)
                 return -1;
         }
     }
+	
+	// DreamSDK::Start
+	wxString loaderCmd = GetLoaderCommand(target);
+    bool bEmbeddedSystemProject = (target->GetTargetType() == ttNative && !loaderCmd.empty());
+    if (bEmbeddedSystemProject)
+    {
+        if (!IsDebugTarget(target))
+        {
+            cmd = loaderCmd;
+        }
+        else
+        {
+            cbMessageBox(_("The selected target is a Debug target.\n"
+                           "Please select the Release target if you want to run the project."), _("Warning"), wxICON_WARNING);
+            m_pProject->SetCurrentlyCompilingTarget(0);
+            return -1;
+        }
+    }
+	// DreamSDK::End
 
     const wxString &message = F(_("Executing: %s (in %s)"), cmd.wx_str(), m_CdRun.wx_str());
     m_CommandQueue.Add(new CompilerCommand(cmd, message, m_pProject, target, true));
@@ -4040,3 +4128,69 @@ wxString CompilerGCC::GetMinSecStr()
     return wxString::Format(_("%d minute(s), %d second(s)"), mins, secs);
 #endif // NO_TRANSLATION
 }
+
+// DreamSDK::Start
+
+void CompilerGCC::OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading)
+{
+    if (loading)
+    {
+        // Hook called when loading project file.
+
+        TiXmlElement* conf = elem->FirstChildElement("compiler");
+        if (conf)
+        {
+            wxString projectLoaderArgs = cbC2U(conf->Attribute("project_loader_arguments"));
+            project->SetLoaderArguments(projectLoaderArgs);
+
+            TiXmlElement* rdElem = conf->FirstChildElement("compiler_settings");
+            while (rdElem)
+            {
+                wxString targetName = cbC2U(rdElem->Attribute("target"));
+                ProjectBuildTarget* bt = project->GetBuildTarget(targetName);
+                if (bt)
+                {
+                    bt->SetLoaderArguments(cbC2U(rdElem->Attribute("target_loader_arguments")));
+                }
+
+                rdElem = rdElem->NextSiblingElement("compiler_settings");
+            }
+        }
+    }
+    else
+    {
+        // Hook called when saving project file.
+
+        // since rev4332, the project keeps a copy of the <Extensions> element
+        // and re-uses it when saving the project (so to avoid losing entries in it
+        // if plugins that use that element are not loaded atm).
+        // so, instead of blindly inserting the element, we must first check it's
+        // not already there (and if it is, clear its contents)
+        TiXmlElement* node = elem->FirstChildElement("compiler");
+        if (!node)
+            node = elem->InsertEndChild(TiXmlElement("compiler"))->ToElement();
+        node->Clear();
+
+        node->SetAttribute("project_loader_arguments", cbU2C(project->GetLoaderArguments()));
+
+        if (project->GetBuildTargetsCount())
+        {
+            for(int i = 0; i < project->GetBuildTargetsCount(); i++)
+            {
+                ProjectBuildTarget* bt = project->GetBuildTarget(i);
+
+                if (bt)
+                {
+                    TiXmlElement* rdnode = node->InsertEndChild(TiXmlElement("compiler_settings"))->ToElement();
+                    if (rdnode)
+                    {
+                        rdnode->SetAttribute("target", cbU2C(bt->GetTitle()));
+                        rdnode->SetAttribute("target_loader_arguments", cbU2C(bt->GetLoaderArguments()));
+                    }
+                }
+            }
+        }
+    }
+}
+
+// DreamSDK::End

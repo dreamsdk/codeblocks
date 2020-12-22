@@ -152,8 +152,16 @@ class CompilerGCC : public cbCompilerPlugin
         void OnClearErrors(wxCommandEvent& event);
         void OnUpdateUI(wxUpdateUIEvent& event);
         void OnConfig(wxCommandEvent& event);
+		
+		// DreamSDK
+		void OnProjectLoadingHook(cbProject* project, TiXmlElement* elem, bool loading);
     private:
         friend class CompilerOptionsDlg;
+		
+		// DreamSDK::Start
+		wxString GetLoaderCommand(ProjectBuildTarget* target);
+        bool IsDebugTarget(ProjectBuildTarget *target);
+		// DreamSDK::End
 
         void Dispatcher(wxCommandEvent& event);
         void TextURL(wxTextUrlEvent& event);
@@ -327,6 +335,8 @@ class CompilerGCC : public cbCompilerPlugin
         size_t m_MaxProgress;
         size_t m_CurrentProgress;
         bool   m_LogBuildProgressPercentage;
+				
+		int m_HookId; // project loader hook ID -- DreamSDK
 
         cbArtProvider *m_pArtProvider;
 

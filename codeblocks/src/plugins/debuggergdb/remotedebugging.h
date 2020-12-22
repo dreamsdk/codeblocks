@@ -53,6 +53,11 @@ struct RemoteDebugging
 
 		skipLDpath = other.skipLDpath;
 		extendedRemote = other.extendedRemote;
+		
+		// DreamSDK::Start
+		loaderArguments = other.loaderArguments;
+		loaderWaitingTime = other.loaderWaitingTime;
+		// DreamSDK::End
 
 		if (!additionalShellCmdsAfter.IsEmpty() && !other.additionalShellCmdsAfter.IsEmpty())
 			additionalShellCmdsAfter += _T('\n');
@@ -91,6 +96,8 @@ struct RemoteDebugging
 	wxString additionalShellCmdsBefore; ///< shell commands before establishing remote connection
 	bool skipLDpath; ///< skip adjusting LD_LIBRARY_PATH before launching debugger
 	bool extendedRemote;//!< connect with extended remote or not
+	wxString loaderArguments; ///< loader arguments -- DreamSDK
+	int loaderWaitingTime; ///< loader waiting time before running target -- DreamSDK
 };
 
 typedef std::map<ProjectBuildTarget*, RemoteDebugging> RemoteDebuggingMap;

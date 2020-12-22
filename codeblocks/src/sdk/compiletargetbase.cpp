@@ -545,3 +545,19 @@ void CompileTargetBase::SetMakeCommandFor(MakeCommand cmd, const wxString& make)
     m_MakeCommandsModified = true;
     SetModified(true);
 }
+
+// DreamSDK::Start
+wxString CompileTargetBase::GetLoaderArguments()
+{
+    return m_LoaderArgs;
+}
+
+void CompileTargetBase::SetLoaderArguments(const wxString& loaderArgs)
+{
+    if (m_LoaderArgs == loaderArgs)
+        return;
+
+    m_LoaderArgs = loaderArgs;
+    SetModified(true);
+}
+// DreamSDK::End
