@@ -18,6 +18,8 @@ for /F "tokens=*" %%i in (%CONFIG_FILE%) do (
 )
 
 rem Sanitize configuration entries
+call :trim BUILD32
+call :trim BUILD64
 call :trim TOOLCHAIN32_HOME
 call :trim TOOLCHAIN64_HOME
 call :trim UPX32
@@ -28,10 +30,22 @@ call :trim WINDRES64_FLAGS
 set UPX32="%UPX32%"
 set UPX64="%UPX64%"
 
+rem Check if BUILD32 and/or BUILD64 is enabled
+set BUILD_ENABLED=0
+if "%BUILD32%"=="1" set BUILD_ENABLED=1
+if "%BUILD64%"=="1" set BUILD_ENABLED=1
+if "%BUILD_ENABLED%"=="0" goto errbuild
+
 rem Doing some checks
+if "%BUILD32%"=="1" goto check32
+goto check64
+
+:check32
 if not exist %TOOLCHAIN32_HOME% goto errenv
-if not exist %TOOLCHAIN64_HOME% goto errenv
 if not exist %UPX32% goto errenv
+
+:check64
+if not exist %TOOLCHAIN64_HOME% goto errenv
 if not exist %UPX64% goto errenv
 
 rem Startup!
@@ -43,10 +57,16 @@ rem Prepare build
 call :cleandir %OUTPUT_DIR%
 call :cleandir %LOGS_DIR%
 
+rem Build necessary libraries
+if "%BUILD64%"=="1" goto build64
+goto build32
+
+:build64
 rem Build x64
 call :build 64 debug
 call :build 64 release
 
+:build32
 rem Build x86
 call :build 86 debug
 call :build 86 release
@@ -56,9 +76,15 @@ rem Done!
 popd
 goto :eof
 
+:errbuild
+echo BUILD32 and/or BUILD64 should be enabled.
+echo To enable a build, just set the corresponding variable to 1.
+pause
+goto :eof
+
 :errenv
-echo.
 echo There is some configuration errors.
+echo Some toolchains and/or tools were not found.
 echo Please verify the configuration file.
 pause
 goto :eof
