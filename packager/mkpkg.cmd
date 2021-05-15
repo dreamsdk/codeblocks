@@ -25,6 +25,8 @@ for /F "tokens=*" %%i in (%CONFIG_FILE%) do (
 )
 
 rem Sanitize configuration entries
+call :trim BUILD32
+call :trim BUILD64
 call :trim TOOLCHAIN32_HOME
 call :trim TOOLCHAIN64_HOME
 call :trim SEVENZIP
@@ -34,21 +36,35 @@ call :trim CB_SOURCE64_DIR_NAME
 call :trim DREAMSDK_HOME_DEBUG_DRIVE
 call :trim OUTPUT_DIR
 
+rem Check if BUILD32 and/or BUILD64 is enabled
+set BUILD_ENABLED=0
+if "%BUILD32%"=="1" set BUILD_ENABLED=1
+if "%BUILD64%"=="1" set BUILD_ENABLED=1
+if "%BUILD_ENABLED%"=="0" goto errbuild
+
 rem Doing some checks
-if not exist %TOOLCHAIN32_HOME% goto errenv
-if not exist %TOOLCHAIN64_HOME% goto errenv
 if not exist %SEVENZIP% goto errenv
 if "%CB_VERSION%"=="" goto errenv
-if "%CB_SOURCE32_DIR_NAME%"=="" goto errenv
-if "%CB_SOURCE64_DIR_NAME%"=="" goto errenv
 if not exist %DREAMSDK_HOME_DEBUG_DRIVE% goto errenv
+
+if "%BUILD32%"=="1" goto check32
+goto check64
+
+:check32
+if not exist %TOOLCHAIN32_HOME% goto errenv
+if "%CB_SOURCE32_DIR_NAME%"=="" goto errenv
+if "%BUILD64%"=="0" goto start
+
+:check64
+if not exist %TOOLCHAIN64_HOME% goto errenv
+if "%CB_SOURCE64_DIR_NAME%"=="" goto errenv
 
 rem Startup!
 :start
 pushd .
 
-call :makepack 64
-call :makepack 86
+if "%BUILD64%"=="1" call :makepack 64
+if "%BUILD32%"=="1" call :makepack 86
 
 rem Done!
 :finish
