@@ -39,6 +39,11 @@ output/
 *.layout
 autorevision.h
 
+# wxMSW
+wxMSW/logs
+wxMSW/bin
+wxMSW/src/lib/gcc_dll*
+
 # DreamSDK specific files
 codeblocks-17.12-dreamsdk-addon-bin.*
 id.dat
@@ -46,5 +51,3 @@ inc.dat
 lib.dat
 sort.dat
 packager/dist/
-codeblocks-patcher-data.zip
-
