@@ -127,8 +127,8 @@ echo --- Clean --- >> %_logfile% 2>&1
 mingw32-make -f makefile.gcc clean >> %_logfile% 2>&1
 
 echo --- Build --- >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" >> %_logfile% 2>&1
 
 if "%errorlevel%"=="0" goto build_success
 goto build_fail
