@@ -1,36 +1,46 @@
-# Code::Blocks for DreamSDK
+# Code::Blocks 17.12 for DreamSDK
 
-[Code::Blocks](http://www.codeblocks.org/) is a free, open-source cross-platform IDE that supports multiple compilers.
+[Code::Blocks](http://www.codeblocks.org/) is a free, open-source cross-platform IDE that supports multiple compilers. This repository contains **Code::Blocks 17.12 for DreamSDK**.
 
-This repository contains a special version of the `17.12` stable release in order to provide full support for the **DreamSDK** package. **DreamSDK** is a modern, ready-to-use environment for the **Sega Dreamcast** development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
+This special version of **Code::Blocks** provides full support for the **DreamSDK** package.
 
-## Changes
-
-Notables changes of this special release of **Code::Blocks** includes:
+Notables changes/features of this special release of **Code::Blocks** includes:
 
 * New compiler/options file (`dc-gcc`) which specify the `GNU GCC Compiler for Sega Dreamcast` compiler.
 * The `compiler` and `debugger` plugins have been patched to run the loader (i.e. `dc-tool`) before running the target.
-* The `Sega Dreamcast Project` (`dc`) wizard template has been added (**Note:** a new `sdk` (`codeblocks.dll`) module is needed to expose the required `CallHooks` function in the *Squirrel* script, that's why almost all compiled binaries are provided in the generated patch).
+* The `Sega Dreamcast Project` (`dc`) wizard template has been added.
+* The `Static Library` project template is also supported.
 
 ## Introduction
 
-Basically this repository purpose is to build the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) file.
-This patcher will be embedded in the **DreamSDK Setup** file.
+The goal of all this repository is to generate the following package: `.\packager\dist\codeblocks-17.12-dreamsdk-addon-bin-x86.7z`.
 
-Please read this document in order to generate the **Code::Blocks Patcher**.
+This package will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
+This patcher is available in the `codeblocks-patcher` repository.
+
+The recipe to follow is:
+
+1. Install prerequisites
+2. Build wxMSW
+3. Build a debug build of **Code::Blocks for DreamSDK** (and debug it)
+4. Build a release build of **Code::Blocks for DreamSDK**
+5. Make the final package (`codeblocks-17.12-dreamsdk-addon-bin-x86.7z`) that will be embedded in **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`)
+6. Make the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) itself (see `codeblocks-patcher` repository)
 
 ## Prerequisites
 
-Install all prerequisites before trying to work with this repository:
+Install all the following prerequisites before trying to work with this repository:
 
 * [7-Zip](http://www.7-zip.org)
 * [Boost](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z)
+* [DreamSDK](https://dreamsdk.org)
 * [Code::Blocks](http://www.codeblocks.org)
 * [TDM-GCC-32](http://tdm-gcc.tdragon.net)
-* [Lazarus](http://www.lazarus-ide.org)
-* [Zip from Info-ZIP](ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip)
+* [Zip from Info-ZIP](http://infozip.sourceforge.net/Zip.html)
 
-## Installing Boost
+All of these prerequisites are available directly in the repository in the `.\prerequisites` directory.
+
+### Installing Boost
 
 The last version of the **Boost** libraries supporting **Windows XP** is the `1.64.0` version. After that version, Windows XP is unsupported. To keep the XP support (as the original Code::Blocks 17.12 release) you must use that specific version. Please don't try to update it!
 
@@ -42,30 +52,53 @@ The last version of the **Boost** libraries supporting **Windows XP** is the `1.
 		bootstrap gcc
 		b2 --toolset=gcc "--prefix=C:\Program Files\CodeBlocks" install
 
-## Configuring Code::Blocks IDE
+### Installing DreamSDK for debugging this Code::Blocks edition
 
-To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and [TDM-GCC-32](http://tdm-gcc.tdragon.net) if not already done.
+If you want to debug the **Code::Blocks for DreamSDK** package, you need to install **DreamSDK** in `E:\DreamSDK\`.
+If you don't have an `E:` drive or doesn't want to use that `E:` drive, you will have to do some modifications:
 
-1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
-2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_64` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
-4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
-5. Select (or create) the `wx` variable, enter `./wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field. Please use the provided `wxMSW` directory provided in that repository.
-
-## Debugging your Code::Blocks build
-
-If you want to debug the **Code::Blocks** build, select the `src` target and install a **DreamSDK** working package in `E:\DreamSDK\`.
-If you don't have an `E:` drive, you have to do some modifications:
-
-1. Change the `DREAMSDK_HOME_DEBUG_DRIVE` variable in `.\packager\mkpkg.cmd`.
+1. Change the `DREAMSDK_HOME_DEBUG_DRIVE` variable in `.\packager\mkpkg.ini`.
 2. Change the `E:` drive reference in the two files below:
 
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\compiler_dc-gcc.xml`
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\options_dc-gcc.xml`
 
+Then everything will be ready for debugging.
+
+### Installing the others prerequisites
+ 
+For all the others prerequisites, you'll need to follow the standard instructions, i.e. basically you can install them in their default location.
+
+## Building wxMSW
+
+After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once.
+
+1. Open the `.\wxMSW\build.ini` file and adapt it as needed.
+2. Double-click on the `.\wxMSW\build.cmd` file.
+
+The `.\wxMSW\bin` directory will be created.
+
+## Configuring Code::Blocks IDE
+
+To build a new **Code::Blocks** release, you will need **Code::Blocks**.
+The following instructions assumes you have installed **Code::Blocks** in `C:\Program Files\CodeBlocks`.
+
+1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
+2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_64` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
+4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
+5. Select (or create) the `wx` variable, enter `.\wxMSW\bin\x86\release` (e.g. `C:\codeblocks\wxMSW\bin\x86\release`) in the `base` field.
+
+## Debugging
+
+If you want to debug the **Code::Blocks** build:
+
+1. Build the **Code::Blocks** project (see below).
+2. Execute the `Debug` command and select the `src` target when prompted. The **Code::Blocks for DreamSDK** build 
 3. In the debugged **Code::Blocks**, go to the **Settings** > **Compiler** menu, 
 select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset defaults**.
 **Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
-4. The GNU Debugger (GDB) included in the latest release of **TDM-GCC** is buggy: some breakpoints are never reached. You should use a newer GNU Debugger (GDB) binary, for example the one included in **DreamSDK** (i.e. `E:\DreamSDK\bin\gdb.exe`). To change that, you may update the Debugger profile inside Code::Blocks (in the `Settings` menu).
+
+The GNU Debugger (GDB) included in the latest release of **TDM-GCC** is buggy: some breakpoints are never reached. You should use a newer GNU Debugger (GDB) binary, for example the one included in **DreamSDK** (i.e. `E:\DreamSDK\bin\gdb.exe`). To change that, you may update the Debugger profile inside Code::Blocks (in the `Settings` menu).
 
 ## Building a Code::Blocks release
 
@@ -117,28 +150,6 @@ Please verify the following:
 
 * The `cb_release_type` global variable should be set to `-g -O0` in order to activate debug symbols.
 * Sometimes the **GDB** version included in **TDM-GCC-32** is buggy. Try to use another **GDB** build (like the one included in **DreamSDK** itself).
-
-### The message 'Mismatch between the program and library build versions detected.' is displayed ###
- 
-When you rebuild the whole **Code::Blocks** workspace, the following message may be displayed:
-
-	Fatal Error: Mismatch between the program and library build versions detected.
-	The library used 2.8 (wchar_t,compiler with C++ ABI 1008,STL containers,compatible with 2.8),
-	and your program used 2.8 (wchar_t,compiler with C++ ABI 1002,STL containers,compatible with 2.8).
-
-The only difference is the C++ ABI version i.e. `1008` vs. `1002`.
-
-After some investigation, the problem arises from the fact that **Code::Blocks** was compiled with **gcc 5.1.0**, which defines `__GXX_ABI_VERSION` as `1008`, but the pre-compiled wxWidgets library was made with **clang 3.6**, which defines `__GXX_ABI_VERSION` as `1002` ([See reference](https://groups.google.com/forum/#!topic/wx-users/bzXESX__828)).
-
-To solve this issue, you may need to recompile the provided `wxMSW` library ([wxWidgets](https://www.wxwidgets.org/)):
-
-1. Open the **TDM-GCC-32** command prompt from the `Start` menu.
-2. Type `cd .\wxMSW\build\msw` then `mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=release VENDOR=cb CXXFLAGS=-fpermissive` ([Read more](https://wiki.wxwidgets.org/WxWidgets_Build_Configurations)). This should update the `.\wxMSW\lib\gcc_dll\wxmsw28u_gcc_cb.dll` file.
-3. Copy the updated `.\wxMSW\lib\gcc_dll\wxmsw28u_gcc_cb.dll` file to `.\codeblocks\src\devel\` (this is important!).
-3. Rebuild the **Code::Blocks** source.
-4. Try again.
-
-**Note:** You may need to enable debugging for **wxWidgets**, in this case you should just set the `BUILD` parameter to `debug` (i.e. `BUILD=debug`). Do this if you want to debug the wxWidgets library. 
 
 ### Couldn't add an image to the image list. ###
 
