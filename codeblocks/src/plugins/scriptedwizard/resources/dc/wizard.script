@@ -3,7 +3,7 @@
 // Code::Blocks new project wizard script
 //
 // Project: Sega Dreamcast Project (DreamSDK)
-// Author:  The DreamSDK Team (http://dreamsdk.org)
+// Author:  The DreamSDK Team (https://dreamsdk.org)
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -23,6 +23,7 @@ FileSystemObjects <- {
 }
 LibraryInformation <- {
     IncludeBufferText = _T("")
+	IncludeDirectoryList = ::wxArrayString()
     LibraryList = ::wxArrayString()
     LibrarySortList = ::wxArrayString()
 }
@@ -31,6 +32,7 @@ Referential <- {
         IdStr = _T("")
         IdList = ::wxArrayString()
         IncludeList = ::wxArrayString()
+		IncludeDirectoryList = ::wxArrayString()
         LibraryList = ::wxArrayString()
         LibrarySortList = ::wxArrayString()
     }
@@ -38,6 +40,7 @@ Referential <- {
         IdStr = _T("")
         IdList = ::wxArrayString()
         IncludeList = ::wxArrayString()
+		IncludeDirectoryList = ::wxArrayString()
         LibraryList = ::wxArrayString()
         LibrarySortList = ::wxArrayString()
     }
@@ -89,6 +92,9 @@ function SetupProject(project)
     project.SetCompilerID(Constants.DefaultCompilerId);
     project.AddCompilerOption(_T("-Wall"));
 
+	// Handle include directories
+	HandleIncludeDirectories(project);
+	
     // Handle libraries
     HandleLibraries(project);
 
@@ -199,6 +205,7 @@ function LoadReferential(isLangCPP)
     local id = GetFileLibraryInfo(isLangCPP, _T("id"));
     local idList = GetArrayFromString(id, _T(";"), false);
     local inc = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("inc")), _T(";"), false);
+    local incDir = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("incdir")), _T(";"), false);
     local lib = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("lib")), _T(";"), false);
     local sort = GetArrayFromString(GetFileLibraryInfo(isLangCPP, _T("sort")), _T(";"), false);
 
@@ -207,6 +214,7 @@ function LoadReferential(isLangCPP)
         Referential.CPPLanguage.IdStr = id;
         Referential.CPPLanguage.IdList = idList;
         Referential.CPPLanguage.IncludeList = inc;
+		Referential.CPPLanguage.IncludeDirectoryList = incDir;
         Referential.CPPLanguage.LibraryList = lib;
         Referential.CPPLanguage.LibrarySortList = sort;
     }
@@ -215,6 +223,7 @@ function LoadReferential(isLangCPP)
         Referential.CLanguage.IdStr = id;
         Referential.CLanguage.IdList = idList;
         Referential.CLanguage.IncludeList = inc;
+        Referential.CLanguage.IncludeDirectoryList = incDir;
         Referential.CLanguage.LibraryList = lib;
         Referential.CLanguage.LibrarySortList = sort;
     }
@@ -249,6 +258,11 @@ function GetReferentialLibraryInfo(libraryData, libraryIndex)
 function GetReferentialInclude(libraryIndex)
 {
     return GetReferentialLibraryInfo(GetReferential().IncludeList, libraryIndex);
+}
+
+function GetReferentialIncludeDirectory(libraryIndex)
+{
+    return GetReferentialLibraryInfo(GetReferential().IncludeDirectoryList, libraryIndex);
 }
 
 function GetReferentialLibrary(libraryIndex)
@@ -300,6 +314,18 @@ function InitializeWizard()
 }
 
 // -----------------------------------------------------------------------------
+// add all required include directories to the project
+function HandleIncludeDirectories(project)
+{	
+    local includes = LibraryInformation.IncludeDirectoryList;
+    for(local i = 0; i < includes.GetCount(); i++)
+    {
+        local include = includes.Item(i);        
+        project.AddIncludeDir(_T("$(#dreamsdk_portsincpath)/") + include);
+    }
+}
+
+// -----------------------------------------------------------------------------
 // add all required libraries to the project
 function HandleLibraries(project)
 {
@@ -333,7 +359,7 @@ function HandleUserLibraries(project)
     buffer = JumpDownSort(buffer);
 
     // Everything is now sorted.
-    // Remove the weight information before adding the libs.
+    // Remove the weight information before adding the libs to the project.
     for(local i = 0; i < buffer.GetCount(); i++)
     {
         project.AddLinkLib(buffer.Item(i).AfterFirst(separator));
@@ -371,6 +397,7 @@ function GetFileLibraryInfo(isLangCPP, fileId)
 function GenerateUserLibraryInformation()
 {
     LibraryInformation.IncludeBufferText = _T("");
+    LibraryInformation.IncludeDirectoryList.Clear();
     LibraryInformation.LibraryList.Clear();
     LibraryInformation.LibrarySortList.Clear();
 
@@ -384,7 +411,15 @@ function GenerateUserLibraryInformation()
         local libraryInc = GetReferentialInclude(selectedLibraryIndex);
         for(local j = 0; j < libraryInc.GetCount(); j++)
         {
-            LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include <") + libraryInc.Item(j) + _T(">\r\n");
+            LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include ") + libraryInc.Item(j) + _T("\r\n");
+        }
+		
+		// Handle include directories
+		local includeDirectoryList = GetReferentialIncludeDirectory(selectedLibraryIndex);
+		for(local j = 0; j < includeDirectoryList.GetCount(); j++)
+        {
+            local includeDirectory = includeDirectoryList.Item(j);
+            LibraryInformation.IncludeDirectoryList.Add(includeDirectory, 1);
         }
 
         // Handle libraries
