@@ -33,8 +33,15 @@
 			</object>
 			<object class="sizeritem">
 				<object class="wxCheckListBox" name="lstLibraries">
-					<size>250,210</size>
+					<size>250,160</size>
 					<style>wxLB_SORT</style>
+				</object>
+				<flag>wxALL</flag>
+				<border>5</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxStaticText" name="m_staticText3">
+					<label>All libraries marked by the (!) symbol are not&#x0A;recognized by DreamSDK Manager.&#x0A;Please read the help manual for more information.</label>
 				</object>
 				<flag>wxALL</flag>
 				<border>5</border>
