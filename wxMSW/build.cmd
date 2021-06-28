@@ -124,7 +124,8 @@ if "%_arch%"=="x64" set PATH=%TOOLCHAIN64_HOME%\bin;%PATH%
 if "%_arch%"=="x86" set PATH=%TOOLCHAIN32_HOME%\bin;%PATH%
 
 echo --- Clean --- >> %_logfile% 2>&1
-mingw32-make -f makefile.gcc clean >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFG=64 clean >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% clean >> %_logfile% 2>&1
 
 echo --- Build --- >> %_logfile% 2>&1
 if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
