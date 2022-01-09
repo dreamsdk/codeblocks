@@ -57,8 +57,11 @@ function BeginWizard()
     {
         if (!InitializeWizard())
         {
-            ShowError(_T("The path of the DreamSDK seems not to be valid.\n" +
-                         "Please check if the Global Variable \"dreamsdk_home\" is properly defined."));
+            ShowError(_T("The installation path of DreamSDK looks like invalid or was undetected.\n" +
+                         "Please check the following:\n" + 
+						 "1. Global Variables \"dreamsdk_bin2o\", \"dreamsdk_home\", \"dreamsdk_idetoolspath\", \"dreamsdk_mkisoimg\", \"dreamsdk_mkrdobj\" are properly defined in the current set\n" + 
+						 "2. Code::Blocks integration is properly enabled in DreamSDK Manager\n" +
+						 "In case of doubt, you can reinstall the feature from DreamSDK Manager and if really needed, reinstall Code::Blocks then the feature from DreamSDK Manager."));
             return false;
         }
 
@@ -278,6 +281,7 @@ function GetReferentialLibrarySortIndex(libraryIndex)
 function InitializeWizard()
 {
     local result = true;
+	local configFile = GetConfigurationFile();
 
     // Handle DreamSDK IDE helper directory
     FileSystemObjects.SoftwareDevelopmentKitHelperDir = GetSoftwareDevelopmentKitHelperDir();
@@ -285,12 +289,24 @@ function InitializeWizard()
     {
         return false;
     }
+	
+	// Check if integration is enabled	
+	local isIntegrationEnabled = IniFileGetString(configFile, _T("Global"), _T("CodeBlocks"), _T("0"));
+	if (!isIntegrationEnabled)
+	{
+		return false;
+	}
 
     // Wizard Base Directory
     FileSystemObjects.WizardBaseDir = _T("dc") + wxFILE_SEP_PATH;
 
-    // Wizard Library Information Directory
-    FileSystemObjects.WizardLibraryInformationDir = FileSystemObjects.WizardBaseDir + _T("libinfo") + wxFILE_SEP_PATH;
+    // Wizard Library Information Directory	
+	local exportPath = IniFileGetString(configFile, _T("CodeBlocks"), _T("ExportLibraryInformationPath"), _T(""));
+	if (exportPath.IsEmpty())
+	{
+		return false;
+	}
+    FileSystemObjects.WizardLibraryInformationDir = exportPath;	
 
     // Static Files
     FileSystemObjects.TemplateStaticFilesDir = FileSystemObjects.WizardBaseDir + _T("files") + wxFILE_SEP_PATH;
@@ -367,10 +383,29 @@ function HandleUserLibraries(project)
 }
 
 // -----------------------------------------------------------------------------
+// get the DreamSDK home folder
+function GetSoftwareDevelopmentKitHomeDir()
+{
+    return ReplaceMacros(_T("$(#DREAMSDK_HOME)"), true);
+}
+
+// -----------------------------------------------------------------------------
 // get the DreamSDK home folder for IDE helper scripts
 function GetSoftwareDevelopmentKitHelperDir()
 {
     return ReplaceMacros(_T("$(#DREAMSDK_IDETOOLSPATH)"), true);
+}
+
+// -----------------------------------------------------------------------------
+// get the IDE configuration file
+function GetConfigurationFile()
+{
+	return GetSoftwareDevelopmentKitHomeDir() 
+		+ wxFILE_SEP_PATH + _T("msys")
+		+ wxFILE_SEP_PATH + _T("1.0")
+		+ wxFILE_SEP_PATH + _T("etc")
+		+ wxFILE_SEP_PATH + _T("dreamsdk")
+		+ wxFILE_SEP_PATH + _T("ide.conf");
 }
 
 // -----------------------------------------------------------------------------
@@ -641,4 +676,45 @@ function ForceSettingsRefresh(project)
 	}
     local fakeUnusedValue = ReplaceMacros(_T("$(TARGET_OUTPUT_FILE)"), true);
     project.SetActiveBuildTarget(targetCurrent);
+}
+
+// -----------------------------------------------------------------------------
+// read an INI file
+function IniFileGetString(filePath, sectionName, keyName, defaultValue)
+{
+	if (IO.FileExists(filePath))
+    {
+        local buffer = IO.ReadFileContents(filePath);
+		
+		local sectionNameStart = _T("[") + sectionName + _T("]");
+		local sectionNameEnd = _T("\n") + keyName + _T("=");
+		
+		// Search for section start
+		local findStart = buffer.Find(sectionNameStart);
+		if (findStart == -1)
+			return defaultValue;
+
+		// search for key in section
+		local findEnd = buffer.Find(sectionNameEnd);
+		if (findEnd == -1 || findEnd <= findStart)
+			return defaultValue;
+		
+		// Remove everything before sectionNameEnd (i.e., the key we want)
+		buffer.Remove(0, findEnd + 1);			
+		
+		// Remove "<keyName>="
+		local keyNameStart = keyName + _T("=");
+		buffer.Remove(0, keyNameStart.Length());
+					
+		// Extract first line of the buffer
+		local keyNameEnd = _T("\n");
+		findEnd = buffer.Find(keyNameEnd);
+		if (findEnd != -1) {
+			buffer.Remove(findEnd - 1, buffer.Length() - findEnd + 1);
+		}
+		
+		return buffer;
+		
+    }
+    return defaultValue;
 }
