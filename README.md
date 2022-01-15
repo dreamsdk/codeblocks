@@ -1,38 +1,48 @@
-# Code::Blocks for DreamSDK
+# Code::Blocks 20.03 for DreamSDK
 
-[Code::Blocks](http://www.codeblocks.org/) is a free, open-source cross-platform IDE that supports multiple compilers.
+![Code::Blocks for DreamSDK](./codeblocks/src/src/resources/start_here/title_1712.png)
 
-This repository contains a special version of the `17.12` stable release in order to provide full support for the **DreamSDK** package. **DreamSDK** is a modern, ready-to-use environment for the **Sega Dreamcast** development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
+[Code::Blocks](http://www.codeblocks.org/) is a free, open-source cross-platform IDE that supports various compilers.
 
-## Changes
+**DreamSDK** is a modern, ready-to-use environment for the **Sega Dreamcast** development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
+
+This repository hold a special version of the official **Code::Blocks 20.03** stable release modified for adding full support of [DreamSDK](https://dreamsdk.org "DreamSDK"). 
 
 Notables changes of this special release of **Code::Blocks** includes:
 
 * New compiler/options file (`dc-gcc`) which specify the `GNU GCC Compiler for Sega Dreamcast` compiler.
 * The `compiler` and `debugger` plugins have been patched to run the loader (i.e. `dc-tool`) before running the target.
-* The `Sega Dreamcast Project` (`dc`) wizard template has been added (**Note:** a new `sdk` (`codeblocks.dll`) module is needed to expose the required `CallHooks` function in the *Squirrel* script, that's why almost all compiled binaries are provided in the generated patch).
+* The `Sega Dreamcast Project` (`dc`) wizard template has been added.
 
 ## Introduction
 
-Basically this repository purpose is to build the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) file.
-This patcher will be embedded in the **DreamSDK Setup** file.
+This repository will allow you to build Code::Blocks 20.03 for embedding it in the **Code::Blocks Patcher for DreamSDK** binary.
 
-Please read this document in order to generate the **Code::Blocks Patcher**.
+Code::Blocks 20.03 is available in both 32-bits and 64-bits. You will need to build both versions from this source. The 32-bits release should support Windows XP, as DreamSDK is targeting from Windows XP to Windows 11. For that, you will need to use specific versions of libraries/compilers, some of them are provided in this repository.
+
+Please note, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP, which is the case of Code::Blocks for DreamSDK.
 
 ## Prerequisites
 
-Install all prerequisites before trying to work with this repository:
+Install all the prerequisites below before trying to work with this repository.
 
-* [7-Zip](http://www.7-zip.org)
-* [Boost](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z)
-* [Code::Blocks](http://www.codeblocks.org)
-* [TDM-GCC-32](http://tdm-gcc.tdragon.net)
-* [Lazarus](http://www.lazarus-ide.org)
-* [Zip from Info-ZIP](ftp://ftp.info-zip.org/pub/infozip/win32/zip300xn.zip)
+These **are** provided directly in this repository, under the `tools` directory:
 
+* [TDM-GCC-64 9.2.0](https://jmeubank.github.io/tdm-gcc/) for 32-bits release (**yes this is normal**) and [Nuwen 16.1](https://nuwen.net/mingw.html) for 64-bits release.
+* [Ultimate Packer for eXecutables](https://upx.github.io/ "UPX") (UPX).
+* Zip from Info-ZIP.
+
+These **are not** provided in this repository but could be easily downloaded:
+
+* [Code::Blocks](http://www.codeblocks.org) (**yes, for building Code::Blocks... you'll need Code::Blocks**).
+* [Boost 1.64.0](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z) for 32-bits release and [Boost 1.74.0](https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.7z) for 64-bits release.
+* [7-Zip](http://www.7-zip.org).
+ 
 ## Installing Boost
 
-The last version of the **Boost** libraries supporting **Windows XP** is the `1.64.0` version. After that version, Windows XP is unsupported. To keep the XP support (as the original Code::Blocks 17.12 release) you must use that specific version. Please don't try to update it!
+### 32-bits release (x86)
+
+The last version of the **Boost** libraries supporting **Windows XP** is the `1.64.0` version. After that version, Windows XP is unsupported. To keep the XP support you must use that specific version.
 
 1. Unzip [boost 1.64.0](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z).
 2. Open the [TDM-GCC-32](http://tdm-gcc.tdragon.net) prompt.
@@ -42,9 +52,15 @@ The last version of the **Boost** libraries supporting **Windows XP** is the `1.
 		bootstrap gcc
 		b2 --toolset=gcc "--prefix=C:\Program Files\CodeBlocks" install
 
+For your information, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP due to an incompatible [Dr. MinGW](https://github.com/jrfonseca/drmingw "Dr. MinGW") component version, but this special release will support that.
+
+### 64-bits release (x64)
+
+... TODO ...
+
 ## Configuring Code::Blocks IDE
 
-To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and [TDM-GCC-32](http://tdm-gcc.tdragon.net) if not already done.
+To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and both toolchains if not already done.
 
 1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
 2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_64` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
@@ -68,6 +84,8 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 4. The GNU Debugger (GDB) included in the latest release of **TDM-GCC** is buggy: some breakpoints are never reached. You should use a newer GNU Debugger (GDB) binary, for example the one included in **DreamSDK** (i.e. `E:\DreamSDK\bin\gdb.exe`). To change that, you may update the Debugger profile inside Code::Blocks (in the `Settings` menu).
 
 ## Building a Code::Blocks release
+
+for 64 check than Nuwen is defined for GCC Compiler
 
 1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
@@ -106,6 +124,8 @@ After building the **Code::Blocks** release, you need to build the package that 
 4. Build the `.\cbpatcher\src\splash\codeblocks-splash.lpi` in **Release** mode from **Lazarus**, then pack the `.\cbpatcher\src\engine\embedded\codeblocks-splash.exe` file with **UPX**.
 5. Build the `.\cbpatcher\src\codeblocks-patcher.lpi` in **Release** mode from **Lazarus**. No need to pack this with **UPX**.
 6. Done! You should have now the `codeblocks-patcher.exe` file which can be embedded in the **DreamSDK Setup** file. Don't be surprised, it's a big file around `10MB`.
+
+**Note:** a new `sdk` (`codeblocks.dll`) module is needed to expose the required `CallHooks()` function in the *Squirrel* script, that's why almost all compiled binaries are provided in the generated patch.
 
 ## FAQ
 
