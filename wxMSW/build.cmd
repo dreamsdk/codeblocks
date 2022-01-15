@@ -13,22 +13,16 @@ set LOGS_DIR=%BASE_DIR%\logs
 
 rem Read Configuration
 set CONFIG_FILE=%BASE_DIR%\build.ini
+if not exist "%CONFIG_FILE%" goto errconfig
 for /F "tokens=*" %%i in (%CONFIG_FILE%) do (
 	set %%i 2> nul
+	rem Sanitize configuration entry
+	for /f "tokens=1 delims==" %%j in ("%%i") do (
+		call :trim %%j
+	)
 )
 
-rem Sanitize configuration entries
-call :trim BUILD32
-call :trim BUILD64
-call :trim TOOLCHAIN32_HOME
-call :trim TOOLCHAIN64_HOME
-call :trim UPX32
-call :trim UPX64
-call :trim FLAGS
-call :trim VENDOR32
-call :trim VENDOR64
-call :trim WINDRES32_FLAGS
-call :trim WINDRES64_FLAGS
+rem Utilities
 set UPX32="%UPX32%"
 set UPX64="%UPX64%"
 
@@ -91,6 +85,11 @@ echo There is some configuration errors.
 echo Some toolchains and/or tools were not found.
 echo Please verify the configuration file.
 pause
+goto :eof
+
+:errconfig
+echo The configuration file was not found.
+echo File: "%CONFIG_FILE%"
 goto :eof
 
 :cleandir
