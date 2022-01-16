@@ -50,6 +50,13 @@ rem Startup!
 pushd .
 cd %BASE_DIR%\src\build\msw\
 
+rem Check if we are sure to proceed...
+echo This script will cleanup all the produced binaries,
+echo Then will rebuild everything related to wxWidgets.
+echo This will takes a lot of time.
+pause
+echo.
+
 rem Prepare build
 call :cleandir %OUTPUT_DIR%
 call :cleandir %LOGS_DIR%
@@ -90,6 +97,7 @@ goto :eof
 :errconfig
 echo The configuration file was not found.
 echo File: "%CONFIG_FILE%"
+pause
 goto :eof
 
 :cleandir
