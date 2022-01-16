@@ -20,21 +20,17 @@ set JREPL=%BASE_DIR%\tools\jrepl.bat
 
 rem Read configuration
 set CONFIG_FILE=%BASE_DIR%\mkpkg.ini
+if not exist "%CONFIG_FILE%" goto errconfig
 for /F "tokens=*" %%i in (%CONFIG_FILE%) do (
 	set %%i 2> nul
+	rem Sanitize configuration entry
+	for /f "tokens=1 delims==" %%j in ("%%i") do (
+		call :trim %%j
+	)	
 )
 
-rem Sanitize configuration entries
-call :trim BUILD32
-call :trim BUILD64
-call :trim TOOLCHAIN32_HOME
-call :trim TOOLCHAIN64_HOME
-call :trim SEVENZIP
-call :trim CB_VERSION
-call :trim CB_SOURCE32_DIR_NAME
-call :trim CB_SOURCE64_DIR_NAME
-call :trim DREAMSDK_HOME_DEBUG_DRIVE
-call :trim OUTPUT_DIR
+rem Utilities
+set SEVENZIP="%SEVENZIP%"
 
 rem Check if BUILD32 and/or BUILD64 is enabled
 set BUILD_ENABLED=0
@@ -80,6 +76,12 @@ goto :eof
 echo.
 echo There is some configuration errors.
 echo Please verify the configuration file.
+pause
+goto :eof
+
+:errconfig
+echo The configuration file was not found.
+echo File: "%CONFIG_FILE%"
 pause
 goto :eof
 
