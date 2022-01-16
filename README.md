@@ -4,9 +4,9 @@
 
 [Code::Blocks](http://www.codeblocks.org/) is a free, open-source cross-platform IDE that supports various compilers.
 
-**DreamSDK** is a modern, ready-to-use environment for the **Sega Dreamcast** development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
+[DreamSDK](https://dreamsdk.org "DreamSDK") is a modern, ready-to-use environment for the [Sega Dreamcast](https://en.wikipedia.org/wiki/Dreamcast) development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
 
-This repository hold a special version of the official **Code::Blocks 20.03** stable release modified for adding full support of [DreamSDK](https://dreamsdk.org "DreamSDK"). 
+**This repository hold a special version of the official Code::Blocks 20.03 stable release modified for adding full support of DreamSDK.**
 
 Notables changes of this special release of **Code::Blocks** includes:
 
@@ -14,13 +14,15 @@ Notables changes of this special release of **Code::Blocks** includes:
 * The `compiler` and `debugger` plugins have been patched to run the loader (i.e. `dc-tool`) before running the target.
 * The `Sega Dreamcast Project` (`dc`) wizard template has been added.
 
+If you are interested about Code::Blocks but not in Sega Dreamcast development using DreamSDK, then we can use this version if you want to, or you can simply use the regular Code::Blocks program.
+
 ## Introduction
 
-This repository will allow you to build Code::Blocks 20.03 for embedding it in the **Code::Blocks Patcher for DreamSDK** binary.
+This repository will allow you to build [Code::Blocks 20.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) binary.
 
 Code::Blocks 20.03 is available in both 32-bits and 64-bits. You will need to build both versions from this source. The 32-bits release should support Windows XP, as DreamSDK is targeting from Windows XP to Windows 11. For that, you will need to use specific versions of libraries/compilers, some of them are provided in this repository.
 
-Please note, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP, which is the case of Code::Blocks for DreamSDK.
+By the way, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP, which is the case of Code::Blocks for DreamSDK.
 
 ## Prerequisites
 
@@ -29,13 +31,13 @@ Install all the prerequisites below before trying to work with this repository.
 These **are** provided directly in this repository, under the `tools` directory:
 
 * [TDM-GCC-64 9.2.0](https://jmeubank.github.io/tdm-gcc/) for 32-bits release (**yes this is normal**) and [Nuwen 16.1](https://nuwen.net/mingw.html) for 64-bits release.
+* [Zip 3.00 from Info-ZIP](http://infozip.sourceforge.net/ "Info-ZIP"). 
 * [Ultimate Packer for eXecutables](https://upx.github.io/ "UPX") (UPX).
-* Zip from Info-ZIP.
 
 These **are not** provided in this repository but could be easily downloaded:
 
-* [Code::Blocks](http://www.codeblocks.org) (**yes, for building Code::Blocks... you'll need Code::Blocks**).
-* [Boost 1.64.0](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z) for 32-bits release and [Boost 1.74.0](https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.7z) for 64-bits release.
+* [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks... you'll need Code::Blocks**).
+* [Boost 1.64.0](https://www.boost.org/users/history/version_1_64_0.html) for 32-bits release and [Boost 1.74.0](https://www.boost.org/users/history/version_1_74_0.html) for 64-bits release.
 * [7-Zip](http://www.7-zip.org).
  
 ## Installing Boost
@@ -89,9 +91,9 @@ for 64 check than Nuwen is defined for GCC Compiler
 
 1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
-3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11256` is the official revision for the `17.12` release.
+3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11983` is the official revision for the `20.03` release.
 
-		/*0*/
+		/*11983*/
 		//don't include this header, only configmanager-revision.cpp should do this.
 		#ifndef AUTOREVISION_H
 		#define AUTOREVISION_H
@@ -101,8 +103,8 @@ for 64 check than Nuwen is defined for GCC Compiler
 	
 		namespace autorevision
 		{
-			const unsigned int svn_revision = 11256;
-			const wxString svnRevision(_T("11256"));
+			const unsigned int svn_revision = 11983;
+			const wxString svnRevision(_T("11983"));
 			const wxString svnDate(_T("YYYY-MM-DD hh:mm:ss")); // update manually the date/time using this format
 		}
 	
