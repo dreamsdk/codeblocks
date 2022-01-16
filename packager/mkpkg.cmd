@@ -82,6 +82,7 @@ goto :eof
 :errconfig
 echo The configuration file was not found.
 echo File: "%CONFIG_FILE%"
+pause
 goto :eof
 
 :makepack
