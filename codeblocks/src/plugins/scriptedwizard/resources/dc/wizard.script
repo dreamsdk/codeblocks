@@ -414,16 +414,17 @@ function GetFileLibraryInfo(isLangCPP, fileId)
 {
     local buffer = _T("");
     local langDir = isLangCPP ? _T("cpp") : _T("c");
-    local filePath = Wizard.FindTemplateFile(FileSystemObjects.WizardLibraryInformationDir
-                                             + langDir + wxFILE_SEP_PATH + fileId + _T(".dat"));
+    local filePath = FileSystemObjects.WizardLibraryInformationDir 
+						+ langDir + wxFILE_SEP_PATH + fileId + _T(".dat");
+	  
     if (IO.FileExists(filePath))
     {
         buffer = IO.ReadFileContents(filePath);
         buffer.Replace(_T("\r\n"), _T(";"));
         buffer.Replace(_T("\r"), _T(";"));
         buffer.Replace(_T("\n"), _T(";"));
-
     }
+	
     return buffer;
 }
 
