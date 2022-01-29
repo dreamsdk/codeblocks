@@ -46,15 +46,19 @@ Referential <- {
     }
 }
 Constants <- {
+	WizardName = _T("DreamSDK Wizard")
+	DebugMode = true
     DefaultCompilerId = _T("dc-gcc")
 }
 
 function BeginWizard()
 {
-    local wiz_type = Wizard.GetWizardType();
+    local wizardType = Wizard.GetWizardType();
 
-    if (wiz_type == wizProject)
+    if (wizardType == wizProject)
     {
+		Trace(_T("BeginWizard"));
+		
         if (!InitializeWizard())
         {
             ShowError(_T("The installation path of DreamSDK looks like invalid or was undetected.\n" +
@@ -85,8 +89,10 @@ function BeginWizard()
         // Settings
         Wizard.AddPage(_T("SettingsPage"));
     }
-    else
-        print(wiz_type);
+	else
+	{
+		ShowError(_T("Unsupported Wizard Type: ") + wizardType);
+	}
 }
 
 function SetupProject(project)
@@ -282,6 +288,8 @@ function InitializeWizard()
 {
     local result = true;
 	local configFile = GetConfigurationFile();
+	
+	Trace(_T("InitializeWizard: ") + configFile);
 
     // Handle DreamSDK IDE helper directory
     FileSystemObjects.SoftwareDevelopmentKitHelperDir = GetSoftwareDevelopmentKitHelperDir();
@@ -309,10 +317,12 @@ function InitializeWizard()
     FileSystemObjects.WizardLibraryInformationDir = exportPath;	
 
     // Static Files
-    FileSystemObjects.TemplateStaticFilesDir = FileSystemObjects.WizardBaseDir + _T("files") + wxFILE_SEP_PATH;
+    FileSystemObjects.TemplateStaticFilesDir = FileSystemObjects.WizardBaseDir
+		+ _T("files") + wxFILE_SEP_PATH;
 
     // Dynamic Files
-    FileSystemObjects.TemplateDynamicFilesDir = FileSystemObjects.WizardBaseDir + _T("templates") + wxFILE_SEP_PATH;
+    FileSystemObjects.TemplateDynamicFilesDir = FileSystemObjects.WizardBaseDir
+		+ _T("templates") + wxFILE_SEP_PATH;
 
     // Libraries Referential (C)
     LoadReferential(false);
@@ -416,7 +426,9 @@ function GetFileLibraryInfo(isLangCPP, fileId)
     local langDir = isLangCPP ? _T("cpp") : _T("c");
     local filePath = FileSystemObjects.WizardLibraryInformationDir 
 						+ langDir + wxFILE_SEP_PATH + fileId + _T(".dat");
-	  
+
+	Trace(_T("GetFileLibraryInfo: ") + filePath);
+	
     if (IO.FileExists(filePath))
     {
         buffer = IO.ReadFileContents(filePath);
@@ -718,4 +730,14 @@ function IniFileGetString(filePath, sectionName, keyName, defaultValue)
 		
     }
     return defaultValue;
+}
+
+// -----------------------------------------------------------------------------
+// debug
+function Trace(message)
+{
+	if (Constants.DebugMode)
+	{
+		print(Constants.WizardName + _T(": ") + message);
+	}
 }
