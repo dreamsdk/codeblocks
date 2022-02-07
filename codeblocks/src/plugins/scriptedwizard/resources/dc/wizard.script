@@ -261,11 +261,11 @@ function GetReferentialIndex(libraryName)
 function GetReferentialLibraryInfo(libraryData, libraryIndex)
 {
     local data = libraryData.Item(libraryIndex);
-	if (data != _T("\f"))
+	if (data.tostring() != _T("\f").tostring())
 	{
 		return GetArrayFromString(data, _T("|"), false);
 	}
-	return _T("");
+	return ::wxArrayString();
 }
 
 function GetReferentialInclude(libraryIndex)
