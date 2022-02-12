@@ -47,7 +47,7 @@ Referential <- {
 }
 Constants <- {
 	WizardName = _T("DreamSDK Wizard")
-	DebugMode = true
+	DebugMode = false
     DefaultCompilerId = _T("dc-gcc")
 }
 
@@ -63,9 +63,9 @@ function BeginWizard()
         {
             ShowError(_T("The installation path of DreamSDK looks like invalid or was undetected.\n" +
                          "Please check the following:\n" + 
-						 "1. Global Variables \"dreamsdk_bin2o\", \"dreamsdk_home\", \"dreamsdk_idetoolspath\", \"dreamsdk_mkisoimg\", \"dreamsdk_mkrdobj\" are properly defined in the current set\n" + 
-						 "2. Code::Blocks integration is properly enabled in DreamSDK Manager\n" +
-						 "In case of doubt, you can reinstall the feature from DreamSDK Manager and if really needed, reinstall everything, i.e. Code::Blocks then the feature from DreamSDK Manager."));
+						 "1. Global Variables starting with \"dreamsdk_\" are properly defined in the current set.\n" + 
+						 "2. Code::Blocks integration is properly enabled in DreamSDK Manager.\n" +
+						 "Please read the DreamSDK Help file for more information."));
             return false;
         }
 
