@@ -10,6 +10,7 @@
 #include <kos.h>
 [KOSLIBS_INC]
 #ifdef DEBUG
+#include <kos/dbgio.h>
 #include <arch/gdb.h>
 #endif
 
@@ -34,12 +35,18 @@ KOS_INIT_ROMDISK(romdisk);[ENDIF ROMDISK]
 
 /* Your program's main entry point */
 int main(int argc, char *argv[]) {
+
 #ifdef DEBUG
 	/* This is needed for the Debug target.
-	   Please don't remove this part of code if you want to use the Code::Blocks debugger.	   
-	   Also, you'll need to configure Dreamcast Tool (dc-tool) from the DreamSDK Manager. */
+	   This instruction is used for initializing the connection with the debugger.
+	   Don't forget to configure Dreamcast Tool (dc-tool) utility from DreamSDK Manager. */
 	gdb_init();
+	
+	/* Greetings... */
 	printf("Connection established to %s!", PROJECT_NAME);
+	
+	/* Set the framebuffer as the output device for dbgio. */
+    dbgio_dev_select("fb");
 #endif
 
     /* Your program start here... */
