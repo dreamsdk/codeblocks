@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
 	/* Greetings... */
 	printf("Connection established to %s!", PROJECT_NAME);
 	
-	/* Set the framebuffer as the output device for dbgio. */
-    dbgio_dev_select("fb");
+	/* Example: Set the framebuffer as the output device for dbgio. */
+    /* dbgio_dev_select("fb"); */
 #endif
 
     /* Your program start here... */
