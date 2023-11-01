@@ -72,19 +72,19 @@
 				checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."/>
 	</Category>
 	
-    <Command name="CompileObject" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -c $file -o $object"/>			 
-    <Command name="CompileObject" ext="cpp" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
-    <Command name="CompileObject" ext="cc" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
-    <Command name="CompileObject" ext="cxx" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
-    <Command name="CompileObject" ext="c++" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
-    <Command name="CompileObject" ext="cp" value="$compiler $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -fno-operator-names -fno-rtti -fno-exceptions -c $file -o $object"/>
+    <Command name="CompileObject" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -c $file -o $object"/>			 
+    <Command name="CompileObject" ext="cpp" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-operator-names -c $file -o $object"/>
+    <Command name="CompileObject" ext="cc" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-operator-names -c $file -o $object"/>
+    <Command name="CompileObject" ext="cxx" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-operator-names -c $file -o $object"/>
+    <Command name="CompileObject" ext="c++" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-operator-names -c $file -o $object"/>
+    <Command name="CompileObject" ext="cp" value="$compiler $options $includes -fno-builtin -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-operator-names -c $file -o $object"/>
     <Command name="GenDependencies" value="cmd /c echo Unsupported in DreamSDK"/>
 	<Command name="CompileResource" value="cmd /c echo Unsupported in DreamSDK"/>
 	<Command name="LinkExe" value="cmd /c echo Unsupported in DreamSDK"/>
     <Command name="LinkConsoleExe" value="cmd /c echo Unsupported in DreamSDK"/>	
 	<Command name="LinkDynamic" value="cmd /c echo Unsupported in DreamSDK"/>
 	<Command name="LinkStatic" value="cmd /c if exist $static_output del $static_output\n$lib_linker -r -s $static_output $link_objects"/>
-	<Command name="LinkNative" value="$linker $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -Wl,-Ttext=0x8c010000 -Wl,--gc-sections -TE:\DreamSDK\msys\1.0\opt\toolchains\dc\kos\utils\ldscripts\shlelf.xc -nodefaultlibs $libdirs -o $exe_output $link_objects $link_resobjects $link_options $libs -Wl,--start-group -lkallisti -lc -lgcc -Wl,--end-group"/>
+	<Command name="LinkNative" value="$linker $options $includes -ml -m4-single-only -ffunction-sections -fdata-sections -matomic-model=soft-imask -ftls-model=local-exec -D_arch_dreamcast -D_arch_sub_pristine -fno-builtin -Wl,-Ttext=0x8c010000 -Wl,--gc-sections -TE:\DreamSDK\msys\1.0\opt\toolchains\dc\kos\utils\ldscripts\shlelf.xc -nodefaultlibs $libdirs -o $exe_output $link_objects $link_resobjects $link_options $libs -Wl,--start-group -lkallisti -lc -lgcc -Wl,--end-group"/>
 
 	<Common name="cmds"/>
     <Common name="re"/>
