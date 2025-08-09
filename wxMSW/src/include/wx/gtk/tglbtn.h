@@ -12,7 +12,7 @@
 #ifndef _WX_GTK_TOGGLEBUTTON_H_
 #define _WX_GTK_TOGGLEBUTTON_H_
 
-#include "wx/bitmap.h"
+#include "wx/bmpbndl.h"
 
 //-----------------------------------------------------------------------------
 // wxToggleButton
@@ -30,7 +30,7 @@ public:
                    const wxSize& size = wxDefaultSize,
                    long style = 0,
                    const wxValidator& validator = wxDefaultValidator,
-                   const wxString& name = wxCheckBoxNameStr)
+                   const wxString& name = wxASCII_STR(wxCheckBoxNameStr))
     {
         Create(parent, id, label, pos, size, style, validator, name);
     }
@@ -42,7 +42,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize, long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxCheckBoxNameStr);
+                const wxString& name = wxASCII_STR(wxCheckBoxNameStr));
 
     // Get/set the value
     void SetValue(bool state) wxOVERRIDE;
@@ -85,12 +85,12 @@ public:
     wxBitmapToggleButton() {}
     wxBitmapToggleButton(wxWindow *parent,
                    wxWindowID id,
-                   const wxBitmap& label,
+                   const wxBitmapBundle& label,
                    const wxPoint& pos = wxDefaultPosition,
                    const wxSize& size = wxDefaultSize,
                    long style = 0,
                    const wxValidator& validator = wxDefaultValidator,
-                   const wxString& name = wxCheckBoxNameStr)
+                   const wxString& name = wxASCII_STR(wxCheckBoxNameStr))
     {
         Create(parent, id, label, pos, size, style, validator, name);
     }
@@ -98,11 +98,11 @@ public:
     // Create the control
     bool Create(wxWindow *parent,
                 wxWindowID id,
-                const wxBitmap& label,
+                const wxBitmapBundle& label,
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize, long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxCheckBoxNameStr);
+                const wxString& name = wxASCII_STR(wxCheckBoxNameStr));
 
     // deprecated synonym for SetBitmapLabel()
     wxDEPRECATED_INLINE( void SetLabel(const wxBitmap& bitmap),

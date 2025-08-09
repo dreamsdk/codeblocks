@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC
 
@@ -45,6 +42,7 @@
 #include "wx/hashset.h"
 #include "wx/scopedptr.h"
 #include "wx/config.h"
+#include "wx/platinfo.h"
 
 #include <limits.h>
 #include <locale.h>
@@ -76,17 +74,43 @@ wxDateTime GetXRCFileModTime(const wxString& filename)
 // name.
 static void XRCID_Assign(const wxString& str_id, int value);
 
+// Flags indicating whether the XRC contents was loaded from file or URL, more
+// generally: this is usually true but is not set for the records created
+// directly from wxXmlDocument.
+namespace XRCWhence
+{
+
+enum
+{
+    From_URL = 0,
+    From_Doc = 1
+};
+
+} // namespace // XRCWhence
+
 class wxXmlResourceDataRecord
 {
 public:
     // Ctor takes ownership of the document pointer.
     wxXmlResourceDataRecord(const wxString& File_,
-                            wxXmlDocument *Doc_
+                            wxXmlDocument *Doc_,
+                            int flags = XRCWhence::From_URL
                            )
         : File(File_), Doc(Doc_)
     {
 #if wxUSE_DATETIME
-        Time = GetXRCFileModTime(File);
+        switch ( flags )
+        {
+            case XRCWhence::From_URL:
+                Time = GetXRCFileModTime(File);
+                break;
+
+            case XRCWhence::From_Doc:
+                // Leave Time invalid.
+                break;
+        }
+#else
+        wxUnusedVar(flags);
 #endif
     }
 
@@ -290,12 +314,7 @@ wxString wxXmlResource::ConvertFileNameToURL(const wxString& filename)
     {
         // Make the name absolute filename, because the app may
         // change working directory later:
-        wxFileName fn(fnd);
-        if (fn.IsRelative())
-        {
-            fn.MakeAbsolute();
-            fnd = fn.GetFullPath();
-        }
+        fnd = wxFileName(fnd).GetAbsolutePath();
 #if wxUSE_FILESYSTEM
         fnd = wxFileSystem::FileNameToURL(fnd);
 #endif
@@ -345,7 +364,8 @@ bool wxXmlResource::Load(const wxString& filemask_)
 {
     wxString filemask = ConvertFileNameToURL(filemask_);
 
-    bool allOK = true;
+    bool allOK = true,
+         anyOK = false;
 
 #if wxUSE_FILESYSTEM
     wxFileSystem fsys;
@@ -358,32 +378,46 @@ bool wxXmlResource::Load(const wxString& filemask_)
     wxString fnd = wxXmlFindFirst;
     if ( fnd.empty() )
     {
-        wxLogError(_("Cannot load resources from '%s'."), filemask);
-        return false;
+        // Some file system handlers (e.g. wxInternetFSHandler) just don't
+        // implement FindFirst() at all, try using the original path as is.
+        fnd = filemask;
     }
 
     while (!fnd.empty())
     {
+        bool thisOK = true;
+
 #if wxUSE_FILESYSTEM
         if ( IsArchive(fnd) )
         {
             if ( !Load(fnd + wxT("#zip:*.xrc")) )
-                allOK = false;
+                thisOK = false;
         }
         else // a single resource URL
 #endif // wxUSE_FILESYSTEM
         {
             wxXmlDocument * const doc = DoLoadFile(fnd);
             if ( !doc )
-                allOK = false;
+                thisOK = false;
             else
                 Data().push_back(new wxXmlResourceDataRecord(fnd, doc));
         }
+
+        if ( thisOK )
+            anyOK = true;
+        else
+            allOK = false;
 
         fnd = wxXmlFindNext;
     }
 #   undef wxXmlFindFirst
 #   undef wxXmlFindNext
+
+    if ( !anyOK )
+    {
+        wxLogError(_("Cannot load resources from '%s'."), filemask);
+        return false;
+    }
 
     return allOK;
 }
@@ -588,15 +622,7 @@ static void ProcessPlatformProperty(wxXmlNode *node)
 
             while (tkn.HasMoreTokens())
             {
-                s = tkn.GetNextToken();
-#ifdef __WINDOWS__
-                if (s == wxT("win")) isok = true;
-#endif
-#if defined(__MAC__) || defined(__APPLE__)
-                if (s == wxT("mac")) isok = true;
-#elif defined(__UNIX__)
-                if (s == wxT("unix")) isok = true;
-#endif
+                isok = wxPlatformId::MatchesCurrent(tkn.GetNextToken());
 
                 if (isok)
                     break;
@@ -648,6 +674,10 @@ bool wxXmlResource::UpdateResources()
 {
     bool rt = true;
 
+    // We never do it if this flag is specified.
+    if ( m_flags & wxXRC_NO_RELOADING )
+        return rt;
+
     for ( wxXmlResourceDataRecords::iterator i = Data().begin();
           i != Data().end(); ++i )
     {
@@ -655,13 +685,14 @@ bool wxXmlResource::UpdateResources()
 
         // Check if we need to reload this one.
 
-        // We never do it if this flag is specified.
-        if ( m_flags & wxXRC_NO_RELOADING )
+        // And we don't do it for the records that were not loaded from a
+        // file/URI (or at least not directly) in the first place.
+        if ( !rec->Time.IsValid() )
             continue;
 
         // Otherwise check its modification time if we can.
 #if wxUSE_DATETIME
-        const wxDateTime lastModTime = GetXRCFileModTime(rec->File);
+        wxDateTime lastModTime = GetXRCFileModTime(rec->File);
 
         if ( lastModTime.IsValid() && lastModTime <= rec->Time )
 #else // !wxUSE_DATETIME
@@ -744,7 +775,15 @@ wxXmlDocument *wxXmlResource::DoLoadFile(const wxString& filename)
         return NULL;
     }
 
-    wxXmlNode * const root = doc->GetRoot();
+    if (!DoLoadDocument(*doc))
+        return NULL;
+
+    return doc.release();
+}
+
+bool wxXmlResource::DoLoadDocument(const wxXmlDocument& doc)
+{
+    wxXmlNode * const root = doc.GetRoot();
     if (root->GetName() != wxT("resource"))
     {
         ReportError
@@ -752,7 +791,7 @@ wxXmlDocument *wxXmlResource::DoLoadFile(const wxString& filename)
             root,
             "invalid XRC resource, doesn't have root node <resource>"
         );
-        return NULL;
+        return false;
     }
 
     long version;
@@ -773,7 +812,34 @@ wxXmlDocument *wxXmlResource::DoLoadFile(const wxString& filename)
     PreprocessForIdRanges(root);
     wxIdRangeManager::Get()->FinaliseRanges(root);
 
-    return doc.release();
+    return true;
+}
+
+bool wxXmlResource::LoadDocument(wxXmlDocument* doc, const wxString& name)
+{
+    wxCHECK_MSG( doc, false, wxS("must have a valid document") );
+
+    if ( !DoLoadDocument(*doc) )
+    {
+        // Still avoid memory leaks.
+        delete doc;
+        return false;
+    }
+
+    // We need to use something instead of the file name, so if we were not
+    // given a name synthesize something ourselves.
+    wxString docname = name;
+    if ( docname.empty() )
+    {
+        static unsigned long s_xrcDocument = 0;
+
+        // Make it look different from any real file name.
+        docname = wxString::Format(wxS("<XML document #%lu>"), ++s_xrcDocument);
+    }
+
+    Data().push_back(new wxXmlResourceDataRecord(docname, doc, XRCWhence::From_Doc));
+
+    return true;
 }
 
 wxXmlNode *wxXmlResource::DoFindResource(wxXmlNode *parent,
@@ -1634,7 +1700,7 @@ float wxXmlResourceHandlerImpl::GetFloat(const wxString& param, float defaultv)
     // strings in XRC always use C locale so make sure to use the
     // locale-independent wxString::ToCDouble() and not ToDouble() which uses
     // the current locale with a potentially different decimal point character
-    double value = defaultv;
+    double value = double(defaultv);
     if (!str.empty())
     {
         if (!str.ToCDouble(&value))
@@ -1786,6 +1852,52 @@ bool GetStockArtAttrs(const wxXmlNode *paramNode,
     return false;
 }
 
+// Load a bitmap from a file system element.
+wxBitmap LoadBitmapFromFS(wxXmlResourceHandlerImpl* impl,
+                            const wxString& path,
+                            wxSize size,
+                            const wxString& nodeName)
+{
+    if (path.empty()) return wxNullBitmap;
+#if wxUSE_FILESYSTEM
+    wxFSFile *fsfile = impl->GetCurFileSystem().OpenFile(path, wxFS_READ | wxFS_SEEKABLE);
+    if (fsfile == NULL)
+    {
+        impl->ReportParamError
+        (
+            nodeName,
+            wxString::Format("cannot open bitmap resource \"%s\"", path)
+        );
+        return wxNullBitmap;
+    }
+    wxImage img(*(fsfile->GetStream()));
+    delete fsfile;
+#else
+    wxImage img(name);
+#endif
+
+    if (!img.IsOk())
+    {
+        impl->ReportParamError
+        (
+            nodeName,
+            wxString::Format("cannot create bitmap from \"%s\"", path)
+        );
+        return wxNullBitmap;
+    }
+    if (!(size == wxDefaultSize)) img.Rescale(size.x, size.y);
+    return wxBitmap(img);
+}
+
+// forward declaration
+template <typename T>
+T
+ParseStringInPixels(wxXmlResourceHandlerImpl* impl,
+                   const wxString& param,
+                   const wxString& str,
+                   const T& defaultValue,
+                   wxWindow *windowToUse = NULL);
+
 } // anonymous namespace
 
 wxBitmap wxXmlResourceHandlerImpl::GetBitmap(const wxString& param,
@@ -1826,36 +1938,139 @@ wxBitmap wxXmlResourceHandlerImpl::GetBitmap(const wxXmlNode* node,
     }
 
     /* ...or load the bitmap from file: */
-    wxString name = GetFilePath(node);
-    if (name.empty()) return wxNullBitmap;
-#if wxUSE_FILESYSTEM
-    wxFSFile *fsfile = GetCurFileSystem().OpenFile(name, wxFS_READ | wxFS_SEEKABLE);
-    if (fsfile == NULL)
-    {
-        ReportParamError
-        (
-            node->GetName(),
-            wxString::Format("cannot open bitmap resource \"%s\"", name)
-        );
-        return wxNullBitmap;
-    }
-    wxImage img(*(fsfile->GetStream()));
-    delete fsfile;
-#else
-    wxImage img(name);
-#endif
+    return LoadBitmapFromFS(this, GetFilePath(node), size, node->GetName());
+}
 
-    if (!img.IsOk())
+
+wxBitmapBundle wxXmlResourceHandlerImpl::GetBitmapBundle(const wxString& param,
+                                                     const wxArtClient& defaultArtClient,
+                                                     wxSize size)
+{
+    wxASSERT_MSG( !param.empty(), "bitmap bundle parameter name can't be empty" );
+
+    const wxXmlNode* const node = GetParamNode(param);
+
+    if ( !node )
     {
-        ReportParamError
-        (
-            node->GetName(),
-            wxString::Format("cannot create bitmap from \"%s\"", name)
-        );
-        return wxNullBitmap;
+        // this is not an error as bitmap parameter could be optional
+        return wxBitmapBundle();
     }
-    if (!(size == wxDefaultSize)) img.Rescale(size.x, size.y);
-    return wxBitmap(img);
+
+    return GetBitmapBundle(node, defaultArtClient, size);
+}
+
+wxBitmapBundle
+wxXmlResourceHandlerImpl::GetBitmapBundle(const wxXmlNode* node,
+                                          const wxArtClient& defaultArtClient,
+                                          wxSize size)
+{
+    if  ( !node )
+        return wxBitmapBundle();
+
+    /* If the bitmap is specified as stock item, query wxArtProvider for it: */
+    wxString art_id, art_client;
+    if ( GetStockArtAttrs(node, defaultArtClient,
+                          art_id, art_client) )
+    {
+        wxBitmapBundle stockArt(wxArtProvider::GetBitmapBundle(art_id, art_client, size));
+        if ( stockArt.IsOk() )
+            return stockArt;
+    }
+
+    wxBitmapBundle bitmapBundle;
+    wxString paramValue = GetFilePath(node);
+    if ( paramValue.EndsWith(".svg") )
+    {
+        if ( paramValue.Contains(";") )
+        {
+            ReportParamError
+            (
+                node->GetName(),
+                "may contain either one SVG file or a list of files separated by ';'"
+            );
+            return bitmapBundle;
+        }
+
+        // it is a bundle from svg file
+        wxString svgDefaultSizeAttr = node->GetAttribute("default_size", "");
+        if ( svgDefaultSizeAttr.empty() )
+        {
+            ReportParamError
+            (
+             node->GetName(),
+                "'default_size' attribute required with svg file"
+            );
+        }
+        else
+        {
+#ifdef wxHAS_SVG
+            wxSize svgDefaultSize = ParseStringInPixels(this, node->GetName(),
+                                                        svgDefaultSizeAttr,
+                                                        wxDefaultSize);
+#if wxUSE_FILESYSTEM
+            wxFSFile* fsfile = GetCurFileSystem().OpenFile(paramValue, wxFS_READ | wxFS_SEEKABLE);
+            if (fsfile == NULL)
+            {
+                ReportParamError
+                (
+                    node->GetName(),
+                    wxString::Format("cannot open SVG resource \"%s\"", paramValue)
+                );
+            }
+            else
+            {
+                wxInputStream* s = fsfile->GetStream();
+                const size_t len = static_cast<size_t>(s->GetLength());
+                wxCharBuffer buf(len);
+                char* const ptr = buf.data();
+
+                if (s->ReadAll(ptr, len))
+                {
+                    bitmapBundle = wxBitmapBundle::FromSVG(ptr, svgDefaultSize);
+                }
+                delete fsfile;
+            }
+#else
+            bitmapBundle = wxBitmapBundle::FromSVGFile(paramValue, svgDefaultSize);
+#endif
+#else // !wxHAS_SVG
+            ReportParamError
+            (
+                node->GetName(),
+                "SVG bitmaps are not supported in this build of the library"
+            );
+#endif // wxHAS_SVG/!wxHAS_SVG
+        }
+    }
+    else
+    {
+        if ( paramValue.Contains(".svg;") )
+        {
+            ReportParamError
+            (
+                node->GetName(),
+                "may contain either one SVG file or a list of files separated by ';'"
+            );
+            return bitmapBundle;
+        }
+
+        // it is a bundle from bitmaps
+        wxVector<wxBitmap> bitmaps;
+        wxArrayString paths = wxSplit(paramValue, ';', '\0');
+        for ( wxArrayString::const_iterator i = paths.begin(); i != paths.end(); ++i )
+        {
+            wxBitmap bmpNext = LoadBitmapFromFS(this, *i, size, node->GetName());
+            if ( !bmpNext.IsOk() )
+            {
+                // error in loading wxBitmap, return invalid wxBitmapBundle
+                return bitmapBundle;
+            }
+            bitmaps.push_back(bmpNext);
+        }
+        bitmapBundle = wxBitmapBundle::FromBitmaps(bitmaps);
+    }
+
+    return bitmapBundle;
 }
 
 
@@ -2116,17 +2331,17 @@ void XRCConvertFromDLU(wxWindow* w, T& value)
     value = w->ConvertDialogToPixels(value);
 }
 
-// Helper for parsing values (of type T, for which XRCConvertFromAbsValue() and
-// XRCConvertFromDLU() functions must be defined) which can be expressed either
-// in pixels or dialog units.
+// Helper for parsing strings which contain values (of type T, for which
+// XRCConvertFromAbsValue() and XRCConvertFromDLU() functions must be defined)
+// which can be expressed either in pixels or dialog units.
 template <typename T>
 T
-ParseValueInPixels(wxXmlResourceHandlerImpl* impl,
+ParseStringInPixels(wxXmlResourceHandlerImpl* impl,
                    const wxString& param,
+                   const wxString& s,
                    const T& defaultValue,
-                   wxWindow *windowToUse = NULL)
+                   wxWindow *windowToUse)
 {
-    const wxString s = impl->GetParamValue(param);
     if ( s.empty() )
         return defaultValue;
 
@@ -2167,6 +2382,17 @@ ParseValueInPixels(wxXmlResourceHandlerImpl* impl,
     }
 
     return value;
+}
+
+// Helper for parsing values which uses ParseStringInPixels() above.
+template <typename T>
+T
+ParseValueInPixels(wxXmlResourceHandlerImpl* impl,
+                   const wxString& param,
+                   const T& defaultValue,
+                   wxWindow *windowToUse = NULL)
+{
+    return ParseStringInPixels(impl, param, impl->GetParamValue(param), defaultValue, windowToUse);
 }
 
 } // anonymous namespace
@@ -2461,7 +2687,7 @@ wxFont wxXmlResourceHandlerImpl::GetFont(const wxString& param, wxWindow* parent
     {
         if (pointSize > 0)
         {
-            font.SetFractionalPointSize(pointSize);
+            font.SetFractionalPointSize(double(pointSize));
             if (HasParam(wxT("relativesize")))
             {
                 ReportParamError
@@ -2492,7 +2718,7 @@ wxFont wxXmlResourceHandlerImpl::GetFont(const wxString& param, wxWindow* parent
     }
     else // not based on system font
     {
-        font = wxFontInfo(pointSize)
+        font = wxFontInfo(double(pointSize))
                 .FaceName(facename)
                 .Family(ifamily)
                 .Style(istyle)
@@ -2788,8 +3014,8 @@ void AddStdXRCID_Records()
     stdID(wxID_PREVIEW);
     stdID(wxID_ABOUT);
     stdID(wxID_HELP_CONTENTS);
-    stdID(wxID_HELP_INDEX),
-    stdID(wxID_HELP_SEARCH),
+    stdID(wxID_HELP_INDEX);
+    stdID(wxID_HELP_SEARCH);
     stdID(wxID_HELP_COMMANDS);
     stdID(wxID_HELP_PROCEDURES);
     stdID(wxID_HELP_CONTEXT);

@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RIBBON
 
@@ -352,7 +349,7 @@ wxSize wxRibbonPanel::GetBestSizeForParentSize(const wxSize& parentSize) const
         wxRibbonControl* control = wxDynamicCast(win, wxRibbonControl);
         if (control)
         {
-            wxClientDC temp_dc((wxRibbonPanel*) this);
+            wxClientDC temp_dc(const_cast<wxRibbonPanel*>(this));
             wxSize clientParentSize = m_art->GetPanelClientSize(temp_dc, this, parentSize, NULL);
             wxSize childSize = control->GetBestSizeForParentSize(clientParentSize);
             wxSize overallSize = m_art->GetPanelSize(temp_dc, this, childSize, NULL);
@@ -374,7 +371,7 @@ wxSize wxRibbonPanel::DoGetNextSmallerSize(wxOrientation direction,
 
     if(m_art != NULL)
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         wxSize child_relative = m_art->GetPanelClientSize(dc, this, relative_to, NULL);
         wxSize smaller(-1, -1);
         bool minimise = false;
@@ -495,7 +492,7 @@ wxSize wxRibbonPanel::DoGetNextLargerSize(wxOrientation direction,
 
     if(m_art != NULL)
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         wxSize child_relative = m_art->GetPanelClientSize(dc, this, relative_to, NULL);
         wxSize larger(-1, -1);
 
@@ -587,14 +584,14 @@ wxSize wxRibbonPanel::GetMinNotMinimisedSize() const
     // Ask sizer if present
     if(GetSizer())
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, GetPanelSizerMinSize(), NULL);
     }
     else if(GetChildren().GetCount() == 1)
     {
         // Common case of single child taking up the entire panel
         wxWindow* child = GetChildren().Item(0)->GetData();
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, child->GetMinSize(), NULL);
     }
 
@@ -615,7 +612,7 @@ wxSize wxRibbonPanel::GetPanelSizerMinSize() const
          return GetSizer()->CalcMin();
     }
     // else use previously calculated m_smallest_unminimised_size
-    wxClientDC dc((wxRibbonPanel*) this);
+    wxClientDC dc(const_cast<wxRibbonPanel*>(this));
     return m_art->GetPanelClientSize(dc,
                                     this,
                                     m_smallest_unminimised_size,
@@ -636,14 +633,14 @@ wxSize wxRibbonPanel::DoGetBestSize() const
     // Ask sizer if present
     if( GetSizer())
     {
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, GetPanelSizerBestSize(), NULL);
     }
     else if(GetChildren().GetCount() == 1)
     {
         // Common case of no sizer and single child taking up the entire panel
         wxWindow* child = GetChildren().Item(0)->GetData();
-        wxClientDC dc((wxRibbonPanel*) this);
+        wxClientDC dc(const_cast<wxRibbonPanel*>(this));
         return m_art->GetPanelSize(dc, this, child->GetBestSize(), NULL);
     }
 
@@ -696,14 +693,14 @@ bool wxRibbonPanel::Realize()
         wxSize panel_min_size = GetMinNotMinimisedSize();
         m_minimised_size = m_art->GetMinimisedPanelMinimumSize(temp_dc, this,
             &bitmap_size, &m_preferred_expand_direction);
-        if(m_minimised_icon.IsOk() && m_minimised_icon.GetScaledSize() != bitmap_size)
+        if(m_minimised_icon.IsOk() && m_minimised_icon.GetLogicalSize() != bitmap_size)
         {
             double scale = m_minimised_icon.GetScaleFactor();
             if (scale > 1.0)
                 scale = 2.0;
 
             wxImage img(m_minimised_icon.ConvertToImage());
-            img.Rescale(scale * bitmap_size.GetWidth(), scale * bitmap_size.GetHeight(), wxIMAGE_QUALITY_HIGH);
+            img.Rescale(int(scale * bitmap_size.GetWidth()), int(scale * bitmap_size.GetHeight()), wxIMAGE_QUALITY_HIGH);
             m_minimised_icon_resized = wxBitmap(img, -1, scale);
         }
         else

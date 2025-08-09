@@ -13,9 +13,6 @@
 
 #if wxUSE_PRINTING_ARCHITECTURE
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/utils.h"
@@ -33,6 +30,7 @@
 
 #include "wx/printdlg.h"
 #include "wx/paper.h"
+#include "wx/display.h"
 #include "wx/osx/printdlg.h"
 
 #include <stdlib.h>
@@ -130,7 +128,7 @@ void wxOSXPrintData::TransferPrinterNameFrom( const wxPrintData &data )
         count = CFArrayGetCount(printerList);
         for (index = 0; index < count; index++)
         {
-            printer = (PMPrinter)CFArrayGetValueAtIndex(printerList, index);
+            printer = static_cast<PMPrinter>(const_cast<void*>(CFArrayGetValueAtIndex(printerList, index)));
             if ((data.GetPrinterName().empty()) && (PMPrinterIsDefault(printer)))
                 break;
 
@@ -184,7 +182,7 @@ void wxOSXPrintData::TransferPaperInfoFrom( const wxPrintData &data )
                 CFIndex top = CFArrayGetCount(paperlist);
                 for ( CFIndex i = 0 ; i < top ; ++ i )
                 {
-                    PMPaper paper = (PMPaper) CFArrayGetValueAtIndex( paperlist, i );
+                    PMPaper paper = static_cast<PMPaper>(const_cast<void*>(CFArrayGetValueAtIndex(paperlist, i)));
                     PMPaperGetHeight(paper, &height);
                     PMPaperGetWidth(paper, &width);
                     if ( fabs( width - papersize.x ) < 5 &&
@@ -399,7 +397,7 @@ void wxOSXPrintData::TransferResolutionTo( wxPrintData &data )
             UInt32 i;
             for (i = 0; i < resCount; i++)
             {
-                if ((resolutions[i].hRes == res.hRes) && (resolutions[i].vRes = res.vRes))
+                if (resolutions[i].hRes == res.hRes && resolutions[i].vRes == res.vRes)
                     break;
             }
             if (i < resCount)
@@ -749,10 +747,7 @@ bool wxMacPrintPreview::Print(bool interactive)
 
 void wxMacPrintPreview::DetermineScaling()
 {
-    int screenWidth , screenHeight ;
-    wxDisplaySize( &screenWidth , &screenHeight ) ;
-
-    wxSize ppiScreen = wxGetDisplayPPI();
+    wxSize ppiScreen = wxDisplay::GetStdPPI();
     wxSize ppiPrinter( 72 , 72 ) ;
 
     m_previewPrintout->SetPPIScreen( ppiScreen.x , ppiScreen.y ) ;

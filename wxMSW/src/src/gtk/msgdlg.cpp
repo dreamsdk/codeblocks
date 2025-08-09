@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MSGDLG && !defined(__WXGPE__)
 
@@ -26,6 +23,7 @@
 #include "wx/modalhook.h"
 
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/list.h"
 #include "wx/gtk/private/messagetype.h"
 #include "wx/gtk/private/mnemonics.h"
 #include "wx/gtk/private/dialogcount.h"
@@ -52,9 +50,7 @@ wxString wxMessageDialog::GetDefaultYesLabel() const
 #ifdef __WXGTK4__
     return wxConvertMnemonicsToGTK(wxGetStockLabel(wxID_YES));
 #else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-    return GTK_STOCK_YES;
-    wxGCC_WARNING_RESTORE()
+    return "gtk-yes";
 #endif
 }
 
@@ -63,9 +59,7 @@ wxString wxMessageDialog::GetDefaultNoLabel() const
 #ifdef __WXGTK4__
     return wxConvertMnemonicsToGTK(wxGetStockLabel(wxID_NO));
 #else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-    return GTK_STOCK_NO;
-    wxGCC_WARNING_RESTORE()
+    return "gtk-no";
 #endif
 }
 
@@ -74,9 +68,7 @@ wxString wxMessageDialog::GetDefaultOKLabel() const
 #ifdef __WXGTK4__
     return wxConvertMnemonicsToGTK(wxGetStockLabel(wxID_OK));
 #else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-    return GTK_STOCK_OK;
-    wxGCC_WARNING_RESTORE()
+    return "gtk-ok";
 #endif
 }
 
@@ -85,9 +77,7 @@ wxString wxMessageDialog::GetDefaultCancelLabel() const
 #ifdef __WXGTK4__
     return wxConvertMnemonicsToGTK(wxGetStockLabel(wxID_CANCEL));
 #else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-    return GTK_STOCK_CANCEL;
-    wxGCC_WARNING_RESTORE()
+    return "gtk-cancel";
 #endif
 }
 
@@ -96,9 +86,7 @@ wxString wxMessageDialog::GetDefaultHelpLabel() const
 #ifdef __WXGTK4__
     return wxConvertMnemonicsToGTK(wxGetStockLabel(wxID_HELP));
 #else
-    wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-    return GTK_STOCK_HELP;
-    wxGCC_WARNING_RESTORE()
+    return "gtk-help";
 #endif
 }
 
@@ -122,6 +110,10 @@ void wxMessageDialog::DoSetCustomLabel(wxString& var, const ButtonLabel& label)
 
 void wxMessageDialog::GTKCreateMsgDialog()
 {
+    // Avoid crash if wxMessageBox() is called before GTK is initialized
+    if (g_type_class_peek(GDK_TYPE_DISPLAY) == NULL)
+        return;
+
     GtkWindow * const parent = m_parent ? GTK_WINDOW(m_parent->m_widget) : NULL;
 
     GtkMessageType type = GTK_MESSAGE_ERROR;
@@ -194,6 +186,26 @@ void wxMessageDialog::GTKCreateMsgDialog()
     if ( m_dialogStyle & wxSTAY_ON_TOP )
     {
         gtk_window_set_keep_above(GTK_WINDOW(m_widget), TRUE);
+    }
+
+    // A GTKMessageDialog usually displays its labels without selection enabled,
+    // so we enable selection to allow the user to select+copy the text out of
+    // the dialog.
+    {
+        GtkMessageDialog * const msgdlg = GTK_MESSAGE_DIALOG(m_widget);
+
+        GtkWidget* const area = gtk_message_dialog_get_message_area(msgdlg);
+        wxGtkList labels(gtk_container_get_children(GTK_CONTAINER(area)));
+
+        for ( GList* elem = labels; elem; elem = elem->next )
+        {
+            GtkWidget* const widget = GTK_WIDGET( elem->data );
+
+            if ( GTK_IS_LABEL(widget) )
+            {
+                gtk_label_set_selectable(GTK_LABEL(widget), TRUE);
+            }
+        }
     }
 
     // we need to add buttons manually if we use custom labels or always for
@@ -288,7 +300,7 @@ int wxMessageDialog::ShowModal()
     {
         default:
             wxFAIL_MSG(wxT("unexpected GtkMessageDialog return code"));
-            // fall through
+            wxFALLTHROUGH;
 
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_DELETE_EVENT:

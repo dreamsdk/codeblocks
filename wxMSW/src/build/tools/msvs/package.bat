@@ -34,6 +34,7 @@ rem Change to wx root folder
 
 set curr_dir1=%cd%
 cd ..\..\..
+set base_dir=%cd%
 
 mkdir %packagePath%
 mkdir %packagePath%\%VCver%
@@ -68,9 +69,9 @@ copy utils\wxrc\%VCver%_mswudll\wxrc.exe lib\%VCver%_dll
 rem Package the 64 bit files
 
 REM Copy wxrc.exe to the dll folder.
-copy utils\wxrc\%VCver%_mswudll_x64\wxrc.exe lib\%VCver%_x64_dll
+copy utils\wxrc\%VCver%_x64_mswudll\wxrc.exe lib\%VCver%_x64_dll
 
-7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_Dev.7z lib\%VCver%_x64_dll\mswud lib\%VCver%_x64_dll\mswu lib\%VCver%_x64_dll\wxMSW%wxDllVers%ud_*.pdb lib\%VCver%_x64_dll\wxbase%wxDllVers%ud_*.pdb lib\%VCver%_x64_dll\wxMSW%wxDllVers%ud_*.dll lib\%VCver%_x64_dll\wxbase%wxDllVers%ud_*.dll lib\%VCver%_x64_dll\*.lib  lib\%VCver%_x64_dll\wxrc.exe
+7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_Dev.7z lib\%VCver%_x64_dll\mswud lib\%VCver%_x64_dll\mswu lib\%VCver%_x64_dll\wxMSW%wxDllVers%ud_*.pdb lib\%VCver%_x64_dll\wxbase%wxDllVers%ud_*.pdb lib\%VCver%_x64_dll\wxMSW%wxDllVers%ud_*.dll lib\%VCver%_x64_dll\wxbase%wxDllVers%u*.dll lib\%VCver%_x64_dll\*.lib  lib\%VCver%_x64_dll\wxrc.exe
 7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_ReleaseDLL.7z lib\%VCver%_x64_dll\wxMSW%wxDllVers%u_*.dll lib\%VCver%_x64_dll\wxbase%wxDllVers%u_*.dll
 7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_ReleasePDB.7z lib\%VCver%_x64_dll\wxMSW%wxDllVers%u_*.pdb lib\%VCver%_x64_dll\wxbase%wxDllVers%u_*.pdb
 
@@ -79,22 +80,30 @@ rem included from it.
 7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_Dev.7z build\msw\wx_setup.props
 7z a -t7z %packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_Dev.7z build\msw\wx_setup.props
 
-rem Create a modified copy of wxwidgets.props suitable for use with our
-rem binaries: we need to enable automatic ABI-compatible MSVC version detection
-rem for this, so we define it in the same place where WXUSINGDLL is defined (as
-rem we only provide DLLs, this is sufficient).
-powershell -noprofile -command "& { (Get-Content wxwidgets.props).Replace('WXUSINGDLL','WXUSINGDLL;wxMSVC_VERSION_ABI_COMPAT') | Set-Content %packagePath%\%VCver%\wxwidgets.props }"
+copy wxwidgets.props %packagePath%\%VCver%\wxwidgets.props
 
 rem Change to the directory containing wxwidgets.props in order to include it
 rem into the archive without any path.
 cd %packagePath%\%VCver%
+
 7z a -t7z wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_Dev.7z wxwidgets.props
 7z a -t7z wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_Dev.7z wxwidgets.props
 
 del wxwidgets.props
 
+rem Change to the directory containing licence file in order to include it
+rem into the archives without any path.
+cd %base_dir%\docs
+
+7z a -t7z ..\%packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_Dev.7z licence.txt
+7z a -t7z ..\%packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_ReleaseDLL.7z licence.txt
+7z a -t7z ..\%packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_Dev.7z licence.txt
+7z a -t7z ..\%packagePath%\%VCver%\wxMSW-%wxMAJOR_VERSION%.%wxMINOR_VERSION%.%wxRELEASE_NUMBER%_%VCver%_x64_ReleaseDLL.7z licence.txt
+
+cd %packagePath%\%VCver%
 del sha1.txt
-fciv . -type *.7z -sha1 -wp >> sha1.txt
+rem fciv requires a complete path to files
+fciv %cd%\. -type *.7z -sha1 -wp >> sha1.txt
 
 
 goto End

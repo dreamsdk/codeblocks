@@ -26,6 +26,12 @@ inline void wxVectorSort(wxVector<T>& v)
     std::sort(v.begin(), v.end());
 }
 
+template<typename T>
+inline bool wxVectorContains(const wxVector<T>& v, const T& obj)
+{
+    return std::find(v.begin(), v.end(), obj) != v.end();
+}
+
 #else // !wxUSE_STD_CONTAINERS
 
 #include "wx/scopeguard.h"
@@ -56,6 +62,13 @@ WXDLLIMPEXP_BASE void wxQsort(void* pbase, size_t total_elems,
                               const void* user_data);
 
 #endif // !wxQSORT_DECLARED
+
+// Fix using placement new in case it was redefined as something else, as is
+// done relatively commonly in MSVC debug builds.
+#ifdef __VISUALC__
+    #pragma push_macro("new")
+    #undef new
+#endif
 
 namespace wxPrivate
 {
@@ -163,9 +176,8 @@ private:
     // This cryptic expression means "typedef Ops to wxVectorMemOpsMovable if
     // type T is movable type, otherwise to wxVectorMemOpsGeneric".
     //
-    // Note that bcc needs the extra parentheses for non-type template
-    // arguments to compile this expression.
-    typedef typename wxIf< (wxIsMovable<T>::value),
+
+    typedef typename wxIf< wxIsMovable<T>::value,
                            wxPrivate::wxVectorMemOpsMovable<T>,
                            wxPrivate::wxVectorMemOpsGeneric<T> >::value
             Ops;
@@ -198,7 +210,7 @@ public:
         reference operator*() const { return *m_ptr; }
         pointer operator->() const { return m_ptr; }
 
-        iterator base() const { return m_ptr; }
+        iterator base() const { return m_ptr + 1; }
 
         reverse_iterator& operator++()
             { --m_ptr; return *this; }
@@ -261,7 +273,7 @@ public:
         const_reference operator*() const { return *m_ptr; }
         const_pointer operator->() const { return m_ptr; }
 
-        const_iterator base() const { return m_ptr; }
+        const_iterator base() const { return m_ptr + 1; }
 
         const_reverse_iterator& operator++()
             { --m_ptr; return *this; }
@@ -514,6 +526,15 @@ public:
         const size_t idx = it - begin();
         const size_t after = end() - it;
 
+        // Unfortunately gcc 12 still complains about use-after-free even
+        // though our code is correct because it actually optimizes it to be
+        // wrong, with -O2 or higher, by moving the assignment above below the
+        // call to reserve() below, so use this hack to avoid the warning with
+        // it by preventing it from rearranging the code.
+#if wxCHECK_GCC_VERSION(12, 1)
+        __asm__ __volatile__("":::"memory");
+#endif
+
         reserve(size() + count);
 
         // the place where the new element is going to be inserted
@@ -689,7 +710,22 @@ void wxVectorSort(wxVector<T>& v)
             wxPrivate::wxVectorComparator<T>::Compare, NULL);
 }
 
+template<typename T>
+inline bool wxVectorContains(const wxVector<T>& v, const T& obj)
+{
+    for ( size_t n = 0; n < v.size(); ++n )
+    {
+        if ( v[n] == obj )
+            return true;
+    }
 
+    return false;
+}
+
+// Restore "new" definition if it we changed it above.
+#ifdef __VISUALC__
+    #pragma pop_macro("new")
+#endif
 
 #endif // wxUSE_STD_CONTAINERS/!wxUSE_STD_CONTAINERS
 

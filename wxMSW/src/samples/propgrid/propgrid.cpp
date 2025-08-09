@@ -30,9 +30,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all "standard" wxWidgets headers)
@@ -423,6 +420,7 @@ enum
     ID_TESTREPLACE,
     ID_SETCOLUMNS,
     ID_SETVIRTWIDTH,
+    ID_SETPGDISABLED,
     ID_TESTXRC,
     ID_ENABLECOMMONVALUES,
     ID_SELECTSTYLE,
@@ -524,6 +522,7 @@ wxBEGIN_EVENT_TABLE(FormMain, wxFrame)
     EVT_MENU( ID_CATCOLOURS, FormMain::OnCatColours )
     EVT_MENU( ID_SETCOLUMNS, FormMain::OnSetColumns )
     EVT_MENU( ID_SETVIRTWIDTH, FormMain::OnSetVirtualWidth )
+    EVT_MENU( ID_SETPGDISABLED, FormMain::OnSetGridDisabled )
     EVT_MENU( ID_TESTXRC, FormMain::OnTestXRC )
     EVT_MENU( ID_ENABLECOMMONVALUES, FormMain::OnEnableCommonValues )
     EVT_MENU( ID_SELECTSTYLE, FormMain::OnSelectStyle )
@@ -704,12 +703,7 @@ void FormMain::OnPropertyGridChange( wxPropertyGridEvent& event )
     }
     else if ( name == "Password" )
     {
-        static int pwdMode = 0;
-
-        //m_pPropGridManager->SetPropertyAttribute(property, wxPG_STRING_PASSWORD, (long)pwdMode);
-
-        pwdMode++;
-        pwdMode &= 1;
+        // Do something very secret here...
     }
     else
     if ( name == "Font" )
@@ -1149,8 +1143,7 @@ void FormMain::PopulateWithStandardItems ()
     // Set test information for cells in columns 3 and 4
     // (reserve column 2 for displaying units)
     wxPropertyGridIterator it;
-    int bmpH = pg->GetGrid()->GetRowHeight() - 2;
-    wxBitmap bmp = wxArtProvider::GetBitmap(wxART_FOLDER, wxART_OTHER, wxSize(bmpH, bmpH));
+    wxBitmap bmp = wxArtProvider::GetBitmap(wxART_FOLDER);
 
     for ( it = pg->GetGrid()->GetIterator();
           !it.AtEnd();
@@ -1161,7 +1154,7 @@ void FormMain::PopulateWithStandardItems ()
             continue;
 
         pg->SetPropertyCell( p, 3, "Cell 3", bmp );
-        pg->SetPropertyCell( p, 4, "Cell 4", wxNullBitmap, *wxWHITE, *wxBLACK );
+        pg->SetPropertyCell( p, 4, "Cell 4", wxBitmapBundle(), *wxWHITE, *wxBLACK );
     }
 }
 
@@ -1386,16 +1379,35 @@ void FormMain::PopulateWithExamples ()
     pg->Append( new wxStringProperty( "StringPropertyWithBitmap",
                 wxPG_LABEL,
                 "Test Text") );
-    wxBitmap myTestBitmap(60, 15, 32);
-    wxMemoryDC mdc;
-    mdc.SelectObject(myTestBitmap);
-    mdc.SetBackground(*wxWHITE_BRUSH);
-    mdc.Clear();
-    mdc.SetPen(*wxBLACK);
-    mdc.DrawLine(0, 0, 60, 15);
-    mdc.SelectObject(wxNullBitmap);
-    pg->SetPropertyImage( "StringPropertyWithBitmap", myTestBitmap );
-
+    wxBitmap myTestBitmap1x(60, 15, 32);
+    {
+        wxMemoryDC mdc(myTestBitmap1x);
+        mdc.SetBackground(*wxWHITE_BRUSH);
+        mdc.Clear();
+        mdc.SetPen(*wxBLACK_PEN);
+        mdc.SetBrush(*wxWHITE_BRUSH);
+        mdc.DrawRectangle(0, 0, 60, 15);
+        mdc.DrawLine(0, 0, 59, 14);
+        mdc.SetTextForeground(*wxBLACK);
+        mdc.DrawText("x1", 0, 0);
+    }
+    wxBitmap myTestBitmap2x(120, 30, 32);
+    {
+        wxMemoryDC mdc(myTestBitmap2x);
+        mdc.SetBackground(*wxWHITE_BRUSH);
+        mdc.Clear();
+        mdc.SetPen(wxPen(*wxBLUE, 2));
+        mdc.SetBrush(*wxWHITE_BRUSH);
+        mdc.DrawRectangle(0, 0, 120, 30);
+        mdc.DrawLine(0, 0, 119, 31);
+        mdc.SetTextForeground(*wxBLUE);
+        wxFont f = mdc.GetFont();
+        f.SetPixelSize(2 * f.GetPixelSize());
+        mdc.SetFont(f);
+        mdc.DrawText("x2", 0, 0);
+    }
+    myTestBitmap2x.SetScaleFactor(2);
+    pg->SetPropertyImage( "StringPropertyWithBitmap", wxBitmapBundle::FromBitmaps(myTestBitmap1x, myTestBitmap2x));
 
     // this value array would be optional if values matched string indexes
     //long flags_prop_values[] = { wxICONIZE, wxCAPTION, wxMINIMIZE_BOX, wxMAXIMIZE_BOX };
@@ -1823,45 +1835,6 @@ wxEND_EVENT_TABLE()
 
 // -----------------------------------------------------------------------
 
-void FormMain::InitPanel()
-{
-    if ( m_panel )
-        m_panel->Destroy();
-
-    wxWindow* panel = new wxPanel(this, wxID_ANY,
-                                  wxPoint(0, 0), wxSize(400, 400),
-                                  wxTAB_TRAVERSAL);
-    m_panel = panel;
-
-    // Column
-    wxBoxSizer* topSizer = new wxBoxSizer ( wxVERTICAL );
-
-    m_topSizer = topSizer;
-}
-
-void FormMain::FinalizePanel( bool wasCreated )
-{
-    // Button for tab traversal testing
-    m_topSizer->Add( new wxButton(m_panel, wxID_ANY,
-                     "Should be able to move here with Tab"),
-                     wxSizerFlags(0).Expand());
-    m_topSizer->Add( new wxButton(m_panel, ID_SHOWPOPUP,
-                     "Show Popup"),
-                     wxSizerFlags(0).Expand());
-
-    m_panel->SetSizer( m_topSizer );
-    m_topSizer->SetSizeHints( m_panel );
-
-    wxBoxSizer* panelSizer = new wxBoxSizer( wxHORIZONTAL );
-    panelSizer->Add( m_panel, wxSizerFlags(1).Expand().FixedMinSize());
-
-    SetSizer( panelSizer );
-    panelSizer->SetSizeHints( this );
-
-    if ( wasCreated )
-        FinalizeFramePosition();
-}
-
 void FormMain::PopulateGrid()
 {
     wxPropertyGridManager* pgman = m_pPropGridManager;
@@ -1878,7 +1851,7 @@ void FormMain::PopulateGrid()
 
     // Use wxMyPropertyGridPage (see above) to test the
     // custom wxPropertyGridPage feature.
-    pgman->AddPage("Examples",wxNullBitmap,myPage);
+    pgman->AddPage("Examples", wxBitmapBundle(), myPage);
 
     PopulateWithExamples();
 }
@@ -1911,10 +1884,6 @@ void FormMain::CreateGrid( int style, int extraStyle )
                 //| wxPG_EX_AUTO_UNSPECIFIED_VALUES
                 //| wxPG_EX_GREY_LABEL_WHEN_DISABLED
                 //| wxPG_EX_HELP_AS_TOOLTIPS
-
-    bool wasCreated = m_panel ? false : true;
-
-    InitPanel();
 
     //
     // This shows how to combine two static choice descriptors
@@ -1961,25 +1930,32 @@ void FormMain::CreateGrid( int style, int extraStyle )
 
     //m_pPropGridManager->SetSplitterLeft(true);
     //m_pPropGridManager->SetSplitterPosition(137);
+}
 
-    m_topSizer->Add( m_pPropGridManager, wxSizerFlags(1).Expand());
+void FormMain::ReplaceGrid(int style, int extraStyle)
+{
+    wxPropertyGridManager* pgmanOld = m_pPropGridManager;
+    CreateGrid(style, extraStyle);
+    m_topSizer->Replace(pgmanOld, m_pPropGridManager);
+    pgmanOld->Destroy();
+    m_pPropGridManager->SetFocus();
 
-    FinalizePanel(wasCreated);
+    m_panel->Layout();
 }
 
 // -----------------------------------------------------------------------
 
-FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size) :
-           wxFrame((wxFrame *)NULL, -1, title, pos, size,
+FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size)
+    : wxFrame((wxFrame *)NULL, -1, title, pos, size,
                (wxMINIMIZE_BOX|wxMAXIMIZE_BOX|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCAPTION|
                 wxTAB_TRAVERSAL|wxCLOSE_BOX) )
+    , m_pPropGridManager(NULL)
+    , m_propGrid(NULL)
+    , m_hasHeader(false)
+    , m_labelEditingEnabled(false)
 {
     SetIcon(wxICON(sample));
-
-    m_propGrid = NULL;
-    m_panel = NULL;
-    m_hasHeader = false;
-    m_labelEditingEnabled = false;
+    Centre();
 
 #ifdef __WXMAC__
     // we need this in order to allow the about menu relocation, since ABOUT is
@@ -1991,34 +1967,6 @@ FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size
     // This is here to really test the wxImageFileProperty.
     wxInitAllImageHandlers();
 #endif
-
-    // Register all editors (SpinCtrl etc.)
-    m_pPropGridManager->RegisterAdditionalEditors();
-
-    // Register our sample custom editors
-    m_pSampleMultiButtonEditor =
-        wxPropertyGrid::RegisterEditorClass(new wxSampleMultiButtonEditor());
-
-    CreateGrid( // style
-                wxPG_BOLD_MODIFIED |
-                wxPG_SPLITTER_AUTO_CENTER |
-                wxPG_AUTO_SORT |
-                //wxPG_HIDE_MARGIN|wxPG_STATIC_SPLITTER |
-                //wxPG_TOOLTIPS |
-                //wxPG_HIDE_CATEGORIES |
-                //wxPG_LIMITED_EDITING |
-                wxPG_TOOLBAR |
-                wxPG_DESCRIPTION,
-                // extra style
-#if wxALWAYS_NATIVE_DOUBLE_BUFFER
-                wxPG_EX_NATIVE_DOUBLE_BUFFERING |
-#endif // wxALWAYS_NATIVE_DOUBLE_BUFFER
-                wxPG_EX_MODE_BUTTONS |
-                wxPG_EX_MULTIPLE_SELECTION
-                //| wxPG_EX_AUTO_UNSPECIFIED_VALUES
-                //| wxPG_EX_GREY_LABEL_WHEN_DISABLED
-                //| wxPG_EX_HELP_AS_TOOLTIPS
-              );
 
     //
     // Create menu bar
@@ -2124,6 +2072,7 @@ FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size
         "Renders Boolean values as checkboxes");
     menuTry->Append(ID_SETCOLUMNS, "Set Number of Columns" );
     menuTry->Append(ID_SETVIRTWIDTH, "Set Virtual Width");
+    menuTry->AppendCheckItem(ID_SETPGDISABLED, "Disable Grid");
     menuTry->AppendSeparator();
     menuTry->Append(ID_TESTXRC, "Display XRC sample" );
 
@@ -2151,7 +2100,54 @@ FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size
     SetStatusText(wxEmptyString);
 #endif // wxUSE_STATUSBAR
 
-    FinalizeFramePosition();
+    // Register all editors (SpinCtrl etc.)
+    wxPropertyGridInterface::RegisterAdditionalEditors();
+
+    // Register our sample custom editors
+    m_pSampleMultiButtonEditor =
+        wxPropertyGrid::RegisterEditorClass(new wxSampleMultiButtonEditor());
+
+    m_panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+
+    CreateGrid( // style
+        wxPG_BOLD_MODIFIED |
+        wxPG_SPLITTER_AUTO_CENTER |
+        wxPG_AUTO_SORT |
+        //wxPG_HIDE_MARGIN|wxPG_STATIC_SPLITTER |
+        //wxPG_TOOLTIPS |
+        //wxPG_HIDE_CATEGORIES |
+        //wxPG_LIMITED_EDITING |
+        wxPG_TOOLBAR |
+        wxPG_DESCRIPTION,
+        // extra style
+#if wxALWAYS_NATIVE_DOUBLE_BUFFER
+        wxPG_EX_NATIVE_DOUBLE_BUFFERING |
+#endif // wxALWAYS_NATIVE_DOUBLE_BUFFER
+        wxPG_EX_MODE_BUTTONS |
+        wxPG_EX_MULTIPLE_SELECTION
+        //| wxPG_EX_AUTO_UNSPECIFIED_VALUES
+        //| wxPG_EX_GREY_LABEL_WHEN_DISABLED
+        //| wxPG_EX_HELP_AS_TOOLTIPS
+    );
+
+    m_topSizer = new wxBoxSizer(wxVERTICAL);
+
+    m_topSizer->Add(m_pPropGridManager, wxSizerFlags(1).Expand());
+
+    // Button for tab traversal testing
+    wxBoxSizer* btnSizer = new wxBoxSizer(wxHORIZONTAL);
+    btnSizer->Add(new wxButton(m_panel, wxID_ANY,
+        "Should be able to move here with Tab"),
+        wxSizerFlags(1).Border(wxALL, 10));
+    btnSizer->Add(new wxButton(m_panel, ID_SHOWPOPUP,
+        "Show Popup"),
+        wxSizerFlags(1).Border(wxALL, 10));
+    m_topSizer->Add(btnSizer, wxSizerFlags(0).Border(wxALL, 5).Expand());
+
+    m_panel->SetSizer(m_topSizer);
+    m_topSizer->SetSizeHints(m_panel);
+
+    m_panel->Layout();
 
 #if wxUSE_LOGWINDOW
     // Create log window
@@ -2160,19 +2156,6 @@ FormMain::FormMain(const wxString& title, const wxPoint& pos, const wxSize& size
                                   GetPosition().y);
     m_logWindow->Show();
 #endif
-}
-
-void FormMain::FinalizeFramePosition()
-{
-    wxSize frameSize((wxSystemSettings::GetMetric(wxSYS_SCREEN_X)/10)*4,
-                     (wxSystemSettings::GetMetric(wxSYS_SCREEN_Y)/10)*8);
-
-    if ( frameSize.x > 500 )
-        frameSize.x = 500;
-
-    SetSize(frameSize);
-
-    Centre();
 }
 
 //
@@ -2717,6 +2700,12 @@ void FormMain::OnShowHeader( wxCommandEvent& event )
 
 void FormMain::OnAbout(wxCommandEvent& WXUNUSED(event))
 {
+    wxPlatformInfo pi = wxPlatformInfo::Get();
+    wxString toolkit = wxString::Format("%s %i.%i.%i", pi.GetPortIdName(),
+                                        pi.GetToolkitMajorVersion(),
+                                        pi.GetToolkitMinorVersion(),
+                                        pi.GetToolkitMicroVersion());
+
     wxString msg;
     msg.Printf( "wxPropertyGrid Sample"
 #if wxUSE_UNICODE
@@ -2735,8 +2724,8 @@ void FormMain::OnAbout(wxCommandEvent& WXUNUSED(event))
 #endif
                 "\n\n"
                 "Programmed by %s\n\n"
-                "Using %s\n\n",
-            "Jaakko Salli", wxVERSION_STRING
+                "Using %s (%s)\n\n",
+            "Jaakko Salli", wxVERSION_STRING, toolkit
             );
 
     wxMessageBox(msg, "About", wxOK | wxICON_INFORMATION, this);
@@ -2772,7 +2761,7 @@ void FormMain::OnColourScheme( wxCommandEvent& event )
         m_pPropGridManager->Freeze();
         m_pPropGridManager->GetGrid()->SetMarginColour( my_grey_1 );
         m_pPropGridManager->GetGrid()->SetCaptionBackgroundColour( my_grey_1 );
-        m_pPropGridManager->GetGrid()->SetLineColour( my_grey_1 );
+        m_pPropGridManager->GetGrid()->SetLineColour( my_grey_2 );
         m_pPropGridManager->Thaw();
     }
     else if ( id == ID_COLOURSCHEME4 )
@@ -2798,7 +2787,7 @@ void FormMain::OnColourScheme( wxCommandEvent& event )
 void FormMain::OnCatColoursUpdateUI(wxUpdateUIEvent& WXUNUSED(event))
 {
     // Prevent menu item from being checked
-    // if it is selected from imroper page.
+    // if it is selected from improper page.
     const wxPropertyGrid* pg = m_pPropGridManager->GetGrid();
     m_itemCatColours->SetCheckable(
          pg->GetPropertyByName("Appearance") &&
@@ -2928,9 +2917,7 @@ void FormMain::OnSelectStyle( wxCommandEvent& WXUNUSED(event) )
         extraStyle = flags;
     }
 
-    CreateGrid( style, extraStyle );
-
-    FinalizeFramePosition();
+    ReplaceGrid( style, extraStyle );
 }
 
 // -----------------------------------------------------------------------
@@ -2965,6 +2952,13 @@ void FormMain::OnSetVirtualWidth(wxCommandEvent& WXUNUSED(evt))
     {
         m_pPropGridManager->GetGrid()->SetVirtualWidth((int)newWidth);
     }
+}
+
+// -----------------------------------------------------------------------
+
+void FormMain::OnSetGridDisabled(wxCommandEvent& evt)
+{
+    m_pPropGridManager->Enable(!evt.IsChecked());
 }
 
 // -----------------------------------------------------------------------
@@ -3148,7 +3142,12 @@ bool cxApplication::OnInit()
     //wxLocale Locale;
     //Locale.Init(wxLANGUAGE_FINNISH);
 
-    FormMain* frame = Form1 = new FormMain( "wxPropertyGrid Sample", wxPoint(0,0), wxSize(300,500) );
+    wxSize frameSize((wxSystemSettings::GetMetric(wxSYS_SCREEN_X) / 10) * 4,
+                     (wxSystemSettings::GetMetric(wxSYS_SCREEN_Y) / 10) * 8);
+    if ( frameSize.x > 500 )
+        frameSize.x = 500;
+
+    FormMain* frame = new FormMain( "wxPropertyGrid Sample", wxPoint(0,0), frameSize);
     frame->Show(true);
 
     //
@@ -3205,7 +3204,7 @@ wxPGProperty* GetRealRoot(wxPropertyGrid *grid)
     return property ? grid->GetFirstChild(property) : NULL;
 }
 
-void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, int width[3])
+void GetColumnWidths(wxPropertyGrid *grid, wxPGProperty *root, int width[3])
 {
     wxPropertyGridPageState *state = grid->GetState();
 
@@ -3220,9 +3219,9 @@ void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, i
     {
         wxPGProperty* p = root->Item(ii);
 
-        width[0] = wxMax(width[0], state->GetColumnFullWidth(dc, p, 0));
-        width[1] = wxMax(width[1], state->GetColumnFullWidth(dc, p, 1));
-        width[2] = wxMax(width[2], state->GetColumnFullWidth(dc, p, 2));
+        width[0] = wxMax(width[0], state->GetColumnFullWidth(p, 0));
+        width[1] = wxMax(width[1], state->GetColumnFullWidth(p, 1));
+        width[2] = wxMax(width[2], state->GetColumnFullWidth(p, 2));
     }
     for (ii = 0; ii < root->GetChildCount(); ++ii)
     {
@@ -3230,7 +3229,7 @@ void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, i
         if (p->IsExpanded())
         {
             int w[3];
-            GetColumnWidths(dc, grid, p, w);
+            GetColumnWidths(grid, p, w);
             width[0] = wxMax(width[0], w[0]);
             width[1] = wxMax(width[1], w[1]);
             width[2] = wxMax(width[2], w[2]);
@@ -3240,13 +3239,6 @@ void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, i
     width[0] = wxMax(width[0], minWidths[0]);
     width[1] = wxMax(width[1], minWidths[1]);
     width[2] = wxMax(width[2], minWidths[2]);
-}
-
-void GetColumnWidths(wxPropertyGrid *grid, wxPGProperty *root, int width[3])
-{
-    wxClientDC dc(grid);
-    dc.SetFont(grid->GetFont());
-    GetColumnWidths(dc, grid, root, width);
 }
 
 void SetMinSize(wxPropertyGrid *grid)

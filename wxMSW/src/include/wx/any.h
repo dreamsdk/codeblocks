@@ -148,7 +148,7 @@ private:
 /**
     Helper macro for defining user value types.
 
-    Even though C++ RTTI would be fully available to use, we'd have to to
+    Even though C++ RTTI would be fully available to use, we'd have to
     facilitate sub-type system which allows, for instance, wxAny with
     signed short '15' to be treated equal to wxAny with signed long long '15'.
     Having sm_instance is important here.
@@ -205,9 +205,18 @@ public:
     static void SetValue(const T& value,
                          wxAnyValueBuffer& buf)
     {
-        // Use placement new
+        // Use placement new, taking care to avoid running into problems with
+        // "new" redefinition in wx/msw/msvcrt.h.
+#ifdef WXDEBUG_NEW
+    #undef new
+#endif
+
         void* const place = buf.m_buffer;
         ::new(place) T(value);
+
+#ifdef WXDEBUG_NEW
+    #define new WXDEBUG_NEW
+#endif
     }
 
     static const T& GetValue(const wxAnyValueBuffer& buf)
@@ -504,8 +513,10 @@ extern WXDLLIMPEXP_BASE bool wxAnyConvertString(const wxString& value,
                                                 wxAnyValueBuffer& dst);
 
 WX_ANY_DEFINE_CONVERTIBLE_TYPE_BASE(wxString, wxString, wxAnyConvertString)
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
 WX_ANY_DEFINE_CONVERTIBLE_TYPE(const char*, ConstCharPtr,
                                wxAnyConvertString, wxString)
+#endif
 WX_ANY_DEFINE_CONVERTIBLE_TYPE(const wchar_t*, ConstWchar_tPtr,
                                wxAnyConvertString, wxString)
 
@@ -757,11 +768,13 @@ public:
     }
 
     // These two constructors are needed to deal with string literals
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
     wxAny(const char* value)
     {
         m_type = wxAnyValueTypeImpl<const char*>::sm_instance.get();
         wxAnyValueTypeImpl<const char*>::SetValue(value, m_buffer);
     }
+#endif
     wxAny(const wchar_t* value)
     {
         m_type = wxAnyValueTypeImpl<const wchar_t*>::sm_instance.get();
@@ -865,11 +878,13 @@ public:
 #endif
 
     // These two operators are needed to deal with string literals
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
     wxAny& operator=(const char* value)
     {
         Assign(value);
         return *this;
     }
+#endif
     wxAny& operator=(const wchar_t* value)
     {
         Assign(value);
@@ -888,8 +903,10 @@ public:
         return value == value2;
     }
 
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
     bool operator==(const char* value) const
         { return (*this) == wxString(value); }
+#endif // wxNO_IMPLICIT_WXSTRING_ENCODING
     bool operator==(const wchar_t* value) const
         { return (*this) == wxString(value); }
 
@@ -1017,6 +1034,13 @@ public:
 #endif
 
 private:
+#ifdef wxNO_IMPLICIT_WXSTRING_ENCODING
+    wxAny(const char*);  // Disabled
+    wxAny& operator=(const char *&value); // Disabled
+    wxAny& operator=(const char value[]); // Disabled
+    wxAny& operator==(const char *value); // Disabled
+#endif
+
     // Assignment functions
     void AssignAny(const wxAny& any)
     {

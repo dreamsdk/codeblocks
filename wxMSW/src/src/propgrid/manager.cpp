@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PROPGRID
 
@@ -61,7 +58,65 @@
 
 const char wxPropertyGridManagerNameStr[] = "wxPropertyGridManager";
 
+#ifdef wxHAS_SVG
+// Categoric Mode Icon
+static const char gs_svg_catmode[] =
+"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32px\" height=\"32px\" viewBox=\"0 0 32 32\">"
+"<circle cx=\"4\" cy=\"3\" r=\"2\" stroke-width=\"1.5\" stroke=\"#868686\" fill=\"#CACACA\"/>"
+"<line x1=\"10\" y1=\"3\" x2=\"20\" y2=\"3\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"10\" y1=\"7\" x2=\"18\" y2=\"7\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"22\" y1=\"7\" x2=\"26\" y2=\"7\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"10\" y1=\"11\" x2=\"18\" y2=\"11\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"22\" y1=\"11\" x2=\"26\" y2=\"11\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"10\" y1=\"15\" x2=\"18\" y2=\"15\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"22\" y1=\"15\" x2=\"26\" y2=\"15\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"10\" y1=\"19\" x2=\"18\" y2=\"19\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"22\" y1=\"19\" x2=\"26\" y2=\"19\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<circle cx=\"4\" cy=\"25\" r=\"2\" stroke-width=\"1.5\" stroke=\"#868686\" fill=\"#CACACA\"/>"
+"<line x1=\"10\" y1=\"25\" x2=\"20\" y2=\"25\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"10\" y1=\"29\" x2=\"18\" y2=\"29\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"22\" y1=\"29\" x2=\"26\" y2=\"29\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"</svg>";
 
+// Alphabetic Mode Icon
+static const char gs_svg_noncatmode[] =
+"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32px\" height=\"32px\" viewBox=\"0 0 32 32\">"
+"<path d=\"M 1,9 L 4.5,9 M 2.5,9 L 6,1 L 9.5,9 M 7.5,9 L 11,9 M 4.2,6 L 7.8,6\" fill=\"none\" stroke=\"black\" stroke-width=\"1.5\"/>"
+"<line x1=\"6\" y1=\"10\" x2=\"6\" y2=\"14\" stroke-width=\"1\" stroke=\"navy\" stroke-linecap=\"square\"/>"
+"<polygon points=\"4,14 6,19 8,14\" stroke-width=\"0.1\" stroke=\"navy\"/>"
+"<polyline points=\"2,23 2,21 9,21 2,29 9,29 9,27\" fill=\"none\" stroke=\"black\" stroke-width=\"1.5\"/>"
+"<line x1=\"16\" y1=\"1\" x2=\"20\" y2=\"1\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"1\" x2=\"28\" y2=\"1\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"5\" x2=\"20\" y2=\"5\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"5\" x2=\"28\" y2=\"5\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"9\" x2=\"20\" y2=\"9\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"9\" x2=\"28\" y2=\"9\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"13\" x2=\"20\" y2=\"13\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"13\" x2=\"28\" y2=\"13\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"17\" x2=\"20\" y2=\"17\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"17\" x2=\"28\" y2=\"17\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"21\" x2=\"20\" y2=\"21\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"21\" x2=\"28\" y2=\"21\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"25\" x2=\"20\" y2=\"25\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"25\" x2=\"28\" y2=\"25\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"29\" x2=\"20\" y2=\"29\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>"
+"<line x1=\"24\" y1=\"29\" x2=\"28\" y2=\"29\" stroke-width=\"2\" stroke=\"#868686\" stroke-linecap=\"square\"/>" 
+"</svg>";
+
+// Default Page Icon.
+static const char gs_svg_defpage[] =
+"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32px\" height=\"32px\" viewBox=\"0 0 32 32\">"
+"<polygon points=\"5,4 27,4 27,28 5,28\" fill=\"none\" stroke-width=\"1.4\" stroke=\"black\"/>"
+"<line x1=\"9\" y1=\"8.5\" x2=\"12\" y2=\"8.5\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"9\" y1=\"13.5\" x2=\"12\" y2=\"13.5\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"9\" y1=\"18.5\" x2=\"12\" y2=\"18.5\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"9\" y1=\"23.5\" x2=\"12\" y2=\"23.5\" stroke-width=\"2\" stroke=\"black\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"8.5\" x2=\"23\" y2=\"8.5\" stroke-width=\"2\" stroke=\"navy\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"13.5\" x2=\"23\" y2=\"13.5\" stroke-width=\"2\" stroke=\"navy\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"18.5\" x2=\"23\" y2=\"18.5\" stroke-width=\"2\" stroke=\"navy\" stroke-linecap=\"square\"/>"
+"<line x1=\"16\" y1=\"23.5\" x2=\"23\" y2=\"23.5\" stroke-width=\"2\" stroke=\"navy\" stroke-linecap=\"square\"/>"
+"</svg>";
+#else
 // Categoric Mode Icon
 static const char* const gs_xpm_catmode[] = {
 "16 16 5 1",
@@ -86,6 +141,47 @@ static const char* const gs_xpm_catmode[] = {
 ".DDD............",
 ".....DDDDD.DDD..",
 "................"
+};
+
+static const char* const gs_xpm_catmode_2x[] = {
+"32 32 5 1",
+". c none",
+"B c black",
+"D c #868686",
+"L c #CACACA",
+"W c #FFFFFF",
+"................................",
+"...DDDD.........................",
+"..DDDDDD........................",
+"..DDLLDD..BBBBBBBBBBBB..........",
+"..DDLLDD..BBBBBBBBBBBB..........",
+"..DDDDDD........................",
+"...DDDD.........................",
+"..........DDDDDDDDDD..DDDDDD....",
+"..........DDDDDDDDDD..DDDDDD....",
+"................................",
+"................................",
+"..........DDDDDDDDDD..DDDDDD....",
+"..........DDDDDDDDDD..DDDDDD....",
+"................................",
+"................................",
+"..........DDDDDDDDDD..DDDDDD....",
+"..........DDDDDDDDDD..DDDDDD....",
+"................................",
+"................................",
+"..........DDDDDDDDDD..DDDDDD....",
+"..........DDDDDDDDDD..DDDDDD....",
+"................................",
+"................................",
+"...DDDD.........................",
+"..DDDDDD........................",
+"..DDLLDD..BBBBBBBBBBBB..........",
+"..DDLLDD..BBBBBBBBBBBB..........",
+"..DDDDDD........................",
+"...DDDD.........................",
+"..........DDDDDDDDDD..DDDDDD....",
+"..........DDDDDDDDDD..DDDDDD....",
+"................................"
 };
 
 // Alphabetic Mode Icon
@@ -114,6 +210,47 @@ static const char* const gs_xpm_noncatmode[] = {
 "................"
 };
 
+static const char* const gs_xpm_noncatmode_2x[] = {
+"32 32 5 1",
+". c none",
+"B c black",
+"D c #868686",
+"L c #000080",
+"W c #FFFFFF",
+"................................",
+"....DDBBDD......DDDDDD..DDDDDD..",
+"....DDBBDD......DDDDDD..DDDDDD..",
+"..DDBB..BBDD....................",
+"..DDBB..BBDD....................",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"..BB......BB....................",
+"..BB......BB....................",
+"................DDDDDD..DDDDDD..",
+"......LL........DDDDDD..DDDDDD..",
+"......LL........................",
+"......LL........................",
+"......LL........DDDDDD..DDDDDD..",
+"..LL..LL..LL....DDDDDD..DDDDDD..",
+"...LL.LL.LL.....................",
+"....LLLLLL......................",
+".....LLLL.......DDDDDD..DDDDDD..",
+"......LL........DDDDDD..DDDDDD..",
+"......LL........................",
+"................................",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"........BBDD....................",
+".......BBDD.....................",
+"......BBDD......DDDDDD..DDDDDD..",
+".....BBDD.......DDDDDD..DDDDDD..",
+"....BBDD........................",
+"...BBDD.........................",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"..BBBBBBBBBB....DDDDDD..DDDDDD..",
+"................................"
+};
+
 // Default Page Icon.
 static const char* const gs_xpm_defpage[] = {
 "16 16 5 1",
@@ -140,6 +277,48 @@ static const char* const gs_xpm_defpage[] = {
 "................"
 };
 
+static const char* const gs_xpm_defpage_2x[] = {
+"32 32 5 1",
+". c none",
+"B c black",
+"D c #868686",
+"L c #000080",
+"W c #FFFFFF",
+"................................",
+"................................",
+"................................",
+"................................",
+"................................",
+"....BBBBBBBBBBBBBBBBBBBBBBBB....",
+"....BBBBBBBBBBBBBBBBBBBBBBBB....",
+"....BB....................BB....",
+"....BB....................BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB....................BB....",
+"....BB....................BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB....................BB....",
+"....BB....................BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB....................BB....",
+"....BB....................BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB..BBBB..LLLLLLLLLL..BB....",
+"....BB....................BB....",
+"....BB....................BB....",
+"....BBBBBBBBBBBBBBBBBBBBBBBB....",
+"....BBBBBBBBBBBBBBBBBBBBBBBB....",
+"................................",
+"................................",
+"................................",
+"................................",
+"................................"
+};
+#endif // wxHAS_SVG/!wxHAS_SVG
+
 // -----------------------------------------------------------------------
 // wxPropertyGridPage
 // -----------------------------------------------------------------------
@@ -154,10 +333,10 @@ wxEND_EVENT_TABLE()
 
 wxPropertyGridPage::wxPropertyGridPage()
     : wxEvtHandler(), wxPropertyGridInterface(), wxPropertyGridPageState()
+    , m_manager(NULL)
+    , m_isDefault(false)
 {
     m_pState = this; // wxPropertyGridInterface to point to State
-    m_manager = NULL;
-    m_isDefault = false;
 }
 
 wxPropertyGridPage::~wxPropertyGridPage()
@@ -216,10 +395,10 @@ class wxPGHeaderCtrl : public wxHeaderCtrl
 {
 public:
     wxPGHeaderCtrl(wxPropertyGridManager* manager, wxWindowID id, const wxPoint& pos,
-                   const wxSize& size, long style) :
-        wxHeaderCtrl(manager, id, pos, size, style)
+                   const wxSize& size, long style)
+        : wxHeaderCtrl(manager, id, pos, size, style)
+        , m_manager(manager)
     {
-        m_manager = manager;
         EnsureColumnCount(2);
 
         // Seed titles with defaults
@@ -294,7 +473,7 @@ private:
         wxPropertyGrid* pg = m_manager->GetGrid();
 
         // Internal border width
-        int borderWidth = pg->DoGetBorderSize().x / 2;
+        int borderWidth = pg->GetWindowBorderSize().x / 2;
 
         const unsigned int colCount = m_page->GetColumnCount();
         for ( unsigned int i = 0; i < colCount; i++ )
@@ -330,7 +509,7 @@ private:
         wxPropertyGrid* pg = m_manager->GetGrid();
 
         // Internal border width
-        int borderWidth = pg->DoGetBorderSize().x / 2;
+        int borderWidth = pg->GetWindowBorderSize().x / 2;
 
         // Compensate for the internal border
         int x = -borderWidth;
@@ -551,6 +730,7 @@ void wxPropertyGridManager::Init2( int style )
 
    propGridFlags &= ~wxBORDER_MASK;
 
+   long pgManExStyle = 0;
    if ((style & wxPG_NO_INTERNAL_BORDER) == 0)
    {
        propGridFlags |= wxBORDER_THEME;
@@ -558,7 +738,7 @@ void wxPropertyGridManager::Init2( int style )
    else
    {
        propGridFlags |= wxBORDER_NONE;
-       wxWindow::SetExtraStyle(wxPG_EX_TOOLBAR_SEPARATOR);
+       pgManExStyle |= wxPG_EX_TOOLBAR_SEPARATOR;
    }
 
     // Create propertygrid.
@@ -573,11 +753,12 @@ void wxPropertyGridManager::Init2( int style )
     m_pState = m_pPropGrid->m_pState;
 
     // Rely on native double-buffering by default.
+    long pgExStyle = wxPG_EX_INIT_NOCAT;
 #if wxALWAYS_NATIVE_DOUBLE_BUFFER
-    m_pPropGrid->SetExtraStyle(wxPG_EX_INIT_NOCAT | wxPG_EX_NATIVE_DOUBLE_BUFFERING);
-#else
-    m_pPropGrid->SetExtraStyle(wxPG_EX_INIT_NOCAT);
-#endif // wxALWAYS_NATIVE_DOUBLE_BUFFER/!wxALWAYS_NATIVE_DOUBLE_BUFFER
+    pgExStyle |= wxPG_EX_NATIVE_DOUBLE_BUFFERING;
+#endif // wxALWAYS_NATIVE_DOUBLE_BUFFER
+    m_pPropGrid->SetExtraStyle(pgExStyle);
+    wxWindow::SetExtraStyle(pgManExStyle | pgExStyle);
 
     // Connect to property grid onselect event.
     // NB: Even if wxID_ANY is used, this doesn't connect properly in wxPython
@@ -679,22 +860,6 @@ void wxPropertyGridManager::SetExtraStyle( long exStyle )
     if ( toolbarStyleChanged && m_pToolbar )
         RecreateControls();
 #endif
-}
-
-// -----------------------------------------------------------------------
-
-void wxPropertyGridManager::DoFreeze()
-{
-    m_pPropGrid->Freeze();
-    wxWindow::DoFreeze();
-}
-
-// -----------------------------------------------------------------------
-
-void wxPropertyGridManager::DoThaw()
-{
-    wxWindow::DoThaw();
-    m_pPropGrid->Thaw();
 }
 
 // -----------------------------------------------------------------------
@@ -940,7 +1105,7 @@ size_t wxPropertyGridManager::GetPageCount() const
 
 wxPropertyGridPage* wxPropertyGridManager::InsertPage( int index,
                                                        const wxString& label,
-                                                       const wxBitmap& bmp,
+                                                       const wxBitmapBundle& bmp,
                                                        wxPropertyGridPage* pageObj )
 {
     if ( index < 0 )
@@ -996,6 +1161,10 @@ wxPropertyGridPage* wxPropertyGridManager::InsertPage( int index,
     {
         state->m_pPropGrid = m_pPropGrid;
         state->InitNonCatMode();
+        if ( !isPageInserted )
+        {
+            state->EnableCategories(m_pPropGrid->HasFlag(wxPG_HIDE_CATEGORIES) ? false : true);
+        }
     }
 
     if ( !label.empty() )
@@ -1031,12 +1200,23 @@ wxPropertyGridPage* wxPropertyGridManager::InsertPage( int index,
             wxToolBarToolBase* tool;
 
             if ( bmp.IsOk() )
-                tool = m_pToolbar->AddTool(wxID_ANY, label, bmp,
-                                           label, wxITEM_RADIO);
+            {
+                tool = m_pToolbar->AddTool(wxID_ANY, label, bmp, label, wxITEM_RADIO);
+            }
             else
-                tool = m_pToolbar->AddTool(wxID_ANY, label,
-                                           wxBitmap(gs_xpm_defpage),
-                                           label, wxITEM_RADIO);
+            {
+#ifdef wxHAS_SVG
+                wxBitmapBundle toolImages =
+                    wxBitmapBundle::FromSVG(gs_svg_defpage, m_pToolbar->GetToolBitmapSize());
+#else
+                wxBitmap icon1x(gs_xpm_defpage);
+                wxBitmap icon2x(gs_xpm_defpage_2x);
+                icon2x.SetScaleFactor(2);
+                wxBitmapBundle toolImages = wxBitmapBundle::FromBitmaps(icon1x, icon2x);
+#endif // wxHAS_SVG/!wxHAS_SVG
+
+                tool = m_pToolbar->AddTool(wxID_ANY, label, toolImages, label, wxITEM_RADIO);
+            }
 
             pageObj->m_toolId = tool->GetId();
 
@@ -1450,13 +1630,6 @@ void wxPropertyGridManager::OnPaint( wxPaintEvent& WXUNUSED(event) )
 
 // -----------------------------------------------------------------------
 
-void wxPropertyGridManager::Refresh(bool eraseBackground, const wxRect* rect )
-{
-    wxPanel::Refresh(eraseBackground, rect);
-}
-
-// -----------------------------------------------------------------------
-
 void wxPropertyGridManager::RefreshProperty( wxPGProperty* p )
 {
     wxASSERT( p->IsRoot() ||
@@ -1492,7 +1665,7 @@ void wxPropertyGridManager::RecreateControls()
                                        wxDefaultPosition,
                                        wxDefaultSize,
                                        toolBarFlags);
-            m_pToolbar->SetToolBitmapSize(wxSize(16, 15));
+            m_pToolbar->SetToolBitmapSize(FromDIP(wxSize(16, 15)));
 
         #if defined(__WXMSW__)
             // Eliminate toolbar flicker on XP
@@ -1526,11 +1699,20 @@ void wxPropertyGridManager::RecreateControls()
             if (m_categorizedModeToolId == -1)
             {
                 wxString desc(_("Categorized Mode"));
+#ifdef wxHAS_SVG
+                wxBitmapBundle toolImages =
+                    wxBitmapBundle::FromSVG(gs_svg_catmode, m_pToolbar->GetToolBitmapSize());
+#else
+                wxBitmap icon1x(gs_xpm_catmode);
+                wxBitmap icon2x(gs_xpm_catmode_2x);
+                icon2x.SetScaleFactor(2);
+                wxBitmapBundle toolImages = wxBitmapBundle::FromBitmaps(icon1x, icon2x);
+#endif // wxHAS_SVG/!wxHAS_SVG
+
                 wxToolBarToolBase* tool = m_pToolbar->InsertTool(0,
                                             wxID_ANY,
                                             desc,
-                                            wxBitmap(gs_xpm_catmode),
-                                            wxNullBitmap,
+                                            toolImages, wxBitmapBundle(),
                                             wxITEM_RADIO,
                                             desc);
                 m_categorizedModeToolId = tool->GetId();
@@ -1543,11 +1725,20 @@ void wxPropertyGridManager::RecreateControls()
             if (m_alphabeticModeToolId == -1)
             {
                 wxString desc(_("Alphabetic Mode"));
+#ifdef wxHAS_SVG
+                wxBitmapBundle toolImages =
+                    wxBitmapBundle::FromSVG(gs_svg_noncatmode, m_pToolbar->GetToolBitmapSize());
+#else
+                wxBitmap icon1x(gs_xpm_noncatmode);
+                wxBitmap icon2x(gs_xpm_noncatmode_2x);
+                icon2x.SetScaleFactor(2);
+                wxBitmapBundle toolImages = wxBitmapBundle::FromBitmaps(icon1x, icon2x);
+#endif // wxHAS_SVG/!wxHAS_SVG
+
                 wxToolBarToolBase* tool = m_pToolbar->InsertTool(1,
                                             wxID_ANY,
                                             desc,
-                                            wxBitmap(gs_xpm_noncatmode),
-                                            wxNullBitmap,
+                                            toolImages, wxBitmapBundle(),
                                             wxITEM_RADIO,
                                             desc);
                 m_alphabeticModeToolId = tool->GetId();
@@ -1881,7 +2072,7 @@ void wxPropertyGridManager::SetSplitterLeft( bool subProps, bool allPages )
 
         for ( size_t i = 0; i < GetPageCount(); i++ )
         {
-            int maxW = m_pState->GetColumnFitWidth(dc, m_arrPages[i]->DoGetRoot(), 0, subProps );
+            int maxW = m_pState->GetColumnFitWidth(m_arrPages[i]->DoGetRoot(), 0, subProps );
             maxW += m_pPropGrid->GetMarginWidth();
             if ( maxW > highest )
                 highest = maxW;
@@ -1908,7 +2099,7 @@ void wxPropertyGridManager::SetPageSplitterLeft(int page, bool subProps)
         wxClientDC dc(this);
         dc.SetFont(m_pPropGrid->GetFont());
 
-        int maxW = m_pState->GetColumnFitWidth(dc, m_arrPages[page]->DoGetRoot(), 0, subProps );
+        int maxW = m_pState->GetColumnFitWidth(m_arrPages[page]->DoGetRoot(), 0, subProps );
         maxW += m_pPropGrid->GetMarginWidth();
         SetPageSplitterPosition( page, maxW );
 
@@ -2201,7 +2392,7 @@ private:
 
 wxPGVIterator wxPropertyGridManager::GetVIterator( int flags ) const
 {
-    return wxPGVIterator( new wxPGVIteratorBase_Manager( (wxPropertyGridManager*)this, flags ) );
+    return wxPGVIterator(new wxPGVIteratorBase_Manager(const_cast<wxPropertyGridManager*>(this), flags));
 }
 
 #endif  // wxUSE_PROPGRID

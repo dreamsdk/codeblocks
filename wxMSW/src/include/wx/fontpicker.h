@@ -95,7 +95,7 @@ protected:
 
 // ----------------------------------------------------------------------------
 // wxFontPickerCtrl: platform-independent class which embeds the
-// platform-dependent wxFontPickerWidget andm if wxFNTP_USE_TEXTCTRL style is
+// platform-dependent wxFontPickerWidget and if wxFNTP_USE_TEXTCTRL style is
 // used, a textctrl next to it.
 // ----------------------------------------------------------------------------
 
@@ -117,7 +117,7 @@ public:
                      const wxSize& size = wxDefaultSize,
                      long style = wxFNTP_DEFAULT_STYLE,
                      const wxValidator& validator = wxDefaultValidator,
-                     const wxString& name = wxFontPickerCtrlNameStr)
+                     const wxString& name = wxASCII_STR(wxFontPickerCtrlNameStr))
         : m_nMinPointSize(wxFNTP_MINPOINT_SIZE), m_nMaxPointSize(wxFNTP_MAXPOINT_SIZE)
     {
         Create(parent, id, initial, pos, size, style, validator, name);
@@ -130,7 +130,7 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxFNTP_DEFAULT_STYLE,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxFontPickerCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxFontPickerCtrlNameStr));
 
 
 public:         // public API
@@ -218,7 +218,7 @@ public:
 private:
     wxFont m_font;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxFontPickerEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxFontPickerEvent);
 };
 
 // ----------------------------------------------------------------------------

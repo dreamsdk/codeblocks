@@ -9,9 +9,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
 #endif
@@ -148,6 +145,8 @@ WrapSizerFrame::WrapSizerFrame()
 
     // Set sizer for the panel
     m_panel->SetSizer(sizerRoot);
+
+    SetClientSize(m_panel->GetBestSize());
 
     Show();
 }

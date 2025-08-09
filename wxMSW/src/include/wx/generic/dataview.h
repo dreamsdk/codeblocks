@@ -12,6 +12,7 @@
 
 #include "wx/defs.h"
 #include "wx/object.h"
+#include "wx/compositewin.h"
 #include "wx/control.h"
 #include "wx/scrolwin.h"
 #include "wx/icon.h"
@@ -45,7 +46,7 @@ public:
         Init(width, align, flags);
     }
 
-    wxDataViewColumn(const wxBitmap& bitmap,
+    wxDataViewColumn(const wxBitmapBundle& bitmap,
                      wxDataViewRenderer *renderer,
                      unsigned int model_column,
                      int width = wxDVC_DEFAULT_WIDTH,
@@ -124,7 +125,7 @@ public:
         return m_sortAscending;
     }
 
-    virtual void SetBitmap( const wxBitmap& bitmap ) wxOVERRIDE
+    virtual void SetBitmap( const wxBitmapBundle& bitmap ) wxOVERRIDE
     {
         wxDataViewColumnBase::SetBitmap(bitmap);
         UpdateWidth();
@@ -137,20 +138,15 @@ public:
         if ( width == m_width )
             return;
 
-        // Normally we don't update it here as this method is called by
-        // UpdateColumnSizes() which resizes the column automatically, and not
-        // "manually", but if it's the first time the width is being set for a
-        // column created with the default width, do set m_manuallySetWidth in
-        // order to prevent the column from becoming narrower than its initial
-        // size when the control is resized, as this is unexpected.
-        if ( m_width == -1 )
-            m_manuallySetWidth = width;
-
         m_width = width;
         UpdateWidth();
     }
 
-    int WXGetManuallySetWidth() const { return m_manuallySetWidth; }
+    // This method is also internal and called when the column is resized by
+    // user interactively.
+    void WXOnResize(int width);
+
+    virtual int WXGetSpecifiedWidth() const wxOVERRIDE;
 
 private:
     // common part of all ctors
@@ -161,6 +157,11 @@ private:
     // former.
     void UpdateDisplay();
     void UpdateWidth();
+
+    // Return the effective value corresponding to the given width, handling
+    // its negative values such as wxCOL_WIDTH_DEFAULT.
+    int DoGetEffectiveWidth(int width) const;
+
 
     wxString m_title;
     int m_width,
@@ -180,8 +181,9 @@ private:
 // wxDataViewCtrl
 // ---------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxDataViewCtrl : public wxDataViewCtrlBase,
-                                       public wxScrollHelper
+class WXDLLIMPEXP_CORE wxDataViewCtrl
+    : public wxCompositeWindow<wxDataViewCtrlBase>,
+      public wxScrollHelper
 {
     friend class wxDataViewMainWindow;
     friend class wxDataViewHeaderWindowBase;
@@ -191,6 +193,8 @@ class WXDLLIMPEXP_CORE wxDataViewCtrl : public wxDataViewCtrlBase,
 #if wxUSE_ACCESSIBILITY
     friend class wxDataViewCtrlAccessible;
 #endif // wxUSE_ACCESSIBILITY
+
+    typedef wxCompositeWindow<wxDataViewCtrlBase> BaseType;
 
 public:
     wxDataViewCtrl() : wxScrollHelper(this)
@@ -202,7 +206,7 @@ public:
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize, long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxDataViewCtrlNameStr )
+           const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr) )
              : wxScrollHelper(this)
     {
         Create(parent, id, pos, size, style, validator, name);
@@ -216,7 +220,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize, long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxDataViewCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr));
 
     virtual bool AssociateModel( wxDataViewModel *model ) wxOVERRIDE;
 
@@ -264,6 +268,8 @@ public:
     virtual void SetFocus() wxOVERRIDE;
 
     virtual bool SetFont(const wxFont & font) wxOVERRIDE;
+    virtual bool SetForegroundColour(const wxColour& colour) wxOVERRIDE;
+    virtual bool SetBackgroundColour(const wxColour& colour) wxOVERRIDE;
 
 #if wxUSE_ACCESSIBILITY
     virtual bool Show(bool show = true) wxOVERRIDE;
@@ -278,7 +284,7 @@ public:
 
 #if wxUSE_DRAG_AND_DROP
     virtual bool EnableDragSource( const wxDataFormat &format ) wxOVERRIDE;
-    virtual bool EnableDropTarget( const wxDataFormat &format ) wxOVERRIDE;
+    virtual bool DoEnableDropTarget(const wxVector<wxDataFormat>& formats) wxOVERRIDE;
 #endif // wxUSE_DRAG_AND_DROP
 
     virtual wxBorder GetDefaultBorder() const wxOVERRIDE;
@@ -331,7 +337,11 @@ public:     // utility functions not part of the API
     // update the display after a change to an individual column
     void OnColumnChange(unsigned int idx);
 
-    // update after the column width changes, also calls OnColumnChange()
+    // update after the column width changes due to interactive resizing
+    void OnColumnResized();
+
+    // update after the column width changes because of e.g. title or bitmap
+    // change, invalidates the column best width and calls OnColumnChange()
     void OnColumnWidthChange(unsigned int idx);
 
     // update after a change to the number of columns
@@ -357,10 +367,13 @@ public:     // utility functions not part of the API
 #endif // wxUSE_ACCESSIBILITY
 
 private:
+    // Implement pure virtual method inherited from wxCompositeWindow.
+    virtual wxWindowList GetCompositeWindowParts() const wxOVERRIDE;
+
     virtual wxDataViewItem DoGetCurrentItem() const wxOVERRIDE;
     virtual void DoSetCurrentItem(const wxDataViewItem& item) wxOVERRIDE;
 
-    virtual void DoExpand(const wxDataViewItem& item) wxOVERRIDE;
+    virtual void DoExpand(const wxDataViewItem& item, bool expandChildren) wxOVERRIDE;
 
     void InvalidateColBestWidths();
     void InvalidateColBestWidth(int idx);

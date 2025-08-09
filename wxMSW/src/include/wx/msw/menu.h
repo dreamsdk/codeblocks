@@ -55,10 +55,11 @@ public:
     // Don't use this object after calling this method.
     WXHMENU MSWDetachHMENU() { WXHMENU m = m_hMenu; m_hMenu = NULL; return m; }
 
+    // Process WM_COMMAND.
+    virtual bool MSWCommand(WXUINT param, WXWORD id);
+
     // implementation only from now on
     // -------------------------------
-
-    bool MSWCommand(WXUINT param, WXWORD id);
 
     // get the native menu handle
     WXHMENU GetHMenu() const { return m_hMenu; }
@@ -67,6 +68,8 @@ public:
     // at the given position belongs. Returns false if there is no radio group
     // containing this position.
     bool MSWGetRadioGroupRange(int pos, int *start, int *end) const;
+
+    void SetupBitmaps();
 
 #if wxUSE_ACCEL
     // called by wxMenuBar to build its accel table from the accels of all menus
@@ -136,7 +139,7 @@ private:
     // It is initially NULL and only allocated if we have any radio items.
     wxMenuRadioItemsData *m_radioData;
 
-    // if true, insert a breal before appending the next item
+    // if true, insert a break before appending the next item
     bool m_doBreak;
 
     // the menu handle of this menu

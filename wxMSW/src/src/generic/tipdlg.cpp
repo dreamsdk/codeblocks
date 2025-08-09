@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_STARTUP_TIPS
 
@@ -275,7 +272,6 @@ wxTipDialog::wxTipDialog(wxWindow *parent,
     SetSizer( topsizer );
 
     topsizer->SetSizeHints( this );
-    topsizer->Fit( this );
 
     Centre(wxBOTH | wxCENTER_FRAME);
 }

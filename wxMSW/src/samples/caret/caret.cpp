@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all <standard< wxWidgets headers
@@ -476,12 +473,12 @@ void MyCanvas::OnChar( wxKeyEvent &event )
                 wxChar ch = (wxChar)event.GetKeyCode();
                 CharAt(m_xCaret, m_yCaret) = ch;
 
-                wxCaretSuspend cs(this);
-                wxClientDC dc(this);
-                dc.SetFont(m_font);
-                dc.SetBackgroundMode(wxBRUSHSTYLE_SOLID); // overwrite old value
-                dc.DrawText(ch, m_xMargin + m_xCaret * m_widthChar,
-                                m_yMargin + m_yCaret * m_heightChar );
+                wxRect rect(
+                    m_xMargin + m_xCaret * m_widthChar,
+                    m_yMargin + m_yCaret * m_heightChar,
+                    m_widthChar,
+                    m_heightChar);
+                RefreshRect(rect, false /* don't erase background */);
 
                 NextChar();
             }

@@ -16,7 +16,7 @@
 #ifdef __WXMAC_XCODE__
 #    include <unistd.h>
 #    include <TargetConditionals.h>
-#    include <AvailabilityMacros.h>
+#    include <Availability.h>
 #    ifndef MAC_OS_X_VERSION_10_4
 #       define MAC_OS_X_VERSION_10_4 1040
 #    endif
@@ -53,7 +53,13 @@
 #    ifndef MAC_OS_X_VERSION_10_15
 #       define MAC_OS_X_VERSION_10_15 101500
 #    endif
-#    if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
+#    ifndef MAC_OS_X_VERSION_10_16
+#       define MAC_OS_X_VERSION_10_16 101600
+#    endif
+#    ifndef MAC_OS_VERSION_11_0
+#       define MAC_OS_VERSION_11_0 110000
+#    endif
+#    if __MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
 #        ifndef NSAppKitVersionNumber10_10
 #            define NSAppKitVersionNumber10_10 1343
 #        endif
@@ -76,7 +82,6 @@
     define it ourselves if any of the following macros is defined:
 
     - MSVC _WIN32 (notice that this is also defined under Win64)
-    - Borland __WIN32__
     - Our __WXMSW__ which selects Windows as platform automatically
  */
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WXMSW__)
@@ -218,42 +223,6 @@
 #endif /* wxUSE_UNICODE */
 
 
-/*
-   test for old versions of Borland C, normally need at least 5.82, Turbo
-   explorer, available for free at http://www.turboexplorer.com/downloads
-*/
-
-
-/*
-    Older versions of Borland C have some compiler bugs that need
-    workarounds. Mostly pertains to the free command line compiler 5.5.1.
-*/
-#if defined(__BORLANDC__) && (__BORLANDC__ <= 0x551)
-    /*
-        The Borland free compiler is unable to handle overloaded enum
-        comparisons under certain conditions e.g. when any class has a
-        conversion ctor for an integral type and there's an overload to
-        compare between an integral type and that class type.
-    */
-#   define wxCOMPILER_NO_OVERLOAD_ON_ENUM
-
-    /*
-        This is needed to overcome bugs in 5.5.1 STL, linking errors will
-        result if it is not defined.
-     */
-#   define _RWSTD_COMPILE_INSTANTIATE
-
-    /*
-        Preprocessor in older Borland compilers have major problems
-        concatenating with ##. Specifically, if the string operands being
-        concatenated have special meaning (e.g. L"str", 123i64 etc)
-        then ## will not concatenate the operands correctly.
-
-        As a workaround, define wxPREPEND* and wxAPPEND* without using
-        wxCONCAT_HELPER.
-    */
-#   define wxCOMPILER_BROKEN_CONCAT_OPER
-#endif /* __BORLANDC__ */
 
 /*
    OS: then test for generic Unix defines, then for particular flavours and
@@ -283,12 +252,12 @@
 #       endif
 #    endif  /* SGI */
 
-#    if defined(__INNOTEK_LIBC__)
+#    if defined(__INNOTEK_LIBC__) && !defined(_GNU_SOURCE)
         /* Ensure visibility of strnlen declaration */
 #        define _GNU_SOURCE
 #    endif
 
-#    if defined(__CYGWIN__)
+#    if defined(__CYGWIN__) && !defined(_GNU_SOURCE)
         /* Ensure visibility of Dl_info and pthread_setconcurrency declarations */
 #        define _GNU_SOURCE
 #    endif
@@ -361,10 +330,6 @@
 /* Force linking against required libraries under Windows: */
 #if defined __WINDOWS__
 #   include "wx/msw/libraries.h"
-#endif
-
-#if defined(__BORLANDC__) || (defined(__GNUC__) && __GNUC__ < 3)
-#define wxNEEDS_CHARPP
 #endif
 
 /*
@@ -450,6 +415,7 @@
 #ifdef __WXOSX__
 /* setup precise defines according to sdk used */
 #   include <TargetConditionals.h>
+#   include <Availability.h>
 #   if defined(__WXOSX_IPHONE__)
 #       if !( defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE )
 #           error "incorrect SDK for an iPhone build"
@@ -467,7 +433,7 @@
 
 #ifdef __WXOSX_MAC__
 #    if defined(__MACH__)
-#        include <AvailabilityMacros.h>
+#        include <Availability.h>
 #        ifndef MAC_OS_X_VERSION_10_4
 #           define MAC_OS_X_VERSION_10_4 1040
 #        endif
@@ -501,7 +467,25 @@
 #        ifndef MAC_OS_X_VERSION_10_14
 #           define MAC_OS_X_VERSION_10_14 101400
 #        endif
-#        if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
+#        ifndef MAC_OS_X_VERSION_10_15
+#           define MAC_OS_X_VERSION_10_15 101500
+#        endif
+#        ifndef MAC_OS_X_VERSION_10_16
+#           define MAC_OS_X_VERSION_10_16 101600
+#        endif
+#        ifndef MAC_OS_VERSION_11_0
+#           define MAC_OS_VERSION_11_0 110000
+#        endif
+#        ifndef MAC_OS_VERSION_12_0
+#           define MAC_OS_VERSION_12_0 120000
+#        endif
+#        ifndef MAC_OS_VERSION_11_0
+#           define MAC_OS_VERSION_13_0 130000
+#        endif
+#        ifndef MAC_OS_VERSION_14_0
+#           define MAC_OS_VERSION_14_0 140000
+#        endif
+#        if __MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_13
 #            ifndef NSAppKitVersionNumber10_10
 #                define NSAppKitVersionNumber10_10 1343
 #            endif

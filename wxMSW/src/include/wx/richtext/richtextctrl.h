@@ -178,7 +178,7 @@ public:
     /**
         Returns the number of items.
     */
-    int GetCount() const { return m_objects.GetCount(); }
+    int GetCount() const { return static_cast<int>(m_objects.GetCount()); }
 
     wxRichTextObjectPtrArray    m_objects;
     wxArrayString               m_labels;
@@ -251,7 +251,7 @@ public:
         @see Create(), wxValidator
     */
     wxRichTextCtrl( wxWindow* parent, wxWindowID id = -1, const wxString& value = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-        long style = wxRE_MULTILINE, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxTextCtrlNameStr);
+        long style = wxRE_MULTILINE, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxASCII_STR(wxTextCtrlNameStr));
 
     /**
         Destructor.
@@ -264,7 +264,7 @@ public:
         Creates the underlying window.
     */
     bool Create( wxWindow* parent, wxWindowID id = -1, const wxString& value = wxEmptyString, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize,
-        long style = wxRE_MULTILINE, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxTextCtrlNameStr );
+        long style = wxRE_MULTILINE, const wxValidator& validator = wxDefaultValidator, const wxString& name = wxASCII_STR(wxTextCtrlNameStr) );
 
     /**
         Initialises the members of the control.

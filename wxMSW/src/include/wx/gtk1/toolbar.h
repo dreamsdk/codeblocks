@@ -25,7 +25,7 @@ public:
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = 0,
-               const wxString& name = wxToolBarNameStr )
+               const wxString& name = wxASCII_STR(wxToolBarNameStr) )
     {
         Init();
 
@@ -37,7 +37,7 @@ public:
                  const wxPoint& pos = wxDefaultPosition,
                  const wxSize& size = wxDefaultSize,
                  long style = 0,
-                 const wxString& name = wxToolBarNameStr );
+                 const wxString& name = wxASCII_STR(wxToolBarNameStr) );
 
     virtual ~wxToolBar();
 
@@ -83,8 +83,8 @@ protected:
 
     virtual wxToolBarToolBase *CreateTool(int id,
                                           const wxString& label,
-                                          const wxBitmap& bitmap1,
-                                          const wxBitmap& bitmap2,
+                                          const wxBitmapBundle& bitmap1,
+                                          const wxBitmapBundle& bitmap2,
                                           wxItemKind kind,
                                           wxObject *clientData,
                                           const wxString& shortHelpString,

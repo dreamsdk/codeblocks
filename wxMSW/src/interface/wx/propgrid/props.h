@@ -441,7 +441,7 @@ protected:
     wxEnumProperty with wxString value and writable combo box editor.
 
     @remarks
-    Uses int value, similar to wxEnumProperty, unless text entered by user is
+    Uses int value, similar to wxEnumProperty, unless text entered by user
     is not in choices (in which case string value is used).
 */
 class wxEditEnumProperty : public wxEnumProperty
@@ -595,7 +595,7 @@ protected:
 };
 
 
-// Indicates first bit useable by derived properties.
+// Indicates first bit usable by derived properties.
 #define wxPG_PROP_SHOW_FULL_FILENAME  wxPG_PROP_CLASS_SPECIFIC_1
 
 /** @class wxFileProperty
@@ -688,8 +688,8 @@ protected:
 class wxDirProperty : public wxEditorDialogProperty
 {
 public:
-    wxDirProperty( const wxString& name = wxPG_LABEL,
-                   const wxString& label = wxPG_LABEL,
+    wxDirProperty( const wxString& label = wxPG_LABEL,
+                   const wxString& name = wxPG_LABEL,
                    const wxString& value = wxEmptyString );
     virtual ~wxDirProperty();
 
@@ -736,9 +736,8 @@ public:
     /**
         Implement in derived class for custom array-to-string conversion.
     */
-    virtual void ConvertArrayToString(const wxArrayString& arr,
-                                      wxString* pString,
-                                      const wxUniChar& delimiter) const;
+    virtual wxString ConvertArrayToString(const wxArrayString& arr,
+                                          const wxUniChar& delimiter) const;
 
     /**
         Shows string editor dialog to edit the individual item. Value to be edited
@@ -758,11 +757,10 @@ public:
     };
 
     /**
-        Generates contents for string @a dst based on the contents of
-        wxArrayString @a src.
+        Generates string based on the contents of wxArrayString @a src.
     */
-    static void ArrayStringToString( wxString& dst, const wxArrayString& src,
-                                     wxUniChar delimiter, int flags );
+    static wxString ArrayStringToString(const wxArrayString& src,
+                                        wxUniChar delimiter, int flags);
 
 protected:
     virtual bool DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value);

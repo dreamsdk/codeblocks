@@ -43,9 +43,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SLIDER
 
@@ -490,6 +487,15 @@ void wxSlider::CalcGeometry()
 
     // initialize to the full client rect
     wxRect rectTotal = GetClientRect();
+    wxSize bestClientSize = DoGetBestClientSize();
+    if ( !IsVert() && rectTotal.height > bestClientSize.y )
+    {
+        rectTotal.height = bestClientSize.y;
+    }
+    else if ( IsVert() && rectTotal.width > bestClientSize.x )
+    {
+        rectTotal.width = bestClientSize.x;
+    }
     m_rectSlider = rectTotal;
     wxSize sizeThumb = GetThumbSize();
 

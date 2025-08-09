@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/app.h"
 #include "wx/frame.h"
@@ -181,7 +178,6 @@ protected:
     bool m_bChecked;
     wxString m_new_text;
 
-    wxRibbonButtonBar* m_mutable_button_bar;
     bool m_plus_minus_state;
     bool m_change_label_state;
 
@@ -327,9 +323,20 @@ MyFrame::MyFrame()
         toolbar->AddHybridTool(ID_POSITION_TOP, position_top_xpm,
                                 "Align the ribbonbar horizontally\nat the top\nfor demonstration purposes");
         toolbar->AddSeparator();
-        toolbar->AddHybridTool(wxID_PRINT, wxArtProvider::GetBitmap(wxART_PRINT, wxART_OTHER, wxSize(16, 15)),
+        wxRibbonToolBarToolBase* print_tool;
+        print_tool = toolbar->AddHybridTool(wxID_PRINT, wxArtProvider::GetBitmap(wxART_PRINT, wxART_OTHER, wxSize(16, 15)),
                                 "This is the Print button tooltip\ndemonstrating a tooltip");
         toolbar->SetRows(2, 3);
+
+        size_t tool_pos = toolbar->GetToolPos(wxID_PRINT);
+        if (toolbar->GetToolCount() != (tool_pos+1))
+        {
+            wxLogError("wxRibbonToolBar::GetToolPos(int) or wxRibbonToolBar::GetToolCount() is broken");
+        }
+        else if (toolbar->GetToolByPos(tool_pos) != print_tool)
+        {
+            wxLogError("wxRibbonToolBar::GetToolByPos(size_t) is broken");
+        }
 
         wxRibbonPanel *selection_panel = new wxRibbonPanel(home, wxID_ANY, "Selection", wxBitmap(selection_panel_xpm));
         wxRibbonButtonBar *selection = new wxRibbonButtonBar(selection_panel);
@@ -447,12 +454,12 @@ MyFrame::MyFrame()
         bar->AddButton(ID_SHOW_PAGES, "Show Pages", ribbon_xpm);
 
         panel = new wxRibbonPanel(page, wxID_ANY, "Button bar manipulation", ribbon_xpm);
-        m_mutable_button_bar = new wxRibbonButtonBar(panel, wxID_ANY);
-        m_mutable_button_bar->AddButton(ID_PLUS_MINUS, "+/-",
+        wxRibbonButtonBar* button_bar = new wxRibbonButtonBar(panel, wxID_ANY);
+        button_bar->AddButton(ID_PLUS_MINUS, "+/-",
             wxArtProvider::GetBitmap(wxART_PLUS, wxART_OTHER, wxSize(24, 24)));
         m_plus_minus_state = false;
-        m_mutable_button_bar->AddButton(ID_CHANGE_LABEL, "short", ribbon_xpm);
-        m_mutable_button_bar->SetButtonTextMinWidth(ID_CHANGE_LABEL, "some long text");
+        button_bar->AddButton(ID_CHANGE_LABEL, "short", ribbon_xpm);
+        button_bar->SetButtonTextMinWidth(ID_CHANGE_LABEL, "some long text");
         m_change_label_state = false;
 
         panel = new wxRibbonPanel(page, wxID_ANY, "Always medium buttons", ribbon_xpm);
@@ -474,12 +481,12 @@ MyFrame::MyFrame()
     {
         wxRibbonPage* page = new wxRibbonPage(m_ribbon, wxID_ANY, "Advanced", empty_xpm);
         wxRibbonPanel* panel = new wxRibbonPanel(page, wxID_ANY, "Button bar manipulation", ribbon_xpm);
-        m_mutable_button_bar = new wxRibbonButtonBar(panel, wxID_ANY);
-        m_mutable_button_bar->AddButton(ID_PLUS_MINUS, "+/-",
+        wxRibbonButtonBar* button_bar = new wxRibbonButtonBar(panel, wxID_ANY);
+        button_bar->AddButton(ID_PLUS_MINUS, "+/-",
             wxArtProvider::GetBitmap(wxART_PLUS, wxART_OTHER, wxSize(24, 24)));
         m_plus_minus_state = false;
-        m_mutable_button_bar->AddButton(ID_CHANGE_LABEL, "short", ribbon_xpm);
-        m_mutable_button_bar->SetButtonTextMinWidth(ID_CHANGE_LABEL, "some long text");
+        button_bar->AddButton(ID_CHANGE_LABEL, "short", ribbon_xpm);
+        button_bar->SetButtonTextMinWidth(ID_CHANGE_LABEL, "some long text");
         m_change_label_state = false;
 
         panel = new wxRibbonPanel(page, wxID_ANY, "Always medium buttons", ribbon_xpm);
@@ -1112,32 +1119,32 @@ void MyFrame::OnShowPages(wxRibbonButtonBarEvent& WXUNUSED(evt))
     m_ribbon->Realize();
 }
 
-void MyFrame::OnPlusMinus(wxRibbonButtonBarEvent& WXUNUSED(evt))
+void MyFrame::OnPlusMinus(wxRibbonButtonBarEvent& evt)
 {
     if(m_plus_minus_state)
     {
-        m_mutable_button_bar->SetButtonIcon(ID_PLUS_MINUS,
+        evt.GetBar()->SetButtonIcon(ID_PLUS_MINUS,
             wxArtProvider::GetBitmap(wxART_PLUS, wxART_OTHER, wxSize(24, 24)));
         m_plus_minus_state = false;
     }
     else
     {
-        m_mutable_button_bar->SetButtonIcon(ID_PLUS_MINUS,
+        evt.GetBar()->SetButtonIcon(ID_PLUS_MINUS,
             wxArtProvider::GetBitmap(wxART_MINUS, wxART_OTHER, wxSize(24, 24)));
         m_plus_minus_state = true;
     }
 }
 
-void MyFrame::OnChangeLabel(wxRibbonButtonBarEvent& WXUNUSED(evt))
+void MyFrame::OnChangeLabel(wxRibbonButtonBarEvent& evt)
 {
     if(m_change_label_state)
     {
-        m_mutable_button_bar->SetButtonText(ID_CHANGE_LABEL, "short");
+        evt.GetBar()->SetButtonText(ID_CHANGE_LABEL, "short");
         m_change_label_state = false;
     }
     else
     {
-        m_mutable_button_bar->SetButtonText(ID_CHANGE_LABEL, "some long text");
+        evt.GetBar()->SetButtonText(ID_CHANGE_LABEL, "some long text");
         m_change_label_state = true;
     }
 }

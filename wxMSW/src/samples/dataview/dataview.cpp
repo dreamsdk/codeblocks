@@ -15,9 +15,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -50,8 +47,6 @@
     #include "../sample.xpm"
 #endif
 
-#include "wx_small.xpm"
-
 // ----------------------------------------------------------------------------
 // MyApp
 // ----------------------------------------------------------------------------
@@ -74,7 +69,8 @@ public:
 
     void BuildDataViewCtrl(wxPanel* parent,
                            unsigned int nPanel,
-                           unsigned long style = 0);
+                           unsigned long style = 0,
+                           int modelFlags = wxALIGN_CENTRE);
 
 private:
     // event handlers
@@ -86,9 +82,11 @@ private:
 #endif // wxHAS_GENERIC_DATAVIEWCTRL
     void OnGetPageInfo(wxCommandEvent& event);
     void OnDisable(wxCommandEvent& event);
+    void OnClearMyMusicTreeModel(wxCommandEvent& event);
     void OnSetForegroundColour(wxCommandEvent& event);
     void OnIncIndent(wxCommandEvent& event);
     void OnDecIndent(wxCommandEvent& event);
+    void OnToggleLayoutDirection(wxCommandEvent& evt);
 
     void OnQuit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
@@ -105,6 +103,7 @@ private:
     void OnShowCurrent(wxCommandEvent& event);
     void OnSetNinthCurrent(wxCommandEvent& event);
     void OnChangeNinthTitle(wxCommandEvent& event);
+    void OnEnsureNinthAndSecondColumn(wxCommandEvent& event);
 
     void OnPrependList(wxCommandEvent& event);
     void OnDeleteList(wxCommandEvent& event);
@@ -170,6 +169,16 @@ private:
     enum Lang { Lang_English, Lang_French };
     void FillIndexList(Lang lang);
 
+    // Helper for checking ModelFlags of current panel (either currently
+    // building or selected one).
+    bool HasModelFlag(int flag) const
+    {
+        return (m_modelFlags[m_currentPanel] & flag) != 0;
+    }
+
+    // HasValue page.
+    void OnHasValueValueChanged(wxDataViewEvent& event);
+
 
     wxNotebook* m_notebook;
 
@@ -182,10 +191,13 @@ private:
         Page_TreeStore,
         Page_VarHeight,
         Page_IndexList,
+        Page_HasValue,
         Page_Max
     };
 
+    unsigned int m_currentPanel;
     wxDataViewCtrl* m_ctrl[Page_Max];
+    int m_modelFlags[Page_Max];
 
     // Some of the models associated with the controls:
 
@@ -258,7 +270,7 @@ public:
 
     virtual wxSize GetSize() const wxOVERRIDE
     {
-        return wxSize(60,20);
+        return GetView()->FromDIP(wxSize(60, 20));
     }
 
     virtual bool SetValue( const wxVariant &value ) wxOVERRIDE
@@ -388,6 +400,7 @@ enum
     ID_CLEARLOG = wxID_HIGHEST+1,
     ID_GET_PAGE_INFO,
     ID_DISABLE,
+    ID_CLEAR_MODEL,
     ID_BACKGROUND_COLOUR,
     ID_FOREGROUND_COLOUR,
     ID_CUSTOM_HEADER_ATTR,
@@ -397,6 +410,7 @@ enum
     ID_STYLE_MENU,
     ID_INC_INDENT,
     ID_DEC_INDENT,
+    ID_LAYOUT_DIR,
 
     // file menu
     //ID_SINGLE,        wxDV_SINGLE==0 so it's always present
@@ -404,6 +418,18 @@ enum
     ID_ROW_LINES,
     ID_HORIZ_RULES,
     ID_VERT_RULES,
+
+    ID_ALIGN_LEFT,
+    ID_ALIGN_CENTRE_H,
+    ID_ALIGN_RIGHT,
+
+    ID_ALIGN_TOP,
+    ID_ALIGN_CENTRE_V,
+    ID_ALIGN_BOTTOM,
+
+    ID_TOGGLE_USE_TALL_ROWS,
+    ID_TOGGLE_KEEP_LOGO_SMALL,
+    ID_TOGGLE_USE_MULTI_LINE_TEXT,
 
     ID_EXIT = wxID_EXIT,
 
@@ -425,6 +451,7 @@ enum
     ID_SHOW_CURRENT,
     ID_SET_NINTH_CURRENT,
     ID_CHANGE_NINTH_TITLE,
+    ID_ENSURE_NINTH_SECOND_COLUMN,
 
     ID_PREPEND_LIST     = 200,
     ID_DELETE_LIST      = 201,
@@ -448,13 +475,15 @@ enum
 };
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
-    EVT_MENU_RANGE( ID_MULTIPLE, ID_VERT_RULES, MyFrame::OnStyleChange )
+    EVT_MENU_RANGE( ID_MULTIPLE, ID_TOGGLE_USE_MULTI_LINE_TEXT,
+        MyFrame::OnStyleChange )
     EVT_MENU( ID_EXIT, MyFrame::OnQuit )
     EVT_MENU( ID_ABOUT, MyFrame::OnAbout )
     EVT_MENU( ID_CLEARLOG, MyFrame::OnClearLog )
 
     EVT_MENU( ID_GET_PAGE_INFO, MyFrame::OnGetPageInfo )
     EVT_MENU( ID_DISABLE, MyFrame::OnDisable )
+    EVT_MENU( ID_CLEAR_MODEL, MyFrame::OnClearMyMusicTreeModel )
     EVT_MENU( ID_FOREGROUND_COLOUR, MyFrame::OnSetForegroundColour )
     EVT_MENU( ID_BACKGROUND_COLOUR, MyFrame::OnSetBackgroundColour )
     EVT_MENU( ID_CUSTOM_HEADER_ATTR, MyFrame::OnCustomHeaderAttr )
@@ -463,6 +492,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
 #endif // wxHAS_GENERIC_DATAVIEWCTRL
     EVT_MENU( ID_INC_INDENT, MyFrame::OnIncIndent )
     EVT_MENU( ID_DEC_INDENT, MyFrame::OnDecIndent )
+    EVT_MENU( ID_LAYOUT_DIR, MyFrame::OnToggleLayoutDirection)
 
     EVT_NOTEBOOK_PAGE_CHANGED( wxID_ANY, MyFrame::OnPageChanged )
 
@@ -475,6 +505,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_BUTTON( ID_SHOW_CURRENT, MyFrame::OnShowCurrent )
     EVT_BUTTON( ID_SET_NINTH_CURRENT, MyFrame::OnSetNinthCurrent )
     EVT_BUTTON( ID_CHANGE_NINTH_TITLE, MyFrame::OnChangeNinthTitle )
+    EVT_BUTTON( ID_ENSURE_NINTH_SECOND_COLUMN, MyFrame::OnEnsureNinthAndSecondColumn )
 
     EVT_BUTTON( ID_PREPEND_LIST, MyFrame::OnPrependList )
     EVT_BUTTON( ID_DELETE_LIST, MyFrame::OnDeleteList )
@@ -551,10 +582,28 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     style_menu->AppendCheckItem(ID_HORIZ_RULES, "Display horizontal rules");
     style_menu->AppendCheckItem(ID_VERT_RULES, "Display vertical rules");
 
+    wxMenu* align_menu = new wxMenu;
+    align_menu->AppendRadioItem(ID_ALIGN_LEFT, "Left\tCtrl-1");
+    align_menu->AppendRadioItem(ID_ALIGN_CENTRE_H, "Centre Horizontal\tCtrl-2");
+    align_menu->AppendRadioItem(ID_ALIGN_RIGHT, "Right\tCtrl-3");
+    align_menu->AppendSeparator();
+    align_menu->AppendRadioItem(ID_ALIGN_TOP, "Top\tCtrl-4");
+    align_menu->AppendRadioItem(ID_ALIGN_CENTRE_V, "Centre Vertical\tCtrl-5");
+    align_menu->AppendRadioItem(ID_ALIGN_BOTTOM, "Bottom\tCtrl-6");
+
+    wxMenu* size_menu = new wxMenu;
+    size_menu->AppendCheckItem(ID_TOGGLE_USE_TALL_ROWS,
+        "Use Tall Rows\tCtrl-7");
+    size_menu->AppendCheckItem(ID_TOGGLE_KEEP_LOGO_SMALL,
+        "Keep Logo Size Small\tCtrl-8");
+    size_menu->AppendCheckItem(ID_TOGGLE_USE_MULTI_LINE_TEXT,
+        "Use Multi-line Text\tCtrl-9");
+
     wxMenu *file_menu = new wxMenu;
     file_menu->Append(ID_CLEARLOG, "&Clear log\tCtrl-L");
     file_menu->Append(ID_GET_PAGE_INFO, "Show current &page info");
     file_menu->AppendCheckItem(ID_DISABLE, "&Disable\tCtrl-D");
+    file_menu->Append(ID_CLEAR_MODEL, "&Clear MyMusicTreeModel\tCtrl-W");
     file_menu->Append(ID_FOREGROUND_COLOUR, "Set &foreground colour...\tCtrl-S");
     file_menu->Append(ID_BACKGROUND_COLOUR, "Set &background colour...\tCtrl-B");
     file_menu->AppendCheckItem(ID_CUSTOM_HEADER_ATTR, "C&ustom header attributes");
@@ -562,8 +611,13 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     file_menu->AppendCheckItem(ID_CUSTOM_HEADER_HEIGHT, "Custom header &height");
 #endif // wxHAS_GENERIC_DATAVIEWCTRL
     file_menu->Append(ID_STYLE_MENU, "&Style", style_menu);
+    file_menu->Append(wxID_ANY, "&Alignment", align_menu);
+    file_menu->Append(wxID_ANY, "Si&ze", size_menu);
     file_menu->Append(ID_INC_INDENT, "&Increase indent\tCtrl-I");
     file_menu->Append(ID_DEC_INDENT, "&Decrease indent\tShift-Ctrl-I");
+    file_menu->AppendSeparator();
+    file_menu->AppendCheckItem(ID_LAYOUT_DIR, "Toggle &layout direction\tShift-Ctrl-L");
+    file_menu->Check(ID_LAYOUT_DIR, GetLayoutDirection() == wxLayout_RightToLeft);
     file_menu->AppendSeparator();
     file_menu->Append(ID_EXIT, "E&xit");
 
@@ -616,9 +670,6 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     wxSizer *firstPanelSz = new wxBoxSizer( wxVERTICAL );
     m_ctrl[Page_Music]->SetMinSize(wxSize(-1, 200));
     firstPanelSz->Add(m_ctrl[Page_Music], 1, wxGROW|wxALL, 5);
-    firstPanelSz->Add(
-        new wxStaticText(firstPanel, wxID_ANY, "Most of the cells above are editable!"),
-        0, wxGROW|wxALL, 5);
     firstPanelSz->Add(button_sizer);
     firstPanelSz->Add(sizerCurrent);
     firstPanel->SetSizerAndFit(firstPanelSz);
@@ -689,8 +740,15 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
 
     BuildDataViewCtrl(fifthPanel, Page_VarHeight);
 
+    wxBoxSizer* button_sizer5 = new wxBoxSizer(wxHORIZONTAL);
+    button_sizer5->Add(
+        new wxButton(fifthPanel, ID_ENSURE_NINTH_SECOND_COLUMN,
+            "Make ninth symphony and second column visible"),
+        wxSizerFlags().DoubleBorder());
+
     wxSizer *fifthPanelSz = new wxBoxSizer(wxVERTICAL);
     fifthPanelSz->Add(m_ctrl[Page_VarHeight], 1, wxGROW | wxALL, 5);
+    fifthPanelSz->Add(button_sizer5);
     fifthPanel->SetSizerAndFit(fifthPanelSz);
 
     // page showing the indexed list model
@@ -713,6 +771,16 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     sixthPanelSz->Add(button_sizer6);
     sixthPanel->SetSizerAndFit(sixthPanelSz);
 
+    // page showing that some columns don't have values for some items
+    // ---------------------------------------------------------------
+
+    wxPanel *seventhPanel = new wxPanel( m_notebook, wxID_ANY );
+
+    BuildDataViewCtrl(seventhPanel, Page_HasValue);
+
+    wxSizer *seventhPanelSz = new wxBoxSizer( wxVERTICAL );
+    seventhPanelSz->Add(m_ctrl[Page_HasValue], 1, wxGROW|wxALL, 5);
+    seventhPanel->SetSizerAndFit(seventhPanelSz);
 
     // complete GUI
     // ------------
@@ -723,6 +791,7 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     m_notebook->AddPage(fourthPanel, "wxDataViewTreeCtrl");
     m_notebook->AddPage(fifthPanel, "Variable line height");
     m_notebook->AddPage(sixthPanel, "MyIndexListModel");
+    m_notebook->AddPage(seventhPanel, "MyDataViewHasValue");
 
     wxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -730,6 +799,9 @@ MyFrame::MyFrame(wxFrame *frame, const wxString &title, int x, int y, int w, int
     mainSizer->Add( m_log, 0, wxGROW );
 
     SetSizerAndFit(mainSizer);
+
+    // Allow using the control from keyboard on startup.
+    m_ctrl[Page_Music]->SetFocus();
 }
 
 MyFrame::~MyFrame()
@@ -737,9 +809,13 @@ MyFrame::~MyFrame()
     delete wxLog::SetActiveTarget(m_logOld);
 }
 
-void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel, unsigned long style)
+void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel,
+    unsigned long style, int modelFlags)
 {
     wxASSERT(!m_ctrl[nPanel]); // should only be initialized once
+
+    m_currentPanel = nPanel;
+    m_modelFlags[nPanel] = modelFlags;
 
     switch (nPanel)
     {
@@ -816,12 +892,14 @@ void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel, unsigned l
             wxDataViewColumn *column5 =
                 new wxDataViewColumn( "custom", cr, 5, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT,
                                       wxDATAVIEW_COL_RESIZABLE );
-            column5->SetBitmap(wxArtProvider::GetBitmap(wxART_INFORMATION, wxART_MENU));
+            column5->SetBitmap(wxArtProvider::GetBitmapBundle(wxART_INFORMATION, wxART_MENU));
             m_ctrl[Page_Music]->AppendColumn( column5 );
 
 
             // select initially the ninth symphony:
             m_ctrl[Page_Music]->Select(m_music_model->GetNinthItem());
+
+            m_ctrl[Page_Music]->SetToolTip("You may edit most of the cells here!");
         }
         break;
 
@@ -830,27 +908,28 @@ void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel, unsigned l
             m_ctrl[Page_List] = new wxDataViewCtrl( parent, ID_ATTR_CTRL, wxDefaultPosition,
                                             wxDefaultSize, style );
 
-            m_list_model = new MyListModel;
+            m_list_model = new MyListModel(modelFlags);
             m_ctrl[Page_List]->AssociateModel( m_list_model.get() );
 
-            m_ctrl[Page_List]->AppendToggleColumn(L"\u2714",
-                                          MyListModel::Col_Toggle,
-                                          wxDATAVIEW_CELL_ACTIVATABLE,
-                                          wxCOL_WIDTH_AUTOSIZE);
+            wxDataViewColumn* const colCheckIconText = new wxDataViewColumn
+                (
+                     L"\u2714 + icon + text",
+                     new wxDataViewCheckIconTextRenderer(),
+                     MyListModel::Col_ToggleIconText,
+                     wxCOL_WIDTH_AUTOSIZE
+                );
+            m_ctrl[Page_List]->AppendColumn(colCheckIconText);
+            const int alignment = modelFlags & wxALIGN_MASK;
+            colCheckIconText->GetRenderer()->SetAlignment(alignment);
 
-            // the various columns
-            m_ctrl[Page_List]->AppendTextColumn("editable string",
+            wxDataViewColumn* const colEditable =
+                m_ctrl[Page_List]->AppendTextColumn("editable string",
                                         MyListModel::Col_EditableText,
                                         wxDATAVIEW_CELL_EDITABLE,
                                         wxCOL_WIDTH_AUTOSIZE,
                                         wxALIGN_NOT,
                                         wxDATAVIEW_COL_SORTABLE);
-            m_ctrl[Page_List]->AppendIconTextColumn("icon",
-                                            MyListModel::Col_IconText,
-                                            wxDATAVIEW_CELL_EDITABLE,
-                                            wxCOL_WIDTH_AUTOSIZE,
-                                            wxALIGN_NOT,
-                                            wxDATAVIEW_COL_REORDERABLE | wxDATAVIEW_COL_SORTABLE);
+            colEditable->GetRenderer()->SetAlignment(alignment);
 
             m_ctrl[Page_List]->AppendDateColumn("date",
                                         MyListModel::Col_Date);
@@ -925,9 +1004,13 @@ void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel, unsigned l
                                         wxDefaultSize, style | wxDV_NO_HEADER );
             m_ctrl[Page_TreeStore] = tc;
 
-            wxImageList *ilist = new wxImageList( 16, 16 );
-            ilist->Add( wxIcon(wx_small_xpm) );
-            tc->AssignImageList( ilist );
+            const wxSize size = GetIconSizeFromModelFlags(m_modelFlags[nPanel]);
+
+            wxDataViewTreeCtrl::Images images;
+            images.push_back(
+                wxArtProvider::GetBitmapBundle(wxART_WX_LOGO, wxART_LIST, size)
+            );
+            tc->SetImages(images);
 
             const wxDataViewItem root =
                 tc->AppendContainer( wxDataViewItem(0), "The Root", 0 );
@@ -990,7 +1073,52 @@ void MyFrame::BuildDataViewCtrl(wxPanel* parent, unsigned int nPanel, unsigned l
                                          this);
         }
         break;
+
+    case Page_HasValue:
+        {
+            wxDataViewListCtrl* lc =
+                new wxDataViewListCtrl( parent, wxID_ANY, wxDefaultPosition,
+                                        wxDefaultSize, style );
+            m_ctrl[Page_HasValue] = lc;
+
+            MyListStoreDerivedModel* page7_model = new MyListStoreHasValueModel();
+            lc->AssociateModel(page7_model);
+            page7_model->DecRef();
+
+            lc->AppendToggleColumn( "Toggle" );
+
+            // We're not limited to convenience column-appending functions, it
+            // can also be done fully manually, which allows us to customize
+            // the renderer being used.
+            wxDataViewToggleRenderer* const rendererRadio =
+                new wxDataViewToggleRenderer("bool", wxDATAVIEW_CELL_ACTIVATABLE);
+            rendererRadio->ShowAsRadio();
+            wxDataViewColumn* const colRadio =
+                new wxDataViewColumn("Radio", rendererRadio, 1);
+            lc->AppendColumn(colRadio, "bool");
+
+            lc->AppendTextColumn( "Text" );
+            lc->AppendProgressColumn( "Progress" )->SetMinWidth(FromDIP(100));
+
+            wxVector<wxVariant> data;
+            for (unsigned int i=0; i<10; i++)
+            {
+                data.clear();
+                data.push_back( (i%3) == 0 );
+                data.push_back( i == 7 ); // select a single (random) radio item
+                data.push_back( wxString::Format("row %d", i) );
+                data.push_back( long(5*i) );
+
+                lc->AppendItem( data );
+            }
+
+            lc->Bind(wxEVT_DATAVIEW_ITEM_VALUE_CHANGED, &MyFrame::OnHasValueValueChanged, this);
+        }
+        break;
     }
+
+    if ( HasModelFlag(MODEL_USE_TALL_ROWS) )
+        m_ctrl[nPanel]->SetRowHeight(FromDIP(32));
 }
 
 
@@ -1028,6 +1156,11 @@ void MyFrame::OnGetPageInfo(wxCommandEvent& WXUNUSED(event))
 void MyFrame::OnDisable(wxCommandEvent& event)
 {
     m_ctrl[m_notebook->GetSelection()]->Enable(!event.IsChecked());
+}
+
+void MyFrame::OnClearMyMusicTreeModel(wxCommandEvent& WXUNUSED(event))
+{
+    m_music_model->Clear();
 }
 
 void MyFrame::OnSetForegroundColour(wxCommandEvent& WXUNUSED(event))
@@ -1101,9 +1234,23 @@ void MyFrame::OnDecIndent(wxCommandEvent& WXUNUSED(event))
     wxLogMessage("Indent is now %d", dvc->GetIndent());
 }
 
+void MyFrame::OnToggleLayoutDirection(wxCommandEvent& WXUNUSED(evt))
+{
+    wxLayoutDirection dir = GetLayoutDirection() == wxLayout_LeftToRight
+                                  ? wxLayout_RightToLeft : wxLayout_LeftToRight;
+    SetLayoutDirection(dir);
+    GetStatusBar()->SetLayoutDirection(dir);
+    for ( int i = 0; i < Page_Max; i++ )
+    {
+        m_ctrl[i]->SetLayoutDirection(dir);
+    }
+    m_log->SetLayoutDirection(dir);
+}
+
 void MyFrame::OnPageChanged( wxBookCtrlEvent& WXUNUSED(event) )
 {
     unsigned int nPanel = m_notebook->GetSelection();
+    m_currentPanel = nPanel;
 
     GetMenuBar()->FindItem(ID_STYLE_MENU)->SetItemLabel(
                 wxString::Format("Style of panel #%d", nPanel+1));
@@ -1134,6 +1281,49 @@ void MyFrame::OnPageChanged( wxBookCtrlEvent& WXUNUSED(event) )
 
         GetMenuBar()->FindItem(id)->Check( m_ctrl[nPanel]->HasFlag(style) );
     }
+
+    const int modelFlags = m_modelFlags[nPanel];
+
+    for (unsigned int id = ID_ALIGN_LEFT; id <= ID_ALIGN_BOTTOM; ++id)
+    {
+        int align = wxALIGN_NOT;
+        bool check = false;
+        switch (id)
+        {
+        case ID_ALIGN_LEFT:
+            check = !(modelFlags & (wxALIGN_CENTRE_HORIZONTAL | wxALIGN_RIGHT));
+            break;
+        case ID_ALIGN_CENTRE_H:
+            align = wxALIGN_CENTRE_HORIZONTAL;
+            break;
+        case ID_ALIGN_RIGHT:
+            align = wxALIGN_RIGHT;
+            break;
+        case ID_ALIGN_TOP:
+            check = !(modelFlags & (wxALIGN_CENTRE_VERTICAL | wxALIGN_BOTTOM));
+            break;
+        case ID_ALIGN_CENTRE_V:
+            align = wxALIGN_CENTRE_VERTICAL;
+            break;
+        case ID_ALIGN_BOTTOM:
+            align = wxALIGN_BOTTOM;
+            break;
+        default:
+            wxFAIL;
+        }
+
+        if ( align != wxALIGN_NOT )
+            check = (modelFlags & align) != 0;
+
+        GetMenuBar()->FindItem(id)->Check(check);
+    }
+
+    GetMenuBar()->FindItem(ID_TOGGLE_USE_TALL_ROWS)->Check(
+        HasModelFlag(MODEL_USE_TALL_ROWS));
+    GetMenuBar()->FindItem(ID_TOGGLE_KEEP_LOGO_SMALL)->Check(
+        HasModelFlag(MODEL_KEEP_LOGO_SMALL));
+    GetMenuBar()->FindItem(ID_TOGGLE_USE_MULTI_LINE_TEXT)->Check(
+        HasModelFlag(MODEL_USE_MULTI_LINE_TEXT));
 
     GetMenuBar()->FindItem(ID_DISABLE)->Check(!m_ctrl[nPanel]->IsEnabled());
 }
@@ -1169,8 +1359,26 @@ void MyFrame::OnStyleChange( wxCommandEvent& WXUNUSED(event) )
     else if (nPanel == 4)
         m_long_music_model.reset(NULL);
 
+    int flags = 0;
+    if ( GetMenuBar()->FindItem(ID_ALIGN_CENTRE_H)->IsChecked() )
+        flags |= wxALIGN_CENTRE_HORIZONTAL;
+    if ( GetMenuBar()->FindItem(ID_ALIGN_RIGHT)->IsChecked() )
+        flags |= wxALIGN_RIGHT;
+    if ( GetMenuBar()->FindItem(ID_ALIGN_CENTRE_V)->IsChecked() )
+        flags |= wxALIGN_CENTRE_VERTICAL;
+    if ( GetMenuBar()->FindItem(ID_ALIGN_BOTTOM)->IsChecked() )
+        flags |= wxALIGN_BOTTOM;
+
+    if ( GetMenuBar()->FindItem(ID_TOGGLE_USE_TALL_ROWS)->IsChecked() )
+        flags |= MODEL_USE_TALL_ROWS;
+    if ( GetMenuBar()->FindItem(ID_TOGGLE_KEEP_LOGO_SMALL)->IsChecked() )
+        flags |= MODEL_KEEP_LOGO_SMALL;
+    if ( GetMenuBar()->FindItem(ID_TOGGLE_USE_MULTI_LINE_TEXT)->IsChecked() )
+        flags |= MODEL_USE_MULTI_LINE_TEXT;
+
     // rebuild the DVC for the selected panel:
-    BuildDataViewCtrl((wxPanel*)m_notebook->GetPage(nPanel), nPanel, style);
+    BuildDataViewCtrl((wxPanel*)m_notebook->GetPage(nPanel),
+        nPanel, style, flags);
 
     sz->Prepend(m_ctrl[nPanel], 1, wxGROW|wxALL, 5);
     sz->Layout();
@@ -1207,6 +1415,7 @@ void MyFrame::OnBeginDrag( wxDataViewEvent &event )
     // only allow drags for item, not containers
     if (m_music_model->IsContainer( item ) )
     {
+        wxLogMessage("Forbidding starting dragging");
         event.Veto();
         return;
     }
@@ -1216,44 +1425,48 @@ void MyFrame::OnBeginDrag( wxDataViewEvent &event )
     obj->SetText( node->m_title );
     event.SetDataObject( obj );
     event.SetDragFlags(wxDrag_AllowMove); // allows both copy and move
+
+    wxLogMessage("Starting dragging \"%s\"", node->m_title);
 }
 
 void MyFrame::OnDropPossible( wxDataViewEvent &event )
 {
-    wxDataViewItem item( event.GetItem() );
-
-    // only allow drags for item or background, not containers
-    if ( item.IsOk() && m_music_model->IsContainer( item ) )
-        event.Veto();
-
     if (event.GetDataFormat() != wxDF_UNICODETEXT)
         event.Veto();
+    else
+        event.SetDropEffect(wxDragMove); // check 'move' drop effect
 }
 
 void MyFrame::OnDrop( wxDataViewEvent &event )
 {
     wxDataViewItem item( event.GetItem() );
 
-    // only allow drops for item, not containers
-    if ( item.IsOk() && m_music_model->IsContainer( item ) )
-    {
-        event.Veto();
-        return;
-    }
-
     if (event.GetDataFormat() != wxDF_UNICODETEXT)
     {
         event.Veto();
         return;
     }
 
+    // Note that instead of recreating a new data object here we could also
+    // retrieve the data object from the event, using its GetDataObject()
+    // method. This would be more efficient as it would avoid copying the text
+    // one more time, but would require a cast in the code and we don't really
+    // care about efficiency here.
     wxTextDataObject obj;
     obj.SetData( wxDF_UNICODETEXT, event.GetDataSize(), event.GetDataBuffer() );
 
     if ( item.IsOk() )
-        wxLogMessage( "Text dropped on item %s: %s", m_music_model->GetTitle( item ), obj.GetText() );
+    {
+        if (m_music_model->IsContainer(item))
+        {
+            wxLogMessage("Text '%s' dropped in container '%s' (proposed index = %i)",
+                         obj.GetText(), m_music_model->GetTitle(item), event.GetProposedDropIndex());
+        }
+        else
+            wxLogMessage("Text '%s' dropped on item '%s'", obj.GetText(), m_music_model->GetTitle(item));
+    }
     else
-        wxLogMessage( "Text dropped on background: %s", obj.GetText() );
+        wxLogMessage("Text '%s' dropped on background (proposed index = %i)", obj.GetText(), event.GetProposedDropIndex());
 }
 
 #endif // wxUSE_DRAG_AND_DROP
@@ -1357,6 +1570,14 @@ void MyFrame::OnChangeNinthTitle(wxCommandEvent& WXUNUSED(event))
 
     m_music_model->SetValue("Symphony No. 9", item, 0);
     m_music_model->ItemChanged(item);
+}
+
+void MyFrame::OnEnsureNinthAndSecondColumn(wxCommandEvent& WXUNUSED(event))
+{
+    wxDataViewItem item(m_long_music_model->GetNinthItem());
+    m_ctrl[Page_VarHeight]->Select(item);
+    wxDataViewColumn *col = m_ctrl[Page_VarHeight]->GetColumn(1);
+    m_ctrl[Page_VarHeight]->EnsureVisible(item, col);
 }
 
 void MyFrame::OnValueChanged( wxDataViewEvent &event )
@@ -1719,4 +1940,46 @@ void MyFrame::OnIndexListSelectionChanged(wxDataViewEvent& event)
     }
 
     wxLogMessage("Selected week day: %s", weekday);
+}
+
+// ----------------------------------------------------------------------------
+// MyFrame - event handlers for the HasValue (wxDataViewListCtrl) page
+// ----------------------------------------------------------------------------
+
+void MyFrame::OnHasValueValueChanged(wxDataViewEvent& event)
+{
+    // Ignore changes coming from our own SetToggleValue() calls below.
+    if ( m_eventFromProgram )
+    {
+        m_eventFromProgram = false;
+        return;
+    }
+
+    wxDataViewListCtrl* const lc = static_cast<wxDataViewListCtrl*>(m_ctrl[Page_HasValue]);
+
+    const int columnToggle = 1;
+
+    // Handle selecting a radio button by unselecting all the other ones.
+    if ( event.GetColumn() == columnToggle )
+    {
+        const int rowChanged = lc->ItemToRow(event.GetItem());
+        if ( lc->GetToggleValue(rowChanged, columnToggle) )
+        {
+            for ( int row = 0; row < lc->GetItemCount(); ++row )
+            {
+                if ( row != rowChanged )
+                {
+                    m_eventFromProgram = true;
+                    lc->SetToggleValue(false, row, columnToggle);
+                }
+            }
+        }
+        else // The item was cleared.
+        {
+            // Explicitly check it back, we want to always have exactly one
+            // checked radio item in this column.
+            m_eventFromProgram = true;
+            lc->SetToggleValue(true, rowChanged, columnToggle);
+        }
+    }
 }

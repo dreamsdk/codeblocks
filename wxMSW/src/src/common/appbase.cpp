@@ -19,9 +19,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #ifdef __WINDOWS__
@@ -259,7 +256,26 @@ wxEventLoopBase *wxAppConsoleBase::CreateMainLoop()
 
 void wxAppConsoleBase::CleanUp()
 {
+#if wxUSE_CONFIG
+    // Delete the global wxConfig object, if any, and reset it.
+    delete wxConfigBase::Set(NULL);
+#endif // wxUSE_CONFIG
+
     wxDELETE(m_mainLoop);
+}
+
+// The error code to return if OnInit() fails: this is a wxApp member variable
+// in 3.3, but this would break ABI in 3.2, so use a global for it instead.
+static int gs_errorExitCode = -1;
+
+void wxAppConsoleBase::SetErrorExitCode(int code)
+{
+    gs_errorExitCode = code;
+}
+
+int wxAppConsoleBase::GetErrorExitCode() const
+{
+    return gs_errorExitCode;
 }
 
 // ----------------------------------------------------------------------------
@@ -312,9 +328,8 @@ int wxAppConsoleBase::OnExit()
     DeletePendingObjects();
 
 #if wxUSE_CONFIG
-    // delete the config object if any (don't use Get() here, but Set()
-    // because Get() could create a new config object)
-    delete wxConfigBase::Set(NULL);
+    // Ensure we won't create it on demand any more if we hadn't done it yet.
+    wxConfigBase::DontCreateOnDemand();
 #endif // wxUSE_CONFIG
 
     return 0;
@@ -361,7 +376,7 @@ wxAppTraits *wxAppConsoleBase::GetTraitsIfExists()
 wxAppTraits& wxAppConsoleBase::GetValidTraits()
 {
     static wxConsoleAppTraits s_traitsConsole;
-    wxAppTraits* const traits = (wxTheApp ? wxTheApp->GetTraits() : NULL);
+    wxAppTraits* const traits = GetTraitsIfExists();
 
     return *(traits ? traits : &s_traitsConsole);
 }
@@ -555,15 +570,18 @@ void wxAppConsoleBase::ProcessPendingEvents()
         // from it when they don't have any more pending events
         while (!m_handlersWithPendingEvents.IsEmpty())
         {
-            // In ProcessPendingEvents(), new handlers might be added
-            // and we can safely leave the critical section here.
-            wxLEAVE_CRIT_SECT(m_handlersWithPendingEventsLocker);
-
             // NOTE: we always call ProcessPendingEvents() on the first event handler
             //       with pending events because handlers auto-remove themselves
             //       from this list (see RemovePendingEventHandler) if they have no
             //       more pending events.
-            m_handlersWithPendingEvents[0]->ProcessPendingEvents();
+            wxEvtHandler* const handler = m_handlersWithPendingEvents[0];
+
+            // In ProcessPendingEvents(), new handlers might be added
+            // and we can safely leave the critical section here as we're not
+            // accessing m_handlersWithPendingEvents while we don't hold it.
+            wxLEAVE_CRIT_SECT(m_handlersWithPendingEventsLocker);
+
+            handler->ProcessPendingEvents();
 
             wxENTER_CRIT_SECT(m_handlersWithPendingEventsLocker);
         }
@@ -845,12 +863,9 @@ bool wxAppConsoleBase::CheckBuildOptions(const char *optionsSignature,
         wxString lib = wxString::FromAscii(WX_BUILD_OPTIONS_SIGNATURE);
         wxString prog = wxString::FromAscii(optionsSignature);
         wxString progName = wxString::FromAscii(componentName);
-        wxString msg;
 
-        msg.Printf(wxT("Mismatch between the program and library build versions detected.\nThe library used %s,\nand %s used %s."),
-                   lib.c_str(), progName.c_str(), prog.c_str());
-
-        wxLogFatalError(msg.c_str());
+        wxLogFatalError(wxT("Mismatch between the program and library build versions detected.\nThe library used %s,\nand %s used %s."),
+                        lib, progName, prog);
 
         // normally wxLogFatalError doesn't return
         return false;
@@ -899,6 +914,9 @@ void wxAppConsoleBase::SetCLocale()
     wxSetlocale(LC_ALL, "");
 }
 
+void* wxAppConsoleBase::WXReservedApp1(void*) { return NULL; }
+void* wxAppConsoleBase::WXReservedApp2(void*) { return NULL; }
+
 // ============================================================================
 // other classes implementations
 // ============================================================================
@@ -945,6 +963,14 @@ bool wxConsoleAppTraitsBase::HasStderr()
 {
     // console applications always have stderr, even under Mac/Windows
     return true;
+}
+
+bool wxConsoleAppTraitsBase::SafeMessageBox(const wxString& WXUNUSED(text),
+                                            const wxString& WXUNUSED(title))
+{
+    // console applications don't show message boxes by default, although this
+    // can be done in platform-specific cases
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -1083,6 +1109,8 @@ wxString wxAppTraitsBase::GetAssertStackTrace()
 }
 #endif // wxUSE_STACKWALKER
 
+void* wxAppTraitsBase::WXReservedAppTraits1(void*) { return NULL; }
+void* wxAppTraitsBase::WXReservedAppTraits2(void*) { return NULL; }
 
 // ============================================================================
 // global functions implementation

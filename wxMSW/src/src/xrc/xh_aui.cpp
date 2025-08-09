@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC && wxUSE_AUI
 
@@ -20,7 +17,7 @@
 #include "wx/aui/framemanager.h"
 #include "wx/aui/auibook.h"
 
-wxIMPLEMENT_DYNAMIC_CLASS(wxAuiXmlHandler, wxXmlResourceHandler)
+wxIMPLEMENT_DYNAMIC_CLASS(wxAuiXmlHandler, wxXmlResourceHandler);
 
 wxAuiXmlHandler::wxAuiXmlHandler()
                 : wxXmlResourceHandler(),
@@ -247,7 +244,7 @@ wxObject *wxAuiXmlHandler::DoCreateResource()
                     m_notebook->AddPage(wnd,
                                         GetText(wxS("label")),
                                         GetBool(wxS("selected")),
-                                        GetBitmap(wxS("bitmap"), wxART_OTHER));
+                                        GetBitmapBundle(wxS("bitmap"), wxART_OTHER));
                 }
                 else
                 {
@@ -277,6 +274,14 @@ wxObject *wxAuiXmlHandler::DoCreateResource()
                     GetPosition(),
                     GetSize(),
                     GetStyle(wxS("style")));
+
+        wxString provider = GetText("art-provider", false);
+        if (provider == "default" || provider.IsEmpty())
+            anb->SetArtProvider(new wxAuiDefaultTabArt);
+        else if (provider.CmpNoCase("simple") == 0)
+            anb->SetArtProvider(new wxAuiSimpleTabArt);
+        else
+            ReportError("invalid wxAuiNotebook art provider");
 
         SetupWindow(anb);
 

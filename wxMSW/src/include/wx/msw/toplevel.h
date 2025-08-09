@@ -29,7 +29,7 @@ public:
                         const wxPoint& pos = wxDefaultPosition,
                         const wxSize& size = wxDefaultSize,
                         long style = wxDEFAULT_FRAME_STYLE,
-                        const wxString& name = wxFrameNameStr)
+                        const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         Init();
 
@@ -42,7 +42,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr);
+                const wxString& name = wxASCII_STR(wxFrameNameStr));
 
     virtual ~wxTopLevelWindowMSW();
 
@@ -55,6 +55,7 @@ public:
     virtual bool IsIconized() const wxOVERRIDE;
     virtual void SetIcons(const wxIconBundle& icons ) wxOVERRIDE;
     virtual void Restore() wxOVERRIDE;
+    virtual bool Destroy() wxOVERRIDE;
 
     virtual void SetLayoutDirection(wxLayoutDirection dir) wxOVERRIDE;
 
@@ -66,6 +67,9 @@ public:
     virtual void ShowWithoutActivating() wxOVERRIDE;
     virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) wxOVERRIDE;
     virtual bool IsFullScreen() const wxOVERRIDE { return m_fsIsShowing; }
+
+    virtual wxContentProtection GetContentProtection() const wxOVERRIDE;
+    virtual bool SetContentProtection(wxContentProtection contentProtection) wxOVERRIDE;
 
     // wxMSW only: EnableCloseButton(false) may be used to remove the "Close"
     // button from the title bar
@@ -102,7 +106,7 @@ public:
 
     // called from wxWidgets code itself only when the pending focus, i.e. the
     // element which should get focus when this TLW is activated again, changes
-    virtual void WXDoUpdatePendingFocus(wxWindow* win) wxOVERRIDE
+    virtual void WXSetPendingFocus(wxWindow* win) wxOVERRIDE
     {
         m_winLastFocused = win;
     }
@@ -114,7 +118,7 @@ public:
     virtual WXHWND MSWGetParent() const wxOVERRIDE;
 
     // window proc for the frames
-    WXLRESULT MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE;
+    virtual WXLRESULT MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE;
 
     // returns true if the platform should explicitly apply a theme border
     virtual bool CanApplyThemeBorder() const wxOVERRIDE { return false; }
@@ -165,8 +169,10 @@ protected:
                                           int& x, int& y,
                                           int& w, int& h) const wxOVERRIDE;
 
-    // WM_DPICHANGED handler.
-    bool HandleDPIChange(const wxSize& newDPI, const wxRect& newRect);
+    // override this one to update our icon on DPI change (not quite the same
+    // thing as font, but close enough...)
+    virtual void MSWUpdateFontOnDPIChange(const wxSize& newDPI) wxOVERRIDE;
+
 
     // This field contains the show command to use when showing the window the
     // next time and also indicates whether the window should be considered
@@ -194,14 +200,9 @@ protected:
     wxWindowRef m_winLastFocused;
 
 private:
-    // Keep track of the DPI used in this window. So when per-monitor dpi
-    // awareness is enabled, both old and new DPI are known for
-    // wxDPIChangedEvent and wxWindow::MSWUpdateOnDPIChange.
-    wxSize m_activeDPI;
+    // Part of SetIcons() actually updating the window icons.
+    void DoSetIcons();
 
-    // This window supports handling per-monitor DPI awareness when the
-    // application manifest contains <dpiAwareness>PerMonitorV2</dpiAwareness>.
-    bool m_perMonitorDPIaware;
 
     // The system menu: initially NULL but can be set (once) by
     // MSWGetSystemMenu(). Owned by this window.

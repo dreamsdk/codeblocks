@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_TREEBOOK
 
@@ -567,16 +564,15 @@ wxWindow *wxTreebook::TryGetNonNullPage(size_t n)
     return page;
 }
 
-void wxTreebook::SetImageList(wxImageList *imageList)
+void wxTreebook::OnImagesChanged()
 {
-    wxBookCtrlBase::SetImageList(imageList);
-    GetTreeCtrl()->SetImageList(imageList);
-}
-
-void wxTreebook::AssignImageList(wxImageList *imageList)
-{
-    wxBookCtrlBase::AssignImageList(imageList);
-    GetTreeCtrl()->SetImageList(imageList);
+    // Propagate the images to the tree control which will actually use them.
+    wxTreeCtrl* const tree = GetTreeCtrl();
+    const Images& images = GetImages();
+    if ( !images.empty() )
+        tree->SetImages(images);
+    else
+        tree->SetImageList(GetImageList());
 }
 
 // ----------------------------------------------------------------------------

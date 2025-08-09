@@ -25,13 +25,8 @@
 #include "wx/gtk/private/timer.h"
 #include "wx/evtloop.h"
 
-#include "wx/gtk/private/wrapgtk.h"
-#ifdef GDK_WINDOWING_WIN32
-#include <gdk/gdkwin32.h>
-#endif
-#ifdef GDK_WINDOWING_X11
-#include <gdk/gdkx.h>
-#endif
+#include "wx/gtk/private/wrapgdk.h"
+#include "wx/gtk/private/backend.h"
 
 #if wxDEBUG_LEVEL
     #include "wx/gtk/assertdlg_gtk.h"
@@ -69,12 +64,42 @@ void wxBell()
 // display characteristics
 // ----------------------------------------------------------------------------
 
-#ifdef GDK_WINDOWING_X11
+#if defined(__UNIX__)
+
 void *wxGetDisplay()
 {
-    return GDK_DISPLAY_XDISPLAY(gdk_window_get_display(wxGetTopLevelGDK()));
+    return wxGetDisplayInfo().dpy;
 }
+
+wxDisplayInfo wxGetDisplayInfo()
+{
+    wxDisplayInfo info = { NULL, wxDisplayNone };
+#if defined(GDK_WINDOWING_WAYLAND) || defined(GDK_WINDOWING_X11)
+    GdkDisplay *display = gdk_window_get_display(wxGetTopLevelGDK());
 #endif
+
+#ifdef GDK_WINDOWING_X11
+#ifdef __WXGTK3__
+    if (wxGTKImpl::IsX11(display))
+#endif
+    {
+        info.dpy = GDK_DISPLAY_XDISPLAY(display);
+        info.type = wxDisplayX11;
+        return info;
+    }
+#endif
+#ifdef GDK_WINDOWING_WAYLAND
+    if (wxGTKImpl::IsWayland(display))
+    {
+        info.dpy = gdk_wayland_display_get_wl_display(display);
+        info.type = wxDisplayWayland;
+        return info;
+    }
+#endif
+    return info;
+}
+
+#endif // __UNIX__
 
 wxWindow* wxFindWindowAtPoint(const wxPoint& pt)
 {
@@ -280,7 +305,7 @@ protected:
             return;
         }
 
-        // Also ignore frames which don't have neither the function name nor
+        // Also ignore frames which have neither the function name nor
         // the file name, showing them in the dialog wouldn't provide any
         // useful information.
         if ( name.empty() && frame.GetFileName().empty() )
@@ -397,17 +422,32 @@ bool wxGUIAppTraits::ShowAssertDialog(const wxString& msg)
 wxString wxGUIAppTraits::GetDesktopEnvironment() const
 {
     wxString de = wxSystemOptions::GetOption(wxT("gtk.desktop"));
+    if (!de.empty())
+        return de;
+
+    de = wxGetenv(wxS("XDG_CURRENT_DESKTOP"));
+    if (!de.empty())
+    {
+        // Can be a colon separated list according to
+        // https://wiki.archlinux.org/title/Environment_variables#Examples
+        de = de.BeforeFirst(':');
+    }
 #if wxUSE_DETECT_SM
     if ( de.empty() )
     {
-        static const wxString s_SM = GetSM();
-
-        if (s_SM == wxT("GnomeSM"))
-            de = wxT("GNOME");
-        else if (s_SM == wxT("KDE"))
-            de = wxT("KDE");
+        static const wxString s_SM(GetSM());
+        de = s_SM;
+        de.Replace(wxS("-session"), wxString());
     }
 #endif // wxUSE_DETECT_SM
+
+    de.MakeUpper();
+    if (de.Contains(wxS("GNOME")))
+        de = wxS("GNOME");
+    else if (de.Contains(wxS("KDE")))
+        de = wxS("KDE");
+    else if (de.Contains(wxS("XFCE")))
+        de = wxS("XFCE");
 
     return de;
 }

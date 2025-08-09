@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #endif // WX_PRECOMP
@@ -141,6 +138,7 @@ bool wxNativeContainerWindow::Create(wxNativeContainerWindowId anid)
 #ifdef GDK_WINDOWING_X11
     GdkWindow * const win = gdk_x11_window_foreign_new_for_display(gdk_display_get_default(), anid);
 #else
+    wxUnusedVar(anid);
     GdkWindow * const win = NULL;
 #endif
 #else

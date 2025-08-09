@@ -23,6 +23,8 @@ enum wxCondError
     They may be used in a multithreaded application to wait until the given condition
     becomes @true which happens when the condition becomes signaled.
 
+    @note In C++11 programs, prefer using @c std::condition to this class.
+
     For example, if a worker thread is doing some long task and another thread has
     to wait until it is finished, the latter thread will wait on the condition
     object and the worker thread will signal it on exit (this example is not
@@ -720,6 +722,8 @@ enum wxThreadError
     between threads and processes is that memory spaces of different processes are
     separated while all threads share the same address space.
 
+    @note In C++11 programs, consider using @c std::thread instead of this class.
+
     While it makes it much easier to share common data between several threads, it
     also makes it much easier to shoot oneself in the foot, so careful use of
     synchronization objects such as mutexes (see wxMutex) or critical sections
@@ -1267,11 +1271,6 @@ public:
           - @c wxPRIORITY_DEFAULT: 50
           - @c wxPRIORITY_MAX: 100
 
-        Notice that in the MSW implementation the thread priority can currently
-        be only set after creating the thread with CreateThread(). But under
-        all platforms this method can be called either before launching the
-        thread using Run() or after doing it.
-
         Please note that currently this function is not implemented when using
         the default (@c SCHED_OTHER) scheduling policy under POSIX systems.
     */
@@ -1386,6 +1385,40 @@ protected:
         OnExit() will be called just before exiting.
     */
     void Exit(ExitCode exitcode = 0);
+
+    /**
+        Sets an internal name for the thread, which enables the debugger to
+        show the name along with the list of threads, as long as both the OS
+        and the debugger support this. The thread name may also be visible
+        in list of processes and in crash dumps (also in release builds).
+
+        This function is protected, as it should be called from a derived
+        class, in the context of the derived thread. A good place to call this
+        function is at the beginning of your Entry() function.
+
+        For portable code, the name should be in ASCII. On Linux the length
+        is truncated to 15 characters, on other platforms the name can be
+        longer than that.
+
+        @return Either:
+            - @false: Failure or missing implementation for this OS.
+            - @true: Success or undetectable failure.
+
+        @since 3.1.6
+    */
+    bool SetName(const wxString &name);
+
+    /**
+        Sets an internal name for the current thread, which may be a wxThread
+        or any other kind of thread; e.g. an std::thread.
+
+        @return Either:
+            - @false: Failure or missing implementation for this OS.
+            - @true: Success or undetectable failure.
+
+        @since 3.1.6
+    */
+    static bool SetNameForCurrent(const wxString &name);
 };
 
 
@@ -1574,6 +1607,8 @@ enum wxMutexError
     from its usefulness in coordinating mutually-exclusive access to a shared
     resource as only one thread at a time can own a mutex object.
 
+    @note In C++11 programs, prefer using @c std::mutex to this class.
+
     Mutexes may be recursive in the sense that a thread can lock a mutex which it
     had already locked before (instead of dead locking the entire process in this
     situation by starting to wait on a mutex which will never be released while the
@@ -1591,7 +1626,7 @@ enum wxMutexError
     // this variable has an "s_" prefix because it is static: seeing an "s_" in
     // a multithreaded program is in general a good sign that you should use a
     // mutex (or a critical section)
-    static wxMutex *s_mutexProtectingTheGlobalData;
+    static wxMutex s_mutexProtectingTheGlobalData;
 
     // we store some numbers in this global array which is presumably used by
     // several threads simultaneously
@@ -1600,11 +1635,15 @@ enum wxMutexError
     void MyThread::AddNewNode(int num)
     {
         // ensure that no other thread accesses the list
-        s_mutexProtectingTheGlobalList->Lock();
+
+        // Note that using Lock() and Unlock() explicitly is not recommended
+        // and only done here for illustrative purposes, prefer to use
+        // wxMutexLocker, as shown below, instead!
+        s_mutexProtectingTheGlobalData.Lock();
 
         s_data.Add(num);
 
-        s_mutexProtectingTheGlobalList->Unlock();
+        s_mutexProtectingTheGlobaData.Unlock();
     }
 
     // return true if the given number is greater than all array elements
@@ -1688,7 +1727,7 @@ public:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_thread */
-//@{
+///@{
 
 /**
     This macro declares a (static) critical section object named @a cs if
@@ -1816,5 +1855,5 @@ void wxMutexGuiEnter();
 */
 void wxMutexGuiLeave();
 
-//@}
+///@}
 

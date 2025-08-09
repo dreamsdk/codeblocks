@@ -14,8 +14,33 @@
     wxTreeItemId handles, which may be tested for validity by calling
     wxTreeItemId::IsOk().
 
-    A similar control with a fully native implementation for GTK+ and OS X
+    A similar control with a fully native implementation for GTK+ and macOS
     as well is wxDataViewTreeCtrl.
+
+    @section treectrl_images Images in wxTreeCtrl
+
+    wxTreeCtrl inherits from wxWithImages classes providing the functions for
+    associating images with the control items. Each item refers to its image
+    using an index, which can possibly by wxWithImages::NO_IMAGE to indicate
+    that the item doesn't use any image at all, and the corresponding image is
+    taken either from the vector passed to wxWithImages::SetImages() or from
+    the image list passed to wxWithImages::SetImageList() or
+    wxWithImages::AssignImageList() functions.
+
+    In addition to normal images, handled with the methods mentioned above,
+    wxTreeCtrl also provides optional state images that may be used to indicate
+    some additional state of the item, e.g. checked or unchecked status. These
+    images can be set using SetStateImageList() and AssignStateImageList()
+    functions that behave in the same way as the corresponding methods of
+    wxWithImages.
+
+    Finally, in the generic version of this control (wxGenericTreeCtrl), also
+    provides SetButtonsImageList() and AssignButtonsImageList(), which can be
+    used to change the images used for the control buttons, used to expand or
+    collapse its branches. These methods are not available in the native wxMSW
+    and wxQt implementations.
+
+    @section treectrl_events Events
 
     To intercept events from a tree control, use the event table macros
     described in wxTreeEvent.
@@ -148,25 +173,14 @@
 
     See also @ref overview_windowstyles.
 
-    @b Win32 @b notes:
-
-    wxTreeCtrl class uses the standard common treeview control under Win32
-    implemented in the system library comctl32.dll. Some versions of this
-    library are known to have bugs with handling the tree control colours: the
-    usual symptom is that the expanded items leave black (or otherwise
-    incorrectly coloured) background behind them, especially for the controls
-    using non-default background colour. The recommended solution is to upgrade
-    the comctl32.dll to a newer version: see
-    http://www.microsoft.com/downloads/details.aspx?familyid=cb2cf3a2-8025-4e8f-8511-9b476a8d35d2
-
     @library{wxcore}
     @category{ctrl}
     @appearance{treectrl}
 
     @see wxDataViewTreeCtrl, wxTreeEvent, wxTreeItemData, @ref overview_treectrl,
-         wxListBox, wxListCtrl, wxImageList
+         wxListBox, wxListCtrl, wxWithImages
 */
-class wxTreeCtrl : public wxControl
+class wxTreeCtrl : public wxControl, public wxWithImages
 {
 public:
     /**
@@ -252,15 +266,6 @@ public:
     void AssignButtonsImageList(wxImageList* imageList);
 
     /**
-        Sets the normal image list. The image list assigned with this method
-        will be automatically deleted by wxTreeCtrl as appropriate (i.e. it
-        takes ownership of the list).
-
-        @see SetImageList().
-    */
-    void AssignImageList(wxImageList* imageList);
-
-    /**
         Sets the state image list. Image list assigned with this method will be
         automatically deleted by wxTreeCtrl as appropriate (i.e. it takes
         ownership of the list).
@@ -333,13 +338,23 @@ public:
     virtual void DeleteChildren(const wxTreeItemId& item);
 
     /**
-        Starts editing the label of the given @a item. This function generates a
-        @c EVT_TREE_BEGIN_LABEL_EDIT event which can be vetoed so that no text
-        control will appear for in-place editing.
+        Starts editing the label of the given @a item.
 
-        If the user changed the label (i.e. s/he does not press ESC or leave the
-        text control without changes, a @c EVT_TREE_END_LABEL_EDIT event will be
-        sent which can be vetoed as well.
+        This function generates a @c EVT_TREE_BEGIN_LABEL_EDIT event which can
+        be vetoed to prevent the editing from starting.
+
+        If it does start, a text control, which can be retrieved using
+        GetEditControl(), allowing the user to edit the label interactively is
+        shown. In wxMSW, this text control is created using @a textCtrlClass,
+        however this parameter is currently ignored in the other ports where a
+        plain wxTextCtrl is always used.
+
+        When the editing ends, @c EVT_TREE_END_LABEL_EDIT event is sent and
+        this event can be vetoed as well to prevent the label from changing.
+        Note that this event is sent both when the user accepts (e.g. by
+        pressing Enter) or cancels (e.g. by pressing Escape) and its handler
+        can use wxTreeEvent::IsEditCancelled() to distinguish between these
+        situations.
 
         @see EndEditLabel(), wxTreeEvent
     */
@@ -495,16 +510,16 @@ public:
     */
     virtual void SetFocusedItem(const wxTreeItemId& item);
 
-
-    /**
-        Returns the normal image list.
-    */
-    wxImageList* GetImageList() const;
-
     /**
         Returns the current tree control indentation.
     */
     virtual unsigned int GetIndent() const;
+
+    /**
+        Returns the current tree control spacing.  This is the number of
+        horizontal pixels between the buttons and the state images.
+    */
+    unsigned int GetSpacing() const;
 
     /**
         Returns the background colour of the item.
@@ -837,18 +852,16 @@ public:
     void SetButtonsImageList(wxImageList* imageList);
 
     /**
-        Sets the normal image list. The image list assigned with this method
-        will @b not be deleted by @ref wxTreeCtrl "wxTreeCtrl"'s destructor, you
-        must delete it yourself.
-
-        @see AssignImageList().
-    */
-    virtual void SetImageList(wxImageList* imageList);
-
-    /**
         Sets the indentation for the tree control.
     */
     virtual void SetIndent(unsigned int indent);
+
+    /**
+        Sets the spacing for the tree control. Spacing is the number of
+        horizontal pixels between the buttons and the state images.
+        This has no effect under wxMSW.
+    */
+    void SetSpacing(unsigned int spacing);
 
     /**
         Sets the colour of the item's background.
@@ -1091,7 +1104,12 @@ public:
                 const wxTreeItemId& item = wxTreeItemId());
 
     /**
-        Returns the item (valid for all events).
+        Returns the item.
+
+        Note that the item may be invalid for wxEVT_TREE_SEL_CHANGED events
+        when the previously selected item has been deselected and there is no
+        new selection any longer, as it notably happens when deleting all tree
+        control items.
     */
     wxTreeItemId GetItem() const;
 

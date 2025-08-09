@@ -24,22 +24,27 @@ public:
     // we have to provide all the overloads to allow using strings instead of
     // data formats (as a lot of existing code does)
     wxDataFormat( const wxString& id ) { InitFromString(id); }
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
     wxDataFormat( const char *id ) { InitFromString(id); }
+#endif
     wxDataFormat( const wchar_t *id ) { InitFromString(id); }
     wxDataFormat( const wxCStrData& id ) { InitFromString(id); }
 
     wxDataFormat& operator=(NativeFormat format)
         { SetId(format); return *this; }
 
-    // comparison (must have both versions)
+    // comparison
+    bool operator==(wxDataFormatId type) const
+        { return m_type == type; }
+    bool operator!=(wxDataFormatId type) const
+        { return m_type != type; }
     bool operator==(NativeFormat format) const
         { return m_format == (NativeFormat)format; }
     bool operator!=(NativeFormat format) const
         { return m_format != (NativeFormat)format; }
-    bool operator==(wxDataFormatId format) const
-        { return m_type == (wxDataFormatId)format; }
-    bool operator!=(wxDataFormatId format) const
-        { return m_type != (wxDataFormatId)format; }
+    bool operator==(const wxDataFormat& other) const;
+    bool operator!=(const wxDataFormat& other) const
+        { return m_format != other.m_format; }
 
     // explicit and implicit conversions to NativeFormat which is one of
     // standard data types (implicit conversion is useful for preserving the

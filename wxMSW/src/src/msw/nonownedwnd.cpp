@@ -18,14 +18,12 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/dcclient.h"
     #include "wx/frame.h"       // Only for wxFRAME_SHAPED.
     #include "wx/region.h"
+    #include "wx/sizer.h"
     #include "wx/msw/private.h"
 #endif // WX_PRECOMP
 
@@ -36,7 +34,9 @@
     #include "wx/graphics.h"
 #endif // wxUSE_GRAPHICS_CONTEXT
 
+#include "wx/dynlib.h"
 #include "wx/scopedptr.h"
+#include "wx/msw/missing.h"
 
 // ============================================================================
 // wxNonOwnedWindow implementation
@@ -128,16 +128,6 @@ private:
     wxDECLARE_NO_COPY_CLASS(wxNonOwnedWindowShapeImpl);
 };
 
-wxNonOwnedWindow::wxNonOwnedWindow()
-{
-    m_shapeImpl = NULL;
-}
-
-wxNonOwnedWindow::~wxNonOwnedWindow()
-{
-    delete m_shapeImpl;
-}
-
 bool wxNonOwnedWindow::DoSetPathShape(const wxGraphicsPath& path)
 {
     delete m_shapeImpl;
@@ -146,17 +136,188 @@ bool wxNonOwnedWindow::DoSetPathShape(const wxGraphicsPath& path)
     return true;
 }
 
-#else // !wxUSE_GRAPHICS_CONTEXT
+#endif // wxUSE_GRAPHICS_CONTEXT
 
-// Trivial ctor and dtor as we don't have anything to do when wxGraphicsContext
-// is not used but still define them here to avoid adding even more #if checks
-// to the header, it it doesn't do any harm even though it's not needed.
 wxNonOwnedWindow::wxNonOwnedWindow()
 {
+#if wxUSE_GRAPHICS_CONTEXT
+    m_shapeImpl = NULL;
+#endif // wxUSE_GRAPHICS_CONTEXT
+
+    m_activeDPI = wxDefaultSize;
+    m_perMonitorDPIaware = false;
 }
 
 wxNonOwnedWindow::~wxNonOwnedWindow()
 {
+#if wxUSE_GRAPHICS_CONTEXT
+    delete m_shapeImpl;
+#endif // wxUSE_GRAPHICS_CONTEXT
 }
 
-#endif // wxUSE_GRAPHICS_CONTEXT/!wxUSE_GRAPHICS_CONTEXT
+bool wxNonOwnedWindow::Reparent(wxWindowBase* newParent)
+{
+    // ::SetParent() can't be used for non-owned windows, as they don't have
+    // any parent, only the owner, so use a different function for them even
+    // if, confusingly, the owner is stored at the same location as the parent
+    // and so uses the same GWLP_HWNDPARENT offset.
+
+    // Do not call the base class function here to skip wxWindow reparenting.
+    if ( !wxWindowBase::Reparent(newParent) )
+        return false;
+
+    const HWND hwndOwner = GetParent() ? GetHwndOf(GetParent()) : 0;
+
+    ::SetWindowLongPtr(GetHwnd(), GWLP_HWNDPARENT, (LONG_PTR)hwndOwner);
+
+    return true;
+}
+
+namespace
+{
+
+static bool IsPerMonitorDPIAware(HWND hwnd)
+{
+    bool dpiAware = false;
+
+    // Determine if 'Per Monitor v2' DPI awareness is enabled in the
+    // applications manifest.
+#if wxUSE_DYNLIB_CLASS
+    #define WXDPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 ((WXDPI_AWARENESS_CONTEXT)-4)
+    typedef WXDPI_AWARENESS_CONTEXT(WINAPI * GetWindowDpiAwarenessContext_t)(HWND hwnd);
+    typedef BOOL(WINAPI * AreDpiAwarenessContextsEqual_t)(WXDPI_AWARENESS_CONTEXT dpiContextA, WXDPI_AWARENESS_CONTEXT dpiContextB);
+    static GetWindowDpiAwarenessContext_t s_pfnGetWindowDpiAwarenessContext = NULL;
+    static AreDpiAwarenessContextsEqual_t s_pfnAreDpiAwarenessContextsEqual = NULL;
+    static bool s_initDone = false;
+
+    if ( !s_initDone )
+    {
+        wxLoadedDLL dllUser32("user32.dll");
+        wxDL_INIT_FUNC(s_pfn, GetWindowDpiAwarenessContext, dllUser32);
+        wxDL_INIT_FUNC(s_pfn, AreDpiAwarenessContextsEqual, dllUser32);
+        s_initDone = true;
+    }
+
+    if ( s_pfnGetWindowDpiAwarenessContext && s_pfnAreDpiAwarenessContextsEqual )
+    {
+        WXDPI_AWARENESS_CONTEXT dpiAwarenessContext = s_pfnGetWindowDpiAwarenessContext(hwnd);
+
+        if ( s_pfnAreDpiAwarenessContextsEqual(dpiAwarenessContext, WXDPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2) == TRUE )
+        {
+            dpiAware = true;
+        }
+    }
+#endif // wxUSE_DYNLIB_CLASS
+
+    return dpiAware;
+}
+
+}
+
+bool wxNonOwnedWindow::IsThisEnabled() const
+{
+    // Under MSW we use the actual window state rather than the value of
+    // m_isEnabled because the latter might be out of sync for TLWs disabled
+    // by a native modal dialog being shown, as native functions such as
+    // ::MessageBox() etc just call ::EnableWindow() on them without updating
+    // m_isEnabled and we have no way to be notified about this.
+    //
+    // But we can only do this if the window had been already created, so test
+    // for this in order to return correct result if it was disabled after
+    // using default ctor but before calling Create().
+    return m_hWnd ? !(::GetWindowLong(GetHwnd(), GWL_STYLE) & WS_DISABLED)
+                  : m_isEnabled;
+}
+
+WXLRESULT wxNonOwnedWindow::MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lParam)
+{
+    WXLRESULT rc = 0;
+    bool processed = false;
+
+    switch ( message )
+    {
+        case WM_NCCALCSIZE:
+            // Use this message ID to determine the DPI information on
+            // window creation, since WM_NCCREATE is not generated for dialogs.
+            if ( m_activeDPI == wxDefaultSize )
+            {
+                m_perMonitorDPIaware = IsPerMonitorDPIAware(GetHwnd());
+                m_activeDPI = GetDPI();
+            }
+            break;
+
+        case WM_DPICHANGED:
+            {
+                const RECT* const prcNewWindow =
+                                         reinterpret_cast<const RECT*>(lParam);
+
+                processed = HandleDPIChange(wxSize(LOWORD(wParam),
+                                                   HIWORD(wParam)),
+                                            wxRectFromRECT(*prcNewWindow));
+            }
+            break;
+    }
+
+    if (!processed)
+        rc = wxNonOwnedWindowBase::MSWWindowProc(message, wParam, lParam);
+
+    return rc;
+}
+
+bool wxNonOwnedWindow::HandleDPIChange(const wxSize& newDPI, const wxRect& newRect)
+{
+    if ( !m_perMonitorDPIaware )
+    {
+        return false;
+    }
+
+    // Update the window decoration size to the new DPI: this seems to be the
+    // call with the least amount of side effects that is sufficient to do it
+    // and we need to do this in order for the size calculations, either in the
+    // user-defined wxEVT_DPI_CHANGED handler or in our own GetBestSize() call
+    // below, to work correctly.
+    ::SetWindowPos(GetHwnd(),
+                   0, 0, 0, 0, 0,
+                   SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOREDRAW |
+                   SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOSENDCHANGING |
+                   SWP_FRAMECHANGED);
+
+    const bool processed = MSWUpdateOnDPIChange(m_activeDPI, newDPI);
+    m_activeDPI = newDPI;
+
+    // We consider that if the event was processed, the application resized the
+    // window on its own already, but otherwise do it ourselves.
+    if ( !processed )
+    {
+        // The best size doesn't scale exactly with the DPI, so while the new
+        // size is usually a decent guess, it's typically not exactly correct.
+        // We can't always do much better, but at least ensure that the window
+        // is still big enough to show its contents if it uses a sizer.
+        //
+        // Note that if it doesn't use a sizer, we can't do anything here as
+        // using the best size wouldn't be the right thing to do: some controls
+        // (e.g. multiline wxTextCtrl) can have best size much bigger than
+        // their current, or minimal, size and we don't want to expand them
+        // significantly just because the DPI has changed, see #23091.
+        wxRect actualNewRect = newRect;
+        if ( wxSizer* sizer = GetSizer() )
+        {
+            const wxSize minSize = ClientToWindowSize(sizer->GetMinSize());
+            wxSize diff = minSize - newRect.GetSize();
+            diff.IncTo(wxSize(0, 0));
+
+            // Use wxRect::Inflate() to ensure that the center of the bigger
+            // rectangle is at the same position as the center of the proposed
+            // one, to prevent moving the window back to the old display from
+            // which it might have been just moved to this one, as doing this
+            // would result in an infinite stream of WM_DPICHANGED messages.
+            actualNewRect.Inflate(diff);
+        }
+
+        SetSize(actualNewRect);
+    }
+
+    Refresh();
+
+    return true;
+}

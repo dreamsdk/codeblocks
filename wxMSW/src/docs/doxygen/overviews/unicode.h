@@ -182,7 +182,7 @@ aware of the potential problems covered by the following section.
 wxWidgets uses the system @c wchar_t in wxString implementation by default
 under all systems. Thus, under Microsoft Windows, UCS-2 (simplified version of
 UTF-16 without support for surrogate characters) is used as @c wchar_t is 2
-bytes on this platform. Under Unix systems, including OS X, UCS-4 (also
+bytes on this platform. Under Unix systems, including macOS, UCS-4 (also
 known as UTF-32) is used by default, however it is also possible to build
 wxWidgets to use UTF-8 internally by passing @c \--enable-utf8 option to
 configure.
@@ -234,10 +234,10 @@ The problems can be separated into three broad classes:
 Because of the need to support implicit conversions to both @c char and
 @c wchar_t, wxString implementation is rather involved and many of its operators
 don't return the types which they could be naively expected to return.
-For example, the @c operator[] doesn't return neither a @c char nor a @c wchar_t
-but an object of a helper class wxUniChar or wxUniCharRef which is implicitly
-convertible to either. Usually you don't need to worry about this as the
-conversions do their work behind the scenes however in some cases it doesn't
+For example, the @c operator[] doesn't return either a @c char or a @c wchar_t
+and instead returns an object of a helper class wxUniChar or wxUniCharRef that is
+implicitly convertible to either. Usually you don't need to worry about this as
+the conversions do their work behind the scenes however in some cases it doesn't
 work. Here are some examples, using a wxString object @c s and some integer @c
 n:
 
@@ -254,6 +254,11 @@ n:
    not pass it to functions expecting @c char* or @c wchar_t*. Consider using
    string iterators instead if possible or replace this expression with
    @code s.c_str() + n @endcode otherwise.
+
+ - When using C++11 range-based for loop, the natural construct for iterating
+   over wxString @code for ( auto& ch: s ) @endcode doesn't compile because of
+   the unusual iterator type and @code for ( wxUniCharRef ch: s ) @endcode
+   needs to be used instead.
 
 Another class of problems is related to the fact that the value returned by
 @c c_str() itself is also not just a pointer to a buffer but a value of helper

@@ -319,7 +319,6 @@ BASE_DIST: ALL_DIST INTL_DIST
 	$(CP_P) $(SAMPDIR)/console/makefile.unx $(DISTDIR)/samples/console
 	$(CP_P) $(SAMPDIR)/console/console.cpp $(DISTDIR)/samples/console
 	$(CP_P) $(SAMPDIR)/console/console.dsp $(DISTDIR)/samples/console
-	$(CP_P) $(SAMPDIR)/console/testdata.fc $(DISTDIR)/samples/console
 
 	mv $(DISTDIR) $(BASEDISTDIR)
 
@@ -410,9 +409,6 @@ OSX_CARBON_DIST: ALL_GUI_DIST
 	$(CP_P) $(MACDIR)/cocoa/*.mm $(DISTDIR)/src/osx/cocoa
 	mkdir $(DISTDIR)/src/osx/iphone
 	$(CP_P) $(MACDIR)/iphone/*.mm $(DISTDIR)/src/osx/iphone
-	mkdir $(DISTDIR)/src/html/htmlctrl
-	mkdir $(DISTDIR)/src/html/htmlctrl/webkit
-	$(CP_P) $(WXDIR)/src/html/htmlctrl/webkit/*.mm $(DISTDIR)/src/html/htmlctrl/webkit
 	mkdir $(DISTDIR)/src/osx/carbon
 	$(CP_P) $(MACDIR)/carbon/*.cpp $(DISTDIR)/src/osx/carbon
 	$(CP_P) $(MACDIR)/carbon/*.mm $(DISTDIR)/src/osx/carbon
@@ -472,7 +468,6 @@ UNIV_DIST: ALL_GUI_DIST
 	mkdir $(DISTDIR)/src/univ
 	mkdir $(DISTDIR)/src/univ/themes
 	$(CP_P) $(INCDIR)/wx/univ/*.h $(DISTDIR)/include/wx/univ
-	$(CP_P) $(INCDIR)/wx/univ/setup0.h $(DISTDIR)/include/wx/univ/setup.h
 	$(CP_P) $(SRCDIR)/univ/*.cpp $(DISTDIR)/src/univ
 	$(CP_P) $(SRCDIR)/univ/themes/*.cpp $(DISTDIR)/src/univ/themes
 
@@ -787,7 +782,7 @@ distdir: @GUIDIST@
 	@# in other dist targets.
 	find $(DISTDIR) \( -name "CVS" -o -name ".cvsignore" -o -name "*.dsp" -o -name "*.dsw" -o -name "*.hh*" -o \
 			\( -name "makefile.*" -a ! -name "makefile.gcc" -a ! -name "makefile.unx" \) \) \
-			-print | egrep -v '/samples/.*\.hh.$$' | xargs rm -rf
+			-print | grep -vE '/samples/.*\.hh.$$' | xargs rm -rf
 
 dist: distdir
 	@cd _dist_dir && tar ch $(DISTDIRNAME) | gzip -f9 > ../$(WXARCHIVE);

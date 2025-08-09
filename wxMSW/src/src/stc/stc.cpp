@@ -28,9 +28,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_STC
 
@@ -238,18 +235,6 @@ bool wxStyledTextCtrl::Create(wxWindow *parent,
 
 #if wxUSE_GRAPHICS_DIRECT2D
     SetFontQuality(wxSTC_EFF_QUALITY_DEFAULT);
-#endif
-
-#ifdef __WXMSW__
-    // Set initial zoom for active DPI
-    const HDC hdc = ::GetDC(parent->GetHWND());
-    const int baseDPI = ::GetDeviceCaps(hdc, LOGPIXELSY);
-    const int activeDPI = parent->GetDPI().y;
-    ::ReleaseDC(parent->GetHWND(), hdc);
-
-    const int ptSizeOld = StyleGetSize(wxSTC_STYLE_DEFAULT);
-    const int ptSizeNew = (int)wxMulDivInt32(ptSizeOld, activeDPI, baseDPI);
-    SetZoom(GetZoom() + (ptSizeNew - ptSizeOld));
 #endif
 
     return true;
@@ -597,7 +582,7 @@ int wxStyledTextCtrl::GetIMEInteraction() const
     return SendMsg(SCI_GETIMEINTERACTION, 0, 0);
 }
 
-// Choose to display the the IME in a winow or inline.
+// Choose to display the IME in a winow or inline.
 void wxStyledTextCtrl::SetIMEInteraction(int imeInteraction)
 {
     SendMsg(SCI_SETIMEINTERACTION, imeInteraction, 0);
@@ -634,7 +619,7 @@ void wxStyledTextCtrl::MarkerSetBackgroundSelected(int markerNumber, const wxCol
     SendMsg(SCI_MARKERSETBACKSELECTED, markerNumber, wxColourAsLong(back));
 }
 
-// Enable/disable highlight for current folding bloc (smallest one that contains the caret)
+// Enable/disable highlight for current folding block (smallest one that contains the caret)
 void wxStyledTextCtrl::MarkerEnableHighlight(bool enabled)
 {
     SendMsg(SCI_MARKERENABLEHIGHLIGHT, enabled, 0);
@@ -1335,7 +1320,7 @@ void wxStyledTextCtrl::StyleSetChangeable(int style, bool changeable)
     SendMsg(SCI_STYLESETCHANGEABLE, style, changeable);
 }
 
-// Display a auto-completion list.
+// Display an auto-completion list.
 // The lengthEntered parameter indicates how many characters before
 // the caret should be used to provide context.
 void wxStyledTextCtrl::AutoCompShow(int lengthEntered, const wxString& itemList)
@@ -1702,7 +1687,7 @@ int wxStyledTextCtrl::FindText(int minPos, int maxPos, const wxString& text,
             ft.chrg.cpMin = minPos;
             ft.chrg.cpMax = maxPos;
             const wxWX2MBbuf buf = wx2stc(text);
-            ft.lpstrText = (char*)(const char*)buf;
+            ft.lpstrText = buf;
 
             int pos = SendMsg(SCI_FINDTEXT, flags, (sptr_t)&ft);
             if (findEnd) *findEnd=(pos==-1?wxSTC_INVALID_POSITION:ft.chrgText.cpMax);
@@ -3749,13 +3734,13 @@ int wxStyledTextCtrl::GetIndicatorValue() const
     return SendMsg(SCI_GETINDICATORVALUE, 0, 0);
 }
 
-// Turn a indicator on over a range.
+// Turn an indicator on over a range.
 void wxStyledTextCtrl::IndicatorFillRange(int start, int lengthFill)
 {
     SendMsg(SCI_INDICATORFILLRANGE, start, lengthFill);
 }
 
-// Turn a indicator off over a range.
+// Turn an indicator off over a range.
 void wxStyledTextCtrl::IndicatorClearRange(int start, int lengthClear)
 {
     SendMsg(SCI_INDICATORCLEARRANGE, start, lengthClear);
@@ -5445,21 +5430,33 @@ void wxStyledTextCtrl::OnGainFocus(wxFocusEvent& evt) {
 }
 
 
-void wxStyledTextCtrl::OnDPIChanged(wxDPIChangedEvent& evt)
-{
-    int ptSizeOld = StyleGetSize(wxSTC_STYLE_DEFAULT);
-    int ptSizeNew = (int)wxMulDivInt32(ptSizeOld, evt.GetNewDPI().y, evt.GetOldDPI().y);
-    SetZoom(GetZoom() + (ptSizeNew - ptSizeOld));
+void wxStyledTextCtrl::OnDPIChanged(wxDPIChangedEvent& evt) {
+    m_swx->DoInvalidateStyleData();
 
+    // trigger a cursor change, so any cursors created by wxWidgets (like reverse arrow) will be recreated
+    const int oldCursor = GetSTCCursor();
+    SetSTCCursor(-1);
+    SetSTCCursor(oldCursor);
+
+    // adjust the margins to the new DPI
     for ( int i = 0; i < SC_MAX_MARGIN; ++i )
     {
-        SetMarginWidth(i, (int)wxMulDivInt32(GetMarginWidth(i), evt.GetNewDPI().y, evt.GetOldDPI().y));
+        SetMarginWidth(i, evt.ScaleX(GetMarginWidth(i)));
     }
+
+    // Hide auto-complete popup, there is no (easy) way to set it to the correct size
+    // and position
+    if ( AutoCompActive() )
+    {
+        AutoCompCancel();
+    }
+
+    evt.Skip();
 }
 
 
 void wxStyledTextCtrl::OnSysColourChanged(wxSysColourChangedEvent& WXUNUSED(evt)) {
-    m_swx->DoSysColourChange();
+    m_swx->DoInvalidateStyleData();
 }
 
 
@@ -5673,6 +5670,26 @@ void wxStyledTextCtrl::NotifyParent(SCNotification* _scn) {
 
     GetEventHandler()->ProcessEvent(evt);
 }
+
+#ifdef __WXMSW__
+WXLRESULT wxStyledTextCtrl::MSWWindowProc(WXUINT nMsg,
+    WXWPARAM wParam,
+    WXLPARAM lParam)
+{
+    switch(nMsg) {
+    // Forward IME messages to ScintillaWX
+    case WM_IME_KEYDOWN:
+    case WM_IME_REQUEST:
+    case WM_IME_STARTCOMPOSITION:
+    case WM_IME_ENDCOMPOSITION:
+    case WM_IME_COMPOSITION:
+    case WM_IME_SETCONTEXT:
+        return SendMsg(nMsg, wParam, lParam);
+    default:
+        return wxControl::MSWWindowProc(nMsg, wParam, lParam);
+    }
+}
+#endif
 
 
 //----------------------------------------------------------------------

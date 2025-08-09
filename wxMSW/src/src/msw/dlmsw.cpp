@@ -18,9 +18,6 @@
 
 #include  "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-  #pragma hdrstop
-#endif
 
 #if wxUSE_DYNLIB_CLASS
 
@@ -143,6 +140,31 @@ wxDynamicLibraryDetailsCreator::EnumModulesProc(const wxChar* name,
 wxDllType wxDynamicLibrary::GetProgramHandle()
 {
     return (wxDllType)::GetModuleHandle(NULL);
+}
+
+// ----------------------------------------------------------------------------
+// error handling
+// ----------------------------------------------------------------------------
+
+/* static */
+void wxDynamicLibrary::ReportError(const wxString& message, const wxString& name)
+{
+    wxString msg(message);
+    if ( name.IsEmpty() && msg.Find("%s") == wxNOT_FOUND )
+        msg += "%s";
+    // msg needs a %s for the name
+    wxASSERT(msg.Find("%s") != wxNOT_FOUND);
+
+    const unsigned long code = wxSysErrorCode();
+    wxString errMsg = wxSysErrorMsgStr(code);
+
+    // The error message (specifically code==193) may contain a
+    // placeholder '%1' which stands for the filename.
+    errMsg.Replace("%1", name, false);
+
+    // Mimic the output of wxLogSysError(), but use our pre-processed
+    // errMsg.
+    wxLogError(msg + " " + _("(error %d: %s)"), name, code, errMsg);
 }
 
 // ----------------------------------------------------------------------------

@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PREFERENCES_EDITOR
 
@@ -61,6 +58,8 @@ public:
                    wxSizerFlags().Expand().DoubleBorder(wxLEFT|wxRIGHT|wxBOTTOM));
 #endif
         SetSizer(sizer);
+
+        m_notebook->SetFocus();
     }
 
     void AddPage(wxPreferencesPage *page)
@@ -82,6 +81,11 @@ public:
      bool ShouldPreventAppExit() const wxOVERRIDE
      {
          return false;
+     }
+
+     void FitPages()
+     {
+        SetClientSize(GetSizer()->GetMinSize());
      }
 
 private:
@@ -129,7 +133,7 @@ protected:
             dlg->AddPage(i->get());
         }
 
-        dlg->Fit();
+        dlg->FitPages();
 
         return dlg;
     }

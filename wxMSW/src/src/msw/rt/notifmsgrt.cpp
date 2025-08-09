@@ -9,10 +9,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_NOTIFICATION_MESSAGE && wxUSE_WINRT
 
 #ifndef WX_PRECOMP
@@ -27,7 +23,6 @@
 #include "wx/msw/rt/utils.h"
 #include "wx/msw/private/comptr.h"
 #include "wx/msw/wrapshl.h"
-#include "wx/msw/ole/comimpl.h"
 
 #include "wx/filename.h"
 #include "wx/stdpaths.h"
@@ -64,7 +59,7 @@ public:
         m_impl = NULL;
     }
 
-    // DesktopToastActivatedEventHandler 
+    // DesktopToastActivatedEventHandler
     IFACEMETHODIMP Invoke(IToastNotification *sender, IInspectable* args);
 
     // DesktopToastDismissedEventHandler
@@ -74,20 +69,56 @@ public:
     IFACEMETHODIMP Invoke(IToastNotification *sender, IToastFailedEventArgs *e);
 
     // IUnknown
-    DECLARE_IUNKNOWN_METHODS;
+    STDMETHODIMP_(ULONG) AddRef() wxOVERRIDE
+    {
+        return ++m_cRef;
+    }
+
+    STDMETHODIMP_(ULONG) Release() wxOVERRIDE
+    {
+        if ( !--m_cRef )
+        {
+            delete this;
+            return 0;
+        }
+
+        return m_cRef;
+    }
+
+    STDMETHODIMP QueryInterface(REFIID riid, void **ppv) wxOVERRIDE
+    {
+        if ( riid == IID_IUnknown || riid == __uuidof(DesktopToastActivatedEventHandler) )
+        {
+            DesktopToastActivatedEventHandler* const p = this;
+            *ppv = p;
+        }
+        else if ( riid == __uuidof(DesktopToastDismissedEventHandler) )
+        {
+            DesktopToastDismissedEventHandler* const p = this;
+            *ppv = p;
+        }
+        else if ( riid == __uuidof(DesktopToastFailedEventHandler) )
+        {
+            DesktopToastFailedEventHandler* const p = this;
+            *ppv = p;
+        }
+        else
+        {
+            *ppv = NULL;
+
+            return E_NOINTERFACE;
+        }
+
+        AddRef();
+
+        return S_OK;
+    }
 
 private:
+    ULONG m_cRef = 0;
+
     wxToastNotifMsgImpl* m_impl;
 };
-
-BEGIN_IID_TABLE(wxToastEventHandler)
-ADD_IID(Unknown)
-ADD_RAW_IID(__uuidof(DesktopToastActivatedEventHandler))
-ADD_RAW_IID(__uuidof(DesktopToastDismissedEventHandler))
-ADD_RAW_IID(__uuidof(DesktopToastFailedEventHandler))
-END_IID_TABLE;
-
-IMPLEMENT_IUNKNOWN_METHODS(wxToastEventHandler)
 
 class wxToastNotifMsgImpl : public wxNotificationMessageImpl
 {
@@ -170,7 +201,7 @@ public:
 
     HRESULT CreateToast(IXmlDocument *xml)
     {
-        HRESULT hr = ms_toastMgr->CreateToastNotifierWithId(rt::TempStringRef::Make(ms_appId), &m_notifier);
+        HRESULT hr = ms_toastMgr->CreateToastNotifierWithId(rt::TempStringRef(ms_appId), &m_notifier);
         if ( SUCCEEDED(hr) )
         {
             wxCOMPtr<IToastNotificationFactory> factory;
@@ -215,7 +246,7 @@ public:
         if ( SUCCEEDED(hr) )
         {
             wxCOMPtr<IXmlNodeList> nodeList;
-            hr = (*toastXml)->GetElementsByTagName(rt::TempStringRef::Make("text"), &nodeList);
+            hr = (*toastXml)->GetElementsByTagName(rt::TempStringRef("text"), &nodeList);
             if ( SUCCEEDED(hr) )
             {
                 hr = SetNodeListValueString(0, m_title, nodeList, *toastXml);
@@ -244,7 +275,7 @@ public:
     {
         wxCOMPtr<IXmlText> inputText;
 
-        HRESULT hr = xml->CreateTextNode(rt::TempStringRef::Make(str), &inputText);
+        HRESULT hr = xml->CreateTextNode(rt::TempStringRef(str), &inputText);
         if ( SUCCEEDED(hr) )
         {
             wxCOMPtr<IXmlNode> inputTextNode;
@@ -463,6 +494,9 @@ class wxToastNotifMsgModule : public wxModule
 public:
     wxToastNotifMsgModule()
     {
+        // Using RT API requires OLE and, importantly, we must ensure our
+        // OnExit() runs before it is uninitialized.
+        AddDependency("wxOleInitModule");
     }
 
     virtual bool OnInit() wxOVERRIDE

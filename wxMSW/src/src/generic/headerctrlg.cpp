@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_HEADERCTRL
 
@@ -556,7 +553,7 @@ void wxHeaderCtrl::OnPaint(wxPaintEvent& WXUNUSED(event))
 
         wxHeaderButtonParams params;
         params.m_labelText = col.GetTitle();
-        params.m_labelBitmap = col.GetBitmap();
+        params.m_labelBitmap = col.GetBitmapBundle().GetBitmapFor(this);
         params.m_labelAlignment = col.GetAlignment();
 
 #ifdef __WXGTK__

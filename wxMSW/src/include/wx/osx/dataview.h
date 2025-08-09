@@ -33,7 +33,7 @@ public:
                      int width = wxDVC_DEFAULT_WIDTH,
                      wxAlignment align = wxALIGN_CENTER,
                      int flags = wxDATAVIEW_COL_RESIZABLE);
-    wxDataViewColumn(const wxBitmap& bitmap,
+    wxDataViewColumn(const wxBitmapBundle& bitmap,
                      wxDataViewRenderer* renderer,
                      unsigned int model_column,
                      int width = wxDVC_DEFAULT_WIDTH,
@@ -53,7 +53,7 @@ public:
     virtual bool IsHidden() const wxOVERRIDE;
 
     virtual void SetAlignment  (wxAlignment align) wxOVERRIDE;
-    virtual void SetBitmap     (wxBitmap const& bitmap) wxOVERRIDE;
+    virtual void SetBitmap     (wxBitmapBundle const& bitmap) wxOVERRIDE;
     virtual void SetFlags      (int flags) wxOVERRIDE { m_flags = flags; /*SetIndividualFlags(flags); */ }
     virtual void SetHidden     (bool hidden) wxOVERRIDE;
     virtual void SetMaxWidth   (int maxWidth);
@@ -134,7 +134,7 @@ public:
                  const wxSize& size = wxDefaultSize,
                  long style = 0,
                  const wxValidator& validator = wxDefaultValidator,
-                 const wxString& name = wxDataViewCtrlNameStr )
+                 const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr) )
   {
     Init();
     Create(parent, winid, pos, size, style, validator, name);
@@ -148,7 +148,7 @@ public:
               const wxSize& size = wxDefaultSize,
               long style = 0,
               const wxValidator& validator = wxDefaultValidator,
-              const wxString& name = wxDataViewCtrlNameStr);
+              const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr));
 
   virtual wxWindow* GetMainWindow() // not used for the native implementation
   {
@@ -208,6 +208,10 @@ public:
 
   virtual void EditItem(const wxDataViewItem& item, const wxDataViewColumn *column) wxOVERRIDE;
 
+#if wxUSE_DRAG_AND_DROP
+  virtual bool DoEnableDropTarget( const wxVector<wxDataFormat>& formats ) wxOVERRIDE;
+#endif // wxUSE_DRAG_AND_DROP
+
  // returns the n-th pointer to a column;
  // this method is different from GetColumn(unsigned int pos) because here 'n' is not a position in the control but the n-th
  // position in the internal list/array of column pointers
@@ -226,11 +230,9 @@ public:
     return m_CustomRendererPtr;
   }
 
- // checks if currently a delete process is running
-  bool IsDeleting() const
-  {
-    return m_Deleting;
-  }
+ // checks if a single item or all items are being deleted
+  bool IsDeleting() const;
+  bool IsClearing() const;
 
  // with CG, we need to get the context from an kEventControlDraw event
  // unfortunately, the DataBrowser callbacks don't provide the context
@@ -255,11 +257,8 @@ public:
   {
     m_CustomRendererPtr = NewCustomRendererPtr;
   }
- // sets the flag indicating a deletion process:
-  void SetDeleting(bool deleting)
-  {
-    m_Deleting = deleting;
-  }
+
+  void AdjustAutosizedColumns() const;
 
   virtual wxDataViewColumn *GetCurrentColumn() const wxOVERRIDE;
 
@@ -276,13 +275,14 @@ protected:
   virtual void DoSetExpanderColumn() wxOVERRIDE;
   virtual void DoSetIndent() wxOVERRIDE;
 
-  virtual void DoExpand(const wxDataViewItem& item) wxOVERRIDE;
+  virtual void DoExpand(const wxDataViewItem& item, bool expandChildren) wxOVERRIDE;
 
   virtual wxSize DoGetBestSize() const wxOVERRIDE;
 
  // event handling
   void OnSize(wxSizeEvent &event);
-  void OnMouse(wxMouseEvent &event);
+
+  virtual void DoThaw() wxOVERRIDE;
 
 private:
  // initializing of local variables:
@@ -291,12 +291,19 @@ private:
   virtual wxDataViewItem DoGetCurrentItem() const wxOVERRIDE;
   virtual void DoSetCurrentItem(const wxDataViewItem& item) wxOVERRIDE;
 
+  void OnContextMenu(wxContextMenuEvent& event);
+
  //
  // variables
  //
-  bool m_Deleting; // flag indicating if a delete process is running; this flag is necessary because the notifier indicating an item deletion in the model may be called
-                   // after the actual deletion of the item; then, native callback functions/delegates may try to update data of variables that are already deleted;
-                   // if this flag is set all native variable update requests will be ignored
+
+  // If non-null, describes the item(s) being deleted. This is necessary to
+  // allow avoiding referencing already deleted items from the native
+  // callbacks/delegates.
+  struct wxOSXDVCDeleting* m_Deleting;
+
+  // This class can set (and reset) m_Deleting.
+  friend class wxOSXDVCScopedDeleter;
 
   void* m_cgContext; // pointer to core graphics context
 
@@ -306,7 +313,7 @@ private:
 
   wxDataViewColumnPtrArrayType m_ColumnPtrs; // all column pointers are stored in an array
 
-  wxDataViewModelNotifier* m_ModelNotifier; // stores the model notifier for the control (does not own the notifier)
+  class wxOSXDataViewModelNotifier* m_ModelNotifier; // stores the model notifier for the control (does not own the notifier)
 
  // wxWidget internal stuff:
   wxDECLARE_DYNAMIC_CLASS(wxDataViewCtrl);

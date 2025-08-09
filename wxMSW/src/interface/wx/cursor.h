@@ -140,7 +140,7 @@ public:
             - under MacOS, it defaults to @c wxBITMAP_TYPE_MACCURSOR_RESOURCE;
               when specifying a string resource name, first the color cursors 'crsr'
               and then the black/white cursors 'CURS' in the resource chain are scanned
-              through. Note that resource forks are deprecated on OS X so this
+              through. Note that resource forks are deprecated on macOS so this
               is only available for legacy reasons and should not be used in
               new code.
             - under GTK, it defaults to @c wxBITMAP_TYPE_XPM.
@@ -191,6 +191,17 @@ public:
     wxCursor(const wxImage& image);
 
     /**
+        Constructs a cursor from XPM data.
+
+        In versions of wxWidgets until 3.1.6 constructing wxCursor from XPM
+        data implicitly used wxImage constructor from XPM data and wxCursor
+        constructor from wxImage. Since 3.1.6 this constructor overload is
+        available to allow constructing wxCursor from XPM to still work, even
+        though wxImage constructor from XPM is now @c explicit.
+     */
+    wxCursor(const char* const* xpmData);
+
+    /**
         Copy constructor, uses @ref overview_refcount "reference counting".
 
         @param cursor
@@ -220,8 +231,8 @@ public:
         The hot spot is the point at which the mouse is actually considered to
         be when this cursor is used.
 
-        This method is currently only implemented in wxMSW and wxGTK2+ and
-        simply returns ::wxDefaultPosition in the other ports.
+        This method is currently implemented in wxMSW, wxGTK and wxOSX (since
+        wxWidgets 3.2.7) and returns ::wxDefaultPosition in the other ports.
 
         @since 3.1.0
      */
@@ -239,10 +250,10 @@ public:
 
     @see wxStockCursor
 */
-//@{
+///@{
 wxCursor wxNullCursor;
 wxCursor* wxSTANDARD_CURSOR;
 wxCursor* wxHOURGLASS_CURSOR;
 wxCursor* wxCROSS_CURSOR;
-//@}
+///@}
 

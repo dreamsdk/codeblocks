@@ -93,6 +93,8 @@ public:
 
     virtual void SetLabel(const wxString& title, wxFontEncoding encoding) wxOVERRIDE
     {
+        wxMacAutoreleasePool autoreleasepool;
+
         wxCFStringRef text( title , encoding );
 
         NSMutableAttributedString *
@@ -155,7 +157,7 @@ wxWidgetImplType* wxWidgetImpl::CreateStaticText( wxWindowMac* wxpeer,
     [v setBezeled:NO];
     [v setBordered:NO];
 
-    NSLineBreakMode linebreak = NSLineBreakByClipping;
+    NSLineBreakMode linebreak = NSLineBreakByWordWrapping;
     if ( style & wxST_ELLIPSIZE_MASK )
     {
         if ( style & wxST_ELLIPSIZE_MIDDLE )

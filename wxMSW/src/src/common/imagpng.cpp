@@ -17,9 +17,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_IMAGE && wxUSE_LIBPNG
 
@@ -544,10 +541,9 @@ bool wxPNGHandler::SaveFile( wxImage *image, wxOutputStream& stream, bool verbos
     const int iHeight = image->GetHeight();
     const int iWidth = image->GetWidth();
 
-    const bool bHasPngFormatOption
-        = image->HasOption(wxIMAGE_OPTION_PNG_FORMAT);
+    const bool hasPngFormatOption = image->HasOption(wxIMAGE_OPTION_PNG_FORMAT);
 
-    int iColorType = bHasPngFormatOption
+    int iColorType = hasPngFormatOption
                             ? image->GetOptionInt(wxIMAGE_OPTION_PNG_FORMAT)
                             : wxPNG_TYPE_COLOUR;
 
@@ -556,7 +552,7 @@ bool wxPNGHandler::SaveFile( wxImage *image, wxOutputStream& stream, bool verbos
 
     bool bUsePalette = iColorType == wxPNG_TYPE_PALETTE
 #if wxUSE_PALETTE
-        || (!bHasPngFormatOption && image->HasPalette() )
+        || (!hasPngFormatOption && image->HasPalette() )
 #endif
     ;
 

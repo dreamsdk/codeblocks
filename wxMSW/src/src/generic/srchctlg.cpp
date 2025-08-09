@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SEARCHCTRL
 
@@ -132,7 +129,8 @@ protected:
         // can't use wxBORDER_NONE to calculate a good height, in which case we just have to
         // assume a border in the code above and then subtract the space that would be taken up
         // by a themed border (the thin blue border and the white internal border).
-        size.y -= FromDIP(4);
+        // Don't use FromDIP(4), this seems not needed.
+        size.y -= 4;
 
         self->SetWindowStyleFlag(flags);
 
@@ -451,28 +449,21 @@ wxString wxSearchCtrl::GetDescriptiveText() const
 
 wxSize wxSearchCtrl::DoGetBestClientSize() const
 {
-    wxSize sizeText = m_text->GetBestSize();
-    wxSize sizeSearch(0,0);
-    wxSize sizeCancel(0,0);
-    int searchMargin = 0;
-    int cancelMargin = 0;
+    wxSize size = m_text->GetBestSize();
+
     if ( IsSearchButtonVisible() )
     {
-        sizeSearch = m_searchButton->GetBestSize();
-        searchMargin = FromDIP(MARGIN);
+        size.x += m_searchButton->GetBestSize().x + FromDIP(MARGIN);
     }
     if ( IsCancelButtonVisible() )
     {
-        sizeCancel = m_cancelButton->GetBestSize();
-        cancelMargin = FromDIP(MARGIN);
+        size.x += m_cancelButton->GetBestSize().x + FromDIP(MARGIN);
     }
 
-    int horizontalBorder = FromDIP(1) + ( sizeText.y - sizeText.y * 14 / 21 ) / 2;
+    int horizontalBorder = FromDIP(1) + (size.y - size.y * 14 / 21 ) / 2;
+    size.x += 2 * horizontalBorder;
 
-    // buttons are square and equal to the height of the text control
-    int height = sizeText.y;
-    return wxSize(sizeSearch.x + searchMargin + sizeText.x + cancelMargin + sizeCancel.x + 2*horizontalBorder,
-                  height);
+    return size;
 }
 
 void wxSearchCtrl::LayoutControls()
@@ -533,7 +524,7 @@ void wxSearchCtrl::LayoutControls()
     // of the white border that's part of the theme border. We can also remove a pixel from
     // the height to fit the text control in, because the padding in EDIT_HEIGHT_FROM_CHAR_HEIGHT
     // is already generous.
-    int textY = FromDIP(2);
+    int textY = FromDIP(1);
 #else
     int textY = 0;
 #endif
@@ -946,32 +937,6 @@ static int GetMultiplier()
     return 6;
 }
 
-static void RescaleBitmap(wxBitmap& bmp, const wxSize& sizeNeeded)
-{
-    wxCHECK_RET( sizeNeeded.IsFullySpecified(), wxS("New size must be given") );
-
-#if wxUSE_IMAGE
-    wxImage img = bmp.ConvertToImage();
-    img.Rescale(sizeNeeded.x, sizeNeeded.y);
-    bmp = wxBitmap(img);
-#else // !wxUSE_IMAGE
-    // Fallback method of scaling the bitmap
-    wxBitmap newBmp(sizeNeeded, bmp.GetDepth());
-#if defined(__WXMSW__) || defined(__WXOSX__)
-    // wxBitmap::UseAlpha() is used only on wxMSW and wxOSX.
-    newBmp.UseAlpha(bmp.HasAlpha());
-#endif // __WXMSW__ || __WXOSX__
-    {
-        wxMemoryDC dc(newBmp);
-        double scX = (double)sizeNeeded.GetWidth() / bmp.GetWidth();
-        double scY = (double)sizeNeeded.GetHeight() / bmp.GetHeight();
-        dc.SetUserScale(scX, scY);
-        dc.DrawBitmap(bmp, 0, 0);
-    }
-    bmp = newBmp;
-#endif // wxUSE_IMAGE/!wxUSE_IMAGE
-}
-
 wxBitmap wxSearchCtrl::RenderSearchBitmap( int x, int y, bool renderDrop )
 {
     wxColour bg = GetBackgroundColour();
@@ -1064,7 +1029,7 @@ wxBitmap wxSearchCtrl::RenderSearchBitmap( int x, int y, bool renderDrop )
 
     if ( multiplier != 1 )
     {
-        RescaleBitmap(bitmap, wxSize(x, y));
+        wxBitmap::Rescale(bitmap, wxSize(x, y));
     }
     if ( !renderDrop )
     {
@@ -1146,7 +1111,7 @@ wxBitmap wxSearchCtrl::RenderCancelBitmap( int x, int y )
     };
     mem.DrawPolygon(WXSIZEOF(handlePolygon2),handlePolygon2,multiplier*lineStartBase,multiplier*(x-lineStartBase));
 
-    // Stop drawing on the bitmap before possibly calling RescaleBitmap()
+    // Stop drawing on the bitmap before possibly calling wxBitmap::Rescale()
     // below.
     mem.SelectObject(wxNullBitmap);
 
@@ -1156,7 +1121,7 @@ wxBitmap wxSearchCtrl::RenderCancelBitmap( int x, int y )
 
     if ( multiplier != 1 )
     {
-        RescaleBitmap(bitmap, wxSize(x, y));
+        wxBitmap::Rescale(bitmap, wxSize(x, y));
     }
 
     return bitmap;
@@ -1235,9 +1200,11 @@ void wxSearchCtrl::OnSize( wxSizeEvent& WXUNUSED(event) )
     LayoutControls();
 }
 
-void wxSearchCtrl::OnDPIChanged(wxDPIChangedEvent &WXUNUSED(event))
+void wxSearchCtrl::OnDPIChanged(wxDPIChangedEvent &event)
 {
     RecalcBitmaps();
+
+    event.Skip();
 }
 
 #if wxUSE_MENUS

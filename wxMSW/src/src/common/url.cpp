@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_URL
 
@@ -35,7 +32,9 @@ wxIMPLEMENT_CLASS(wxURL, wxURI);
 wxProtoInfo *wxURL::ms_protocols = NULL;
 
 // Enforce linking of protocol classes:
+#if wxUSE_PROTOCOL_FILE
 USE_PROTOCOL(wxFileProto)
+#endif
 
 #if wxUSE_PROTOCOL_HTTP
 USE_PROTOCOL(wxHTTP)

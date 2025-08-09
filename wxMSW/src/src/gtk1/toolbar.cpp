@@ -75,8 +75,8 @@ public:
     wxToolBarTool(wxToolBar *tbar,
                   int id,
                   const wxString& label,
-                  const wxBitmap& bitmap1,
-                  const wxBitmap& bitmap2,
+                  const wxBitmapBundle& bitmap1,
+                  const wxBitmapBundle& bitmap2,
                   wxItemKind kind,
                   wxObject *clientData,
                   const wxString& shortHelpString,
@@ -123,7 +123,7 @@ public:
     {
         if (bitmap.IsOk())
         {
-            GdkBitmap *mask = bitmap.GetMask() ? bitmap.GetMask()->GetBitmap()
+            GdkBitmap *mask = bitmap.GetMask() ? bitmap.GetMask()->m_bitmap
                                                : NULL;
             gtk_pixmap_set( GTK_PIXMAP(m_pixmap), bitmap.GetPixmap(), mask );
         }
@@ -234,8 +234,8 @@ void wxToolBarTool::Init()
 
 wxToolBarToolBase *wxToolBar::CreateTool(int id,
                                          const wxString& text,
-                                         const wxBitmap& bitmap1,
-                                         const wxBitmap& bitmap2,
+                                         const wxBitmapBundle& bitmap1,
+                                         const wxBitmapBundle& bitmap2,
                                          wxItemKind kind,
                                          wxObject *clientData,
                                          const wxString& shortHelpString,
@@ -371,7 +371,7 @@ bool wxToolBar::DoInsertTool(size_t pos, wxToolBarToolBase *toolBase)
 
             GdkBitmap *mask = NULL;
             if ( bitmap.GetMask() )
-                mask = bitmap.GetMask()->GetBitmap();
+                mask = bitmap.GetMask()->m_bitmap;
 
             tool_pixmap = gtk_pixmap_new( pixmap, mask );
             gtk_pixmap_set_build_insensitive( GTK_PIXMAP(tool_pixmap), TRUE );
@@ -393,8 +393,8 @@ bool wxToolBar::DoInsertTool(size_t pos, wxToolBarToolBase *toolBase)
 
                 if ( tool->IsRadio() )
                 {
-                    wxToolBarToolsList::compatibility_iterator node
-                        = wxToolBarToolsList::compatibility_iterator();
+                    wxToolBarToolsList::compatibility_iterator node =
+                        wxToolBarToolsList::compatibility_iterator();
                     if ( pos )
                         node = m_tools.Item(pos - 1);
 

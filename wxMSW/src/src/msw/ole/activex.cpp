@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_ACTIVEX
 
@@ -155,28 +152,15 @@ wxDEFINE_EVENT( wxEVT_ACTIVEX, wxActiveXEvent );
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-#define HIMETRIC_PER_INCH   2540
-#define MAP_PIX_TO_LOGHIM(x,ppli)   MulDiv(HIMETRIC_PER_INCH, (x), (ppli))
-
 static void PixelsToHimetric(SIZEL &sz)
 {
-    static int logX = 0;
-    static int logY = 0;
-
-    if (logY == 0)
-    {
-        // initaliase
-        HDC dc = GetDC(NULL);
-        logX = GetDeviceCaps(dc, LOGPIXELSX);
-        logY = GetDeviceCaps(dc, LOGPIXELSY);
-        ReleaseDC(NULL, dc);
-    }
+    const wxSize logSz = wxGetDPIofHDC(ScreenHDC());
 
 #define HIMETRIC_INCH   2540
 #define CONVERT(x, logpixels)   wxMulDivInt32(HIMETRIC_INCH, (x), (logpixels))
 
-    sz.cx = CONVERT(sz.cx, logX);
-    sz.cy = CONVERT(sz.cy, logY);
+    sz.cx = CONVERT(sz.cx, logSz.x);
+    sz.cy = CONVERT(sz.cy, logSz.y);
 
 #undef CONVERT
 #undef HIMETRIC_INCH
@@ -768,7 +752,7 @@ namespace
 const int invalid_entry_marker = 0;
 }
 
-wxVariant wxActiveXEvents::ms_invalidEntryMarker((void*)&invalid_entry_marker);
+wxVariant wxActiveXEvents::ms_invalidEntryMarker(const_cast<void*>(static_cast<const void*>(&invalid_entry_marker)));
 
 size_t wxActiveXEvent::ParamCount() const
 {
@@ -802,7 +786,7 @@ wxVariant &wxActiveXEvent::operator [](size_t idx)
         {
             // copy the _real_ parameter into this one
             // NOTE: m_params stores the parameters in *reverse* order.
-            // Whyever, but this was the case in the original implementation of
+            // Whatever, but this was the case in the original implementation of
             // wxActiveXEvents::Invoke
             // Keep this convention.
             VARIANTARG& va = native->pDispParams->rgvarg[ native->pDispParams->cArgs - idx - 1 ];

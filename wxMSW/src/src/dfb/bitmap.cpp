@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -420,7 +417,7 @@ bool wxBitmap::CreateWithFormat(int width, int height, int dfbFormat)
 }
 
 #if wxUSE_IMAGE
-wxBitmap::wxBitmap(const wxImage& imageOrig, int depth, double WXUNUSED(scale))
+void wxBitmap::InitFromImage(const wxImage& imageOrig, int depth, double WXUNUSED(scale))
 {
     wxCHECK_RET( imageOrig.IsOk(), wxT("invalid image") );
 
@@ -604,12 +601,6 @@ void wxBitmap::SetMask(wxMask *mask)
     AllocExclusive();
     delete M_BITMAP->m_mask;
     M_BITMAP->m_mask = mask;
-}
-
-bool wxBitmap::CopyFromIcon(const wxIcon& icon)
-{
-    *this = *((wxBitmap*)(&icon));
-    return true;
 }
 
 wxBitmap wxBitmap::GetSubBitmap(const wxRect& rect) const

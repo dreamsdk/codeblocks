@@ -18,20 +18,16 @@
 
 #include "wx/wxprec.h"
 
-#ifdef    __BORLANDC__
-    #pragma hdrstop
-#endif  //__BORLANDC__
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
     #include "wx/filefn.h"
     #include "wx/log.h"
-    #include "wx/intl.h"
     #include "wx/module.h"
 #endif
 
 #include "wx/init.h"
-#include "wx/thread.h"
+#include "wx/atomic.h"
 
 #include "wx/scopedptr.h"
 #include "wx/except.h"
@@ -54,9 +50,7 @@
     #endif // wxCrtSetDbgFlag
 #endif // __WINDOWS__
 
-#if wxUSE_UNICODE && defined(__WXOSX__)
-    #include <locale.h>
-#endif
+#include "wx/private/localeset.h"
 
 // ----------------------------------------------------------------------------
 // private classes
@@ -133,21 +127,20 @@ static inline void Use(void *) { }
 static struct InitData
 {
     InitData()
+        : nInitCount(0)
     {
-        nInitCount = 0;
-
 #if wxUSE_UNICODE
         argc = argcOrig = 0;
         // argv = argvOrig = NULL; -- not even really needed
 #endif // wxUSE_UNICODE
     }
 
-    // critical section protecting this struct
-    wxCRIT_SECT_DECLARE_MEMBER(csInit);
-
     // number of times wxInitialize() was called minus the number of times
     // wxUninitialize() was
-    size_t nInitCount;
+    //
+    // it is atomic to allow more than one thread to call wxInitialize() but
+    // only one of them to actually initialize the library
+    wxAtomicInt nInitCount;
 
 #if wxUSE_UNICODE
     int argc;
@@ -232,17 +225,9 @@ static void FreeConvertedArgs()
 // initialization which is always done (not customizable) before wxApp creation
 static bool DoCommonPreInit()
 {
-#if wxUSE_UNICODE && defined(__WXOSX__)
-    // In OS X and iOS, wchar_t CRT functions convert to char* and fail under
-    // some locales. The safest fix is to set LC_CTYPE to UTF-8 to ensure that
-    // they can handle any input.
-    //
-    // Note that this must be done for any app, Cocoa or console, whether or
-    // not it uses wxLocale.
-    //
-    // See https://stackoverflow.com/questions/11713745/why-does-the-printf-family-of-functions-care-about-locale
-    setlocale(LC_CTYPE, "UTF-8");
-#endif // wxUSE_UNICODE && defined(__WXOSX__)
+    // This is necessary even for the default locale, see comments in this
+    // function.
+    wxEnsureLocaleIsCompatibleWithCRT();
 
 #if wxUSE_LOG
     // Reset logging in case we were cleaned up and are being reinitialized.
@@ -440,7 +425,12 @@ static void DoCommonPostCleanup()
 #endif // wxUSE_LOG
 }
 
-void wxEntryCleanup()
+// for MSW the real wxEntryCleanup() is defined in msw/main.cpp
+#ifndef __WINDOWS__
+    #define wxEntryCleanupReal wxEntryCleanup
+#endif // !__WINDOWS__
+
+void wxEntryCleanupReal()
 {
     DoCommonPreCleanup();
 
@@ -491,7 +481,7 @@ int wxEntryReal(int& argc, wxChar **argv)
         if ( !wxTheApp->CallOnInit() )
         {
             // don't call OnExit() if OnInit() failed
-            return -1;
+            return wxTheApp->GetErrorExitCode();
         }
 
         // ensure that OnExit() is called if OnInit() had succeeded
@@ -533,9 +523,7 @@ bool wxInitialize()
 
 bool wxInitialize(int& argc, wxChar **argv)
 {
-    wxCRIT_SECT_LOCKER(lockInit, gs_initData.csInit);
-
-    if ( gs_initData.nInitCount++ )
+    if ( wxAtomicInc(gs_initData.nInitCount) != 1 )
     {
         // already initialized
         return true;
@@ -547,9 +535,7 @@ bool wxInitialize(int& argc, wxChar **argv)
 #if wxUSE_UNICODE
 bool wxInitialize(int& argc, char **argv)
 {
-    wxCRIT_SECT_LOCKER(lockInit, gs_initData.csInit);
-
-    if ( gs_initData.nInitCount++ )
+    if ( wxAtomicInc(gs_initData.nInitCount) != 1 )
     {
         // already initialized
         return true;
@@ -561,10 +547,8 @@ bool wxInitialize(int& argc, char **argv)
 
 void wxUninitialize()
 {
-    wxCRIT_SECT_LOCKER(lockInit, gs_initData.csInit);
+    if ( wxAtomicDec(gs_initData.nInitCount) != 0 )
+        return;
 
-    if ( --gs_initData.nInitCount == 0 )
-    {
-        wxEntryCleanup();
-    }
+    wxEntryCleanup();
 }

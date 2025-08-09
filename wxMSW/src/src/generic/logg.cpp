@@ -20,9 +20,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -236,7 +233,7 @@ wxString wxLogGui::GetTitle() const
             titleFormat = _("%s Information");
     }
 
-    return wxString::Format(titleFormat, wxTheApp->GetAppDisplayName());
+    return wxString::Format(titleFormat, wxTheApp ? wxTheApp->GetAppDisplayName() : _("Application"));
 }
 
 void
@@ -270,7 +267,7 @@ wxLogGui::DoShowMultipleLogMessages(const wxArrayString& messages,
     const size_t nMsgCount = messages.size();
     message.reserve(nMsgCount*100);
     for ( size_t n = nMsgCount; n > 0; n-- ) {
-        message << m_aMessages[n - 1] << wxT("\n");
+        message << messages[n - 1] << wxT("\n");
     }
 
     DoShowSingleLogMessage(message, title, style);
@@ -345,7 +342,7 @@ void wxLogGui::DoLogRecord(wxLogLevel level,
             {
                 m_aMessages.Add(msg);
                 m_aSeverity.Add(wxLOG_Message);
-                m_aTimes.Add((long)info.timestamp);
+                m_aTimes.Add((long)(info.timestampMS / 1000));
                 m_bHasMessages = true;
             }
             break;
@@ -398,7 +395,7 @@ void wxLogGui::DoLogRecord(wxLogLevel level,
 
             m_aMessages.Add(msg);
             m_aSeverity.Add((int)level);
-            m_aTimes.Add((long)info.timestamp);
+            m_aTimes.Add((long)(info.timestampMS / 1000));
             m_bHasMessages = true;
             break;
 
@@ -491,6 +488,9 @@ wxEND_EVENT_TABLE()
 wxLogFrame::wxLogFrame(wxWindow *pParent, wxLogWindow *log, const wxString& szTitle)
           : wxFrame(pParent, wxID_ANY, szTitle)
 {
+    // We don't want our parent frame getting any events from us.
+    SetExtraStyle(GetExtraStyle() | wxWS_EX_BLOCK_EVENTS);
+
     m_log = log;
 
     m_pTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
@@ -573,7 +573,7 @@ void wxLogFrame::OnSave(wxCommandEvent& WXUNUSED(event))
         wxLogError(_("Can't save log contents to file."));
     }
     else {
-        wxLogStatus((wxFrame*)this, _("Log saved to the file '%s'."), filename.c_str());
+        wxLogStatus((wxFrame*)this, _("Log saved to the file '%s'."), filename);
     }
 }
 #endif // CAN_SAVE_FILES
@@ -808,7 +808,7 @@ void wxLogDialog::CreateDetailsControls(wxWindow *parent)
     wxImageList *imageList = new wxImageList(ICON_SIZE, ICON_SIZE);
 
     // order should be the same as in the switch below!
-    static const char* const icons[] =
+    static wxString const icons[] =
     {
         wxART_ERROR,
         wxART_WARNING,
@@ -1012,7 +1012,7 @@ static int OpenLogFile(wxFile& file, wxString *pFilename, wxWindow *parent)
         bool bAppend = false;
         wxString strMsg;
         strMsg.Printf(_("Append log to file '%s' (choosing [No] will overwrite it)?"),
-                      filename.c_str());
+                      filename);
         switch ( wxMessageBox(strMsg, _("Question"),
                               wxICON_QUESTION | wxYES_NO | wxCANCEL) ) {
             case wxYES:

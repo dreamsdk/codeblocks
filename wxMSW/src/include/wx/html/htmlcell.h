@@ -222,7 +222,7 @@ public:
 
     void SetScriptMode(wxHtmlScriptMode mode, long previousBase);
     wxHtmlScriptMode GetScriptMode() const { return m_ScriptMode; }
-    long GetScriptBaseline() { return m_ScriptBaseline; }
+    long GetScriptBaseline() const { return m_ScriptBaseline; }
 
     // Formatting cells are not visible on the screen, they only alter
     // renderer's state.
@@ -295,7 +295,7 @@ public:
     //
     // 'window' is pointer to wxHtmlWindowInterface of the window which
     // generated the event.
-    // HINT: if this handling is not enough for you you should use
+    // HINT: if this handling is not enough for you should use
     //       wxHtmlWidgetCell
     virtual bool ProcessMouseClick(wxHtmlWindowInterface *window,
                                    const wxPoint& pos,

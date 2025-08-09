@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_INFOBAR
 
@@ -38,6 +35,13 @@
 
 #include "wx/artprov.h"
 #include "wx/scopeguard.h"
+
+#ifdef __WXGTK3__
+    #include "wx/gtk/private/wrapgtk.h"
+
+    #include "wx/gtk/private/gtk3-compat.h"
+    #include "wx/gtk/private/stylecontext.h"
+#endif
 
 wxBEGIN_EVENT_TABLE(wxInfoBarGeneric, wxInfoBarBase)
     EVT_BUTTON(wxID_ANY, wxInfoBarGeneric::OnButton)
@@ -69,7 +73,34 @@ bool wxInfoBarGeneric::Create(wxWindow *parent, wxWindowID winid)
         return false;
 
     // use special, easy to notice, colours
-    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK));
+    wxColour colBg, colFg;
+    if ( !m_hasBgCol && !m_hasFgCol )
+    {
+        // We want to use the native infobar colours for consistency with the
+        // native implementation under GTK, but only do it for 3.24, as both
+        // the CSS structure and the default colour values have changed in this
+        // version compared to all the previous ones and it seems safer to keep
+        // the old behaviour for the older GTK versions, see #25048.
+#ifdef __WXGTK3__
+        if ( wx_is_at_least_gtk3(24) )
+        {
+            wxGtkStyleContext sc;
+            sc.Add(GTK_TYPE_INFO_BAR, "infobar", "info", NULL);
+            sc.Add("revealer");
+            sc.Add("box");
+            sc.Bg(colBg);
+            sc.Fg(colFg);
+        }
+        else
+#endif // GTK 3
+        {
+            colBg = wxSystemSettings::GetColour(wxSYS_COLOUR_INFOBK);
+            colFg = wxSystemSettings::GetColour(wxSYS_COLOUR_INFOTEXT);
+        }
+    }
+
+    if( !m_hasBgCol )
+        SetBackgroundColour(colBg);
 
     // create the controls: icon, text and the button to dismiss the
     // message.
@@ -77,8 +108,12 @@ bool wxInfoBarGeneric::Create(wxWindow *parent, wxWindowID winid)
     // the icon is not shown unless it's assigned a valid bitmap
     m_icon = new wxStaticBitmap(this, wxID_ANY, wxNullBitmap);
 
-    m_text = new wxStaticText(this, wxID_ANY, wxString());
-    m_text->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_INFOTEXT));
+    m_text = new wxStaticText(this, wxID_ANY, wxString(),
+                              wxDefaultPosition, wxDefaultSize,
+                              wxST_ELLIPSIZE_MIDDLE);
+
+    if(!m_hasFgCol)
+        m_text->SetForegroundColour(colFg);
 
     m_button = wxBitmapButton::NewCloseButton(this, wxID_ANY);
     m_button->SetToolTip(_("Hide this notification message."));
@@ -90,8 +125,8 @@ bool wxInfoBarGeneric::Create(wxWindow *parent, wxWindowID winid)
     //     and being preceded by a spacer
     wxSizer * const sizer = new wxBoxSizer(wxHORIZONTAL);
     sizer->Add(m_icon, wxSizerFlags().Centre().Border());
-    sizer->Add(m_text, wxSizerFlags().Centre());
-    sizer->AddStretchSpacer();
+    sizer->Add(m_text, wxSizerFlags().Proportion(1).Centre());
+    sizer->AddSpacer(0); // This spacer only exists for compatibility.
     sizer->Add(m_button, wxSizerFlags().Centre().Border());
     SetSizer(sizer);
 
@@ -227,16 +262,17 @@ void wxInfoBarGeneric::ShowMessage(const wxString& msg, int flags)
     }
     else // do show an icon
     {
-        m_icon->SetBitmap(wxArtProvider::GetBitmap(
+        m_icon->SetBitmap(wxArtProvider::GetBitmapBundle(
                             wxArtProvider::GetMessageBoxIconId(flags),
                           wxART_BUTTON));
         m_icon->Show();
     }
 
-    // notice the use of EscapeMnemonics() to ensure that "&" come through
-    // correctly
-    m_text->SetLabel(wxControl::EscapeMnemonics(msg));
-    m_text->Wrap( GetClientSize().GetWidth() );
+    // use SetLabelText() to ensure that "&" come through correctly
+    m_text->SetLabelText(msg);
+
+    // in case it doesn't fit in the window, show the full message as a tooltip
+    m_text->SetToolTip(msg);
 
     // then show this entire window if not done yet
     if ( !IsShown() )

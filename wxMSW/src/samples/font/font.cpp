@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all standard wxWidgets headers
@@ -651,24 +648,25 @@ bool MyFrame::DoEnumerateFamilies(bool fixedWidthOnly,
         else
         {
             // let the user choose
-            wxString *facenames = new wxString[nFacenames];
+            wxArrayString facenames;
+            facenames.Alloc(nFacenames);
             int n;
             for ( n = 0; n < nFacenames; n++ )
-                facenames[n] = fontEnumerator.GetFacenames().Item(n);
+                facenames.Add(fontEnumerator.GetFacenames().Item(n));
+
+            // it's more convenient to see the fonts in alphabetical order
+            facenames.Sort();
 
             n = wxGetSingleChoiceIndex
                 (
                     "Choose a facename",
                     GetSampleTitle(),
-                    nFacenames,
                     facenames,
                     this
                 );
 
             if ( n != -1 )
                 facename = facenames[n];
-
-            delete [] facenames;
         }
 
         if ( !facename.empty() )

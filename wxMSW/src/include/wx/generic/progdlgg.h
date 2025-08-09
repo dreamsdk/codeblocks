@@ -120,7 +120,7 @@ protected:
     // called to disable the other windows while this dialog is shown
     void DisableOtherWindows();
 
-    // must be called to reenable the other windows temporarily disabled while
+    // must be called to re-enable the other windows temporarily disabled while
     // the dialog was shown
     void ReenableOtherWindows();
 
@@ -188,7 +188,7 @@ private:
                  *m_remaining;
 
     // Reference to the parent top level window, automatically becomes NULL if
-    // it it is destroyed and could be always NULL if it's not given at all.
+    // it is destroyed and could be always NULL if it's not given at all.
     wxWindowRef m_parentTop;
 
     // Progress dialog styles: this is not the same as m_windowStyle because

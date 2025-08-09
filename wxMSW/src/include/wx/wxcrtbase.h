@@ -180,7 +180,7 @@ extern unsigned long android_wcstoul(const wchar_t *nptr, wchar_t **endptr, int 
     #define wxCRT_StrtoullW  _wcstoui64
 #else
     /* Both of these functions are implemented in C++11 compilers */
-    #if defined(__cplusplus) && __cplusplus >= 201103L
+    #if wxCHECK_CXX_STD(201103L)
         #ifndef HAVE_STRTOULL
             #define HAVE_STRTOULL
         #endif
@@ -231,11 +231,7 @@ extern unsigned long android_wcstoul(const wchar_t *nptr, wchar_t **endptr, int 
 #endif
 
 /* define wxCRT_StricmpA/W and wxCRT_StrnicmpA/W for various compilers */
-
-#if defined(__BORLANDC__)
-    #define wxCRT_StricmpA stricmp
-    #define wxCRT_StrnicmpA strnicmp
-#elif defined(__VISUALC__) || defined(__MINGW32__)
+#if defined(__VISUALC__) || defined(__MINGW32__)
     /*
         Due to MinGW 5.3 bug (https://sourceforge.net/p/mingw/bugs/2322/),
         _stricmp() and _strnicmp() are not declared in its standard headers
@@ -504,7 +500,7 @@ WXDLLIMPEXP_BASE int wxCRT_FputcW(wchar_t wc, FILE *stream);
    ------------------------------------------------------------------------- */
 
 #define wxCRT_GetenvA           getenv
-#ifdef _tgetenv
+#ifdef wxHAVE_TCHAR_SUPPORT
     #define wxCRT_GetenvW       _wgetenv
 #endif
 
@@ -514,8 +510,7 @@ WXDLLIMPEXP_BASE wchar_t * wxCRT_GetenvW(const wchar_t *name);
 
 
 #define wxCRT_SystemA               system
-/* mingw32 doesn't provide _tsystem() or _wsystem(): */
-#if defined(_tsystem)
+#ifdef wxHAVE_TCHAR_SUPPORT
     #define  wxCRT_SystemW          _wsystem
 #endif
 
@@ -599,7 +594,7 @@ WXDLLIMPEXP_BASE size_t wxCRT_StrftimeW(wchar_t *s, size_t max,
 #define wxCRT_IsxdigitW(c)  iswxdigit(c)
 
 #ifdef __GLIBC__
-    #if defined(__GLIBC__) && (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
+    #if (__GLIBC__ == 2) && (__GLIBC_MINOR__ == 0)
         /* /usr/include/wctype.h incorrectly declares translations */
         /* tables which provokes tons of compile-time warnings -- try */
         /* to correct this */

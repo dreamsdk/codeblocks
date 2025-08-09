@@ -11,9 +11,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SOUND && wxUSE_LIBSDL
 
@@ -72,18 +69,18 @@ public:
           m_data(NULL), m_evtHandler(NULL) {}
     virtual ~wxSoundBackendSDL();
 
-    wxString GetName() const { return wxT("Simple DirectMedia Layer"); }
-    int GetPriority() const { return 9; }
-    bool IsAvailable() const;
-    bool HasNativeAsyncPlayback() const { return true; }
+    wxString GetName() const wxOVERRIDE { return wxT("Simple DirectMedia Layer"); }
+    int GetPriority() const wxOVERRIDE { return 9; }
+    bool IsAvailable() const wxOVERRIDE;
+    bool HasNativeAsyncPlayback() const wxOVERRIDE { return true; }
     bool Play(wxSoundData *data, unsigned flags,
-              volatile wxSoundPlaybackStatus *status);
+              volatile wxSoundPlaybackStatus *status) wxOVERRIDE;
 
     void FillAudioBuffer(Uint8 *stream, int len);
     void FinishedPlayback();
 
-    void Stop();
-    bool IsPlaying() const { return m_playing; }
+    void Stop() wxOVERRIDE;
+    bool IsPlaying() const wxOVERRIDE { return m_playing; }
 
 private:
     bool OpenAudio();
@@ -134,6 +131,7 @@ bool wxSoundBackendSDL::IsAvailable() const
         return true;
     if (SDL_WasInit(SDL_INIT_AUDIO) != SDL_INIT_AUDIO)
     {
+        SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
         if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE) == -1)
             return false;
     }
@@ -218,7 +216,7 @@ bool wxSoundBackendSDL::OpenAudio()
             wxStrlcpy(driver, SDL_GetCurrentAudioDriver(), 256);
 #endif
             wxLogTrace(wxT("sound"), wxT("opened audio, driver '%s'"),
-                       wxString(driver, wxConvLocal).c_str());
+                       wxString(driver, wxConvLocal));
 #endif
             m_audioOpen = true;
             return true;
@@ -226,7 +224,7 @@ bool wxSoundBackendSDL::OpenAudio()
         else
         {
             wxString err(SDL_GetError(), wxConvLocal);
-            wxLogError(_("Couldn't open audio: %s"), err.c_str());
+            wxLogError(_("Couldn't open audio: %s"), err);
             return false;
         }
     }

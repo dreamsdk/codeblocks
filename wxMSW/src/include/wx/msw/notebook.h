@@ -35,14 +35,14 @@ public:
              const wxPoint& pos = wxDefaultPosition,
              const wxSize& size = wxDefaultSize,
              long style = 0,
-             const wxString& name = wxNotebookNameStr);
+             const wxString& name = wxASCII_STR(wxNotebookNameStr));
     // Create() function
   bool Create(wxWindow *parent,
               wxWindowID id,
               const wxPoint& pos = wxDefaultPosition,
               const wxSize& size = wxDefaultSize,
               long style = 0,
-              const wxString& name = wxNotebookNameStr);
+              const wxString& name = wxASCII_STR(wxNotebookNameStr));
   virtual ~wxNotebook();
 
   // accessors
@@ -61,14 +61,6 @@ public:
     // set/get the title of a page
   bool SetPageText(size_t nPage, const wxString& strText) wxOVERRIDE;
   wxString GetPageText(size_t nPage) const wxOVERRIDE;
-
-  // image list stuff: each page may have an image associated with it. All
-  // the images belong to an image list, so you have to
-  // 1) create an image list
-  // 2) associate it with the notebook
-  // 3) set for each page it's image
-    // associate image list with a control
-  void SetImageList(wxImageList* imageList) wxOVERRIDE;
 
     // sets/returns item's image index in the current image list
   int  GetPageImage(size_t nPage) const wxOVERRIDE;
@@ -130,17 +122,9 @@ public:
   // implementation only
   // -------------------
 
+  virtual bool SetBackgroundColour(const wxColour& colour) wxOVERRIDE;
+
 #if wxUSE_UXTHEME
-  virtual bool SetBackgroundColour(const wxColour& colour) wxOVERRIDE
-  {
-      if ( !wxNotebookBase::SetBackgroundColour(colour) )
-          return false;
-
-      UpdateBgBrush();
-
-      return true;
-  }
-
   // draw child background
   virtual bool MSWPrintChild(WXHDC hDC, wxWindow *win) wxOVERRIDE;
 
@@ -160,6 +144,9 @@ protected:
 
   // remove one page from the notebook, without deleting
   virtual wxNotebookPage *DoRemovePage(size_t nPage) wxOVERRIDE;
+
+  // update the image list used by the native control
+  virtual void OnImagesChanged() wxOVERRIDE;
 
   // get the page rectangle for the current notebook size
   //

@@ -24,7 +24,7 @@
 #include "wx/window.h"
 #include "wx/timer.h"
 #include "wx/sizer.h"
-#include "wx/bitmap.h"
+#include "wx/bmpbndl.h"
 
 enum wxAuiManagerDock
 {
@@ -123,7 +123,6 @@ enum wxAuiPaneInsertLevel
 
 // forwards and array declarations
 class wxAuiDockUIPart;
-class wxAuiPaneButton;
 class wxAuiPaneInfo;
 class wxAuiDockInfo;
 class wxAuiDockArt;
@@ -132,7 +131,6 @@ class wxAuiManagerEvent;
 #ifndef SWIG
 WX_DECLARE_USER_EXPORTED_OBJARRAY(wxAuiDockInfo, wxAuiDockInfoArray, WXDLLIMPEXP_AUI);
 WX_DECLARE_USER_EXPORTED_OBJARRAY(wxAuiDockUIPart, wxAuiDockUIPartArray, WXDLLIMPEXP_AUI);
-WX_DECLARE_USER_EXPORTED_OBJARRAY(wxAuiPaneButton, wxAuiPaneButtonArray, WXDLLIMPEXP_AUI);
 WX_DECLARE_USER_EXPORTED_OBJARRAY(wxAuiPaneInfo, wxAuiPaneInfoArray, WXDLLIMPEXP_AUI);
 WX_DEFINE_USER_EXPORTED_ARRAY_PTR(wxAuiPaneInfo*, wxAuiPaneInfoPtrArray, class WXDLLIMPEXP_AUI);
 WX_DEFINE_USER_EXPORTED_ARRAY_PTR(wxAuiDockInfo*, wxAuiDockInfoPtrArray, class WXDLLIMPEXP_AUI);
@@ -176,7 +174,6 @@ public:
         // unsafe bits of "dest"
         source.window = window;
         source.frame = frame;
-        source.buttons = buttons;
         wxCHECK_RET(source.IsValid(),
                     "window settings and pane settings are incompatible");
         // now assign
@@ -226,7 +223,7 @@ public:
     }
     wxAuiPaneInfo& Name(const wxString& n) { name = n; return *this; }
     wxAuiPaneInfo& Caption(const wxString& c) { caption = c; return *this; }
-    wxAuiPaneInfo& Icon(const wxBitmap& b) { icon = b; return *this; }
+    wxAuiPaneInfo& Icon(const wxBitmapBundle& b) { icon = b; return *this; }
     wxAuiPaneInfo& Left() { dock_direction = wxAUI_DOCK_LEFT; return *this; }
     wxAuiPaneInfo& Right() { dock_direction = wxAUI_DOCK_RIGHT; return *this; }
     wxAuiPaneInfo& Top() { dock_direction = wxAUI_DOCK_TOP; return *this; }
@@ -374,7 +371,7 @@ public:
 public:
     wxString name;        // name of the pane
     wxString caption;     // caption displayed on the window
-    wxBitmap icon;        // icon of the pane, may be invalid
+    wxBitmapBundle icon;  // icon of the pane, may be invalid
 
     wxWindow* window;     // window that is in this pane
     wxFrame* frame;       // floating frame window that holds the pane
@@ -392,9 +389,6 @@ public:
     wxPoint floating_pos; // position while floating
     wxSize floating_size; // size while floating
     int dock_proportion;  // proportion while docked
-
-    wxAuiPaneButtonArray buttons; // buttons on the pane
-
 
     wxRect rect;              // current rectangle (populated by wxAUI)
 
@@ -418,6 +412,9 @@ public:
 
     void SetFlags(unsigned int flags);
     unsigned int GetFlags() const;
+
+    static bool AlwaysUsesLiveResize();
+    bool HasLiveResize() const;
 
     void SetManagedWindow(wxWindow* managedWnd);
     wxWindow* GetManagedWindow() const;
@@ -489,7 +486,7 @@ public:
 
 public:
 
-    // deprecated -- please use SetManagedWindow() and
+    // deprecated -- please use SetManagedWindow()
     // and GetManagedWindow() instead
 
     wxDEPRECATED( void SetFrame(wxFrame* frame) );
@@ -558,6 +555,7 @@ public:
 protected:
 
     // protected events
+    void OnDestroy(wxWindowDestroyEvent& evt);
     void OnPaint(wxPaintEvent& evt);
     void OnEraseBackground(wxEraseEvent& evt);
     void OnSize(wxSizeEvent& evt);
@@ -605,7 +603,6 @@ protected:
     wxRect m_lastHint;          // last hint rectangle
     wxPoint m_lastMouseMove;   // last mouse move position (see OnMotion)
     int  m_currentDragItem;
-    bool m_skipping;
     bool m_hasMaximized;
 
     double m_dockConstraintX;  // 0.0 .. 1.0; max pct of window width a dock can consume
@@ -730,18 +727,12 @@ public:
     int orientation;         // orientation (either wxHORIZONTAL or wxVERTICAL)
     wxAuiDockInfo* dock;        // which dock the item is associated with
     wxAuiPaneInfo* pane;        // which pane the item is associated with
-    wxAuiPaneButton* button;    // which pane button the item is associated with
+    int button;              // which pane button the item is associated with
     wxSizer* cont_sizer;     // the part's containing sizer
     wxSizerItem* sizer_item; // the sizer item of the part
     wxRect rect;             // client coord rectangle of the part itself
 };
 
-
-class WXDLLIMPEXP_AUI wxAuiPaneButton
-{
-public:
-    int button_id;        // id of the button (e.g. buttonClose)
-};
 
 
 

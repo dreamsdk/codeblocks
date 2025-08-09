@@ -24,6 +24,10 @@
 #ifndef _LIBPORT_
 #define	_LIBPORT_
 
+#if defined(HAVE_CONFIG_H)
+#  include <tif_config.h>
+#endif
+
 int getopt(int argc, char * const argv[], const char *optstring);
 extern   char *optarg;
 extern   int opterr;
@@ -36,16 +40,16 @@ int strcasecmp(const char *s1, const char *s2);
 #  define HAVE_GETOPT 1
 #endif
 
-#if HAVE_STRTOL
+#if !defined(HAVE_STRTOL)
 long strtol(const char *nptr, char **endptr, int base);
 #endif
-#if HAVE_STRTOLL
+#if !defined(HAVE_STRTOLL)
 long long strtoll(const char *nptr, char **endptr, int base);
 #endif
-#if HAVE_STRTOUL
+#if !defined(HAVE_STRTOUL)
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 #endif
-#if HAVE_STRTOULL
+#if !defined(HAVE_STRTOULL)
 unsigned long long strtoull(const char *nptr, char **endptr, int base);
 #endif
 
@@ -53,15 +57,6 @@ unsigned long long strtoull(const char *nptr, char **endptr, int base);
 void *
 lfind(const void *key, const void *base, size_t *nmemb, size_t size,
       int(*compar)(const void *, const void *));
-#endif
-
-#if !defined(HAVE_SNPRINTF)
-#undef vsnprintf
-#define vsnprintf _TIFF_vsnprintf_f
-
-#undef snprintf
-#define snprintf _TIFF_snprintf_f
-int snprintf(char* str, size_t size, const char* format, ...);
 #endif
 
 #endif /* ndef _LIBPORT_ */

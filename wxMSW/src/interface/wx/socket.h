@@ -479,7 +479,7 @@ public:
     @endEventTable
 
     @library{wxnet}
-    @category{net}
+    @category{net,events}
 
     @see wxSocketBase, wxSocketClient, wxSocketServer
 */
@@ -664,7 +664,7 @@ enum wxSocketEventFlags
     This option can have surprising platform dependent behaviour, so check the
     documentation for your platform's implementation of setsockopt().
 
-    Note that on BSD-based systems(e.g. OS X), use of
+    Note that on BSD-based systems(e.g. macOS), use of
     @b wxSOCKET_REUSEADDR implies @b SO_REUSEPORT in addition to
     @b SO_REUSEADDR to be consistent with Windows.
 
@@ -732,7 +732,7 @@ public:
     /**
         @name Construction and Destruction
     */
-    //@{
+    ///@{
 
     /**
         Default constructor.
@@ -798,13 +798,13 @@ public:
      */
     static void Shutdown();
 
-    //@}
+    ///@}
 
 
     /**
         @name Socket State
     */
-    //@{
+    ///@{
 
     /**
         Returns @true if an error occurred in the last IO operation.
@@ -941,7 +941,7 @@ public:
     */
     void SaveState();
 
-    //@}
+    ///@}
 
 
     /**
@@ -949,7 +949,7 @@ public:
 
         See also: wxSocketServer::WaitForAccept(), wxSocketClient::WaitOnConnect()
     */
-    //@{
+    ///@{
 
     /**
         Shut down the socket, disabling further transmission and reception of
@@ -1331,13 +1331,13 @@ public:
     */
     wxSocketBase& WriteMsg(const void* buffer, wxUint32 nbytes);
 
-    //@}
+    ///@}
 
 
     /**
         @name Handling Socket Events
     */
-    //@{
+    ///@{
 
     /**
         Returns a pointer of the client data for this socket, as set with
@@ -1421,7 +1421,7 @@ public:
     */
     wxSOCKET_T GetSocket() const;
 
-    //@}
+    ///@}
 };
 
 

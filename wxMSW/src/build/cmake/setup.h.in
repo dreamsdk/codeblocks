@@ -17,23 +17,8 @@
 /* the installation location prefix from configure */
 #cmakedefine wxINSTALL_PREFIX "@wxINSTALL_PREFIX@"
 
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#cmakedefine gid_t int
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#cmakedefine mode_t int
-
-/* Define to `long' if <sys/types.h> doesn't define.  */
-#cmakedefine off_t long
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#cmakedefine pid_t int
-
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#cmakedefine size_t unsigned
-
 /* Define if ssize_t type is available.  */
-#cmakedefine HAVE_SSIZE_T
+#cmakedefine HAVE_SSIZE_T 1
 
 /* Define if you have the ANSI C header files.  */
 #cmakedefine STDC_HEADERS 1
@@ -42,9 +27,6 @@
 #ifndef _GNU_SOURCE
 #cmakedefine _GNU_SOURCE 1
 #endif
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#cmakedefine uid_t int
 
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
@@ -182,8 +164,6 @@
     #cmakedefine01 wxUSE_UNICODE
 #endif
 
-#cmakedefine01 wxUSE_WCHAR_T
-
 
 #cmakedefine01 wxUSE_EXCEPTIONS
 
@@ -235,6 +215,8 @@
 #cmakedefine01 wxUSE_FSVOLUME
 
 #cmakedefine01 wxUSE_SECRETSTORE
+
+#cmakedefine01 wxUSE_SPELLCHECK
 
 #cmakedefine01 wxUSE_STDPATHS
 
@@ -296,6 +278,16 @@
 
 #cmakedefine01 wxUSE_MIMETYPE
 
+#cmakedefine01 wxUSE_WEBREQUEST
+
+#ifdef __APPLE__
+#define wxUSE_WEBREQUEST_URLSESSION wxUSE_WEBREQUEST
+#else
+#cmakedefine01 wxUSE_WEBREQUEST_URLSESSION
+#endif
+
+#cmakedefine01 wxUSE_WEBREQUEST_CURL
+
 #cmakedefine01 wxUSE_PROTOCOL
 
 #cmakedefine01 wxUSE_PROTOCOL_FILE
@@ -320,7 +312,7 @@
 
 #cmakedefine01 wxUSE_XRC
 
-#define wxUSE_XML       wxUSE_XRC
+#cmakedefine01 wxUSE_XML
 
 #cmakedefine01 wxUSE_AUI
 
@@ -337,6 +329,10 @@
 #else
 #cmakedefine01 wxUSE_WEBVIEW_IE
 #endif
+
+#cmakedefine01 wxUSE_WEBVIEW_EDGE
+
+#cmakedefine01 wxUSE_WEBVIEW_EDGE_STATIC
 
 #if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
 #cmakedefine01 wxUSE_WEBVIEW_WEBKIT
@@ -413,6 +409,8 @@
 #cmakedefine01 wxUSE_TREECTRL
 #cmakedefine01 wxUSE_TREELISTCTRL
 
+#cmakedefine01 wxUSE_NATIVE_DATAVIEWCTRL
+
 #cmakedefine01 wxUSE_STATUSBAR
 
 #cmakedefine01 wxUSE_NATIVE_STATUSBAR
@@ -467,6 +465,8 @@
 
 #cmakedefine01 wxUSE_MENUS
 
+#cmakedefine01 wxUSE_MENUBAR
+
 #cmakedefine01 wxUSE_NOTIFICATION_MESSAGE
 
 #cmakedefine01 wxUSE_PREFERENCES_EDITOR
@@ -500,7 +500,6 @@
 
 #cmakedefine01 wxUSE_DIRDLG
 
-
 #cmakedefine01 wxUSE_FILEDLG
 
 #cmakedefine01 wxUSE_FINDREPLDLG
@@ -518,6 +517,8 @@
 #cmakedefine01 wxUSE_TEXTDLG
 
 #cmakedefine01 wxUSE_NUMBERDLG
+
+#cmakedefine01 wxUSE_CREDENTIALDLG
 
 #cmakedefine01 wxUSE_SPLASH
 
@@ -544,6 +545,8 @@
 #cmakedefine01 wxUSE_HTML
 
 #cmakedefine01 wxUSE_GLCANVAS
+
+#cmakedefine01 wxUSE_GLCANVAS_EGL
 
 #cmakedefine01 wxUSE_RICHTEXT
 
@@ -596,7 +599,6 @@
 #cmakedefine01 wxUSE_DC_TRANSFORM_MATRIX
 
 
-
 #cmakedefine01 wxUSE_IMAGE
 
 #cmakedefine01 wxUSE_LIBPNG
@@ -604,6 +606,10 @@
 #cmakedefine01 wxUSE_LIBJPEG
 
 #cmakedefine01 wxUSE_LIBTIFF
+
+#cmakedefine01 wxUSE_NANOSVG
+
+#cmakedefine01 wxUSE_NANOSVG_EXTERNAL
 
 #cmakedefine01 wxUSE_TGA
 
@@ -628,7 +634,6 @@
 #cmakedefine01 wxUSE_THEME_METAL
 #cmakedefine01 wxUSE_THEME_MONO
 #cmakedefine01 wxUSE_THEME_WIN32
-
 
 /* --- end common options --- */
 
@@ -673,6 +678,8 @@
 #else
     #cmakedefine01 wxUSE_GRAPHICS_DIRECT2D
 #endif
+
+#cmakedefine01 wxUSE_WEBREQUEST_WINHTTP
 
 
 #cmakedefine01 wxUSE_OLE
@@ -737,11 +744,6 @@
  * Define if va_list type is an array
  */
 #cmakedefine VA_LIST_IS_ARRAY 1
-
-/*
- * Define if the compiler supports variadic macros
- */
-#cmakedefine HAVE_VARIADIC_MACROS 1
 
 /*
  * Define if you don't want variadic macros to be used even if they are
@@ -819,12 +821,6 @@
  */
 #cmakedefine HAVE_BROKEN_LIBSTDCXX_VISIBILITY
 
-/*
- * The built-in regex supports advanced REs in additional to POSIX's basic
- * and extended. Your system regex probably won't support this, and in this
- * case WX_NO_REGEX_ADVANCED should be defined.
- */
-#cmakedefine WX_NO_REGEX_ADVANCED
 /*
  * On GNU systems use re_search instead of regexec, since the latter does a
  * strlen on the search text affecting the performance of some operations.
@@ -983,14 +979,8 @@
 /* Define if you have pthread_attr_setstacksize */
 #cmakedefine HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 
-/* Define if you have shl_load() */
-#cmakedefine HAVE_SHL_LOAD 1
-
 /* Define if you have snprintf() */
 #cmakedefine HAVE_SNPRINTF 1
-
-/* Define if you have snprintf() declaration in the header */
-#cmakedefine HAVE_SNPRINTF_DECL 1
 
 /* Define if you have a snprintf() which supports positional arguments
    (defined in the unix98 standard) */
@@ -1014,9 +1004,6 @@
 /* Define if you have vsnprintf() */
 #cmakedefine HAVE_VSNPRINTF 1
 
-/* Define if you have vsnprintf() declaration in the header */
-#cmakedefine HAVE_VSNPRINTF_DECL 1
-
 /* Define if you have a _broken_ vsnprintf() declaration in the header,
  * with 'char*' for the 3rd parameter instead of 'const char*' */
 #cmakedefine HAVE_BROKEN_VSNPRINTF_DECL 1
@@ -1027,9 +1014,6 @@
 
 /* Define if you have vsscanf() */
 #cmakedefine HAVE_VSSCANF 1
-
-/* Define if you have vsscanf() declaration in the header */
-#cmakedefine HAVE_VSSCANF_DECL 1
 
 /* Define if you have usleep() */
 #cmakedefine HAVE_USLEEP 1
@@ -1087,9 +1071,6 @@
 
 /* Define if wchar_t is distinct type in your compiler. */
 #cmakedefine wxWCHAR_T_IS_REAL_TYPE 1
-
-/* Define if you have the dlerror function.  */
-#cmakedefine HAVE_DLERROR 1
 
 /* Define if you have the dladdr function.  */
 #cmakedefine HAVE_DLADDR 1
@@ -1202,9 +1183,6 @@
 /* Define if you have the <langinfo.h> header file.  */
 #cmakedefine HAVE_LANGINFO_H 1
 
-/* Define if you have the <w32api.h> header file (mingw,cygwin).  */
-#cmakedefine HAVE_W32API_H 1
-
 /* Define if you have the <sys/soundcard.h> header file. */
 #cmakedefine HAVE_SYS_SOUNDCARD_H 1
 
@@ -1267,6 +1245,9 @@
 
 /* Define if setpriority() is available. */
 #cmakedefine HAVE_SETPRIORITY 1
+
+/* Define if xkbcommon is available */
+#cmakedefine HAVE_XKBCOMMON 1
 
 /* Define if xlocale.h header file exists. */
 #cmakedefine HAVE_XLOCALE_H 1

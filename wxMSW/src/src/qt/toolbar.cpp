@@ -8,9 +8,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_TOOLBAR
 
@@ -31,8 +28,8 @@ class wxQtToolButton;
 class wxToolBarTool : public wxToolBarToolBase
 {
 public:
-    wxToolBarTool(wxToolBar *tbar, int id, const wxString& label, const wxBitmap& bitmap1,
-                  const wxBitmap& bitmap2, wxItemKind kind, wxObject *clientData,
+    wxToolBarTool(wxToolBar *tbar, int id, const wxString& label, const wxBitmapBundle& bitmap1,
+                  const wxBitmapBundle& bitmap2, wxItemKind kind, wxObject *clientData,
                   const wxString& shortHelpString, const wxString& longHelpString)
         : wxToolBarToolBase(tbar, id, label, bitmap1, bitmap2, kind,
                             clientData, shortHelpString, longHelpString)
@@ -197,7 +194,7 @@ void wxToolBar::SetToolShortHelp( int id, const wxString& helpString )
     }
 }
 
-void wxToolBar::SetToolNormalBitmap( int id, const wxBitmap& bitmap )
+void wxToolBar::SetToolNormalBitmap( int id, const wxBitmapBundle& bitmap )
 {
     wxToolBarTool* tool = static_cast<wxToolBarTool*>(FindById(id));
     if ( tool )
@@ -209,7 +206,7 @@ void wxToolBar::SetToolNormalBitmap( int id, const wxBitmap& bitmap )
     }
 }
 
-void wxToolBar::SetToolDisabledBitmap( int id, const wxBitmap& bitmap )
+void wxToolBar::SetToolDisabledBitmap( int id, const wxBitmapBundle& bitmap )
 {
     wxToolBarTool* tool = static_cast<wxToolBarTool*>(FindById(id));
     if ( tool )
@@ -367,8 +364,8 @@ void wxToolBar::DoSetToggle(wxToolBarToolBase * WXUNUSED(tool),
     wxFAIL_MSG( wxT("not implemented") );
 }
 
-wxToolBarToolBase *wxToolBar::CreateTool(int id, const wxString& label, const wxBitmap& bmpNormal,
-                                      const wxBitmap& bmpDisabled, wxItemKind kind, wxObject *clientData,
+wxToolBarToolBase *wxToolBar::CreateTool(int id, const wxString& label, const wxBitmapBundle& bmpNormal,
+                                      const wxBitmapBundle& bmpDisabled, wxItemKind kind, wxObject *clientData,
                                       const wxString& shortHelp, const wxString& longHelp)
 {
     return new wxToolBarTool(this, id, label, bmpNormal, bmpDisabled, kind,

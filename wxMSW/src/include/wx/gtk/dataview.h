@@ -26,7 +26,7 @@ public:
                       unsigned int model_column, int width = wxDVC_DEFAULT_WIDTH,
                       wxAlignment align = wxALIGN_CENTER,
                       int flags = wxDATAVIEW_COL_RESIZABLE );
-    wxDataViewColumn( const wxBitmap &bitmap, wxDataViewRenderer *renderer,
+    wxDataViewColumn( const wxBitmapBundle &bitmap, wxDataViewRenderer *renderer,
                       unsigned int model_column, int width = wxDVC_DEFAULT_WIDTH,
                       wxAlignment align = wxALIGN_CENTER,
                       int flags = wxDATAVIEW_COL_RESIZABLE );
@@ -35,7 +35,7 @@ public:
     // setters:
 
     virtual void SetTitle( const wxString &title ) wxOVERRIDE;
-    virtual void SetBitmap( const wxBitmap &bitmap ) wxOVERRIDE;
+    virtual void SetBitmap( const wxBitmapBundle &bitmap ) wxOVERRIDE;
 
     virtual void SetOwner( wxDataViewCtrl *owner ) wxOVERRIDE;
 
@@ -112,7 +112,7 @@ public:
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize, long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxDataViewCtrlNameStr )
+           const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr) )
     {
         Init();
 
@@ -123,7 +123,7 @@ public:
            const wxPoint& pos = wxDefaultPosition,
            const wxSize& size = wxDefaultSize, long style = 0,
            const wxValidator& validator = wxDefaultValidator,
-           const wxString& name = wxDataViewCtrlNameStr);
+           const wxString& name = wxASCII_STR(wxDataViewCtrlNameStr));
 
     virtual ~wxDataViewCtrl();
 
@@ -166,7 +166,7 @@ public:
     virtual bool IsExpanded( const wxDataViewItem & item ) const wxOVERRIDE;
 
     virtual bool EnableDragSource( const wxDataFormat &format ) wxOVERRIDE;
-    virtual bool EnableDropTarget( const wxDataFormat &format ) wxOVERRIDE;
+    virtual bool DoEnableDropTarget( const wxVector<wxDataFormat>& formats ) wxOVERRIDE;
 
     virtual wxDataViewColumn *GetCurrentColumn() const wxOVERRIDE;
 
@@ -218,7 +218,7 @@ protected:
     virtual void DoSetExpanderColumn() wxOVERRIDE;
     virtual void DoSetIndent() wxOVERRIDE;
 
-    virtual void DoExpand(const wxDataViewItem& item) wxOVERRIDE;
+    virtual void DoExpand(const wxDataViewItem& item, bool expandChildren) wxOVERRIDE;
 
     virtual void DoApplyWidgetStyle(GtkRcStyle *style) wxOVERRIDE;
     virtual GdkWindow* GTKGetWindow(wxArrayGdkWindows& windows) const wxOVERRIDE;

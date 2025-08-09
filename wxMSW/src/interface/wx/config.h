@@ -342,7 +342,7 @@ public:
 
         See @ref configbase_paths
     */
-    //@{
+    ///@{
 
     /**
         Retrieve the current path (always as absolute path).
@@ -358,7 +358,7 @@ public:
     */
     virtual void SetPath(const wxString& strPath) = 0;
 
-    //@}
+    ///@}
 
 
     /**
@@ -366,7 +366,7 @@ public:
 
         See @ref configbase_enumeration
     */
-    //@{
+    ///@{
 
     /**
         Gets the first entry.
@@ -421,7 +421,7 @@ public:
     */
     virtual size_t GetNumberOfGroups(bool bRecursive = false) const = 0;
 
-    //@}
+    ///@}
 
 
     enum EntryType
@@ -436,7 +436,7 @@ public:
     /**
         @name Tests of Existence
     */
-    //@{
+    ///@{
 
     /**
         @return @true if either a group or an entry with a given name exists.
@@ -462,13 +462,13 @@ public:
     */
     virtual bool HasGroup(const wxString& strName) const = 0;
 
-    //@}
+    ///@}
 
 
     /**
         @name Miscellaneous Functions
     */
-    //@{
+    ///@{
 
     /**
         Returns the application name.
@@ -480,7 +480,7 @@ public:
     */
     wxString GetVendorName() const;
 
-    //@}
+    ///@}
 
 
     /**
@@ -488,7 +488,7 @@ public:
 
         See @ref configbase_keyaccess
     */
-    //@{
+    ///@{
 
     /**
         Permanently writes all changes (otherwise, they're only written from
@@ -549,6 +549,52 @@ public:
     */
     bool Read(const wxString& key, long* l,
               long defaultVal) const;
+    /**
+        Reads a 64-bit long long value, returning @true if the value was found.
+        If the value was not found, @a ll is not changed.
+
+        @since 3.1.5
+
+        @beginWxPerlOnly
+        Not supported by wxPerl.
+        @endWxPerlOnly
+    */
+    bool Read(const wxString& key, wxLongLong_t* ll) const;
+    /**
+        Reads a 64-bit long long value, returning @true if the value was found.
+        If the value was not found, @a defaultVal is used instead.
+
+        @since 3.1.5
+
+        @beginWxPerlOnly
+        Not supported by wxPerl.
+        @endWxPerlOnly
+    */
+    bool Read(const wxString& key, wxLongLong_t* ll,
+              wxLongLong_t defaultVal) const;
+    /**
+        Reads a size_t value, returning @true if the value was found.
+        If the value was not found, @a value is not changed.
+
+        @since 3.1.5
+
+        @beginWxPerlOnly
+        Not supported by wxPerl.
+        @endWxPerlOnly
+    */
+    bool Read(const wxString& key, size_t* value) const;
+    /**
+        Reads a size_t value, returning @true if the value was found.
+        If the value was not found, @a defaultVal is used instead.
+
+        @since 3.1.5
+
+        @beginWxPerlOnly
+        Not supported by wxPerl.
+        @endWxPerlOnly
+    */
+    bool Read(const wxString& key, size_t* value,
+              size_t defaultVal) const;
     /**
         Reads a double value, returning @true if the value was found. If the
         value was not found, @a d is not changed.
@@ -663,6 +709,14 @@ public:
     long ReadLong(const wxString& key, long defaultVal) const;
 
     /**
+        Reads a 64-bit long long value from the key and returns it. @a
+        defaultVal is returned if the key is not found.
+
+        @since 3.1.5
+    */
+    wxLongLong_t ReadLongLong(const wxString& key, wxLongLong_t defaultVal) const;
+
+    /**
         Reads a value of type T (for which the function wxFromString() must be
         defined) from the key and returns it. @a defaultVal is returned if the
         key is not found.
@@ -678,6 +732,13 @@ public:
         Writes the long value to the config file and returns @true on success.
     */
     bool Write(const wxString& key, long value);
+    /**
+        Writes the 64-bit long long value to the config file and returns @true
+        on success.
+
+        @since 3.1.5
+    */
+    bool Write(const wxString& key, wxLongLong_t value);
     /**
         Writes the double value to the config file and returns @true on
         success.
@@ -706,7 +767,7 @@ public:
     */
     bool Write(const wxString& key, T const& buf);
 
-    //@}
+    ///@}
 
 
     /**
@@ -718,7 +779,7 @@ public:
         entry/group with the new name already exists or because the function is
         not supported in this wxConfig implementation.
     */
-    //@{
+    ///@{
 
     /**
         Renames an entry in the current group. The entries names (both the old
@@ -742,7 +803,7 @@ public:
     virtual bool RenameGroup(const wxString& oldName,
                              const wxString& newName) = 0;
 
-    //@}
+    ///@}
 
 
     /**
@@ -752,7 +813,7 @@ public:
         file. DeleteAll() is especially useful if you want to erase all traces
         of your program presence: for example, when you uninstall it.
     */
-    //@{
+    ///@{
 
     /**
         Delete the whole underlying object (disk file, registry key, ...).
@@ -775,7 +836,7 @@ public:
     */
     virtual bool DeleteGroup(const wxString& key) = 0;
 
-    //@}
+    ///@}
 
 
     /**
@@ -805,7 +866,7 @@ public:
         SetExpandEnvVars(@true) just after. Another solution would be to prefix
         the offending symbols with a backslash.
     */
-    //@{
+    ///@{
 
     /**
         Returns @true if we are expanding environment variables in key values.
@@ -834,7 +895,7 @@ public:
     */
     void SetRecordDefaults(bool bDoIt = true);
 
-    //@}
+    ///@}
 
 
     /**
@@ -894,7 +955,7 @@ public:
 
     For example:
     @code
-    // this function loads somes settings from the given wxConfig object;
+    // this function loads some settings from the given wxConfig object;
     // the path selected inside it is left unchanged
     bool LoadMySettings(wxConfigBase* cfg)
     {

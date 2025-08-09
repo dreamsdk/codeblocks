@@ -87,7 +87,9 @@ docfiles = \
 	v4.0.7.html \
 	v4.0.8.html \
 	v4.0.9.html \
-	v4.0.10.html
+	v4.0.10.html \
+	v4.1.0.html \
+	v4.2.0.html
 
 dist_doc_DATA = $(docfiles)
 

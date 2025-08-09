@@ -32,8 +32,9 @@ class WXDLLIMPEXP_FWD_CORE wxListMainWindow;
 class WXDLLIMPEXP_CORE wxGenericListCtrl: public wxNavigationEnabled<wxListCtrlBase>,
                                           public wxScrollHelper
 {
-public:
+    typedef wxNavigationEnabled<wxListCtrlBase> BaseType;
 
+public:
     wxGenericListCtrl() : wxScrollHelper(this)
     {
         Init();
@@ -45,7 +46,7 @@ public:
                 const wxSize &size = wxDefaultSize,
                 long style = wxLC_ICON,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = wxListCtrlNameStr)
+                const wxString &name = wxASCII_STR(wxListCtrlNameStr))
             : wxScrollHelper(this)
     {
         Create(parent, winid, pos, size, style, validator, name);
@@ -61,12 +62,20 @@ public:
                  const wxSize &size = wxDefaultSize,
                  long style = wxLC_ICON,
                  const wxValidator& validator = wxDefaultValidator,
-                 const wxString &name = wxListCtrlNameStr);
+                 const wxString &name = wxASCII_STR(wxListCtrlNameStr));
 
     bool GetColumn( int col, wxListItem& item ) const wxOVERRIDE;
     bool SetColumn( int col, const wxListItem& item ) wxOVERRIDE;
     int GetColumnWidth( int col ) const wxOVERRIDE;
     bool SetColumnWidth( int col, int width) wxOVERRIDE;
+
+    // Column ordering functions
+    int GetColumnOrder(int col) const wxOVERRIDE;
+    int GetColumnIndexFromOrder(int order) const wxOVERRIDE;
+
+    wxArrayInt GetColumnsOrder() const wxOVERRIDE;
+    bool SetColumnsOrder(const wxArrayInt& orders) wxOVERRIDE;
+
     int GetCountPerPage() const; // not the same in wxGLC as in Windows, I think
     wxRect GetViewRect() const;
 
@@ -101,18 +110,19 @@ public:
     void SetTextColour(const wxColour& col);
     long GetTopItem() const;
 
-    virtual bool HasCheckBoxes() const wxOVERRIDE;
-    virtual bool EnableCheckBoxes(bool enable = true) wxOVERRIDE;
-    virtual bool IsItemChecked(long item) const wxOVERRIDE;
-    virtual void CheckItem(long item, bool check) wxOVERRIDE;
+    bool HasCheckBoxes() const wxOVERRIDE;
+    bool EnableCheckBoxes(bool enable = true) wxOVERRIDE;
+    bool IsItemChecked(long item) const wxOVERRIDE;
+    void CheckItem(long item, bool check) wxOVERRIDE;
+
+    void ShowSortIndicator(int idx, bool ascending = true) wxOVERRIDE;
+    int GetSortIndicator() const wxOVERRIDE;
+    bool IsAscendingSortIndicator() const wxOVERRIDE;
 
     void SetSingleStyle( long style, bool add = true ) ;
     void SetWindowStyleFlag( long style ) wxOVERRIDE;
     void RecreateWindow() {}
     long GetNextItem( long item, int geometry = wxLIST_NEXT_ALL, int state = wxLIST_STATE_DONTCARE ) const;
-    wxImageList *GetImageList( int which ) const wxOVERRIDE;
-    void SetImageList( wxImageList *imageList, int which ) wxOVERRIDE;
-    void AssignImageList( wxImageList *imageList, int which ) wxOVERRIDE;
     bool Arrange( int flag = wxLIST_ALIGN_DEFAULT ); // always wxLIST_ALIGN_LEFT in wxGLC
 
     void ClearAll();
@@ -188,6 +198,8 @@ public:
     virtual bool SetFont( const wxFont &font ) wxOVERRIDE;
     virtual bool SetCursor( const wxCursor &cursor ) wxOVERRIDE;
 
+    virtual void ExtendRulesAndAlternateColour(bool extend = true) wxOVERRIDE;
+
 #if wxUSE_DRAG_AND_DROP
     virtual void SetDropTarget( wxDropTarget *dropTarget ) wxOVERRIDE;
     virtual wxDropTarget *GetDropTarget() const wxOVERRIDE;
@@ -198,19 +210,13 @@ public:
     // implementation
     // --------------
 
-    wxImageList         *m_imageListNormal;
-    wxImageList         *m_imageListSmall;
-    wxImageList         *m_imageListState;  // what's that ?
-    bool                 m_ownsImageListNormal,
-                         m_ownsImageListSmall,
-                         m_ownsImageListState;
     wxListHeaderWindow  *m_headerWin;
     wxListMainWindow    *m_mainWin;
 
 protected:
     // Implement base class pure virtual methods.
     long DoInsertColumn(long col, const wxListItem& info) wxOVERRIDE;
-
+    void DoUpdateImages(int which) wxOVERRIDE;
 
     virtual wxSize DoGetBestClientSize() const wxOVERRIDE;
 
@@ -230,7 +236,7 @@ private:
     // arrows but let the other navigation characters through
 #if defined(__WXMSW__) && !defined(__WXUNIVERSAL__)
     virtual WXLRESULT
-    MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam);
+    MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE;
 #endif // __WXMSW__
 
     WX_FORWARD_TO_SCROLL_HELPER()
@@ -257,7 +263,7 @@ public:
                const wxSize& size = wxDefaultSize,
                long style = wxLC_ICON,
                const wxValidator &validator = wxDefaultValidator,
-               const wxString &name = wxListCtrlNameStr)
+               const wxString &name = wxASCII_STR(wxListCtrlNameStr))
     : wxGenericListCtrl(parent, winid, pos, size, style, validator, name)
     {
     }

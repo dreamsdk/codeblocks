@@ -19,16 +19,12 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // Don't use the Windows printer if we're in wxUniv mode and using
 // the PostScript architecture
 #if wxUSE_PRINTING_ARCHITECTURE && (!defined(__WXUNIVERSAL__) || !wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW)
 
 #ifndef WX_PRECOMP
-    #include "wx/msw/wrapcdlg.h"
     #include "wx/window.h"
     #include "wx/msw/private.h"
     #include "wx/utils.h"
@@ -49,6 +45,7 @@
 #include "wx/msw/private.h"
 #include "wx/msw/dcprint.h"
 #include "wx/msw/enhmeta.h"
+#include "wx/display.h"
 
 #include <stdlib.h>
 
@@ -313,10 +310,8 @@ bool wxWindowsPrintPreview::Print(bool interactive)
 
 void wxWindowsPrintPreview::DetermineScaling()
 {
-    ScreenHDC dc;
-    int logPPIScreenX = ::GetDeviceCaps(dc, LOGPIXELSX);
-    int logPPIScreenY = ::GetDeviceCaps(dc, LOGPIXELSY);
-    m_previewPrintout->SetPPIScreen(logPPIScreenX, logPPIScreenY);
+    const wxSize logPPIScreen = wxDisplay::GetStdPPI();
+    m_previewPrintout->SetPPIScreen(logPPIScreen);
 
     // Get a device context for the currently selected printer
     wxPrinterDC printerDC(m_printDialogData.GetPrintData());
@@ -325,8 +320,7 @@ void wxWindowsPrintPreview::DetermineScaling()
     int printerHeightMM;
     int printerXRes;
     int printerYRes;
-    int logPPIPrinterX;
-    int logPPIPrinterY;
+    wxSize logPPIPrinter;
 
     wxRect paperRect;
 
@@ -338,13 +332,12 @@ void wxWindowsPrintPreview::DetermineScaling()
         printerHeightMM = ::GetDeviceCaps(hdc, VERTSIZE);
         printerXRes = ::GetDeviceCaps(hdc, HORZRES);
         printerYRes = ::GetDeviceCaps(hdc, VERTRES);
-        logPPIPrinterX = ::GetDeviceCaps(hdc, LOGPIXELSX);
-        logPPIPrinterY = ::GetDeviceCaps(hdc, LOGPIXELSY);
+        logPPIPrinter = wxGetDPIofHDC(hdc);
 
         paperRect = printerDC.GetPaperRect();
 
-        if ( logPPIPrinterX == 0 ||
-                logPPIPrinterY == 0 ||
+        if ( logPPIPrinter.x == 0 ||
+                logPPIPrinter.y == 0 ||
                     printerWidthMM == 0 ||
                         printerHeightMM == 0 )
         {
@@ -358,8 +351,7 @@ void wxWindowsPrintPreview::DetermineScaling()
         printerHeightMM = 250;
         printerXRes = 1500;
         printerYRes = 2500;
-        logPPIPrinterX = 600;
-        logPPIPrinterY = 600;
+        logPPIPrinter = wxSize(600, 600);
 
         paperRect = wxRect(0, 0, printerXRes, printerYRes);
         m_isOk = false;
@@ -369,11 +361,11 @@ void wxWindowsPrintPreview::DetermineScaling()
     m_previewPrintout->SetPageSizePixels(printerXRes, printerYRes);
     m_previewPrintout->SetPageSizeMM(printerWidthMM, printerHeightMM);
     m_previewPrintout->SetPaperRectPixels(paperRect);
-    m_previewPrintout->SetPPIPrinter(logPPIPrinterX, logPPIPrinterY);
+    m_previewPrintout->SetPPIPrinter(logPPIPrinter);
 
     // At 100%, the page should look about page-size on the screen.
-    m_previewScaleX = float(logPPIScreenX) / logPPIPrinterX;
-    m_previewScaleY = float(logPPIScreenY) / logPPIPrinterY;
+    m_previewScaleX = float(logPPIScreen.x) / logPPIPrinter.x;
+    m_previewScaleY = float(logPPIScreen.y) / logPPIPrinter.y;
 }
 
 #if wxUSE_ENH_METAFILE
@@ -432,12 +424,24 @@ BOOL CALLBACK wxAbortProc(HDC WXUNUSED(hdc), int WXUNUSED(error))
         return(TRUE);
 
     /* Process messages intended for the abort dialog box */
+    const HWND hwnd = GetHwndOf(wxPrinterBase::sm_abortWindow);
 
     while (!wxPrinterBase::sm_abortIt && ::PeekMessage(&msg, 0, 0, 0, TRUE))
-        if (!IsDialogMessage((HWND) wxPrinterBase::sm_abortWindow->GetHWND(), &msg)) {
+    {
+        // Apparently handling the message may, somehow, result in
+        // sm_abortWindow being destroyed, so guard against this happening.
+        if (!wxPrinterBase::sm_abortWindow)
+        {
+            wxLogDebug(wxS("Print abort dialog unexpected disappeared."));
+            return TRUE;
+        }
+
+        if (!IsDialogMessage(hwnd, &msg))
+        {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
+    }
 
     /* bAbort is TRUE (return is FALSE) if the user has aborted */
 

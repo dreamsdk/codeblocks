@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RICHTEXT && wxUSE_XML
 
@@ -1294,7 +1291,7 @@ wxString wxRichTextXMLHelper::MakeStringFromProperty(const wxVariant& var)
     return var.MakeString();
 }
 
-// Create a proprty from the string read from the XML file.
+// Create a property from the string read from the XML file.
 wxVariant wxRichTextXMLHelper::MakePropertyFromString(const wxString& name, const wxString& value, const wxString& WXUNUSED(type))
 {
     wxVariant var(value, name);
@@ -1957,7 +1954,6 @@ void wxRichTextXMLHelper::OutputIndentation(wxOutputStream& stream, int indent)
 void wxRichTextXMLHelper::OutputStringEnt(wxOutputStream& stream, const wxString& str,
                             wxMBConv *convMem, wxMBConv *convFile)
 {
-    wxString buf;
     size_t i, last, len;
     wxChar c;
 
@@ -2033,7 +2029,7 @@ void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, cons
 
 void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, const double& v)
 {
-    str << wxT(" ") << name << wxT("=\"") << wxString::Format(wxT("%.2f"), (float) v) << wxT("\"");
+    str << wxS(" ") << name << wxS("=\"") << wxString::Format(wxS("%.2f"), v) << wxS("\"");
 }
 
 void wxRichTextXMLHelper::AddAttribute(wxString& str, const wxString& name, const wxChar* s)

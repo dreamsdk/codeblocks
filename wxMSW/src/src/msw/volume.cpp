@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_FSVOLUME
 
@@ -366,15 +363,12 @@ static bool BuildRemoteList(wxArrayString& list, NETRESOURCE* pResSrc,
         for (ssize_t iMounted = mounted.GetCount()-1; iMounted >= 0 && iList >= 0; iMounted--)
         {
             int compare;
-            wxString all(list[iList]);
-            wxString mount(mounted[iMounted]);
 
             while (compare =
                      wxStricmp(list[iList].c_str(), mounted[iMounted].c_str()),
                    compare > 0 && iList >= 0)
             {
                 iList--;
-                all = list[iList];
             }
 
 
@@ -515,7 +509,7 @@ bool wxFSVolumeBase::Create(const wxString& name)
     long rc = SHGetFileInfo(m_volName.t_str(), 0, &fi, sizeof(fi), SHGFI_DISPLAYNAME);
     if (!rc)
     {
-        wxLogError(_("Cannot read typename from '%s'!"), m_volName.c_str());
+        wxLogError(_("Cannot read typename from '%s'!"), m_volName);
         return false;
     }
     m_dispName = fi.szDisplayName;
@@ -627,7 +621,7 @@ wxIcon wxFSVolume::GetIcon(wxFSIconType type) const
         long rc = SHGetFileInfo(m_volName.t_str(), 0, &fi, sizeof(fi), flags);
         if (!rc || !fi.hIcon)
         {
-            wxLogError(_("Cannot load icon from '%s'."), m_volName.c_str());
+            wxLogError(_("Cannot load icon from '%s'."), m_volName);
         }
         else
         {

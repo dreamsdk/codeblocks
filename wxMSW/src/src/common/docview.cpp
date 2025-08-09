@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_DOC_VIEW_ARCHITECTURE
 
@@ -283,7 +280,7 @@ wxDocManager *wxDocument::GetDocumentManager() const
 
 bool wxDocument::OnNewDocument()
 {
-    // notice that there is no need to neither reset nor even check the
+    // notice that there is no need to either reset nor even check the
     // modified flag here as the document itself is a new object (this is only
     // called from CreateDocument()) and so it shouldn't be saved anyhow even
     // if it is modified -- this could happen if the user code creates
@@ -2163,12 +2160,12 @@ bool wxDocPrintout::OnPrintPage(int WXUNUSED(page))
     GetPPIPrinter(&ppiPrinterX, &ppiPrinterY);
     wxUnusedVar(ppiPrinterY);
 
-    // This scales the DC so that the printout roughly represents the
+    // This scales the DC so that the printout roughly represents
     // the screen scaling. The text point size _should_ be the right size
     // but in fact is too small for some reason. This is a detail that will
     // need to be addressed at some point but can be fudged for the
     // moment.
-    float scale = (float)((float)ppiPrinterX/(float)ppiScreenX);
+    double scale = double(ppiPrinterX) / ppiScreenX;
 
     // Now we have to check in case our real page size is reduced
     // (e.g. because we're drawing to a print preview memory DC)
@@ -2180,7 +2177,7 @@ bool wxDocPrintout::OnPrintPage(int WXUNUSED(page))
 
     // If printer pageWidth == current DC width, then this doesn't
     // change. But w might be the preview bitmap width, so scale down.
-    float overallScale = scale * (float)(w/(float)pageWidth);
+    double overallScale = scale * w / pageWidth;
     dc->SetUserScale(overallScale, overallScale);
 
     if (m_printoutView)

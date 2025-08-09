@@ -25,17 +25,14 @@
 wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner)
     : wxGCDCImpl(owner)
 {
+    m_layoutDir = wxLayout_Default;
 }
 
-wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, double scaleFactor)
+wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, wxWindow* window, wxLayoutDirection dir, int width)
     : wxGCDCImpl(owner, 0)
+    , m_size(width, 0)
 {
-    m_contentScaleFactor = scaleFactor;
-}
-
-wxGTKCairoDCImpl::wxGTKCairoDCImpl(wxDC* owner, wxWindow* window)
-    : wxGCDCImpl(owner, 0)
-{
+    m_layoutDir = dir;
     if ( window )
     {
         m_window = window;
@@ -62,6 +59,12 @@ void wxGTKCairoDCImpl::DoDrawBitmap(const wxBitmap& bitmap, int x, int y, bool u
     if (cr)
     {
         cairo_save(cr);
+        if (m_layoutDir == wxLayout_RightToLeft)
+        {
+            // bitmap is not mirrored
+            cairo_scale(cr, -1, 1);
+            x = -x - bitmap.GetWidth();
+        }
         bitmap.Draw(cr, x, y, useMask, &m_textForegroundColour, &m_textBackgroundColour);
         cairo_restore(cr);
     }
@@ -80,6 +83,115 @@ bool wxGTKCairoDCImpl::DoFloodFill(int x, int y, const wxColour& col, wxFloodFil
     return wxDoFloodFill(GetOwner(), x, y, col, style);
 }
 #endif
+
+void wxGTKCairoDCImpl::DoDrawText(const wxString& text, int x, int y)
+{
+    wxCHECK_RET(IsOk(), "invalid DC");
+
+    if (text.empty())
+        return;
+
+    const bool xInverted = m_signX < 0 || m_layoutDir == wxLayout_RightToLeft;
+    if (xInverted && text.find('\n') != wxString::npos)
+    {
+        // RTL needs each line separately to position text properly.
+        // DrawLabel() will split the text and call back for each line.
+        GetOwner()->DrawLabel(text, wxRect(x, y, 0, 0));
+        return;
+    }
+
+    int w, h;
+    DoGetTextExtent(text, &w, &h);
+
+    CalcBoundingBox(wxPoint(x, y), wxSize(w, h));
+
+    const bool yInverted = m_signY < 0;
+    if (xInverted || yInverted)
+        m_graphicContext->PushState();
+    if (xInverted)
+    {
+        // text is not mirrored
+        m_graphicContext->Scale(-1, 1);
+        x = -x - w;
+    }
+    if (yInverted)
+    {
+        m_graphicContext->Scale(1, -1);
+        y = -y - h;
+    }
+
+    wxCompositionMode curMode = m_graphicContext->GetCompositionMode();
+    m_graphicContext->SetCompositionMode(wxCOMPOSITION_OVER);
+
+    if (m_backgroundMode == wxBRUSHSTYLE_TRANSPARENT)
+        m_graphicContext->DrawText(text, x, y);
+    else
+        m_graphicContext->DrawText(text, x, y, m_graphicContext->CreateBrush(m_textBackgroundColour));
+
+    m_graphicContext->SetCompositionMode(curMode);
+
+    if (xInverted || yInverted)
+        m_graphicContext->PopState();
+}
+
+void wxGTKCairoDCImpl::DoDrawRotatedText(const wxString& text, int x, int y, double angle)
+{
+    wxCHECK_RET(IsOk(), "invalid DC");
+
+    // save current bounding box
+    // rotation will cause DoDrawText() to update it incorrectly
+    const bool isBBoxValid = m_isBBoxValid;
+    const int minX = m_minX;
+    const int minY = m_minY;
+    const int maxX = m_maxX;
+    const int maxY = m_maxY;
+
+    const double rad = wxDegToRad(-angle);
+    m_graphicContext->PushState();
+    m_graphicContext->Translate(x, y);
+    m_graphicContext->Rotate(rad);
+    DoDrawText(text, 0, 0);
+    m_graphicContext->PopState();
+
+    // restore bounding box and update it correctly
+    m_isBBoxValid = isBBoxValid;
+    m_minX = minX;
+    m_minY = minY;
+    m_maxX = maxX;
+    m_maxY = maxY;
+
+    CalcBoundingBox(x, y);
+    int w, h;
+    DoGetTextExtent(text, &w, &h);
+    cairo_matrix_t m;
+    cairo_matrix_init_translate(&m, x, y);
+    cairo_matrix_rotate(&m, rad);
+    double xx = w, yy = 0;
+    cairo_matrix_transform_point(&m, &xx, &yy);
+    CalcBoundingBox(int(xx), int(yy));
+    xx = w; yy = h;
+    cairo_matrix_transform_point(&m, &xx, &yy);
+    CalcBoundingBox(int(xx), int(yy));
+    xx = 0; yy = h;
+    cairo_matrix_transform_point(&m, &xx, &yy);
+    CalcBoundingBox(int(xx), int(yy));
+}
+
+void wxGTKCairoDCImpl::DoDrawCheckMark(int x, int y, int width, int height)
+{
+    if (m_layoutDir == wxLayout_RightToLeft)
+    {
+        wxCHECK_RET(IsOk(), "invalid DC");
+
+        // checkmark is not mirrored
+        m_graphicContext->PushState();
+        m_graphicContext->Scale(-1, 1);
+        BaseType::DoDrawCheckMark(-x - width, y, width, height);
+        m_graphicContext->PopState();
+    }
+    else
+        BaseType::DoDrawCheckMark(x, y, width, height);
+}
 
 wxBitmap wxGTKCairoDCImpl::DoGetAsBitmap(const wxRect* /*subrect*/) const
 {
@@ -137,9 +249,6 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     if (cr == NULL || cr_src == NULL)
         return false;
 
-    const int xsrc_dev = source->LogicalToDeviceX(xsrc);
-    const int ysrc_dev = source->LogicalToDeviceY(ysrc);
-
     cairo_surface_t* surfaceSrc = cairo_get_target(cr_src);
     cairo_surface_flush(surfaceSrc);
 
@@ -183,11 +292,24 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
         }
     }
     cairo_save(cr);
+    if (m_layoutDir == wxLayout_RightToLeft)
+    {
+        // blit is not mirrored
+        cairo_scale(cr, -1, 1);
+        xdest = -xdest - dstWidth;
+    }
     cairo_translate(cr, xdest, ydest);
     cairo_rectangle(cr, 0, 0, dstWidth, dstHeight);
     double sx, sy;
     source->GetUserScale(&sx, &sy);
-    cairo_scale(cr, dstWidth / (sx * srcWidth), dstHeight / (sy * srcHeight));
+
+    const wxBitmap& bitmap = source->GetImpl()->GetSelectedBitmap();
+    const double bmpScale = bitmap.IsOk() ? bitmap.GetScaleFactor() : 1.0;
+
+    const int xsrc_dev = int(source->LogicalToDeviceX(xsrc) * bmpScale);
+    const int ysrc_dev = int(source->LogicalToDeviceY(ysrc) * bmpScale);
+
+    cairo_scale(cr, dstWidth / (sx * srcWidth * bmpScale), dstHeight / (sy * srcHeight * bmpScale));
     cairo_set_source_surface(cr, surfaceSrc, -xsrc_dev, -ysrc_dev);
     const wxRasterOperationMode rop_save = m_logicalFunction;
     SetLogicalFunction(rop);
@@ -195,7 +317,6 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
     cairo_surface_t* maskSurf = NULL;
     if (useMask)
     {
-        const wxBitmap& bitmap = source->GetImpl()->GetSelectedBitmap();
         if (bitmap.IsOk())
         {
             wxMask* mask = bitmap.GetMask();
@@ -208,11 +329,21 @@ bool wxGTKCairoDCImpl::DoStretchBlit(int xdest, int ydest, int dstWidth, int dst
         int xsrcMask_dev = xsrc_dev;
         int ysrcMask_dev = ysrc_dev;
         if (xsrcMask != -1)
-            xsrcMask_dev = source->LogicalToDeviceX(xsrcMask);
+            xsrcMask_dev = int(source->LogicalToDeviceX(xsrcMask) * bmpScale);
         if (ysrcMask != -1)
-            ysrcMask_dev = source->LogicalToDeviceY(ysrcMask);
+            ysrcMask_dev = int(source->LogicalToDeviceY(ysrcMask) * bmpScale);
         cairo_clip(cr);
-        cairo_mask_surface(cr, maskSurf, -xsrcMask_dev, -ysrcMask_dev);
+
+        cairo_pattern_t* pattern = cairo_pattern_create_for_surface(maskSurf);
+        cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+        if (xsrcMask_dev || ysrcMask_dev)
+        {
+            cairo_matrix_t matrix;
+            cairo_matrix_init_translate(&matrix, xsrcMask_dev, ysrcMask_dev);
+            cairo_pattern_set_matrix(pattern, &matrix);
+        }
+        cairo_mask(cr, pattern);
+        cairo_pattern_destroy(pattern);
     }
     else
     {
@@ -247,6 +378,31 @@ wxSize wxGTKCairoDCImpl::GetPPI() const
     return wxGCDCImpl::GetPPI();
 }
 
+void wxGTKCairoDCImpl::SetLayoutDirection(wxLayoutDirection dir)
+{
+    if (dir == wxLayout_Default && m_window)
+        dir = m_window->GetLayoutDirection();
+
+    m_layoutDir = dir;
+}
+
+wxLayoutDirection wxGTKCairoDCImpl::GetLayoutDirection() const
+{
+    // LTR unless explicitly RTL
+    return
+        m_layoutDir == wxLayout_RightToLeft
+            ? wxLayout_RightToLeft
+            : wxLayout_LeftToRight;
+}
+
+void wxGTKCairoDCImpl::AdjustForRTL(cairo_t* cr)
+{
+    if (m_layoutDir == wxLayout_RightToLeft)
+    {
+        cairo_translate(cr, m_size.x, 0);
+        cairo_scale(cr, -1, 1);
+    }
+}
 //-----------------------------------------------------------------------------
 
 wxWindowDCImpl::wxWindowDCImpl(wxWindowDC* owner, wxWindow* window)
@@ -264,9 +420,11 @@ wxWindowDCImpl::wxWindowDCImpl(wxWindowDC* owner, wxWindow* window)
     if (gdkWindow)
     {
         cairo_t* cr = gdk_cairo_create(gdkWindow);
+        SetLayoutDirection(wxLayout_Default);
+        AdjustForRTL(cr);
         wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
         cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->SetContentScaleFactor(m_contentScaleFactor);
         SetGraphicsContext(gc);
         GtkAllocation a;
         gtk_widget_get_allocation(widget, &a);
@@ -304,27 +462,23 @@ wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
     GdkWindow* gdkWindow = NULL;
     if (widget)
     {
+        window->GetClientSize(&m_size.x, &m_size.y);
         gdkWindow = gtk_widget_get_window(widget);
         m_ok = true;
     }
     if (gdkWindow)
     {
         cairo_t* cr = gdk_cairo_create(gdkWindow);
+        SetLayoutDirection(wxLayout_Default);
+        AdjustForRTL(cr);
         wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
         cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->SetContentScaleFactor(m_contentScaleFactor);
         SetGraphicsContext(gc);
-        if (gtk_widget_get_has_window(widget))
-        {
-            m_size.x = gdk_window_get_width(gdkWindow);
-            m_size.y = gdk_window_get_height(gdkWindow);
-        }
-        else
+        if (!gtk_widget_get_has_window(widget))
         {
             GtkAllocation a;
             gtk_widget_get_allocation(widget, &a);
-            m_size.x = a.width;
-            m_size.y = a.height;
             cairo_rectangle(cr, a.x, a.y, a.width, a.height);
             cairo_clip(cr);
             SetDeviceLocalOrigin(a.x, a.y);
@@ -337,13 +491,30 @@ wxClientDCImpl::wxClientDCImpl(wxClientDC* owner, wxWindow* window)
 
 wxPaintDCImpl::wxPaintDCImpl(wxPaintDC* owner, wxWindow* window)
     : wxGTKCairoDCImpl(owner, window)
+    , m_clip(window->m_nativeUpdateRegion)
 {
     cairo_t* cr = window->GTKPaintContext();
     wxCHECK_RET(cr, "using wxPaintDC without being in a native paint event");
     InitSize(gtk_widget_get_window(window->m_wxwindow));
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-    gc->EnableOffset(m_contentScaleFactor <= 1);
+    gc->SetContentScaleFactor(m_contentScaleFactor);
     SetGraphicsContext(gc);
+    // context is already adjusted for RTL
+    m_layoutDir = window->GetLayoutDirection();
+}
+
+void wxPaintDCImpl::DestroyClippingRegion()
+{
+    BaseType::DestroyClippingRegion();
+
+    // re-establish clip for paint update area
+    int x, y, w, h;
+    m_clip.GetBox(x, y, w, h);
+    cairo_t* cr = static_cast<cairo_t*>(GetCairoContext());
+    cairo_rectangle(cr,
+        DeviceToLogicalX(x), DeviceToLogicalY(y),
+        DeviceToLogicalXRel(w), DeviceToLogicalYRel(h));
+    cairo_clip(cr);
 }
 //-----------------------------------------------------------------------------
 
@@ -356,7 +527,7 @@ wxScreenDCImpl::wxScreenDCImpl(wxScreenDC* owner)
     cairo_t* cr = gdk_cairo_create(window);
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
     cairo_destroy(cr);
-    gc->EnableOffset(m_contentScaleFactor <= 1);
+    gc->SetContentScaleFactor(m_contentScaleFactor);
     SetGraphicsContext(gc);
 }
 
@@ -413,23 +584,27 @@ void wxMemoryDCImpl::Setup()
     m_ok = m_bitmap.IsOk();
     if (m_ok)
     {
-        m_size = m_bitmap.GetScaledSize();
+        m_size = m_bitmap.GetLogicalSize();
         m_contentScaleFactor = m_bitmap.GetScaleFactor();
         cairo_t* cr = m_bitmap.CairoCreate();
+        AdjustForRTL(cr);
         gc = wxGraphicsContext::CreateFromNative(cr);
         cairo_destroy(cr);
-        gc->EnableOffset(m_contentScaleFactor <= 1);
+        gc->SetContentScaleFactor(m_contentScaleFactor);
     }
     SetGraphicsContext(gc);
 }
 //-----------------------------------------------------------------------------
 
-wxGTKCairoDC::wxGTKCairoDC(cairo_t* cr, wxWindow* window)
-    : wxDC(new wxGTKCairoDCImpl(this, window->GetContentScaleFactor()))
+wxGTKCairoDC::wxGTKCairoDC(cairo_t* cr, wxWindow* window, wxLayoutDirection dir, int width)
+    : wxDC(new wxGTKCairoDCImpl(this, window, dir, width))
 {
     wxGraphicsContext* gc = wxGraphicsContext::CreateFromNative(cr);
-    gc->EnableOffset(window->GetContentScaleFactor() <= 1);
+    gc->SetContentScaleFactor(window->GetContentScaleFactor());
     SetGraphicsContext(gc);
+    if (dir == wxLayout_Default)
+        SetLayoutDirection(window->GetLayoutDirection());
+    // else context is already adjusted for RTL
 }
 
 #else

@@ -9,12 +9,16 @@
 
 list(APPEND CMAKE_MODULE_PATH "${wxSOURCE_DIR}/build/cmake/modules")
 
+file(TO_CMAKE_PATH "${CMAKE_INSTALL_PREFIX}" CMAKE_INSTALL_PREFIX)
+
 include(build/cmake/files.cmake)            # Files list
+include(build/cmake/source_groups.cmake)    # Source group definitions
 include(build/cmake/functions.cmake)        # wxWidgets functions
 include(build/cmake/toolkit.cmake)          # Platform/toolkit settings
 include(build/cmake/options.cmake)          # User options
 include(build/cmake/init.cmake)             # Init various global build vars
-include(build/cmake/install.cmake)          # Install target support
+include(build/cmake/pch.cmake)              # Precompiled header support
+include(build/cmake/locale.cmake)           # Locale files
 
 add_subdirectory(build/cmake/lib libs)
 add_subdirectory(build/cmake/utils utils)
@@ -32,15 +36,26 @@ if(wxBUILD_DEMOS)
     add_subdirectory(build/cmake/demos demos)
 endif()
 
+if(wxBUILD_BENCHMARKS)
+    add_subdirectory(build/cmake/benchmarks benchmarks)
+endif()
+
 if(NOT wxBUILD_CUSTOM_SETUP_HEADER_PATH)
     # Write setup.h after all variables are available
     include(build/cmake/setup.cmake)
 endif()
 
-if(UNIX)
+if(WIN32_MSVC_NAMING)
+    include(build/cmake/build_cfg.cmake)
+endif()
+
+if(NOT MSVC)
     # Write wx-config
     include(build/cmake/config.cmake)
 endif()
+
+# Install target support
+include(build/cmake/install.cmake)
 
 # Determine minimum required OS at runtime
 set(wxREQUIRED_OS_DESC "${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
@@ -53,21 +68,26 @@ if(MSVC OR MINGW OR CYGWIN)
     else()
         set(wxREQUIRED_OS_DESC "Windows Vista / Windows Server 2008")
     endif()
-    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-        wx_string_append(wxREQUIRED_OS_DESC " (x64 Edition)")
+    if(wxPLATFORM_ARCH)
+        wx_string_append(wxREQUIRED_OS_DESC " (${wxPLATFORM_ARCH} Edition)")
     endif()
 elseif(APPLE AND NOT IPHONE)
     if(DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
-        set(wxREQUIRED_OS_DESC "macOS ${CMAKE_OSX_DEPLOYMENT_TARGET}")
+        set(wxREQUIRED_OS_DESC "macOS ${CMAKE_OSX_DEPLOYMENT_TARGET} ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endif()
 
 # Print configuration summary
 wx_print_thirdparty_library_summary()
 
-message(STATUS "Configured wxWidgets ${wxVERSION} for ${CMAKE_SYSTEM}
+if(wxTOOLKIT_EXTRA)
+    string(REPLACE ";" ", " wxTOOLKIT_DESC "${wxTOOLKIT_EXTRA}")
+    set(wxTOOLKIT_DESC "with support for: ${wxTOOLKIT_DESC}")
+endif()
+
+message(STATUS "Configured wxWidgets ${wxVERSION} for ${CMAKE_SYSTEM_NAME}
     Min OS Version required at runtime:                ${wxREQUIRED_OS_DESC}
-    Which GUI toolkit should wxWidgets use?            ${wxBUILD_TOOLKIT} ${wxTOOLKIT_VERSION}
+    Which GUI toolkit should wxWidgets use?            ${wxBUILD_TOOLKIT} ${wxTOOLKIT_VERSION} ${wxTOOLKIT_DESC}
     Should wxWidgets be compiled into single library?  ${wxBUILD_MONOLITHIC}
     Should wxWidgets be linked as a shared library?    ${wxBUILD_SHARED}
     Should wxWidgets support Unicode?                  ${wxUSE_UNICODE}

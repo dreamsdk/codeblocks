@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers
 #ifndef WX_PRECOMP
@@ -39,9 +36,6 @@
 
 #include "wx/textctrl.h"
 #include "wx/wizard.h"
-
-#include "wiztest.xpm"
-#include "wiztest2.xpm"
 
 #include "../sample.xpm"
 
@@ -125,7 +119,7 @@ class wxValidationPage : public wxWizardPageSimple
 public:
     wxValidationPage(wxWizard *parent) : wxWizardPageSimple(parent)
     {
-        m_bitmap = wxBitmap(wiztest2_xpm);
+        m_bitmap = wxBitmapBundle::FromSVGFile("wiztest2.svg", wxSize(116, 260));
 
         m_checkbox = new wxCheckBox(this, wxID_ANY, "&Check me");
 
@@ -386,7 +380,8 @@ MyWizard::MyWizard(wxFrame *frame, bool useSizer)
     SetExtraStyle(wxWIZARD_EX_HELPBUTTON);
 
     Create(frame,wxID_ANY,"Absolutely Useless Wizard",
-                   wxBitmap(wiztest_xpm),wxDefaultPosition,
+                   wxBitmapBundle::FromSVGFile("wiztest.svg", wxSize(116, 260)),
+                   wxDefaultPosition,
                    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
     SetIcon(wxICON(sample));
 

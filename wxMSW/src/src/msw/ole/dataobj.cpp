@@ -19,13 +19,11 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_DATAOBJ
 
 #ifndef WX_PRECOMP
+    #include "wx/dcmemory.h"
     #include "wx/intl.h"
     #include "wx/log.h"
     #include "wx/utils.h"
@@ -67,15 +65,15 @@
 namespace
 {
 
-wxDataFormat HtmlFormatFixup(wxDataFormat format)
+wxDataFormat NonStandardFormatsFixup(wxDataFormat format)
 {
-    // Since the HTML format is dynamically registered, the wxDF_HTML
-    // format does not match the native constant in the way other formats do,
+    // Since the HTML and PNG formats are dynamically registered, the wxDF_HTML and wxDF_PNG
+    // formats do not match the native constants in the way other formats do,
     // so for the format checks below to work, we must change the native
-    // id to the wxDF_HTML constant.
+    // id to the wxDF_HTML or wxDF_PNG constant.
     //
     // But skip this for the standard constants which are never going to match
-    // wxDF_HTML anyhow.
+    // wxDF_HTML or wxDF_PNG anyhow.
     if ( !format.IsStandard() )
     {
         wxChar szBuf[256];
@@ -83,6 +81,8 @@ wxDataFormat HtmlFormatFixup(wxDataFormat format)
         {
             if ( wxStrcmp(szBuf, wxT("HTML Format")) == 0 )
                 format = wxDF_HTML;
+            else if ( wxStrcmp(szBuf, wxT("PNG")) == 0 )
+                format = wxDF_PNG;
         }
     }
 
@@ -95,16 +95,15 @@ HGLOBAL wxGlobalClone(HGLOBAL hglobIn)
 {
     HGLOBAL hglobOut = NULL;
 
-    LPVOID pvIn = GlobalLock(hglobIn);
-    if (pvIn)
+    GlobalPtrLock ptrIn(hglobIn);
+    if (ptrIn)
     {
-        SIZE_T cb = GlobalSize(hglobIn);
+        SIZE_T cb = ptrIn.GetSize();
         hglobOut = GlobalAlloc(GMEM_FIXED, cb);
         if (hglobOut)
         {
-            CopyMemory(hglobOut, pvIn, cb);
+            CopyMemory(hglobOut, ptrIn, cb);
         }
-        GlobalUnlock(hglobIn);
     }
 
     return hglobOut;
@@ -351,7 +350,7 @@ wxIDataObject::SaveSystemData(FORMATETC *pformatetc,
 
 bool wxDataFormat::operator==(wxDataFormatId format) const
 {
-    return HtmlFormatFixup(*this).m_format == (NativeFormat)format;
+    return NonStandardFormatsFixup(*this).m_format == (NativeFormat)format;
 }
 
 bool wxDataFormat::operator!=(wxDataFormatId format) const
@@ -361,10 +360,20 @@ bool wxDataFormat::operator!=(wxDataFormatId format) const
 
 bool wxDataFormat::operator==(const wxDataFormat& format) const
 {
-    return HtmlFormatFixup(*this).m_format == HtmlFormatFixup(format).m_format;
+    return NonStandardFormatsFixup(*this).m_format == NonStandardFormatsFixup(format).m_format;
 }
 
 bool wxDataFormat::operator!=(const wxDataFormat& format) const
+{
+    return !(*this == format);
+}
+
+bool wxDataFormat::operator==(NativeFormat format) const
+{
+    return NonStandardFormatsFixup(*this).m_format == format;
+}
+
+bool wxDataFormat::operator!=(NativeFormat format) const
 {
     return !(*this == format);
 }
@@ -416,10 +425,12 @@ wxIEnumFORMATETC::wxIEnumFORMATETC(const wxDataFormat *formats, ULONG nCount)
     m_nCount = nCount;
     m_formats = new CLIPFORMAT[nCount];
     for ( ULONG n = 0; n < nCount; n++ ) {
-        if (formats[n].GetFormatId() != wxDF_HTML)
-            m_formats[n] = formats[n].GetFormatId();
-        else
+        if ( formats[n].GetFormatId() == wxDF_HTML )
             m_formats[n] = ::RegisterClipboardFormat(wxT("HTML Format"));
+        else if ( formats[n].GetFormatId() == wxDF_PNG )
+            m_formats[n] = ::RegisterClipboardFormat(wxT("PNG"));
+        else
+            m_formats[n] = formats[n].GetFormatId();
     }
 }
 
@@ -534,7 +545,7 @@ STDMETHODIMP wxIDataObject::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium)
     // for the bitmaps and metafiles we use the handles instead of global memory
     // to pass the data
     wxDataFormat format = (wxDataFormat::NativeFormat)pformatetcIn->cfFormat;
-    format = HtmlFormatFixup(format);
+    format = NonStandardFormatsFixup(format);
 
     // is this system data?
     if ( GetSystemData(format, pmedium) )
@@ -627,27 +638,18 @@ STDMETHODIMP wxIDataObject::GetDataHere(FORMATETC *pformatetc,
         case TYMED_HGLOBAL:
             {
                 // copy data
-                HGLOBAL hGlobal = pmedium->hGlobal;
-                void *pBuf = GlobalLock(hGlobal);
-                if ( pBuf == NULL ) {
-                    wxLogLastError(wxT("GlobalLock"));
+                GlobalPtrLock ptr(pmedium->hGlobal);
+                if ( !ptr )
                     return E_OUTOFMEMORY;
-                }
 
                 wxDataFormat format = pformatetc->cfFormat;
 
                 // possibly put the size in the beginning of the buffer
-                pBuf = m_pDataObject->SetSizeInBuffer
-                                      (
-                                        pBuf,
-                                        ::GlobalSize(hGlobal),
-                                        format
-                                      );
+                void* const pBuf =
+                    m_pDataObject->SetSizeInBuffer(ptr, ptr.GetSize(), format);
 
                 if ( !m_pDataObject->GetDataHere(format, pBuf) )
                     return E_UNEXPECTED;
-
-                GlobalUnlock(hGlobal);
             }
             break;
 
@@ -693,7 +695,7 @@ STDMETHODIMP wxIDataObject::SetData(FORMATETC *pformatetc,
             {
                 wxDataFormat format = pformatetc->cfFormat;
 
-                format = HtmlFormatFixup(format);
+                format = NonStandardFormatsFixup(format);
 
                 // check if this format is supported
                 if ( !m_pDataObject->IsSupported(format, wxDataObject::Set) ) {
@@ -703,12 +705,9 @@ STDMETHODIMP wxIDataObject::SetData(FORMATETC *pformatetc,
                 }
 
                 // copy data
-                const void *pBuf = GlobalLock(pmedium->hGlobal);
-                if ( pBuf == NULL ) {
-                    wxLogLastError(wxT("GlobalLock"));
-
+                GlobalPtrLock ptr(pmedium->hGlobal);
+                if ( !ptr )
                     return E_OUTOFMEMORY;
-                }
 
                 // we've got a problem with SetData() here because the base
                 // class version requires the size parameter which we don't
@@ -721,17 +720,12 @@ STDMETHODIMP wxIDataObject::SetData(FORMATETC *pformatetc,
                     case wxDF_HTML:
                     case CF_TEXT:
                     case CF_OEMTEXT:
-                        size = strlen((const char *)pBuf);
+                        // Size must include the trailing NUL.
+                        size = strlen((const char *)ptr.Get()) + 1;
                         break;
-#if !(defined(__BORLANDC__) && (__BORLANDC__ < 0x500))
                     case CF_UNICODETEXT:
-#if ( defined(__BORLANDC__) && (__BORLANDC__ > 0x530) )
-                        size = std::wcslen((const wchar_t *)pBuf) * sizeof(wchar_t);
-#else
-                        size = wxWcslen((const wchar_t *)pBuf) * sizeof(wchar_t);
-#endif
+                        size = (wxWcslen((const wchar_t *)ptr.Get()) + 1) * sizeof(wchar_t);
                         break;
-#endif
                     case CF_BITMAP:
                     case CF_HDROP:
                         // these formats don't use size at all, anyhow (but
@@ -748,19 +742,27 @@ STDMETHODIMP wxIDataObject::SetData(FORMATETC *pformatetc,
                     case CF_METAFILEPICT:
                         size = sizeof(METAFILEPICT);
                         break;
+
+                    case wxDF_PNG:
+                        wxFALLTHROUGH;
+
                     default:
-                        pBuf = m_pDataObject->
-                                    GetSizeFromBuffer(pBuf, &size, format);
-                        size -= m_pDataObject->GetBufferOffset(format);
+                        size = ptr.GetSize();
+
+                        // Account for the possible offset.
+                        const size_t
+                            ofs = m_pDataObject->GetBufferOffset(format);
+
+                        // Check that it has a reasonable value to avoid
+                        // overflow.
+                        if ( ofs > size )
+                            return E_UNEXPECTED;
+
+                        size -= ofs;
                 }
 
-                bool ok = m_pDataObject->SetData(format, size, pBuf);
-
-                GlobalUnlock(pmedium->hGlobal);
-
-                if ( !ok ) {
+                if ( !m_pDataObject->SetData(format, size, ptr.Get()) )
                     return E_UNEXPECTED;
-                }
             }
             break;
 
@@ -823,7 +825,7 @@ STDMETHODIMP wxIDataObject::QueryGetData(FORMATETC *pformatetc)
 
     // and now check the type of data requested
     wxDataFormat format = pformatetc->cfFormat;
-    format = HtmlFormatFixup(format);
+    format = NonStandardFormatsFixup(format);
 
     if ( m_pDataObject->IsSupportedFormat(format) ) {
         wxLogTrace(wxTRACE_OleCalls, wxT("wxIDataObject::QueryGetData: %s ok"),
@@ -965,14 +967,10 @@ const void *wxDataObject::GetSizeFromBuffer(const void *buffer,
                                             size_t *size,
                                             const wxDataFormat& WXUNUSED(format))
 {
-    // hack: the third parameter is declared non-const in Wine's headers so
-    // cast away the const
-    const size_t realsz = ::HeapSize(::GetProcessHeap(), 0,
-                                     const_cast<void*>(buffer));
-    if ( realsz == (size_t)-1 )
+    const size_t realsz = ::GlobalSize(::GlobalHandle(buffer));
+    if ( !realsz )
     {
-        // note that HeapSize() does not set last error
-        wxLogApiError(wxT("HeapSize"), 0);
+        wxLogLastError(wxT("GlobalSize"));
         return NULL;
     }
 
@@ -1045,10 +1043,42 @@ const wxChar *wxDataObject::GetFormatName(wxDataFormat format)
 // wxBitmapDataObject supports CF_DIB format
 // ----------------------------------------------------------------------------
 
+namespace
+{
+
+// Modify bitmap if necessary, i.e. if it uses 0RGB format in which alpha
+// channel is present but is entirely 0, to make it just plain RGB, i.e.
+// without alpha channel at all, to ensure compatibility with the applications
+// not recognizing the special case of 0RGB and handling such bitmaps as
+// completely transparent, see #17640.
+void RemoveAlphaIfNecessary(wxBitmap& bmp)
+{
+    // Replace 0RGB bitmap with its RGB copy to ensure compatibility with
+    // applications not recognizing bitmaps in 0RGB format, see #17640.
+    if ( bmp.GetDepth() == 32 && !bmp.HasAlpha() )
+    {
+        wxBitmap bmpRGB(bmp.GetSize(), 24);
+        {
+            wxMemoryDC dc(bmpRGB);
+            dc.DrawBitmap(bmp, 0, 0);
+        }
+
+        bmp = bmpRGB;
+    }
+}
+
+} // anonymous namespace
+
 size_t wxBitmapDataObject::GetDataSize() const
 {
 #if wxUSE_WXDIB
-    return wxDIB::ConvertFromBitmap(NULL, GetHbitmapOf(GetBitmap()));
+    wxBitmap& bmp = const_cast<wxBitmapDataObject*>(this)->m_bitmap;
+
+    // Note that we need to do this here too and not just in GetDataHere()
+    // because the size of the bitmap without the alpha channel is different.
+    RemoveAlphaIfNecessary(bmp);
+
+    return wxDIB::ConvertFromBitmap(NULL, GetHbitmapOf(bmp));
 #else
     return 0;
 #endif
@@ -1057,9 +1087,13 @@ size_t wxBitmapDataObject::GetDataSize() const
 bool wxBitmapDataObject::GetDataHere(void *buf) const
 {
 #if wxUSE_WXDIB
+    wxBitmap& bmp = const_cast<wxBitmapDataObject*>(this)->m_bitmap;
+
+    RemoveAlphaIfNecessary(bmp);
+
     BITMAPINFO * const pbi = (BITMAPINFO *)buf;
 
-    return wxDIB::ConvertFromBitmap(pbi, GetHbitmapOf(GetBitmap())) != 0;
+    return wxDIB::ConvertFromBitmap(pbi, GetHbitmapOf(bmp)) != 0;
 #else
     wxUnusedVar(buf);
     return false;
@@ -1114,7 +1148,7 @@ bool wxBitmapDataObject2::GetDataHere(void *pBuf) const
 
 bool wxBitmapDataObject2::SetData(size_t WXUNUSED(len), const void *pBuf)
 {
-    HBITMAP hbmp = *(HBITMAP *)pBuf;
+    HBITMAP hbmp = *static_cast<const HBITMAP*>(pBuf);
 
     BITMAP bmp;
     if ( !GetObject(hbmp, sizeof(BITMAP), &bmp) )
@@ -1273,7 +1307,7 @@ bool wxFileDataObject::SetData(size_t WXUNUSED(size),
     // ((char *)&(pDropFiles.pFiles)) + pDropFiles.pFiles. We're also advised
     // to use DragQueryFile to work with this structure, but not told where and
     // how to get HDROP.
-    HDROP hdrop = (HDROP)pData;   // NB: it works, but I'm not sure about it
+    HDROP hdrop = static_cast<HDROP>(const_cast<void*>(pData));   // NB: it works, but I'm not sure about it
 
     // get number of files (magic value -1)
     UINT nFiles = ::DragQueryFile(hdrop, (unsigned)-1, NULL, 0u);
@@ -1492,7 +1526,7 @@ void wxURLDataObject::SetURL(const wxString& url)
     }
 
 #if wxUSE_UNICODE
-    SetData(wxDF_UNICODETEXT, url.length()*sizeof(wxChar), url.wc_str());
+    SetData(wxDF_UNICODETEXT, (url.length() + 1)*sizeof(wxChar), url.wc_str());
 #endif
 }
 

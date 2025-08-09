@@ -200,10 +200,10 @@ public:
         Returns a reference to the wxPageSetupDialogData associated with the
         printing operations of this document manager.
     */
-    //@{
+    ///@{
     wxPageSetupDialogData& GetPageSetupDialogData();
     const wxPageSetupDialogData& GetPageSetupDialogData() const;
-    //@}
+    ///@}
 
     /**
         Returns the run-time class information that allows view instances
@@ -359,6 +359,10 @@ public:
         Initialize() in your own constructor, to allow your own Initialize() or
         OnCreateFileHistory functions to be called.
 
+        Note that the last created wxDocManager object automatically becomes
+        the global document manager and can be retrieved using
+        GetDocumentManager().
+
         @param flags
             Currently unused.
         @param initialize
@@ -368,6 +372,8 @@ public:
 
     /**
         Destructor.
+
+        Destructor also resets the global document manager pointer to @NULL.
     */
     virtual ~wxDocManager();
 
@@ -582,6 +588,16 @@ public:
         @see GetAnyUsableView()
     */
     virtual wxView* GetCurrentView() const;
+
+    /**
+        Return the global instance of the document manager.
+
+        The last created wxDocManager instance becomes the global document
+        manager and this function returns it.
+
+        If no wxDocManager objects exist, returns @NULL.
+     */
+    static wxDocManager* GetDocumentManager();
 
     /**
         Returns a vector of wxDocument pointers.
@@ -922,6 +938,8 @@ public:
     /**
         Closes the view by calling OnClose(). If @a deleteWindow is @true, this
         function should delete the window associated with the view.
+
+        @return @true if the view was closed
     */
     virtual bool Close(bool deleteWindow = true);
 
@@ -971,6 +989,9 @@ public:
         example, if your views all share the same window, you need to
         disassociate the window from the view and perhaps clear the window. If
         @a deleteWindow is @true, delete the frame associated with the view.
+
+        Returning @false from this function prevents the view, and possibly the
+        document, from being closed.
     */
     virtual bool OnClose(bool deleteWindow);
 
@@ -1295,6 +1316,8 @@ public:
         Closes the document, by calling OnSaveModified() and then (if this
         returned @true) OnCloseDocument(). This does not normally delete the
         document object, use DeleteAllViews() to do this implicitly.
+
+        @return @true if the document was closed
     */
     virtual bool Close();
 
@@ -1392,7 +1415,7 @@ public:
     */
     wxViewVector GetViewsVector() const;
 
-    //@{
+    ///@{
     /**
         Returns the list whose elements are the views on the document.
 
@@ -1400,7 +1423,7 @@ public:
     */
     wxList& GetViews();
     const wxList& GetViews() const;
-    //@}
+    ///@}
 
     /**
         Returns true if this document is a child document corresponding to a
@@ -1423,7 +1446,7 @@ public:
     */
     virtual bool IsModified() const;
 
-    //@{
+    ///@{
     /**
         Override this function and call it from your own LoadObject() before
         streaming your own data. LoadObject() is called by the framework
@@ -1434,7 +1457,7 @@ public:
     */
     virtual istream& LoadObject(istream& stream);
     virtual wxInputStream& LoadObject(wxInputStream& stream);
-    //@}
+    ///@}
 
     /**
         Call with @true to mark the document as modified since the last save,
@@ -1463,6 +1486,12 @@ public:
         Notice that previous wxWidgets versions used to call this function also
         from OnNewDocument(), rather counter-intuitively. This is no longer the
         case since wxWidgets 2.9.0.
+
+        Returning @false from this function prevents the document from closing.
+        The default implementation does this if the document is modified and
+        the user didn't confirm discarding the modifications to it.
+
+        Return @true to allow the document to be closed.
     */
     virtual bool OnCloseDocument();
 
@@ -1559,7 +1588,7 @@ public:
     */
     virtual bool Revert();
 
-    //@{
+    ///@{
     /**
         Override this function and call it from your own SaveObject() before
         streaming your own data. SaveObject() is called by the framework
@@ -1570,7 +1599,7 @@ public:
     */
     virtual ostream& SaveObject(ostream& stream);
     virtual wxOutputStream& SaveObject(wxOutputStream& stream);
-    //@}
+    ///@}
 
     /**
         Sets the command processor to be used for this document. The document
@@ -1707,7 +1736,7 @@ protected:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_file */
-//@{
+///@{
 
 /**
     Copies the given file to @a stream. Useful when converting an old
@@ -1729,5 +1758,5 @@ bool wxTransferFileToStream(const wxString& filename,
 bool wxTransferStreamToFile(istream& stream,
                              const wxString& filename);
 
-//@}
+///@}
 

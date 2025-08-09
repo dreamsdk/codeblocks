@@ -2,33 +2,33 @@
 #                                                                            *
 # Make file for VMS                                                          *
 # Author : J.Jansen (joukj@hrem.nano.tudelft.nl)                             *
-# Date : 13 September 2019                                                   *
+# Date : 20 October 2021                                                     *
 #                                                                            *
 #*****************************************************************************
 .first
 	define wx [--.include.wx]
 
 .ifdef __WXMOTIF__
-CXX_DEFINE = /define=(__WXMOTIF__=1)/name=(as_is,short)\
+CXX_DEFINE = /define=(__WXMOTIF__=1,WXBUILDING=1)/name=(as_is,short)\
 	   /assume=(nostdnew,noglobal_array_new)/incl=[-.regex]
-CC_DEFINE = /define=(__WXMOTIF__=1)/name=(as_is,short)/incl=[-.regex]
+CC_DEFINE = /define=(__WXMOTIF__=1,WXBUILDING=1)/name=(as_is,short)/incl=[-.regex]
 .else
 .ifdef __WXGTK__
-CXX_DEFINE = /define=(__WXGTK__=1)/float=ieee/name=(as_is,short)/ieee=denorm\
+CXX_DEFINE = /define=(__WXGTK__=1,WXBUILDING=1)/float=ieee/name=(as_is,short)/ieee=denorm\
 	   /assume=(nostdnew,noglobal_array_new)/incl=[-.regex]
-CC_DEFINE = /define=(__WXGTK__=1)/float=ieee/name=(as_is,short)/ieee=denorm\
+CC_DEFINE = /define=(__WXGTK__=1,WXBUILDING=1)/float=ieee/name=(as_is,short)/ieee=denorm\
 	/incl=[-.regex]
 .else
 .ifdef __WXGTK2__
-CXX_DEFINE = /define=(__WXGTK__=1,VMS_GTK2=1)/float=ieee/name=(as_is,short)/ieee=denorm\
+CXX_DEFINE = /define=(__WXGTK__=1,VMS_GTK2=1,WXBUILDING=1)/float=ieee/name=(as_is,short)/ieee=denorm\
 	   /assume=(nostdnew,noglobal_array_new)/incl=[-.regex]
-CC_DEFINE = /define=(__WXGTK__=1,VMS_GTK2=1)/float=ieee/name=(as_is,short)\
+CC_DEFINE = /define=(__WXGTK__=1,VMS_GTK2=1,WXBUILDING=1)/float=ieee/name=(as_is,short)\
 	/ieee=denorm/incl=[-.regex]
 .else
 .ifdef __WXX11__
-CXX_DEFINE = /define=(__WXX11__=1,__WXUNIVERSAL__==1)/float=ieee\
+CXX_DEFINE = /define=(__WXX11__=1,__WXUNIVERSAL__==1,WXBUILDING=1)/float=ieee\
 	/name=(as_is,short)/assume=(nostdnew,noglobal_array_new)/incl=[-.regex]
-CC_DEFINE = /define=(__WXX11__=1,__WXUNIVERSAL__==1)/float=ieee\
+CC_DEFINE = /define=(__WXX11__=1,__WXUNIVERSAL__==1,WXBUILDING=1)/float=ieee\
 	/name=(as_is,short)/incl=[-.regex]
 .else
 CXX_DEFINE =
@@ -227,7 +227,7 @@ OBJECTS3=listctrlcmn.obj,socketiohandler.obj,fdiodispatcher.obj,\
 		affinematrix2d.obj,richtooltipcmn.obj,persist.obj,time.obj,\
 		textmeasurecmn.obj,modalhook.obj,threadinfo.obj,\
 		addremovectrl.obj,notifmsgcmn.obj,graphcmn.obj,dcsvg.obj,\
-		dcgraph.obj
+		dcgraph.obj,secretstore.obj,uilocale.obj,bmpbndl.obj
 
 OBJECTS_MOTIF=radiocmn.obj,combocmn.obj
 
@@ -432,7 +432,8 @@ SOURCES = \
 		gridcmn.cpp,odcombocmn.cpp,spinbtncmn.cpp,scrolbarcmn.cpp,\
 		colourdata.cpp,fontdata.cpp affinematrix2d.cpp\
 		richtooltipcmn.cpp persist.cpp time.cpp textmeasurecmn.cpp \
-		modalhook.cpp graphcmn.cpp dcsvg.cpp dcgraph.cpp
+		modalhook.cpp graphcmn.cpp dcsvg.cpp dcgraph.cpp \
+		secretstore.cpp uilocale.cpp bmpbndl.cpp
 
 all : $(SOURCES)
 	$(MMS)$(MMSQUALIFIERS) $(OBJECTS)
@@ -655,6 +656,7 @@ geometry.obj : geometry.cpp
 matrix.obj : matrix.cpp
 radiocmn.obj : radiocmn.cpp
 regex.obj : regex.cpp
+	cxx$(CXX_DEFINE)/warn=disable=(INTSIGNCHANGE)/obj=regex.obj regex.cpp
 taskbarcmn.obj : taskbarcmn.cpp
 xti.obj : xti.cpp
 xtistrm.obj : xtistrm.cpp
@@ -730,3 +732,6 @@ notifmsgcmn.obj : notifmsgcmn.cpp
 graphcmn.obj : graphcmn.cpp
 dcsvg.obj : dcsvg.cpp
 dcgraph.obj : dcgraph.cpp
+secretstore.obj : secretstore.cpp
+uilocale.obj : uilocale.cpp
+bmpbndl.obj : bmpbndl.cpp

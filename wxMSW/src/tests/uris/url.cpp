@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -68,21 +65,25 @@ void URLTestCase::GetInputStream()
 {
     if (!IsNetworkAvailable())      // implemented in test.cpp
     {
-        wxLogWarning("No network connectivity; skipping the URLTestCase::GetInputStream test unit.");
+        WARN("No network connectivity; skipping the URLTestCase::GetInputStream test unit.");
         return;
     }
 
-    wxURL url("http://www.wxwidgets.org/assets/img/header-logo.png");
+    // We need a site never redirecting to HTTPs and this one seems better than
+    // the other alternatives such as Microsoft's www.msftconnecttest.com or
+    // Apple's captive.apple.com. IANAs example.com might be another good
+    // choice but it's not clear if it's never going to redirect to HTTPs.
+    wxURL url("http://detectportal.firefox.com/");
     CPPUNIT_ASSERT_EQUAL(wxURL_NOERR, url.GetError());
 
     wxScopedPtr<wxInputStream> in_stream(url.GetInputStream());
     if ( !in_stream && IsAutomaticTest() )
     {
-        // Sometimes the connection fails during CI runs, try to connect once
-        // again if this happens in the hope it was just a transient error.
-        wxSleep(3);
-        WARN("Connection to www.wxwidgets.org failed, retrying...");
-        in_stream.reset(url.GetInputStream());
+        // Sometimes the connection fails during CI runs, don't consider this
+        // as a fatal error because it happens from time to time and there is
+        // nothing we can do about it.
+        WARN("Connection to HTTP URL failed, skipping the test.");
+        return;
     }
 
     CPPUNIT_ASSERT(in_stream);
@@ -91,7 +92,7 @@ void URLTestCase::GetInputStream()
     wxMemoryOutputStream ostream;
     CPPUNIT_ASSERT(in_stream->Read(ostream).GetLastError() == wxSTREAM_EOF);
 
-    CPPUNIT_ASSERT_EQUAL(17334, ostream.GetSize());
+    CPPUNIT_ASSERT_EQUAL(strlen("success\n"), ostream.GetSize());
 }
 
 void URLTestCase::CopyAndAssignment()

@@ -25,7 +25,7 @@ public:
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = wxTB_DEFAULT_STYLE,
-               const wxString& name = wxToolBarNameStr )
+               const wxString& name = wxASCII_STR(wxToolBarNameStr) )
     {
         Init();
 
@@ -37,7 +37,7 @@ public:
                  const wxPoint& pos = wxDefaultPosition,
                  const wxSize& size = wxDefaultSize,
                  long style = wxTB_DEFAULT_STYLE,
-                 const wxString& name = wxToolBarNameStr );
+                 const wxString& name = wxASCII_STR(wxToolBarNameStr) );
 
     virtual ~wxToolBar();
 
@@ -47,8 +47,8 @@ public:
 
     virtual void SetWindowStyleFlag( long style ) wxOVERRIDE;
 
-    virtual void SetToolNormalBitmap(int id, const wxBitmap& bitmap) wxOVERRIDE;
-    virtual void SetToolDisabledBitmap(int id, const wxBitmap& bitmap) wxOVERRIDE;
+    virtual void SetToolNormalBitmap(int id, const wxBitmapBundle& bitmap) wxOVERRIDE;
+    virtual void SetToolDisabledBitmap(int id, const wxBitmapBundle& bitmap) wxOVERRIDE;
 
     virtual bool Realize() wxOVERRIDE;
 
@@ -57,8 +57,8 @@ public:
 
     virtual wxToolBarToolBase *CreateTool(int id,
                                           const wxString& label,
-                                          const wxBitmap& bitmap1,
-                                          const wxBitmap& bitmap2 = wxNullBitmap,
+                                          const wxBitmapBundle& bitmap1,
+                                          const wxBitmapBundle& bitmap2 = wxNullBitmap,
                                           wxItemKind kind = wxITEM_NORMAL,
                                           wxObject *clientData = NULL,
                                           const wxString& shortHelpString = wxEmptyString,

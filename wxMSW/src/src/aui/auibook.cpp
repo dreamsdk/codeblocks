@@ -14,9 +14,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_AUI
 
@@ -30,6 +27,9 @@
 #endif
 
 #include "wx/aui/tabmdi.h"
+#include "wx/wupdlock.h"
+
+#include "wx/dcbuffer.h" // just for wxALWAYS_NATIVE_DOUBLE_BUFFER
 
 #ifdef __WXMAC__
 #include "wx/osx/private.h"
@@ -56,7 +56,7 @@ wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_MIDDLE_DOWN, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_UP, wxAuiNotebookEvent);
 wxDEFINE_EVENT(wxEVT_AUINOTEBOOK_TAB_RIGHT_DOWN, wxAuiNotebookEvent);
 
-wxIMPLEMENT_CLASS(wxAuiNotebook, wxControl);
+wxIMPLEMENT_CLASS(wxAuiNotebook, wxBookCtrlBase);
 wxIMPLEMENT_CLASS(wxAuiTabCtrl, wxControl);
 wxIMPLEMENT_DYNAMIC_CLASS(wxAuiNotebookEvent, wxBookCtrlEvent);
 
@@ -67,7 +67,7 @@ wxIMPLEMENT_DYNAMIC_CLASS(wxAuiNotebookEvent, wxBookCtrlEvent);
 // wxAuiTabContainer is a class which contains information about each
 // tab.  It also can render an entire tab control to a specified DC.
 // It's not a window class itself, because this code will be used by
-// the wxFrameMananger, where it is disadvantageous to have separate
+// the wxAuiManager, where it is disadvantageous to have separate
 // windows for each tab control in the case of "docked tabs"
 
 // A derived class, wxAuiTabCtrl, is an actual wxWindow-derived window
@@ -171,13 +171,13 @@ void wxAuiTabContainer::SetActiveColour(const wxColour& colour)
     m_art->SetActiveColour(colour);
 }
 
-void wxAuiTabContainer::SetRect(const wxRect& rect)
+void wxAuiTabContainer::SetRect(const wxRect& rect, wxWindow* wnd)
 {
     m_rect = rect;
 
     if (m_art)
     {
-        m_art->SetSizingInfo(rect.GetSize(), m_pages.GetCount());
+        m_art->SetSizingInfo(rect.GetSize(), m_pages.GetCount(), wnd);
     }
 }
 
@@ -194,7 +194,7 @@ bool wxAuiTabContainer::AddPage(wxWindow* page,
     // let the art provider know how many pages we have
     if (m_art)
     {
-        m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount());
+        m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount(), page);
     }
 
     return true;
@@ -217,7 +217,7 @@ bool wxAuiTabContainer::InsertPage(wxWindow* page,
     // let the art provider know how many pages we have
     if (m_art)
     {
-        m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount());
+        m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount(), page);
     }
 
     return true;
@@ -255,7 +255,7 @@ bool wxAuiTabContainer::RemovePage(wxWindow* wnd)
             // let the art provider know how many pages we have
             if (m_art)
             {
-                m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount());
+                m_art->SetSizingInfo(m_rect.GetSize(), m_pages.GetCount(), wnd);
             }
 
             return true;
@@ -326,7 +326,7 @@ wxWindow* wxAuiTabContainer::GetWindowFromIdx(size_t idx) const
     return m_pages[idx].window;
 }
 
-int wxAuiTabContainer::GetIdxFromWindow(wxWindow* wnd) const
+int wxAuiTabContainer::GetIdxFromWindow(const wxWindow* wnd) const
 {
     const size_t page_count = m_pages.GetCount();
     for ( size_t i = 0; i < page_count; ++i )
@@ -364,8 +364,8 @@ size_t wxAuiTabContainer::GetPageCount() const
 
 void wxAuiTabContainer::AddButton(int id,
                                   int location,
-                                  const wxBitmap& normalBitmap,
-                                  const wxBitmap& disabledBitmap)
+                                  const wxBitmapBundle& normalBitmap,
+                                  const wxBitmapBundle& disabledBitmap)
 {
     wxAuiTabContainerButton button;
     button.id = id;
@@ -417,6 +417,13 @@ void wxAuiTabContainer::Render(wxDC* raw_dc, wxWindow* wnd)
     if (m_rect.IsEmpty())
         return;
 
+    size_t i;
+    size_t page_count = m_pages.GetCount();
+    size_t button_count = m_buttons.GetCount();
+
+#if wxALWAYS_NATIVE_DOUBLE_BUFFER
+    wxDC& dc = *raw_dc;
+#else
     wxMemoryDC dc;
 
     // use the same layout direction as the window DC uses to ensure that the
@@ -424,16 +431,13 @@ void wxAuiTabContainer::Render(wxDC* raw_dc, wxWindow* wnd)
     dc.SetLayoutDirection(raw_dc->GetLayoutDirection());
 
     wxBitmap bmp;
-    size_t i;
-    size_t page_count = m_pages.GetCount();
-    size_t button_count = m_buttons.GetCount();
-
     // create off-screen bitmap
     bmp.Create(m_rect.GetWidth(), m_rect.GetHeight(),*raw_dc);
     dc.SelectObject(bmp);
 
     if (!dc.IsOk())
         return;
+#endif
 
     // ensure we show as many tabs as possible
     while (m_tabOffset > 0 && IsTabVisible(page_count-1, m_tabOffset-1, &dc, wnd))
@@ -710,9 +714,11 @@ void wxAuiTabContainer::Render(wxDC* raw_dc, wxWindow* wnd)
     }
 
 
+#if !wxALWAYS_NATIVE_DOUBLE_BUFFER
     raw_dc->Blit(m_rect.x, m_rect.y,
                  m_rect.GetWidth(), m_rect.GetHeight(),
                  &dc, 0, 0);
+#endif
 }
 
 // Is the tab visible?
@@ -1094,6 +1100,7 @@ void wxAuiTabCtrl::OnCaptureLost(wxMouseCaptureLostEvent& WXUNUSED(event))
 {
     if (m_isDragging)
     {
+        m_clickPt = wxDefaultPosition;
         m_isDragging = false;
 
         wxAuiNotebookEvent evt(wxEVT_AUINOTEBOOK_CANCEL_DRAG, m_windowId);
@@ -1111,6 +1118,7 @@ void wxAuiTabCtrl::OnLeftUp(wxMouseEvent& evt)
 
     if (m_isDragging)
     {
+        m_clickPt = wxDefaultPosition;
         m_isDragging = false;
 
         wxAuiNotebookEvent e(wxEVT_AUINOTEBOOK_END_DRAG, m_windowId);
@@ -1515,8 +1523,9 @@ public:
     wxTabFrame()
     {
         m_tabs = NULL;
-        m_rect = wxRect(wxPoint(0,0), FromDIP(wxSize(200,200)));
-        m_tabCtrlHeight = FromDIP(20);
+
+        // Both m_rect and m_tabCtrlHeight will be really initialized later.
+        m_tabCtrlHeight = 0;
     }
 
     ~wxTabFrame()
@@ -1642,7 +1651,7 @@ const int wxAuiBaseTabCtrlId = 5380;
 #define EVT_AUI_RANGE(id1, id2, event, func) \
     wx__DECLARE_EVT2(event, id1, id2, wxAuiNotebookEventHandler(func))
 
-wxBEGIN_EVENT_TABLE(wxAuiNotebook, wxControl)
+wxBEGIN_EVENT_TABLE(wxAuiNotebook, wxBookCtrlBase)
     EVT_SIZE(wxAuiNotebook::OnSize)
     EVT_CHILD_FOCUS(wxAuiNotebook::OnChildFocusNotebook)
     EVT_AUI_RANGE(wxAuiBaseTabCtrlId, wxAuiBaseTabCtrlId+500,
@@ -1708,7 +1717,6 @@ void wxAuiNotebook::Init()
     m_curPage = -1;
     m_tabIdCounter = wxAuiBaseTabCtrlId;
     m_dummyWnd = NULL;
-    m_tabCtrlHeight = FromDIP(20);
     m_requestedBmpSize = wxDefaultSize;
     m_requestedTabCtrlHeight = -1;
 }
@@ -1966,7 +1974,7 @@ void wxAuiNotebook::SetWindowStyleFlag(long style)
 bool wxAuiNotebook::AddPage(wxWindow* page,
                             const wxString& caption,
                             bool select,
-                            const wxBitmap& bitmap)
+                            const wxBitmapBundle& bitmap)
 {
     return InsertPage(GetPageCount(), page, caption, select, bitmap);
 }
@@ -1975,7 +1983,7 @@ bool wxAuiNotebook::InsertPage(size_t page_idx,
                                wxWindow* page,
                                const wxString& caption,
                                bool select,
-                               const wxBitmap& bitmap)
+                               const wxBitmapBundle& bitmap)
 {
     wxASSERT_MSG(page, wxT("page pointer must be non-NULL"));
     if (!page)
@@ -2069,6 +2077,12 @@ bool wxAuiNotebook::DeletePage(size_t page_idx)
 // but does not destroy the window
 bool wxAuiNotebook::RemovePage(size_t page_idx)
 {
+    // Lock the window for changes to avoid flicker when
+    // removing the active page (there is a noticeable
+    // flicker from the active tab is closed and until a
+    // new one is selected) - this is noticeable on MSW
+    wxWindowUpdateLocker locker(this);
+
     // save active window pointer
     wxWindow* active_wnd = NULL;
     if (m_curPage >= 0)
@@ -2081,6 +2095,8 @@ bool wxAuiNotebook::RemovePage(size_t page_idx)
     // make sure we found the page
     if (!wnd)
         return false;
+
+    ShowWnd(wnd, false);
 
     // find out which onscreen tab ctrl owns this tab
     wxAuiTabCtrl* ctrl;
@@ -2156,13 +2172,10 @@ bool wxAuiNotebook::RemovePage(size_t page_idx)
     return true;
 }
 
-// GetPageIndex() returns the index of the page, or -1 if the
-// page could not be located in the notebook
-int wxAuiNotebook::GetPageIndex(wxWindow* page_wnd) const
+int wxAuiNotebook::FindPage(const wxWindow* page) const
 {
-    return m_tabs.GetIdxFromWindow(page_wnd);
+    return m_tabs.GetIdxFromWindow(page);
 }
-
 
 
 // SetPageText() changes the tab caption of the specified page
@@ -2231,7 +2244,7 @@ wxString wxAuiNotebook::GetPageToolTip(size_t page_idx) const
     return page_info.tooltip;
 }
 
-bool wxAuiNotebook::SetPageBitmap(size_t page_idx, const wxBitmap& bitmap)
+bool wxAuiNotebook::SetPageBitmap(size_t page_idx, const wxBitmapBundle& bitmap)
 {
     if (page_idx >= m_tabs.GetPageCount())
         return false;
@@ -2265,7 +2278,7 @@ wxBitmap wxAuiNotebook::GetPageBitmap(size_t page_idx) const
 
     // update our own tab catalog
     const wxAuiNotebookPage& page_info = m_tabs.GetPage(page_idx);
-    return page_info.bitmap;
+    return page_info.bitmap.GetBitmap(page_info.bitmap.GetDefaultSize());
 }
 
 // GetSelection() returns the index of the currently active page
@@ -3398,7 +3411,7 @@ int wxAuiNotebook::GetPageImage(size_t WXUNUSED(n)) const
 
 bool wxAuiNotebook::SetPageImage(size_t n, int imageId)
 {
-    return SetPageBitmap(n, GetImageList()->GetBitmap(imageId));
+    return SetPageBitmap(n, GetBitmapBundle(imageId));
 }
 
 int wxAuiNotebook::ChangeSelection(size_t n)
@@ -3409,14 +3422,7 @@ int wxAuiNotebook::ChangeSelection(size_t n)
 bool wxAuiNotebook::AddPage(wxWindow *page, const wxString &text, bool select,
                             int imageId)
 {
-    if(HasImageList())
-    {
-        return AddPage(page, text, select, GetImageList()->GetBitmap(imageId));
-    }
-    else
-    {
-        return AddPage(page, text, select, wxNullBitmap);
-    }
+    return AddPage(page, text, select, GetBitmapBundle(imageId));
 }
 
 bool wxAuiNotebook::DeleteAllPages()
@@ -3433,15 +3439,7 @@ bool wxAuiNotebook::InsertPage(size_t index, wxWindow *page,
                                const wxString &text, bool select,
                                int imageId)
 {
-    if(HasImageList())
-    {
-        return InsertPage(index, page, text, select,
-                          GetImageList()->GetBitmap(imageId));
-    }
-    else
-    {
-        return InsertPage(index, page, text, select, wxNullBitmap);
-    }
+    return InsertPage(index, page, text, select, GetBitmapBundle(imageId));
 }
 
 namespace

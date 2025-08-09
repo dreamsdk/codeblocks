@@ -80,7 +80,7 @@ private:
 /////////////////////////////////////////////////////////////////////////////
 // wxArchiveInputStream
 //
-// GetNextEntry() returns an wxArchiveEntry object containing the meta-data
+// GetNextEntry() returns a wxArchiveEntry object containing the meta-data
 // for the next entry in the archive (and gives away ownership). Reading from
 // the wxArchiveInputStream then returns the entry's data. Eof() becomes true
 // after an attempt has been made to read past the end of the entry's data.
@@ -218,9 +218,9 @@ public:
 
     wxArchiveIterator& operator =(const wxArchiveIterator& it) {
         if (it.m_rep)
-            it.m_rep.AddRef();
+            it.m_rep->AddRef();
         if (m_rep)
-            this->m_rep.UnRef();
+            m_rep->UnRef();
         m_rep = it.m_rep;
         return *this;
     }

@@ -103,12 +103,6 @@ bool wxTextCtrl::Create( wxWindow *parent,
 
     MacPostControlCreate(pos, size) ;
 
-#if wxOSX_USE_COCOA
-    // under carbon everything can already be set before the MacPostControlCreate embedding takes place
-    // but under cocoa for single line textfields this only works after everything has been set up
-    GetTextPeer()->SetStringValue(str);
-#endif
-
     // only now the embedding is correct and we can do a positioning update
 
     MacSuperChangedPosition() ;
@@ -130,9 +124,17 @@ void wxTextCtrl::MacVisibilityChanged()
 {
 }
 
+#if WXWIN_COMPATIBILITY_3_0 && wxUSE_SPELLCHECK
 void wxTextCtrl::MacCheckSpelling(bool check)
 {
-    GetTextPeer()->CheckSpelling(check);
+    GetTextPeer()->CheckSpelling(check ? wxTextProofOptions::Default()
+                                       : wxTextProofOptions::Disable());
+}
+#endif // WXWIN_COMPATIBILITY_3_0 && wxUSE_SPELLCHECK
+
+void wxTextCtrl::OSXEnableNewLineReplacement(bool enable)
+{
+    GetTextPeer()->EnableNewLineReplacement(enable);
 }
 
 void wxTextCtrl::OSXEnableAutomaticQuoteSubstitution(bool enable)
@@ -156,7 +158,7 @@ bool wxTextCtrl::SetFont( const wxFont& font )
     if ( !wxTextCtrlBase::SetFont( font ) )
         return false ;
 
-    GetPeer()->SetFont( font , GetForegroundColour() , GetWindowStyle(), false /* dont ignore black */ ) ;
+    GetPeer()->SetFont(font) ;
 
     return true ;
 }
@@ -184,54 +186,73 @@ bool wxTextCtrl::IsModified() const
 
 wxSize wxTextCtrl::DoGetBestSize() const
 {
-    int wText = -1;
-    int hText = -1;
-
+    wxSize size;
     if (GetTextPeer())
-    {
-        wxSize size = GetTextPeer()->GetBestSize();
-        if (size.x > 0 && size.y > 0)
-        {
-            hText = size.y;
-            wText = size.x;
-        }
-    }
+        size = GetTextPeer()->GetBestSize();
 
-    if ( hText == - 1)
+    // Normally the width passed to GetSizeFromTextSize() is supposed to be
+    // valid, i.e. positive, but we use our knowledge of its implementation
+    // just below to rely on it returning the default size if we don't have
+    // any valid best size in the peer and size remained default-initialized.
+    return GetSizeFromTextSize(size);
+}
+
+wxSize wxTextCtrl::DoGetSizeFromTextSize(int xlen, int ylen) const
+{
+    static const int TEXTCTRL_BORDER_SIZE = 5;
+    static const int TEXTCTRL_MAX_EMPTY_WIDTH = 5;
+
+    // Compute the default height if not specified.
+    int hText = ylen;
+    if ( hText <= 0 )
     {
         // these are the numbers from the HIG:
-        // we reduce them by the borders first
-        wText = 100 ;
-
         switch ( m_windowVariant )
         {
             case wxWINDOW_VARIANT_NORMAL :
-                hText = 22 - 6 ;
+                hText = 22;
                 break ;
 
             case wxWINDOW_VARIANT_SMALL :
-                hText = 19 - 6 ;
+                hText = 19;
                 break ;
 
             case wxWINDOW_VARIANT_MINI :
-                hText = 15 - 6 ;
+                hText = 15;
                 break ;
 
             default :
-                hText = 22 - 6;
+                hText = 22;
                 break ;
         }
+
+        // the numbers above include the border size, so subtract it before
+        // possibly adding it back below
+        hText -= TEXTCTRL_BORDER_SIZE;
+
+        // make the control 5 lines tall by default for consistently with how
+        // the old code behaved
+        if ( m_windowStyle & wxTE_MULTILINE )
+            hText *= 5 ;
     }
 
-    // as the above numbers have some free space around the text
-    // we get 5 lines like this anyway
-    if ( m_windowStyle & wxTE_MULTILINE )
-         hText *= 5 ;
+    // Keep using the same default 100px width as was used previously in the
+    // special case of having invalid width.
+    // since this method is now called with native field widths, an empty field still
+    // has small positive xlen, therefore don't compare just with > 0 anymore
+    wxSize size(xlen > TEXTCTRL_MAX_EMPTY_WIDTH ? xlen : 100, hText);
+
+    // Use extra margin size which works under macOS 10.15: note that we don't
+    // need the vertical margin when using the automatically determined hText.
+    if ( xlen > TEXTCTRL_MAX_EMPTY_WIDTH )
+        size.x += 4;
+    if ( ylen > 0 )
+        size.y += 2;
 
     if ( !HasFlag(wxNO_BORDER) )
-        hText += 6 ;
+        size += wxSize(TEXTCTRL_BORDER_SIZE, TEXTCTRL_BORDER_SIZE) ;
 
-    return wxSize(wText, hText);
+    return size;
 }
 
 bool wxTextCtrl::GetStyle(long position, wxTextAttr& style)
@@ -247,6 +268,13 @@ void wxTextCtrl::MarkDirty()
 void wxTextCtrl::DiscardEdits()
 {
     m_dirty = false;
+}
+
+void wxTextCtrl::EmptyUndoBuffer()
+{
+    wxCHECK_RET( GetTextPeer(), "Must create the control first" );
+
+    GetTextPeer()->EmptyUndoBuffer() ;
 }
 
 int wxTextCtrl::GetNumberOfLines() const
@@ -323,6 +351,22 @@ void wxTextCtrl::Paste()
     }
 }
 
+#if wxUSE_SPELLCHECK
+
+bool wxTextCtrl::EnableProofCheck(const wxTextProofOptions& options)
+{
+    GetTextPeer()->CheckSpelling(options);
+
+    return true;
+}
+
+wxTextProofOptions wxTextCtrl::GetProofCheckOptions() const
+{
+    return GetTextPeer()->GetCheckingOptions();
+}
+
+#endif // wxUSE_SPELLCHECK
+
 void wxTextCtrl::OnDropFiles(wxDropFilesEvent& event)
 {
     // By default, load the first file into the text window.
@@ -332,7 +376,7 @@ void wxTextCtrl::OnDropFiles(wxDropFilesEvent& event)
 
 void wxTextCtrl::OnKeyDown(wxKeyEvent& event)
 {
-    if ( event.GetModifiers() == wxMOD_CONTROL )
+    if ( event.ControlDown() )
     {
         switch( event.GetKeyCode() )
         {
@@ -350,6 +394,18 @@ void wxTextCtrl::OnKeyDown(wxKeyEvent& event)
             case 'X':
                 if ( CanCut() )
                     Cut() ;
+                return;
+            case 'Z':
+                if ( !event.ShiftDown() )
+                {
+                    if ( CanUndo() )
+                        Undo() ;
+                    return;
+                }
+                // else fall through to Redo
+            case 'Y':
+                if ( CanRedo() )
+                    Redo() ;
                 return;
             default:
                 break;
@@ -410,7 +466,7 @@ void wxTextCtrl::OnChar(wxKeyEvent& event)
                     return;
             }
 
-            if ( !(m_windowStyle & wxTE_MULTILINE) )
+            if ( GetTextPeer()->GetNewLineReplacement() )
             {
                 wxTopLevelWindow *tlw = wxDynamicCast(wxGetTopLevelParent(this), wxTopLevelWindow);
                 if ( tlw && tlw->GetDefaultItem() )
@@ -678,6 +734,10 @@ void wxTextWidgetImpl::Redo()
 {
 }
 
+void wxTextWidgetImpl::EmptyUndoBuffer()
+{
+}
+
 long wxTextWidgetImpl::XYToPosition(long WXUNUSED(x), long WXUNUSED(y)) const
 {
     return 0 ;
@@ -774,6 +834,15 @@ int wxTextWidgetImpl::GetLineLength(long lineNo) const
 
     return -1 ;
 }
+
+#if wxUSE_SPELLCHECK
+
+wxTextProofOptions wxTextWidgetImpl::GetCheckingOptions() const
+{
+    return wxTextProofOptions::Disable();
+}
+
+#endif // wxUSE_SPELLCHECK
 
 void wxTextWidgetImpl::SetJustification()
 {

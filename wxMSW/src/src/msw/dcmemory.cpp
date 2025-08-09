@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/dcmemory.h"
 #include "wx/msw/dcmemory.h"
@@ -30,6 +27,8 @@
     #include "wx/utils.h"
     #include "wx/log.h"
 #endif
+
+#include "wx/display.h"
 
 #include "wx/msw/private.h"
 
@@ -134,6 +133,29 @@ void wxMemoryDCImpl::DoSelect( const wxBitmap& bitmap )
     {
         m_oldBitmap = hBmp;
     }
+
+    // Remember content scale factor used by the bitmap: we don't use it
+    // ourselves, but this can be needed later for creating fonts of the
+    // correct size.
+    m_contentScaleFactor = bitmap.GetScaleFactor();
+
+    // The font may need to be adjusted for the new scale factor.
+    SetFont(GetFont());
+}
+
+wxSize wxMemoryDCImpl::GetPPI() const
+{
+    return wxDisplay::GetStdPPI() * GetContentScaleFactor();
+}
+
+void wxMemoryDCImpl::SetFont(const wxFont& font)
+{
+    // We need to adjust the font size by the ratio between the scale factor we
+    // use and the default/global scale factor used when creating fonts.
+    wxFont scaledFont = font;
+    if ( scaledFont.IsOk() )
+        scaledFont.WXAdjustToPPI(GetPPI());
+    wxMSWDCImpl::SetFont(scaledFont);
 }
 
 void wxMemoryDCImpl::DoGetSize(int *width, int *height) const

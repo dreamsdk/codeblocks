@@ -131,7 +131,7 @@ public:
                    const wxPoint& pos = wxDefaultPosition,
                    const wxSize& size = wxDefaultSize,
                    long style = wxTL_DEFAULT_STYLE,
-                   const wxString& name = wxTreeListCtrlNameStr)
+                   const wxString& name = wxASCII_STR(wxTreeListCtrlNameStr))
     {
         Init();
 
@@ -143,7 +143,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxTL_DEFAULT_STYLE,
-                const wxString& name = wxTreeListCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxTreeListCtrlNameStr));
 
 
     virtual ~wxTreeListCtrl();
@@ -515,7 +515,7 @@ private:
 
     friend class wxTreeListCtrl;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxTreeListEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxTreeListEvent);
 };
 
 // Event types and event table macros.

@@ -1,10 +1,10 @@
 
 /* pngrutil.c - utilities to read a PNG file
  *
- * Last changed in libpng 1.6.35 [July 15, 2018]
+ * Copyright (c) 2018 Cosmin Truta
  * Copyright (c) 1998-2002,2004,2006-2018 Glenn Randers-Pehrson
- * (Version 0.96 Copyright (c) 1996, 1997 Andreas Dilger)
- * (Version 0.88 Copyright (c) 1995, 1996 Guy Eric Schalnat, Group 42, Inc.)
+ * Copyright (c) 1996-1997 Andreas Dilger
+ * Copyright (c) 1995-1996 Guy Eric Schalnat, Group 42, Inc.
  *
  * This code is released under the libpng license.
  * For conditions of distribution and use, see the disclaimer
@@ -17,6 +17,61 @@
 #include "pngpriv.h"
 
 #ifdef PNG_READ_SUPPORTED
+
+#ifndef PNG_USE_ZLIB_INFLATE_VALIDATE
+   /* Check if zlib's inflateValidate can be used. */
+#  if ZLIB_VERNUM >= 0x1290 && \
+     defined(PNG_SET_OPTION_SUPPORTED) && defined(PNG_IGNORE_ADLER32)
+#     if defined(__APPLE__) && defined(__MACH__)
+         /* Determine whether inflateValidate is available by checking:
+          * - for static zlib linking (best, but flaky and unreliable detection)
+          * - at run-time by OS version (best with sys zlib usage)
+          * - at compile-time by minimal supported OS version
+          */
+
+         /* For TARGET_OS_IPHONE / TARGET_OS_MAC */
+#        include <TargetConditionals.h>
+
+         /* For IPHONE_OS_VERSION_MIN_REQUIRED / MAC_OS_X_VERSION_MIN_REQUIRED.
+          * Not using the preferred <Availability.h> because it was introduced
+          * during the 10.5 SDK while this header has been available with Xcode
+          * since 1.0 (10.3 SDK).
+          */
+#        include <AvailabilityMacros.h>
+#        ifdef inflateValidate
+            /* Without this (empty) check usage of inflateValidate is driven
+             * only by OS version while zlib with inflateValidate could be
+             * linked statically.
+             * If the system's zlib is being used inflateValidate is not a
+             * macro so by checking if inflateValidate is a macro the cases
+             * where zlib is compiled with a prefix are at least handled and
+             * inflateValidate can then be used regardless of OS version.
+             */
+#        elif defined(__clang__) && __has_builtin(__builtin_available)
+            /* Check at run-time for availability by OS version. */
+#           define PNG_USE_ZLIB_INFLATE_VALIDATE 2
+#        elif defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#           if defined(IPHONE_OS_VERSION_MIN_REQUIRED) && \
+              IPHONE_OS_VERSION_MIN_REQUIRED < 110000
+               /* Don't use if targeting pre-iOS 11.0. */
+#              define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#           endif
+#        elif defined(TARGET_OS_MAC) && TARGET_OS_MAC
+#           if defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+              MAC_OS_X_VERSION_MIN_REQUIRED < 101300
+               /* Don't use if targeting pre-macOS 10.13. */
+#              define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#           endif
+#        endif /* inflateValidate */
+#     endif /* __APPLE__ && __MACH__ */
+#  else
+#     define PNG_USE_ZLIB_INFLATE_VALIDATE 0
+#  endif /* ZLIB_VERNUM && PNG_SET_OPTION_SUPPORTED && PNG_IGNORE_ADLER32 */
+
+#  ifndef PNG_USE_ZLIB_INFLATE_VALIDATE
+#     define PNG_USE_ZLIB_INFLATE_VALIDATE 1
+#  endif
+#endif /* PNG_USE_ZLIB_INFLATE_VALIDATE */
 
 png_uint_32 PNGAPI
 png_get_uint_31(png_const_structrp png_ptr, png_const_bytep buf)
@@ -182,23 +237,8 @@ png_read_chunk_header(png_structrp png_ptr)
    png_check_chunk_name(png_ptr, png_ptr->chunk_name);
 
    /* Check for too-large chunk length */
-if (png_ptr->chunk_name != png_IDAT)
-   {
-      png_alloc_size_t limit = PNG_SIZE_MAX;
-# ifdef PNG_SET_USER_LIMITS_SUPPORTED
-      if (png_ptr->user_chunk_malloc_max > 0 &&
-          png_ptr->user_chunk_malloc_max < limit)
-         limit = png_ptr->user_chunk_malloc_max;
-# elif PNG_USER_CHUNK_MALLOC_MAX > 0
-      if (PNG_USER_CHUNK_MALLOC_MAX < limit)
-         limit = PNG_USER_CHUNK_MALLOC_MAX;
-# endif
-      if (length > limit)
-         png_chunk_error(png_ptr, "chunk data is too large");
-   }
+   png_check_chunk_length(png_ptr, length);
 
-    
-    
 #ifdef PNG_IO_STATE_SUPPORTED
    png_ptr->io_state = PNG_IO_READING | PNG_IO_CHUNK_DATA;
 #endif
@@ -437,11 +477,13 @@ png_inflate_claim(png_structrp png_ptr, png_uint_32 owner)
             png_ptr->flags |= PNG_FLAG_ZSTREAM_INITIALIZED;
       }
 
-#if ZLIB_VERNUM >= 0x1290 && \
-   defined(PNG_SET_OPTION_SUPPORTED) && defined(PNG_IGNORE_ADLER32)
+#if PNG_USE_ZLIB_INFLATE_VALIDATE
       if (((png_ptr->options >> PNG_IGNORE_ADLER32) & 3) == PNG_OPTION_ON)
-         /* Turn off validation of the ADLER32 checksum in IDAT chunks */
-         ret = inflateValidate(&png_ptr->zstream, 0);
+#  if PNG_USE_ZLIB_INFLATE_VALIDATE == 2
+         if (__builtin_available(macOS 10.13, iOS 11.0, *))
+#  endif
+            /* Turn off validation of the ADLER32 checksum in IDAT chunks */
+            ret = inflateValidate(&png_ptr->zstream, 0);
 #endif
 
       if (ret == Z_OK)
@@ -1476,8 +1518,7 @@ png_handle_iCCP(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
                {
                   /* We have the ICC profile header; do the basic header checks.
                    */
-                  const png_uint_32 profile_length =
-                     png_get_uint_32(profile_header);
+                  png_uint_32 profile_length = png_get_uint_32(profile_header);
 
                   if (png_icc_check_length(png_ptr, &png_ptr->colorspace,
                       keyword, profile_length) != 0)
@@ -1494,8 +1535,8 @@ png_handle_iCCP(png_structrp png_ptr, png_inforp info_ptr, png_uint_32 length)
                          * profile.  The header check has already validated
                          * that none of this stuff will overflow.
                          */
-                        const png_uint_32 tag_count = png_get_uint_32(
-                            profile_header+128);
+                        png_uint_32 tag_count =
+                           png_get_uint_32(profile_header + 128);
                         png_bytep profile = png_read_buffer(png_ptr,
                             profile_length, 2/*silent*/);
 
@@ -3147,7 +3188,7 @@ png_handle_unknown(png_structrp png_ptr, png_inforp info_ptr,
  */
 
 void /* PRIVATE */
-png_check_chunk_name(png_const_structrp png_ptr, const png_uint_32 chunk_name)
+png_check_chunk_name(png_const_structrp png_ptr, png_uint_32 chunk_name)
 {
    int i;
    png_uint_32 cn=chunk_name;
@@ -3166,7 +3207,7 @@ png_check_chunk_name(png_const_structrp png_ptr, const png_uint_32 chunk_name)
 }
 
 void /* PRIVATE */
-png_check_chunk_length(png_const_structrp png_ptr, const png_uint_32 length)
+png_check_chunk_length(png_const_structrp png_ptr, png_uint_32 length)
 {
    png_alloc_size_t limit = PNG_UINT_31_MAX;
 
@@ -3378,7 +3419,7 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
          /* Hence the pre-compiled masks indexed by PACKSWAP (or not), depth and
           * then pass:
           */
-         static PNG_CONST png_uint_32 row_mask[2/*PACKSWAP*/][3/*depth*/][6] =
+         static const png_uint_32 row_mask[2/*PACKSWAP*/][3/*depth*/][6] =
          {
             /* Little-endian byte masks for PACKSWAP */
             { S_MASKS(1,0), S_MASKS(2,0), S_MASKS(4,0) },
@@ -3389,7 +3430,7 @@ png_combine_row(png_const_structrp png_ptr, png_bytep dp, int display)
          /* display_mask has only three entries for the odd passes, so index by
           * pass>>1.
           */
-         static PNG_CONST png_uint_32 display_mask[2][3][3] =
+         static const png_uint_32 display_mask[2][3][3] =
          {
             /* Little-endian byte masks for PACKSWAP */
             { B_MASKS(1,0), B_MASKS(2,0), B_MASKS(4,0) },
@@ -3702,7 +3743,7 @@ png_do_read_interlace(png_row_infop row_info, png_bytep row, int pass,
 {
    /* Arrays to facilitate easy interlacing - use pass (0 - 6) as index */
    /* Offset to next interlace block */
-   static PNG_CONST unsigned int png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
+   static const unsigned int png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
 
    png_debug(1, "in png_do_read_interlace");
    if (row != NULL && row_info != NULL)
@@ -4344,16 +4385,16 @@ png_read_finish_row(png_structrp png_ptr)
    /* Arrays to facilitate easy interlacing - use pass (0 - 6) as index */
 
    /* Start of interlace block */
-   static PNG_CONST png_byte png_pass_start[7] = {0, 4, 0, 2, 0, 1, 0};
+   static const png_byte png_pass_start[7] = {0, 4, 0, 2, 0, 1, 0};
 
    /* Offset to next interlace block */
-   static PNG_CONST png_byte png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
+   static const png_byte png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
 
    /* Start of interlace block in the y direction */
-   static PNG_CONST png_byte png_pass_ystart[7] = {0, 0, 4, 0, 2, 0, 1};
+   static const png_byte png_pass_ystart[7] = {0, 0, 4, 0, 2, 0, 1};
 
    /* Offset to next interlace block in the y direction */
-   static PNG_CONST png_byte png_pass_yinc[7] = {8, 8, 8, 4, 4, 2, 2};
+   static const png_byte png_pass_yinc[7] = {8, 8, 8, 4, 4, 2, 2};
 
    png_debug(1, "in png_read_finish_row");
    png_ptr->row_number++;
@@ -4409,16 +4450,16 @@ png_read_start_row(png_structrp png_ptr)
    /* Arrays to facilitate easy interlacing - use pass (0 - 6) as index */
 
    /* Start of interlace block */
-   static PNG_CONST png_byte png_pass_start[7] = {0, 4, 0, 2, 0, 1, 0};
+   static const png_byte png_pass_start[7] = {0, 4, 0, 2, 0, 1, 0};
 
    /* Offset to next interlace block */
-   static PNG_CONST png_byte png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
+   static const png_byte png_pass_inc[7] = {8, 8, 4, 4, 2, 2, 1};
 
    /* Start of interlace block in the y direction */
-   static PNG_CONST png_byte png_pass_ystart[7] = {0, 0, 4, 0, 2, 0, 1};
+   static const png_byte png_pass_ystart[7] = {0, 0, 4, 0, 2, 0, 1};
 
    /* Offset to next interlace block in the y direction */
-   static PNG_CONST png_byte png_pass_yinc[7] = {8, 8, 8, 4, 4, 2, 2};
+   static const png_byte png_pass_yinc[7] = {8, 8, 8, 4, 4, 2, 2};
 
    unsigned int max_pixel_depth;
    size_t row_bytes;

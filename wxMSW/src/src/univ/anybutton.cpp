@@ -11,9 +11,6 @@
 #include "wx/wxprec.h"
 
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/dcclient.h"
@@ -213,8 +210,6 @@ bool wxStdAnyButtonInputHandler::HandleMouse(wxInputConsumer *consumer,
             m_winHasMouse = true;
 
             consumer->PerformAction(wxACTION_BUTTON_PRESS);
-
-            return true;
         }
         else if ( event.LeftUp() )
         {

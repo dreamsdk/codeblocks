@@ -4305,7 +4305,7 @@ protected:
 #endif
 };
 
-class wxRichTextLineList;
+typedef wxVector<wxRichTextLine*> wxRichTextLineVector;
 
 /**
     @class wxRichTextParagraph
@@ -4357,7 +4357,7 @@ public:
     /**
         Returns the cached lines.
     */
-    wxRichTextLineList& GetLines() { return m_cachedLines; }
+    const wxRichTextLineVector& GetLines() const { return m_cachedLines; }
 
 // Operations
 
@@ -4482,7 +4482,7 @@ public:
 protected:
 
     // The lines that make up the wrapped paragraph
-    wxRichTextLineList  m_cachedLines;
+    wxRichTextLineVector m_cachedLines;
 
     // Whether the paragraph is impacted by floating objects from above
     int                 m_impactedByFloatingObjects;
@@ -6403,6 +6403,10 @@ protected:
 // Convert the more common face names to names that will work on the current platform
 // in a larger document
 #define wxRICHTEXT_HANDLER_CONVERT_FACENAMES        0x0100
+
+// Use CSS where possible in the HTML handler, otherwise use workarounds that will
+// show in wxHtmlWindow.
+#define wxRICHTEXT_HANDLER_USE_CSS                  0x1000
 
 /**
     @class wxRichTextFileHandler

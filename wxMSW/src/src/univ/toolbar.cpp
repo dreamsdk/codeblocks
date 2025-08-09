@@ -20,9 +20,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_TOOLBAR
 
@@ -81,8 +78,8 @@ public:
     wxToolBarTool(wxToolBar *tbar,
                   int id,
                   const wxString& label,
-                  const wxBitmap& bmpNormal,
-                  const wxBitmap& bmpDisabled,
+                  const wxBitmapBundle& bmpNormal,
+                  const wxBitmapBundle& bmpDisabled,
                   wxItemKind kind,
                   wxObject *clientData,
                   const wxString& shortHelp,
@@ -316,8 +313,8 @@ void wxToolBar::DoSetToggle(wxToolBarToolBase *tool, bool WXUNUSED(toggle))
 
 wxToolBarToolBase *wxToolBar::CreateTool(int id,
                                          const wxString& label,
-                                         const wxBitmap& bmpNormal,
-                                         const wxBitmap& bmpDisabled,
+                                         const wxBitmapBundle& bmpNormal,
+                                         const wxBitmapBundle& bmpDisabled,
                                          wxItemKind kind,
                                          wxObject *clientData,
                                          const wxString& shortHelp,
@@ -563,33 +560,6 @@ wxSize wxToolBar::DoGetBestClientSize() const
     return wxSize(m_maxWidth, m_maxHeight);
 }
 
-void wxToolBar::DoSetSize(int x, int y, int width, int height, int sizeFlags)
-{
-    int old_width, old_height;
-    GetSize(&old_width, &old_height);
-
-    wxToolBarBase::DoSetSize(x, y, width, height, sizeFlags);
-
-    // Correct width and height if needed.
-    if ( width == wxDefaultCoord || height == wxDefaultCoord )
-    {
-        int tmp_width, tmp_height;
-        GetSize(&tmp_width, &tmp_height);
-
-        if ( width == wxDefaultCoord )
-            width = tmp_width;
-        if ( height == wxDefaultCoord )
-            height = tmp_height;
-    }
-
-    // We must refresh the frame size when the toolbar changes size
-    // otherwise the toolbar can be shown incorrectly
-    if ( old_width != width || old_height != height )
-    {
-        SendSizeEventToParent();
-    }
-}
-
 // ----------------------------------------------------------------------------
 // wxToolBar drawing
 // ----------------------------------------------------------------------------
@@ -743,7 +713,7 @@ bool wxToolBar::PerformAction(const wxControlAction& action,
     }
     else if ( action == wxACTION_TOOLBAR_PRESS )
     {
-        wxLogTrace(wxT("toolbar"), wxT("Button '%s' pressed."), tool->GetShortHelp().c_str());
+        wxLogTrace(wxT("toolbar"), wxT("Button '%s' pressed."), tool->GetShortHelp());
 
         tool->Invert();
 
@@ -751,7 +721,7 @@ bool wxToolBar::PerformAction(const wxControlAction& action,
     }
     else if ( action == wxACTION_TOOLBAR_RELEASE )
     {
-        wxLogTrace(wxT("toolbar"), wxT("Button '%s' released."), tool->GetShortHelp().c_str());
+        wxLogTrace(wxT("toolbar"), wxT("Button '%s' released."), tool->GetShortHelp());
 
         wxASSERT_MSG( tool->IsInverted(), wxT("release unpressed button?") );
 

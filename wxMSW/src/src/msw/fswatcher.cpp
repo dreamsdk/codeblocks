@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_FSWATCHER
 
@@ -352,6 +349,8 @@ void wxIOCPThread::ProcessNativeEvents(wxVector<wxEventProcessingData>& events)
             }
             wxFileSystemWatcherEvent event(flags, oldpath, newpath);
             SendEvent(event);
+            if ( it == events.end() )
+                break;
         }
         // all other events
         else
@@ -395,9 +394,9 @@ int wxIOCPThread::Native2WatcherFlags(int flags)
             return flag_mapping[i][1];
     }
 
-    // never reached
-    wxFAIL_MSG(wxString::Format("Unknown file notify change %u", flags));
-    return -1;
+    // We can get unknown values here, see #18953, just ignore them because we
+    // don't know what else to do with them.
+    return 0;
 }
 
 wxString wxIOCPThread::FileNotifyInformationToString(

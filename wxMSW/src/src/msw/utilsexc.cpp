@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/utils.h"
@@ -488,7 +485,7 @@ wxPipeOutputStream::wxPipeOutputStream(HANDLE hOutput)
                 m_hOutput,
                 &mode,
                 NULL,       // collection count (we don't set it)
-                NULL        // timeout (we don't set it neither)
+                NULL        // timeout (we don't set it either)
             ) )
     {
         wxLogLastError(wxT("SetNamedPipeHandleState(PIPE_NOWAIT)"));
@@ -520,7 +517,7 @@ size_t wxPipeOutputStream::OnSysWrite(const void *buffer, size_t len)
         if ( !chunkWritten )
             break;
 
-        buffer = (char *)buffer + chunkWritten;
+        buffer = static_cast<const char*>(buffer) + chunkWritten;
         totalWritten += chunkWritten;
         len -= chunkWritten;
     }
@@ -587,7 +584,7 @@ long wxExecute(const wxString& cmd, int flags, wxProcess *handler,
 #if wxUSE_THREADS
     // for many reasons, the code below breaks down if it's called from another
     // thread -- this could be fixed, but as Unix versions don't support this
-    // neither I don't want to waste time on this now
+    // either I don't want to waste time on this now
     wxASSERT_MSG( wxThread::IsMain(),
                     wxT("wxExecute() can be called only from the main thread") );
 #endif // wxUSE_THREADS
@@ -873,7 +870,7 @@ long wxExecute(const wxString& cmd, int flags, wxProcess *handler,
         }
 #endif // wxUSE_STREAMS
 
-        wxLogSysError(_("Execution of command '%s' failed"), command.c_str());
+        wxLogSysError(_("Execution of command '%s' failed"), command);
 
         return flags & wxEXEC_SYNC ? -1 : 0;
     }
@@ -1008,7 +1005,7 @@ long wxExecute(const wxString& cmd, int flags, wxProcess *handler,
         if ( !ddeOK )
         {
             wxLogDebug(wxT("Failed to send DDE request to the process \"%s\"."),
-                       cmd.c_str());
+                       cmd);
         }
     }
 #endif // wxUSE_IPC
@@ -1021,7 +1018,7 @@ long wxExecute(const wxString& cmd, int flags, wxProcess *handler,
         return pi.dwProcessId;
     }
 
-    wxAppTraits *traits = wxTheApp ? wxTheApp->GetTraits() : NULL;
+    wxAppTraits *traits = wxApp::GetTraitsIfExists();
     wxCHECK_MSG( traits, -1, wxT("no wxAppTraits in wxExecute()?") );
 
     void *cookie = NULL;

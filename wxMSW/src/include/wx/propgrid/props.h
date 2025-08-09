@@ -17,14 +17,14 @@
 
 // -----------------------------------------------------------------------
 
-class WXDLLIMPEXP_FWD_PROPGRID wxPGArrayEditorDialog;
-
 #include "wx/propgrid/property.h"
 
 #include "wx/filename.h"
 #include "wx/dialog.h"
 #include "wx/textctrl.h"
 #include "wx/valtext.h"
+
+class WXDLLIMPEXP_FWD_PROPGRID wxPGArrayEditorDialog;
 
 // -----------------------------------------------------------------------
 
@@ -463,7 +463,7 @@ private:
 // -----------------------------------------------------------------------
 
 // wxEnumProperty with wxString value and writable combo box editor.
-// Uses int value, similar to wxEnumProperty, unless text entered by user is
+// Uses int value, similar to wxEnumProperty, unless text entered by user
 // is not in choices (in which case string value is used).
 class WXDLLIMPEXP_PROPGRID wxEditEnumProperty : public wxEnumProperty
 {
@@ -575,7 +575,7 @@ protected:
 class WXDLLIMPEXP_PROPGRID wxEditorDialogProperty : public wxPGProperty
 {
     friend class wxPGDialogAdapter;
-    wxDECLARE_ABSTRACT_CLASS(wxDialogProperty);
+    wxDECLARE_ABSTRACT_CLASS(wxEditorDialogProperty);
 
 public:
     virtual ~wxEditorDialogProperty();
@@ -594,7 +594,7 @@ protected:
 
 // -----------------------------------------------------------------------
 
-// Indicates first bit useable by derived properties.
+// Indicates first bit usable by derived properties.
 #define wxPG_PROP_SHOW_FULL_FILENAME  wxPG_PROP_CLASS_SPECIFIC_1
 
 // Like wxLongStringProperty, but the button triggers file selector instead.
@@ -665,8 +665,8 @@ class WXDLLIMPEXP_PROPGRID wxDirProperty : public wxEditorDialogProperty
 {
     WX_PG_DECLARE_PROPERTY_CLASS(wxDirProperty)
 public:
-    wxDirProperty( const wxString& name = wxPG_LABEL,
-                   const wxString& label = wxPG_LABEL,
+    wxDirProperty( const wxString& label = wxPG_LABEL,
+                   const wxString& name = wxPG_LABEL,
                    const wxString& value = wxEmptyString );
     virtual ~wxDirProperty();
 
@@ -710,9 +710,16 @@ public:
     virtual bool DoSetAttribute( const wxString& name, wxVariant& value ) wxOVERRIDE;
 
     // Implement in derived class for custom array-to-string conversion.
+#if WXWIN_COMPATIBILITY_3_0
+    wxDEPRECATED_MSG("use function ConvertArrayToString(arr, delim) returning wxString")
     virtual void ConvertArrayToString(const wxArrayString& arr,
                                       wxString* pString,
-                                      const wxUniChar& delimiter) const;
+                                      const wxUniChar& delimiter) const
+    {
+        *pString = ConvertArrayToString(arr, delimiter);
+    }
+#endif // WXWIN_COMPATIBILITY_3_0
+    virtual wxString ConvertArrayToString(const wxArrayString& arr, const wxUniChar& delimiter) const;
 
     // Shows string editor dialog. Value to be edited should be read from
     // value, and if dialog is not cancelled, it should be stored back and true
@@ -736,10 +743,17 @@ public:
         QuoteStrings    = 0x02
     };
 
-    // Generates contents for string dst based on the contents of
-    // wxArrayString src.
+    // Generates string based on the contents of wxArrayString src.
+#if WXWIN_COMPATIBILITY_3_0
+    wxDEPRECATED_MSG("use function ArrayStringToString(src, delim, flag) returning wxString")
     static void ArrayStringToString( wxString& dst, const wxArrayString& src,
-                                     wxUniChar delimiter, int flags );
+                                     wxUniChar delimiter, int flags )
+    {
+        dst = ArrayStringToString(src, delimiter, flags);
+    }
+#endif // WXWIN_COMPATIBILITY_3_0
+    static wxString ArrayStringToString(const wxArrayString& src,
+                                        wxUniChar delimiter, int flags);
 
 protected:
     virtual bool DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value) wxOVERRIDE;

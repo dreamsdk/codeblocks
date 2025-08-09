@@ -8,9 +8,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -27,7 +24,9 @@
 #include "wx/caret.h"
 #include "wx/cshelp.h"
 #include "wx/scopedptr.h"
+#include "wx/stopwatch.h"
 #include "wx/tooltip.h"
+#include "wx/wupdlock.h"
 
 class WindowTestCase
 {
@@ -35,6 +34,13 @@ public:
     WindowTestCase()
         : m_window(new wxWindow(wxTheApp->GetTopWindow(), wxID_ANY))
     {
+    #ifdef __WXGTK3__
+        // Without this, when running this test suite solo it succeeds,
+        // but not when running it together with the other tests !!
+        // Not needed when run under Xvfb display.
+        for ( wxStopWatch sw; sw.Time() < 50; )
+            wxYield();
+    #endif
     }
 
     ~WindowTestCase()
@@ -48,23 +54,37 @@ protected:
     wxDECLARE_NO_COPY_CLASS(WindowTestCase);
 };
 
-TEST_CASE_METHOD(WindowTestCase, "Window::ShowHideEvent", "[window]")
+static void DoTestShowHideEvent(wxWindow* window)
 {
-#if defined(__WXMSW__)
-    EventCounter show(m_window, wxEVT_SHOW);
+    EventCounter show(window, wxEVT_SHOW);
 
-    CHECK(m_window->IsShown());
+    CHECK(window->IsShown());
 
-    m_window->Show(false);
+    window->Show(false);
 
-    CHECK(!m_window->IsShown());
+    CHECK(!window->IsShown());
 
-    m_window->Show();
+    window->Show();
 
-    CHECK(m_window->IsShown());
+    CHECK(window->IsShown());
 
     CHECK( show.GetCount() == 2 );
-#endif // __WXMSW__
+}
+
+TEST_CASE_METHOD(WindowTestCase, "Window::ShowHideEvent", "[window]")
+{
+    SECTION("Normal window")
+    {
+        DoTestShowHideEvent(m_window);
+    }
+
+    SECTION("Frozen window")
+    {
+        wxWindowUpdateLocker freeze(m_window->GetParent() );
+        REQUIRE( m_window->IsFrozen() );
+
+        DoTestShowHideEvent(m_window);
+    }
 }
 
 TEST_CASE_METHOD(WindowTestCase, "Window::KeyEvent", "[window]")
@@ -127,13 +147,27 @@ TEST_CASE_METHOD(WindowTestCase, "Window::Mouse", "[window]")
 
     CHECK(m_window->GetCursor().IsOk());
 
-    //A plain window doesn't have a caret
+#if wxUSE_CARET
     CHECK(!m_window->GetCaret());
 
-    wxCaret* caret = new wxCaret(m_window, 16, 16);
+    wxCaret* caret = NULL;
+
+    // Try creating the caret in two different, but normally equivalent, ways.
+    SECTION("Caret 1-step")
+    {
+        caret = new wxCaret(m_window, 16, 16);
+    }
+
+    SECTION("Caret 2-step")
+    {
+        caret = new wxCaret();
+        caret->Create(m_window, 16, 16);
+    }
+
     m_window->SetCaret(caret);
 
     CHECK(m_window->GetCaret()->IsOk());
+#endif
 
     m_window->CaptureMouse();
 
@@ -188,6 +222,7 @@ TEST_CASE_METHOD(WindowTestCase, "Window::ToolTip", "[window]")
 
 TEST_CASE_METHOD(WindowTestCase, "Window::Help", "[window]")
 {
+#if wxUSE_HELP
     wxHelpProvider::Set(new wxSimpleHelpProvider());
 
     CHECK( m_window->GetHelpText() == "" );
@@ -195,6 +230,7 @@ TEST_CASE_METHOD(WindowTestCase, "Window::Help", "[window]")
     m_window->SetHelpText("helptext");
 
     CHECK( m_window->GetHelpText() == "helptext" );
+#endif
 }
 
 TEST_CASE_METHOD(WindowTestCase, "Window::Parent", "[window]")
@@ -410,8 +446,13 @@ TEST_CASE_METHOD(WindowTestCase, "Window::SizerErrors", "[window][sizer][error]"
     wxScopedPtr<wxSizer> const sizer2(new wxBoxSizer(wxHORIZONTAL));
 
     REQUIRE_NOTHROW( sizer1->Add(child) );
+#ifdef __WXDEBUG__
     CHECK_THROWS_AS( sizer1->Add(child), TestAssertFailure );
     CHECK_THROWS_AS( sizer2->Add(child), TestAssertFailure );
+#else
+    CHECK_NOTHROW( sizer1->Add(child) );
+    CHECK_NOTHROW( sizer2->Add(child) );
+#endif
 
     CHECK_NOTHROW( sizer1->Detach(child) );
     CHECK_NOTHROW( sizer2->Add(child) );

@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MENUS
 
@@ -29,6 +26,7 @@
 #include "wx/stockitem.h"
 
 #ifndef WX_PRECOMP
+    #include "wx/dcclient.h"
     #include "wx/dcmemory.h"
     #include "wx/font.h"
     #include "wx/bitmap.h"
@@ -691,25 +689,43 @@ void wxMenuItem::SetItemLabel(const wxString& txt)
     }
 }
 
-void wxMenuItem::DoSetBitmap(const wxBitmap& bmpNew, bool bChecked)
+wxBitmap wxMenuItem::GetBitmap(bool bChecked) const
 {
-    wxBitmap& bmp = bChecked ? m_bmpChecked : m_bmpUnchecked;
-    if ( bmp.IsSameAs(bmpNew) )
-        return;
-
+    wxBitmap bmp = GetBitmapFromBundle(bChecked ? m_bitmap : m_bmpUnchecked);
 #if wxUSE_IMAGE
-    if ( !bmpNew.HasAlpha() && wxGetWinVersion() >= wxWinVersion_Vista)
+    if ( bmp.IsOk() && wxGetWinVersion() >= wxWinVersion_Vista)
     {
         // we must use PARGB DIB for the menu bitmaps so ensure that we do
-        wxImage img(bmpNew.ConvertToImage());
-        img.InitAlpha();
-        bmp = wxBitmap(img);
+        if ( !bmp.HasAlpha() )
+        {
+            wxImage img(bmp.ConvertToImage());
+            img.InitAlpha();
+            bmp = wxBitmap(img);
+        }
+        else
+        {
+            // even if the bitmap already has alpha, it might be a DDB, while
+            // the menu code only handles alpha correctly for DIBs
+            bmp.ConvertToDIB();
+        }
     }
-    else
 #endif // wxUSE_IMAGE
-    {
-        bmp = bmpNew;
-    }
+    return bmp;
+}
+
+#if wxUSE_OWNER_DRAWN
+wxBitmap wxMenuItem::GetDisabledBitmap() const
+{
+    return GetBitmapFromBundle(m_bmpDisabled);
+}
+#endif
+
+void wxMenuItem::DoSetBitmap(const wxBitmapBundle& bmpNew, bool bChecked)
+{
+    wxBitmapBundle& bmp = bChecked ? m_bitmap : m_bmpUnchecked;
+    if ( bmp.IsSameAs(bmpNew) )
+        return;
+    bmp = bmpNew;
 
 #if wxUSE_OWNER_DRAWN
     // already marked as owner-drawn, cannot be reverted
@@ -741,6 +757,16 @@ void wxMenuItem::DoSetBitmap(const wxBitmap& bmpNew, bool bChecked)
         return;
     }
 #endif // wxUSE_OWNER_DRAWN
+}
+
+void wxMenuItem::SetupBitmaps()
+{
+    // Owner-drawn items must not return valid bitmaps even if they have them,
+    // this somehow breaks the item measuring logic and the menu may not become
+    // wide enough to accommodate the items text, so just don't do anything at
+    // all for them here.
+    if ( IsOwnerDrawn() )
+        return;
 
     const int itemPos = MSGetMenuItemPos();
     if ( itemPos == -1 )
@@ -774,19 +800,28 @@ void wxMenuItem::DoSetBitmap(const wxBitmap& bmpNew, bool bChecked)
 
 #if wxUSE_OWNER_DRAWN
 
-int wxMenuItem::MeasureAccelWidth() const
+wxSize wxMenuItem::GetMenuTextExtent(const wxString& text) const
 {
-    wxString accel = GetItemLabel().AfterFirst(wxT('\t'));
+    // We need to use the window that this menu is associated with to use the
+    // correct DPI.
+    //
+    // Note that we must have both a valid menu and a valid window by the time
+    // we can be called -- and GetFontToUse() already assumes this, so there is
+    // no need to check that they're both non-null here.
+    wxClientDC dc(GetMenu()->GetWindow());
 
-    wxMemoryDC dc;
     wxFont font;
     GetFontToUse(font);
     dc.SetFont(font);
 
-    wxCoord w;
-    dc.GetTextExtent(accel, &w, NULL);
+    return dc.GetTextExtent(text);
+}
 
-    return w;
+int wxMenuItem::MeasureAccelWidth() const
+{
+    wxString accel = GetItemLabel().AfterFirst(wxT('\t'));
+
+    return GetMenuTextExtent(accel).x;
 }
 
 wxString wxMenuItem::GetName() const
@@ -812,20 +847,12 @@ bool wxMenuItem::OnMeasureItem(size_t *width, size_t *height)
             return true;
         }
 
-        wxString str = GetName();
+        const wxSize extent = GetMenuTextExtent(GetName());
 
-        wxMemoryDC dc;
-        wxFont font;
-        GetFontToUse(font);
-        dc.SetFont(font);
+        *width = data->TextBorder + extent.x + data->AccelBorder;
+        *height = extent.y;
 
-        wxCoord w, h;
-        dc.GetTextExtent(str, &w, &h);
-
-        *width = data->TextBorder + w + data->AccelBorder;
-        *height = h;
-
-        w = m_parentMenu->GetMaxAccelWidth();
+        int w = m_parentMenu->GetMaxAccelWidth();
         if ( w > 0 )
             *width += w + data->ArrowBorder;
 
@@ -854,12 +881,14 @@ bool wxMenuItem::OnMeasureItem(size_t *width, size_t *height)
         *width += imgWidth + data->CheckBgMargin.GetTotalX();
     }
 
-    if ( m_bmpChecked.IsOk() || m_bmpUnchecked.IsOk() )
+    if ( m_bitmap.IsOk() || m_bmpUnchecked.IsOk() )
     {
         // get size of bitmap always return valid value (0 for invalid bitmap),
         // so we don't needed check if bitmap is valid ;)
-        size_t heightBmp = wxMax(m_bmpChecked.GetHeight(), m_bmpUnchecked.GetHeight());
-        size_t widthBmp = wxMax(m_bmpChecked.GetWidth(),  m_bmpUnchecked.GetWidth());
+        wxBitmap bmpChecked = GetBitmap(true);
+        wxBitmap bmpUnchecked = GetBitmap(false);
+        size_t heightBmp = wxMax(bmpChecked.GetLogicalHeight(), bmpUnchecked.GetLogicalHeight());
+        size_t widthBmp = wxMax(bmpChecked.GetLogicalWidth(),  bmpUnchecked.GetLogicalWidth());
 
         if ( IsOwnerDrawn() )
         {
@@ -1076,7 +1105,7 @@ bool wxMenuItem::OnDrawItem(wxDC& dc, const wxRect& rc,
                         - data->CheckBgMargin.cyBottomHeight
                         - data->CheckMargin.cyBottomHeight);
 
-    if ( IsCheckable() && !m_bmpChecked.IsOk() )
+    if ( IsCheckable() && !m_bitmap.IsOk() )
     {
         if ( stat & wxODChecked )
         {
@@ -1116,8 +1145,8 @@ bool wxMenuItem::OnDrawItem(wxDC& dc, const wxRect& rc,
             dcMem.SelectObjectAsSource(bmp);
 
             // center bitmap
-            int nBmpWidth  = bmp.GetWidth(),
-                nBmpHeight = bmp.GetHeight();
+            int nBmpWidth  = bmp.GetLogicalWidth(),
+                nBmpHeight = bmp.GetLogicalHeight();
 
             int x = rcImg.left + (imgWidth - nBmpWidth) / 2;
             int y = rcImg.top  + (rcImg.bottom - rcImg.top - nBmpHeight) / 2;
@@ -1342,8 +1371,12 @@ HBITMAP wxMenuItem::GetHBitmapForMenu(BitmapKind kind) const
 #if wxUSE_IMAGE
     if ( wxGetWinVersion() >= wxWinVersion_Vista )
     {
+        // We need to store the returned bitmap, so that its HBITMAP remains
+        // valid for as long as it's used.
         bool checked = (kind != Unchecked);
-        wxBitmap bmp = GetBitmap(checked);
+        wxBitmap& bmp = const_cast<wxBitmap&>(checked ? m_bmpCheckedCurrent
+                                                      : m_bmpUncheckedCurrent);
+        bmp = GetBitmap(checked);
         if ( bmp.IsOk() )
         {
             return GetHbitmapOf(bmp);

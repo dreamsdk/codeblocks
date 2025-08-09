@@ -143,7 +143,7 @@ public:
 
     // return true if the converter's charset is UTF-8, i.e. char* strings
     // decoded using this object can be directly copied to wxString's internal
-    // storage without converting to WC and than back to UTF-8 MB string
+    // storage without converting to WC and then back to UTF-8 MB string
     virtual bool IsUTF8() const { return false; }
 
     // The old conversion functions. The existing classes currently mostly
@@ -718,6 +718,20 @@ extern WXDLLIMPEXP_DATA_BASE(wxMBConv *) wxConvUI;
     #define wxSafeConvertMB2WX(s) (s)
     #define wxSafeConvertWX2MB(s) (s)
 #endif // Unicode/ANSI
+
+// Macro that indicates the default encoding for converting C strings
+// to wxString. It provides a default value for a const wxMBConv&
+// parameter (i.e. wxConvLibc) unless wxNO_IMPLICIT_WXSTRING_ENCODING
+// is defined.
+//
+// Intended use:
+// wxString(const char *data, ...,
+//          const wxMBConv &conv wxSTRING_DEFAULT_CONV_ARG);
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
+#define wxSTRING_DEFAULT_CONV_ARG = wxConvLibc
+#else
+#define wxSTRING_DEFAULT_CONV_ARG
+#endif
 
 #endif // _WX_STRCONV_H_
 

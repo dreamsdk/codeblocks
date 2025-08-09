@@ -14,9 +14,6 @@
 
 #if wxUSE_COMBOBOX
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
@@ -150,8 +147,9 @@ void ComboBoxTestCase::PopDismiss()
     // Under wxGTK2, the event is sent only during idle time and not
     // immediately, so we need this yield to get it.
     wxYield();
-    CPPUNIT_ASSERT_EQUAL(1, close.GetCount());
 #endif // wxGTK2
+
+    CPPUNIT_ASSERT_EQUAL(1, close.GetCount());
 #endif
 }
 
@@ -249,5 +247,11 @@ TEST_CASE("wxComboBox::ProcessEnter", "[wxComboBox][enter]")
 
     TestProcessEnter(ComboBoxCreator());
 }
+
+#else
+
+#ifdef TEST_INVALID_COMBOBOX_ISEMPTY
+#error provoke failing here
+#endif
 
 #endif //wxUSE_COMBOBOX

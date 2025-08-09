@@ -27,8 +27,10 @@
 
 #include "wx/apptrait.h"
 #include "wx/fontmap.h"
+#include "wx/msgout.h"
 
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/log.h"
 
 #include "wx/gtk/mimetype.h"
 //-----------------------------------------------------------------------------
@@ -101,7 +103,7 @@ static gboolean wxapp_idle_callback(gpointer)
 }
 
 // 0: no change, 1: focus in, 2: focus out
-static int gs_focusChange;
+static wxUIntPtr gs_focusChange;
 
 extern "C" {
 static gboolean
@@ -109,7 +111,7 @@ wx_focus_event_hook(GSignalInvocationHint*, unsigned, const GValue* param_values
 {
     // If focus change on TLW
     if (GTK_IS_WINDOW(g_value_peek_pointer(param_values)))
-        gs_focusChange = GPOINTER_TO_INT(data);
+        gs_focusChange = wxUIntPtr(data);
 
     return true;
 }
@@ -144,12 +146,9 @@ bool wxApp::DoIdle()
         gs_focusChange = 0;
     }
 
-    bool needMore;
-    do {
-        ProcessPendingEvents();
+    ProcessPendingEvents();
+    const bool needMore = ProcessIdle();
 
-        needMore = ProcessIdle();
-    } while (needMore && gtk_events_pending() == 0);
     gdk_threads_leave();
 
 #if wxUSE_THREADS
@@ -176,6 +175,132 @@ bool wxApp::DoIdle()
 
     return keepSource;
 }
+
+#ifdef wxHAS_GLIB_LOG_WRITER
+
+namespace wxGTKImpl
+{
+
+bool LogFilter::ms_allowed = false;
+bool LogFilter::ms_installed = false;
+LogFilter* LogFilter::ms_first = NULL;
+
+/* static */
+GLogWriterOutput
+LogFilter::wx_log_writer(GLogLevelFlags   log_level,
+                         const GLogField *fields,
+                         gsize            n_fields,
+                         gpointer         WXUNUSED(user_data))
+{
+    for ( const LogFilter* lf = LogFilter::ms_first; lf; lf = lf->m_next )
+    {
+        if ( lf->Filter(log_level, fields, n_fields) )
+            return G_LOG_WRITER_HANDLED;
+    }
+
+    return g_log_writer_default(log_level, fields, n_fields, NULL);
+}
+
+bool LogFilter::Install()
+{
+    if ( !ms_allowed )
+        return false;
+
+    if ( !ms_installed )
+    {
+        if ( glib_check_version(2, 50, 0) != 0 )
+        {
+            // No runtime support for log callback, we can't do anything.
+            return false;
+        }
+
+        g_log_set_writer_func(LogFilter::wx_log_writer, NULL, NULL);
+        ms_installed = true;
+    }
+
+    // Put this object in front of the linked list.
+    m_next = ms_first;
+    ms_first = this;
+
+    return true;
+}
+
+void LogFilter::Uninstall()
+{
+    if ( !ms_installed )
+    {
+        // We don't do anything at all in this case.
+        return;
+    }
+
+    // We should be uninstalling only the currently installed filter.
+    wxASSERT( ms_first == this );
+
+    ms_first = m_next;
+}
+
+bool LogFilterByMessage::Filter(GLogLevelFlags WXUNUSED(log_level),
+                                const GLogField* fields,
+                                gsize n_fields) const
+{
+    for ( gsize n = 0; n < n_fields; ++n )
+    {
+        const GLogField& f = fields[n];
+        if ( strcmp(f.key, "MESSAGE") == 0 )
+        {
+            if ( strcmp(static_cast<const char*>(f.value), m_message) == 0 )
+            {
+                // This is the message we want to filter.
+                m_warnNotFiltered = false;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+LogFilterByMessage::~LogFilterByMessage()
+{
+    Uninstall();
+
+    if ( m_warnNotFiltered )
+    {
+        wxLogTrace("gtklog", "Message \"%s\" wasn't logged.", m_message);
+    }
+}
+
+} // namespace wxGTKImpl
+
+/* static */
+void wxApp::GTKSuppressDiagnostics(int flags)
+{
+    // Allow Install() to actually do something.
+    GTKAllowDiagnosticsControl();
+
+    static wxGTKImpl::LogFilterByLevel s_logFilter;
+    s_logFilter.SetLevelToIgnore(flags);
+    s_logFilter.Install();
+}
+
+/* static */
+void wxApp::GTKAllowDiagnosticsControl()
+{
+    wxGTKImpl::LogFilter::Allow();
+}
+#else // !wxHAS_GLIB_LOG_WRITER
+/* static */
+void wxApp::GTKSuppressDiagnostics(int WXUNUSED(flags))
+{
+    // We can't do anything here.
+}
+
+/* static */
+void wxApp::GTKAllowDiagnosticsControl()
+{
+    // And don't need to do anything here.
+}
+#endif // wxHAS_GLIB_LOG_WRITER/!wxHAS_GLIB_LOG_WRITER
 
 //-----------------------------------------------------------------------------
 // wxApp
@@ -338,10 +463,23 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
 #endif // __UNIX__
 
 
+    // Using XIM results in many problems, so try to warn people about it.
+    wxString inputMethod;
+    if ( wxGetEnv("GTK_IM_MODULE", &inputMethod) && inputMethod == "xim" )
+    {
+        wxMessageOutputStderr().Output
+        (
+            _("WARNING: using XIM input method is unsupported and may result "
+              "in problems with input handling and flickering. Consider "
+              "unsetting GTK_IM_MODULE or setting to \"ibus\".")
+        );
+    }
+
     bool init_result;
-    int i;
 
 #if wxUSE_UNICODE
+    int i;
+
     // gtk_init() wants UTF-8, not wchar_t, so convert
     char **argvGTK = new char *[argc_ + 1];
     for ( i = 0; i < argc_; i++ )
@@ -356,7 +494,15 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
     // Prevent gtk_init_check() from changing the locale automatically for
     // consistency with the other ports that don't do it. If necessary,
     // wxApp::SetCLocale() may be explicitly called.
-    gtk_disable_setlocale();
+    //
+    // Note that this function generates a warning if it's called more than
+    // once, so avoid them.
+    static bool s_gtkLocalDisabled = false;
+    if ( !s_gtkLocalDisabled )
+    {
+        s_gtkLocalDisabled = true;
+        gtk_disable_setlocale();
+    }
 
 #ifdef __WXGPE__
     init_result = true;  // is there a _check() version of this?

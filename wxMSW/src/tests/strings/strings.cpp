@@ -12,13 +12,14 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
 #endif // WX_PRECOMP
+
+#include "wx/private/localeset.h"
+
+#include <errno.h>
 
 // ----------------------------------------------------------------------------
 // test class
@@ -46,6 +47,8 @@ private:
         CPPUNIT_TEST( Compare );
         CPPUNIT_TEST( CompareNoCase );
         CPPUNIT_TEST( Contains );
+        CPPUNIT_TEST( ToInt );
+        CPPUNIT_TEST( ToUInt );
         CPPUNIT_TEST( ToLong );
         CPPUNIT_TEST( ToULong );
 #ifdef wxLongLong_t
@@ -81,6 +84,8 @@ private:
     void Compare();
     void CompareNoCase();
     void Contains();
+    void ToInt();
+    void ToUInt();
     void ToLong();
     void ToULong();
 #ifdef wxLongLong_t
@@ -169,6 +174,16 @@ void StringTestCase::Format()
         CPPUNIT_ASSERT_EQUAL( len, wxString::Format(wxT("%s"), s.c_str()).length());
     }
 
+    int errnoWas = errno;
+    // wxString::Format() should not modify errno
+    errno = 1234;
+    wxString::Format("abc %d %d", 1, 1);
+    CPPUNIT_ASSERT_EQUAL
+    (
+        1234,
+        errno
+    );
+    errno = errnoWas;
 
     // Positional parameters tests:
     CPPUNIT_ASSERT_EQUAL
@@ -195,6 +210,10 @@ void StringTestCase::Format()
 void StringTestCase::FormatUnicode()
 {
 #if wxUSE_UNICODE
+    // At least under FreeBSD vsnprintf(), used by wxString::Format(), doesn't
+    // work with Unicode strings unless a UTF-8 locale is used, so set it.
+    wxLocaleSetter loc("C.UTF-8");
+
     const char *UNICODE_STR = "Iestat\xC4\xAB %i%i";
     //const char *UNICODE_STR = "Iestat\xCC\x84 %i%i";
 
@@ -263,7 +282,9 @@ void StringTestCase::StaticConstructors()
     CPPUNIT_ASSERT_EQUAL( "Hello", wxString::FromUTF8("Hello", 5) );
     CPPUNIT_ASSERT_EQUAL( "Hello", wxString::FromUTF8("Hello") );
 
+#if wxUSE_UNICODE
     CPPUNIT_ASSERT_EQUAL( 2, wxString::FromUTF8("h\xc3\xa9llo", 3).length() );
+#endif // wxUSE_UNICODE
 
 
     //CPPUNIT_ASSERT_EQUAL( 1, wxString::FromUTF8("", 1).length() );
@@ -603,7 +624,8 @@ enum
     Number_Unsigned = 2,    // if not specified, works for signed conversion
     Number_Signed   = 4,    // if not specified, works for unsigned
     Number_LongLong = 8,    // only for long long tests
-    Number_Long     = 16    // only for long tests
+    Number_Long     = 16,   // only for long tests
+    Number_Int      = 32    // only for int tests
 };
 
 #ifdef wxLongLong_t
@@ -613,6 +635,38 @@ typedef long TestValue_t;
 #endif
 
 wxGCC_WARNING_SUPPRESS(missing-field-initializers)
+
+static const struct ToIntData
+{
+    const wxChar *str;
+    TestValue_t value;
+    int flags;
+    int base;
+
+    int IValue() const { return value; }
+    unsigned int UIValue() const { return value; }
+
+    bool IsOk() const { return !(flags & Number_Invalid); }
+} intData[] =
+{
+    { wxT("1"), 1, Number_Ok },
+    { wxT("0"), 0, Number_Ok },
+    { wxT("a"), 0, Number_Invalid },
+    { wxT("12345"), 12345, Number_Ok },
+    { wxT("--1"), 0, Number_Invalid },
+
+    { wxT("-1"), -1, Number_Signed | Number_Int },
+    { wxT("-1"), (TestValue_t)UINT_MAX, Number_Unsigned | Number_Int | Number_Invalid },
+
+    { wxT("2147483647"), (TestValue_t)INT_MAX, Number_Int | Number_Signed },
+    { wxT("2147483648"), (TestValue_t)INT_MAX, Number_Int | Number_Signed | Number_Invalid },
+
+    { wxT("-2147483648"), (TestValue_t)INT_MIN, Number_Int | Number_Signed },
+    { wxT("-2147483649"), (TestValue_t)INT_MIN, Number_Int | Number_Signed | Number_Invalid },
+
+    { wxT("4294967295"), (TestValue_t)UINT_MAX, Number_Int | Number_Unsigned },
+    { wxT("4294967296"), (TestValue_t)UINT_MAX, Number_Int | Number_Unsigned | Number_Invalid },
+};
 
 static const struct ToLongData
 {
@@ -670,6 +724,64 @@ static const struct ToLongData
 };
 
 wxGCC_WARNING_RESTORE(missing-field-initializers)
+
+void StringTestCase::ToInt()
+{
+    int i;
+    for (size_t n = 0; n < WXSIZEOF(intData); n++)
+    {
+        const ToIntData &id = intData[n];
+
+        if (id.flags & (Number_Unsigned))
+            continue;
+
+        CPPUNIT_ASSERT_EQUAL(id.IsOk(),
+            wxString(id.str).ToInt(&i, id.base));
+
+        if (id.IsOk())
+            CPPUNIT_ASSERT_EQUAL(id.IValue(), i);
+    }
+
+    // special case: check that the output is not modified if the parsing
+    // failed completely
+    i = 17;
+    CPPUNIT_ASSERT(!wxString("foo").ToInt(&i));
+    CPPUNIT_ASSERT_EQUAL(17, i);
+
+    // also check that it is modified if we did parse something successfully in
+    // the beginning of the string
+    CPPUNIT_ASSERT(!wxString("9 cats").ToInt(&i));
+    CPPUNIT_ASSERT_EQUAL(9, i);
+}
+
+void StringTestCase::ToUInt()
+{
+    unsigned int i;
+    for (size_t n = 0; n < WXSIZEOF(intData); n++)
+    {
+        const ToIntData &id = intData[n];
+
+        if (id.flags & (Number_Signed))
+            continue;
+
+        CPPUNIT_ASSERT_EQUAL(id.IsOk(),
+            wxString(id.str).ToUInt(&i, id.base));
+
+        if (id.IsOk())
+            CPPUNIT_ASSERT_EQUAL(id.UIValue(), i);
+    }
+
+    // special case: check that the output is not modified if the parsing
+    // failed completely
+    i = 17;
+    CPPUNIT_ASSERT(!wxString("foo").ToUInt(&i));
+    CPPUNIT_ASSERT_EQUAL(17, i);
+
+    // also check that it is modified if we did parse something successfully in
+    // the beginning of the string
+    CPPUNIT_ASSERT(!wxString("9 cats").ToUInt(&i));
+    CPPUNIT_ASSERT_EQUAL(9, i);
+}
 
 void StringTestCase::ToLong()
 {

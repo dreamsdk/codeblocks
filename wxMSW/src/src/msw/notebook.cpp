@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_NOTEBOOK
 
@@ -112,11 +109,6 @@ static bool HasTroubleWithNonTopTabs()
 wxBEGIN_EVENT_TABLE(wxNotebook, wxBookCtrlBase)
     EVT_SIZE(wxNotebook::OnSize)
     EVT_NAVIGATION_KEY(wxNotebook::OnNavigationKey)
-
-#if USE_NOTEBOOK_ANTIFLICKER
-    EVT_ERASE_BACKGROUND(wxNotebook::OnEraseBackground)
-    EVT_PAINT(wxNotebook::OnPaint)
-#endif // USE_NOTEBOOK_ANTIFLICKER
 wxEND_EVENT_TABLE()
 
 // ============================================================================
@@ -450,14 +442,11 @@ bool wxNotebook::SetPageImage(size_t nPage, int nImage)
     return TabCtrl_SetItem(GetHwnd(), nPage, &tcItem) != 0;
 }
 
-void wxNotebook::SetImageList(wxImageList* imageList)
+void wxNotebook::OnImagesChanged()
 {
-    wxNotebookBase::SetImageList(imageList);
+    wxImageList* const iml = GetUpdatedImageListFor(this);
 
-    if ( imageList )
-    {
-        (void) TabCtrl_SetImageList(GetHwnd(), GetHimagelistOf(imageList));
-    }
+    (void) TabCtrl_SetImageList(GetHwnd(), iml ? GetHimagelistOf(iml) : NULL);
 }
 
 // ----------------------------------------------------------------------------
@@ -533,7 +522,7 @@ wxSize wxNotebook::CalcSizeFromPage(const wxSize& sizePage) const
     const int rows = GetRowCount();
 
     // add an extra margin in both directions
-    const int MARGIN = 8;
+    const int MARGIN = FromDIP(8);
     if ( IsVertical() )
     {
         sizeTotal.x += MARGIN;
@@ -677,7 +666,7 @@ bool wxNotebook::InsertPage(size_t nPage,
     // finally do insert it
     if ( TabCtrl_InsertItem(GetHwnd(), nPage, &tcItem) == -1 )
     {
-        wxLogError(wxT("Can't create the notebook page '%s'."), strText.c_str());
+        wxLogError(wxT("Can't create the notebook page '%s'."), strText);
 
         return false;
     }
@@ -790,14 +779,13 @@ void wxNotebook::OnEraseBackground(wxEraseEvent& WXUNUSED(event))
 void wxNotebook::OnPaint(wxPaintEvent& WXUNUSED(event))
 {
     wxPaintDC dc(this);
-    wxMemoryDC memdc;
     RECT rc;
     ::GetClientRect(GetHwnd(), &rc);
-    wxBitmap bmp(rc.right, rc.bottom);
-    memdc.SelectObject(bmp);
+    if ( !rc.right || !rc.bottom )
+        return;
 
-    const wxLayoutDirection dir = dc.GetLayoutDirection();
-    memdc.SetLayoutDirection(dir);
+    wxBitmap bmp(rc.right, rc.bottom);
+    wxMemoryDC memdc(bmp);
 
     const HDC hdc = GetHdcOf(memdc);
 
@@ -867,10 +855,7 @@ void wxNotebook::OnPaint(wxPaintEvent& WXUNUSED(event))
         ::ExtFloodFill(hdc, x, y, ::GetSysColor(COLOR_BTNFACE), FLOODFILLSURFACE);
     }
 
-    // For some reason in RTL mode, source offset has to be -1, otherwise the
-    // right border (physical) remains unpainted.
-    const wxCoord ofs = dir == wxLayout_RightToLeft ? -1 : 0;
-    dc.Blit(ofs, 0, rc.right, rc.bottom, &memdc, ofs, 0);
+    dc.Blit(0, 0, rc.right, rc.bottom, &memdc, 0, 0);
 }
 
 #endif // USE_NOTEBOOK_ANTIFLICKER
@@ -1091,6 +1076,28 @@ void wxNotebook::OnNavigationKey(wxNavigationKeyEvent& event)
     }
 }
 
+bool wxNotebook::SetBackgroundColour(const wxColour& colour)
+{
+    if ( !wxNotebookBase::SetBackgroundColour(colour) )
+        return false;
+
+#if wxUSE_UXTHEME
+    UpdateBgBrush();
+#endif // wxUSE_UXTHEME
+
+#if USE_NOTEBOOK_ANTIFLICKER
+    Unbind(wxEVT_ERASE_BACKGROUND, &wxNotebook::OnEraseBackground, this);
+    Unbind(wxEVT_PAINT, &wxNotebook::OnPaint, this);
+    if ( m_hasBgCol || !wxUxThemeIsActive() )
+    {
+        Bind(wxEVT_ERASE_BACKGROUND, &wxNotebook::OnEraseBackground, this);
+        Bind(wxEVT_PAINT, &wxNotebook::OnPaint, this);
+    }
+#endif // USE_NOTEBOOK_ANTIFLICKER
+
+    return true;
+}
+
 #if wxUSE_UXTHEME
 
 WXHBRUSH wxNotebook::QueryBgBitmap()
@@ -1225,7 +1232,7 @@ wxColour wxNotebook::GetThemeBackgroundColour() const
 #if wxUSE_UXTHEME
     if (wxUxThemeIsActive())
     {
-        wxUxThemeHandle hTheme((wxNotebook*) this, L"TAB");
+        wxUxThemeHandle hTheme(this, L"TAB");
         if (hTheme)
         {
             // This is total guesswork.

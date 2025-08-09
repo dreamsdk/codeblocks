@@ -183,8 +183,17 @@ enum wxEllipsizeMode
 // macros
 // ---------------------------------------------------------------------------
 
+// The difference between wxHAS_IMAGES_IN_RESOURCES and wxHAS_IMAGE_RESOURCES
+// is that the former is, historically, only defined under MSW while the latter
+// is also defined under macOS, which uses a different resource concept, and
+// may be also defined for any other ports where images don't need to be
+// embedded into the program text in order to be available during run-time.
 #if defined(__WINDOWS__) && wxUSE_WXDIB
     #define wxHAS_IMAGES_IN_RESOURCES
+#endif
+
+#if defined(wxHAS_IMAGES_IN_RESOURCES) || defined(__WXOSX__)
+    #define wxHAS_IMAGE_RESOURCES
 #endif
 
 /* Useful macro for creating icons portably, for example:
@@ -224,7 +233,7 @@ enum wxEllipsizeMode
 #endif // platform
 
 /* Another macro: this one is for portable creation of bitmaps. We assume that
-   under Unix bitmaps live in XPMs and under Windows they're in ressources.
+   under Unix bitmaps live in XPMs and under Windows they're in resources.
  */
 
 #if defined(__WINDOWS__) && wxUSE_WXDIB
@@ -256,7 +265,7 @@ enum wxEllipsizeMode
 // resource type and under OS X the PNG file with the specified name must be
 // available in the resource subdirectory of the bundle. Elsewhere, this is
 // exactly the same thing as wxBITMAP_PNG_FROM_DATA() described above.
-#if (defined(__WINDOWS__) && wxUSE_WXDIB) || defined(__WXOSX__)
+#ifdef wxHAS_IMAGE_RESOURCES
     #define wxBITMAP_PNG(name) wxBitmap(wxS(#name), wxBITMAP_TYPE_PNG_RESOURCE)
 #else
     #define wxBITMAP_PNG(name) wxBITMAP_PNG_FROM_DATA(name)
@@ -270,7 +279,7 @@ enum wxEllipsizeMode
 // wxSize
 // ---------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxSize
+class WXDLLIMPEXP_CORE wxWARN_UNUSED wxSize
 {
 public:
     // members are public for compatibility, don't use them directly.
@@ -426,6 +435,11 @@ inline wxSize operator*(unsigned long i, const wxSize& s)
     return wxSize(int(s.x * i), int(s.y * i));
 }
 
+inline wxSize operator/(const wxSize& s, double i)
+{
+    return wxSize(wxRound(s.x / i), wxRound(s.y / i));
+}
+
 inline wxSize operator*(const wxSize& s, double i)
 {
     return wxSize(wxRound(s.x * i), wxRound(s.y * i));
@@ -442,7 +456,7 @@ inline wxSize operator*(double i, const wxSize& s)
 // Point classes: with real or integer coordinates
 // ---------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxRealPoint
+class WXDLLIMPEXP_CORE wxWARN_UNUSED wxRealPoint
 {
 public:
     double x;
@@ -560,7 +574,7 @@ inline wxRealPoint operator*(double i, const wxRealPoint& s)
 // wxPoint: 2D point with integer coordinates
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxPoint
+class WXDLLIMPEXP_CORE wxWARN_UNUSED wxPoint
 {
 public:
     int x, y;
@@ -716,7 +730,7 @@ WX_DECLARE_LIST_WITH_DECL(wxPoint, wxPointList, class WXDLLIMPEXP_CORE);
 // wxRect
 // ---------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxRect
+class WXDLLIMPEXP_CORE wxWARN_UNUSED wxRect
 {
 public:
     wxRect()
@@ -825,7 +839,7 @@ public:
         return r;
     }
 
-    // return true if the point is (not strcitly) inside the rect
+    // return true if the point is (not strictly) inside the rect
     bool Contains(int x, int y) const;
     bool Contains(const wxPoint& pt) const { return Contains(pt.x, pt.y); }
     // return true if the rectangle 'rect' is (not strictly) inside this rect
@@ -837,7 +851,7 @@ public:
     // like Union() but don't ignore empty rectangles
     wxRect& operator+=(const wxRect& rect);
 
-    // intersections of two rectrangles not testing for empty rectangles
+    // intersections of two rectangles not testing for empty rectangles
     wxRect& operator*=(const wxRect& rect);
 
     // centre this rectangle in the given (usually, but not necessarily,
@@ -939,7 +953,7 @@ public:
 
   wxStockGDI creates the stock GDI objects on demand.  Pointers to the
   created objects are stored in the ms_stockObject array, which is indexed
-  by the Item enum values.  Platorm-specific fonts can be created by
+  by the Item enum values.  Platform-specific fonts can be created by
   implementing a derived class with an override for the GetFont function.
   wxStockGDI operates as a singleton, accessed through the ms_instance
   pointer.  By default this pointer is set to an instance of wxStockGDI.

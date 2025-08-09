@@ -127,14 +127,21 @@
     wxMenuImpl* menuimpl = [menu implementation];
     if ( menuimpl )
     {
+        wxMenuItem* menuitem = nullptr;
         wxMenu* wxpeer = (wxMenu*) menuimpl->GetWXPeer();
+
         if ( [ item isKindOfClass:[wxNSMenuItem class] ] )
         {
             wxMenuItemImpl* menuitemimpl = (wxMenuItemImpl*) [ (wxNSMenuItem*) item implementation ];
-            if ( wxpeer && menuitemimpl )
+            if ( menuitemimpl )
             {
-                wxpeer->HandleMenuItemHighlighted( menuitemimpl->GetWXPeer() );
+                menuitem = menuitemimpl->GetWXPeer();
             }
+        }
+
+        if ( wxpeer )
+        {
+            wxpeer->HandleMenuItemHighlighted( menuitem );
         }
     }
 }
@@ -249,11 +256,29 @@ public :
 
         if ( windowMenu == nil )
         {
-            windowMenu = [[NSMenu alloc] initWithTitle:nsWindowMenuTitle];
+            NSString* nsHelpMenuTitle = wxNSStringWithWxString(wxStripMenuCodes(wxApp::s_macHelpMenuTitleName, wxStrip_Menu));
+            NSString* nsAlternateHelpTitle = wxNSStringWithWxString(wxStripMenuCodes(_("&Help"), wxStrip_Menu));
+
+            NSMenuItem* helpMenu = nil;
+            NSInteger numberOfMenus = [m_osxMenu numberOfItems];
+            if ( numberOfMenus > 0 )
+            {
+                NSMenuItem* lastMenu = [m_osxMenu itemAtIndex:numberOfMenus-1];
+                if ([[lastMenu title] isEqualToString:nsHelpMenuTitle] ||
+                    [[lastMenu title] isEqualToString:nsAlternateHelpTitle])
+                {
+                    helpMenu = lastMenu;
+                }
+            }
+
+            windowMenu = [[NSMenu alloc] initWithTitle:nsAlternateWindowMenuTitle];
             NSMenuItem* windowMenuItem = [[NSMenuItem alloc] initWithTitle:nsWindowMenuTitle action:nil keyEquivalent:@""];
             [windowMenuItem setSubmenu:windowMenu];
             [windowMenu release];
-            [m_osxMenu addItem:windowMenuItem];
+            if (helpMenu == nil )
+                [m_osxMenu addItem:windowMenuItem];
+            else
+                [m_osxMenu insertItem:windowMenuItem atIndex:numberOfMenus-1];
             [windowMenuItem release];
         }
         return windowMenu;

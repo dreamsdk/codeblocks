@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/iconbndl.h"
 
@@ -252,6 +249,8 @@ void wxIconBundle::AddIcon(const wxString& resourceName, WXHINSTANCE module)
         }
     }
 #else
+    wxUnusedVar(resourceName);
+    wxUnusedVar(module);
     wxLogError(wxS("Loading icons from resources isn't implemented in this toolkit port yet."));
 #endif
 }
@@ -267,7 +266,7 @@ wxIcon wxIconBundle::GetIcon(const wxSize& size, int flags) const
             sysY = 0;
     if ( flags & FALLBACK_SYSTEM )
     {
-        wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+        wxWindow* win = wxApp::GetMainTopWindow();
         sysX = wxSystemSettings::GetMetric(wxSYS_ICON_X, win);
         sysY = wxSystemSettings::GetMetric(wxSYS_ICON_Y, win);
     }

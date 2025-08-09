@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PRINTING_ARCHITECTURE && (!defined(__WXMSW__) || wxUSE_POSTSCRIPT_ARCHITECTURE_IN_MSW)
 
@@ -252,7 +249,6 @@ void wxGenericPrintDialog::Init(wxWindow * WXUNUSED(parent))
     if ( sizerBtn )
         mainsizer->Add(sizerBtn, 0, wxEXPAND|wxALL, 10 );
 
-    SetAutoLayout( true );
     SetSizer( mainsizer );
 
     mainsizer->Fit( this );
@@ -662,7 +658,6 @@ void wxGenericPrintSetupDialog::Init(wxPrintData* data)
 
     main_sizer->Add( CreateButtonSizer( wxOK|wxCANCEL), 0, wxEXPAND|wxALL, 10 );
 
-    SetAutoLayout( true );
     SetSizer( main_sizer );
 
     main_sizer->Fit( this );
@@ -924,7 +919,6 @@ wxGenericPageSetupDialog::wxGenericPageSetupDialog( wxWindow *parent,
     mainsizer->Add( buttonsizer, 0, wxEXPAND|wxALL, 10 );
 
 
-    SetAutoLayout( true );
     SetSizer( mainsizer );
 
     mainsizer->Fit( this );

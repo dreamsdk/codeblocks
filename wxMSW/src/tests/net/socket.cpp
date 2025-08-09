@@ -18,9 +18,6 @@
 // and "wx/cppunit.h"
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SOCKETS
 
@@ -40,6 +37,14 @@ class SocketTestCase : public CppUnit::TestCase
 public:
     SocketTestCase() { }
 
+    // get the address to connect to, if NULL is returned it means that the
+    // test is disabled and shouldn't run at all
+    static wxSockAddress* GetServer();
+
+    // get the socket to read HTTP reply from, returns NULL if the test is
+    // disabled
+    static wxSocketClient* GetHTTPSocket(int flags = wxSOCKET_NONE);
+
 private:
     // we need to repeat the tests twice as the sockets behave differently when
     // there is an active event loop and without it
@@ -50,6 +55,7 @@ private:
         CPPUNIT_TEST( ReadBlock ); \
         CPPUNIT_TEST( ReadNowait ); \
         CPPUNIT_TEST( ReadWaitall ); \
+        CPPUNIT_TEST( ReadAnotherThread ); \
         CPPUNIT_TEST( UrlTest )
 
     CPPUNIT_TEST_SUITE( SocketTestCase );
@@ -86,14 +92,6 @@ private:
         wxEventLoopBase *m_evtLoopOld;
     };
 
-    // get the address to connect to, if NULL is returned it means that the
-    // test is disabled and shouldn't run at all
-    wxSockAddress* GetServer() const;
-
-    // get the socket to read HTTP reply from, returns NULL if the test is
-    // disabled
-    wxSocketClient* GetHTTPSocket(int flags = wxSOCKET_NONE) const;
-
     void PseudoTest_SetUseEventLoop() { ms_useLoop = true; }
 
     void BlockingConnect();
@@ -102,6 +100,7 @@ private:
     void ReadBlock();
     void ReadNowait();
     void ReadWaitall();
+    void ReadAnotherThread();
 
     void UrlTest();
 
@@ -115,7 +114,7 @@ bool SocketTestCase::ms_useLoop = false;
 CPPUNIT_TEST_SUITE_REGISTRATION( SocketTestCase );
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( SocketTestCase, "SocketTestCase" );
 
-wxSockAddress* SocketTestCase::GetServer() const
+wxSockAddress* SocketTestCase::GetServer()
 {
     if ( gs_serverHost.empty() )
         return NULL;
@@ -127,7 +126,7 @@ wxSockAddress* SocketTestCase::GetServer() const
     return addr;
 }
 
-wxSocketClient* SocketTestCase::GetHTTPSocket(int flags) const
+wxSocketClient* SocketTestCase::GetHTTPSocket(int flags)
 {
     wxSockAddress *addr = GetServer();
     if ( !addr )
@@ -248,6 +247,44 @@ void SocketTestCase::ReadWaitall()
     CPPUNIT_ASSERT_EQUAL( WXSIZEOF(buf), (size_t)sock->LastReadCount() );
 }
 
+void SocketTestCase::ReadAnotherThread()
+{
+    class SocketThread : public wxThread
+    {
+    public:
+        SocketThread()
+            : wxThread(wxTHREAD_JOINABLE)
+        {
+        }
+
+        virtual void* Entry() wxOVERRIDE
+        {
+            wxSocketClientPtr sock(SocketTestCase::GetHTTPSocket(wxSOCKET_BLOCK));
+            if ( !sock )
+                return NULL;
+
+            char bufSmall[128];
+            sock->Read(bufSmall, WXSIZEOF(bufSmall));
+
+            REQUIRE( sock->LastError() == wxSOCKET_NOERROR );
+            CHECK( sock->LastCount() == WXSIZEOF(bufSmall) );
+            CHECK( sock->LastReadCount() == WXSIZEOF(bufSmall) );
+
+            REQUIRE_NOTHROW( sock.reset() );
+
+            return NULL;
+        }
+    };
+
+    SocketThread thr;
+
+    SocketTestEventLoop loop(ms_useLoop);
+
+    thr.Run();
+
+    CHECK( thr.Wait() == NULL );
+}
+
 void SocketTestCase::UrlTest()
 {
     if ( gs_serverHost.empty() )
@@ -262,6 +299,62 @@ void SocketTestCase::UrlTest()
 
     wxStringOutputStream out;
     CPPUNIT_ASSERT_EQUAL( wxSTREAM_EOF, in->Read(out).GetLastError() );
+}
+
+TEST_CASE("wxDatagramSocket::ShortRead", "[socket][dgram]")
+{
+    // Check that reading fewer bytes than are present in a
+    // datagram does not leave the socket in an error state
+
+    wxIPV4address addr;
+    addr.LocalHost();
+    addr.Service(19898);// Arbitrary port number
+    wxDatagramSocket sock(addr);
+
+    // Send ourselves a datagram
+    unsigned int sendbuf[4] = {1, 2, 3, 4};
+    sock.SendTo(addr, sendbuf, sizeof(sendbuf));
+
+    // Read less than we know we sent
+    unsigned int recvbuf[1] = {0};
+    sock.Read(recvbuf, sizeof(recvbuf));
+    CHECK(!sock.Error());
+    CHECK(sock.LastReadCount() == sizeof(recvbuf));
+    CHECK(recvbuf[0] == sendbuf[0]);
+}
+
+TEST_CASE("wxDatagramSocket::ShortPeek", "[socket][dgram]")
+{
+    // Check that peeking fewer bytes than are present in a datagram
+    // does not lose the rest of the data in that datagram (#23594)
+
+    wxIPV4address addr;
+    addr.LocalHost();
+    addr.Service(27384);// Arbitrary port number
+    wxDatagramSocket sock(addr);
+
+    // Send ourselves 2 datagrams
+    unsigned int sendbuf1[2] = {1, 2};
+    sock.SendTo(addr, sendbuf1, sizeof(sendbuf1));
+    unsigned int sendbuf2[2] = {3, 4};
+    sock.SendTo(addr, sendbuf2, sizeof(sendbuf2));
+
+    long timeout_s = 1;
+    if ( !sock.WaitForRead(timeout_s) )
+        return;
+
+    // Peek the first word
+    unsigned int peekbuf[1] = {0};
+    sock.Peek(peekbuf, sizeof(peekbuf));
+    CHECK(sock.LastCount() == sizeof(peekbuf));
+    CHECK(peekbuf[0] == sendbuf1[0]);
+
+    // Read the whole of the first datagram
+    unsigned int recvbuf[2] = {0};
+    sock.Read(recvbuf, sizeof(recvbuf));
+    CHECK(sock.LastReadCount() == sizeof(recvbuf));
+    CHECK(recvbuf[0] == sendbuf1[0]);
+    CHECK(recvbuf[1] == sendbuf1[1]);
 }
 
 #endif // wxUSE_SOCKETS

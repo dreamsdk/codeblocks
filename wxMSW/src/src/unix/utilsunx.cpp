@@ -18,6 +18,10 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
+// Define this as soon as possible and before string.h is included to get
+// memset_s() declaration from it if available.
+#define __STDC_WANT_LIB_EXT1__ 1
+
 #include "wx/utils.h"
 
 #if !defined(HAVE_SETENV) && defined(HAVE_PUTENV)
@@ -50,6 +54,7 @@
 
 #include "wx/private/selectdispatcher.h"
 #include "wx/private/fdiodispatcher.h"
+#include "wx/private/glibc.h"
 #include "wx/unix/private/execute.h"
 #include "wx/unix/pipe.h"
 #include "wx/unix/private.h"
@@ -57,6 +62,8 @@
 #include "wx/evtloop.h"
 #include "wx/mstream.h"
 #include "wx/private/fdioeventloopsourcehandler.h"
+#include "wx/config.h"
+#include "wx/filename.h"
 
 #include <pwd.h>
 #include <sys/wait.h>       // waitpid()
@@ -141,6 +148,10 @@
     #include <sys/resource.h>   // for setpriority()
 #endif
 
+#if defined(__DARWIN__)
+    #include <sys/sysctl.h>
+#endif
+
 // ----------------------------------------------------------------------------
 // conditional compilation
 // ----------------------------------------------------------------------------
@@ -192,9 +203,6 @@ void wxMicroSleep(unsigned long microseconds)
     #endif // Sun
 
     usleep(microseconds);
-#elif defined(HAVE_SLEEP)
-    // under BeOS sleep() takes seconds (what about other platforms, if any?)
-    sleep(microseconds * 1000000);
 #else // !sleep function
     #error "usleep() or nanosleep() function required for wxMicroSleep"
 #endif // sleep function
@@ -203,6 +211,32 @@ void wxMicroSleep(unsigned long microseconds)
 void wxMilliSleep(unsigned long milliseconds)
 {
     wxMicroSleep(milliseconds*1000);
+}
+
+// ----------------------------------------------------------------------------
+// security
+// ----------------------------------------------------------------------------
+
+void wxSecureZeroMemory(void* v, size_t n)
+{
+#if wxCHECK_GLIBC_VERSION(2, 25) || \
+    (defined(__FreeBSD__) && __FreeBSD__ >= 11)
+    // This non-standard function is somewhat widely available elsewhere too,
+    // but may be found in a non-standard header file, or in a library that is
+    // not linked by default.
+    explicit_bzero(v, n);
+#elif defined(__DARWIN__) || defined(__STDC_LIB_EXT1__)
+    // memset_s() is available since OS X 10.9, and may be available on
+    // other platforms.
+    memset_s(v, n, 0, n);
+#else
+    // A generic implementation based on the example at:
+    // http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1381.pdf
+    int c = 0;
+    volatile unsigned char *p = reinterpret_cast<unsigned char *>(v);
+    while ( n-- )
+        *p++ = c;
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -870,11 +904,10 @@ long wxExecute(const char* const* argv, int flags, wxProcess* process,
 const wxChar* wxGetHomeDir( wxString *home  )
 {
     *home = wxGetUserHome();
-    wxString tmp;
     if ( home->empty() )
         *home = wxT("/");
 #ifdef __VMS
-    tmp = *home;
+    wxString tmp = *home;
     if ( tmp.Last() != wxT(']'))
         if ( tmp.Last() != wxT('/')) *home << wxT('/');
 #endif
@@ -929,7 +962,11 @@ wxGetCommandOutput(const wxString &cmd, wxMBConv& conv = wxConvISO8859_1)
 {
     // Suppress stderr from the shell to avoid outputting errors if the command
     // doesn't exist.
+#ifdef __VMS
+    FILE *f = popen(( "pipe " + cmd + " 2>/nl:").ToAscii(), "r");
+#else
     FILE *f = popen((cmd + " 2>/dev/null").ToAscii(), "r");
+#endif
     if ( !f )
     {
         // Notice that this doesn't happen simply if the command doesn't exist,
@@ -1078,15 +1115,59 @@ bool wxGetUserName(wxChar *buf, int sz)
 
 bool wxIsPlatform64Bit()
 {
-    const wxString machine = wxGetCommandOutput(wxT("uname -m"));
+#if SIZEOF_VOID_P == 8
+    (void)wxGetCommandOutput;
+    return true;  // 64-bit programs run only on 64-bit platforms
+#else
+    const wxString machine = wxGetCpuArchitectureName();
 
     // the test for "64" is obviously not 100% reliable but seems to work fine
     // in practice
     return machine.Contains(wxT("64")) ||
                 machine.Contains(wxT("alpha"));
+#endif
+}
+
+wxString wxGetCpuArchitectureName()
+{
+    return wxGetCommandOutput(wxT("uname -m"));
+}
+
+wxString wxGetNativeCpuArchitectureName()
+{
+#if defined(__DARWIN__)
+    // macOS on ARM will report an x86_64 process as translated, assume the native CPU is arm64
+    int translated;
+    size_t translated_size = sizeof(translated);
+    if (sysctlbyname("sysctl.proc_translated", &translated, &translated_size, NULL, 0) == 0)
+        return "arm64";
+    else
+#endif
+        return wxGetCpuArchitectureName();
 }
 
 #ifdef __LINUX__
+
+static bool
+wxGetValuesFromOSRelease(const wxString& filename, wxLinuxDistributionInfo& ret)
+{
+#if wxUSE_CONFIG
+    if ( !wxFileName::Exists(filename) )
+    {
+        return false;
+    }
+
+    wxFileConfig fc(wxEmptyString, wxEmptyString, wxEmptyString, filename);
+    ret.Id = fc.Read(wxS("ID"), wxEmptyString).Capitalize();
+    ret.Description = fc.Read(wxS("PRETTY_NAME"), wxEmptyString);
+    ret.Release = fc.Read(wxS("VERSION_ID"), wxEmptyString);
+    ret.CodeName = fc.Read(wxS("VERSION_CODENAME"), wxEmptyString);
+
+    return true;
+#else
+    return false;
+#endif
+}
 
 static bool
 wxGetValueFromLSBRelease(const wxString& arg, const wxString& lhs, wxString* rhs)
@@ -1101,6 +1182,17 @@ wxGetValueFromLSBRelease(const wxString& arg, const wxString& lhs, wxString* rhs
 wxLinuxDistributionInfo wxGetLinuxDistributionInfo()
 {
     wxLinuxDistributionInfo ret;
+
+    // Read /etc/os-release and fall back to /usr/lib/os-release per below
+    // https://www.freedesktop.org/software/systemd/man/os-release.html
+    if ( wxGetValuesFromOSRelease(wxS("/etc/os-release"), ret) )
+    {
+        return ret;
+    }
+    if ( wxGetValuesFromOSRelease(wxS("/usr/lib/os-release"), ret) )
+    {
+        return ret;
+    }
 
     if ( !wxGetValueFromLSBRelease(wxS("--id"), wxS("Distributor ID:\t"),
                                    &ret.Id) )
@@ -1120,20 +1212,32 @@ wxLinuxDistributionInfo wxGetLinuxDistributionInfo()
 }
 #endif // __LINUX__
 
-// these functions are in src/osx/utilsexc_base.cpp for wxMac
+// these functions are in src/osx/utils_base.mm for wxOSX.
 #ifndef __DARWIN__
 
 wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin, int *verMicro)
 {
     // get OS version
     int major = -1, minor = -1, micro = -1;
+#ifdef __VMS
+    wxString release = wxGetCommandOutput(wxT("uname -v"));
+#else
     wxString release = wxGetCommandOutput(wxT("uname -r"));
+#endif
     if ( !release.empty() )
     {
+#ifdef __VMS
+        if ( wxSscanf(release.c_str(), wxT("V%d.%d-%d"), &major, &minor, &micro ) != 3 )
+#else
         if ( wxSscanf(release.c_str(), wxT("%d.%d.%d"), &major, &minor, &micro ) != 3 )
+#endif
         {
             micro = 0;
+#ifdef __VMS
+            if ( wxSscanf(release.c_str(), wxT("V%d.%d"), &major, &minor ) != 2 )
+#else
             if ( wxSscanf(release.c_str(), wxT("%d.%d"), &major, &minor ) != 2 )
+#endif
             {
                 // failed to get version string or unrecognized format
                 major = minor = micro = -1;
@@ -1161,7 +1265,11 @@ wxOperatingSystemId wxGetOsVersion(int *verMaj, int *verMin, int *verMicro)
 
 wxString wxGetOsDescription()
 {
+#ifdef __VMS
+    return wxGetCommandOutput(wxT("uname -s -v -m"));
+#else
     return wxGetCommandOutput(wxT("uname -s -r -m"));
+#endif
 }
 
 bool wxCheckOsVersion(int majorVsn, int minorVsn, int microVsn)
@@ -1260,7 +1368,7 @@ bool wxGetDiskSpace(const wxString& path, wxDiskspaceSize_t *pTotal, wxDiskspace
 #if defined(HAVE_STATFS) || defined(HAVE_STATVFS)
     // the case to "char *" is needed for AIX 4.3
     wxStatfs_t fs;
-    if ( wxStatfs((char *)(const char*)path.fn_str(), &fs) != 0 )
+    if ( wxStatfs(const_cast<char*>(static_cast<const char*>(path.fn_str())), &fs) != 0 )
     {
         wxLogSysError( wxT("Failed to get file system statistics") );
 

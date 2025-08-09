@@ -156,7 +156,7 @@ gtk_combo_select_child_callback( GtkList *WXUNUSED(list), GtkWidget *WXUNUSED(wi
         combo->HandleWindowEvent( event );
 
         // for consistency with the other ports, don't generate text update
-        // events while the user is browsing the combobox neither
+        // events while the user is browsing the combobox either
         wxCommandEvent event2( wxEVT_TEXT, combo->GetId() );
         event2.SetString( combo->GetValue() );
         event2.SetEventObject( combo );
@@ -230,7 +230,7 @@ bool wxComboBox::Create( wxWindow *parent, wxWindowID id, const wxString& value,
     combo->entry_change_id = gtk_signal_connect (GTK_OBJECT (combo->entry), "changed",
                   (GtkSignalFunc) gtk_dummy_callback, combo);
 
-    // make it more useable
+    // make it more usable
     gtk_combo_set_use_arrows_always( GTK_COMBO(m_widget), TRUE );
 
     // and case-sensitive

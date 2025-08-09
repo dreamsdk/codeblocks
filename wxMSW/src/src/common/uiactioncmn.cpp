@@ -74,10 +74,8 @@ bool wxUIActionSimulatorImpl::MouseClick(int button)
 
 bool wxUIActionSimulatorImpl::MouseDblClick(int button)
 {
-    MouseDown(button);
-    MouseUp(button);
-    MouseDown(button);
-    MouseUp(button);
+    MouseClick(button);
+    MouseClick(button);
 
     return true;
 }
@@ -193,12 +191,20 @@ bool wxUIActionSimulator::Select(const wxString& text)
 #ifdef wxNO_RTTI
     wxItemContainer* container = NULL;
 
+#if wxUSE_COMBOBOX
     if ( wxComboBox* combo = wxDynamicCast(focus, wxComboBox) )
         container = combo;
-    else if ( wxChoice* choice = wxDynamicCast(focus, wxChoice) )
+#endif // wxUSE_COMBOBOX
+#if wxUSE_CHOICE
+    wxChoice* choice;
+    if ( !container && (choice = wxDynamicCast(focus, wxChoice)) )
         container = choice;
-    else if ( wxListBox* listbox = wxDynamicCast(focus, wxListBox) )
+#endif // wxUSE_CHOICE
+#if wxUSE_LISTBOX
+    wxListBox* listbox;
+    if ( !container && (listbox = wxDynamicCast(focus, wxListBox)) )
         container = listbox;
+#endif // wxUSE_LISTBOX
 #else // !wxNO_RTTI
     wxItemContainer* const container = dynamic_cast<wxItemContainer*>(focus);
 #endif // wxNO_RTTI/!wxNO_RTTI

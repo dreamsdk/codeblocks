@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_BUTTON
 
@@ -45,6 +42,7 @@
 #include "wx/stockitem.h"
 #include "wx/msw/private/button.h"
 #include "wx/msw/private/dc.h"
+#include "wx/private/rescale.h"
 #include "wx/private/window.h"
 
 #if wxUSE_MARKUP
@@ -166,33 +164,19 @@ wxSize wxButtonBase::GetDefaultSize(wxWindow* win)
 
     if ( s_sizeBtn.HasChanged(win) )
     {
-        wxSize base;
-        if ( win )
-        {
-            wxClientDC dc(win);
-            dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
-            base = wxPrivate::GetAverageASCIILetterSize(dc);
-        }
-        else
-        {
-            wxScreenDC dc;
-            dc.SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
-            base = wxPrivate::GetAverageASCIILetterSize(dc);
-        }
-
-        // The size of a standard button in the dialog units is 50x14,
-        // translate this to pixels.
+        // The "Recommended sizing and spacing" section of MSDN layout article
+        // documents the default button size as being 50*14 dialog units or
+        // 75*23 relative pixels (what we call DIPs). But dialog units don't
+        // work well in high DPI (and not just because of rounding errors, i.e.
+        // the values differ from the actual default button size used by
+        // Windows itself in high DPI by too much), so just use DIPs directly.
         //
-        // Windows' computes dialog units using average character width over
-        // upper- and lower-case ASCII alphabet and not using the average
-        // character width metadata stored in the font; see
-        // http://support.microsoft.com/default.aspx/kb/145994 for detailed
-        // discussion.
-        //
-        // NB: wxMulDivInt32() is used, because it correctly rounds the result
-
-        s_sizeBtn.SetAtNewDPI(wxSize(wxMulDivInt32(50, base.x, 4),
-                                     wxMulDivInt32(14, base.y, 8)));
+        // Moreover, it looks like the extra 2px borders around the visible
+        // part of the button are not scaled correctly in higher than normal
+        // DPI, so add them without scaling.
+        s_sizeBtn.SetAtNewDPI(
+            wxWindow::FromDIP(wxSize(73, 21), win) + wxSize(2, 2)
+        );
     }
 
     return s_sizeBtn.Get();
@@ -227,8 +211,8 @@ wxSize wxButtonBase::GetDefaultSize(wxWindow* win)
    and the current control doesn't process Enter itself somehow. This is
    handled by ::DefWindowProc() (or maybe ::DefDialogProc()) using DM_SETDEFID
    Another aspect of "defaultness" is that the default button has different
-   appearance: this is due to BS_DEFPUSHBUTTON style which is completely
-   separate from DM_SETDEFID stuff (!). Also note that BS_DEFPUSHBUTTON should
+   appearance: this is due to BS_DEFPUSHBUTTON style which is only partially
+   handled by using DM_SETDEFID. Also note that BS_DEFPUSHBUTTON should
    be unset if our parent window is not active so it should be unset whenever
    we lose activation and set back when we regain it.
 
@@ -335,22 +319,21 @@ wxButton::SetDefaultStyle(wxButton *btn, bool on)
     if ( !btn )
         return;
 
+    // we shouldn't set BS_DEFPUSHBUTTON for any button if we don't have
+    // focus at all any more
+    if ( on && !wxTheApp->IsActive() )
+        return;
+
     // first, let DefDlgProc() know about the new default button
-    if ( on )
-    {
-        // we shouldn't set BS_DEFPUSHBUTTON for any button if we don't have
-        // focus at all any more
-        if ( !wxTheApp->IsActive() )
-            return;
+    wxWindow * const tlw = wxGetTopLevelParent(btn);
+    wxCHECK_RET( tlw, wxT("button without top level window?") );
 
-        wxWindow * const tlw = wxGetTopLevelParent(btn);
-        wxCHECK_RET( tlw, wxT("button without top level window?") );
-
-        ::SendMessage(GetHwndOf(tlw), DM_SETDEFID, btn->GetId(), 0L);
-
-        // sending DM_SETDEFID also changes the button style to
-        // BS_DEFPUSHBUTTON so there is nothing more to do
-    }
+    // passing -1 to indicate absence of the default button is not documented
+    // as being supported, but we need to pass something to DM_SETDEFID when
+    // resetting the default button it in order to prevent DefDlgProc() from
+    // restoring BS_DEFPUSHBUTTON on it later, see #19245, and -1 shouldn't
+    // conflict with anything, as it can never be a valid ID
+    ::SendMessage(GetHwndOf(tlw), DM_SETDEFID, on ? btn->GetId() : -1, 0L);
 
     // then also change the style as needed
     long style = ::GetWindowLong(GetHwndOf(btn), GWL_STYLE);

@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MSGDLG
 
@@ -35,6 +32,7 @@
 #include "wx/fontutil.h"
 #include "wx/textbuf.h"
 #include "wx/display.h"
+#include "wx/translation.h"
 
 // Interestingly, this symbol currently seems to be absent from Platform SDK
 // headers but it is documented at MSDN.
@@ -396,7 +394,7 @@ void wxMessageDialog::AdjustButtonLabels()
 /* static */
 wxFont wxMessageDialog::GetMessageFont()
 {
-    const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    const wxWindow* win = wxApp::GetMainTopWindow();
     const wxNativeFontInfo
         info(wxMSWImpl::GetNonClientMetrics(win).lfMessageFont, win);
 
@@ -426,8 +424,8 @@ int wxMessageDialog::ShowMessageBox()
     // way to translate them and so we must assume they were already
     // translated) to avoid mismatch between the language of the message box
     // text and its buttons
-    wxLocale * const loc = wxGetLocale();
-    if ( loc && loc->GetLanguage() != wxLocale::GetSystemLanguage() )
+    wxTranslations* currentTranslations = wxTranslations::Get();
+    if ( currentTranslations )
     {
         if ( m_dialogStyle & wxYES_NO &&
                 (GetCustomYesLabel().empty() && GetCustomNoLabel().empty()) )
@@ -541,6 +539,8 @@ int wxMessageDialog::ShowMessageBox()
 int wxMessageDialog::ShowModal()
 {
     WX_HOOK_MODAL_DIALOG();
+
+    wxWindowDisabler disableOthers(this, GetParentForModalDialog());
 
 #ifdef wxHAS_MSW_TASKDIALOG
     if ( HasNativeTaskDialog() )

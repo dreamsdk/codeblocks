@@ -16,9 +16,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -443,7 +440,7 @@ wxString DumpHandlerInfo(const wxHandlerInfo *phdlr, int indent)
         return ind + "none";
 
     infostr << ind << "event class: " <<
-        (phdlr->GetEventClassInfo() ? phdlr->GetEventClassInfo()->GetClassName() : "none");
+        (phdlr->GetEventClassInfo() ? wxString(phdlr->GetEventClassInfo()->GetClassName()) : "none");
 
     return infostr;
 }

@@ -13,9 +13,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/gbsizer.h"
 
@@ -182,11 +179,9 @@ wxSizerItem* wxGridBagSizer::Add( wxWindow *window,
     wxGBSizerItem* item = new wxGBSizerItem(window, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-    else
-    {
-        delete item;
-        return NULL;
-    }
+
+    delete item;
+    return NULL;
 }
 
 wxSizerItem* wxGridBagSizer::Add( wxSizer *sizer,
@@ -196,11 +191,9 @@ wxSizerItem* wxGridBagSizer::Add( wxSizer *sizer,
     wxGBSizerItem* item = new wxGBSizerItem(sizer, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-    else
-    {
-        delete item;
-        return NULL;
-    }
+
+    delete item;
+    return NULL;
 }
 
 wxSizerItem* wxGridBagSizer::Add( int width, int height,
@@ -210,11 +203,9 @@ wxSizerItem* wxGridBagSizer::Add( int width, int height,
     wxGBSizerItem* item = new wxGBSizerItem(width, height, pos, span, flag, border, userData);
     if ( Add(item) )
         return item;
-    else
-    {
-        delete item;
-        return NULL;
-    }
+
+    delete item;
+    return NULL;
 }
 
 wxSizerItem* wxGridBagSizer::Add( wxGBSizerItem *item )
@@ -611,7 +602,7 @@ void wxGridBagSizer::AdjustForOverflow()
                 // first deduct the portions of the item that are on prior rows
                 int itemHeight = item->CalcMin().GetHeight();
                 for (int r=item->GetPos().GetRow(); r<row; r++)
-                    itemHeight -= (m_rowHeights[r] + GetHGap());
+                    itemHeight -= (m_rowHeights[r] + m_vgap);
 
                 if ( itemHeight < 0 )
                     itemHeight = 0;
@@ -650,7 +641,7 @@ void wxGridBagSizer::AdjustForOverflow()
             {
                 int itemWidth = item->CalcMin().GetWidth();
                 for (int c=item->GetPos().GetCol(); c<col; c++)
-                    itemWidth -= (m_colWidths[c] + GetVGap());
+                    itemWidth -= (m_colWidths[c] + m_hgap);
 
                 if ( itemWidth < 0 )
                     itemWidth = 0;

@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/cursor.h"
 
@@ -35,6 +32,8 @@
     #include "wx/image.h"
     #include "wx/module.h"
 #endif
+
+#include "wx/display.h"
 
 #include "wx/msw/private.h"
 #include "wx/msw/missing.h" // IDC_HAND
@@ -110,13 +109,13 @@ public:
 
 wxCoord wxCursorRefData::GetStandardWidth()
 {
-    const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    const wxWindow* win = wxApp::GetMainTopWindow();
     return wxSystemSettings::GetMetric(wxSYS_CURSOR_X, win);
 }
 
 wxCoord wxCursorRefData::GetStandardHeight()
 {
-    const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    const wxWindow* win = wxApp::GetMainTopWindow();
     return wxSystemSettings::GetMetric(wxSYS_CURSOR_Y, win);
 }
 
@@ -154,6 +153,16 @@ wxCursor::wxCursor()
 
 #if wxUSE_IMAGE
 wxCursor::wxCursor(const wxImage& image)
+{
+    InitFromImage(image);
+}
+
+wxCursor::wxCursor(const char* const* xpmData)
+{
+    InitFromImage(wxImage(xpmData));
+}
+
+void wxCursor::InitFromImage(const wxImage& image)
 {
     // image has to be of the standard cursor size, otherwise we won't be able
     // to create it
@@ -263,12 +272,20 @@ wxPoint wxCursor::GetHotSpot() const
 namespace
 {
 
-void ReverseBitmap(HBITMAP bitmap, int width, int height)
+wxSize ScaleAndReverseBitmap(HBITMAP& bitmap, float scale)
 {
+    BITMAP bmp;
+    if ( !::GetObject(bitmap, sizeof(bmp), &bmp) )
+        return wxSize();
+    wxSize cs(bmp.bmWidth * scale, bmp.bmHeight * scale);
+
     MemoryHDC hdc;
     SelectInHDC selBitmap(hdc, bitmap);
-    ::StretchBlt(hdc, width - 1, 0, -width, height,
-                 hdc, 0, 0, width, height, SRCCOPY);
+    if ( scale != 1 )
+        ::SetStretchBltMode(hdc, HALFTONE);
+    ::StretchBlt(hdc, cs.x - 1, 0, -cs.x, cs.y, hdc, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
+
+    return cs;
 }
 
 HCURSOR CreateReverseCursor(HCURSOR cursor)
@@ -277,14 +294,15 @@ HCURSOR CreateReverseCursor(HCURSOR cursor)
     if ( !info.GetFrom(cursor) )
         return NULL;
 
-    BITMAP bmp;
-    if ( !::GetObject(info.hbmMask, sizeof(bmp), &bmp) )
-        return NULL;
+    const unsigned displayID = (unsigned)wxDisplay::GetFromPoint(wxGetMousePosition());
+    wxDisplay disp(displayID == 0u || displayID < wxDisplay::GetCount() ? displayID : 0u);
+    const float scale = (float)disp.GetPPI().y / wxGetDisplayPPI().y;
 
-    ReverseBitmap(info.hbmMask, bmp.bmWidth, bmp.bmHeight);
+    wxSize cursorSize = ScaleAndReverseBitmap(info.hbmMask, scale);
     if ( info.hbmColor )
-        ReverseBitmap(info.hbmColor, bmp.bmWidth, bmp.bmHeight);
-    info.xHotspot = (DWORD)bmp.bmWidth - 1 - info.xHotspot;
+        ScaleAndReverseBitmap(info.hbmColor, scale);
+    info.xHotspot = (DWORD)(cursorSize.x - 1 - info.xHotspot * scale);
+    info.yHotspot = (DWORD)(info.yHotspot * scale);
 
     return ::CreateIconIndirect(&info);
 }

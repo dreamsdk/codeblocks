@@ -67,7 +67,7 @@ public:
     // Low-level invocation function. Pass either an array of variants,
     // or an array of pointers to variants.
     bool Invoke(const wxString& member, int action,
-        wxVariant& retValue, int noArgs, wxVariant args[], const wxVariant* ptrArgs[] = 0) const;
+        wxVariant& retValue, int noArgs, wxVariant args[], const wxVariant* ptrArgs[] = NULL) const;
 
     // Invoke a member function
     wxVariant CallMethod(const wxString& method, int noArgs, wxVariant args[]);
@@ -96,7 +96,7 @@ public:
 
     // Uses DISPATCH_PROPERTYGET
     // and returns a dispatch pointer. The calling code should call Release
-    // on the pointer, though this could be implicit by constructing an wxAutomationObject
+    // on the pointer, though this could be implicit by constructing a wxAutomationObject
     // with it and letting the destructor call Release.
     WXIDISPATCH* GetDispatchProperty(const wxString& property, int noArgs, wxVariant args[]) const;
     WXIDISPATCH* GetDispatchProperty(const wxString& property, int noArgs, const wxVariant **args) const;

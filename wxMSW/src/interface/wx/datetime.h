@@ -94,9 +94,9 @@ public:
         /// the time in the current time zone
         Local,
 
-        //@{
+        ///@{
         /// zones from GMT (= Greenwich Mean Time): they're guaranteed to be
-        /// consequent numbers, so writing something like `GMT0 + offset' is
+        /// consequent numbers, so writing something like `GMT0 + offset` is
         /// safe if abs(offset) <= 12
 
         // underscore stands for minus
@@ -107,7 +107,7 @@ public:
         GMT7, GMT8, GMT9, GMT10, GMT11, GMT12, GMT13,
         // Note that GMT12 and GMT_12 are not the same: there is a difference
         // of exactly one day between them
-        //@}
+        ///@}
 
         // some symbolic names for TZ
 
@@ -147,8 +147,7 @@ public:
         NZST = GMT12,       //!< Standard Time
         NZDT = GMT13,       //!< Daylight Saving Time
 
-        /// Universal Coordinated Time = the new and politically correct name
-        /// for GMT.
+        /// Universal Coordinated Time
         UTC = GMT0
     };
 
@@ -313,7 +312,7 @@ public:
         you should use IsValid() method to check that the values were correct
         as constructors cannot return an error code.
     */
-    //@{
+    ///@{
 
     /**
         Default constructor. Use one of the Set() functions to initialize the
@@ -480,7 +479,7 @@ public:
     */
     wxDateTime& operator=(const struct tm& tm);
 
-    //@}
+    ///@}
 
 
 
@@ -489,9 +488,9 @@ public:
 
         Here are the trivial accessors. Other functions, which might have to
         perform some more complicated calculations to find the answer are under
-        the "Date Arithmetics" section.
+        the "Date Arithmetic" section.
     */
-    //@{
+    ///@{
 
     /**
         Returns the date and time in DOS format.
@@ -666,7 +665,7 @@ public:
     */
     bool IsWorkDay(Country country = Country_Default) const;
 
-    //@}
+    ///@}
 
 
 
@@ -683,7 +682,7 @@ public:
         using any other operators or IsEarlierThan() or IsLaterThan() functions
         would result in an assert because their result is not well-defined.
     */
-    //@{
+    ///@{
 
     /**
         Returns @true if this date precedes the given one.
@@ -733,15 +732,15 @@ public:
     */
     bool IsBetween(const wxDateTime& t1, const wxDateTime& t2) const;
 
-    //@}
+    ///@}
 
 
 
     /**
-        @name Date Arithmetics
+        @name Date Arithmetic
 
         These functions carry out
-        @ref overview_datetime_arithmetics "arithmetics" on the wxDateTime
+        @ref overview_datetime_arithmetics "arithmetic" on the wxDateTime
         objects. As explained in the overview, either wxTimeSpan or wxDateSpan
         may be added to wxDateTime, hence all functions are overloaded to
         accept both arguments.
@@ -752,7 +751,7 @@ public:
         the object to which it is applied. The operators "-=" and "+=" are
         defined to be equivalent to the second forms of these functions.
     */
-    //@{
+    ///@{
 
     /**
         Adds the given date span to this object.
@@ -840,7 +839,7 @@ public:
     */
     wxTimeSpan operator-(const wxDateTime& dt2) const;
 
-    //@}
+    ///@}
 
 
 
@@ -849,11 +848,11 @@ public:
 
         See @ref datetime_formatting
     */
-    //@{
+    ///@{
 
     /**
         This function does the same as the standard ANSI C @c strftime(3)
-        function (http://www.cplusplus.com/reference/clibrary/ctime/strftime.html).
+        function (https://cplusplus.com/reference/ctime/strftime/).
         Please see its description for the meaning of @a format parameter.
 
         Notice that POSIX @c "%g", @c "%G", @c "%V" and @c "%z" format
@@ -936,14 +935,12 @@ public:
     bool ParseDateTime(const wxString& datetime, wxString::const_iterator *end);
 
     /**
-        This function parses the string @a date according to the given
-        @e format. The system @c strptime(3) function is used whenever
-        available, but even if it is not, this function is still implemented,
-        although support for locale-dependent format specifiers such as
-        @c "%c", @c "%x" or @c "%X" may not be perfect and GNU extensions such
-        as @c "%z" and @c "%Z" are not implemented. This function does handle
-        the month and weekday names in the current locale on all platforms,
-        however.
+        Parses the string @a date according to the given @e format.
+
+        This function is similar to @c strptime(3) but doesn't use it and
+        implements the parsing itself, with support for all the standard
+        (POSIX) formatting specifiers as well as a number of GNU extensions
+        such as `%l`, `%F`, `%z` (but not `%Z`, currently) etc.
 
         Please see the description of the ANSI C function @c strftime(3) for
         the syntax of the format string.
@@ -1061,7 +1058,7 @@ public:
     */
     bool ParseTime(const wxString& time, wxString::const_iterator *end);
 
-    //@}
+    ///@}
 
 
 
@@ -1076,7 +1073,7 @@ public:
         None of the functions in this section modify the time part of the
         wxDateTime, they only work with the date part of it.
     */
-    //@{
+    ///@{
 
     /**
         Returns the copy of this object to which SetToLastMonthDay() was
@@ -1195,7 +1192,7 @@ public:
     */
     wxDateTime& SetToYearDay(wxDateTime_t yday);
 
-    //@}
+    ///@}
 
 
 
@@ -1208,7 +1205,7 @@ public:
 
         Related functions in other groups: wxDateTime(double), Set(double)
     */
-    //@{
+    ///@{
 
     /**
         Synonym for GetJulianDayNumber().
@@ -1245,7 +1242,7 @@ public:
     */
     double GetRataDie() const;
 
-    //@}
+    ///@}
 
 
 
@@ -1262,7 +1259,7 @@ public:
 
         Related functions in other groups: GetBeginDST(), GetEndDST()
     */
-    //@{
+    ///@{
 
     /**
         Transform the date from the given time zone to the local one.
@@ -1318,7 +1315,7 @@ public:
     */
     wxDateTime ToUTC(bool noDST = false) const;
 
-    //@}
+    ///@}
 
 
 

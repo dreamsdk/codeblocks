@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/gdicmn.h"
 
@@ -421,7 +418,7 @@ wxColour wxColourDatabase::Find(const wxString& colour) const
     wxColourDatabase * const self = wxConstCast(this, wxColourDatabase);
     self->Initialize();
 
-    // make the comparaison case insensitive and also match both grey and gray
+    // make the comparison case insensitive and also match both grey and gray
     wxString colName = colour;
     colName.MakeUpper();
     wxString colNameAlt = colName;

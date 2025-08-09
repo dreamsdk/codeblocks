@@ -19,15 +19,13 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/app.h"
     #include "wx/window.h"
     #include "wx/bitmap.h"
     #include "wx/log.h"
+    #include "wx/module.h"
     #include "wx/msgdlg.h"
     #include "wx/confbase.h"
     #include "wx/utils.h"
@@ -41,6 +39,7 @@
 #include "wx/thread.h"
 #include "wx/vidmode.h"
 #include "wx/evtloop.h"
+#include "wx/uilocale.h"
 
 #if wxUSE_FONTMAP
     #include "wx/fontmap.h"
@@ -192,6 +191,14 @@ wxWindow* wxAppBase::GetTopWindow() const
     return window;
 }
 
+/* static */
+wxWindow* wxAppBase::GetMainTopWindow()
+{
+    const wxAppBase* const app = GetGUIInstance();
+
+    return app ? app->GetTopWindow() : NULL;
+}
+
 wxVideoMode wxAppBase::GetDisplayMode() const
 {
     return wxVideoMode();
@@ -200,19 +207,11 @@ wxVideoMode wxAppBase::GetDisplayMode() const
 wxLayoutDirection wxAppBase::GetLayoutDirection() const
 {
 #if wxUSE_INTL
-    const wxLocale *const locale = wxGetLocale();
-    if ( locale )
-    {
-        const wxLanguageInfo *const
-            info = wxLocale::GetLanguageInfo(locale->GetLanguage());
-
-        if ( info )
-            return info->LayoutDirection;
-    }
-#endif // wxUSE_INTL
-
+    return wxUILocale::GetCurrent().GetLayoutDirection();
+#else
     // we don't know
     return wxLayout_Default;
+#endif // wxUSE_INTL
 }
 
 #if wxUSE_CMDLINE_PARSER
@@ -277,7 +276,7 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
         wxTheme *theme = wxTheme::Create(themeName);
         if ( !theme )
         {
-            wxLogError(_("Unsupported theme '%s'."), themeName.c_str());
+            wxLogError(_("Unsupported theme '%s'."), themeName);
             return false;
         }
 
@@ -292,9 +291,9 @@ bool wxAppBase::OnCmdLineParsed(wxCmdLineParser& parser)
     if ( parser.Found(OPTION_MODE, &modeDesc) )
     {
         unsigned w, h, bpp;
-        if ( wxSscanf(modeDesc.c_str(), wxT("%ux%u-%u"), &w, &h, &bpp) != 3 )
+        if ( wxSscanf(modeDesc, wxT("%ux%u-%u"), &w, &h, &bpp) != 3 )
         {
-            wxLogError(_("Invalid display mode specification '%s'."), modeDesc.c_str());
+            wxLogError(_("Invalid display mode specification '%s'."), modeDesc);
             return false;
         }
 
@@ -493,7 +492,7 @@ bool wxGUIAppTraitsBase::ShowAssertDialog(const wxString& msg)
     if ( wxIsMainThread() )
     {
         // Note that this and the other messages here are intentionally not
-        // translated -- they are for developpers only.
+        // translated -- they are for developers only.
         static const wxStringCharType* caption = wxS("wxWidgets Debug Alert");
 
         wxString msgDlg = wxS("A debugging check in this application ")
@@ -579,3 +578,21 @@ bool wxGUIAppTraitsBase::HasStderr()
 #endif
 }
 
+#ifndef __WIN32__
+
+bool wxGUIAppTraitsBase::SafeMessageBox(const wxString& text,
+                                        const wxString& title)
+{
+    // The modules are initialized only after a successful call to
+    // wxApp::Initialize() in wxEntryStart, so it can be used as a proxy for
+    // GUI availability (note that the mere existence of wxTheApp is not enough
+    // for this).
+    if ( !wxModule::AreInitialized() )
+        return false;
+
+    wxMessageBox(text, title, wxOK | wxICON_ERROR);
+
+    return true;
+}
+
+#endif // !__WIN32__

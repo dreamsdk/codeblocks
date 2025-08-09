@@ -16,8 +16,10 @@
     #include "wx/image.h"
     #include "wx/colour.h"
     #include "wx/cursor.h"
+    #include "wx/dc.h"
 #endif
 
+#include "wx/math.h"
 #include "wx/rawbmp.h"
 
 #include "wx/gtk/private/object.h"
@@ -388,13 +390,13 @@ wxBitmapRefData::~wxBitmapRefData()
     if (m_surface)
         cairo_surface_destroy(m_surface);
 #else
-    if (m_pixbufMask)
-        g_object_unref(m_pixbufMask);
     if (m_pixmap)
         g_object_unref (m_pixmap);
     if (m_pixbuf)
         g_object_unref (m_pixbuf);
 #endif
+    if (m_pixbufMask)
+        g_object_unref(m_pixbufMask);
     delete m_mask;
 }
 
@@ -588,7 +590,7 @@ static void CopyImageData(
 
 #if wxUSE_IMAGE
 #ifdef __WXGTK3__
-wxBitmap::wxBitmap(const wxImage& image, int depth, double scale)
+void wxBitmap::InitFromImage(const wxImage& image, int depth, double scale)
 {
     wxCHECK_RET(image.IsOk(), "invalid image");
 
@@ -635,7 +637,7 @@ wxBitmap::wxBitmap(const wxImage& image, int depth, double scale)
     }
 }
 #else
-wxBitmap::wxBitmap(const wxImage& image, int depth, double WXUNUSED(scale))
+void wxBitmap::InitFromImage(const wxImage& image, int depth, double WXUNUSED(scale))
 {
     wxCHECK_RET(image.IsOk(), "invalid image");
 
@@ -756,9 +758,40 @@ bool wxBitmap::CreateFromImageAsPixbuf(const wxImage& image)
         }
     }
 
+    if ( image.HasMask() )
+    {
+        const size_t out_size = size_t((width + 7) / 8) * unsigned(height);
+        wxByte* out = new wxByte[out_size];
+        memset(out, 0xff, out_size);
+        const wxByte r_mask = image.GetMaskRed();
+        const wxByte g_mask = image.GetMaskGreen();
+        const wxByte b_mask = image.GetMaskBlue();
+        const wxByte* in = image.GetData();
+        unsigned bit_index = 0;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++, in += 3, bit_index++)
+                if (in[0] == r_mask && in[1] == g_mask && in[2] == b_mask)
+                    out[bit_index >> 3] ^= 1 << (bit_index & 7);
+            bit_index = (bit_index + 7) & ~7u;
+        }
+        SetMask(new wxMask(gdk_bitmap_create_from_data(wxGetTopLevelGDK(), reinterpret_cast<char*>(out), width, height)));
+        delete[] out;
+    }
+
     return true;
 }
 #endif
+
+wxBitmap::wxBitmap(const wxImage& image, int depth, double scale)
+{
+    InitFromImage(image, depth, scale);
+}
+
+wxBitmap::wxBitmap(const wxImage& image, const wxDC& dc)
+{
+    InitFromImage(image, -1, dc.GetContentScaleFactor());
+}
 
 wxImage wxBitmap::ConvertToImage() const
 {
@@ -836,7 +869,7 @@ wxImage wxBitmap::ConvertToImage() const
     // prefer pixbuf if available, it will preserve alpha and should be quicker
     if (HasPixbuf())
     {
-        GdkPixbuf *pixbuf = GetPixbuf();
+        GdkPixbuf *pixbuf = GetPixbufNoMask();
         unsigned char* alpha = NULL;
         if (gdk_pixbuf_get_has_alpha(pixbuf))
         {
@@ -883,8 +916,8 @@ wxImage wxBitmap::ConvertToImage() const
         if (pixmap_invert != NULL)
             g_object_unref(pixmap_invert);
     }
-    // convert mask, unless there is already alpha
-    if (GetMask() && !image.HasAlpha())
+    // convert mask, even there is already alpha. Image can have both.
+    if ( GetMask() )
     {
         // we hard code the mask colour for now but we could also make an
         // effort (and waste time) to choose a colour not present in the
@@ -967,18 +1000,31 @@ void wxBitmap::SetMask( wxMask *mask )
     }
 }
 
-bool wxBitmap::CopyFromIcon(const wxIcon& icon)
+#ifdef __WXGTK3__
+bool wxBitmap::Create(int width, int height, const wxDC& dc)
 {
-    *this = icon;
-    return IsOk();
+    return DoCreate(wxSize(width, height),
+                    dc.GetContentScaleFactor(),
+                    wxBITMAP_SCREEN_DEPTH);
 }
 
-#ifdef __WXGTK3__
-bool wxBitmap::CreateScaled(int w, int h, int depth, double scale)
+bool wxBitmap::DoCreate(const wxSize& size, double scale, int depth)
 {
-    Create(int(w * scale), int(h * scale), depth);
+    Create(size*scale, depth);
     M_BMPDATA->m_scaleFactor = scale;
     return true;
+}
+
+void wxBitmap::SetScaleFactor(double scale)
+{
+    wxCHECK_RET(m_refData, "invalid bitmap");
+
+    if ( M_BMPDATA->m_scaleFactor != scale )
+    {
+        AllocExclusive();
+
+        M_BMPDATA->m_scaleFactor = scale;
+    }
 }
 
 double wxBitmap::GetScaleFactor() const
@@ -1007,15 +1053,22 @@ static cairo_surface_t* GetSubSurface(cairo_surface_t* surface, const wxRect& re
 }
 #endif
 
-wxBitmap wxBitmap::GetSubBitmap( const wxRect& rect) const
+wxBitmap wxBitmap::GetSubBitmap(const wxRect& r) const
 {
     wxBitmap ret;
 
     wxCHECK_MSG(IsOk(), ret, wxT("invalid bitmap"));
 
+    const wxBitmapRefData* bmpData = M_BMPDATA;
+#ifdef __WXGTK3__
+    const double s = bmpData->m_scaleFactor;
+    const wxRect rect(int(r.x * s), int(r.y * s), int(r.width * s), int(r.height * s));
+#else
+    const wxRect& rect = r;
+#endif
+
     const int w = rect.width;
     const int h = rect.height;
-    const wxBitmapRefData* bmpData = M_BMPDATA;
 
     wxCHECK_MSG(rect.x >= 0 && rect.y >= 0 &&
                 rect.x + w <= bmpData->m_width &&
@@ -1368,9 +1421,46 @@ void wxBitmap::Draw(cairo_t* cr, int x, int y, bool useMask, const wxColour* fg,
     if (useMask && bmpData->m_mask)
         mask = *bmpData->m_mask;
     if (mask)
-        cairo_mask_surface(cr, mask, x, y);
+    {
+        cairo_pattern_t* pattern = cairo_pattern_create_for_surface(mask);
+        cairo_pattern_set_filter(pattern, CAIRO_FILTER_NEAREST);
+        if (x || y)
+        {
+            cairo_matrix_t matrix;
+            cairo_matrix_init_translate(&matrix, -x, -y);
+            cairo_pattern_set_matrix(pattern, &matrix);
+        }
+        cairo_mask(cr, pattern);
+        cairo_pattern_destroy(pattern);
+    }
     else
         cairo_paint(cr);
+}
+
+wxBitmap wxBitmap::CreateDisabled() const
+{
+    wxBitmap disabled;
+    if (m_refData == NULL)
+        return disabled;
+
+    const wxBitmapRefData* bmpData = M_BMPDATA;
+    wxBitmapRefData* newRef = new wxBitmapRefData(bmpData->m_width, bmpData->m_height, 32);
+    newRef->m_scaleFactor = bmpData->m_scaleFactor;
+    disabled.m_refData = newRef;
+
+    cairo_t* cr = disabled.CairoCreate();
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0);
+    // clear to transparent
+    cairo_paint(cr);
+    // draw in this bitmap
+    Draw(cr, 0, 0);
+    cairo_set_source_rgba(cr, 0, 0, 0, 0);
+    // create disabled appearance
+    cairo_paint_with_alpha(cr, 0.5);
+    cairo_destroy(cr);
+
+    return disabled;
 }
 #else
 GdkPixbuf* wxBitmap::GetPixbufNoMask() const

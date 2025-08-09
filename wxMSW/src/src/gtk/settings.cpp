@@ -24,6 +24,7 @@
 #include "wx/gtk/private/gtk3-compat.h"
 #include "wx/gtk/private/win_gtk.h"
 #include "wx/gtk/private/stylecontext.h"
+#include "wx/gtk/private/value.h"
 
 bool wxGetFrameExtents(GdkWindow* window, int* left, int* right, int* top, int* bottom);
 
@@ -179,6 +180,68 @@ static void notify_gtk_theme_name(GObject*, GParamSpec*, void*)
 static void notify_gtk_font_name(GObject*, GParamSpec*, void*)
 {
     gs_fontSystem.UnRef();
+}
+}
+
+static bool UpdatePreferDark(GVariant* value)
+{
+    // 0: No preference, 1: Prefer dark appearance, 2: Prefer light appearance
+    gboolean preferDark = g_variant_get_uint32(value) == 1;
+
+    GtkSettings* settings = gtk_settings_get_default();
+    char* themeName;
+    gboolean preferDarkPrev;
+    g_object_get(settings,
+        "gtk-theme-name", &themeName,
+        "gtk-application-prefer-dark-theme", &preferDarkPrev, NULL);
+
+    // We don't need to enable prefer-dark if the theme is already dark
+    if (strstr(themeName, "-dark") || strstr(themeName, "-Dark"))
+        preferDark = false;
+    g_free(themeName);
+
+    const bool changed = preferDark != preferDarkPrev;
+    if (changed)
+    {
+        g_object_set(settings,
+            "gtk-application-prefer-dark-theme", preferDark, NULL);
+    }
+    return changed;
+}
+
+// "g-signal" from GDBusProxy
+extern "C" {
+static void
+proxy_g_signal(GDBusProxy*, const char*, const char* signal_name, GVariant* parameters, void*)
+{
+    if (strcmp(signal_name, "SettingChanged") != 0)
+        return;
+
+    const char* nameSpace;
+    const char* key;
+    GVariant* value;
+    g_variant_get(parameters, "(&s&sv)", &nameSpace, &key, &value);
+    if (strcmp(nameSpace, "org.freedesktop.appearance") == 0 &&
+        strcmp(key, "color-scheme") == 0)
+    {
+        if (UpdatePreferDark(value))
+        {
+            for (int i = wxSYS_COLOUR_MAX; i--;)
+                gs_systemColorCache[i].UnRef();
+
+            for ( wxWindowList::compatibility_iterator node = wxTopLevelWindows.GetFirst();
+                  node;
+                  node = node->GetNext() )
+            {
+                wxWindow* const win = node->GetData();
+
+                wxSysColourChangedEvent event;
+                event.SetEventObject(win);
+                win->HandleWindowEvent(event);
+            }
+        }
+    }
+    g_variant_unref(value);
 }
 }
 
@@ -391,8 +454,31 @@ void wxGtkStyleContext::Bg(wxColour& color, int state) const
     // If there is an image, try to get a color out of it.
     if (pattern)
     {
-        if (cairo_pattern_get_type(pattern) == CAIRO_PATTERN_TYPE_SURFACE)
+        int count;
+        switch (cairo_pattern_get_type(pattern))
         {
+        default:
+            break;
+        case CAIRO_PATTERN_TYPE_LINEAR:
+        case CAIRO_PATTERN_TYPE_RADIAL:
+            cairo_pattern_get_color_stop_count(pattern, &count);
+            if (count > 0)
+            {
+                double r, g, b, a;
+                cairo_pattern_get_color_stop_rgba(pattern, 0, NULL, &r, &g, &b, &a);
+                if (count > 1)
+                {
+                    double r2, g2, b2, a2;
+                    cairo_pattern_get_color_stop_rgba(pattern, count - 1, NULL, &r2, &g2, &b2, &a2);
+                    r = (r + r2) / 2;
+                    g = (g + g2) / 2;
+                    b = (b + b2) / 2;
+                    a = (a + a2) / 2;
+                }
+                color.Set(guchar(r * 255), guchar(g * 255), guchar(b * 255), guchar(a * 255));
+            }
+            break;
+        case CAIRO_PATTERN_TYPE_SURFACE:
             cairo_surface_t* surf;
             cairo_pattern_get_surface(pattern, &surf);
             if (cairo_surface_get_type(surf) == CAIRO_SURFACE_TYPE_IMAGE)
@@ -409,18 +495,13 @@ void wxGtkStyleContext::Bg(wxColour& color, int state) const
                 {
                 case CAIRO_FORMAT_ARGB32:
                     a = guchar(pixel >> 24);
+                    if (a == 0)
+                        break;
                     wxFALLTHROUGH;
                 case CAIRO_FORMAT_RGB24:
                     r = guchar(pixel >> 16);
                     g = guchar(pixel >> 8);
                     b = guchar(pixel);
-                    break;
-                default:
-                    a = 0;
-                    break;
-                }
-                if (a != 0)
-                {
                     if (a != 0xff)
                     {
                         // un-premultiply
@@ -429,6 +510,9 @@ void wxGtkStyleContext::Bg(wxColour& color, int state) const
                         b = guchar((b * 0xff) / a);
                     }
                     color.Set(r, g, b, a);
+                    break;
+                default:
+                    break;
                 }
             }
         }
@@ -562,15 +646,13 @@ wxColour wxSystemSettingsNative::GetColour(wxSystemColour index)
         else
         {
             wxGCC_WARNING_SUPPRESS(deprecated-declarations)
-            GValue value = G_VALUE_INIT;
-            g_value_init(&value, GDK_TYPE_COLOR);
-            gtk_style_context_get_style_property(sc, "link-color", &value);
-            GdkColor* link_color = static_cast<GdkColor*>(g_value_get_boxed(&value));
+            wxGtkValue value( GDK_TYPE_COLOR);
+            gtk_style_context_get_style_property(sc, "link-color", value);
+            GdkColor* link_color = static_cast<GdkColor*>(g_value_get_boxed(value));
             GdkColor gdkColor = { 0, 0, 0, 0xeeee };
             if (link_color)
                 gdkColor = *link_color;
             color = wxColour(gdkColor);
-            g_value_unset(&value);
             wxGCC_WARNING_RESTORE()
         }
 #endif
@@ -748,8 +830,20 @@ wxColour wxSystemSettingsNative::GetColour( wxSystemColour index )
             break;
 
         case wxSYS_COLOUR_HOTLIGHT:
-            // TODO
-            color = *wxBLACK;
+            {
+                GdkColor c = { 0, 0, 0, 0xeeee };
+                if (gtk_check_version(2,10,0) == NULL)
+                {
+                    GdkColor* linkColor = NULL;
+                    gtk_widget_style_get(ButtonWidget(), "link-color", &linkColor, NULL);
+                    if (linkColor)
+                    {
+                        c = *linkColor;
+                        gdk_color_free(linkColor);
+                    }
+                }
+                color = wxColour(c);
+            }
             break;
 
         case wxSYS_COLOUR_MAX:
@@ -873,33 +967,45 @@ static GdkRectangle GetMonitorGeom(GdkWindow* window)
 }
 #endif
 
+#ifdef __WXGTK3__
+static int GetNodeWidth(wxGtkStyleContext& sc)
+{
+    int width;
+    gtk_style_context_get(sc, GTK_STATE_FLAG_NORMAL, "min-width", &width, NULL);
+    GtkBorder border;
+    gtk_style_context_get_padding(sc, GTK_STATE_FLAG_NORMAL, &border);
+    width += border.left + border.right;
+    gtk_style_context_get_border(sc, GTK_STATE_FLAG_NORMAL, &border);
+    width += border.left + border.right;
+    gtk_style_context_get_margin(sc, GTK_STATE_FLAG_NORMAL, &border);
+    width += border.left + border.right;
+
+    return width < 0 ? 0 : width;
+}
+#endif // __WXGTK3__
+
 static int GetScrollbarWidth()
 {
     int width;
 #ifdef __WXGTK3__
     if (wx_is_at_least_gtk3(20))
     {
-        GtkBorder border;
 #if GTK_CHECK_VERSION(3,10,0)
         wxGtkStyleContext sc(gtk_widget_get_scale_factor(ScrollBarWidget()));
 #else
         wxGtkStyleContext sc;
 #endif
         sc.Add(GTK_TYPE_SCROLLBAR, "scrollbar", "scrollbar", "vertical", "right", NULL);
+        width = GetNodeWidth(sc);
 
-        gtk_style_context_get_border(sc, GTK_STATE_FLAG_NORMAL, &border);
+        sc.Add("contents");
+        width += GetNodeWidth(sc);
 
-        sc.Add("contents").Add("trough").Add("slider");
+        sc.Add("trough");
+        width += GetNodeWidth(sc);
 
-        gtk_style_context_get(sc, GTK_STATE_FLAG_NORMAL, "min-width", &width, NULL);
-        width += border.left + border.right;
-
-        gtk_style_context_get_border(sc, GTK_STATE_FLAG_NORMAL, &border);
-        width += border.left + border.right;
-        gtk_style_context_get_padding(sc, GTK_STATE_FLAG_NORMAL, &border);
-        width += border.left + border.right;
-        gtk_style_context_get_margin(sc, GTK_STATE_FLAG_NORMAL, &border);
-        width += border.left + border.right;
+        sc.Add("slider");
+        width += GetNodeWidth(sc);
     }
     else
 #endif
@@ -1115,11 +1221,65 @@ bool wxSystemSettingsNative::HasFeature(wxSystemFeature index)
 class wxSystemSettingsModule: public wxModule
 {
 public:
-    virtual bool OnInit() wxOVERRIDE { return true; }
+    virtual bool OnInit() wxOVERRIDE;
     virtual void OnExit() wxOVERRIDE;
+
+#ifdef __WXGTK3__
+    GDBusProxy* m_proxy;
+#endif
     wxDECLARE_DYNAMIC_CLASS(wxSystemSettingsModule);
 };
 wxIMPLEMENT_DYNAMIC_CLASS(wxSystemSettingsModule, wxModule);
+
+bool wxSystemSettingsModule::OnInit()
+{
+#ifdef __WXGTK3__
+    // Gnome has gone to a dark style setting rather than a selectable dark
+    // theme, available via GSettings as the 'color-scheme' key under the
+    // 'org.gnome.desktop.interface' schema. It's also available via a "portal"
+    // (https://docs.flatpak.org/en/latest/portal-api-reference.html), which
+    // has the advantage of allowing the setting to be accessed from within a
+    // virtualized environment such as Flatpak. Since the setting does not
+    // change the theme, we propagate it to the GtkSettings
+    // 'gtk-application-prefer-dark-theme' property to get a dark theme.
+
+    m_proxy = NULL;
+
+    // If this is not a GUI app
+    if (!g_type_class_peek(GTK_TYPE_WIDGET))
+        return true;
+
+    // GTK_THEME environment variable overrides other settings
+    if (getenv("GTK_THEME") == NULL)
+    {
+        m_proxy = g_dbus_proxy_new_for_bus_sync(
+            G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE, NULL,
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.Settings",
+            NULL, NULL);
+    }
+    if (m_proxy)
+    {
+        g_signal_connect(m_proxy, "g-signal", G_CALLBACK(proxy_g_signal), NULL);
+
+        GVariant* ret = g_dbus_proxy_call_sync(m_proxy, "Read",
+            g_variant_new("(ss)", "org.freedesktop.appearance", "color-scheme"),
+            G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL);
+        if (ret)
+        {
+            GVariant* child;
+            g_variant_get(ret, "(v)", &child);
+            GVariant* value = g_variant_get_variant(child);
+            UpdatePreferDark(value);
+            g_variant_unref(value);
+            g_variant_unref(child);
+            g_variant_unref(ret);
+        }
+    }
+#endif // __WXGTK3__
+    return true;
+}
 
 void wxSystemSettingsModule::OnExit()
 {
@@ -1132,6 +1292,8 @@ void wxSystemSettingsModule::OnExit()
         g_signal_handlers_disconnect_by_func(settings,
             (void*)notify_gtk_font_name, NULL);
     }
+    if (m_proxy)
+        g_object_unref(m_proxy);
 #endif
     if (gs_tlw_parent)
     {

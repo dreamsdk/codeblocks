@@ -121,7 +121,7 @@ public:
     wxUint16 LowSurrogate() const { return LowSurrogate(m_value); }
 
     // Conversions to char and wchar_t types: all of those are needed to be
-    // able to pass wxUniChars to verious standard narrow and wide character
+    // able to pass wxUniChars to various standard narrow and wide character
     // functions
     operator char() const { return To8bit(m_value); }
     operator unsigned char() const { return (unsigned char)To8bit(m_value); }
@@ -167,7 +167,7 @@ public:
     wxFOR_ALL_COMPARISONS(wxDEFINE_UNICHAR_OPERATOR)
 
 #undef wxDEFINE_UNICHAR_OPERATOR
-#undef wxDEFINE_UNCHAR_CMP_WITH_INT
+#undef wxDEFINE_UNICHAR_CMP_WITH_INT
 
     // this is needed for expressions like 'Z'-c
     int operator-(const wxUniChar& c) const { return m_value - c.m_value; }
@@ -267,10 +267,8 @@ public:
     wxUniCharRef& operator=(const wxUniCharRef& c)
         { if (&c != this) *this = c.UniChar(); return *this; }
 
-#if wxUSE_UNICODE_UTF8
-    wxUniCharRef(const wxUniCharRef& that) : m_str(that.m_str), m_pos(that.m_pos) { }
-#else
-    wxUniCharRef(const wxUniCharRef& that) : m_pos(that.m_pos) { }
+#ifdef wxHAS_MEMBER_DEFAULT
+    wxUniCharRef(const wxUniCharRef&) = default;
 #endif
 
 #define wxUNICHAR_REF_DEFINE_OPERATOR_EQUAL(type) \

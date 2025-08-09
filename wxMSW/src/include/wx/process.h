@@ -167,10 +167,10 @@ public:
 
     // accessors
         // PID of process which terminated
-    int GetPid() { return m_pid; }
+    int GetPid() const { return m_pid; }
 
         // the exit code
-    int GetExitCode() { return m_exitcode; }
+    int GetExitCode() const { return m_exitcode; }
 
     // implement the base class pure virtual
     virtual wxEvent *Clone() const wxOVERRIDE { return new wxProcessEvent(*this); }
@@ -179,7 +179,7 @@ public:
     int m_pid,
         m_exitcode;
 
-    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN(wxProcessEvent);
+    wxDECLARE_DYNAMIC_CLASS_NO_ASSIGN_DEF_COPY(wxProcessEvent);
 };
 
 typedef void (wxEvtHandler::*wxProcessEventFunction)(wxProcessEvent&);

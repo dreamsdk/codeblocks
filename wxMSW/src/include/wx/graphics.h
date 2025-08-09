@@ -68,7 +68,8 @@ enum wxCompositionMode
     wxCOMPOSITION_XOR, /* R = S*(1 - Da) + D*(1 - Sa) */
 
     // mathematical compositions
-    wxCOMPOSITION_ADD /* R = S + D */
+    wxCOMPOSITION_ADD, /* R = S + D */
+    wxCOMPOSITION_DIFF /* R = abs(S - D) */
 };
 
 enum wxGradientType
@@ -104,7 +105,7 @@ class WXDLLIMPEXP_FWD_CORE wxGraphicsBitmap;
 /*
  * notes about the graphics context apis
  *
- * angles : are measured in radians, 0.0 being in direction of positiv x axis, PI/2 being
+ * angles : are measured in radians, 0.0 being in direction of positive x axis, PI/2 being
  * in direction of positive y axis.
  */
 
@@ -128,6 +129,9 @@ class WXDLLIMPEXP_CORE wxGraphicsObject : public wxObject
 public:
     wxGraphicsObject();
     wxGraphicsObject( wxGraphicsRenderer* renderer );
+
+    wxDECLARE_DEFAULT_COPY(wxGraphicsObject)
+
     virtual ~wxGraphicsObject();
 
     bool IsNull() const;
@@ -208,6 +212,8 @@ class WXDLLIMPEXP_CORE wxGraphicsMatrix : public wxGraphicsObject
 public:
     wxGraphicsMatrix() {}
 
+    wxDECLARE_DEFAULT_COPY(wxGraphicsMatrix)
+
     virtual ~wxGraphicsMatrix() {}
 
     // concatenates the matrix
@@ -218,7 +224,7 @@ public:
     virtual void Set(wxDouble a=1.0, wxDouble b=0.0, wxDouble c=0.0, wxDouble d=1.0,
         wxDouble tx=0.0, wxDouble ty=0.0);
 
-    // gets the component valuess of the matrix
+    // gets the component values of the matrix
     virtual void Get(wxDouble* a=NULL, wxDouble* b=NULL,  wxDouble* c=NULL,
                      wxDouble* d=NULL, wxDouble* tx=NULL, wxDouble* ty=NULL) const;
 
@@ -274,12 +280,18 @@ extern WXDLLIMPEXP_DATA_CORE(wxGraphicsMatrix) wxNullGraphicsMatrix;
 // and how they are spread out in a gradient
 // ----------------------------------------------------------------------------
 
+// gcc 9 gives a nonsensical warning about implicitly generated move ctor not
+// throwing but not being noexcept, suppress it.
+#if wxCHECK_GCC_VERSION(9, 1) && !wxCHECK_GCC_VERSION(10, 0)
+wxGCC_WARNING_SUPPRESS(noexcept)
+#endif
+
 // Describes a single gradient stop.
 class wxGraphicsGradientStop
 {
 public:
     wxGraphicsGradientStop(wxColour col = wxTransparentColour,
-                           float pos = 0.)
+                           float pos = 0.0f)
         : m_col(col),
           m_pos(pos)
     {
@@ -305,6 +317,10 @@ private:
     // Its starting position: 0 is the beginning and 1 is the end.
     float m_pos;
 };
+
+#if wxCHECK_GCC_VERSION(9, 1) && !wxCHECK_GCC_VERSION(10, 0)
+wxGCC_WARNING_RESTORE(noexcept)
+#endif
 
 // A collection of gradient stops ordered by their positions (from lowest to
 // highest). The first stop (index 0, position 0.0) is always the starting
@@ -371,11 +387,11 @@ public:
     wxGraphicsPenInfo& Width(wxDouble width)
     { m_width = width; return *this; }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxColour& c1, const wxColour& c2,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_LINEAR;
         m_x1 = x1;
         m_y1 = y1;
@@ -384,14 +400,14 @@ public:
         m_stops.SetStartColour(c1);
         m_stops.SetEndColour(c2);
         m_matrix = matrix;
-        return *this; 
-    }                                      
+        return *this;
+    }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_LINEAR;
         m_x1 = x1;
         m_y1 = y1;
@@ -399,42 +415,42 @@ public:
         m_y2 = y2;
         m_stops = stops;
         m_matrix = matrix;
-        return *this; 
+        return *this;
     }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, wxDouble radius, 
+                   wxDouble endX, wxDouble endY, wxDouble radius,
                    const wxColour& oColor, const wxColour& cColor,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_RADIAL;
         m_x1 = startX;
-        m_y1 = startY; 
-        m_x2 = endX; 
+        m_y1 = startY;
+        m_x2 = endX;
         m_y2 = endY;
         m_radius = radius;
         m_stops.SetStartColour(oColor);
         m_stops.SetEndColour(cColor);
         m_matrix = matrix;
-        return *this; 
-    }                                      
+        return *this;
+    }
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, 
+                   wxDouble endX, wxDouble endY,
                    wxDouble radius, const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix)
-    { 
+    {
         m_gradientType = wxGRADIENT_RADIAL;
-        m_x1 = startX; 
-        m_y1 = startY; 
-        m_x2 = endX; 
+        m_x1 = startX;
+        m_y1 = startY;
+        m_x2 = endX;
         m_y2 = endY;
         m_radius = radius;
         m_stops = stops;
         m_matrix = matrix;
-        return *this; 
+        return *this;
     }
 
     // Accessors
@@ -729,6 +745,28 @@ public:
     // returns the resolution of the graphics context in device points per inch
     virtual void GetDPI( wxDouble* dpiX, wxDouble* dpiY) const;
 
+    wxSize FromDIP(const wxSize& sz) const;
+    wxPoint FromDIP(const wxPoint& pt) const
+    {
+        const wxSize sz = FromDIP(wxSize(pt.x, pt.y));
+        return wxPoint(sz.x, sz.y);
+    }
+    int FromDIP(int d) const
+    {
+        return FromDIP(wxSize(d, 0)).x;
+    }
+
+    wxSize ToDIP(const wxSize& sz) const;
+    wxPoint ToDIP(const wxPoint& pt) const
+    {
+        const wxSize sz = ToDIP(wxSize(pt.x, pt.y));
+        return wxPoint(sz.x, sz.y);
+    }
+    int ToDIP(int d) const
+    {
+        return ToDIP(wxSize(d, 0)).x;
+    }
+
 #if 0
     // sets the current alpha on this context
     virtual void SetAlpha( wxDouble alpha );
@@ -866,7 +904,15 @@ public:
     virtual void EnableOffset(bool enable = true);
 
     void DisableOffset() { EnableOffset(false); }
-    bool OffsetEnabled() { return m_enableOffset; }
+    bool OffsetEnabled() const { return m_enableOffset; }
+
+    void SetContentScaleFactor(double contentScaleFactor);
+    double GetContentScaleFactor() const { return m_contentScaleFactor; }
+
+#ifdef __WXMSW__
+    virtual WXHDC GetNativeHDC() = 0;
+    virtual void ReleaseNativeHDC(WXHDC hdc) = 0;
+#endif
 
 protected:
     // These fields must be initialized in the derived class ctors.
@@ -902,6 +948,7 @@ private:
     // Create() or the associated window of the wxDC this context was created
     // from.
     wxWindow* const m_window;
+    double m_contentScaleFactor;
 
     wxDECLARE_NO_COPY_CLASS(wxGraphicsContext);
     wxDECLARE_ABSTRACT_CLASS(wxGraphicsContext);

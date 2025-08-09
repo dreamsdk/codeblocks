@@ -673,7 +673,7 @@ static void gtk_menu_nolight_callback( GtkWidget *widget, wxMenu *menu )
     if (!menu->IsEnabled(id))
         return;
 
-    wxMenuEvent event( wxEVT_MENU_HIGHLIGHT, -1, menu );
+    wxMenuEvent event( wxEVT_MENU_HIGHLIGHT, wxID_NONE, menu );
     event.SetEventObject( menu );
 
     wxEvtHandler* handler = menu->GetEventHandler();
@@ -978,7 +978,7 @@ bool wxMenu::GtkAppend(wxMenuItem *mitem, int pos)
     else if (mitem->GetBitmap().IsOk())
     {
         text = mitem->wxMenuItemBase::GetItemLabel();
-        const wxBitmap *bitmap = &mitem->GetBitmap();
+        const wxBitmap bitmap = mitem->GetBitmap();
 
         // TODO
         wxUnusedVar(bitmap);

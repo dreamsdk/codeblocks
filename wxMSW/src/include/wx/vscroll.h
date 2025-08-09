@@ -133,7 +133,7 @@ public:
     void HandleOnMouseWheel(wxMouseEvent& event);
 #endif // wxUSE_MOUSEWHEEL
 
-    // these functions must be overidden in the derived class to return
+    // these functions must be overridden in the derived class to return
     // orientation specific data (e.g. the width for vertically scrolling
     // derivatives in the case of GetOrientationTargetSize())
     virtual int GetOrientationTargetSize() const = 0;
@@ -618,7 +618,7 @@ protected:
     // OnGetLineHeight instead (backwards compatible name)
     // note that we don't need to forward OnGetUnitSize() as it is already
     // forwarded to OnGetRowHeight() in wxVarVScrollHelper
-    virtual wxCoord OnGetRowHeight(size_t n) const;
+    virtual wxCoord OnGetRowHeight(size_t n) const wxOVERRIDE;
 
     // this function doesn't have to be overridden but it may be useful to do
     // it if calculating the lines heights is a relatively expensive operation
@@ -638,7 +638,7 @@ protected:
 
     // forwards the calls from base class pure virtual function to pure virtual
     // OnGetLinesHint instead (backwards compatible name)
-    void OnGetRowsHeightHint(size_t rowMin, size_t rowMax) const;
+    void OnGetRowsHeightHint(size_t rowMin, size_t rowMax) const wxOVERRIDE;
 };
 
 #else // !WXWIN_COMPATIBILITY_2_8
@@ -694,7 +694,7 @@ public:
                       const wxPoint& pos = wxDefaultPosition,
                       const wxSize& size = wxDefaultSize,
                       long style = 0,
-                      const wxString& name = wxPanelNameStr)
+                      const wxString& name = wxASCII_STR(wxPanelNameStr))
     : wxVarVScrollLegacyAdaptor(this)
     {
         (void)Create(parent, id, pos, size, style, name);
@@ -709,7 +709,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxPanelNameStr)
+                const wxString& name = wxASCII_STR(wxPanelNameStr))
     {
         return wxPanel::Create(parent, id, pos, size, style | wxVSCROLL, name);
     }
@@ -770,7 +770,7 @@ public:
                       const wxPoint& pos = wxDefaultPosition,
                       const wxSize& size = wxDefaultSize,
                       long style = 0,
-                      const wxString& name = wxPanelNameStr)
+                      const wxString& name = wxASCII_STR(wxPanelNameStr))
         : wxVarHScrollHelper(this)
     {
         (void)Create(parent, id, pos, size, style, name);
@@ -785,7 +785,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxPanelNameStr)
+                const wxString& name = wxASCII_STR(wxPanelNameStr))
     {
         return wxPanel::Create(parent, id, pos, size, style | wxHSCROLL, name);
     }
@@ -833,7 +833,7 @@ public:
                        const wxPoint& pos = wxDefaultPosition,
                        const wxSize& size = wxDefaultSize,
                        long style = 0,
-                       const wxString& name = wxPanelNameStr)
+                       const wxString& name = wxASCII_STR(wxPanelNameStr))
         : wxPanel(),
           wxVarHVScrollHelper(this)
     {
@@ -849,7 +849,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
-                const wxString& name = wxPanelNameStr)
+                const wxString& name = wxASCII_STR(wxPanelNameStr))
     {
         return wxPanel::Create(parent, id, pos, size,
                                style | wxVSCROLL | wxHSCROLL, name);

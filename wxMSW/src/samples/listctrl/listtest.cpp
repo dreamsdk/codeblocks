@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #include "wx/wx.h"
@@ -71,13 +68,14 @@ const wxChar *SMALL_VIRTUAL_VIEW_ITEMS[][2] =
 static const int NUM_ICONS = 9;
 
 int wxCALLBACK
-MyCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr WXUNUSED(sortData))
+MyCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData)
 {
+    bool ascending = (sortData == 1);
     // inverse the order
     if (item1 < item2)
-        return 1;
+        return ascending ? -1 : 1;
     if (item1 > item2)
-        return -1;
+        return ascending ? 1 : -1;
 
     return 0;
 }
@@ -137,6 +135,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(LIST_SET_FG_COL, MyFrame::OnSetFgColour)
     EVT_MENU(LIST_SET_BG_COL, MyFrame::OnSetBgColour)
     EVT_MENU(LIST_ROW_LINES, MyFrame::OnSetRowLines)
+    EVT_MENU(LIST_ROW_LINES_ON_BLANK, MyFrame::OnSetRowLinesOnBlank)
     EVT_MENU(LIST_CUSTOM_HEADER_ATTR, MyFrame::OnCustomHeaderAttr)
     EVT_MENU(LIST_TOGGLE_MULTI_SEL, MyFrame::OnToggleMultiSel)
     EVT_MENU(LIST_SHOW_COL_INFO, MyFrame::OnShowColInfo)
@@ -152,9 +151,6 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(LIST_TOGGLE_HEADER, MyFrame::OnToggleHeader)
     EVT_MENU(LIST_TOGGLE_BELL, MyFrame::OnToggleBell)
     EVT_MENU(LIST_CHECKVISIBILITY, MyFrame::OnCheckVisibility)
-#ifdef __WXOSX__
-    EVT_MENU(LIST_MAC_USE_GENERIC, MyFrame::OnToggleMacUseGeneric)
-#endif // __WXOSX__
     EVT_MENU(LIST_FIND, MyFrame::OnFind)
     EVT_MENU(LIST_TOGGLE_CHECKBOX, MyFrame::OnToggleItemCheckBox)
     EVT_MENU(LIST_GET_CHECKBOX, MyFrame::OnGetItemCheckBox)
@@ -168,6 +164,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_UPDATE_UI(LIST_TOGGLE_CHECKBOXES, MyFrame::OnUpdateToggleCheckBoxes)
     EVT_UPDATE_UI(LIST_TOGGLE_HEADER, MyFrame::OnUpdateToggleHeader)
     EVT_UPDATE_UI(LIST_ROW_LINES, MyFrame::OnUpdateRowLines)
+    EVT_UPDATE_UI(LIST_ROW_LINES_ON_BLANK, MyFrame::OnUpdateUIEnableInReport)
 wxEND_EVENT_TABLE()
 
 // My frame constructor
@@ -182,35 +179,32 @@ MyFrame::MyFrame(const wxString& title)
     // Give it an icon
     SetIcon(wxICON(sample));
 
-    // Make an image list containing large icons
-    m_imageListNormal = new wxImageList(32, 32, true);
-    m_imageListSmall = new wxImageList(16, 16, true);
-
+    // Fill vectors containing normal and small icons.
 #ifdef wxHAS_IMAGES_IN_RESOURCES
-    m_imageListNormal->Add( wxIcon("icon1", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon2", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon3", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon4", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon5", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon6", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon7", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon8", wxBITMAP_TYPE_ICO_RESOURCE) );
-    m_imageListNormal->Add( wxIcon("icon9", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon1", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon2", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon3", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon4", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon5", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon6", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon7", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon8", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesNormal.push_back( wxIcon("icon9", wxBITMAP_TYPE_ICO_RESOURCE) );
 
-    m_imageListSmall->Add( wxIcon("iconsmall", wxBITMAP_TYPE_ICO_RESOURCE) );
+    m_imagesSmall.push_back( wxIcon("iconsmall", wxBITMAP_TYPE_ICO_RESOURCE, 16, 16) );
 
 #else
-    m_imageListNormal->Add( wxIcon( toolbrai_xpm ) );
-    m_imageListNormal->Add( wxIcon( toolchar_xpm ) );
-    m_imageListNormal->Add( wxIcon( tooldata_xpm ) );
-    m_imageListNormal->Add( wxIcon( toolnote_xpm ) );
-    m_imageListNormal->Add( wxIcon( tooltodo_xpm ) );
-    m_imageListNormal->Add( wxIcon( toolchec_xpm ) );
-    m_imageListNormal->Add( wxIcon( toolgame_xpm ) );
-    m_imageListNormal->Add( wxIcon( tooltime_xpm ) );
-    m_imageListNormal->Add( wxIcon( toolword_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolbrai_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolchar_xpm ) );
+    m_imagesNormal.push_back( wxIcon( tooldata_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolnote_xpm ) );
+    m_imagesNormal.push_back( wxIcon( tooltodo_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolchec_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolgame_xpm ) );
+    m_imagesNormal.push_back( wxIcon( tooltime_xpm ) );
+    m_imagesNormal.push_back( wxIcon( toolword_xpm ) );
 
-    m_imageListSmall->Add( wxIcon( small1_xpm) );
+    m_imagesSmall.push_back( wxIcon( small1_xpm) );
 #endif
 
     // Make a menubar
@@ -230,10 +224,6 @@ MyFrame::MyFrame(const wxString& title)
     menuView->Append(LIST_SMALL_VIRTUAL_VIEW, "Small virtual vie&w\tF8");
     menuView->AppendSeparator();
     menuView->Append(LIST_SET_ITEMS_COUNT, "Set &number of items");
-#ifdef __WXOSX__
-    menuView->AppendSeparator();
-    menuView->AppendCheckItem(LIST_MAC_USE_GENERIC, "Mac: Use Generic Control");
-#endif
 
     wxMenu *menuList = new wxMenu;
     menuList->Append(LIST_GOTO, "&Go to item #3\tCtrl-3");
@@ -280,6 +270,7 @@ MyFrame::MyFrame(const wxString& title)
     menuCol->Append(LIST_SET_FG_COL, "&Foreground colour...");
     menuCol->Append(LIST_SET_BG_COL, "&Background colour...");
     menuCol->AppendCheckItem(LIST_ROW_LINES, "Alternating colours");
+    menuCol->AppendCheckItem(LIST_ROW_LINES_ON_BLANK, "Extend to whole window");
     menuCol->AppendCheckItem(LIST_CUSTOM_HEADER_ATTR, "&Custom header attributes");
 
     wxMenuBar *menubar = new wxMenuBar;
@@ -319,9 +310,6 @@ MyFrame::MyFrame(const wxString& title)
 MyFrame::~MyFrame()
 {
     delete wxLog::SetActiveTarget(m_logOld);
-
-    delete m_imageListNormal;
-    delete m_imageListSmall;
 }
 
 bool MyFrame::CheckNonVirtual() const
@@ -391,17 +379,14 @@ void MyFrame::OnCheckVisibility(wxCommandEvent& WXUNUSED(event))
         wxLogMessage( "Line 9 is not visible" );
 }
 
-#ifdef __WXOSX__
-
-void MyFrame::OnToggleMacUseGeneric(wxCommandEvent& event)
-{
-    wxSystemOptions::SetOption("mac.listctrl.always_use_generic", event.IsChecked());
-}
-
-#endif // __WXOSX__
-
 void MyFrame::OnGoTo(wxCommandEvent& WXUNUSED(event))
 {
+    if ( m_listCtrl->IsEmpty() )
+    {
+        wxLogMessage("Attempt go to item #3 when list is empty");
+        return;
+    }
+
     long index = 3;
     m_listCtrl->SetItemState(index, wxLIST_STATE_FOCUSED, wxLIST_STATE_FOCUSED);
 
@@ -426,7 +411,14 @@ void MyFrame::OnFocusLast(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::OnToggleFirstSel(wxCommandEvent& WXUNUSED(event))
 {
-    m_listCtrl->SetItemState(0, (~m_listCtrl->GetItemState(0, wxLIST_STATE_SELECTED) ) & wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+    if ( !m_listCtrl->IsEmpty() )
+    {
+        m_listCtrl->SetItemState(0, (~m_listCtrl->GetItemState(0, wxLIST_STATE_SELECTED) ) & wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+    }
+    else
+    {
+        wxLogMessage("Attempt toggle first item when list is empty");
+    }
 }
 
 void MyFrame::OnDeselectAll(wxCommandEvent& WXUNUSED(event))
@@ -510,6 +502,7 @@ void MyFrame::RecreateList(long flags, bool withText)
     }
 
     GetMenuBar()->Check(LIST_ROW_LINES, false);
+    GetMenuBar()->Check(LIST_ROW_LINES_ON_BLANK, false);
 
     m_logWindow->Clear();
 }
@@ -534,7 +527,7 @@ void MyFrame::OnReportView(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::InitWithReportItems()
 {
-    m_listCtrl->SetImageList(m_imageListSmall, wxIMAGE_LIST_SMALL);
+    m_listCtrl->SetSmallImages(m_imagesSmall);
 
     // note that under MSW for SetColumnWidth() to work we need to create the
     // items with images initially even if we specify dummy image id
@@ -550,6 +543,15 @@ void MyFrame::InitWithReportItems()
     itemCol.SetText("Column 3 (auto size including header)");
     itemCol.SetAlign(wxLIST_FORMAT_RIGHT);
     m_listCtrl->InsertColumn(2, itemCol);
+
+    if ( m_numListItems <= 0 )
+    {
+        m_listCtrl->SetColumnWidth( 0, 100 );
+        m_listCtrl->SetColumnWidth( 1, wxLIST_AUTOSIZE );
+        m_listCtrl->SetColumnWidth( 2, wxLIST_AUTOSIZE_USEHEADER );
+
+        return;
+    }
 
     // to speed up inserting we hide the control temporarily
     m_listCtrl->Hide();
@@ -571,25 +573,38 @@ void MyFrame::InitWithReportItems()
     item.SetTextColour(*wxRED);
     m_listCtrl->SetItem( item );
 
-    item.m_itemId = 2;
-    item.SetTextColour(*wxGREEN);
-    m_listCtrl->SetItem( item );
-    item.m_itemId = 4;
-    item.SetTextColour(*wxLIGHT_GREY);
-    item.SetFont(*wxITALIC_FONT);
-    item.SetBackgroundColour(*wxRED);
-    m_listCtrl->SetItem( item );
+    if ( m_numListItems > 2 )
+    {
+        item.m_itemId = 2;
+        item.SetTextColour(*wxGREEN);
+        m_listCtrl->SetItem( item );
+    }
+
+    if ( m_numListItems > 4 )
+    {
+        item.m_itemId = 4;
+        item.SetTextColour(*wxLIGHT_GREY);
+        item.SetFont(*wxITALIC_FONT);
+        item.SetBackgroundColour(*wxRED);
+        m_listCtrl->SetItem( item );
+    }
 
     m_listCtrl->SetTextColour(*wxBLUE);
 
-    // Set images in columns
-    m_listCtrl->SetItemColumnImage(1, 1, 0);
+    if ( m_numListItems > 1 )
+    {
+        // Set images in columns
+        m_listCtrl->SetItemColumnImage(1, 1, 0);
+    }
 
-    wxListItem info;
-    info.SetImage(0);
-    info.SetId(3);
-    info.SetColumn(2);
-    m_listCtrl->SetItem(info);
+    if ( m_numListItems > 3 )
+    {
+        wxListItem info;
+        info.SetImage(0);
+        info.SetId(3);
+        info.SetColumn(2);
+        m_listCtrl->SetItem(info);
+    }
 
     // test SetItemFont too
     m_listCtrl->SetItemFont(0, *wxITALIC_FONT);
@@ -601,8 +616,8 @@ void MyFrame::InitWithReportItems()
 
 void MyFrame::InitWithIconItems(bool withText, bool sameIcon)
 {
-    m_listCtrl->SetImageList(m_imageListNormal, wxIMAGE_LIST_NORMAL);
-    m_listCtrl->SetImageList(m_imageListSmall, wxIMAGE_LIST_SMALL);
+    m_listCtrl->SetNormalImages(m_imagesNormal);
+    m_listCtrl->SetSmallImages(m_imagesSmall);
 
     for ( int i = 0; i < NUM_ICONS; i++ )
     {
@@ -614,6 +629,8 @@ void MyFrame::InitWithIconItems(bool withText, bool sameIcon)
             wxString label;
             if ( !(i % 5) )
                 label.Printf("Longer label %d", i);
+            else if ( !(i % 4) )
+                label.Printf("#%d", i);
             else
                 label.Printf("Label %d", i);
 
@@ -685,7 +702,7 @@ void MyFrame::OnSetItemsCount(wxCommandEvent& WXUNUSED(event))
 
 void MyFrame::InitWithVirtualItems()
 {
-    m_listCtrl->SetImageList(m_imageListSmall, wxIMAGE_LIST_SMALL);
+    m_listCtrl->SetSmallImages(m_imagesSmall);
 
     if ( m_smallVirtual )
     {
@@ -707,11 +724,15 @@ void MyFrame::OnSort(wxCommandEvent& WXUNUSED(event))
 {
     wxStopWatch sw;
 
-    m_listCtrl->SortItems(MyCompareFunction, 0);
+    static bool sortAsc = false;
+    sortAsc = !sortAsc;
+    m_listCtrl->SortItems(MyCompareFunction, sortAsc);
 
     m_logWindow->WriteText(wxString::Format("Sorting %d items took %ld ms\n",
                                             m_listCtrl->GetItemCount(),
                                             sw.Time()));
+
+    m_listCtrl->ShowSortIndicator(0, sortAsc);
 }
 
 void MyFrame::OnFind(wxCommandEvent& WXUNUSED(event))
@@ -908,6 +929,11 @@ void MyFrame::OnSetRowLines(wxCommandEvent& event)
     m_listCtrl->Refresh();
 }
 
+void MyFrame::OnSetRowLinesOnBlank(wxCommandEvent& event)
+{
+    m_listCtrl->ExtendRulesAndAlternateColour(event.IsChecked());
+}
+
 void MyFrame::OnCustomHeaderAttr(wxCommandEvent& event)
 {
     wxItemAttr attr;
@@ -1059,6 +1085,18 @@ void MyListCtrl::SetColumnImage(int col, int image)
 void MyListCtrl::OnColClick(wxListEvent& event)
 {
     int col = event.GetColumn();
+
+    if ( col == -1 )
+    {
+        return; // clicked outside any column.
+    }
+
+    // sort on item data (SetItemData)
+    const bool ascending = GetUpdatedAscendingSortIndicator(col);
+    if ( SortItems(MyCompareFunction, ascending) )
+    {
+        ShowSortIndicator(col, ascending);
+    }
 
     // set or unset image
     static bool x = false;
@@ -1221,7 +1259,8 @@ void MyListCtrl::OnChecked(wxListEvent& event)
 
     if ( IsVirtual() )
     {
-        CheckItem(event.GetIndex(), true);
+        m_checked.SelectItem(event.GetIndex(), true);
+        RefreshItem(event.GetIndex());
     }
 
     event.Skip();
@@ -1233,7 +1272,8 @@ void MyListCtrl::OnUnChecked(wxListEvent& event)
 
     if ( IsVirtual() )
     {
-        CheckItem(event.GetIndex(), false);
+        m_checked.SelectItem(event.GetIndex(), false);
+        RefreshItem(event.GetIndex());
     }
 
     event.Skip();
@@ -1389,15 +1429,16 @@ void MyListCtrl::OnListKeyDown(wxListEvent& event)
                 }
                 else // !virtual
                 {
-                    InsertItemInReportView(event.GetIndex());
+                    int idx = event.GetIndex();
+                    if ( idx == -1 )
+                        idx = 0;
+                    InsertItemInReportView(idx);
                 }
                 break;
             }
             wxFALLTHROUGH;
 
         default:
-            LogEvent(event, "OnListKeyDown");
-
             event.Skip();
     }
 }
@@ -1429,13 +1470,12 @@ void MyListCtrl::OnRightClick(wxMouseEvent& event)
         case wxLIST_HITTEST_NOWHERE: where = "nowhere near"; break;
         case wxLIST_HITTEST_ONITEMICON: where = "on icon of"; break;
         case wxLIST_HITTEST_ONITEMLABEL: where = "on label of"; break;
-        case wxLIST_HITTEST_ONITEMRIGHT: where = "right on"; break;
         case wxLIST_HITTEST_TOLEFT: where = "to the left of"; break;
         case wxLIST_HITTEST_TORIGHT: where = "to the right of"; break;
         default: where = "not clear exactly where on"; break;
     }
 
-    wxLogMessage("Right double click %s item %ld, subitem %ld",
+    wxLogMessage("Right click %s item %ld, subitem %ld",
                  where, item, subitem);
 }
 
@@ -1458,34 +1498,9 @@ wxString MyListCtrl::OnGetItemText(long item, long column) const
     }
 }
 
-void MyListCtrl::CheckItem(long item, bool check)
-{
-    if ( IsVirtual() )
-    {
-        m_checked.SelectItem(item, check);
-        RefreshItem(item);
-    }
-    else
-    {
-        wxListCtrl::CheckItem(item, check);
-    }
-}
-
-bool MyListCtrl::IsItemChecked(long item) const
-{
-    if ( IsVirtual() )
-    {
-        return m_checked.IsSelected(item);
-    }
-    else
-    {
-        return wxListCtrl::IsItemChecked(item);
-    }
-}
-
 bool MyListCtrl::OnGetItemIsChecked(long item) const
 {
-    return IsItemChecked(item);
+    return m_checked.IsSelected(item);
 }
 
 int MyListCtrl::OnGetItemColumnImage(long item, long column) const

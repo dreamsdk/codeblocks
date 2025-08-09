@@ -334,8 +334,8 @@ public:
 
     wxPGCommonValue( const wxString& label, wxPGCellRenderer* renderer )
         : m_label(label)
+        , m_renderer(renderer)
     {
-        m_renderer = renderer;
         renderer->IncRef();
     }
     virtual ~wxPGCommonValue()
@@ -408,9 +408,9 @@ class WXDLLIMPEXP_PROPGRID wxPGValidationInfo
     friend class wxPropertyGrid;
 public:
     wxPGValidationInfo()
+        : m_failureBehavior(0)
+        , m_isFailing(false)
     {
-        m_failureBehavior = 0;
-        m_isFailing = false;
     }
 
     ~wxPGValidationInfo()
@@ -593,7 +593,7 @@ enum wxPG_INTERNAL_FLAGS
 // used to do the very same thing, but it hasn't been updated for a while
 // and it is currently deprecated.
 // Please note that most member functions are inherited and as such not
-// documented heree. This means you will probably also want to read
+// documented here. This means you will probably also want to read
 // wxPropertyGridInterface class reference.
 // To process input from a propertygrid control, use these event handler
 // macros to direct input to member functions that take a wxPropertyGridEvent
@@ -672,7 +672,7 @@ public:
                     const wxPoint& pos = wxDefaultPosition,
                     const wxSize& size = wxDefaultSize,
                     long style = wxPG_DEFAULT_STYLE,
-                    const wxString& name = wxPropertyGridNameStr );
+                    const wxString& name = wxASCII_STR(wxPropertyGridNameStr) );
 
     // Destructor
     virtual ~wxPropertyGrid();
@@ -741,7 +741,7 @@ public:
                  const wxPoint& pos = wxDefaultPosition,
                  const wxSize& size = wxDefaultSize,
                  long style = wxPG_DEFAULT_STYLE,
-                 const wxString& name = wxPropertyGridNameStr );
+                 const wxString& name = wxASCII_STR(wxPropertyGridNameStr) );
 
     // Call when editor widget's contents is modified.
     // For example, this is called when changes text in wxTextCtrl (used in
@@ -1155,6 +1155,7 @@ public:
 
     const wxPGCommonValue* GetCommonValue( unsigned int i ) const
     {
+        wxCHECK_MSG( i < m_commonValues.size(), NULL, "Invalid item index" );
         return m_commonValues[i];
     }
 
@@ -1167,7 +1168,7 @@ public:
     // Returns label of given common value.
     wxString GetCommonValueLabel( unsigned int i ) const
     {
-        wxASSERT( GetCommonValue(i) );
+        wxCHECK_MSG( i < m_commonValues.size(), wxString(), "Invalid item index" );
         return GetCommonValue(i)->GetLabel();
     }
 
@@ -1233,6 +1234,9 @@ public:
 
     // Checks system screen design used for laying out various dialogs.
     static bool IsSmallScreen();
+
+    // Returns rescaled bitmap
+    static wxBitmap RescaleBitmap(const wxBitmap& srcBmp, double scaleX, double scaleY);
 
     // Returns rectangle that fully contains properties between and including
     // p1 and p2. Rectangle is in virtual scrolled window coordinates.
@@ -1309,7 +1313,7 @@ public:
 
     // Returns true if given event is from first of an array of buttons
     // (as can be in case when wxPGMultiButton is used).
-    bool IsMainButtonEvent( const wxEvent& event )
+    bool IsMainButtonEvent( const wxEvent& event ) const
     {
         return (event.GetEventType() == wxEVT_BUTTON)
                     && (m_wndSecId == event.GetId());
@@ -1453,12 +1457,13 @@ protected:
     virtual void DoThaw() wxOVERRIDE;
 
     virtual wxSize DoGetBestSize() const wxOVERRIDE;
+    virtual void DoEnable(bool enable) wxOVERRIDE;
 
 #ifndef wxPG_ICON_WIDTH
-    wxBitmap            *m_expandbmp, *m_collbmp;
+    wxBitmap            m_expandbmp, m_collbmp;
 #endif
 
-    wxCursor            *m_cursorSizeWE;
+    wxCursor            m_cursorSizeWE;
 
     // wxWindow pointers to editor control(s).
     wxWindow            *m_wndEditor;
@@ -1587,11 +1592,12 @@ protected:
     // 0 = not dragging, 1 = drag just started, 2 = drag in progress
     unsigned char       m_dragStatus;
 
+#if WXWIN_COMPATIBILITY_3_0
+    // Unused variable.
     // 0 = margin, 1 = label, 2 = value.
     unsigned char       m_mouseSide;
 
     // True when editor control is focused.
-#if WXWIN_COMPATIBILITY_3_0
     unsigned char       m_editorFocused;
 #else
     bool                m_editorFocused;
@@ -1630,8 +1636,8 @@ protected:
     int                 m_clearThisMany;
 #endif
 
-    // Mouse is hovering over this column (index)
-    unsigned int        m_colHover;
+    // Mouse is hovering over this column (index), -1 for margin
+    int                 m_colHover;
 
     // pointer to property that has mouse hovering
     wxPGProperty*       m_propHover;
@@ -1833,7 +1839,7 @@ protected:
         return KeyEventToActions(event, NULL);
     }
 
-    void ImprovedClientToScreen( int* px, int* py );
+    void ImprovedClientToScreen( int* px, int* py ) const;
 
     // Called by focus event handlers. newFocused is the window that becomes
     // focused.
@@ -2035,7 +2041,7 @@ public:
 
     wxPGProperty* GetMainParent() const
     {
-        wxASSERT(m_property);
+        wxCHECK_MSG(m_property, NULL, "Property cannot be NULL");
         return m_property->GetMainParent();
     }
 
@@ -2079,9 +2085,7 @@ public:
     // the property grid has been deleted.
     wxVariant GetPropertyValue() const
     {
-        if ( m_validationInfo )
-            return m_validationInfo->GetValue();
-        return m_value;
+        return m_validationInfo ? m_validationInfo->GetValue() : m_value;
     }
 
     // Returns value of the associated property.
@@ -2150,7 +2154,6 @@ public:
     }
 
 private:
-    void Init();
     void OnPropertyGridSet();
     wxDECLARE_DYNAMIC_CLASS(wxPropertyGridEvent);
 

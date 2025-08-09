@@ -146,7 +146,7 @@ public:
     /**
        Sets the default action for drag and drop.  Use wxDragMove or
        wxDragCopy to set default action to move or copy and use wxDragNone
-       (default) to set default action specified by initialization of draging
+       (default) to set default action specified by initialization of dragging
        (see wxDropSource::DoDragDrop())
     */
     void SetDefaultAction(wxDragResult action);
@@ -429,7 +429,7 @@ public:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_gdi */
-//@{
+///@{
 
 /**
     This macro creates either a cursor (MSW) or an icon (elsewhere) with the
@@ -451,5 +451,5 @@ public:
 */
 bool wxIsDragResultOk(wxDragResult res);
 
-//@}
+///@}
 

@@ -17,19 +17,14 @@ public:
     // creation
     // --------
 
-    wxTextCtrl() { Init(); }
+    wxTextCtrl();
     wxTextCtrl(wxWindow *parent, wxWindowID id,
                const wxString& value = wxEmptyString,
                const wxPoint& pos = wxDefaultPosition,
                const wxSize& size = wxDefaultSize,
                long style = 0,
                const wxValidator& validator = wxDefaultValidator,
-               const wxString& name = wxTextCtrlNameStr)
-    {
-        Init();
-
-        Create(parent, id, value, pos, size, style, validator, name);
-    }
+               const wxString& name = wxASCII_STR(wxTextCtrlNameStr));
     virtual ~wxTextCtrl();
 
     bool Create(wxWindow *parent, wxWindowID id,
@@ -38,7 +33,7 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxTextCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxTextCtrlNameStr));
 
     // overridden wxTextEntry methods
     // ------------------------------
@@ -64,6 +59,9 @@ public:
 
     virtual void Redo() wxOVERRIDE;
     virtual bool CanRedo() const wxOVERRIDE;
+#if wxUSE_RICHEDIT
+    virtual void EmptyUndoBuffer() wxOVERRIDE;
+#endif // wxUSE_RICHEDIT
 
     virtual void SetInsertionPointEnd() wxOVERRIDE;
     virtual long GetInsertionPoint() const wxOVERRIDE;
@@ -107,6 +105,14 @@ public:
     // Caret handling (Windows only)
     bool ShowNativeCaret(bool show = true);
     bool HideNativeCaret() { return ShowNativeCaret(false); }
+
+#if wxUSE_RICHEDIT && wxUSE_SPELLCHECK
+    // Use native spelling and grammar checking functions.
+    // This is only available in wxTE_RICH2 controls.
+    virtual bool EnableProofCheck(const wxTextProofOptions& options
+                                    = wxTextProofOptions::Default()) wxOVERRIDE;
+    virtual wxTextProofOptions GetProofCheckOptions() const wxOVERRIDE;
+#endif // wxUSE_RICHEDIT && wxUSE_SPELLCHECK
 
     // Implementation from now on
     // --------------------------
@@ -241,8 +247,13 @@ protected:
     virtual wxSize DoGetBestSize() const wxOVERRIDE;
     virtual wxSize DoGetSizeFromTextSize(int xlen, int ylen = -1) const wxOVERRIDE;
 
+    virtual void DoMoveWindow(int x, int y, int width, int height) wxOVERRIDE;
+
 #if wxUSE_RICHEDIT
     virtual void MSWUpdateFontOnDPIChange(const wxSize& newDPI) wxOVERRIDE;
+
+    // Apply m_richDPIscale zoom to rich control.
+    void MSWSetRichZoom();
 
     // Apply the character-related parts of wxTextAttr to the given selection
     // or the entire control if start == end == -1.
@@ -265,6 +276,10 @@ protected:
     // (although not directly: 1 is for 1.0, 2 is for either 2.0 or 3.0 as we
     // can't nor really need to distinguish between them and 4 is for 4.1)
     int m_verRichEdit;
+
+    // Rich text controls need temporary scaling when they are created on a
+    // display with non-system DPI.
+    float m_richDPIscale;
 #endif // wxUSE_RICHEDIT
 
     // number of EN_UPDATE events sent by Windows when we change the controls
@@ -284,6 +299,13 @@ private:
 #if wxUSE_OLE
     virtual void MSWProcessSpecialKey(wxKeyEvent& event) wxOVERRIDE;
 #endif // wxUSE_OLE
+
+    // Do we need to handle Ctrl+Backspace ourselves?
+    bool MSWNeedsToHandleCtrlBackspace() const;
+
+    // Delete backwards until the start of the previous word before caret in a
+    // way compatible with the standard MSW Ctrl+Backspace shortcut.
+    void MSWDeleteWordBack();
 
     void OnKeyDown(wxKeyEvent& event);
 

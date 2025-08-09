@@ -17,21 +17,6 @@
 /* the installation location prefix from configure */
 #undef wxINSTALL_PREFIX
 
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef gid_t
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef mode_t
-
-/* Define to `long' if <sys/types.h> doesn't define.  */
-#undef off_t
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef pid_t
-
-/* Define to `unsigned' if <sys/types.h> doesn't define.  */
-#undef size_t
-
 /* Define if ssize_t type is available.  */
 #undef HAVE_SSIZE_T
 
@@ -42,9 +27,6 @@
 #ifndef _GNU_SOURCE
 #undef _GNU_SOURCE
 #endif
-
-/* Define to `int' if <sys/types.h> doesn't define.  */
-#undef uid_t
 
 /* Define if your processor stores words with the most significant
    byte first (like Motorola and SPARC, unlike Intel and VAX).  */
@@ -182,8 +164,6 @@
     #define wxUSE_UNICODE 0
 #endif
 
-#define wxUSE_WCHAR_T 0
-
 
 #define wxUSE_EXCEPTIONS    0
 
@@ -235,6 +215,8 @@
 #define wxUSE_FSVOLUME      0
 
 #define wxUSE_SECRETSTORE   0
+
+#define wxUSE_SPELLCHECK 0
 
 #define wxUSE_STDPATHS      0
 
@@ -296,6 +278,16 @@
 
 #define wxUSE_MIMETYPE 0
 
+#define wxUSE_WEBREQUEST 0
+
+#ifdef __APPLE__
+#define wxUSE_WEBREQUEST_URLSESSION wxUSE_WEBREQUEST
+#else
+#define wxUSE_WEBREQUEST_URLSESSION 0
+#endif
+
+#define wxUSE_WEBREQUEST_CURL 0
+
 #define wxUSE_PROTOCOL 0
 
 #define wxUSE_PROTOCOL_FILE 0
@@ -320,7 +312,7 @@
 
 #define wxUSE_XRC       0
 
-#define wxUSE_XML       wxUSE_XRC
+#define wxUSE_XML       0
 
 #define wxUSE_AUI       0
 
@@ -337,6 +329,10 @@
 #else
 #define wxUSE_WEBVIEW_IE 0
 #endif
+
+#define wxUSE_WEBVIEW_EDGE 0
+
+#define wxUSE_WEBVIEW_EDGE_STATIC 0
 
 #if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
 #define wxUSE_WEBVIEW_WEBKIT 0
@@ -413,6 +409,8 @@
 #define wxUSE_TREECTRL      0
 #define wxUSE_TREELISTCTRL  0
 
+#define wxUSE_NATIVE_DATAVIEWCTRL 0
+
 #define wxUSE_STATUSBAR    0
 
 #define wxUSE_NATIVE_STATUSBAR        0
@@ -467,6 +465,8 @@
 
 #define wxUSE_MENUS         0
 
+#define wxUSE_MENUBAR       0
+
 #define wxUSE_NOTIFICATION_MESSAGE 0
 
 #define wxUSE_PREFERENCES_EDITOR 0
@@ -500,7 +500,6 @@
 
 #define wxUSE_DIRDLG 0
 
-
 #define wxUSE_FILEDLG       0
 
 #define wxUSE_FINDREPLDLG       0
@@ -518,6 +517,8 @@
 #define wxUSE_TEXTDLG 0
 
 #define wxUSE_NUMBERDLG 0
+
+#define wxUSE_CREDENTIALDLG 0
 
 #define wxUSE_SPLASH 0
 
@@ -544,6 +545,8 @@
 #define wxUSE_HTML          0
 
 #define wxUSE_GLCANVAS       0
+
+#define wxUSE_GLCANVAS_EGL   0
 
 #define wxUSE_RICHTEXT       0
 
@@ -596,7 +599,6 @@
 #define wxUSE_DC_TRANSFORM_MATRIX 0
 
 
-
 #define wxUSE_IMAGE         0
 
 #define wxUSE_LIBPNG        0
@@ -604,6 +606,10 @@
 #define wxUSE_LIBJPEG       0
 
 #define wxUSE_LIBTIFF       0
+
+#define wxUSE_NANOSVG       0
+
+#define wxUSE_NANOSVG_EXTERNAL 0
 
 #define wxUSE_TGA           0
 
@@ -628,7 +634,6 @@
 #define wxUSE_THEME_METAL   0
 #define wxUSE_THEME_MONO    0
 #define wxUSE_THEME_WIN32   0
-
 
 /* --- end common options --- */
 
@@ -673,6 +678,8 @@
 #else
     #define wxUSE_GRAPHICS_DIRECT2D 0
 #endif
+
+#define wxUSE_WEBREQUEST_WINHTTP 0
 
 
 #define wxUSE_OLE           0
@@ -737,11 +744,6 @@
  * Define if va_list type is an array
  */
 #undef VA_LIST_IS_ARRAY
-
-/*
- * Define if the compiler supports variadic macros
- */
-#undef HAVE_VARIADIC_MACROS
 
 /*
  * Define if you don't want variadic macros to be used even if they are
@@ -819,12 +821,6 @@
  */
 #undef HAVE_BROKEN_LIBSTDCXX_VISIBILITY
 
-/*
- * The built-in regex supports advanced REs in additional to POSIX's basic
- * and extended. Your system regex probably won't support this, and in this
- * case WX_NO_REGEX_ADVANCED should be defined.
- */
-#undef WX_NO_REGEX_ADVANCED
 /*
  * On GNU systems use re_search instead of regexec, since the latter does a
  * strlen on the search text affecting the performance of some operations.
@@ -983,14 +979,8 @@
 /* Define if you have pthread_attr_setstacksize */
 #undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
 
-/* Define if you have shl_load() */
-#undef HAVE_SHL_LOAD
-
 /* Define if you have snprintf() */
 #undef HAVE_SNPRINTF
-
-/* Define if you have snprintf() declaration in the header */
-#undef HAVE_SNPRINTF_DECL
 
 /* Define if you have a snprintf() which supports positional arguments
    (defined in the unix98 standard) */
@@ -1014,9 +1004,6 @@
 /* Define if you have vsnprintf() */
 #undef HAVE_VSNPRINTF
 
-/* Define if you have vsnprintf() declaration in the header */
-#undef HAVE_VSNPRINTF_DECL
-
 /* Define if you have a _broken_ vsnprintf() declaration in the header,
  * with 'char*' for the 3rd parameter instead of 'const char*' */
 #undef HAVE_BROKEN_VSNPRINTF_DECL
@@ -1027,9 +1014,6 @@
 
 /* Define if you have vsscanf() */
 #undef HAVE_VSSCANF
-
-/* Define if you have vsscanf() declaration in the header */
-#undef HAVE_VSSCANF_DECL
 
 /* Define if you have usleep() */
 #undef HAVE_USLEEP
@@ -1087,9 +1071,6 @@
 
 /* Define if wchar_t is distinct type in your compiler. */
 #undef wxWCHAR_T_IS_REAL_TYPE
-
-/* Define if you have the dlerror function.  */
-#undef HAVE_DLERROR
 
 /* Define if you have the dladdr function.  */
 #undef HAVE_DLADDR
@@ -1202,9 +1183,6 @@
 /* Define if you have the <langinfo.h> header file.  */
 #undef HAVE_LANGINFO_H
 
-/* Define if you have the <w32api.h> header file (mingw,cygwin).  */
-#undef HAVE_W32API_H
-
 /* Define if you have the <sys/soundcard.h> header file. */
 #undef HAVE_SYS_SOUNDCARD_H
 
@@ -1267,6 +1245,9 @@
 
 /* Define if setpriority() is available. */
 #undef HAVE_SETPRIORITY
+
+/* Define if xkbcommon is available */
+#undef HAVE_XKBCOMMON
 
 /* Define if xlocale.h header file exists. */
 #undef HAVE_XLOCALE_H

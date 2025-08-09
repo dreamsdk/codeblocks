@@ -11,9 +11,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MIMETYPE && wxUSE_FILE
 
@@ -37,6 +34,7 @@
 #include "wx/filename.h"
 #include "wx/app.h"
 #include "wx/apptrait.h"
+#include "wx/uilocale.h"
 
 // other standard headers
 #include <ctype.h>
@@ -61,7 +59,7 @@ public:
 
        size_t size = file.Length();
        wxCharBuffer buffer( size );
-       file.Read( (void*) (const char*) buffer, size );
+       file.Read(buffer.data(), size);
 
        // Check for valid UTF-8 here?
        wxString all = wxString::FromUTF8( buffer, size );
@@ -132,7 +130,7 @@ private:
 // Read a XDG *.desktop file of type 'Application'
 void wxMimeTypesManagerImpl::LoadXDGApp(const wxString& filename)
 {
-    wxLogTrace(TRACE_MIME, wxT("loading XDG file %s"), filename.c_str());
+    wxLogTrace(TRACE_MIME, wxT("loading XDG file %s"), filename);
 
     wxMimeTextFile file(filename);
     if ( !file.Open() )
@@ -158,9 +156,8 @@ void wxMimeTypesManagerImpl::LoadXDGApp(const wxString& filename)
     wxString nameapp;
     nIndex = wxNOT_FOUND;
 #if wxUSE_INTL // try "Name[locale name]" first
-    wxLocale *locale = wxGetLocale();
-    if ( locale )
-        nIndex = file.pIndexOf(wxT("Name[")+locale->GetName()+wxT("]="));
+    if ( wxUILocale::GetCurrent().IsSupported() )
+        nIndex = file.pIndexOf(wxT("Name[")+wxUILocale::GetCurrent().GetName()+wxT("]="));
 #endif // wxUSE_INTL
     if(nIndex == wxNOT_FOUND)
         nIndex = file.pIndexOf( wxT("Name=") );
@@ -171,8 +168,8 @@ void wxMimeTypesManagerImpl::LoadXDGApp(const wxString& filename)
     wxString nameicon, namemini;
     nIndex = wxNOT_FOUND;
 #if wxUSE_INTL // try "Icon[locale name]" first
-    if ( locale )
-        nIndex = file.pIndexOf(wxT("Icon[")+locale->GetName()+wxT("]="));
+    if ( wxUILocale::GetCurrent().IsSupported() )
+        nIndex = file.pIndexOf(wxT("Icon[")+wxUILocale::GetCurrent().GetName()+wxT("]="));
 #endif // wxUSE_INTL
     if(nIndex == wxNOT_FOUND)
         nIndex = file.pIndexOf( wxT("Icon=") );
@@ -246,7 +243,7 @@ void wxMimeTypesManagerImpl::LoadXDGGlobs(const wxString& filename)
     if ( !wxFileName::FileExists(filename) )
         return;
 
-    wxLogTrace(TRACE_MIME, wxT("loading XDG globs file from %s"), filename.c_str());
+    wxLogTrace(TRACE_MIME, wxT("loading XDG globs file from %s"), filename);
 
     wxMimeTextFile file(filename);
     if ( !file.Open() )
@@ -320,7 +317,7 @@ size_t wxFileTypeImpl::GetAllCommands(wxArrayString *verbs,
                                   wxArrayString *commands,
                                   const wxFileType::MessageParameters& params) const
 {
-    wxString vrb, cmd, sTmp;
+    wxString vrb, cmd;
     size_t count = 0;
     wxMimeTypeCommands * sPairs;
 
@@ -954,7 +951,7 @@ wxFileType * wxMimeTypesManagerImpl::GetFileTypeFromMimeType(const wxString& mim
 
 wxString wxMimeTypesManagerImpl::GetCommand(const wxString & verb, size_t nIndex) const
 {
-    wxString command, testcmd, sV, sTmp;
+    wxString command, sV, sTmp;
     sV = verb + wxT("=");
 
     // list of verb = command pairs for this mimetype

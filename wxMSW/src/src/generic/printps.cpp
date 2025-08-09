@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // ============================================================================
 // declarations
@@ -41,6 +38,7 @@
 #include "wx/generic/prntdlgg.h"
 #include "wx/progdlg.h"
 #include "wx/paper.h"
+#include "wx/display.h"
 
 #include <stdlib.h>
 
@@ -100,7 +98,7 @@ bool wxPostScriptPrinter::Print(wxWindow *parent, wxPrintout *printout, bool pro
     // May have pressed cancel.
     if (!dc || !dc->IsOk())
     {
-        if (dc) delete dc;
+        delete dc;
         sm_lastError = wxPRINTER_ERROR;
         return false;
     }
@@ -315,7 +313,7 @@ void wxPostScriptPrintPreview::DetermineScaling()
     {
         int resolution = 600;  // TODO, this is correct, but get this from wxPSDC somehow
 
-        const wxSize screenPPI = wxGetDisplayPPI();
+        const wxSize screenPPI = wxDisplay::GetStdPPI();
         int logPPIScreenX = screenPPI.GetWidth();
         int logPPIScreenY = screenPPI.GetHeight();
         int logPPIPrinterX = resolution;
@@ -325,8 +323,8 @@ void wxPostScriptPrintPreview::DetermineScaling()
         m_previewPrintout->SetPPIPrinter( logPPIPrinterX, logPPIPrinterY );
 
         wxSize sizeDevUnits(paper->GetSizeDeviceUnits());
-        sizeDevUnits.x = (wxCoord)((float)sizeDevUnits.x * resolution / 72.0);
-        sizeDevUnits.y = (wxCoord)((float)sizeDevUnits.y * resolution / 72.0);
+        sizeDevUnits.x = sizeDevUnits.x * resolution / 72;
+        sizeDevUnits.y = sizeDevUnits.y * resolution / 72;
         wxSize sizeTenthsMM(paper->GetSize());
         wxSize sizeMM(sizeTenthsMM.x / 10, sizeTenthsMM.y / 10);
 

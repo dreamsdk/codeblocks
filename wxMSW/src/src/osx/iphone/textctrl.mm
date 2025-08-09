@@ -426,7 +426,7 @@ void wxUITextViewControl::WriteText(const wxString& str)
     [m_textView setText:subst];
 }
 
-void wxUITextViewControl::SetFont( const wxFont & font , const wxColour& WXUNUSED(foreground) , long WXUNUSED(windowStyle), bool WXUNUSED(ignoreBlack) )
+void wxUITextViewControl::SetFont(const wxFont & font)
 {
     if ([m_textView respondsToSelector:@selector(setFont:)])
         [m_textView setFont: font.OSXGetUIFont()];
@@ -498,10 +498,6 @@ void wxUITextViewControl::SetStyle(long start,
             [storage addAttribute:NSForegroundColorAttributeName value:fgcolor.OSXGetNSColor() range:range];
 */
     }
-}
-
-void wxUITextViewControl::CheckSpelling(bool check)
-{
 }
 
 wxSize wxUITextViewControl::GetBestSize() const

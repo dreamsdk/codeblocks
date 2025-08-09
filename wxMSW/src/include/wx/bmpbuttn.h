@@ -18,7 +18,7 @@
 #include "wx/button.h"
 
 // FIXME: right now only wxMSW, wxGTK and wxOSX implement bitmap support in wxButton
-//        itself, this shouldn't be used for the other platforms neither
+//        itself, this shouldn't be used for the other platforms either
 //        when all of them do it
 #if (defined(__WXMSW__) || defined(__WXGTK20__) || defined(__WXOSX__) || defined(__WXQT__)) && !defined(__WXUNIVERSAL__)
     #define wxHAS_BUTTON_BITMAP
@@ -65,11 +65,25 @@ public:
                                 validator, name);
     }
 
+    /*
+        Derived classes also need to declare, but not define, as it's done in
+        common code in bmpbtncmn.cpp, the following function:
+
+    bool CreateCloseButton(wxWindow* parent,
+                           wxWindowID winid,
+                           const wxString& name = wxString());
+
+        which is used by NewCloseButton(), and, as Create(), must be
+        called on default-constructed wxBitmapButton object.
+    */
+
     // Special creation function for a standard "Close" bitmap. It allows to
     // simply create a close button with the image appropriate for the current
     // platform.
-    static wxBitmapButton* NewCloseButton(wxWindow* parent, wxWindowID winid);
-
+    static wxBitmapButton*
+    NewCloseButton(wxWindow* parent,
+                   wxWindowID winid,
+                   const wxString& name = wxString());
 
     // set/get the margins around the button
     virtual void SetMargins(int x, int y)
@@ -85,8 +99,9 @@ protected:
     // function called when any of the bitmaps changes
     virtual void OnSetBitmap() { InvalidateBestSize(); Refresh(); }
 
-    virtual wxBitmap DoGetBitmap(State which) const { return m_bitmaps[which]; }
-    virtual void DoSetBitmap(const wxBitmap& bitmap, State which)
+    virtual wxBitmap DoGetBitmap(State which) const
+        { return m_bitmaps[which].GetBitmap(wxDefaultSize); }
+    virtual void DoSetBitmap(const wxBitmapBundle& bitmap, State which)
         { m_bitmaps[which] = bitmap; OnSetBitmap(); }
 
     virtual wxSize DoGetBitmapMargins() const
@@ -100,8 +115,8 @@ protected:
         m_marginY = y;
     }
 
-    // the bitmaps for various states
-    wxBitmap m_bitmaps[State_Max];
+    // the bitmap bundles for various states
+    wxBitmapBundle m_bitmaps[State_Max];
 
     // the margins around the bitmap
     int m_marginX,

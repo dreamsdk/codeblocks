@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/utils.h"
@@ -71,12 +68,6 @@
     #include <cygwin/version.h>
 #endif  //GNUWIN32
 
-#ifdef __BORLANDC__ // Please someone tell me which version of Borland needs
-                    // this (3.1 I believe) and how to test for it.
-                    // If this works for Borland 4.0 as well, then no worries.
-    #include <dir.h>
-#endif
-
 // VZ: there is some code using NetXXX() functions to get the full user name:
 //     I don't think it's a good idea because they don't work under Win95 and
 //     seem to return the same as wxGetUserId() under NT. If you really want
@@ -95,10 +86,38 @@
     #include <shellapi.h>
 #endif
 
+#ifndef PROCESSOR_ARCHITECTURE_ARM64
+#define PROCESSOR_ARCHITECTURE_ARM64 12
+#endif
+
+#ifndef IMAGE_FILE_MACHINE_ARM64
+#define IMAGE_FILE_MACHINE_ARM64 0xAA64
+#endif
+
+#ifndef IMAGE_FILE_MACHINE_ARMNT
+#define IMAGE_FILE_MACHINE_ARMNT 0x01c4
+#endif
+
 #include <errno.h>
 
 // For wxKillAllChildren
 #include <tlhelp32.h>
+
+// For wxCmpNatural()
+#include <shlwapi.h>
+
+// In some distributions of MinGW32, this function is exported in the library,
+// but not declared in shlwapi.h. Therefore we declare it here.
+#if defined( __MINGW32_TOOLCHAIN__ )
+    extern "C" __declspec(dllimport) int WINAPI StrCmpLogicalW(LPCWSTR psz1, LPCWSTR psz2);
+#endif
+
+// For MSVC we can also link the library containing StrCmpLogicalW()
+// directly from here, for the other compilers this needs to be done at
+// makefiles level.
+#ifdef __VISUALC__
+    #pragma comment(lib, "shlwapi")
+#endif
 
 // ----------------------------------------------------------------------------
 // constants
@@ -448,13 +467,8 @@ bool wxGetDiskSpace(const wxString& path,
     }
 
     // ULARGE_INTEGER is a union of a 64 bit value and a struct containing
-    // two 32 bit fields which may be or may be not named - try to make it
-    // compile in all cases
-#if defined(__BORLANDC__) && !defined(_ANONYMOUS_STRUCT)
-    #define UL(ul) ul.u
-#else // anon union
+    // two 32 bit fields which may be or may be not named
     #define UL(ul) ul
-#endif
     if ( pTotal )
     {
 #if wxUSE_LONGLONG
@@ -545,6 +559,24 @@ bool wxUnsetEnv(const wxString& variable)
 }
 
 // ----------------------------------------------------------------------------
+// security
+// ----------------------------------------------------------------------------
+
+void wxSecureZeroMemory(void* v, size_t n)
+{
+#if defined(__MINGW32__)
+    // A generic implementation based on the example at:
+    // http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1381.pdf
+    int c = 0;
+    volatile unsigned char *p = reinterpret_cast<unsigned char *>(v);
+    while ( n-- )
+        *p++ = c;
+#else
+    RtlSecureZeroMemory(v, n);
+#endif
+}
+
+// ----------------------------------------------------------------------------
 // process management
 // ----------------------------------------------------------------------------
 
@@ -583,12 +615,12 @@ BOOL CALLBACK wxEnumFindByPidProc(HWND hwnd, LPARAM lParam)
     return TRUE;
 }
 
-int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc);
+int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc, int flags);
 
 int wxKill(long pid, wxSignal sig, wxKillError *krc, int flags)
 {
     if (flags & wxKILL_CHILDREN)
-        wxKillAllChildren(pid, sig, krc);
+        wxKillAllChildren(pid, sig, krc, flags);
 
     // get the process handle to operate on
     DWORD dwAccess = PROCESS_QUERY_INFORMATION | SYNCHRONIZE;
@@ -768,7 +800,7 @@ bool wxMSWActivatePID(long pid)
 }
 
 // By John Skiff
-int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
+int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc, int flags)
 {
     if (krc)
         *krc = wxKILL_OK;
@@ -798,7 +830,7 @@ int wxKillAllChildren(long pid, wxSignal sig, wxKillError *krc)
 
     do {
         if (pe.th32ParentProcessID == (DWORD) pid) {
-            if (wxKill(pe.th32ProcessID, sig, krc))
+            if (wxKill(pe.th32ProcessID, sig, krc, flags))
                 return -1;
         }
     } while (::Process32Next (hProcessSnap, &pe));
@@ -812,9 +844,9 @@ bool wxShell(const wxString& command)
 {
     wxString cmd;
 
-    wxChar *shell = wxGetenv(wxT("COMSPEC"));
+    const wxChar* shell = wxGetenv(wxT("COMSPEC"));
     if ( !shell )
-        shell = (wxChar*) wxT("\\COMMAND.COM");
+        shell = wxT("\\COMMAND.COM");
 
     if ( !command )
     {
@@ -963,7 +995,7 @@ wxLoadUserResource(const void **outData,
 
     *outLen = ::SizeofResource(instance, hResource);
 
-    // Notice that we do not need to call neither UnlockResource() (which is
+    // Notice that we need to call neither UnlockResource() (which is
     // obsolete in Win32) nor GlobalFree() (resources are freed on process
     // termination only)
 
@@ -1065,8 +1097,18 @@ int wxIsWindowsServer()
     return -1;
 }
 
+static const int WINDOWS_SERVER2016_BUILD = 14393;
+static const int WINDOWS_SERVER2019_BUILD = 17763;
+static const int WINDOWS_SERVER2022_BUILD = 20348;
+static const int WINDOWS_SERVER2025_BUILD = 26100;
+
+// Windows 11 uses the same version as Windows 10 but its build numbers start
+// from 22000, which provides a way to test for it.
+static const int FIRST_WINDOWS11_BUILD = 22000;
+
 } // anonymous namespace
 
+// When adding a new version, update also the table in wxGetOsVersion() docs.
 wxString wxGetOsDescription()
 {
     wxString str;
@@ -1128,15 +1170,37 @@ wxString wxGetOsDescription()
                     break;
 
                 case 10:
-                    str = wxIsWindowsServer() == 1
-                            ? "Windows Server 2016"
+                    if ( wxIsWindowsServer() == 1 )
+                    {
+                        switch ( info.dwBuildNumber )
+                        {
+                            case WINDOWS_SERVER2016_BUILD:
+                                str = "Windows Server 2016";
+                                break;
+                            case WINDOWS_SERVER2019_BUILD:
+                                str = "Windows Server 2019";
+                                break;
+                            case WINDOWS_SERVER2022_BUILD:
+                                str = "Windows Server 2022";
+                                break;
+                            case WINDOWS_SERVER2025_BUILD:
+                                str = "Windows Server 2025";
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        str = info.dwBuildNumber >= FIRST_WINDOWS11_BUILD
+                            ? "Windows 11"
                             : "Windows 10";
+                    }
                     break;
             }
 
             if ( str.empty() )
             {
-                str.Printf("Windows %lu.%lu",
+                str.Printf("Windows %s%lu.%lu",
+                           wxIsWindowsServer() == 1 ? "Server " : "",
                            info.dwMajorVersion,
                            info.dwMinorVersion);
             }
@@ -1236,8 +1300,9 @@ bool wxCheckOsVersion(int majorVsn, int minorVsn, int microVsn)
 wxWinVersion wxGetWinVersion()
 {
     int verMaj,
-        verMin;
-    switch ( wxGetOsVersion(&verMaj, &verMin) )
+        verMin,
+        build;
+    switch ( wxGetOsVersion(&verMaj, &verMin, &build) )
     {
         case wxOS_WINDOWS_NT:
             switch ( verMaj )
@@ -1272,7 +1337,8 @@ wxWinVersion wxGetWinVersion()
                     break;
 
                 case 10:
-                    return wxWinVersion_10;
+                    return build >= FIRST_WINDOWS11_BUILD ? wxWinVersion_11
+                                                          : wxWinVersion_10;
             }
             break;
         default:
@@ -1282,6 +1348,90 @@ wxWinVersion wxGetWinVersion()
 
     return wxWinVersion_Unknown;
 }
+
+wxString wxGetCpuArchitecureNameFromImageType(USHORT imageType)
+{
+    switch (imageType)
+    {
+    case IMAGE_FILE_MACHINE_I386:
+        return "x86";
+    case IMAGE_FILE_MACHINE_AMD64:
+        return "x64";
+    case IMAGE_FILE_MACHINE_IA64:
+        return "Itanium";
+    case IMAGE_FILE_MACHINE_ARMNT:
+        return "arm";
+    case IMAGE_FILE_MACHINE_ARM64:
+        return "arm64";
+    default:
+        return wxString();
+    }
+}
+
+// Wrap IsWow64Process2 API (Available since Win10 1511)
+BOOL wxIsWow64Process2(HANDLE hProcess, USHORT* pProcessMachine, USHORT* pNativeMachine)
+{
+#if wxUSE_DYNLIB_CLASS // Win32
+
+    typedef BOOL(WINAPI *IsWow64Process2_t)(HANDLE, USHORT *, USHORT *);
+
+    wxDynamicLibrary dllKernel32("kernel32.dll");
+    IsWow64Process2_t pfnIsWow64Process2 =
+        (IsWow64Process2_t)dllKernel32.RawGetSymbol("IsWow64Process2");
+
+    if (pfnIsWow64Process2)
+        return pfnIsWow64Process2(hProcess, pProcessMachine, pNativeMachine);
+    else
+#endif
+    return FALSE;
+}
+
+wxString wxGetCpuArchitectureName()
+{
+    // Try to get the current active CPU architecture via IsWow64Process2()
+    // first, fallback to GetNativeSystemInfo() otherwise
+    USHORT machine;
+    if (wxIsWow64Process2(::GetCurrentProcess(), &machine, NULL) &&
+        machine != IMAGE_FILE_MACHINE_UNKNOWN)
+        return wxGetCpuArchitecureNameFromImageType(machine);
+
+    SYSTEM_INFO si;
+    GetNativeSystemInfo(&si);
+
+    switch (si.wProcessorArchitecture)
+    {
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        return "x64";
+
+    case PROCESSOR_ARCHITECTURE_ARM:
+        return "ARM";
+
+    case PROCESSOR_ARCHITECTURE_ARM64:
+        return "ARM64";
+
+    case PROCESSOR_ARCHITECTURE_IA64:
+        return "Itanium";
+
+    case PROCESSOR_ARCHITECTURE_INTEL:
+        return "x86";
+
+    case PROCESSOR_ARCHITECTURE_UNKNOWN:
+    default:
+        return wxString();
+    }
+}
+
+wxString wxGetNativeCpuArchitectureName()
+{
+    USHORT machine;
+    USHORT nativeMachine;
+    if (wxIsWow64Process2(::GetCurrentProcess(), &machine, &nativeMachine))
+        return wxGetCpuArchitecureNameFromImageType(nativeMachine);
+    else
+        return wxGetCpuArchitectureName();
+}
+
+
 
 // ----------------------------------------------------------------------------
 // sleep functions
@@ -1564,4 +1714,9 @@ wxCreateHiddenWindow(LPCTSTR *pclassname, LPCTSTR classname, WNDPROC wndproc)
     }
 
     return hwnd;
+}
+
+int wxCMPFUNC_CONV wxCmpNatural(const wxString& s1, const wxString& s2)
+{
+    return StrCmpLogicalW(s1.wc_str(), s2.wc_str());
 }

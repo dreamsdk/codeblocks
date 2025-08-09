@@ -41,13 +41,13 @@ public:
         If there is a current point set, an initial line segment will be added
         to the path to connect the current point to the beginning of the arc.
     */
-    //@{
+    ///@{
     virtual void AddArc(wxDouble x, wxDouble y, wxDouble r,
                         wxDouble startAngle, wxDouble endAngle,
                         bool clockwise);
     void AddArc(const wxPoint2DDouble& c, wxDouble r,
                 wxDouble startAngle, wxDouble endAngle, bool clockwise);
-    //@}
+    ///@}
 
     /**
         Adds an arc (of a circle with radius @a r) that is tangent
@@ -302,7 +302,23 @@ enum wxCompositionMode
     wxCOMPOSITION_DEST_OUT, /**< @e R = @e D*(1 - @e Sa) */
     wxCOMPOSITION_DEST_ATOP, /**< @e R = @e S*(1 - @e Da) + @e D*@e Sa */
     wxCOMPOSITION_XOR, /**< @e R = @e S*(1 - @e Da) + @e D*(1 - @e Sa) */
-    wxCOMPOSITION_ADD  /**< @e R = @e S + @e D */
+    wxCOMPOSITION_ADD, /**< @e R = @e S + @e D */
+
+    /**
+        Result is the absolute value of the difference between the source and
+        the destination.
+
+        This composition mode is only supported by Cairo and CoreGraphics-based
+        implementations, i.e. in wxGTK and wxOSX only (unless Cairo-based
+        renderer is explicitly under the other platforms).
+
+        When the source colour is white, this mode can be used to emulate
+        wxINVERT logical function of wxDC, i.e. drawing using this mode twice
+        restores the original contents.
+
+        @since 3.2.0
+     */
+    wxCOMPOSITION_DIFF
 };
 
 /**
@@ -804,8 +820,8 @@ public:
         @param y
             The y coordinate position to draw the text at.
         @param angle
-            The angle relative to the (default) horizontal direction to draw
-            the string.
+            The angle, in radians, relative to the (default) horizontal
+            direction to draw the string.
     */
     void DrawText(const wxString& str, wxDouble x, wxDouble y, wxDouble angle);
 
@@ -833,8 +849,8 @@ public:
         @param y
             The y coordinate position to draw the text at.
         @param angle
-            The angle relative to the (default) horizontal direction to draw
-            the string.
+            The angle, in radians, relative to the (default) horizontal
+            direction to draw the string.
         @param backgroundBrush
             Brush to fill the text with.
     */
@@ -1154,7 +1170,57 @@ public:
     virtual void EnableOffset(bool enable = true);
 
     void DisableOffset();
-    bool OffsetEnabled();
+    bool OffsetEnabled() const;
+
+    /**
+        Convert DPI-independent pixel values to the value in pixels appropriate
+        for the graphics context.
+
+        See wxWindow::FromDIP(const wxSize& sz) and wxDC::FromDIP(const wxSize& sz)
+        for more info about converting device independent pixel values.
+
+        @since 3.1.7
+     */
+    wxSize FromDIP(const wxSize& sz) const;
+
+    /// @overload
+    wxPoint FromDIP(const wxPoint& pt) const;
+
+    /**
+        Convert DPI-independent value in pixels to the value in pixels
+        appropriate for the graphics context.
+
+        This is the same as FromDIP(const wxSize& sz) overload, but assumes
+        that the resolution is the same in horizontal and vertical directions.
+
+        @since 3.1.7
+     */
+    int FromDIP(int d) const;
+
+    /**
+        Convert pixel values of the current graphics context to DPI-independent
+        pixel values.
+
+        See wxWindow::ToDIP(const wxSize& sz) and wxDC::ToDIP(const wxSize& sz)
+        for more info about converting device independent pixel values.
+
+        @since 3.1.7
+     */
+    wxSize ToDIP(const wxSize& sz) const;
+
+    /// @overload
+    wxPoint ToDIP(const wxPoint& pt) const;
+
+    /**
+        Convert pixel values of the current graphics context to DPI-independent
+        pixel values.
+
+        This is the same as ToDIP(const wxSize& sz) overload, but assumes
+        that the resolution is the same in horizontal and vertical directions.
+
+        @since 3.1.7
+     */
+    int ToDIP(int d) const;
 
     /** @}
     */
@@ -1235,10 +1301,10 @@ public:
     /**
         Add a new stop.
     */
-    //@{
+    ///@{
     void Add(const wxGraphicsGradientStop& stop);
     void Add(wxColour col, float pos);
-    //@}
+    ///@}
 
     /**
         Returns the stop at the given index.
@@ -1327,7 +1393,7 @@ public:
         Creates wxGraphicsBitmap from a native bitmap handle.
 
         @a bitmap meaning is platform-dependent. Currently it's a GDI+ @c
-        Bitmap pointer under MSW, @c CGImage pointer under OS X or a @c
+        Bitmap pointer under MSW, @c CGImage pointer under macOS or a @c
         cairo_surface_t pointer when using Cairo under any platform.
 
         Notice that this method takes ownership of @a bitmap, i.e. it will be
@@ -1478,7 +1544,7 @@ public:
         and end colours could be specified.
 
         The ability to apply a transformation matrix to the gradient was added in 3.1.3
-        
+
     */
     virtual wxGraphicsBrush CreateLinearGradientBrush(wxDouble x1,
                                                       wxDouble y1,
@@ -1534,7 +1600,7 @@ public:
 
         Currently this function returns "gdiplus" for Windows GDI+
         implementation, "direct2d" for Windows Direct2D implementation,
-        "cairo" for Cairo implementation and "cg" for OS X CoreGraphics
+        "cairo" for Cairo implementation and "cg" for macOS CoreGraphics
         implementation.
 
         @remarks The string returned by this method is not user-readable and is
@@ -1559,7 +1625,7 @@ public:
     virtual void GetVersion(int* major, int* minor = NULL, int* micro=NULL) const = 0;
 
     /**
-        Returns the default renderer on this platform. On OS X this is the Core
+        Returns the default renderer on this platform. On macOS this is the Core
         Graphics (a.k.a. Quartz 2D) renderer, on MSW the GDIPlus renderer, and
         on GTK we currently default to the Cairo renderer.
     */
@@ -1660,25 +1726,25 @@ public:
 
     wxGraphicsPenInfo& Cap(wxPenCap cap);
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxColour& c1, const wxColour& c2,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     LinearGradient(wxDouble x1, wxDouble y1, wxDouble x2, wxDouble y2,
                    const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, wxDouble radius, 
+                   wxDouble endX, wxDouble endY, wxDouble radius,
                    const wxColour& oColor, const wxColour& cColor,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
 
-    wxGraphicsPenInfo& 
+    wxGraphicsPenInfo&
     RadialGradient(wxDouble startX, wxDouble startY,
-                   wxDouble endX, wxDouble endY, 
+                   wxDouble endX, wxDouble endY,
                    wxDouble radius, const wxGraphicsGradientStops& stops,
                    const wxGraphicsMatrix& matrix = wxNullGraphicsMatrix);
 
@@ -1690,7 +1756,7 @@ public:
     int GetDashes(wxDash **ptr);
     int GetDashCount() const;
     wxDash* GetDash() const;
-    bool IsTransparent() const;    
+    bool IsTransparent() const;
     wxDouble GetWidth() const;
     wxGradientType GetGradientType() const;
     wxDouble GetX1() const;

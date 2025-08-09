@@ -13,9 +13,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // For all others, include the necessary headers (this file is usually all you
 // need because it includes almost all "standard" wxWidgets headers)
@@ -40,7 +37,7 @@
 
 //-----------------------------------------------------------------------------
 
-#include "wx/xrc/xmlres.h"              // XRC XML resouces
+#include "wx/xrc/xmlres.h"              // XRC XML resources
 
 //-----------------------------------------------------------------------------
 
@@ -52,6 +49,7 @@
 #include "objrefdlg.h"
 // For functions to manipulate the corresponding controls.
 #include "wx/animate.h"
+#include "wx/generic/animate.h"
 #include "wx/infobar.h"
 #include "wx/treectrl.h"
 #include "wx/listctrl.h"
@@ -86,6 +84,7 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(XRCID("derived_tool_or_menuitem"), MyFrame::OnDerivedDialogToolOrMenuCommand)
     EVT_MENU(XRCID("controls_tool_or_menuitem"), MyFrame::OnControlsToolOrMenuCommand)
     EVT_MENU(XRCID("uncentered_tool_or_menuitem"), MyFrame::OnUncenteredToolOrMenuCommand)
+    EVT_MENU(XRCID("multiple_accels"), MyFrame::OnMultipleAccels)
     EVT_MENU(XRCID("aui_demo_tool_or_menuitem"), MyFrame::OnAuiDemoToolOrMenuCommand)
     EVT_MENU(XRCID("obj_ref_tool_or_menuitem"), MyFrame::OnObjRefToolOrMenuCommand)
     EVT_MENU(XRCID("custom_class_tool_or_menuitem"), MyFrame::OnCustomClassToolOrMenuCommand)
@@ -206,14 +205,17 @@ void MyFrame::OnAnimationCtrlPlay(wxCommandEvent& event)
 
     wxWindow *win = btn->GetParent();
     wxAnimationCtrl *ctrl = XRCCTRL(*win, "controls_animation_ctrl", wxAnimationCtrl);
+    wxGenericAnimationCtrl *generic =
+        XRCCTRL(*win, "controls_generic_animation_ctrl", wxGenericAnimationCtrl);
     if (ctrl->IsPlaying())
     {
         ctrl->Stop();
+        generic->Stop();
         btn->SetLabel("Play");
     }
     else
     {
-        if (ctrl->Play())
+        if ( ctrl->Play() && generic->Play() )
             btn->SetLabel("Stop");
         else
             wxLogError("Cannot play the animation...");
@@ -282,6 +284,26 @@ void MyFrame::OnUncenteredToolOrMenuCommand(wxCommandEvent& WXUNUSED(event))
     wxDialog dlg;
     wxXmlResource::Get()->LoadDialog(&dlg, this, "uncentered_dialog");
     dlg.ShowModal();
+}
+
+void MyFrame::OnMultipleAccels(wxCommandEvent& WXUNUSED(event))
+{
+    wxString msg;
+#if defined(__WXOSX_COCOA__)
+    wxString main = "Cmd-W";
+    wxString extra1 = "Cmd-T";
+    wxString extra2 = "Shift-Cmd-W";
+#else
+    wxString main = "Ctrl-W";
+    wxString extra1 = "Ctrl-T";
+    wxString extra2 = "Shift-Ctrl-W";
+#endif
+    msg.Printf(
+        "You can open this dialog with any of '%s' (main), '%s' or '%s' (extra) accelerators.",
+        main, extra1, extra2
+    );
+
+    wxMessageBox(msg, _("Multiple accelerators demo"), wxOK | wxICON_INFORMATION, this);
 }
 
 void MyFrame::OnAuiDemoToolOrMenuCommand(wxCommandEvent& WXUNUSED(event))

@@ -118,7 +118,7 @@ for Windows (ran from Git Bash, or any other Unix-like shell):
 Building wxGT on Android               {#qt_android}
 --------------------------
 
-Download Android Native Development Kit (NDK), tandalone Android Software
+Download Android Native Development Kit (NDK), standalone Android Software
 Development Kit (SDK), install them and perform the following instructions to
 prepare the cross-compilation tool-chain to (change NDK and other paths):
 
@@ -140,7 +140,7 @@ the android_armv5/ android_armv7/ android_x86/ pre-compiled folders to
 cross-compile for that architectures)
 
 Then, create a build directory (under the wxWidgets folder), configure for
-Andrid (disable currently unsupported/uneeded features) and run make:
+Android (disable currently unsupported/unneeded features) and run make:
 
     cd ~/src/wxWidgets
     mkdir bldqt5droid

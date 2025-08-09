@@ -37,7 +37,7 @@ public:
                      const wxString choices[] = NULL,
                      long style = 0,
                      const wxValidator& validator = wxDefaultValidator,
-                     const wxString& name = wxBitmapComboBoxNameStr)
+                     const wxString& name = wxASCII_STR(wxBitmapComboBoxNameStr))
         : wxComboBox(),
           wxBitmapComboBoxBase()
     {
@@ -55,7 +55,7 @@ public:
                      const wxArrayString& choices,
                      long style,
                      const wxValidator& validator = wxDefaultValidator,
-                     const wxString& name = wxBitmapComboBoxNameStr);
+                     const wxString& name = wxASCII_STR(wxBitmapComboBoxNameStr));
 
     bool Create(wxWindow *parent,
                 wxWindowID id,
@@ -66,7 +66,7 @@ public:
                 const wxString choices[],
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxBitmapComboBoxNameStr);
+                const wxString& name = wxASCII_STR(wxBitmapComboBoxNameStr));
 
     bool Create(wxWindow *parent,
                 wxWindowID id,
@@ -76,12 +76,12 @@ public:
                 const wxArrayString& choices,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxBitmapComboBoxNameStr);
+                const wxString& name = wxASCII_STR(wxBitmapComboBoxNameStr));
 
     virtual ~wxBitmapComboBox();
 
     // Sets the image for the given item.
-    virtual void SetItemBitmap(unsigned int n, const wxBitmap& bitmap) wxOVERRIDE;
+    virtual void SetItemBitmap(unsigned int n, const wxBitmapBundle& bitmap) wxOVERRIDE;
 
     // Returns the image of the item with the given index.
     virtual wxBitmap GetItemBitmap(unsigned int n) const wxOVERRIDE;
@@ -93,16 +93,16 @@ public:
     }
 
     // Adds item with image to the end of the combo box.
-    int Append(const wxString& item, const wxBitmap& bitmap = wxNullBitmap);
-    int Append(const wxString& item, const wxBitmap& bitmap, void *clientData);
-    int Append(const wxString& item, const wxBitmap& bitmap, wxClientData *clientData);
+    int Append(const wxString& item, const wxBitmapBundle& bitmap = wxBitmapBundle());
+    int Append(const wxString& item, const wxBitmapBundle& bitmap, void *clientData);
+    int Append(const wxString& item, const wxBitmapBundle& bitmap, wxClientData *clientData);
 
     // Inserts item with image into the list before pos. Not valid for wxCB_SORT
     // styles, use Append instead.
-    int Insert(const wxString& item, const wxBitmap& bitmap, unsigned int pos);
-    int Insert(const wxString& item, const wxBitmap& bitmap,
+    int Insert(const wxString& item, const wxBitmapBundle& bitmap, unsigned int pos);
+    int Insert(const wxString& item, const wxBitmapBundle& bitmap,
                unsigned int pos, void *clientData);
-    int Insert(const wxString& item, const wxBitmap& bitmap,
+    int Insert(const wxString& item, const wxBitmapBundle& bitmap,
                unsigned int pos, wxClientData *clientData);
 
     // Override some wxTextEntry interface.

@@ -110,7 +110,7 @@ public:
         @param size
             Initial size.
         @param choices
-            An wxArrayString with which to initialise the control.
+            A wxArrayString with which to initialise the control.
         @param style
             The window style, see wxCB_* flags.
         @param validator
@@ -217,6 +217,6 @@ public:
     /**
         Sets the bitmap for the given item.
     */
-    virtual void SetItemBitmap(unsigned int n, const wxBitmap& bitmap);
+    virtual void SetItemBitmap(unsigned int n, const wxBitmapBundle& bitmap);
 };
 

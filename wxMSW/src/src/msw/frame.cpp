@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/frame.h"
 
@@ -42,6 +39,7 @@
 #endif // WX_PRECOMP
 
 #include "wx/msw/private.h"
+#include "wx/msw/private/menu.h"
 
 #include "wx/generic/statusbr.h"
 
@@ -315,24 +313,25 @@ void wxFrame::PositionStatusBar()
     int x = 0;
 #if wxUSE_TOOLBAR
     wxToolBar * const toolbar = GetToolBar();
-    if ( toolbar && !toolbar->HasFlag(wxTB_TOP) )
+    if ( toolbar )
     {
         const wxSize sizeTB = toolbar->GetSize();
+        const int directionTB = toolbar->GetDirection();
 
-        if ( toolbar->HasFlag(wxTB_LEFT | wxTB_RIGHT) )
+        if ( toolbar->IsVertical() )
         {
-            if ( toolbar->HasFlag(wxTB_LEFT) )
+            if ( directionTB == wxTB_LEFT )
                 x -= sizeTB.x;
 
             w += sizeTB.x;
         }
-        else // wxTB_BOTTOM
+        else if ( directionTB == wxTB_BOTTOM )
         {
             // we need to position the status bar below the toolbar
             h += sizeTB.y;
         }
+        //else: no adjustments necessary for the toolbar on top
     }
-    //else: no adjustments necessary for the toolbar on top
 #endif // wxUSE_TOOLBAR
 
     // GetSize returns the height of the clientSize in which the statusbar
@@ -603,7 +602,7 @@ void wxFrame::PositionToolBar()
 
         int tx, ty, tw, th;
         toolbar->GetPosition( &tx, &ty );
-        toolbar->GetSize( &tw, &th );
+        toolbar->GetBestSize( &tw, &th );
 
         int x, y;
         if ( toolbar->HasFlag(wxTB_BOTTOM) )
@@ -709,7 +708,7 @@ void wxFrame::IconizeChildFrames(bool bIconize)
                 frame->m_wasMinimized = frame->IsIconized();
             }
 
-            // note that we shouldn't touch the hidden frames neither because
+            // note that we shouldn't touch the hidden frames either because
             // iconizing/restoring them would show them as a side effect
             if ( !frame->m_wasMinimized && frame->IsShown() )
                 frame->Iconize(bIconize);
@@ -741,6 +740,8 @@ bool wxFrame::MSWDoTranslateMessage(wxFrame *frame, WXMSG *pMsg)
     wxMenuBar *menuBar = GetMenuBar();
     if ( menuBar && menuBar->GetAcceleratorTable()->Translate(frame, pMsg) )
         return true;
+#else
+    wxUnusedVar(frame);
 #endif // wxUSE_MENUS && wxUSE_ACCEL
 
     return false;
@@ -764,7 +765,7 @@ bool wxFrame::HandleSize(int WXUNUSED(x), int WXUNUSED(y), WXUINT id)
         case SIZE_RESTORED:
         case SIZE_MAXIMIZED:
             // only do it it if we were iconized before, otherwise resizing the
-            // parent frame has a curious side effect of bringing it under it's
+            // parent frame has a curious side effect of bringing it under its
             // children
             if ( m_showCmd != SW_MINIMIZE )
                 break;
@@ -833,6 +834,58 @@ bool wxFrame::HandleCommand(WXWORD id, WXWORD cmd, WXHWND control)
     return wxFrameBase::HandleCommand(id, cmd, control);
 }
 
+bool
+HandleMenuMessage(WXLRESULT* result,
+                  wxWindow* w,
+                  WXUINT nMsg,
+                  WXWPARAM wParam,
+                  WXLPARAM lParam)
+{
+    using namespace wxMSWMenuImpl;
+
+    switch ( nMsg )
+    {
+        case WM_MENUBAR_MEASUREMENUITEM:
+            if ( MenuBarMeasureMenuItem* const measureMenuItem = (MenuBarMeasureMenuItem*)lParam )
+            {
+                // We only need to handle this message for a workaround when
+                // using non-standard DPI.
+                if ( !(w->GetDPIScaleFactor() > 1.0) )
+                    break;
+
+                MEASUREITEMSTRUCT& mis = measureMenuItem->mis;
+
+                // Just a sanity check.
+                if ( mis.CtlType != ODT_MENU )
+                    break;
+
+                HWND hwnd = GetHwndOf(w);
+
+                WinStruct<MENUBARINFO> mbi;
+                if ( !::GetMenuBarInfo(hwnd, OBJID_MENU, 0, &mbi) )
+                {
+                    wxLogLastError("GetMenuBarInfo");
+                    break;
+                }
+
+                *result = w->MSWDefWindowProc(nMsg, wParam, lParam);
+
+                // Scale the horizontal padding of menu bar menus and the
+                // vertical padding of menu items with the DPI scaling factor
+                // as Windows doesn't do it.
+                if ( mbi.hMenu == measureMenuItem->mbdm.hmenu )
+                    mis.itemWidth += w->FromDIP(14) - 14;
+                else
+                    mis.itemHeight += w->FromDIP(6) - 6;
+
+                return true;
+            }
+            break;
+    }
+
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // the window proc for wxFrame
 // ---------------------------------------------------------------------------
@@ -841,6 +894,12 @@ WXLRESULT wxFrame::MSWWindowProc(WXUINT message, WXWPARAM wParam, WXLPARAM lPara
 {
     WXLRESULT rc = 0;
     bool processed = false;
+
+    if ( GetMenuBar() &&
+          HandleMenuMessage(&rc, this, message, wParam, lParam) )
+    {
+        return rc;
+    }
 
     switch ( message )
     {
@@ -930,12 +989,13 @@ wxPoint wxFrame::GetClientAreaOrigin() const
     if ( toolbar && toolbar->IsShown() )
     {
         const wxSize sizeTB = toolbar->GetSize();
+        const int directionTB = toolbar->GetDirection();
 
-        if ( toolbar->HasFlag(wxTB_TOP) )
+        if ( directionTB == wxTB_TOP )
         {
             pt.y += sizeTB.y;
         }
-        else if ( toolbar->HasFlag(wxTB_LEFT) )
+        else if ( directionTB == wxTB_LEFT )
         {
             pt.x += sizeTB.x;
         }

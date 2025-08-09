@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/preferences.h"
 
@@ -271,8 +268,8 @@ class PrefsPageTopics : public wxPreferencesPage
 {
 public:
     virtual wxString GetName() const wxOVERRIDE { return "Topics"; }
-    virtual wxBitmap GetLargeIcon() const wxOVERRIDE
-        { return wxArtProvider::GetBitmap(wxART_HELP, wxART_TOOLBAR); }
+    virtual wxBitmapBundle GetIcon() const wxOVERRIDE
+        { return wxArtProvider::GetBitmapBundle(wxART_HELP, wxART_TOOLBAR); }
     virtual wxWindow *CreateWindow(wxWindow *parent) wxOVERRIDE
         { return new PrefsPageTopicsPanel(parent); }
 };

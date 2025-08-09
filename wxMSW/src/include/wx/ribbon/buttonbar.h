@@ -18,6 +18,7 @@
 #include "wx/ribbon/control.h"
 #include "wx/dynarray.h"
 
+class wxRibbonButtonBar;
 class wxRibbonButtonBarButtonBase;
 class wxRibbonButtonBarLayout;
 class wxRibbonButtonBarButtonInstance;
@@ -131,6 +132,7 @@ public:
     virtual wxRibbonButtonBarButtonBase *GetItem(size_t n) const;
     virtual wxRibbonButtonBarButtonBase *GetItemById(int id) const;
     virtual int GetItemId(wxRibbonButtonBarButtonBase *button) const;
+    virtual wxRect GetItemRect(int button_id) const;
 
 
     virtual bool Realize() wxOVERRIDE;
@@ -190,13 +192,6 @@ protected:
     void TryCollapseLayout(wxRibbonButtonBarLayout* original,
                      size_t first_btn, size_t* last_button,
                      wxRibbonButtonBarButtonState target_size);
-    void MakeBitmaps(wxRibbonButtonBarButtonBase* base,
-                     const wxBitmap& bitmap_large,
-                     const wxBitmap& bitmap_large_disabled,
-                     const wxBitmap& bitmap_small,
-                     const wxBitmap& bitmap_small_disabled);
-    static wxBitmap MakeResizedBitmap(const wxBitmap& original, wxSize size);
-    static wxBitmap MakeDisabledBitmap(const wxBitmap& original);
     void FetchButtonSizeInfo(wxRibbonButtonBarButtonBase* button,
         wxRibbonButtonBarButtonState size, wxDC& dc);
     virtual void UpdateWindowUI(long flags) wxOVERRIDE;
@@ -213,6 +208,9 @@ protected:
     bool m_layouts_valid;
     bool m_lock_active_state;
     bool m_show_tooltips_for_disabled;
+
+private:
+    wxRibbonBar* m_ribbonBar;
 
 #ifndef SWIG
     wxDECLARE_CLASS(wxRibbonButtonBar);

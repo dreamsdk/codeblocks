@@ -851,7 +851,7 @@ public:
                                 const wxString& falseChoice );
 
     /**
-        Set proportion of a auto-stretchable column. wxPG_SPLITTER_AUTO_CENTER
+        Set proportion of an auto-stretchable column. wxPG_SPLITTER_AUTO_CENTER
         window style needs to be used to indicate that columns are auto-
         resizable.
 
@@ -927,7 +927,7 @@ public:
     void SetPropertyCell( wxPGPropArg id,
                           int column,
                           const wxString& text = wxEmptyString,
-                          const wxBitmap& bitmap = wxNullBitmap,
+                          const wxBitmapBundle& bitmap = wxBitmapBundle(),
                           const wxColour& fgCol = wxNullColour,
                           const wxColour& bgCol = wxNullColour );
 
@@ -1047,12 +1047,12 @@ public:
     void SetPropertyHelpString( wxPGPropArg id, const wxString& helpString );
 
     /**
-        Set wxBitmap in front of the value.
+        Set wxBitmap taken from wxBitmapBundle in front of the value.
 
         @remarks Bitmap will be scaled to a size returned by
                 wxPropertyGrid::GetImageSize();
     */
-    void SetPropertyImage( wxPGPropArg id, wxBitmap& bmp );
+    void SetPropertyImage( wxPGPropArg id, wxBitmapBundle& bmp );
 
     /**
         Sets maximum length of text in property text editor.
@@ -1062,7 +1062,7 @@ public:
         @param maxLen
             Maximum number of characters of the text the user can enter in
             the text editor. If it is 0, the length is not limited and the text
-            can be as long as it is supported by the the underlying native text
+            can be as long as it is supported by the underlying native text
             control widget.
         @return
             Returns @true if maximum length was set.

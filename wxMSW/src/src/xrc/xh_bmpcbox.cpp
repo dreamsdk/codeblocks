@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC && wxUSE_BITMAPCOMBOBOX
 
@@ -50,7 +47,7 @@ wxObject *wxBitmapComboBoxXmlHandler::DoCreateResource()
         }
 
         m_combobox->Append(GetText(wxT("text")),
-                           GetBitmap(wxT("bitmap")));
+                           GetBitmapBundle(wxT("bitmap")));
 
         return m_combobox;
     }

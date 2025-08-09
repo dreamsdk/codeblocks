@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SCROLLBAR
 
@@ -1089,7 +1086,7 @@ bool wxStdScrollBarInputHandler::HandleMouse(wxInputConsumer *consumer,
         }
     }
 
-    return wxStdInputHandler::HandleMouse(consumer, event);
+    return true;
 }
 
 bool wxStdScrollBarInputHandler::HandleMouseMove(wxInputConsumer *consumer,

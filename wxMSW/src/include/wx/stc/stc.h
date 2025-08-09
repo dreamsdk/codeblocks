@@ -3056,7 +3056,7 @@ public:
     // Is the IME displayed in a window or inline?
     int GetIMEInteraction() const;
 
-    // Choose to display the the IME in a winow or inline.
+    // Choose to display the IME in a winow or inline.
     void SetIMEInteraction(int imeInteraction);
 
     // Set the symbol used for a particular marker number,
@@ -3074,7 +3074,7 @@ public:
     // Set the background colour used for a particular marker number when its folding block is selected.
     void MarkerSetBackgroundSelected(int markerNumber, const wxColour& back);
 
-    // Enable/disable highlight for current folding bloc (smallest one that contains the caret)
+    // Enable/disable highlight for current folding block (smallest one that contains the caret)
     void MarkerEnableHighlight(bool enabled);
 
     // Add a marker to a line, returning an ID which can be used to find or delete the marker.
@@ -3377,7 +3377,7 @@ public:
     // Experimental feature, currently buggy.
     void StyleSetChangeable(int style, bool changeable);
 
-    // Display a auto-completion list.
+    // Display an auto-completion list.
     // The lengthEntered parameter indicates how many characters before
     // the caret should be used to provide context.
     void AutoCompShow(int lengthEntered, const wxString& itemList);
@@ -3642,7 +3642,7 @@ public:
     bool CanUndo() const wxOVERRIDE;
 
     // Delete the undo history.
-    void EmptyUndoBuffer();
+    void EmptyUndoBuffer() wxOVERRIDE;
 
     // Undo one action in the undo history.
     void Undo() wxOVERRIDE;
@@ -4584,10 +4584,10 @@ public:
     // Get the current indicator value
     int GetIndicatorValue() const;
 
-    // Turn a indicator on over a range.
+    // Turn an indicator on over a range.
     void IndicatorFillRange(int start, int lengthFill);
 
-    // Turn a indicator off over a range.
+    // Turn an indicator off over a range.
     void IndicatorClearRange(int start, int lengthClear);
 
     // Are any indicators present at pos?
@@ -5492,6 +5492,10 @@ protected:
     // Turn notifications from Scintilla into events
     void NotifyChange();
     void NotifyParent(SCNotification* scn);
+
+#ifdef __WXMSW__
+    virtual WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) wxOVERRIDE;
+#endif // __WXMSW__
 
 private:
     wxDECLARE_EVENT_TABLE();

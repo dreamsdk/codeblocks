@@ -19,7 +19,7 @@
 struct RGBColor;
 
 // Colour
-class WXDLLIMPEXP_CORE wxColour: public wxColourBase
+class WXDLLIMPEXP_CORE wxWARN_UNUSED wxColour: public wxColourBase
 {
 public:
     // constructors
@@ -35,8 +35,6 @@ public:
     virtual ChannelType Alpha() const wxOVERRIDE;
 
     virtual bool IsSolid() const wxOVERRIDE;
-
-    wxColour& operator=(const wxColour& col);
 
     // comparison
     bool operator == (const wxColour& colour) const;
@@ -68,6 +66,7 @@ public:
     // This ctor does not take ownership of the color.
     explicit wxColour(WX_NSColor color);
     WX_NSColor OSXGetNSColor() const;
+    WX_NSImage OSXGetNSPatternImage() const;
 #endif
 
 protected :
@@ -88,10 +87,10 @@ public:
     wxColourRefData() {}
     virtual ~wxColourRefData() {}
 
-    virtual CGFloat Red() const = 0;
-    virtual CGFloat Green() const = 0;
-    virtual CGFloat Blue() const = 0;
-    virtual CGFloat Alpha() const = 0;
+    virtual double Red() const = 0;
+    virtual double Green() const = 0;
+    virtual double Blue() const = 0;
+    virtual double Alpha() const = 0;
 
     virtual bool IsSolid() const
         { return true; }
@@ -102,6 +101,7 @@ public:
 
 #if wxOSX_USE_COCOA
     virtual WX_NSColor GetNSColor() const;
+    virtual WX_NSImage GetNSPatternImage() const;
 #endif
 };
 

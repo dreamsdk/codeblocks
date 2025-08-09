@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_HTML && wxUSE_PRINTING_ARCHITECTURE && wxUSE_STREAMS
 
@@ -57,7 +54,7 @@
 //      On a 300 dots-per-inch (dpi) printer, that may be rounded up to 3 dots
 //      (0.25 mm); on a 600 dpi printer, it can be rounded to 5 dots.
 //
-// See also https://trac.wxwidgets.org/ticket/10942.
+// See also https://github.com/wxWidgets/wxWidgets/issues/10942.
 #define TYPICAL_SCREEN_DPI  96.0
 
 //--------------------------------------------------------------------------------

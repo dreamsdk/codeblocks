@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/msw/wrapcctl.h"
@@ -144,6 +141,33 @@ wxVector<ClassRegInfo> gs_regClassesInfo;
 // ----------------------------------------------------------------------------
 
 LRESULT WXDLLEXPORT APIENTRY wxWndProc(HWND, UINT, WPARAM, LPARAM);
+
+// ----------------------------------------------------------------------------
+// Module for OLE initialization and cleanup
+// ----------------------------------------------------------------------------
+
+class wxOleInitModule : public wxModule
+{
+public:
+    wxOleInitModule()
+    {
+    }
+
+    virtual bool OnInit() wxOVERRIDE
+    {
+        return wxOleInitialize();
+    }
+
+    virtual void OnExit() wxOVERRIDE
+    {
+        wxOleUninitialize();
+    }
+
+private:
+    wxDECLARE_DYNAMIC_CLASS(wxOleInitModule);
+};
+
+wxIMPLEMENT_DYNAMIC_CLASS(wxOleInitModule, wxModule);
 
 // ===========================================================================
 // wxGUIAppTraits implementation
@@ -579,6 +603,12 @@ bool wxGUIAppTraits::WriteToStderr(const wxString& WXUNUSED(text))
 
 #endif // wxUSE_DYNLIB_CLASS/!wxUSE_DYNLIB_CLASS
 
+WXHWND wxGUIAppTraits::GetMainHWND() const
+{
+    const wxWindow* const w = wxApp::GetMainTopWindow();
+    return w ? w->GetHWND() : NULL;
+}
+
 // ===========================================================================
 // wxApp implementation
 // ===========================================================================
@@ -621,8 +651,6 @@ bool wxApp::Initialize(int& argc_, wxChar **argv_)
     wxCallBaseCleanup callBaseCleanup(this);
 
     InitCommonControls();
-
-    wxOleInitialize();
 
     wxSetKeyboardHook(true);
 
@@ -739,8 +767,6 @@ void wxApp::CleanUp()
 
     wxSetKeyboardHook(false);
 
-    wxOleUninitialize();
-
     // for an EXE the classes are unregistered when it terminates but DLL may
     // be loaded several times (load/unload/load) into the same process in
     // which case the registration will fail after the first time if we don't
@@ -794,9 +820,14 @@ void wxApp::MSWProcessPendingEventsIfNeeded()
 {
     // The cast below is safe as wxEventLoop derives from wxMSWEventLoopBase in
     // both console and GUI applications.
-    wxMSWEventLoopBase * const evtLoop
-        = static_cast<wxMSWEventLoopBase *>(wxEventLoop::GetActive());
-    if ( evtLoop && evtLoop->MSWIsWakeUpRequested() )
+    wxMSWEventLoopBase * const evtLoop =
+        static_cast<wxMSWEventLoopBase *>(wxEventLoop::GetActive());
+
+    // We don't want to do anything if we have an event loop which hadn't been
+    // woken up, but we need to do it if we don't have any event loop at all
+    // (which is uncommon but may happen), as otherwise pending events would
+    // just accumulate forever, without ever being processed.
+    if ( !evtLoop || evtLoop->MSWIsWakeUpRequested() )
         ProcessPendingEvents();
 }
 
@@ -814,7 +845,7 @@ void wxApp::OnEndSession(wxCloseEvent& WXUNUSED(event))
     // destroyed: this will result in a leak of a HWND, of course, but who
     // cares when the process is being killed anyhow
     if ( !wxTopLevelWindows.empty() )
-        wxTopLevelWindows[0]->SetHWND(0);
+        wxTopLevelWindows[0]->DissociateHandle();
 
     // Destroy all the remaining TLWs before calling OnExit() to have the same
     // sequence of events in this case as in case of the normal shutdown,

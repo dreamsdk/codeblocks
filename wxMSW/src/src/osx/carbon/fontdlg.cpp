@@ -21,9 +21,6 @@
 
 #if wxUSE_FONTDLG
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/intl.h"
@@ -300,7 +297,6 @@ bool wxFontDialog::Create(wxWindow* parent, const wxFontData& fontData)
     wxDialog::Create( parent, wxID_ANY, caption, wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 
     CreateControls();
-    GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
     Centre();
 

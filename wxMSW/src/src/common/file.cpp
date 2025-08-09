@@ -16,9 +16,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-  #pragma hdrstop
-#endif
 
 #if wxUSE_FILE
 
@@ -53,18 +50,6 @@
     #ifdef __GNUWIN32__
         #include "wx/msw/wrapwin.h"
     #endif
-#elif (defined(__WXSTUBS__))
-    // Have to ifdef this for different environments
-    #include <io.h>
-#elif (defined(__WXMAC__))
-#if __MSL__ < 0x6000
-    int access( const char *path, int mode ) { return 0 ; }
-#else
-    int _access( const char *path, int mode ) { return 0 ; }
-#endif
-    char* mktemp( char * path ) { return path ;}
-    #include <stat.h>
-    #include <unistd.h>
 #else
     #error  "Please specify the header with file functions declarations."
 #endif  //Win/UNIX
@@ -479,7 +464,8 @@ wxFileOffset wxFile::Length() const
         wxFileOffset iLen = const_cast<wxFile *>(this)->SeekEnd();
         if ( iLen != wxInvalidOffset ) {
             // restore old position
-            if ( ((wxFile *)this)->Seek(iRc) == wxInvalidOffset ) {
+            if (const_cast<wxFile*>(this)->Seek(iRc) == wxInvalidOffset)
+            {
                 // error
                 iLen = wxInvalidOffset;
             }
@@ -606,13 +592,8 @@ bool wxTempFile::Commit()
 {
     m_file.Close();
 
-    if ( wxFile::Exists(m_strName) && wxRemove(m_strName) != 0 ) {
-        wxLogSysError(_("can't remove file '%s'"), m_strName.c_str());
-        return false;
-    }
-
-    if ( !wxRenameFile(m_strTemp, m_strName)  ) {
-        wxLogSysError(_("can't commit changes to file '%s'"), m_strName.c_str());
+    if ( !wxRenameFile(m_strTemp, m_strName) ) {
+        wxLogSysError(_("can't commit changes to file '%s'"), m_strName);
         return false;
     }
 
@@ -624,7 +605,7 @@ void wxTempFile::Discard()
     m_file.Close();
     if ( wxRemove(m_strTemp) != 0 )
     {
-        wxLogSysError(_("can't remove temporary file '%s'"), m_strTemp.c_str());
+        wxLogSysError(_("can't remove temporary file '%s'"), m_strTemp);
     }
 }
 

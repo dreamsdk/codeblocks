@@ -9,10 +9,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_AUI && wxUSE_UXTHEME
 
 #ifndef WX_PRECOMP
@@ -105,12 +101,6 @@ void wxAuiMSWToolBarArt::DrawLabel(
     wxAuiGenericToolBarArt::DrawLabel(dc, wnd, item, rect);
 }
 
-static const unsigned char
-DISABLED_TEXT_GREY_HUE = wxColour::AlphaBlend(0, 255, 0.4);
-const wxColour DISABLED_TEXT_COLOR(DISABLED_TEXT_GREY_HUE,
-    DISABLED_TEXT_GREY_HUE,
-    DISABLED_TEXT_GREY_HUE);
-
 void wxAuiMSWToolBarArt::DrawButton(
     wxDC& dc,
     wxWindow* wnd,
@@ -163,15 +153,16 @@ void wxAuiMSWToolBarArt::DrawButton(
         int bmpX = 0, bmpY = 0;
         int textX = 0, textY = 0;
 
+        const wxBitmap& bmp = item.GetCurrentBitmapFor(wnd);
         if ( m_textOrientation == wxAUI_TBTOOL_TEXT_BOTTOM )
         {
             bmpX = rect.x +
                 (rect.width / 2) -
-                (item.GetBitmap().GetWidth() / 2);
+                (bmp.GetWidth() / 2);
 
             bmpY = rect.y +
                 ((rect.height - textHeight) / 2) -
-                (item.GetBitmap().GetHeight() / 2);
+                (bmp.GetHeight() / 2);
 
             textX = rect.x + (rect.width / 2) - (textWidth / 2) + 1;
             textY = rect.y + rect.height - textHeight - 1;
@@ -182,27 +173,22 @@ void wxAuiMSWToolBarArt::DrawButton(
 
             bmpY = rect.y +
                 (rect.height / 2) -
-                (item.GetBitmap().GetHeight() / 2);
+                (bmp.GetHeight() / 2);
 
-            textX = bmpX + wnd->FromDIP(3) + item.GetBitmap().GetWidth();
+            textX = bmpX + wnd->FromDIP(3) + bmp.GetWidth();
             textY = rect.y +
                 (rect.height / 2) -
                 (textHeight / 2);
         }
 
-        wxBitmap bmp;
-        if ( item.GetState() & wxAUI_BUTTON_STATE_DISABLED )
-            bmp = item.GetDisabledBitmap();
-        else
-            bmp = item.GetBitmap();
-
         if ( bmp.IsOk() )
             dc.DrawBitmap(bmp, bmpX, bmpY, true);
 
         // set the item's text color based on if it is disabled
-        dc.SetTextForeground(*wxBLACK);
         if ( item.GetState() & wxAUI_BUTTON_STATE_DISABLED )
-            dc.SetTextForeground(DISABLED_TEXT_COLOR);
+            dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+        else
+            dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT));
 
         if ( (m_flags & wxAUI_TB_TEXT) && !item.GetLabel().empty() )
         {
@@ -280,14 +266,18 @@ void wxAuiMSWToolBarArt::DrawDropDownButton(
             &dropDownR,
             NULL);
 
+        const wxBitmap& bmp = item.GetCurrentBitmapFor(wnd);
+        if ( !bmp.IsOk() )
+            return;
+
         if ( m_textOrientation == wxAUI_TBTOOL_TEXT_BOTTOM )
         {
             bmpX = buttonRect.x +
                 (buttonRect.width / 2) -
-                (item.GetBitmap().GetWidth() / 2);
+                (bmp.GetWidth() / 2);
             bmpY = buttonRect.y +
                 ((buttonRect.height - textHeight) / 2) -
-                (item.GetBitmap().GetHeight() / 2);
+                (bmp.GetHeight() / 2);
 
             textX = rect.x + (rect.width / 2) - (textWidth / 2) + 1;
             textY = rect.y + rect.height - textHeight - 1;
@@ -298,33 +288,21 @@ void wxAuiMSWToolBarArt::DrawDropDownButton(
 
             bmpY = rect.y +
                 (rect.height / 2) -
-                (item.GetBitmap().GetHeight() / 2);
+                (bmp.GetHeight() / 2);
 
-            textX = bmpX + wnd->FromDIP(3) + item.GetBitmap().GetWidth();
+            textX = bmpX + wnd->FromDIP(3) + bmp.GetWidth();
             textY = rect.y +
                 (rect.height / 2) -
                 (textHeight / 2);
         }
 
-        wxBitmap bmp;
-        if ( item.GetState() & wxAUI_BUTTON_STATE_DISABLED )
-        {
-            bmp = item.GetDisabledBitmap();
-        }
-        else
-        {
-            bmp = item.GetBitmap();
-        }
-
-        if ( !bmp.IsOk() )
-            return;
-
         dc.DrawBitmap(bmp, bmpX, bmpY, true);
 
         // set the item's text color based on if it is disabled
-        dc.SetTextForeground(*wxBLACK);
         if ( item.GetState() & wxAUI_BUTTON_STATE_DISABLED )
-            dc.SetTextForeground(DISABLED_TEXT_COLOR);
+            dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT));
+        else
+            dc.SetTextForeground(wxSystemSettings::GetColour(wxSYS_COLOUR_CAPTIONTEXT));
 
         if ( (m_flags & wxAUI_TB_TEXT) && !item.GetLabel().empty() )
         {
@@ -441,7 +419,7 @@ wxSize wxAuiMSWToolBarArt::GetToolSize(
 {
     if ( m_themed )
     {
-        if ( !item.GetBitmap().IsOk() && !(m_flags & wxAUI_TB_TEXT) )
+        if ( !item.GetBitmapBundle().IsOk() && !(m_flags & wxAUI_TB_TEXT) )
             return m_buttonSize;
 
         wxSize size = wxAuiGenericToolBarArt::GetToolSize(dc, wnd, item);

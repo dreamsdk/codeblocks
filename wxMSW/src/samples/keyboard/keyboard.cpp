@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
 #endif
@@ -238,7 +235,7 @@ MyFrame::MyFrame(const wxString& title)
                                             wxTE_READONLY);
     headerText->SetValue(
                " event          key     KeyCode mod   UnicodeKey  "
-               "  RawKeyCode RawKeyFlags  Position");
+               "  RawKeyCode RawKeyFlags  Position      Repeat");
 
 
     m_logText = new wxTextCtrl(this, wxID_ANY, "",
@@ -496,6 +493,21 @@ const char* GetVirtualKeyCodeName(int keycode)
         WXK_(LAUNCH_MAIL)
         WXK_(LAUNCH_APP1)
         WXK_(LAUNCH_APP2)
+        WXK_(LAUNCH_0)
+        WXK_(LAUNCH_1)
+        WXK_(LAUNCH_2)
+        WXK_(LAUNCH_3)
+        WXK_(LAUNCH_4)
+        WXK_(LAUNCH_5)
+        WXK_(LAUNCH_6)
+        WXK_(LAUNCH_7)
+        WXK_(LAUNCH_8)
+        WXK_(LAUNCH_9)
+        // skip A/B which are duplicate cases of APP1/2
+        WXK_(LAUNCH_C)
+        WXK_(LAUNCH_D)
+        WXK_(LAUNCH_E)
+        WXK_(LAUNCH_F)
 #undef WXK_
 
     default:
@@ -541,6 +553,7 @@ void MyFrame::LogEvent(const wxString& name, wxKeyEvent& event)
                    "  not-set    not-set"
 #endif
                    "  (%5d,%5d)"
+                   "  %s"
                    "\n",
                name,
                GetKeyName(event),
@@ -559,6 +572,7 @@ void MyFrame::LogEvent(const wxString& name, wxKeyEvent& event)
 #endif
                , event.GetX()
                , event.GetY()
+               , event.IsAutoRepeat() ? "Yes" : "No"
                );
 
     m_logText->AppendText(msg);

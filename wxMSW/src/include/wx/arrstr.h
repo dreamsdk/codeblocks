@@ -18,6 +18,9 @@
 #if wxUSE_STD_CONTAINERS_COMPATIBLY
     #include <vector>
 #endif
+#ifdef wxHAVE_INITIALIZER_LIST
+    #include <initializer_list>
+#endif
 
 // these functions are only used in STL build now but we define them in any
 // case for compatibility with the existing code outside of the library which
@@ -42,11 +45,29 @@ wxDictionaryStringSortAscending(const wxString& s1, const wxString& s2)
     return cmp ? cmp : s1.Cmp(s2);
 }
 
+
 inline int wxCMPFUNC_CONV
 wxDictionaryStringSortDescending(const wxString& s1, const wxString& s2)
 {
     return wxDictionaryStringSortAscending(s2, s1);
 }
+
+WXDLLIMPEXP_BASE
+int wxCMPFUNC_CONV wxCmpNatural(const wxString& s1, const wxString& s2);
+
+WXDLLIMPEXP_BASE
+int wxCMPFUNC_CONV wxCmpNaturalGeneric(const wxString& s1, const wxString& s2);
+
+inline int wxCMPFUNC_CONV wxNaturalStringSortAscending(const wxString& s1, const wxString& s2)
+{
+    return wxCmpNatural(s1, s2);
+}
+
+inline int wxCMPFUNC_CONV wxNaturalStringSortDescending(const wxString& s1, const wxString& s2)
+{
+    return wxCmpNatural(s2, s1);
+}
+
 
 #if wxUSE_STD_CONTAINERS
 
@@ -54,7 +75,7 @@ typedef int (wxCMPFUNC_CONV *CMPFUNCwxString)(wxString*, wxString*);
 WX_DEFINE_USER_EXPORTED_TYPEARRAY(wxString, wxArrayStringBase,
                                   wxARRAY_DUMMY_BASE, WXDLLIMPEXP_BASE);
 
-class WXDLLIMPEXP_BASE wxArrayString : public wxArrayStringBase
+class WXDLLIMPEXP_BASE wxWARN_UNUSED wxArrayString : public wxArrayStringBase
 {
 public:
     // type of function used by wxArrayString::Sort()
@@ -65,6 +86,10 @@ public:
     wxArrayString(size_t sz, const char** a);
     wxArrayString(size_t sz, const wchar_t** a);
     wxArrayString(size_t sz, const wxString* a);
+#ifdef wxHAVE_INITIALIZER_LIST
+    template<typename U>
+    wxArrayString(std::initializer_list<U> list) : wxArrayStringBase(list) { }
+#endif
 
     int Index(const wxString& str, bool bCase = true, bool bFromEnd = false) const;
 
@@ -136,7 +161,7 @@ private:
 #include <iterator>
 #include "wx/afterstd.h"
 
-class WXDLLIMPEXP_BASE wxArrayString
+class WXDLLIMPEXP_BASE wxWARN_UNUSED wxArrayString
 {
 public:
   // type of function used by wxArrayString::Sort()
@@ -166,6 +191,11 @@ public:
   wxArrayString(size_t sz, const wxString* a);
     // copy ctor
   wxArrayString(const wxArrayString& array);
+#ifdef wxHAVE_INITIALIZER_LIST
+    // list constructor
+  template<typename U>
+  wxArrayString(std::initializer_list<U> list) { Init(false); assign(list.begin(), list.end()); }
+#endif
     // assignment operator
   wxArrayString& operator=(const wxArrayString& src);
     // not virtual, this class should not be derived from
@@ -379,6 +409,11 @@ private:
   // return the pointer to the old buffer, which must be deleted by the caller
   // (if the old buffer is big enough, just return NULL).
   wxString *Grow(size_t nIncrement);
+
+  // Binary search in the sorted array: return the index of the string if it's
+  // present, otherwise, if lowerBound is true, return the position at which
+  // the string should be inserted and if it's false return wxNOT_FOUND.
+  size_t BinarySearch(const wxString& str, bool lowerBound) const;
 
   size_t  m_nSize,    // current size of the array
           m_nCount;   // current number of elements

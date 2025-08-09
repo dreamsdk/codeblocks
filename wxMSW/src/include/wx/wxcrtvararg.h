@@ -36,33 +36,6 @@
  */
 #ifdef __UNIX__
 
-#if defined(HAVE_VSNPRINTF) && !defined(HAVE_VSNPRINTF_DECL)
-#ifdef __cplusplus
-    extern "C"
-#else
-    extern
-#endif
-    int vsnprintf(char *str, size_t size, const char *format, va_list ap);
-#endif /* !HAVE_VSNPRINTF_DECL */
-
-#if defined(HAVE_SNPRINTF) && !defined(HAVE_SNPRINTF_DECL)
-#ifdef __cplusplus
-    extern "C"
-#else
-    extern
-#endif
-    int snprintf(char *str, size_t size, const char *format, ...);
-#endif /* !HAVE_SNPRINTF_DECL */
-
-#if defined(HAVE_VSSCANF) && !defined(HAVE_VSSCANF_DECL)
-#ifdef __cplusplus
-    extern "C"
-#else
-    extern
-#endif
-    int vsscanf(const char *str, const char *format, va_list ap);
-#endif /* !HAVE_VSSCANF_DECL */
-
 /* Wrapper for vsnprintf if it's 3rd parameter is non-const. Note: the
  * same isn't done for snprintf below, the builtin wxSnprintf_ is used
  * instead since it's already a simple wrapper */
@@ -132,8 +105,7 @@
        is a wrapper around it as explained below
      */
 
-    #if defined(__VISUALC__) || \
-            (defined(__BORLANDC__) && __BORLANDC__ >= 0x540)
+    #if defined(__VISUALC__)
         #define wxCRT_VsnprintfA    _vsnprintf
         #define wxCRT_VsnprintfW    _vsnwprintf
     #else
@@ -276,19 +248,23 @@
 #endif
 
 
+wxGCC_ONLY_WARNING_SUPPRESS(format-nonliteral)
+
 WX_DEFINE_VARARG_FUNC_SANS_N0(int, wxPrintf, 1, (const wxFormatString&),
                               wxCRT_PrintfNative, wxCRT_PrintfA)
 inline int wxPrintf(const wxFormatString& s)
 {
-    return wxPrintf("%s", s.InputAsString());
+    return wxPrintf(wxASCII_STR("%s"), s.InputAsString());
 }
 
 WX_DEFINE_VARARG_FUNC_SANS_N0(int, wxFprintf, 2, (FILE*, const wxFormatString&),
                               wxCRT_FprintfNative, wxCRT_FprintfA)
 inline int wxFprintf(FILE *f, const wxFormatString& s)
 {
-    return wxFprintf(f, "%s", s.InputAsString());
+    return wxFprintf(f, wxASCII_STR("%s"), s.InputAsString());
 }
+
+wxGCC_ONLY_WARNING_RESTORE(format-nonliteral)
 
 // va_list versions of printf functions simply forward to the respective
 // CRT function; note that they assume that va_list was created using
@@ -310,6 +286,11 @@ inline int wxFprintf(FILE *f, const wxFormatString& s)
         return implA args
 #endif
 
+// In non-Unicode build we get suggestions for using gnu_printf format
+// attribute, but it doesn't work in Unicode build, so don't bother with it and
+// just disable the warning.
+wxGCC_ONLY_WARNING_SUPPRESS(suggest-attribute=format)
+
 inline int
 wxVprintf(const wxString& format, va_list ap)
 {
@@ -323,6 +304,8 @@ wxVfprintf(FILE *f, const wxString& format, va_list ap)
     WX_VARARG_VFOO_IMPL((f, wxFormatString(format), ap),
                         wxCRT_VfprintfW, wxCRT_VfprintfA);
 }
+
+wxGCC_ONLY_WARNING_RESTORE(suggest-attribute=format)
 
 #undef WX_VARARG_VFOO_IMPL
 
@@ -440,12 +423,16 @@ WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxScopedCharBuffer& str, const char *form
                    wxCRT_SscanfA, (str.data(), format))
 WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxScopedWCharBuffer& str, const wchar_t *format),
                    wxCRT_SscanfW, (str.data(), wxScanfConvertFormatW(format)))
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
 WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxString& str, const char *format),
                    wxCRT_SscanfA, (str.mb_str(), format))
+#endif
 WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxString& str, const wchar_t *format),
                    wxCRT_SscanfW, (str.wc_str(), wxScanfConvertFormatW(format)))
+#ifndef wxNO_IMPLICIT_WXSTRING_ENCODING
 WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxCStrData& str, const char *format),
                    wxCRT_SscanfA, (str.AsCharBuf(), format))
+#endif
 WX_DEFINE_SCANFUNC(wxSscanf, 2, (const wxCStrData& str, const wchar_t *format),
                    wxCRT_SscanfW, (str.AsWCharBuf(), wxScanfConvertFormatW(format)))
 

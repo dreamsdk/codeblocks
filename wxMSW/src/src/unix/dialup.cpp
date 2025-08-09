@@ -74,7 +74,7 @@ public:
    virtual ~wxDialUpManagerImpl();
 
    /** Could the dialup manager be initialized correctly? If this function
-       returns false, no other functions will work neither, so it's a good idea
+       returns false, no other functions will work either, so it's a good idea
        to call this function and check its result before calling any other
        wxDialUpManager methods.
    */
@@ -140,7 +140,7 @@ public:
    virtual bool EnableAutoCheckOnlineStatus(size_t nSeconds) wxOVERRIDE;
 
    // disable automatic check for connection status change - notice that the
-   // wxEVT_DIALUP_XXX events won't be sent any more neither.
+   // wxEVT_DIALUP_XXX events won't be sent any more either.
    virtual void DisableAutoCheckOnlineStatus() wxOVERRIDE;
 
    // under Unix, the value of well-known host is used to check whether we're
@@ -304,7 +304,7 @@ wxDialUpManagerImpl::wxDialUpManagerImpl()
 
 wxDialUpManagerImpl::~wxDialUpManagerImpl()
 {
-   if(m_timer) delete m_timer;
+   delete m_timer;
    if(m_DialProcess)
    {
       m_DialProcess->Disconnect();
@@ -420,7 +420,7 @@ void wxDialUpManagerImpl::CheckStatus(bool fromAsync) const
     // which is OS - specific and then sends the events.
 
     NetConnection oldIsOnline = m_IsOnline;
-    ( /* non-const */ (wxDialUpManagerImpl *)this)->CheckStatusInternal();
+    const_cast<wxDialUpManagerImpl*>(this)->CheckStatusInternal();
 
     // now send the events as appropriate: i.e. if the status changed and
     // if we're in defined state
@@ -795,6 +795,7 @@ wxDialUpManagerImpl::NetConnection wxDialUpManagerImpl::CheckPing()
     // nothing to add to ping command
 #elif defined(__AIX__) || \
       defined (__BSD__) || \
+      defined (__NetBSD__) || \
       defined(__LINUX__) || \
       defined(__OSF__) || \
       defined(__SGI__) || \

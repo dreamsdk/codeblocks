@@ -30,7 +30,7 @@ public:
     wxStatusBarGeneric(wxWindow *parent,
                        wxWindowID winid = wxID_ANY,
                        long style = wxSTB_DEFAULT_STYLE,
-                       const wxString& name = wxStatusBarNameStr)
+                       const wxString& name = wxASCII_STR(wxStatusBarNameStr))
     {
         Init();
 
@@ -41,7 +41,7 @@ public:
 
     bool Create(wxWindow *parent, wxWindowID winid = wxID_ANY,
                 long style = wxSTB_DEFAULT_STYLE,
-                const wxString& name = wxStatusBarNameStr);
+                const wxString& name = wxASCII_STR(wxStatusBarNameStr));
 
     // implement base class methods
     virtual void SetStatusWidths(int n, const int widths_field[]) wxOVERRIDE;
@@ -70,7 +70,7 @@ protected:
     void OnSysColourChanged(wxSysColourChangedEvent& event);
 
 protected:
-
+    virtual int GetEffectiveFieldStyle(int i) const { return m_panes[i].GetStyle(); }
     virtual void DrawFieldText(wxDC& dc, const wxRect& rc, int i, int textHeight);
     virtual void DrawField(wxDC& dc, int i, int textHeight);
 

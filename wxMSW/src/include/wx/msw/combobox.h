@@ -33,7 +33,7 @@ public:
             int n = 0, const wxString choices[] = NULL,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxComboBoxNameStr)
+            const wxString& name = wxASCII_STR(wxComboBoxNameStr))
     {
         Init();
         Create(parent, id, value, pos, size, n, choices, style, validator, name);
@@ -47,7 +47,7 @@ public:
             const wxArrayString& choices,
             long style = 0,
             const wxValidator& validator = wxDefaultValidator,
-            const wxString& name = wxComboBoxNameStr)
+            const wxString& name = wxASCII_STR(wxComboBoxNameStr))
     {
         Init();
 
@@ -63,7 +63,7 @@ public:
                 const wxString choices[] = NULL,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxComboBoxNameStr);
+                const wxString& name = wxASCII_STR(wxComboBoxNameStr));
     bool Create(wxWindow *parent,
                 wxWindowID id,
                 const wxString& value,
@@ -72,7 +72,7 @@ public:
                 const wxArrayString& choices,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxComboBoxNameStr);
+                const wxString& name = wxASCII_STR(wxComboBoxNameStr));
 
     // See wxComboBoxBase discussion of IsEmpty().
     bool IsListEmpty() const { return wxItemContainer::IsEmpty(); }
@@ -128,6 +128,8 @@ public:
 
     virtual void SetLayoutDirection(wxLayoutDirection dir) wxOVERRIDE;
 
+    virtual const wxTextEntry* WXGetTextEntry() const wxOVERRIDE { return this; }
+
 protected:
 #if wxUSE_TOOLTIPS
     virtual void DoSetToolTip(wxToolTip *tip) wxOVERRIDE;
@@ -151,6 +153,14 @@ protected:
     {
         m_allowTextEvents = enable;
     }
+
+#if wxABI_VERSION >= 30202
+    // Recreate the native control entirely while preserving its initial
+    // contents and attributes: this is useful if the height of the items must
+    // be changed as the native control doesn't seem to support doing this once
+    // it had been already determined.
+    void MSWRecreate();
+#endif // wxABI_VERSION >= 3.2.2
 
 private:
     // there are the overridden wxTextEntry methods which should only be called

@@ -39,6 +39,9 @@ extern WXDLLIMPEXP_CORE bool IsIidFromList(REFIID riid, const IID *aIids[], size
 // ============================================================================
 
 /*
+   WARNING: This does NOT work with multiple inheritance, so multiple
+   interfaces can only be supported when they inherit from each other.
+
    The most dumb implementation of IUnknown methods. We don't support
    aggregation nor containment, but for 99% of cases this simple
    implementation is quite enough.
@@ -56,7 +59,7 @@ extern WXDLLIMPEXP_CORE bool IsIidFromList(REFIID riid, const IID *aIids[], size
  */
 
 /*
-  wxAutoULong: this class is used for automatically initalising m_cRef to 0
+  wxAutoULong: this class is used for automatically initialising m_cRef to 0
 */
 class wxAutoULong
 {

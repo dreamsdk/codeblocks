@@ -20,9 +20,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MIMETYPE
 
@@ -220,7 +217,6 @@ wxString wxFileType::ExpandCommand(const wxString& command,
                     {
                         const wxChar *pEnd = wxStrchr(pc, wxT('}'));
                         if ( pEnd == NULL ) {
-                            wxString mimetype;
                             wxLogWarning(_("Unmatched '{' in an entry for mime type %s."),
                                          params.GetMimeType().c_str());
                             str << wxT("%{");
@@ -290,8 +286,7 @@ wxFileType::wxFileType()
 
 wxFileType::~wxFileType()
 {
-    if ( m_impl )
-        delete m_impl;
+    delete m_impl;
 }
 
 bool wxFileType::GetExtensions(wxArrayString& extensions)
@@ -589,8 +584,7 @@ wxMimeTypesManager::wxMimeTypesManager()
 
 wxMimeTypesManager::~wxMimeTypesManager()
 {
-    if ( m_impl )
-        delete m_impl;
+    delete m_impl;
 }
 
 bool wxMimeTypesManager::Unassociate(wxFileType *ft)

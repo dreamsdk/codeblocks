@@ -87,7 +87,7 @@ public:
                const wxSize& size = wxDefaultSize,
                long style = wxLC_ICON,
                const wxValidator& validator = wxDefaultValidator,
-               const wxString& name = wxListCtrlNameStr)
+               const wxString& name = wxASCII_STR(wxListCtrlNameStr))
     {
         Init();
 
@@ -102,7 +102,7 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxLC_ICON,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxListCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxListCtrlNameStr));
 
 
     // Attributes
@@ -129,14 +129,14 @@ public:
 
 
     // Gets the column order from its index or index from its order
-    int GetColumnOrder(int col) const;
-    int GetColumnIndexFromOrder(int order) const;
+    int GetColumnOrder(int col) const wxOVERRIDE;
+    int GetColumnIndexFromOrder(int order) const wxOVERRIDE;
 
     // Gets the column order for all columns
-    wxArrayInt GetColumnsOrder() const;
+    wxArrayInt GetColumnsOrder() const wxOVERRIDE;
 
     // Sets the column order for all columns
-    bool SetColumnsOrder(const wxArrayInt& orders);
+    bool SetColumnsOrder(const wxArrayInt& orders) wxOVERRIDE;
 
 
     // Gets the number of items that can fit vertically in the
@@ -220,10 +220,15 @@ public:
     wxFont GetItemFont( long item ) const;
 
     // Checkbox state of an item
-    virtual bool HasCheckBoxes() const wxOVERRIDE;
-    virtual bool EnableCheckBoxes(bool enable = true) wxOVERRIDE;
-    virtual bool IsItemChecked(long item) const wxOVERRIDE;
-    virtual void CheckItem(long item, bool check) wxOVERRIDE;
+    bool HasCheckBoxes() const wxOVERRIDE;
+    bool EnableCheckBoxes(bool enable = true) wxOVERRIDE;
+    bool IsItemChecked(long item) const wxOVERRIDE;
+    void CheckItem(long item, bool check) wxOVERRIDE;
+
+    // Sort indicator in header
+    void ShowSortIndicator(int idx, bool ascending = true) wxOVERRIDE;
+    int GetSortIndicator() const wxOVERRIDE;
+    bool IsAscendingSortIndicator() const wxOVERRIDE;
 
     // Gets the number of selected items in the list control
     int GetSelectedItemCount() const;
@@ -249,13 +254,6 @@ public:
     // specified flags.
     // Returns the item or -1 if unsuccessful.
     long GetNextItem(long item, int geometry = wxLIST_NEXT_ALL, int state = wxLIST_STATE_DONTCARE) const;
-
-    // Gets one of the three image lists
-    wxImageList *GetImageList(int which) const wxOVERRIDE;
-
-    // Sets the image list
-    void SetImageList(wxImageList *imageList, int which) wxOVERRIDE;
-    void AssignImageList(wxImageList *imageList, int which) wxOVERRIDE;
 
     // refresh items selectively (only useful for virtual list controls)
     void RefreshItem(long item);
@@ -407,6 +405,7 @@ protected:
 
     // Implement base class pure virtual methods.
     long DoInsertColumn(long col, const wxListItem& info) wxOVERRIDE;
+    void DoUpdateImages(int which) wxOVERRIDE;
 
     // free memory taken by all internal data
     void FreeAllInternalData();
@@ -414,18 +413,12 @@ protected:
     // get the internal data object for this item (may return NULL)
     wxMSWListItemData *MSWGetItemData(long item) const;
 
-    // get the item attribute, either by quering it for virtual control, or by
+    // get the item attribute, either by querying it for virtual control, or by
     // returning the one previously set using setter methods for a normal one
     wxItemAttr *DoGetItemColumnAttr(long item, long column) const;
 
 
     wxTextCtrl*       m_textCtrl;        // The control used for editing a label
-    wxImageList *     m_imageListNormal; // The image list for normal icons
-    wxImageList *     m_imageListSmall;  // The image list for small icons
-    wxImageList *     m_imageListState;  // The image list state icons (not implemented yet)
-    bool              m_ownsImageListNormal,
-                      m_ownsImageListSmall,
-                      m_ownsImageListState;
 
     int               m_colCount;   // Windows doesn't have GetColumnCount so must
                                     // keep track of inserted/deleted columns
@@ -435,6 +428,10 @@ protected:
 
     // true if we have any items with custom attributes
     bool m_hasAnyAttr;
+
+    // m_sortAsc is only used if m_sortCol != -1
+    bool m_sortAsc;
+    int m_sortCol;
 
 private:
     // process NM_CUSTOMDRAW notification message
@@ -450,10 +447,15 @@ private:
     // destroy m_textCtrl if it's currently valid and reset it to NULL
     void DeleteEditControl();
 
+    // Update all image lists that we have.
+    void UpdateAllImageLists();
+
     // Intercept Escape and Enter keys to avoid them being stolen from our
     // in-place editor control.
     void OnCharHook(wxKeyEvent& event);
 
+    // Draw the sort arrow in the header.
+    void DrawSortArrow();
 
     // Object using for header custom drawing if necessary, may be NULL.
     wxMSWListHeaderCustomDraw* m_headerCustomDraw;

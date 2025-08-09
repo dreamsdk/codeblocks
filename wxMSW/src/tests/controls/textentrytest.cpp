@@ -292,6 +292,7 @@ void TextEntryTestCase::Editable()
     CPPUNIT_ASSERT_EQUAL("abcdef", entry->GetValue());
     CPPUNIT_ASSERT_EQUAL(6, updated.GetCount());
 
+    wxYield();
 
     // And that the event carries the right value.
     TextEventHandler handler(window);
@@ -463,7 +464,21 @@ private:
     void SimulateEnter()
     {
         wxUIActionSimulator sim;
+
+        // Calling SetFocus() is somehow not enough to give the focus to this
+        // window when running this test with wxGTK, apparently because the
+        // dialog itself needs to be raised to the front first, so simulate a
+        // click doing this.
+        sim.MouseMove(m_control->GetScreenPosition() + wxPoint(5, 5));
+        wxYield();
+        sim.MouseClick();
+        wxYield();
+
+        // Note that clicking it is still not enough to give it focus with
+        // wxGTK either, so we still need to call SetFocus() nevertheless: but
+        // now it works.
         m_control->SetFocus();
+
         sim.Char(WXK_RETURN);
     }
 

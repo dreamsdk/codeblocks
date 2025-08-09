@@ -99,6 +99,11 @@ public:
 
     virtual bool HasTransparentBackground() wxOVERRIDE { return true; }
 
+    // This semi-private function is currently used to allow wxMSW checkbox to
+    // blend in with its parent background colour without changing the
+    // background colour of the checkbox itself under the other platforms.
+    virtual void SetTransparentPartColour(const wxColour& WXUNUSED(col)) { }
+
     // wxCheckBox-specific processing after processing the update event
     virtual void DoUpdateWindowUI(wxUpdateUIEvent& event) wxOVERRIDE
     {
@@ -132,7 +137,7 @@ protected:
             // For compatibility we use absence of style flags as wxCHK_2STATE
             // because wxCHK_2STATE used to have the value of 0 and some
             // existing code uses 0 instead of it. Moreover, some code even
-            // uses some non-0 style, e.g. wxBORDER_XXX, but doesn't specify
+            // uses some non-0 style, e.g. wxBORDER_XXX, but specifies
             // neither wxCHK_2STATE nor wxCHK_3STATE -- to avoid breaking it,
             // assume (much more common) 2 state checkbox by default.
             style |= wxCHK_2STATE;

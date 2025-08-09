@@ -12,9 +12,6 @@
 
 #include "testprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
@@ -278,15 +275,15 @@ void TokenizerTestCase::CopyObj()
     wxStringTokenizer tkzSrc(wxT("first:second:third:fourth"), wxT(":"));
     while ( tkzSrc.HasMoreTokens() )
     {
-        wxString tokenSrc = tkzSrc.GetNextToken();
+        tkzSrc.GetNextToken();
         wxStringTokenizer tkz = tkzSrc;
 
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetPosition(), tkz.GetPosition() );
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetString(), tkz.GetString() );
 
         // Change the state of both objects and compare again...
-        tokenSrc = tkzSrc.GetNextToken();
-        wxString token = tkz.GetNextToken();
+        tkzSrc.GetNextToken();
+        tkz.GetNextToken();
 
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetPosition(), tkz.GetPosition() );
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetString(), tkz.GetString() );
@@ -300,15 +297,15 @@ void TokenizerTestCase::AssignObj()
     wxStringTokenizer tkz;
     while ( tkzSrc.HasMoreTokens() )
     {
-        wxString tokenSrc = tkzSrc.GetNextToken();
+        tkzSrc.GetNextToken();
         tkz = tkzSrc;
 
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetPosition(), tkz.GetPosition() );
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetString(), tkz.GetString() );
 
         // Change the state of both objects and compare again...
-        tokenSrc = tkzSrc.GetNextToken();
-        wxString token = tkz.GetNextToken();
+        tkzSrc.GetNextToken();
+        tkz.GetNextToken();
 
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetPosition(), tkz.GetPosition() );
         CPPUNIT_ASSERT_EQUAL( tkzSrc.GetString(), tkz.GetString() );

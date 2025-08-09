@@ -40,7 +40,7 @@ public:
         m_encDefault = enc;
     }
 
-    // copy ctor doesn't initialize anything neither as conversion can only be
+    // copy ctor doesn't initialize anything either as conversion can only be
     // deduced on first use
     wxConvAuto(const wxConvAuto& other) : wxMBConv()
     {
@@ -78,6 +78,8 @@ public:
 
     virtual size_t GetMBNulLen() const wxOVERRIDE { return m_conv->GetMBNulLen(); }
 
+    virtual bool IsUTF8() const wxOVERRIDE { return m_conv && m_conv->IsUTF8(); }
+
     virtual wxMBConv *Clone() const wxOVERRIDE { return new wxConvAuto(*this); }
 
     // return the BOM type of this buffer
@@ -89,6 +91,14 @@ public:
     wxBOM GetBOM() const
     {
         return m_bomType;
+    }
+
+    wxFontEncoding GetEncoding() const;
+
+    // Return true if the fall-back encoding is used
+    bool IsUsingFallbackEncoding() const
+    {
+        return m_ownsConv && m_bomType == wxBOM_None;
     }
 
 private:

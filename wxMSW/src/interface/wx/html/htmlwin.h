@@ -83,7 +83,7 @@ public:
     virtual void SetHTMLBackgroundColour(const wxColour& clr) = 0;
 
     /// Sets window's background to given bitmap.
-    virtual void SetHTMLBackgroundImage(const wxBitmap& bmpBg) = 0;
+    virtual void SetHTMLBackgroundImage(const wxBitmapBundle& bmpBg) = 0;
 
     /// Sets status bar text.
     virtual void SetHTMLStatusText(const wxString& text) = 0;
@@ -504,7 +504,7 @@ protected:
     /**
         This method is called when a mouse button is clicked inside wxHtmlWindow.
         The default behaviour is to emit a wxHtmlCellEvent and, if the event was
-        not processed or skipped, call OnLinkClicked() if the cell contains an
+        not processed or skipped, call OnLinkClicked() if the cell contains a
         hypertext link.
 
         Overloading this method is deprecated; intercept the event instead.
@@ -559,7 +559,7 @@ wxEventType wxEVT_HTML_LINK_CLICKED;
     @endEventTable
 
     @library{wxhtml}
-    @category{html}
+    @category{html,events}
 */
 class wxHtmlLinkEvent : public wxCommandEvent
 {
@@ -592,7 +592,7 @@ public:
     @endEventTable
 
     @library{wxhtml}
-    @category{html}
+    @category{html,events}
 */
 class wxHtmlCellEvent : public wxCommandEvent
 {

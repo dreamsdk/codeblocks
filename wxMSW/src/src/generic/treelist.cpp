@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_TREELISTCTRL
 
@@ -367,8 +364,6 @@ public:
 
 
     // Implement the base class pure virtual methods.
-    virtual unsigned GetColumnCount() const wxOVERRIDE;
-    virtual wxString GetColumnType(unsigned col) const wxOVERRIDE;
     virtual void GetValue(wxVariant& variant,
                           const wxDataViewItem& item,
                           unsigned col) const wxOVERRIDE;
@@ -639,25 +634,6 @@ void wxTreeListModel::CheckItem(Node* item, wxCheckBoxState checkedState)
     ItemChanged(ToDVI(item));
 }
 
-unsigned wxTreeListModel::GetColumnCount() const
-{
-    return m_numColumns;
-}
-
-wxString wxTreeListModel::GetColumnType(unsigned col) const
-{
-    if ( col == 0 )
-    {
-        return m_treelist->HasFlag(wxTL_CHECKBOX)
-                    ? wxDataViewCheckIconTextRenderer::GetDefaultType()
-                    : wxDataViewIconTextRenderer::GetDefaultType();
-    }
-    else // All the other columns contain just text.
-    {
-        return wxS("string");
-    }
-}
-
 void
 wxTreeListModel::GetValue(wxVariant& variant,
                           const wxDataViewItem& item,
@@ -675,7 +651,7 @@ wxTreeListModel::GetValue(wxVariant& variant,
         if ( image == wxWithImages::NO_IMAGE )
             image = node->m_imageClosed;
 
-        wxIcon icon = m_treelist->GetImage(image);
+        wxBitmapBundle icon = m_treelist->GetBitmapBundle(image);
 
         if ( m_treelist->HasFlag(wxTL_CHECKBOX) )
             variant << wxDataViewCheckIconText(node->m_text, icon,
@@ -735,7 +711,7 @@ bool wxTreeListModel::IsContainer(const wxDataViewItem& item) const
     //        adding the item itself) and we can't know whether we're container
     //        or not by then. Luckily, always returning true doesn't have any
     //        serious drawbacks for us.
-#ifdef __WXGTK__
+#if defined(__WXGTK__) && defined(wxHAS_NATIVE_DATAVIEWCTRL)
     wxUnusedVar(item);
 
     return true;
@@ -1089,7 +1065,7 @@ wxTreeListCtrl::GetItemText(wxTreeListItem item, unsigned col) const
     // reference to return so we use a static variable that exists just for the
     // purpose of this check -- and so we put it in its own scope so that it's
     // never even created during normal program execution.
-    if ( !m_model || col >= m_model->GetColumnCount() )
+    if ( !m_model || col >= GetColumnCount() )
     {
         static wxString s_empty;
 
@@ -1097,7 +1073,7 @@ wxTreeListCtrl::GetItemText(wxTreeListItem item, unsigned col) const
         {
             wxFAIL_MSG( "Must create first" );
         }
-        else if ( col >= m_model->GetColumnCount() )
+        else if ( col >= GetColumnCount() )
         {
             wxFAIL_MSG( "Invalid column index" );
         }
@@ -1114,7 +1090,7 @@ wxTreeListCtrl::SetItemText(wxTreeListItem item,
                             const wxString& text)
 {
     wxCHECK_RET( m_model, "Must create first" );
-    wxCHECK_RET( col < m_model->GetColumnCount(), "Invalid column index" );
+    wxCHECK_RET( col < GetColumnCount(), "Invalid column index" );
 
     m_model->SetItemText(item, col, text);
 }
@@ -1208,6 +1184,7 @@ unsigned wxTreeListCtrl::GetSelections(wxTreeListItems& selections) const
 void wxTreeListCtrl::Select(wxTreeListItem item)
 {
     wxCHECK_RET( m_view, "Must create first" );
+    wxCHECK_RET( item->GetParent(), "Can't select the invisible root item" );
 
     m_view->Select(m_model->ToNonRootDVI(item));
 }
@@ -1215,6 +1192,7 @@ void wxTreeListCtrl::Select(wxTreeListItem item)
 void wxTreeListCtrl::Unselect(wxTreeListItem item)
 {
     wxCHECK_RET( m_view, "Must create first" );
+    wxCHECK_RET( item->GetParent(), "Can't deselect the invisible root item" );
 
     m_view->Unselect(m_model->ToNonRootDVI(item));
 }
@@ -1222,6 +1200,7 @@ void wxTreeListCtrl::Unselect(wxTreeListItem item)
 bool wxTreeListCtrl::IsSelected(wxTreeListItem item) const
 {
     wxCHECK_MSG( m_view, false, "Must create first" );
+    wxCHECK_MSG( item->GetParent(), false, "Invisible root can't be selected" );
 
     return m_view->IsSelected(m_model->ToNonRootDVI(item));
 }

@@ -19,7 +19,7 @@ public:
                const wxSize& size = wxDefaultSize,
                long style = wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT,
                const wxValidator& validator = wxDefaultValidator,
-               const wxString& name = wxTreeCtrlNameStr);
+               const wxString& name = wxASCII_STR(wxTreeCtrlNameStr));
 
     virtual ~wxTreeCtrl();
 
@@ -28,7 +28,7 @@ public:
                 const wxSize& size = wxDefaultSize,
                 long style = wxTR_HAS_BUTTONS | wxTR_LINES_AT_ROOT,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString& name = wxTreeCtrlNameStr);
+                const wxString& name = wxASCII_STR(wxTreeCtrlNameStr));
 
     virtual unsigned int GetCount() const wxOVERRIDE;
 
@@ -135,9 +135,13 @@ protected:
 
     virtual wxTreeItemId DoTreeHitTest(const wxPoint& point, int& flags) const wxOVERRIDE;
 
+    virtual void OnImagesChanged() wxOVERRIDE;
+
 private:
     void SendDeleteEvent(const wxTreeItemId &item);
     wxTreeItemId GetNext(const wxTreeItemId &item) const;
+
+    void DoUpdateIconsSize(wxImageList *imageList);
 
     wxQTreeWidget *m_qtTreeWidget;
     wxDECLARE_DYNAMIC_CLASS(wxTreeCtrl);

@@ -31,8 +31,10 @@
         A menu has been just closed.
         This type of event is sent as wxMenuEvent.
     @event{EVT_MENU_HIGHLIGHT(id, func)}
-        The menu item with the specified id has been highlighted: used to show
-        help prompts in the status bar by wxFrame
+        The menu item with the specified id has been highlighted. If the id is
+        ::wxID_NONE, highlighting has been removed from the previously
+        highlighted menu item and there is no highlighted item any more.
+        This is used by wxFrame to show help prompts in the status bar.
         This type of event is sent as wxMenuEvent.
     @event{EVT_MENU_HIGHLIGHT_ALL(func)}
         A menu item has been highlighted, i.e. the currently selected menu item has changed.
@@ -136,7 +138,7 @@ public:
         For example:
 
         @code
-          wxMenuItem::GetLabelfromText("&Hello\tCtrl-h");
+          wxMenuItem::GetLabelText("&Hello\tCtrl-h");
         @endcode
 
         will return just @c "Hello".
@@ -149,7 +151,7 @@ public:
     /**
         @name Getters
     */
-    //@{
+    ///@{
 
     /**
         Returns the background colour associated with the menu item.
@@ -159,18 +161,38 @@ public:
     wxColour& GetBackgroundColour() const;
 
     /**
-        Returns the checked or unchecked bitmap.
+        Returns the item bitmap.
 
-        @onlyfor{wxmsw}
+        This method exists only for compatibility, please use GetBitmapBundle()
+        in the new code.
     */
-    virtual const wxBitmap& GetBitmap(bool checked = true) const;
+    wxBitmap GetBitmap() const;
 
     /**
-        Returns the bitmap to be used for disabled items.
+        Returns the checked or unchecked bitmap.
+
+        This overload only exists in wxMSW, avoid using it in portable code.
+    */
+    wxBitmap GetBitmap(bool checked) const;
+
+    /**
+        Returns the bitmap bundle containing the bitmap used for this item.
+
+        The returned bundle is invalid, i.e. empty, if no bitmap is associated
+        with the item.
+
+        @see SetBitmap()
+
+        @since 3.2.0
+    */
+    wxBitmapBundle GetBitmapBundle() const;
+
+    /**
+        Returns the bitmap used for disabled items.
 
         @onlyfor{wxmsw}
     */
-    virtual const wxBitmap& GetDisabledBitmap() const;
+    virtual wxBitmap GetDisabledBitmap() const;
 
     /**
         Returns the font associated with the menu item.
@@ -254,7 +276,7 @@ public:
 
         @deprecated This function is deprecated in favour of GetItemLabel().
 
-        @see GetLabelFromText()
+        @see GetItemLabel()
     */
     const wxString& GetText() const;
 
@@ -276,14 +298,14 @@ public:
     */
     virtual wxAcceleratorEntry *GetAccel() const;
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Checkers
     */
-    //@{
+    ///@{
 
     /**
         Returns @true if the item is a check item.
@@ -330,14 +352,14 @@ public:
     */
     bool IsSubMenu() const;
 
-    //@}
+    ///@}
 
 
 
     /**
         @name Setters
     */
-    //@{
+    ///@{
 
     /**
         Sets the background colour associated with the menu item.
@@ -349,23 +371,26 @@ public:
     /**
         Sets the bitmap for the menu item.
 
-        It is equivalent to wxMenuItem::SetBitmaps(bmp, wxNullBitmap) if
-        @a checked is @true (default value) or SetBitmaps(wxNullBitmap, bmp)
-        otherwise.
-
-        SetBitmap() must be called before the item is appended to the menu,
-        i.e. appending the item without a bitmap and setting one later is not
-        guaranteed to work. But the bitmap can be changed or reset later if it
-        had been set up initially.
-
         Notice that GTK+ uses a global setting called @c gtk-menu-images to
         determine if the images should be shown in the menus at all. If it is
         off (which is the case in e.g. Gnome 2.28 by default), no images will
         be shown, consistently with the native behaviour.
-
-        @onlyfor{wxmsw,wxosx,wxgtk}
     */
-    virtual void SetBitmap(const wxBitmap& bmp, bool checked = true);
+    void SetBitmap(const wxBitmapBundle& bmp);
+
+    /**
+        Sets the checked or unchecked bitmap for the menu item.
+
+        It is equivalent to wxMenuItem::SetBitmaps(bmp, wxNullBitmap) if
+        @a checked is @true or SetBitmaps(wxNullBitmap, bmp) otherwise.
+
+        Note that different bitmaps for checked and unchecked item states are
+        not supported in most ports, while setting just a single bitmap using
+        the overload above is supported in all of them.
+
+        @onlyfor{wxmsw}
+    */
+    void SetBitmap(const wxBitmapBundle& bmp, bool checked);
 
     /**
         Sets the checked/unchecked bitmaps for the menu item.
@@ -373,15 +398,15 @@ public:
 
         @onlyfor{wxmsw}
     */
-    void SetBitmaps(const wxBitmap& checked,
-                    const wxBitmap& unchecked = wxNullBitmap);
+    void SetBitmaps(const wxBitmapBundle& checked,
+                    const wxBitmapBundle& unchecked = wxNullBitmap);
 
     /**
         Sets the to be used for disabled menu items.
 
         @onlyfor{wxmsw}
     */
-    void SetDisabledBitmap(const wxBitmap& disabled);
+    void SetDisabledBitmap(const wxBitmapBundle& disabled);
 
 
     /**
@@ -416,7 +441,7 @@ public:
         "ALT" and @c "SHIFT" strings (case doesn't matter) separated by either
         @c '-' or @c '+' characters and followed by the accelerator itself.
         Notice that @c CTRL corresponds to the "Ctrl" key on most platforms but
-        not under OS X where it is mapped to "Cmd" key on Mac keyboard.
+        not under macOS where it is mapped to "Cmd" key on Mac keyboard.
         Usually this is exactly what you want in portable code but if you
         really need to use the (rarely used for this purpose) "Ctrl" key even
         under Mac, you may use @c RAWCTRL to prevent this mapping. Under the
@@ -565,6 +590,30 @@ public:
     */
     virtual void SetAccel(wxAcceleratorEntry *accel);
 
-    //@}
+    /**
+       Add an extra accelerator for this menu item.
+
+       Additional accelerators are not shown in the item's label,
+       but still will trigger the menu command when pressed.
+
+       They can be useful to let multiple keys be used as accelerators
+       for the same command, e.g. @c WXK_ADD and @c WXK_NUMPAD_ADD.
+
+       @onlyfor{wxmsw,wxgtk}
+
+        @since 3.1.6
+    */
+    virtual void AddExtraAccel(const wxAcceleratorEntry& accel);
+
+    /**
+       Clear the extra accelerators list.
+
+       This doesn't affect the main item accelerator (if any).
+
+       @since 3.1.6
+    */
+    void ClearExtraAccels();
+
+    ///@}
 };
 

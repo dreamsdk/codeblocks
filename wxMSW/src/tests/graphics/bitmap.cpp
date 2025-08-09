@@ -14,17 +14,16 @@
 
 #ifdef wxHAS_RAW_BITMAP
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/bitmap.h"
 #include "wx/rawbmp.h"
 #include "wx/dcmemory.h"
+#include "wx/dcsvg.h"
 #if wxUSE_GRAPHICS_CONTEXT
 #include "wx/graphics.h"
 #endif // wxUSE_GRAPHICS_CONTEXT
 
+#include "testfile.h"
 #include "testimage.h"
 
 #define ASSERT_EQUAL_RGB(c, r, g, b) \
@@ -32,11 +31,19 @@
     CHECK( (int)g == (int)c.Green() ); \
     CHECK( (int)b == (int)c.Blue() )
 
-#define ASSERT_EQUAL_RGBA(c, r, g, b, a) \
-    CHECK( (int)r == (int)c.Red() ); \
-    CHECK( (int)g == (int)c.Green() ); \
-    CHECK( (int)b == (int)c.Blue() ); \
-    CHECK( (int)a == (int)c.Alpha() )
+#define ASSERT_EQUAL_COLOUR_RGB(c1, c2) \
+    CHECK( (int)c1.Red()   == (int)c2.Red() ); \
+    CHECK( (int)c1.Green() == (int)c2.Green() ); \
+    CHECK( (int)c1.Blue()  == (int)c2.Blue() )
+
+#define ASSERT_EQUAL_COLOUR_RGBA(c1, c2) \
+    CHECK( (int)c1.Red()   == (int)c2.Red() ); \
+    CHECK( (int)c1.Green() == (int)c2.Green() ); \
+    CHECK( (int)c1.Blue()  == (int)c2.Blue() ); \
+    CHECK( (int)c1.Alpha() == (int)c2.Alpha() )
+
+#define CHECK_EQUAL_COLOUR_RGB(c1, c2)  ASSERT_EQUAL_COLOUR_RGB(c1, c2)
+#define CHECK_EQUAL_COLOUR_RGBA(c1, c2) ASSERT_EQUAL_COLOUR_RGBA(c1, c2)
 
 #ifdef __WXMSW__
 // Support for iteration over 32 bpp 0RGB bitmaps
@@ -51,6 +58,54 @@ typedef wxNativePixelData wxNative32PixelData;
 // ----------------------------------------------------------------------------
 // tests
 // ----------------------------------------------------------------------------
+
+TEST_CASE("BitmapTestCase::Monochrome", "[bitmap][monochrome]")
+{
+#ifdef __WXGTK__
+    WARN("Skipping test known not to work in wxGTK.");
+#elif defined(__WXOSX__)
+    WARN("Skipping test known not to work in wxOSX.");
+#else
+    wxBitmap color;
+    color.LoadFile("horse.bmp", wxBITMAP_TYPE_BMP);
+    REQUIRE(color.IsOk());
+    REQUIRE(color.GetDepth() == 32);
+
+    wxImage imgQuant = color.ConvertToImage();
+    wxBitmap bmpQuant(imgQuant, 1);
+    REQUIRE(bmpQuant.GetDepth() == 1);
+    TempFile mono_horse("mono_horse.bmp");
+    REQUIRE(bmpQuant.SaveFile(mono_horse.GetName(), wxBITMAP_TYPE_BMP));
+
+    wxBitmap mono;
+    REQUIRE(mono.LoadFile(mono_horse.GetName(), wxBITMAP_TYPE_BMP));
+    REQUIRE(mono.IsOk());
+    REQUIRE(mono.GetDepth() == 1);
+
+    // wxMonoPixelData only exists in wxMSW
+#if defined(__WXMSW__)
+    // draw lines on top and left, but leaving blank top and left lines
+    {
+        wxMonoPixelData data(mono);
+        wxMonoPixelData::Iterator p(data);
+        p.OffsetY(data, 1);
+        for ( int i = 0; i < data.GetWidth() - 2; ++i )
+        {
+            ++p;
+            p.Pixel() = 0;
+        }
+        p.MoveTo(data, 1, 1);
+        for ( int i = 0; i < data.GetHeight() - 3; ++i )
+        {
+            p.OffsetY(data, 1);
+            p.Pixel() = 1;
+        }
+    }
+    TempFile mono_lines_horse("mono_lines_horse.bmp");
+    REQUIRE(mono.SaveFile(mono_lines_horse.GetName(), wxBITMAP_TYPE_BMP));
+#endif      // __WXMSW__
+#endif      // !__WXGTK__
+}
 
 TEST_CASE("BitmapTestCase::Mask", "[bitmap][mask]")
 {
@@ -75,6 +130,493 @@ TEST_CASE("BitmapTestCase::Mask", "[bitmap][mask]")
     REQUIRE_NOTHROW(mask2 = new wxMask(*mask));
     bmp.SetMask(mask2);
     REQUIRE(bmp.GetMask() == mask2);
+}
+
+TEST_CASE("BitmapTestCase::ToImage", "[bitmap][image][convertto]")
+{
+    SECTION("RGB bitmap without mask")
+    {
+        // RGB bitmap
+        wxBitmap bmp(16, 16, 24);
+        {
+            wxMemoryDC dc(bmp);
+            dc.SetPen(*wxYELLOW_PEN);
+            dc.SetBrush(*wxYELLOW_BRUSH);
+            dc.DrawRectangle(0, 0, bmp.GetWidth(), bmp.GetHeight());
+        }
+        REQUIRE_FALSE(bmp.HasAlpha());
+        REQUIRE(bmp.GetMask() == NULL);
+
+        wxImage image = bmp.ConvertToImage();
+        REQUIRE_FALSE(image.HasAlpha());
+        REQUIRE_FALSE(image.HasMask());
+        REQUIRE(image.GetWidth() == bmp.GetWidth());
+        REQUIRE(image.GetHeight() == bmp.GetHeight());
+
+        wxNativePixelData dataBmp(bmp);
+        wxNativePixelData::Iterator rowStartBmp(dataBmp);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxNativePixelData::Iterator iBmp = rowStartBmp;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue());
+                wxColour imgc(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y));
+                CHECK_EQUAL_COLOUR_RGB(imgc, bmpc);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+        }
+    }
+
+    SECTION("RGB bitmap with mask")
+    {
+        // RGB bitmap
+        wxBitmap bmp(16, 16, 24);
+        {
+            wxMemoryDC dc(bmp);
+            dc.SetPen(*wxYELLOW_PEN);
+            dc.SetBrush(*wxYELLOW_BRUSH);
+            dc.DrawRectangle(0, 0, bmp.GetWidth(), bmp.GetHeight());
+        }
+        // Mask
+        wxBitmap bmask(bmp.GetWidth(), bmp.GetHeight(), 1);
+        {
+            wxMemoryDC dc(bmask);
+#if wxUSE_GRAPHICS_CONTEXT
+            wxGraphicsContext* gc = dc.GetGraphicsContext();
+            if (gc)
+            {
+                gc->SetAntialiasMode(wxANTIALIAS_NONE);
+            }
+#endif // wxUSE_GRAPHICS_CONTEXT
+            dc.SetBackground(*wxBLACK_BRUSH);
+            dc.Clear();
+            dc.SetPen(*wxWHITE_PEN);
+            dc.SetBrush(*wxWHITE_BRUSH);
+            dc.DrawRectangle(4, 4, 8, 8);
+        }
+        bmp.SetMask(new wxMask(bmask));
+        REQUIRE_FALSE(bmp.HasAlpha());
+        REQUIRE(bmp.GetMask() != NULL);
+        const int numUnmaskedPixels = 8 * 8;
+
+        wxImage image = bmp.ConvertToImage();
+        REQUIRE_FALSE(image.HasAlpha());
+        REQUIRE(image.HasMask() == true);
+        REQUIRE(image.GetWidth() == bmp.GetWidth());
+        REQUIRE(image.GetHeight() == bmp.GetHeight());
+        const wxColour maskCol(image.GetMaskRed(), image.GetMaskGreen(), image.GetMaskBlue());
+        REQUIRE(maskCol.IsOk());
+
+        wxNativePixelData dataBmp(bmp);
+        wxNativePixelData::Iterator rowStartBmp(dataBmp);
+        wxBitmap mask = bmp.GetMask()->GetBitmap();
+        wxNativePixelData dataMask(mask);
+        wxNativePixelData::Iterator rowStartMask(dataMask);
+
+        int unmaskedPixelsCount = 0;
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxNativePixelData::Iterator iBmp = rowStartBmp;
+            wxNativePixelData::Iterator iMask = rowStartMask;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp, ++iMask )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue());
+                wxColour maskc(iMask.Red(), iMask.Green(), iMask.Blue());
+                wxColour imgc(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y));
+                if ( maskc == *wxWHITE )
+                {
+                    CHECK_EQUAL_COLOUR_RGB(imgc, bmpc);
+                    unmaskedPixelsCount++;
+                }
+                else
+                {
+                    CHECK_EQUAL_COLOUR_RGB(imgc, maskCol);
+                }
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+            rowStartMask.OffsetY(dataMask, 1);
+        }
+        CHECK(unmaskedPixelsCount == numUnmaskedPixels);
+    }
+
+    SECTION("RGBA bitmap without mask")
+    {
+        // RGBA Bitmap
+        wxBitmap bmp(16, 16, 32);
+#if defined(__WXMSW__) || defined(__WXOSX__)
+        bmp.UseAlpha();
+#endif // __WXMSW__ || __WXOSX__
+        {
+            const wxColour clrFg(*wxCYAN);
+            const unsigned char alpha = 92;
+
+#if defined(__WXMSW__) || defined(__WXOSX__)
+            // premultiplied values
+            const wxColour clrFgAlpha(((clrFg.Red() * alpha) + 127) / 255, ((clrFg.Green() * alpha) + 127) / 255, ((clrFg.Blue() * alpha) + 127) / 255);
+#else
+            const wxColour clrFgAlpha(clrFg);
+#endif // __WXMSW__ || __WXOSX__
+
+            wxAlphaPixelData data(bmp);
+            REQUIRE(data);
+            wxAlphaPixelData::Iterator p(data);
+            for ( int y = 0; y < bmp.GetHeight(); y++)
+            {
+                wxAlphaPixelData::Iterator rowStart = p;
+                for ( int x = 0; x < bmp.GetWidth(); x++, ++p )
+                {
+                    if ( x < bmp.GetWidth() / 2 )
+                    {   // opaque
+                        p.Red() = clrFg.Red();
+                        p.Green() = clrFg.Green();
+                        p.Blue() = clrFg.Blue();
+                        p.Alpha() = 255;
+                    }
+                    else
+                    {   // with transparency
+                        p.Red() = clrFgAlpha.Red();
+                        p.Green() = clrFgAlpha.Green();
+                        p.Blue() = clrFgAlpha.Blue();
+                        p.Alpha() = alpha;
+                    }
+                }
+                p = rowStart;
+                p.OffsetY(data, 1);
+            }
+        }
+        REQUIRE(bmp.HasAlpha() == true);
+        REQUIRE(bmp.GetMask() == NULL);
+
+        wxImage image = bmp.ConvertToImage();
+        REQUIRE(image.HasAlpha() == true);
+        REQUIRE_FALSE(image.HasMask());
+        REQUIRE(image.GetWidth() == bmp.GetWidth());
+        REQUIRE(image.GetHeight() == bmp.GetHeight());
+
+        wxAlphaPixelData dataBmp(bmp);
+        wxAlphaPixelData::Iterator rowStartBmp(dataBmp);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxAlphaPixelData::Iterator iBmp = rowStartBmp;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue(), iBmp.Alpha());
+                wxColour imgc(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y), image.GetAlpha(x,y));
+#if defined(__WXMSW__) || defined(__WXOSX__)
+                // Premultiplied values
+                unsigned char r = ((imgc.Red() * imgc.Alpha()) + 127) / 255;
+                unsigned char g = ((imgc.Green() * imgc.Alpha()) + 127) / 255;
+                unsigned char b = ((imgc.Blue() * imgc.Alpha()) + 127) / 255;
+                imgc.Set(r, g, b, imgc.Alpha());
+#endif // __WXMSW__ || __WXOSX__
+                CHECK_EQUAL_COLOUR_RGBA(imgc, bmpc);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+        }
+    }
+
+    SECTION("RGBA bitmap with mask")
+    {
+        // RGBA Bitmap
+        wxBitmap bmp(16, 16, 32);
+#if defined(__WXMSW__) || defined(__WXOSX__)
+        bmp.UseAlpha();
+#endif // __WXMSW__ || __WXOSX__
+        {
+            const wxColour clrFg(*wxCYAN);
+            const unsigned char alpha = 92;
+#if defined(__WXMSW__) || defined(__WXOSX__)
+            // premultiplied values
+            const wxColour clrFgAlpha(((clrFg.Red() * alpha) + 127) / 255, ((clrFg.Green() * alpha) + 127) / 255, ((clrFg.Blue() * alpha) + 127) / 255);
+#else
+            const wxColour clrFgAlpha(clrFg);
+#endif // __WXMSW__ || __WXOSX__
+
+            wxAlphaPixelData data(bmp);
+            REQUIRE(data);
+            wxAlphaPixelData::Iterator p(data);
+            for ( int y = 0; y < bmp.GetHeight(); y++)
+            {
+                wxAlphaPixelData::Iterator rowStart = p;
+                for ( int x = 0; x < bmp.GetWidth(); x++, ++p )
+                {
+                    if ( x < bmp.GetWidth() / 2 )
+                    {   // opaque
+                        p.Red() = clrFg.Red();
+                        p.Green() = clrFg.Green();
+                        p.Blue() = clrFg.Blue();
+                        p.Alpha() = 255;
+                    }
+                    else
+                    {   // with transparency
+                        p.Red() = clrFgAlpha.Red();
+                        p.Green() = clrFgAlpha.Green();
+                        p.Blue() = clrFgAlpha.Blue();
+                        p.Alpha() = alpha;
+                    }
+                }
+                p = rowStart;
+                p.OffsetY(data, 1);
+            }
+        }
+        // Mask
+        wxBitmap bmask(bmp.GetWidth(), bmp.GetHeight(), 1);
+        {
+            wxMemoryDC dc(bmask);
+#if wxUSE_GRAPHICS_CONTEXT
+            wxGraphicsContext* gc = dc.GetGraphicsContext();
+            if (gc)
+            {
+                gc->SetAntialiasMode(wxANTIALIAS_NONE);
+            }
+#endif // wxUSE_GRAPHICS_CONTEXT
+            dc.SetBackground(*wxBLACK_BRUSH);
+            dc.Clear();
+            dc.SetPen(*wxWHITE_PEN);
+            dc.SetBrush(*wxWHITE_BRUSH);
+            dc.DrawRectangle(4, 4, 8, 8);
+        }
+        bmp.SetMask(new wxMask(bmask));
+        REQUIRE(bmp.HasAlpha() == true);
+        REQUIRE(bmp.GetMask() != NULL);
+        const int numUnmaskedPixels = 8 * 8;
+
+        wxImage image = bmp.ConvertToImage();
+        REQUIRE(image.HasAlpha() == true);
+        REQUIRE(image.HasMask() == true);
+        REQUIRE(image.GetWidth() == bmp.GetWidth());
+        REQUIRE(image.GetHeight() == bmp.GetHeight());
+        const wxColour maskCol(image.GetMaskRed(), image.GetMaskGreen(), image.GetMaskBlue());
+        REQUIRE(maskCol.IsOk());
+
+        wxAlphaPixelData dataBmp(bmp);
+        wxAlphaPixelData::Iterator rowStartBmp(dataBmp);
+        wxBitmap mask = bmp.GetMask()->GetBitmap();
+        wxNativePixelData dataMask(mask);
+        wxNativePixelData::Iterator rowStartMask(dataMask);
+
+        int unmaskedPixelsCount = 0;
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxAlphaPixelData::Iterator iBmp = rowStartBmp;
+            wxNativePixelData::Iterator iMask = rowStartMask;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp, ++iMask )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue(), iBmp.Alpha());
+                wxColour maskc(iMask.Red(), iMask.Green(), iMask.Blue());
+                wxColour imgc(image.GetRed(x, y), image.GetGreen(x, y), image.GetBlue(x, y), image.GetAlpha(x,y));
+                if ( maskc == *wxWHITE )
+                {
+#if defined(__WXMSW__) || defined(__WXOSX__)
+                    // Premultiplied values
+                    unsigned char r = ((imgc.Red() * imgc.Alpha()) + 127) / 255;
+                    unsigned char g = ((imgc.Green() * imgc.Alpha()) + 127) / 255;
+                    unsigned char b = ((imgc.Blue() * imgc.Alpha()) + 127) / 255;
+                    imgc.Set(r, g, b, imgc.Alpha());
+#endif // __WXMSW__ || __WXOSX
+                    CHECK_EQUAL_COLOUR_RGBA(imgc, bmpc);
+                    unmaskedPixelsCount++;
+                }
+                else
+                {
+                    CHECK_EQUAL_COLOUR_RGB(imgc, maskCol);
+                    CHECK(imgc.Alpha() == bmpc.Alpha());
+                }
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+            rowStartMask.OffsetY(dataMask, 1);
+        }
+        CHECK(unmaskedPixelsCount == numUnmaskedPixels);
+    }
+}
+
+TEST_CASE("BitmapTestCase::FromImage", "[bitmap][image][convertfrom]")
+{
+    const wxColour maskCol(*wxRED);
+    const wxColour fillCol(*wxGREEN);
+
+    SECTION("RGB image without mask")
+    {
+        wxImage img(2, 2);
+        img.SetRGB(0, 0, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(0, 1, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(1, 0, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetRGB(1, 1, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        REQUIRE_FALSE(img.HasAlpha());
+        REQUIRE_FALSE(img.HasMask());
+
+        wxBitmap bmp(img);
+        REQUIRE_FALSE(bmp.HasAlpha());
+        REQUIRE(bmp.GetMask() == NULL);
+        REQUIRE(bmp.GetWidth() == img.GetWidth());
+        REQUIRE(bmp.GetHeight() == img.GetHeight());
+
+        wxNativePixelData dataBmp(bmp);
+        wxNativePixelData::Iterator rowStartBmp(dataBmp);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxNativePixelData::Iterator iBmp = rowStartBmp;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue());
+                wxColour imgc(img.GetRed(x, y), img.GetGreen(x, y), img.GetBlue(x, y));
+                CHECK_EQUAL_COLOUR_RGB(bmpc, imgc);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+        }
+    }
+
+    SECTION("RGB image with mask")
+    {
+        wxImage img(2, 2);
+        img.SetRGB(0, 0, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(0, 1, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(1, 0, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetRGB(1, 1, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetMaskColour(maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        REQUIRE_FALSE(img.HasAlpha());
+        REQUIRE(img.HasMask() == true);
+
+        wxBitmap bmp(img);
+        REQUIRE_FALSE(bmp.HasAlpha());
+        REQUIRE(bmp.GetMask() != NULL);
+        REQUIRE(bmp.GetWidth() == img.GetWidth());
+        REQUIRE(bmp.GetHeight() == img.GetHeight());
+
+        wxNativePixelData dataBmp(bmp);
+        wxNativePixelData::Iterator rowStartBmp(dataBmp);
+
+        wxBitmap mask = bmp.GetMask()->GetBitmap();
+        wxNativePixelData dataMask(mask);
+        wxNativePixelData::Iterator rowStartMask(dataMask);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxNativePixelData::Iterator iBmp = rowStartBmp;
+            wxNativePixelData::Iterator iMask = rowStartMask;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp, ++iMask )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue());
+                wxColour maskc(iMask.Red(), iMask.Green(), iMask.Blue());
+                wxColour imgc(img.GetRed(x, y), img.GetGreen(x, y), img.GetBlue(x, y));
+                CHECK_EQUAL_COLOUR_RGB(bmpc, imgc);
+                wxColour c = maskc == *wxWHITE ? fillCol : maskCol;
+                CHECK_EQUAL_COLOUR_RGB(bmpc, c);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+            rowStartMask.OffsetY(dataMask, 1);
+        }
+    }
+
+    SECTION("RGBA image without mask")
+    {
+        wxImage img(2, 2);
+        img.SetRGB(0, 0, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(0, 1, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(1, 0, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetRGB(1, 1, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetAlpha();
+        img.SetAlpha(0, 0, 128);
+        img.SetAlpha(0, 1, 0);
+        img.SetAlpha(1, 0, 128);
+        img.SetAlpha(1, 1, 0);
+        REQUIRE(img.HasAlpha() == true);
+        REQUIRE_FALSE(img.HasMask());
+
+        wxBitmap bmp(img);
+        REQUIRE(bmp.HasAlpha() == true);
+        REQUIRE(bmp.GetMask() == NULL);
+        REQUIRE(bmp.GetWidth() == img.GetWidth());
+        REQUIRE(bmp.GetHeight() == img.GetHeight());
+
+        wxAlphaPixelData dataBmp(bmp);
+        wxAlphaPixelData::Iterator rowStartBmp(dataBmp);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxAlphaPixelData::Iterator iBmp = rowStartBmp;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue(), iBmp.Alpha());
+                wxColour imgc(img.GetRed(x, y), img.GetGreen(x, y), img.GetBlue(x, y), img.GetAlpha(x, y));
+#if defined(__WXMSW__) || defined(__WXOSX__)
+                // Premultiplied values
+                unsigned char r = ((imgc.Red() * imgc.Alpha()) + 127) / 255;
+                unsigned char g = ((imgc.Green() * imgc.Alpha()) + 127) / 255;
+                unsigned char b = ((imgc.Blue() * imgc.Alpha()) + 127) / 255;
+                imgc.Set(r, g, b, imgc.Alpha());
+#endif // __WXMSW__ || __WXOSX__
+                CHECK_EQUAL_COLOUR_RGBA(bmpc, imgc);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+        }
+    }
+
+    SECTION("RGBA image with mask")
+    {
+        wxImage img(2, 2);
+        img.SetRGB(0, 0, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(0, 1, maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        img.SetRGB(1, 0, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetRGB(1, 1, fillCol.Red(), fillCol.Green(), fillCol.Blue());
+        img.SetAlpha();
+        img.SetAlpha(0, 0, 128);
+        img.SetAlpha(0, 1, 0);
+        img.SetAlpha(1, 0, 128);
+        img.SetAlpha(1, 1, 0);
+        img.SetMaskColour(maskCol.Red(), maskCol.Green(), maskCol.Blue());
+        REQUIRE(img.HasAlpha() == true);
+        REQUIRE(img.HasMask() == true);
+
+        wxBitmap bmp(img);
+        REQUIRE(bmp.HasAlpha() == true);
+        REQUIRE(bmp.GetMask() != NULL);
+        REQUIRE(bmp.GetWidth() == img.GetWidth());
+        REQUIRE(bmp.GetHeight() == img.GetHeight());
+
+        wxAlphaPixelData dataBmp(bmp);
+        wxAlphaPixelData::Iterator rowStartBmp(dataBmp);
+
+        wxBitmap mask = bmp.GetMask()->GetBitmap();
+        wxNativePixelData dataMask(mask);
+        wxNativePixelData::Iterator rowStartMask(dataMask);
+
+        for ( int y = 0; y < bmp.GetHeight(); ++y )
+        {
+            wxAlphaPixelData::Iterator iBmp = rowStartBmp;
+            wxNativePixelData::Iterator iMask = rowStartMask;
+            for ( int x = 0; x < bmp.GetWidth(); ++x, ++iBmp, ++iMask )
+            {
+                wxColour bmpc(iBmp.Red(), iBmp.Green(), iBmp.Blue(), iBmp.Alpha());
+                wxColour maskc(iMask.Red(), iMask.Green(), iMask.Blue());
+                wxColour imgc(img.GetRed(x, y), img.GetGreen(x, y), img.GetBlue(x, y), img.GetAlpha(x, y));
+#if defined(__WXMSW__) || defined(__WXOSX__)
+                // Premultiplied values
+                unsigned char r = ((imgc.Red() * imgc.Alpha()) + 127) / 255;
+                unsigned char g = ((imgc.Green() * imgc.Alpha()) + 127) / 255;
+                unsigned char b = ((imgc.Blue() * imgc.Alpha()) + 127) / 255;
+                imgc.Set(r, g, b, imgc.Alpha());
+#endif // __WXMSW__ || __WXOSX__
+                CHECK_EQUAL_COLOUR_RGBA(bmpc, imgc);
+
+                wxColour c = maskc == *wxWHITE ? fillCol : maskCol;
+#if defined(__WXMSW__) || defined(__WXOSX__)
+                // Premultiplied values
+                r = ((c.Red() * imgc.Alpha()) + 127) / 255;
+                g = ((c.Green() * imgc.Alpha()) + 127) / 255;
+                b = ((c.Blue() * imgc.Alpha()) + 127) / 255;
+                c.Set(r, g, b);
+#endif // __WXMSW__ || __WXOSX__
+                CHECK_EQUAL_COLOUR_RGB(bmpc, c);
+            }
+            rowStartBmp.OffsetY(dataBmp, 1);
+            rowStartMask.OffsetY(dataMask, 1);
+        }
+    }
 }
 
 TEST_CASE("BitmapTestCase::OverlappingBlit", "[bitmap][blit]")
@@ -216,15 +758,15 @@ TEST_CASE("BitmapTestCase::DrawNonAlphaWithMask", "[bitmap][draw][nonalpha][with
         p.OffsetY(data, h / 4);
         wxNativePixelData::Iterator rowStart = p;
         p.OffsetX(data, w / 4); // drawn area - left side
-        ASSERT_EQUAL_RGB(p, clrLeft.Red(), clrLeft.Green(), clrLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrLeft);
         p.OffsetX(data, w / 2); // drawn area - right side
-        ASSERT_EQUAL_RGB(p, clrRight.Red(), clrRight.Green(), clrRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrRight);
         p = rowStart;
         p.OffsetY(data, h / 2);
         p.OffsetX(data, w / 4); // masked area - left side
-        ASSERT_EQUAL_RGB(p, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrBg);
         p.OffsetX(data, w / 2); // masked area - right side
-        ASSERT_EQUAL_RGB(p, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrBg);
     }
 
     // Drawing the bitmap not using mask
@@ -245,15 +787,15 @@ TEST_CASE("BitmapTestCase::DrawNonAlphaWithMask", "[bitmap][draw][nonalpha][with
         p.OffsetY(data, h / 4);
         wxNativePixelData::Iterator rowStart = p;
         p.OffsetX(data, w / 4); // left upper side
-        ASSERT_EQUAL_RGB(p, clrLeft.Red(), clrLeft.Green(), clrLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrLeft);
         p.OffsetX(data, w / 2); // right upper side
-        ASSERT_EQUAL_RGB(p, clrRight.Red(), clrRight.Green(), clrRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrRight);
         p = rowStart;
         p.OffsetY(data, h / 2);
         p.OffsetX(data, w / 4); // left lower side - same colour as upper
-        ASSERT_EQUAL_RGB(p, clrLeft.Red(), clrLeft.Green(), clrLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrLeft);
         p.OffsetX(data, w / 2); // right lower side - same colour as upper
-        ASSERT_EQUAL_RGB(p, clrRight.Red(), clrRight.Green(), clrRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrRight);
     }
 }
 
@@ -327,7 +869,7 @@ TEST_CASE("BitmapTestCase::DrawAlpha", "[bitmap][draw][alpha]")
     wxNativePixelData::Iterator p1(data24);
     p1.OffsetY(data24, h / 2);
     p1.OffsetX(data24, w / 4); // left side is opaque
-    ASSERT_EQUAL_RGB(p1, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p1, clrFg);
     p1.OffsetX(data24, w / 2); // right side is with alpha
 #if defined(__WXMSW__) || defined(__WXOSX__)
     // premultiplied values
@@ -360,7 +902,7 @@ TEST_CASE("BitmapTestCase::DrawAlpha", "[bitmap][draw][alpha]")
     wxNative32PixelData::Iterator p2(data32);
     p2.OffsetY(data32, h / 2);
     p2.OffsetX(data32, w / 4); // left side is opaque
-    ASSERT_EQUAL_RGB(p2, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p2, clrFg);
     p2.OffsetX(data32, w / 2); // right side is with alpha
     // premultiplied values
     ASSERT_EQUAL_RGB(p2, clrFgAlpha.Red() + (clrBg.Red() * (255 - alpha) + 127) / 255,
@@ -447,7 +989,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p1.OffsetY(data24, h / 4);
         wxNativePixelData::Iterator rowStart1 = p1;
         p1.OffsetX(data24, w / 4); // drawn area - left side opaque
-        ASSERT_EQUAL_RGB(p1, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p1, clrFg);
         p1.OffsetX(data24, w / 2); // drawn area - right side with alpha
 #if defined(__WXMSW__) || defined(__WXOSX__)
         // premultiplied values
@@ -462,9 +1004,9 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p1 = rowStart1;
         p1.OffsetY(data24, h / 2);
         p1.OffsetX(data24, w / 4); // masked area - left side
-        ASSERT_EQUAL_RGB(p1, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p1, clrBg);
         p1.OffsetX(data24, w / 2); // masked area - right side
-        ASSERT_EQUAL_RGB(p1, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p1, clrBg);
     }
 
     // Drawing the bitmap on 24 bpp RGB target not using mask
@@ -487,7 +1029,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p1.OffsetY(data24, h / 4);
         wxNativePixelData::Iterator rowStart1 = p1;
         p1.OffsetX(data24, w / 4); // left upper side opaque
-        ASSERT_EQUAL_RGB(p1, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p1, clrFg);
         p1.OffsetX(data24, w / 2); // right upper side with alpha
 #if defined(__WXMSW__) || defined(__WXOSX__)
         // premultiplied values
@@ -502,7 +1044,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p1 = rowStart1;
         p1.OffsetY(data24, h / 2);
         p1.OffsetX(data24, w / 4); // left lower side - same colour as upper
-        ASSERT_EQUAL_RGB(p1, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p1, clrFg);
         p1.OffsetX(data24, w / 2); // right lower side - same colour as upper
 #if defined(__WXMSW__) || defined(__WXOSX__)
          // premultiplied values
@@ -538,7 +1080,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p2.OffsetY(data32, h / 4);
         wxNative32PixelData::Iterator rowStart2 = p2;
         p2.OffsetX(data32, w / 4); // drawn area - left side opaque
-        ASSERT_EQUAL_RGB(p2, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p2, clrFg);
         p2.OffsetX(data32, w / 2); // drawn area - right side with alpha
         // premultiplied values
         ASSERT_EQUAL_RGB(p2, clrFgAlpha.Red() + (clrBg.Red() * (255 - alpha) + 127) / 255,
@@ -547,9 +1089,9 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p2 = rowStart2;
         p2.OffsetY(data32, h / 2);
         p2.OffsetX(data32, w / 4); // masked area - left side
-        ASSERT_EQUAL_RGB(p2, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p2, clrBg);
         p2.OffsetX(data32, w / 2); // masked area - right side
-        ASSERT_EQUAL_RGB(p2, clrBg.Red(), clrBg.Green(), clrBg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p2, clrBg);
     }
 
     // Drawing the bitmap on 32 bpp xRGB target not using mask
@@ -573,7 +1115,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p2.OffsetY(data32, h / 4);
         wxNative32PixelData::Iterator rowStart2 = p2;
         p2.OffsetX(data32, w / 4); // left upper side opaque
-        ASSERT_EQUAL_RGB(p2, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p2, clrFg);
         p2.OffsetX(data32, w / 2); // right upper side with alpha
         // premultiplied values
         ASSERT_EQUAL_RGB(p2, clrFgAlpha.Red() + (clrBg.Red() * (255 - alpha) + 127) / 255,
@@ -582,7 +1124,7 @@ TEST_CASE("BitmapTestCase::DrawAlphaWithMask", "[bitmap][draw][alpha][withmask]"
         p2 = rowStart2;
         p2.OffsetY(data32, h / 2);
         p2.OffsetX(data32, w / 4); // left lower side - same colour as upper
-        ASSERT_EQUAL_RGB(p2, clrFg.Red(), clrFg.Green(), clrFg.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p2, clrFg);
         p2.OffsetX(data32, w / 2); // right lower side - same colour as upper
         // premultiplied values
         ASSERT_EQUAL_RGB(p2, clrFgAlpha.Red() + (clrBg.Red() * (255 - alpha) + 127) / 255,
@@ -640,15 +1182,15 @@ TEST_CASE("BitmapTestCase::SubBitmapNonAlpha", "[bitmap][subbitmap][nonalpha]")
     p.OffsetY(data, h2 / 4);
     wxNativePixelData::Iterator rowStart = p;
     p.OffsetX(data, w2 / 4); // top-left point
-    ASSERT_EQUAL_RGB(p, clrTopLeft.Red(), clrTopLeft.Green(), clrTopLeft.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p, clrTopLeft);
     p.OffsetX(data, w2 / 2); // top-right point
-    ASSERT_EQUAL_RGB(p, clrTopRight.Red(), clrTopRight.Green(), clrTopRight.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p, clrTopRight);
     p = rowStart;
     p.OffsetY(data, h2 / 2);
     p.OffsetX(data, w2 / 4); // bottom-left point
-    ASSERT_EQUAL_RGB(p, clrBottomLeft.Red(), clrBottomLeft.Green(), clrBottomLeft.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p, clrBottomLeft);
     p.OffsetX(data, w2 / 2); // bottom-right point
-    ASSERT_EQUAL_RGB(p, clrBottomRight.Red(), clrBottomRight.Green(), clrBottomRight.Blue());
+    ASSERT_EQUAL_COLOUR_RGB(p, clrBottomRight);
 }
 
 TEST_CASE("BitmapTestCase::SubBitmapNonAlphaWithMask", "[bitmap][subbitmap][nonalpha][withmask]")
@@ -706,15 +1248,15 @@ TEST_CASE("BitmapTestCase::SubBitmapNonAlphaWithMask", "[bitmap][subbitmap][nona
         p.OffsetY(data, h2 / 4);
         wxNativePixelData::Iterator rowStart = p;
         p.OffsetX(data, w2 / 4); // top-left point
-        ASSERT_EQUAL_RGB(p, clrTopLeft.Red(), clrTopLeft.Green(), clrTopLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrTopLeft);
         p.OffsetX(data, w2 / 2); // top-right point
-        ASSERT_EQUAL_RGB(p, clrTopRight.Red(), clrTopRight.Green(), clrTopRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrTopRight);
         p = rowStart;
         p.OffsetY(data, h2 / 2);
         p.OffsetX(data, w2 / 4); // bottom-left point
-        ASSERT_EQUAL_RGB(p, clrBottomLeft.Red(), clrBottomLeft.Green(), clrBottomLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrBottomLeft);
         p.OffsetX(data, w2 / 2); // bottom-right point
-        ASSERT_EQUAL_RGB(p, clrBottomRight.Red(), clrBottomRight.Green(), clrBottomRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, clrBottomRight);
     }
 
     // Check sub bitmap mask
@@ -722,6 +1264,9 @@ TEST_CASE("BitmapTestCase::SubBitmapNonAlphaWithMask", "[bitmap][subbitmap][nona
     wxColour maskClrTopRight;
     wxColour maskClrBottomLeft;
     wxColour maskClrBottomRight;
+#if !defined(__WXOSX__)
+    REQUIRE(bmpMask.GetDepth() == 1);
+#endif
     // Fetch sample original mask pixels
     {
         wxNativePixelData data(bmpMask);
@@ -745,6 +1290,38 @@ TEST_CASE("BitmapTestCase::SubBitmapNonAlphaWithMask", "[bitmap][subbitmap][nona
     CHECK(maskClrBottomLeft == *wxBLACK);
     CHECK(maskClrBottomRight == *wxBLACK);
 
+    // wxMonoPixelData only exists in wxMSW
+#if defined(__WXMSW__)
+    bool maskValueTopLeft;
+    bool maskValueTopRight;
+    bool maskValueBottomLeft;
+    bool maskValueBottomRight;
+    // Fetch sample original mask pixels
+    {
+        REQUIRE(bmpMask.GetDepth() == 1);
+        wxMonoPixelData data(bmpMask);
+        REQUIRE(data);
+        wxMonoPixelData::Iterator p(data);
+        p.OffsetY(data, h / 4);
+        wxMonoPixelData::Iterator rowStart = p;
+        p.OffsetX(data, w / 4); // top-left point
+        maskValueTopLeft = p.Pixel();
+        p.OffsetX(data, w / 2); // top-right point
+        maskValueTopRight = p.Pixel();
+        p = rowStart;
+        p.OffsetY(data, h / 2);
+        p.OffsetX(data, w / 4); // bottom-left point
+        maskValueBottomLeft = p.Pixel();
+        p.OffsetX(data, w / 2); // bottom-right point
+        maskValueBottomRight = p.Pixel();
+    }
+    REQUIRE(bmpMask.GetDepth() == 1);
+    CHECK(maskValueTopLeft == true);
+    CHECK(maskValueTopRight == true);
+    CHECK(maskValueBottomLeft == false);
+    CHECK(maskValueBottomRight == false);
+#endif      // __WXMSW__
+
     wxBitmap subBmpMask = subBmp.GetMask()->GetBitmap();
     // Check sub bitmap mask attributes
     REQUIRE(subBmpMask.GetWidth() == subBmp.GetWidth());
@@ -762,16 +1339,39 @@ TEST_CASE("BitmapTestCase::SubBitmapNonAlphaWithMask", "[bitmap][subbitmap][nona
         p.OffsetY(data, h2 / 4);
         wxNativePixelData::Iterator rowStart = p;
         p.OffsetX(data, w2 / 4); // top-left point
-        ASSERT_EQUAL_RGB(p, maskClrTopLeft.Red(), maskClrTopLeft.Green(), maskClrTopLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, maskClrTopLeft);
         p.OffsetX(data, w2 / 2); // top-right point
-        ASSERT_EQUAL_RGB(p, maskClrTopRight.Red(), maskClrTopRight.Green(), maskClrTopRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, maskClrTopRight);
         p = rowStart;
         p.OffsetY(data, h2 / 2);
         p.OffsetX(data, w2 / 4); // bottom-left point
-        ASSERT_EQUAL_RGB(p, maskClrBottomLeft.Red(), maskClrBottomLeft.Green(), maskClrBottomLeft.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, maskClrBottomLeft);
         p.OffsetX(data, w2 / 2); // bottom-right point
-        ASSERT_EQUAL_RGB(p, maskClrBottomRight.Red(), maskClrBottomRight.Green(), maskClrBottomRight.Blue());
+        ASSERT_EQUAL_COLOUR_RGB(p, maskClrBottomRight);
     }
+
+    // wxMonoPixelData only exists in wxMSW
+#if defined(__WXMSW__)
+    {
+        REQUIRE(subBmpMask.GetDepth() == 1);
+        wxMonoPixelData data(subBmpMask);
+        REQUIRE(data);
+        wxMonoPixelData::Iterator p(data);
+        p.OffsetY(data, h2 / 4);
+        wxMonoPixelData::Iterator rowStart = p;
+        p.OffsetX(data, w2 / 4); // top-left point
+        CHECK(p.Pixel() == maskValueTopLeft);
+        p.OffsetX(data, w2 / 2); // top-right point
+        CHECK(p.Pixel() == maskValueTopRight);
+        p = rowStart;
+        p.OffsetY(data, h2 / 2);
+        p.OffsetX(data, w2 / 4); // bottom-left point
+        CHECK(p.Pixel() == maskValueBottomLeft);
+        p.OffsetX(data, w2 / 2); // bottom-right point
+        CHECK(p.Pixel() == maskValueBottomRight);
+    }
+    REQUIRE(subBmpMask.GetDepth() == 1);
+#endif      // __WXMSW__
 }
 
 TEST_CASE("BitmapTestCase::SubBitmapAlphaWithMask", "[bitmap][subbitmap][alpha][withmask]")
@@ -850,15 +1450,15 @@ TEST_CASE("BitmapTestCase::SubBitmapAlphaWithMask", "[bitmap][subbitmap][alpha][
         p.OffsetY(data, h2 / 4);
         wxAlphaPixelData::Iterator rowStart = p;
         p.OffsetX(data, w2 / 4); // top-left point
-        ASSERT_EQUAL_RGBA(p, clrLeft.Red(), clrLeft.Green(), clrLeft.Blue(), clrLeft.Alpha());
+        ASSERT_EQUAL_COLOUR_RGBA(p, clrLeft);
         p.OffsetX(data, w2 / 2); // top-right point
-        ASSERT_EQUAL_RGBA(p, clrRight.Red(), clrRight.Green(), clrRight.Blue(), clrRight.Alpha());
+        ASSERT_EQUAL_COLOUR_RGBA(p, clrRight);
         p = rowStart;
         p.OffsetY(data, h2 / 2);
         p.OffsetX(data, w2 / 4); // bottom-left point
-        ASSERT_EQUAL_RGBA(p, clrLeft.Red(), clrLeft.Green(), clrLeft.Blue(), clrLeft.Alpha());
+        ASSERT_EQUAL_COLOUR_RGBA(p, clrLeft);
         p.OffsetX(data, w2 / 2); // bottom-right point
-        ASSERT_EQUAL_RGBA(p, clrRight.Red(), clrRight.Green(), clrRight.Blue(), clrRight.Alpha());
+        ASSERT_EQUAL_COLOUR_RGBA(p, clrRight);
     }
 
     // Check sub bitmap mask
@@ -866,6 +1466,9 @@ TEST_CASE("BitmapTestCase::SubBitmapAlphaWithMask", "[bitmap][subbitmap][alpha][
     wxColour maskClrTopRight;
     wxColour maskClrBottomLeft;
     wxColour maskClrBottomRight;
+#if !defined(__WXOSX__)
+    REQUIRE(bmpMask.GetDepth() == 1);
+#endif
     // Fetch sample original mask pixels
     {
         wxNativePixelData data(bmpMask);
@@ -888,6 +1491,38 @@ TEST_CASE("BitmapTestCase::SubBitmapAlphaWithMask", "[bitmap][subbitmap][alpha][
     CHECK(maskClrTopRight == *wxWHITE);
     CHECK(maskClrBottomLeft == *wxBLACK);
     CHECK(maskClrBottomRight == *wxBLACK);
+
+    // wxMonoPixelData only exists in wxMSW
+#if defined(__WXMSW__)
+    bool maskValueTopLeft;
+    bool maskValueTopRight;
+    bool maskValueBottomLeft;
+    bool maskValueBottomRight;
+    // Fetch sample original mask pixels
+    {
+        REQUIRE(bmpMask.GetDepth() == 1);
+        wxMonoPixelData data(bmpMask);
+        REQUIRE(data);
+        wxMonoPixelData::Iterator p(data);
+        p.OffsetY(data, h / 4);
+        wxMonoPixelData::Iterator rowStart = p;
+        p.OffsetX(data, w / 4); // top-left point
+        maskValueTopLeft = p.Pixel();
+        p.OffsetX(data, w / 2); // top-right point
+        maskValueTopRight = p.Pixel();
+        p = rowStart;
+        p.OffsetY(data, h / 2);
+        p.OffsetX(data, w / 4); // bottom-left point
+        maskValueBottomLeft = p.Pixel();
+        p.OffsetX(data, w / 2); // bottom-right point
+        maskValueBottomRight = p.Pixel();
+    }
+    REQUIRE(bmpMask.GetDepth() == 1);
+    CHECK(maskValueTopLeft == true);
+    CHECK(maskValueTopRight == true);
+    CHECK(maskValueBottomLeft == false);
+    CHECK(maskValueBottomRight == false);
+#endif      // __WXMSW__
 
     wxBitmap subBmpMask = subBmp.GetMask()->GetBitmap();
     // Check sub bitmap mask attributes
@@ -916,6 +1551,29 @@ TEST_CASE("BitmapTestCase::SubBitmapAlphaWithMask", "[bitmap][subbitmap][alpha][
         p.OffsetX(data, w2 / 2); // bottom-right point
         ASSERT_EQUAL_RGB(p, maskClrBottomRight.Red(), maskClrBottomRight.Green(), maskClrBottomRight.Blue());
     }
+
+    // wxMonoPixelData only exists in wxMSW
+#if defined(__WXMSW__)
+    {
+        REQUIRE(subBmpMask.GetDepth() == 1);
+        wxMonoPixelData data(subBmpMask);
+        REQUIRE(data);
+        wxMonoPixelData::Iterator p(data);
+        p.OffsetY(data, h2 / 4);
+        wxMonoPixelData::Iterator rowStart = p;
+        p.OffsetX(data, w2 / 4); // top-left point
+        CHECK(p.Pixel() == maskValueTopLeft);
+        p.OffsetX(data, w2 / 2); // top-right point
+        CHECK(p.Pixel() == maskValueTopRight);
+        p = rowStart;
+        p.OffsetY(data, h2 / 2);
+        p.OffsetX(data, w2 / 4); // bottom-left point
+        CHECK(p.Pixel() == maskValueBottomLeft);
+        p.OffsetX(data, w2 / 2); // bottom-right point
+        CHECK(p.Pixel() == maskValueBottomRight);
+    }
+    REQUIRE(subBmpMask.GetDepth() == 1);
+#endif      // __WXMSW__
 }
 
 namespace Catch
@@ -1030,5 +1688,140 @@ TEST_CASE("DC::Clear", "[bitmap][dc]")
         CHECK_THAT(bmp, AllPixelsAre(*wxWHITE));
     }
 }
+
+TEST_CASE("Bitmap::DC", "[bitmap][dc]")
+{
+#if wxUSE_SVG
+    TempFile dummySVG("dummy.svg");
+    wxSVGFileDC dc(dummySVG.GetName());
+    wxBitmap bmp(10, 10, dc);
+    CHECK( bmp.IsOk() );
+
+    wxImage image(10, 10);
+    wxBitmap bmpFromImage(image, dc);
+    CHECK( bmpFromImage.IsOk() );
+#endif // wxUSE_SVG
+}
+
+#if defined(wxHAS_DPI_INDEPENDENT_PIXELS) || defined(__WXMSW__)
+
+TEST_CASE("Bitmap::ScaleFactor", "[bitmap][dc][scale]")
+{
+    // Create a bitmap with scale factor != 1.
+    wxBitmap bmp;
+    bmp.CreateWithDIPSize(8, 8, 2);
+    REQUIRE( bmp.GetScaleFactor() == 2 );
+    CHECK( bmp.GetSize() == wxSize(16, 16) );
+
+    // wxMemoryDC should use the same scale factor as the bitmap.
+    wxMemoryDC dc(bmp);
+    CHECK( dc.GetContentScaleFactor() == 2 );
+
+    // A bitmap "compatible" with this DC should also use the same scale factor.
+    wxBitmap bmp2(4, 4, dc);
+    CHECK( bmp2.GetScaleFactor() == 2 );
+    CHECK( bmp2.GetSize() == wxSize(8, 8) );
+
+    // A compatible bitmap created from wxImage and this DC should also inherit
+    // the same scale factor, but its size should be still the same as that of
+    // the image.
+    wxImage img(16, 16);
+    wxBitmap bmp3(img, dc);
+    CHECK( bmp3.GetScaleFactor() == 2 );
+    CHECK( bmp3.GetSize() == wxSize(16, 16) );
+}
+
+#endif // ports with scaled bitmaps support
+
+#if wxUSE_GRAPHICS_CONTEXT
+
+inline void DrawScaledBmp(wxBitmap& bmp, float scale, wxGraphicsRenderer* renderer)
+{
+    if ( !renderer )
+        return;
+
+    wxBitmap canvas(bmp.GetWidth() * scale, bmp.GetHeight() * scale, 24);
+    {
+        wxMemoryDC mdc(canvas);
+        mdc.SetBackground(*wxBLACK_BRUSH);
+        mdc.Clear();
+        wxGraphicsContext* gc = renderer->CreateContext(mdc);
+        gc->DrawBitmap(bmp, 0, 0, canvas.GetSize().GetWidth(), canvas.GetSize().GetHeight());
+        delete gc;
+    }
+
+    wxNativePixelData bmpData(bmp);
+    REQUIRE(bmpData);
+    wxNativePixelData::Iterator bmpP(bmpData);
+
+    wxNativePixelData canvasData(canvas);
+    REQUIRE(canvasData);
+    wxNativePixelData::Iterator canvasP(canvasData);
+
+    bmpP.MoveTo(bmpData, 0, 0);
+    canvasP.MoveTo(canvasData, 0, 0);
+    ASSERT_EQUAL_COLOUR_RGB(bmpP, canvasP);
+
+    bmpP.MoveTo(bmpData, bmp.GetWidth() / 2, bmp.GetHeight() / 2);
+    canvasP.MoveTo(canvasData, canvas.GetWidth() / 2, canvas.GetHeight() / 2);
+    ASSERT_EQUAL_COLOUR_RGB(bmpP, canvasP);
+
+    bmpP.MoveTo(bmpData, bmp.GetWidth() - 1, bmp.GetHeight() - 1);
+    canvasP.MoveTo(canvasData, canvas.GetWidth() - 1, canvas.GetHeight() - 1);
+    ASSERT_EQUAL_COLOUR_RGB(bmpP, canvasP);
+}
+
+TEST_CASE("GC::DrawBitmap", "[bitmap][drawbitmap]")
+{
+    // Draw a red rectangle to a bitmap, draw the bitmap using a GC to a larger
+    // canvas and test if the bitmap scaled correctly by checking pixels
+    // inside and outside the rectangle.
+
+    wxBitmap bmp(100, 100, 24);
+    {
+        wxMemoryDC mdc(bmp);
+        mdc.SetBackground(*wxBLACK_BRUSH);
+        mdc.Clear();
+        mdc.SetBrush(*wxRED_BRUSH);
+        mdc.DrawRectangle(20, 20, 60, 60);
+    }
+
+    SECTION("Draw bitmap using default GC")
+    {
+        DrawScaledBmp(bmp, 1, wxGraphicsRenderer::GetDefaultRenderer());
+    }
+
+    SECTION("Draw bitmap 0.5x scaled using default GC")
+    {
+        DrawScaledBmp(bmp, 0.5, wxGraphicsRenderer::GetDefaultRenderer());
+    }
+
+    SECTION("Draw bitmap 5x scaled using default GC")
+    {
+        DrawScaledBmp(bmp, 5, wxGraphicsRenderer::GetDefaultRenderer());
+    }
+
+#if defined(__WXMSW__) && wxUSE_GRAPHICS_DIRECT2D
+
+    SECTION("Draw bitmap using Direct2D GC")
+    {
+        DrawScaledBmp(bmp, 1, wxGraphicsRenderer::GetDirect2DRenderer());
+    }
+
+    SECTION("Draw bitmap 0.5x scaled using Direct2D GC")
+    {
+        DrawScaledBmp(bmp, 0.5, wxGraphicsRenderer::GetDirect2DRenderer());
+    }
+
+    SECTION("Draw bitmap 5x scaled using Direct2D GC")
+    {
+        DrawScaledBmp(bmp, 5, wxGraphicsRenderer::GetDirect2DRenderer());
+    }
+
+#endif //defined(__WXMSW__) && wxUSE_GRAPHICS_DIRECT2D
+
+}
+
+#endif //wxUSE_GRAPHICS_CONTEXT
 
 #endif //wxHAS_RAW_BITMAP

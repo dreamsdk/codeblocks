@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_ENH_METAFILE
 
@@ -36,6 +33,7 @@
 
 #include "wx/metafile.h"
 #include "wx/clipbrd.h"
+#include "wx/display.h"
 
 #include "wx/msw/private.h"
 
@@ -225,6 +223,24 @@ public:
                          const wxString& filename, int width, int height,
                          const wxString& description );
     virtual ~wxEnhMetaFileDCImpl();
+
+    wxSize FromDIP(const wxSize& sz) const wxOVERRIDE
+    {
+        return sz;
+    }
+
+    virtual wxSize ToDIP(const wxSize& sz) const wxOVERRIDE
+    {
+        return sz;
+    }
+
+    void SetFont(const wxFont& font) wxOVERRIDE
+    {
+        wxFont scaledFont = font;
+        if (scaledFont.IsOk())
+            scaledFont.WXAdjustToPPI(wxDisplay::GetStdPPI());
+        wxMSWDCImpl::SetFont(scaledFont);
+    }
 
     // obtain a pointer to the new metafile (caller should delete it)
     wxEnhMetaFile *Close();
@@ -480,7 +496,7 @@ bool wxEnhMetaFileDataObject::SetData(const wxDataFormat& format,
 
     if ( format == wxDF_ENHMETAFILE )
     {
-        hEMF = *(HENHMETAFILE *)buf;
+        hEMF = *static_cast<const HENHMETAFILE*>(buf);
 
         wxCHECK_MSG( hEMF, false, wxT("pasting invalid enh metafile") );
     }
@@ -555,7 +571,7 @@ bool wxEnhMetaFileSimpleDataObject::GetDataHere(void *buf) const
 bool wxEnhMetaFileSimpleDataObject::SetData(size_t WXUNUSED(len),
                                             const void *buf)
 {
-    HENHMETAFILE hEMF = *(HENHMETAFILE *)buf;
+    HENHMETAFILE hEMF = *static_cast<const HENHMETAFILE*>(buf);
 
     wxCHECK_MSG( hEMF, false, wxT("pasting invalid enh metafile") );
     m_metafile.SetHENHMETAFILE((WXHANDLE)hEMF);

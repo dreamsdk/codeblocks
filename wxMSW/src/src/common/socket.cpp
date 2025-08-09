@@ -16,9 +16,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SOCKETS
 
@@ -65,7 +62,7 @@
     #define wxSOCKET_MSG_NOSIGNAL MSG_NOSIGNAL
 #else // MSG_NOSIGNAL not available (BSD including OS X)
     // next best possibility is to use SO_NOSIGPIPE socket option, this covers
-    // BSD systems (including OS X) -- but if we don't have it neither (AIX and
+    // BSD systems (including OS X) -- but if we don't have it either (AIX and
     // old HP-UX do not), we have to fall back to the old way of simply
     // disabling SIGPIPE temporarily, so define a class to do it in a safe way
     #if defined(__UNIX__) && !defined(SO_NOSIGPIPE)
@@ -366,9 +363,9 @@ void wxSocketImpl::PostCreation()
     if ( m_initialSendBufferSize >= 0 )
         SetSocketOption(SO_SNDBUF, m_initialSendBufferSize);
 
-    // we always put our sockets in unblocked mode and handle blocking
+    // Call this to put our socket in unblocked mode: we'll handle blocking
     // ourselves in DoRead/Write() if wxSOCKET_WAITALL is specified
-    UnblockAndRegisterWithEventLoop();
+    UpdateBlockingState();
 }
 
 wxSocketError wxSocketImpl::UpdateLocalAddress()
@@ -551,7 +548,7 @@ wxSocketImpl *wxSocketImpl::Accept(wxSocketBase& wxsocket)
     sock->m_fd = fd;
     sock->m_peer = wxSockAddressImpl(from.addr, fromlen);
 
-    sock->UnblockAndRegisterWithEventLoop();
+    sock->UpdateBlockingState();
 
     return sock;
 }
@@ -692,7 +689,15 @@ int wxSocketImpl::RecvDgram(void *buffer, int size)
                                   0, &from.addr, &fromlen) );
 
     if ( ret == SOCKET_ERROR )
-        return SOCKET_ERROR;
+    {
+#ifdef __WINDOWS__
+        if ( WSAGetLastError() == WSAEMSGSIZE )
+            ret = size;
+        else
+#endif // __WINDOWS__
+            return SOCKET_ERROR;
+    }
+
 
     m_peer = wxSockAddressImpl(from.addr, fromlen);
     if ( !m_peer.IsOk() )
@@ -1134,14 +1139,48 @@ wxSocketBase& wxSocketBase::ReadMsg(void* buffer, wxUint32 nbytes)
 
 wxSocketBase& wxSocketBase::Peek(void* buffer, wxUint32 nbytes)
 {
+    // If we're already closed, don't try switching the invalid socket into
+    // non-blocking mode, but still use the already read data, if any.
+    if ( m_impl->m_fd == INVALID_SOCKET )
+    {
+        m_lcount = GetPushback(buffer, nbytes, true);
+        return *this;
+    }
+
     wxSocketReadGuard read(this);
 
     // Peek() should never block
     wxSocketWaitModeChanger changeFlags(this, wxSOCKET_NOWAIT);
 
-    m_lcount = DoRead(buffer, nbytes);
+    // Guard against data loss when reading fewer bytes
+    // than are present in a received datagram
+    void* readbuf;
+    wxUint32 readbytes;
+    const wxUint32 DGRAM_MIN_READ = 65536;  // 64K is enough for UDP
+    std::vector<unsigned char> peekbuf;
+    bool usePeekbuf = !m_impl->m_stream && nbytes < DGRAM_MIN_READ;
+    if ( usePeekbuf )
+    {
+        // Allocate our own buffer
+        peekbuf.resize(DGRAM_MIN_READ);
+        readbuf = &peekbuf[0];
+        readbytes = DGRAM_MIN_READ;
+    }
+    else
+    {
+        // Use the caller-supplied buffer directly
+        readbuf = buffer;
+        readbytes = nbytes;
+    }
 
-    Pushback(buffer, m_lcount);
+    wxUint32 lcount = DoRead(readbuf, readbytes);
+
+    Pushback(readbuf, lcount);
+
+    if ( usePeekbuf )
+        lcount = GetPushback(buffer, nbytes, true);
+
+    m_lcount = lcount;
 
     return *this;
 }
@@ -1672,7 +1711,20 @@ void wxSocketBase::SetFlags(wxSocketFlags flags)
                   "Using wxSOCKET_WAITALL or wxSOCKET_BLOCK with "
                   "wxSOCKET_NOWAIT doesn't make sense" );
 
+    // Blocking sockets are very different from non-blocking ones and we need
+    // to [un]register the socket with the event loop if wxSOCKET_BLOCK is
+    // being [un]set.
+    const bool
+        blockChanged = (m_flags & wxSOCKET_BLOCK) != (flags & wxSOCKET_BLOCK);
+
     m_flags = flags;
+
+    if ( blockChanged )
+    {
+        // Of course, we only do this if we already have the actual socket.
+        if ( m_impl )
+            m_impl->UpdateBlockingState();
+    }
 }
 
 

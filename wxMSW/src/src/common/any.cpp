@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #include "wx/any.h"
 
@@ -168,7 +165,7 @@ bool wxConvertAnyToVariant(const wxAny& any, wxVariant* variant)
             if ( ll > wxINT32_MAX || ll < wxINT32_MIN )
                 *variant = wxLongLong(ll);
             else
-                *variant = (long) wxLongLong(ll).GetLo();
+                *variant = static_cast<long>(ll);
         }
         else
         {

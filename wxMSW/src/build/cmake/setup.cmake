@@ -23,14 +23,6 @@ include(CheckTypeSize)
 include(CMakePushCheckState)
 include(TestBigEndian)
 
-if(
-    APPLE AND
-    CMAKE_OSX_DEPLOYMENT_TARGET VERSION_LESS 10.9 AND
-    (CMAKE_CXX_STANDARD EQUAL 11 OR CMAKE_CXX_STANDARD EQUAL 14)
-  )
-    set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS} "-stdlib=libc++")
-endif()
-
 # Add a definition to setup.h and append it to a list of defines for
 # for compile checks
 macro(wx_setup_definition def)
@@ -53,6 +45,7 @@ endif()
 if(UNIX)
     wx_setup_definition(wxUSE_UNIX)
     wx_setup_definition(__UNIX__)
+    list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_FILE_OFFSET_BITS=64)
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -65,23 +58,35 @@ endif()
 
 if(WXGTK)
     # Add GTK version definitions
-    foreach(gtk_version 1.2.7 2.0 2.10 2.18 2.20 3.0)
-        if(wxTOOLKIT_VERSION VERSION_GREATER gtk_version)
-            string(REPLACE . "" gtk_version_dotless ${gtk_version})
-            set(__WXGTK${gtk_version_dotless}__ ON)
+    foreach(gtk_version 2.0 2.10 2.18 2.20 3.0 3.90.0)
+        if(NOT wxTOOLKIT_VERSION VERSION_LESS gtk_version)
+            if(gtk_version EQUAL 3.90.0)
+                set(__WXGTK4__ ON)
+            elseif(gtk_version EQUAL 3.0)
+                set(__WXGTK3__ ON)
+            else()
+                string(REPLACE . "" gtk_version_dotless ${gtk_version})
+                set(__WXGTK${gtk_version_dotless}__ ON)
+            endif()
         endif()
     endforeach()
 endif()
 
-set(wxINSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+set(wxINSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
 check_include_files("stdlib.h;stdarg.h;string.h;float.h" STDC_HEADERS)
 
-if(wxBUILD_SHARED)
-    if(wxUSE_VISIBILITY)
-        check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY)
-    endif()
-endif() # wxBUILD_SHARED
+if(NOT WIN32 AND wxUSE_VISIBILITY)
+    check_cxx_compiler_flag(-fvisibility=hidden HAVE_VISIBILITY)
+else()
+    set(HAVE_VISIBILITY 0)
+endif()
+
+if(MSVC)
+    set(DISABLE_ALL_WARNINGS "/w")
+else()
+    set(DISABLE_ALL_WARNINGS "-w")
+endif()
 
 # wx_check_cxx_source_compiles(<code> <var> [headers...])
 function(wx_check_cxx_source_compiles code res_var)
@@ -97,10 +102,15 @@ function(wx_check_cxx_source_compiles code res_var)
         endif()
     endforeach()
     set(src "${src}\n\nint main(int argc, char* argv[]) {\n ${code}\nreturn 0; }")
+    # We're not interested in any warnings that can arise in the test, which is
+    # especially important if -Werror is globally in effect.
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS ${DISABLE_ALL_WARNINGS})
     check_cxx_source_compiles("${src}" ${res_var})
+    cmake_pop_check_state()
 endfunction()
 
-# wx_check_cxx_source_compiles(<code> <var> [headers...])
+# wx_check_c_source_compiles(<code> <var> [headers...])
 function(wx_check_c_source_compiles code res_var)
     set(src)
     foreach(header ${ARGN})
@@ -134,39 +144,55 @@ if(NOT MSVC)
     endif()
 endif()
 
-wx_check_c_source_compiles(
-    "#define test(fmt, ...) printf(fmt, __VA_ARGS__)
-    test(\"%s %d %p\", \"test\", 1, 0);"
-    HAVE_VARIADIC_MACROS
-    stdio.h
+wx_check_cxx_source_compiles("
+    std::string foo, bar;
+    foo.compare(bar);
+    foo.compare(1, 1, bar);
+    foo.compare(1, 1, bar, 1, 1);
+    foo.compare(\"\");
+    foo.compare(1, 1, \"\");
+    foo.compare(1, 1, \"\", 2);"
+    HAVE_STD_STRING_COMPARE
+    string
     )
-#TODO: wxNO_VARIADIC_MACROS
-if(wxUSE_STL)
-    wx_check_cxx_source_compiles("
-        std::vector<int> moo;
-        std::list<int> foo;
-        std::vector<int>::iterator it =
-            std::find_if(moo.begin(), moo.end(),
-                std::bind2nd(std::less<int>(), 3));"
-        wxTEST_STL
-        string functional algorithm vector list
-        )
-    if(NOT wxTEST_STL)
-        message(FATAL_ERROR "Can't use wxUSE_STL as basic STL functionality is missing")
-    endif()
 
-    wx_check_cxx_source_compiles("
-        std::string foo, bar;
-        foo.compare(bar);
-        foo.compare(1, 1, bar);
-        foo.compare(1, 1, bar, 1, 1);
-        foo.compare(\"\");
-        foo.compare(1, 1, \"\");
-        foo.compare(1, 1, \"\", 2);"
-        HAVE_STD_STRING_COMPARE
-        string
-        )
-endif()
+wx_check_cxx_source_compiles(
+    "std::wstring s;"
+    HAVE_STD_WSTRING
+    string
+    )
+
+wx_check_cxx_source_compiles("
+    std::hash_map<double*, char*, std::hash<double*>, std::equal_to<double*> > test1;
+    std::hash_set<char*, std::hash<char*>, std::equal_to<char*> > test2;"
+    HAVE_HASH_MAP
+    hash_map hash_set
+    )
+set(HAVE_STD_HASH_MAP ${HAVE_HASH_MAP})
+
+wx_check_cxx_source_compiles("
+    __gnu_cxx::hash_map<double*, char*, __gnu_cxx::hash<double*>, std::equal_to<double*> > test1;
+    __gnu_cxx::hash_set<char*, __gnu_cxx::hash<char*>, std::equal_to<char*> > test2;"
+    HAVE_EXT_HASH_MAP
+    ext/hash_map ext/hash_set
+    )
+set(HAVE_GNU_CXX_HASH_MAP ${HAVE_EXT_HASH_MAP})
+
+wx_check_cxx_source_compiles("
+    std::unordered_map<double*, char*> test1;
+    std::unordered_set<char*> test2;"
+    HAVE_STD_UNORDERED_MAP
+    unordered_map unordered_set
+    )
+set(HAVE_STD_UNORDERED_SET ${HAVE_STD_UNORDERED_MAP})
+
+wx_check_cxx_source_compiles("
+    std::tr1::unordered_map<double*, char*> test1;
+    std::tr1::unordered_set<char*> test2;"
+    HAVE_TR1_UNORDERED_MAP
+    tr1/unordered_map tr1/unordered_set
+    )
+set(HAVE_TR1_UNORDERED_SET ${HAVE_TR1_UNORDERED_MAP})
 
 # Check for availability of GCC's atomic operations builtins.
 wx_check_c_source_compiles("
@@ -276,27 +302,23 @@ if(UNIX)
     wx_check_funcs(mkstemp mktemp)
 
     # get the library function to use for wxGetDiskSpace(): it is statfs() under
-    # Linux and *BSD and statvfs() under Solaris
+    # Linux and *BSD and statvfs() under Solaris and NetBSD
     wx_check_c_source_compiles("
         return 0; }
-        #if defined(__BSD__)
-        #include <sys/param.h>
-        #include <sys/mount.h>
-        #else
-        #include <sys/vfs.h>
-        #endif
+        #include <sys/statvfs.h>
 
         int foo() {
         long l;
-        struct statfs fs;
-        statfs(\"/\", &fs);
+        struct statvfs fs;
+        statvfs(\"/\", &fs);
         l = fs.f_bsize;
         l += fs.f_blocks;
         l += fs.f_bavail;"
-        HAVE_STATFS)
-    if(HAVE_STATFS)
-        set(WX_STATFS_T "struct statfs")
-        wx_check_cxx_source_compiles("
+        HAVE_STATVFS)
+    if(HAVE_STATVFS)
+        set(WX_STATFS_T "struct statvfs")
+    else()
+        wx_check_c_source_compiles("
             return 0; }
             #if defined(__BSD__)
             #include <sys/param.h>
@@ -306,13 +328,28 @@ if(UNIX)
             #endif
 
             int foo() {
+            long l;
             struct statfs fs;
-            statfs(\"/\", &fs);"
-            HAVE_STATFS_DECL)
-    else()
-        # TODO: implement statvfs checks
-        if(HAVE_STATVFS)
-            set(WX_STATFS_T statvfs_t)
+            statfs(\"/\", &fs);
+            l = fs.f_bsize;
+            l += fs.f_blocks;
+            l += fs.f_bavail;"
+            HAVE_STATFS)
+        if(HAVE_STATFS)
+            set(WX_STATFS_T "struct statfs")
+            wx_check_cxx_source_compiles("
+                return 0; }
+                #if defined(__BSD__)
+                #include <sys/param.h>
+                #include <sys/mount.h>
+                #else
+                #include <sys/vfs.h>
+                #endif
+
+                int foo() {
+                struct statfs fs;
+                statfs(\"/\", &fs);"
+                HAVE_STATFS_DECL)
         endif()
     endif()
 
@@ -373,6 +410,10 @@ if(UNIX)
 
     wx_check_funcs(fdopen)
 
+    if(wxBUILD_LARGEFILE_SUPPORT)
+        wx_check_funcs(fseeko)
+    endif()
+
     if(wxUSE_TARSTREAM)
         wx_check_funcs(sysconf)
 
@@ -419,11 +460,19 @@ if(UNIX)
         check_symbol_exists(inet_aton arpa/inet.h HAVE_INET_ATON)
         check_symbol_exists(inet_addr arpa/inet.h HAVE_INET_ADDR)
     endif(wxUSE_SOCKETS)
+
+    if(wxUSE_JOYSTICK AND WXGTK)
+        check_include_files("linux/joystick.h" HAVE_JOYSTICK_H)
+        if(NOT HAVE_JOYSTICK_H)
+            message(WARNING "wxJoystick is not available")
+            wx_option_force_value(wxUSE_JOYSTICK OFF)
+        endif()
+    endif()
 endif(UNIX)
 
 if(CMAKE_USE_PTHREADS_INIT)
     cmake_push_check_state(RESET)
-    set(CMAKE_REQUIRED_LIBRARIES pthread)
+    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
     wx_check_cxx_source_compiles("
         void *p;
         pthread_cleanup_push(ThreadCleanupFunc, p);
@@ -536,8 +585,6 @@ check_struct_has_member("struct passwd" pw_gecos pwd.h HAVE_PW_GECOS)
 # Check for functions
 # ---------------------------------------------------------------------------
 
-# TODO: wcslen
-
 # Check various string symbols
 foreach(func
     ftime
@@ -546,20 +593,18 @@ foreach(func
     wcsdup wcsnlen wcscasecmp wcsncasecmp
     wcsrctombs
     wcstoull
+    wcslen
     )
     string(TOUPPER ${func} func_upper)
     check_symbol_exists(${func} wchar.h HAVE_${func_upper})
 endforeach()
 
 # Check various functions
-foreach(func
-    fsync
-    snprintf vsnprintf strnlen strtoull
-    setpriority
-    )
-    string(TOUPPER ${func} func_upper)
-    check_function_exists(${func} HAVE_${func_upper})
-endforeach()
+wx_check_funcs(fsync
+               snprintf vsnprintf strnlen strtoull
+               setpriority
+               gettimeofday
+               )
 
 if(MSVC)
     check_symbol_exists(vsscanf stdio.h HAVE_VSSCANF)
@@ -578,16 +623,8 @@ check_include_file(fcntl.h HAVE_FCNTL_H)
 check_include_file(langinfo.h HAVE_LANGINFO_H)
 check_include_file(sched.h HAVE_SCHED_H)
 check_include_file(unistd.h HAVE_UNISTD_H)
-check_include_file(w32api.h HAVE_W32API_H)
 check_include_file(wchar.h HAVE_WCHAR_H)
 check_include_file(wcstr.h HAVE_WCSTR_H)
-
-
-wx_check_cxx_source_compiles(
-    "std::wstring s;"
-    HAVE_STD_WSTRING
-    string
-    )
 
 if(wxUSE_DATETIME)
     # check for timezone variable
@@ -609,16 +646,12 @@ if(wxUSE_DATETIME)
 endif()
 
 cmake_push_check_state(RESET)
-set(CMAKE_REQUIRED_LIBRARIES dl)
+set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 check_symbol_exists(dlopen dlfcn.h HAVE_DLOPEN)
 cmake_pop_check_state()
 if(HAVE_DLOPEN)
-    check_symbol_exists(dlerror dlfcn.h HAVE_DLERROR)
     check_symbol_exists(dladdr dlfcn.h HAVE_DLADDR)
-else()
-    check_symbol_exists(shl_load dl.h HAVE_SHL_LOAD)
 endif()
-check_function_exists(gettimeofday HAVE_GETTIMEOFDAY)
 
 if(APPLE)
     set(wxUSE_EPOLL_DISPATCHER OFF)
@@ -648,15 +681,8 @@ if(wxUSE_XLOCALE)
     set(CMAKE_EXTRA_INCLUDE_FILES)
 endif()
 
-# Check size and availability of various types
-set(SYSTYPES
-    pid_t size_t
-    wchar_t int long short
-    gid_t uid_t
-    )
-if(NOT MSVC)
-    list(APPEND SYSTYPES mode_t off_t)
-endif()
+# Check sizes of various types
+set(SYSTYPES size_t wchar_t int long short)
 
 foreach(SYSTYPE ${SYSTYPES})
     string(TOUPPER ${SYSTYPE} SYSTYPE_UPPER)

@@ -25,6 +25,7 @@
 #if wxUSE_GUI
     #include "wx/gdicmn.h"
     #include "wx/mousestate.h"
+    #include "wx/vector.h"
 #endif
 
 class WXDLLIMPEXP_FWD_BASE wxArrayString;
@@ -51,7 +52,6 @@ class WXDLLIMPEXP_FWD_BASE wxArrayInt;
 class WXDLLIMPEXP_FWD_BASE wxProcess;
 class WXDLLIMPEXP_FWD_CORE wxFrame;
 class WXDLLIMPEXP_FWD_CORE wxWindow;
-class wxWindowList;
 class WXDLLIMPEXP_FWD_CORE wxEventLoop;
 
 // ----------------------------------------------------------------------------
@@ -150,11 +150,17 @@ WXDLLIMPEXP_BASE bool wxCheckOsVersion(int majorVsn, int minorVsn = 0, int micro
 // Get platform endianness
 WXDLLIMPEXP_BASE bool wxIsPlatformLittleEndian();
 
-// Get platform architecture
+// Get platform architecture bitness
 WXDLLIMPEXP_BASE bool wxIsPlatform64Bit();
 
+// Get machine CPU architecture
+WXDLLIMPEXP_BASE wxString wxGetCpuArchitectureName();
+
+// Get native machine CPU architecture
+WXDLLIMPEXP_BASE wxString wxGetNativeCpuArchitectureName();
+
 #ifdef __LINUX__
-// Get linux-distro informations
+// Get linux-distro information
 WXDLLIMPEXP_BASE wxLinuxDistributionInfo wxGetLinuxDistributionInfo();
 #endif
 
@@ -162,7 +168,7 @@ WXDLLIMPEXP_BASE wxLinuxDistributionInfo wxGetLinuxDistributionInfo();
 WXDLLIMPEXP_BASE wxString wxNow();
 
 // Return path where wxWidgets is installed (mostly useful in Unices)
-WXDLLIMPEXP_BASE const wxChar *wxGetInstallPrefix();
+WXDLLIMPEXP_BASE wxString wxGetInstallPrefix();
 // Return path to wxWin data (/usr/share/wx/%{version}) (Unices)
 WXDLLIMPEXP_BASE wxString wxGetDataDir();
 
@@ -178,7 +184,7 @@ WXDLLIMPEXP_CORE bool wxGetKeyState(wxKeyCode key);
 // in wxMSW.
 WXDLLIMPEXP_CORE bool wxSetDetectableAutoRepeat( bool flag );
 
-// Returns the current state of the mouse position, buttons and modifers
+// Returns the current state of the mouse position, buttons and modifiers
 WXDLLIMPEXP_CORE wxMouseState wxGetMouseState();
 
 #endif // wxUSE_GUI
@@ -274,13 +280,13 @@ inline bool wxPlatformIs(int platform) { return wxPlatform::Is(platform); }
 // ----------------------------------------------------------------------------
 
 // Ensure subsequent IDs don't clash with this one
-WXDLLIMPEXP_BASE void wxRegisterId(int id);
+WXDLLIMPEXP_BASE void wxRegisterId(wxWindowID id);
 
 // Return the current ID
-WXDLLIMPEXP_BASE int wxGetCurrentId();
+WXDLLIMPEXP_BASE wxWindowID wxGetCurrentId();
 
 // Generate a unique ID
-WXDLLIMPEXP_BASE int wxNewId();
+WXDLLIMPEXP_BASE wxWindowID wxNewId();
 
 // ----------------------------------------------------------------------------
 // Various conversions
@@ -320,6 +326,12 @@ inline int wxHexToDec(const char* buf)
 WXDLLIMPEXP_BASE void wxDecToHex(unsigned char dec, wxChar *buf);
 WXDLLIMPEXP_BASE void wxDecToHex(unsigned char dec, char* ch1, char* ch2);
 WXDLLIMPEXP_BASE wxString wxDecToHex(unsigned char dec);
+
+// ----------------------------------------------------------------------------
+// Security
+// ----------------------------------------------------------------------------
+
+WXDLLIMPEXP_BASE void wxSecureZeroMemory(void *p, size_t n);
 
 // ----------------------------------------------------------------------------
 // Process management
@@ -718,22 +730,25 @@ class WXDLLIMPEXP_CORE wxWindowDisabler
 public:
     // this ctor conditionally disables all windows: if the argument is false,
     // it doesn't do anything
-    wxWindowDisabler(bool disable = true);
+    explicit wxWindowDisabler(bool disable = true);
 
-    // ctor disables all windows except winToSkip
-    wxWindowDisabler(wxWindow *winToSkip);
+    // ctor disables all windows except the given one(s)
+    explicit wxWindowDisabler(wxWindow *winToSkip, wxWindow *winToSkip2 = NULL);
 
     // dtor enables back all windows disabled by the ctor
     ~wxWindowDisabler();
 
 private:
-    // disable all windows except the given one (used by both ctors)
-    void DoDisable(wxWindow *winToSkip = NULL);
+    // disable all windows not in m_windowsToSkip
+    void DoDisable();
 
 #if defined(__WXOSX__) && wxOSX_USE_COCOA
-    wxEventLoop* m_modalEventLoop;
+    void AfterDisable(wxWindow* winToSkip);
+    void BeforeEnable();
+
+    wxEventLoop* m_modalEventLoop = NULL;
 #endif
-    wxWindowList *m_winDisabled;
+    wxVector<wxWindow*> m_windowsToSkip;
     bool m_disabled;
 
     wxDECLARE_NO_COPY_CLASS(wxWindowDisabler);
@@ -776,10 +791,22 @@ void WXDLLIMPEXP_CORE wxGetMousePosition( int* x, int* y );
 // X11 Display access
 // ----------------------------------------------------------------------------
 
-#if defined(__X__) || defined(__WXGTK__)
+#if defined(__X__) || (defined(__WXGTK__) && defined(__UNIX__))
 
 #ifdef __WXGTK__
     WXDLLIMPEXP_CORE void *wxGetDisplay();
+    enum wxDisplayType
+    {
+        wxDisplayNone,
+        wxDisplayX11,
+        wxDisplayWayland
+    };
+    struct wxDisplayInfo
+    {
+        void* dpy;
+        wxDisplayType type;
+    };
+    WXDLLIMPEXP_CORE wxDisplayInfo wxGetDisplayInfo();
 #endif
 
 #ifdef __X__
@@ -802,7 +829,7 @@ inline struct _XDisplay *wxGetX11Display()
 // wxYield(): these functions are obsolete, please use wxApp methods instead!
 // ----------------------------------------------------------------------------
 
-// avoid redeclaring this function here if it had been already declated by
+// avoid redeclaring this function here if it had been already declared by
 // wx/app.h, this results in warnings from g++ with -Wredundant-decls
 #ifndef wx_YIELD_DECLARED
 #define wx_YIELD_DECLARED
@@ -839,7 +866,7 @@ WXDLLIMPEXP_CORE bool wxYieldIfNeeded();
                        size_t *outLen,
                        const wxString& resourceName,
                        const wxChar* resourceType = wxUserResourceStr,
-                       WXHINSTANCE module = 0);
+                       WXHINSTANCE module = NULL);
 
     // This function allocates a new buffer and makes a copy of the resource
     // data, remember to delete[] the buffer. And avoid using it entirely if
@@ -850,7 +877,7 @@ WXDLLIMPEXP_CORE bool wxYieldIfNeeded();
     wxLoadUserResource(const wxString& resourceName,
                        const wxChar* resourceType = wxUserResourceStr,
                        int* pLen = NULL,
-                       WXHINSTANCE module = 0);
+                       WXHINSTANCE module = NULL);
 #endif // __WINDOWS__
 
 #endif

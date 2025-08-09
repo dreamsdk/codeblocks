@@ -10,15 +10,13 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_GRAPHICS_CONTEXT
 
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPicture>
 
 #ifndef WX_PRECOMP

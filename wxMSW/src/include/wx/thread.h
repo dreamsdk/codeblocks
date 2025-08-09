@@ -102,7 +102,7 @@ enum
 //
 // However recursive mutexes have several important drawbacks: first, in the
 // POSIX implementation, they're less efficient. Second, and more importantly,
-// they CAN NOT BE USED WITH CONDITION VARIABLES under Unix! Using them with
+// they CANNOT BE USED WITH CONDITION VARIABLES under Unix! Using them with
 // wxCondition will work under Windows and some Unices (notably Linux) but will
 // deadlock under other Unix versions (e.g. Solaris). As it might be difficult
 // to ensure that a recursive mutex is not used with wxCondition, it is a good
@@ -559,9 +559,6 @@ public:
     // priority
         // Sets the priority to "prio" which must be in 0..100 range (see
         // also wxPRIORITY_XXX constants).
-        //
-        // NB: under MSW the priority can only be set after the thread is
-        //     created (but possibly before it is launched)
     void SetPriority(unsigned int prio);
 
         // Get the current priority.
@@ -599,15 +596,21 @@ public:
     // Delete() instead (or leave the thread terminate by itself)
     virtual ~wxThread();
 
+    // sets name to assist debugging
+    static bool SetNameForCurrent(const wxString &name);
+
 protected:
+    // sets name to assist debugging
+    bool SetName(const wxString &name);
+
     // exits from the current thread - can be called only from this thread
-    void Exit(ExitCode exitcode = 0);
+    void Exit(ExitCode exitcode = NULL);
 
     // entry point for the thread - called by Run() and executes in the context
     // of this thread.
     virtual void *Entry() = 0;
 
-    // use this to call the Entry() virtual method
+    // obsolete private function calling Entry(), do not use.
     void *CallEntry();
 
     // Callbacks which may be overridden by the derived class to perform some
@@ -643,7 +646,7 @@ private:
     wxThreadInternal *m_internal;
 
     // protects access to any methods of wxThreadInternal object
-    wxCriticalSection m_critsect;
+    mutable wxCriticalSection m_critsect;
 
     // true if the thread is detached, false if it is joinable
     bool m_isDetached;
@@ -652,7 +655,7 @@ private:
 // wxThreadHelperThread class
 // --------------------------
 
-class WXDLLIMPEXP_BASE wxThreadHelperThread : public wxThread
+class wxThreadHelperThread : public wxThread
 {
 public:
     // constructor only creates the C++ thread object and doesn't create (or
@@ -680,7 +683,7 @@ private:
 // derive from it to implement a threading background task in your class.
 // ----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_BASE wxThreadHelper
+class wxThreadHelper
 {
 private:
     void KillThread()
@@ -734,7 +737,7 @@ public:
     // returns a pointer to the thread which can be used to call Run()
     wxThread *GetThread() const
     {
-        wxCriticalSectionLocker locker((wxCriticalSection&)m_critSection);
+        wxCriticalSectionLocker locker(m_critSection);
 
         wxThread* thread = m_thread;
 
@@ -744,7 +747,7 @@ public:
 protected:
     wxThread *m_thread;
     wxThreadKind m_kind;
-    wxCriticalSection m_critSection; // To guard the m_thread variable
+    mutable wxCriticalSection m_critSection; // To guard the m_thread variable
 
     friend class wxThreadHelperThread;
 };

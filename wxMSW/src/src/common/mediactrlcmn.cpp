@@ -20,9 +20,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MEDIACTRL
 
@@ -269,8 +266,7 @@ const wxClassInfo* wxMediaCtrl::NextBackend(wxClassInfo::const_iterator* it)
 //---------------------------------------------------------------------------
 wxMediaCtrl::~wxMediaCtrl()
 {
-    if (m_imp)
-        delete m_imp;
+    delete m_imp;
 }
 
 //---------------------------------------------------------------------------
@@ -470,6 +466,9 @@ void wxMediaCtrl::DoMoveWindow(int x, int y, int w, int h)
 
 void wxMediaBackendCommonBase::NotifyMovieSizeChanged()
 {
+    if ( m_ctrl->HasFlag(wxMC_NO_AUTORESIZE) )
+        return;
+
     // our best size changed after opening a new file
     m_ctrl->InvalidateBestSize();
     m_ctrl->SetSize(m_ctrl->GetSize());

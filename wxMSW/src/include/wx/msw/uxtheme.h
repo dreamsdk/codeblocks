@@ -33,8 +33,8 @@
 // ----------------------------------------------------------------------------
 // Definitions for legacy Windows SDKs
 // ----------------------------------------------------------------------------
-// Some defintions introduced with Windows Vista might be missing in older SDKs
-// Missing defintions are added here for compatiblity
+// Some definitions introduced with Windows Vista might be missing in older SDKs
+// Missing definitions are added here for compatibility
 
 #ifndef VSCLASS_LISTVIEW
 #define LISS_NORMAL 1
@@ -56,7 +56,7 @@
 #endif
 
 #ifndef TMT_FONT
-#define TMT_FONT	210
+#define TMT_FONT    210
 #endif
 
 #ifndef HAVE_VSSYM32
@@ -165,7 +165,7 @@ enum POPUPCHECKSTATES
 // If we declare them as taking LOGFONT below, the code would be able to
 // silently pass LOGFONTA to them in ANSI build and would crash at run-time
 // under Windows Vista/7 because of a buffer overrun (LOGFONTA being smaller
-// than LOGFONTW expected by these functions). If we we declare them as taking
+// than LOGFONTW expected by these functions). If we declare them as taking
 // LOGFONTW, the code wouldn't work correctly under XP. So we use a special
 // wxUxThemeFont class to encapsulate this and intentionally change the LOGFONT
 // output parameters of the theme functions to take it instead.

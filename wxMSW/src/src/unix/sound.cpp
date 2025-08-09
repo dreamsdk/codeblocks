@@ -11,9 +11,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#if defined(__BORLANDC__)
-    #pragma hdrstop
-#endif
 
 #if wxUSE_SOUND
 
@@ -459,7 +456,7 @@ bool wxSound::Create(const wxString& fileName,
     if ( fileWave.Read(data, len) != lenOrig )
     {
         delete [] data;
-        wxLogError(_("Couldn't load sound data from '%s'."), fileName.c_str());
+        wxLogError(_("Couldn't load sound data from '%s'."), fileName);
         return false;
     }
 
@@ -467,7 +464,7 @@ bool wxSound::Create(const wxString& fileName,
     {
         delete [] data;
         wxLogError(_("Sound file '%s' is in unsupported format."),
-                   fileName.c_str());
+                   fileName);
         return false;
     }
 
@@ -501,12 +498,12 @@ bool wxSound::Create(size_t size, const void* data)
 #else
             wxString dllname;
             dllname.Printf(wxT("%s/%s"),
-                wxDynamicLibrary::GetPluginsDirectory().c_str(),
+                wxDynamicLibrary::GetPluginsDirectory(),
                 wxDynamicLibrary::CanonicalizePluginName(
-                    wxT("sound_sdl"), wxDL_PLUGIN_BASE).c_str());
+                    wxT("sound_sdl"), wxDL_PLUGIN_BASE));
             wxLogTrace(wxT("sound"),
                        wxT("trying to load SDL plugin from '%s'..."),
-                       dllname.c_str());
+                       dllname);
             wxLogNull null;
             ms_backendSDL = new wxDynamicLibrary(dllname, wxDL_NOW);
             if (!ms_backendSDL->IsLoaded())
@@ -549,7 +546,7 @@ bool wxSound::Create(size_t size, const void* data)
             ms_backend = new wxSoundSyncOnlyAdaptor(ms_backend);
 
         wxLogTrace(wxT("sound"),
-                   wxT("using backend '%s'"), ms_backend->GetName().c_str());
+                   wxT("using backend '%s'"), ms_backend->GetName());
     }
 }
 
@@ -663,7 +660,20 @@ bool wxSound::LoadWAV(const void* data_, size_t length, bool copyData)
     if (waveformat.uiSize != 16)
         return false;
 
-    if (memcmp(&data[FMT_INDEX + waveformat.uiSize + 8], "data", 4) != 0)
+    // Skip the "LIST" chunk if present.
+    wxUint32 data_offset = FMT_INDEX + waveformat.uiSize + 8;
+    if (memcmp(&data[data_offset], "LIST", 4) == 0)
+    {
+        wxUint32 list_chunk_length;
+        memcpy(&list_chunk_length, &data[data_offset + 4], 4);
+        list_chunk_length = wxUINT32_SWAP_ON_BE(list_chunk_length);
+        if (length - (data_offset + 8u) < list_chunk_length)
+            return false;
+
+        data_offset += (list_chunk_length + 8u);
+    }
+
+    if (memcmp(&data[data_offset], "data", 4) != 0)
         return false;
 
     if (waveformat.uiFormatTag != WAVE_FORMAT_PCM)
@@ -697,7 +707,7 @@ bool wxSound::LoadWAV(const void* data_, size_t length, bool copyData)
 
     // get the sound data size
     wxUint32 ul;
-    memcpy(&ul, &data[FMT_INDEX + waveformat.uiSize + 12], 4);
+    memcpy(&ul, &data[data_offset + 4u], 4);
     ul = wxUINT32_SWAP_ON_BE(ul);
 
     // ensure we actually have at least that much data in the input
@@ -717,10 +727,9 @@ bool wxSound::LoadWAV(const void* data_, size_t length, bool copyData)
         memcpy(m_data->m_dataWithHeader, data, length);
     }
     else
-        m_data->m_dataWithHeader = (wxUint8*)data;
+        m_data->m_dataWithHeader = const_cast<wxUint8*>(data);
 
-    m_data->m_data =
-        (&m_data->m_dataWithHeader[FMT_INDEX + waveformat.uiSize + 8]);
+    m_data->m_data = (&m_data->m_dataWithHeader[data_offset]);
 
     return true;
 }

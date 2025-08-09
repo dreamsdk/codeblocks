@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_COLOURDLG
 
@@ -182,6 +179,8 @@ int wxColourDialog::ShowModal()
 
     wxWindow* const parent = GetParentForModalDialog(m_parent, GetWindowStyle());
     WXHWND hWndParent = parent ? GetHwndOf(parent) : NULL;
+
+    wxWindowDisabler disableOthers(this, parent);
 
     // initialize the struct used by Windows
     CHOOSECOLOR chooseColorStruct;

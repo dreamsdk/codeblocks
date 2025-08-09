@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_GLCANVAS
 
@@ -306,7 +303,7 @@ bool wxGLCanvasBase::ParseAttribList(const int *attribList,
                 src++;
                 break;
 
-            case wx_GL_COMPAT_PROFILE:
+            case WX_GL_COMPAT_PROFILE:
                 if ( ctxAttrs )
                     ctxAttrs->CompatibilityProfile();
                 break;
@@ -443,7 +440,8 @@ void wxGLAPI::glFrustum(GLfloat left, GLfloat right, GLfloat bottom,
 #if wxUSE_OPENGL_EMULATION
     ::glFrustumf(left, right, bottom, top, zNear, zFar);
 #else
-    ::glFrustum(left, right, bottom, top, zNear, zFar);
+    ::glFrustum(double(left), double(right),
+        double(bottom), double(top), double(zNear), double(zFar));
 #endif
 }
 

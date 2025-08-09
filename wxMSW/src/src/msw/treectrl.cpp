@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_TREECTRL
 
@@ -793,6 +790,15 @@ bool wxTreeCtrl::Create(wxWindow *parent,
         EnableSystemThemeByDefault();
     }
 
+    // When using non-standard DPI, we need to scale the default indent with
+    // the DPI scaling factor as Windows doesn't do it and the "+" buttons
+    // would be displayed too small if the tree is used without images.
+    if ( GetDPIScaleFactor() > 1.0 )
+        SetIndent(FromDIP(GetIndent()));
+
+    // And ensure we adjust it again if the DPI changes in the future.
+    Bind(wxEVT_DPI_CHANGED, &wxTreeCtrl::OnDPIChanged, this);
+
     return true;
 }
 
@@ -924,18 +930,19 @@ void wxTreeCtrl::SetAnyImageList(wxImageList *imageList, int which)
 
 void wxTreeCtrl::SetImageList(wxImageList *imageList)
 {
-    if (m_ownsImageListNormal)
-        delete m_imageListNormal;
-
-    SetAnyImageList(m_imageListNormal = imageList, TVSIL_NORMAL);
-    m_ownsImageListNormal = false;
+    wxWithImages::SetImageList(imageList);
+    SetAnyImageList(imageList, TVSIL_NORMAL);
 }
 
 void wxTreeCtrl::SetStateImageList(wxImageList *imageList)
 {
-    if (m_ownsImageListState) delete m_imageListState;
-    SetAnyImageList(m_imageListState = imageList, TVSIL_STATE);
-    m_ownsImageListState = false;
+    m_imagesState.SetImageList(imageList);
+    SetAnyImageList(imageList, TVSIL_STATE);
+}
+
+void wxTreeCtrl::OnImagesChanged()
+{
+    SetAnyImageList(GetUpdatedImageListFor(this), TVSIL_NORMAL);
 }
 
 size_t wxTreeCtrl::GetChildrenCount(const wxTreeItemId& item,
@@ -1549,15 +1556,9 @@ wxTreeItemId wxTreeCtrl::DoInsertAfter(const wxTreeItemId& parent,
     tvIns.item.lParam = (LPARAM)param;
     tvIns.item.mask = mask;
 
-    // apparently some Windows versions (2000 and XP are reported to do this)
-    // sometimes don't refresh the tree after adding the first child and so we
-    // need this to make the "[+]" appear
-    //
-    // don't use this hack below for the children of hidden root nor for modern
-    // MSW versions as it would just unnecessarily slow down the item insertion
-    // at best
+    // Without this, the tree doesn't show a "+" button when we add the first
+    // child, at least after removing the children previously (see #23718).
     const bool refreshFirstChild =
-        (wxGetWinVersion() < wxWinVersion_Vista) &&
             !IsHiddenRoot(parent) &&
                 !TreeView_GetChild(GetHwnd(), HITEM(parent));
 
@@ -2015,7 +2016,18 @@ void wxTreeCtrl::EnsureVisible(const wxTreeItemId& item)
 
 void wxTreeCtrl::ScrollTo(const wxTreeItemId& item)
 {
-    if ( !TreeView_SelectSetFirstVisible(GetHwnd(), HITEM(item)) )
+    HTREEITEM htItem = HITEM(item);
+
+    if ( IsHiddenRoot(item) )
+    {
+        // Calling TreeView_SelectSetFirstVisible() with the invisible root
+        // item would simply crash (#23534), so don't do this. However also
+        // don't just assert and return as this works in the generic version,
+        // so do the same thing as it does here, and scroll to the top item.
+        htItem = TreeView_GetChild(GetHwnd(), htItem);
+    }
+
+    if ( !TreeView_SelectSetFirstVisible(GetHwnd(), htItem) )
     {
         wxLogLastError(wxT("TreeView_SelectSetFirstVisible"));
     }
@@ -2221,7 +2233,7 @@ void wxTreeCtrl::SortChildren(const wxTreeItemId& item)
         tvSort.hParent = HITEM(item);
         tvSort.lpfnCompare = wxTreeSortHelper::Compare;
         tvSort.lParam = (LPARAM)this;
-        if ( !TreeView_SortChildrenCB(GetHwnd(), &tvSort, 0 /* reserved */) )
+        if ( !TreeView_SortChildrenCB(GetHwnd(), &tvSort, wxRESERVED_PARAM) )
             wxLogLastError(wxS("TreeView_SortChildrenCB()"));
     }
 }
@@ -2281,6 +2293,14 @@ void wxTreeCtrl::MSWUpdateFontOnDPIChange(const wxSize& newDPI)
         if ( it->second->HasFont() )
             SetItemFont(it->first, it->second->GetFont());
     }
+}
+
+void wxTreeCtrl::OnDPIChanged(wxDPIChangedEvent& event)
+{
+    // Adjust the indent to the new DPI scaling factor as Windows doesn't do it.
+    SetIndent(event.ScaleX(GetIndent()));
+
+    event.Skip();
 }
 
 bool wxTreeCtrl::MSWIsOnItem(unsigned flags) const
@@ -3561,14 +3581,16 @@ bool wxTreeCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result)
                         // so we have to add temp image (of zero index) to state image list
                         // before we draw any item, then after items are drawn we have to
                         // delete it (in POSTPAINT notify)
-                        if (m_imageListState && m_imageListState->GetImageCount() > 0)
+                        if ( m_imagesState.HasImages() )
                         {
+                            wxImageList* const
+                                imageListState = m_imagesState.GetImageList();
                             const HIMAGELIST
-                                hImageList = GetHimagelistOf(m_imageListState);
+                                hImageList = GetHimagelistOf(imageListState);
 
                             // add temporary image
                             int width, height;
-                            m_imageListState->GetSize(0, width, height);
+                            imageListState->GetSize(0, width, height);
 
                             HBITMAP hbmpTemp = ::CreateBitmap(width, height, 1, 1, NULL);
                             int index = ::ImageList_Add(hImageList, hbmpTemp, hbmpTemp);
@@ -3593,8 +3615,8 @@ bool wxTreeCtrl::MSWOnNotify(int idCtrl, WXLPARAM lParam, WXLPARAM *result)
                     case CDDS_POSTPAINT:
                         // we are deleting temp image of 0 index, which was
                         // added before items were drawn (in PREPAINT notify)
-                        if (m_imageListState && m_imageListState->GetImageCount() > 0)
-                            m_imageListState->Remove(0);
+                        if ( m_imagesState.HasImages() )
+                            m_imagesState.GetImageList()->Remove(0);
                         break;
 
                     case CDDS_ITEMPREPAINT:

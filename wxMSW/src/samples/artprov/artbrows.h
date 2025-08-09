@@ -22,6 +22,7 @@ class wxArtBrowserDialog : public wxDialog
 {
 public:
     wxArtBrowserDialog(wxWindow *parent);
+    ~wxArtBrowserDialog();
 
     void SetArtClient(const wxArtClient& client);
     void SetArtBitmap(const wxArtID& id, const wxArtClient& client, const wxSize& size = wxDefaultSize);
@@ -32,6 +33,8 @@ private:
     void OnChooseClient(wxCommandEvent &event);
 
     wxSize GetSelectedBitmapSize() const;
+
+    void DeleteListItemData();
 
     wxListCtrl *m_list;
     wxStaticBitmap *m_canvas;

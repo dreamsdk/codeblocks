@@ -76,6 +76,10 @@ public:
     // Resolution in pixels per logical inch
     wxSize GetPPI() const wxOVERRIDE;
 
+    virtual wxSize FromDIP(const wxSize& sz) const wxOVERRIDE;
+
+    virtual wxSize ToDIP(const wxSize& sz) const wxOVERRIDE;
+
     virtual void ComputeScaleAndOrigin() wxOVERRIDE;
 
     void SetBackgroundMode(int WXUNUSED(mode)) wxOVERRIDE { }
@@ -90,7 +94,7 @@ public:
 
     void PsPrint( const wxString& psdata );
 
-    // Overrridden for wxPrinterDC Impl
+    // Overridden for wxPrinterDC Impl
 
     virtual int GetResolution() const wxOVERRIDE;
     virtual wxRect GetPaperRect() const wxOVERRIDE;
@@ -152,8 +156,8 @@ protected:
     unsigned char     m_currentBlue;
     int               m_pageNumber;
     bool              m_clipping;
-    double            m_underlinePosition;
-    double            m_underlineThickness;
+    mutable double    m_underlinePosition;
+    mutable double    m_underlineThickness;
     wxPrintData       m_printData;
     double            m_pageHeight;
     wxArrayString     m_definedPSFonts;

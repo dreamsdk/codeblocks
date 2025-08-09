@@ -85,9 +85,32 @@ public:
         translations offered to the user. To do this, pass the app's main
         catalog as @a domain.
 
+        @note
+        The returned list does not include messages ID language, i.e. the
+        language (typically English) included in the source code. In the use
+        case described above, that language needs to be added manually.
+
         @see GetBestTranslation()
      */
     wxArrayString GetAvailableTranslations(const wxString& domain) const;
+
+    /**
+        Returns the best available translation for the required language.
+
+        For wxLANGUAGE_DEFAULT, this function returns the available translation
+        best matching one of wxUILocale::GetPreferredUILanguages(). Otherwise
+        it simply returns the language set with SetLanguage() if it's available
+        or empty string otherwise.
+
+        @warning
+        This function does not consider messages ID language (typically
+        English) and can return inappropriate language if it is anywhere in
+        user's preferred languages list. Use GetBestTranslation() instead
+        unless you have very specific needs.
+
+        @since 3.2.3
+     */
+    wxString GetBestAvailableTranslation(const wxString& domain);
 
     /**
         Returns the best UI language for the @a domain.
@@ -96,7 +119,14 @@ public:
         list the user configured in the OS. Notice that this may or may not
         correspond to the default @em locale as obtained from
         wxLocale::GetSystemLanguage(); modern operation systems (Windows
-        Vista+, OS X) have separate language and regional (= locale) settings.
+        Vista+, macOS) have separate language and regional (= locale) settings.
+
+        Please note that that this function may return the language
+        corresponding to @a msgIdLanguage if this language is considered to be
+        acceptable, i.e. is part of wxUILocale::GetPreferredUILanguages(),
+        indicating that it is fine not to use translations at all on this
+        system. If this is undesirable, GetBestAvailableTranslation() should be
+        used which doesn't consider the messages ID language as being available.
 
         @param domain
             The catalog domain to look for.
@@ -119,7 +149,7 @@ public:
         list the user configured in the OS. Notice that this may or may not
         correspond to the default @em locale as obtained from
         wxLocale::GetSystemLanguage(); modern operation systems (Windows
-        Vista+, OS X) have separate language and regional (= locale) settings.
+        Vista+, macOS) have separate language and regional (= locale) settings.
 
         @param domain
             The catalog domain to look for.
@@ -142,14 +172,14 @@ public:
 
         @return @true if a suitable catalog was found, @false otherwise
 
-        @see AddCatalog()
+        @see AddAvailableCatalog()
      */
     bool AddStdCatalog();
 
     /**
         Add a catalog for use with the current locale.
 
-        By default, it is searched for in standard places (see
+        By default, the catalog is searched for in standard places (see
         wxFileTranslationsLoader), but you may also prepend additional
         directories to the search path with
         wxFileTranslationsLoader::AddCatalogLookupPathPrefix().
@@ -157,7 +187,40 @@ public:
         All loaded catalogs will be used for message lookup by GetString() for
         the current locale.
 
-        Bu default, i.e. if @a msgIdLanguage is not given, @c msgid strings are assumed
+        @param domain
+            The catalog domain to add.
+
+        @param msgIdLanguage
+            Specifies the language of "msgid" strings in source code
+            (i.e. arguments to GetString(), wxGetTranslation() and the _() macro).
+            It is used if AddCatalog() cannot find any catalog for current language:
+            if the language is same as source code language, then strings from source
+            code are used instead.
+
+        @return
+            @true if catalog was successfully loaded, @false otherwise, usually
+            because it wasn't found. Note that unlike AddCatalog() this
+            function returns @false even if the language of the original
+            strings (usually English) can be used directly, i.e. its return
+            value only indicates that there are no catalogs available for the
+            selected or system-default languages, but is not necessarily an
+            error if no translations are needed in the first place.
+
+        @since 3.2.3 (the msgIdLanguage argument since 3.2.6)
+     */
+    bool AddAvailableCatalog(const wxString& domain,
+                             wxLanguage msgIdLanguage = wxLANGUAGE_ENGLISH_US);
+
+    /**
+        Add a catalog for use with the current locale or fall back to the
+        original messages language.
+
+        This function behaves like AddAvailableCatalog() but also checks if the
+        strings used in the program, written in @a msgIdLanguage, can be used
+        without any translations on the current system and also returns @true
+        in this case, unlike AddAvailableCatalog().
+
+        By default, i.e. if @a msgIdLanguage is not given, @c msgid strings are assumed
         to be in English and written only using 7-bit ASCII characters.
         If you have to deal with non-English strings or 8-bit characters in the
         source code, see the instructions in @ref overview_nonenglish.
@@ -173,8 +236,10 @@ public:
             code are used instead.
 
         @return
-            @true if catalog was successfully loaded, @false otherwise (which might
-            mean that the catalog is not found or that it isn't in the correct format).
+            @true if catalog was successfully loaded or loading it is
+            unnecessary because the original messages can be used directly,
+            @false otherwise (which might mean that the catalog is not found or
+            that it isn't in the correct format).
      */
     bool AddCatalog(const wxString& domain,
                     wxLanguage msgIdLanguage = wxLANGUAGE_ENGLISH_US);
@@ -213,7 +278,7 @@ public:
         According to GNU gettext tradition, each catalog normally corresponds to
         'domain' which is more or less the application name.
 
-        @see AddCatalog()
+        @see AddAvailableCatalog()
      */
     bool IsLoaded(const wxString& domain) const;
 
@@ -269,7 +334,7 @@ public:
 
     /**
         Returns the header value for header @a header.
-        The search for @a header is case sensitive. If an @a domain is passed,
+        The search for @a header is case sensitive. If a @a domain is passed,
         this domain is searched. Else all domains will be searched until a
         header has been found.
 
@@ -333,7 +398,7 @@ public:
 
     Catalogs are searched for in standard places (system locales directory,
     `LC_PATH` on Unix systems, Resources subdirectory of the application bundle
-    on OS X, executable's directory on Windows), but you may also prepend
+    on macOS, executable's directory on Windows), but you may also prepend
     additional directories to the search path with
     AddCatalogLookupPathPrefix().
 
@@ -348,7 +413,7 @@ public:
         (in this order).
 
         This only applies to subsequent invocations of
-        wxTranslations::AddCatalog().
+        wxTranslations::AddAvailableCatalog().
     */
     static void AddCatalogLookupPathPrefix(const wxString& prefix);
 };
@@ -358,8 +423,7 @@ public:
     resources.
 
     If you wish to store translation MO files in resources, you have to
-    enable this loader before calling wxTranslations::AddCatalog() or
-    wxLocale::AddCatalog():
+    enable this loader before calling wxTranslations::AddAvailableCatalog():
 
     @code
     wxTranslations::Get()->SetLoader(new wxResourceTranslationsLoader);
@@ -442,7 +506,7 @@ public:
 // ============================================================================
 
 /** @addtogroup group_funcmacro_string */
-//@{
+///@{
 
 /**
     This macro is identical to _() but for the plural variant of
@@ -520,6 +584,18 @@ public:
     @header{wx/intl.h}
 */
 #define wxTRANSLATE(string)
+
+/**
+    This macro doesn't do anything in the program code -- it simply expands to
+    the value of its argument.
+
+    Similar to wxTRANSLATE(), but with a context argument. Both the context and
+    string need to be string literals. Be sure to use the same context when
+    calling wxGetTranslation().
+
+    @since 3.1.7
+*/
+#define wxTRANSLATE_IN_CONTEXT(context, string)
 
 /**
     This function returns the translation of @a string in the current
@@ -603,5 +679,5 @@ const wxString& wxGetTranslation(const wxString& string,
 */
 const wxString& _(const wxString& string);
 
-//@}
+///@}
 

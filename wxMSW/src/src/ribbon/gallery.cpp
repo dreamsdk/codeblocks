@@ -10,9 +10,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RIBBON
 
@@ -541,12 +538,12 @@ wxRibbonGalleryItem* wxRibbonGallery::Append(const wxBitmap& bitmap, int id)
     wxASSERT(bitmap.IsOk());
     if(m_items.IsEmpty())
     {
-        m_bitmap_size = bitmap.GetScaledSize();
+        m_bitmap_size = bitmap.GetLogicalSize();
         CalculateMinSize();
     }
     else
     {
-        wxASSERT(bitmap.GetScaledSize() == m_bitmap_size);
+        wxASSERT(bitmap.GetLogicalSize() == m_bitmap_size);
     }
 
     wxRibbonGalleryItem *item = new wxRibbonGalleryItem;

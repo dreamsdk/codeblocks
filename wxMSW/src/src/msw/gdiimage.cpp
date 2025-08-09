@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include "wx/string.h"
@@ -41,8 +38,8 @@
 // By default, use PNG resource handler if we can, i.e. have support for
 // loading PNG images in the library. This symbol could be predefined as 0 to
 // avoid doing this if anybody ever needs to do it for some reason.
-#if !defined(wxUSE_PNG_RESOURCE_HANDLER) && wxUSE_LIBPNG && wxUSE_IMAGE
-    #define wxUSE_PNG_RESOURCE_HANDLER 1
+#if !defined(wxUSE_PNG_RESOURCE_HANDLER)
+    #define wxUSE_PNG_RESOURCE_HANDLER wxUSE_LIBPNG && wxUSE_IMAGE
 #endif
 
 #if wxUSE_PNG_RESOURCE_HANDLER
@@ -339,6 +336,54 @@ void wxGDIImage::InitStandardHandlers()
 }
 
 // ----------------------------------------------------------------------------
+// scale factor-related functions
+// ----------------------------------------------------------------------------
+
+// wxMSW doesn't really use scale factor, but we must still store it to use the
+// correct sizes in the code which uses it to decide on the bitmap size to use.
+
+void wxGDIImage::SetScaleFactor(double scale)
+{
+    wxCHECK_RET( IsOk(), wxT("invalid bitmap") );
+
+    if ( GetGDIImageData()->m_scaleFactor != scale )
+    {
+        AllocExclusive();
+
+        // Note that GetGDIImageData() result may have changed after calling
+        // AllocExclusive(), so don't be tempted to optimize it.
+        GetGDIImageData()->m_scaleFactor = scale;
+    }
+}
+
+double wxGDIImage::GetScaleFactor() const
+{
+    wxCHECK_MSG( IsOk(), -1, wxT("invalid bitmap") );
+
+    return GetGDIImageData()->m_scaleFactor;
+}
+
+wxSize wxGDIImage::GetDIPSize() const
+{
+    return GetSize() / GetScaleFactor();
+}
+
+double wxGDIImage::GetLogicalWidth() const
+{
+    return GetWidth();
+}
+
+double wxGDIImage::GetLogicalHeight() const
+{
+    return GetHeight();
+}
+
+wxSize wxGDIImage::GetLogicalSize() const
+{
+    return GetSize();
+}
+
+// ----------------------------------------------------------------------------
 // wxBitmap handlers
 // ----------------------------------------------------------------------------
 
@@ -474,7 +519,7 @@ bool wxICOFileHandler::LoadIcon(wxIcon *icon,
     else
 #endif
     // were we asked for a large icon?
-    const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+    const wxWindow* win = wxApp::GetMainTopWindow();
     if ( desiredWidth == wxGetSystemMetrics(SM_CXICON, win) &&
          desiredHeight == wxGetSystemMetrics(SM_CYICON, win) )
     {
@@ -589,7 +634,26 @@ bool wxICOResourceHandler::LoadIcon(wxIcon *icon,
         }
     }
 
-    return icon->CreateFromHICON((WXHICON)hicon);
+    if ( !hicon )
+        return false;
+
+    wxSize size;
+    double scale = 1.0;
+    if ( hasSize )
+    {
+        size.x = desiredWidth;
+        size.y = desiredHeight;
+    }
+    else // We loaded an icon of default size.
+    {
+        // LoadIcon() returns icons of scaled size, so we must use the correct
+        // scaling factor of them.
+        size = wxGetHiconSize(hicon);
+        if ( const wxWindow* win = wxApp::GetMainTopWindow() )
+            scale = win->GetDPIScaleFactor();
+    }
+
+    return icon->InitFromHICON((WXHICON)hicon, size.x, size.y, scale);
 }
 
 #if wxUSE_PNG_RESOURCE_HANDLER
@@ -629,7 +693,7 @@ bool wxPNGResourceHandler::LoadFile(wxBitmap *bitmap,
     *bitmap = wxBitmap::NewFromPNGData(pngData, pngSize);
     if ( !bitmap->IsOk() )
     {
-        wxLogError(wxS("Couldn't load resource bitmap \"%s\" as a PNG. "),
+        wxLogError(wxS("Couldn't load resource bitmap \"%s\" as a PNG. ")
                    wxS("Have you registered PNG image handler?"),
                    name);
 
@@ -663,13 +727,19 @@ wxSize wxGetHiconSize(HICON hicon)
                     size = wxSize(bm.bmWidth, bm.bmHeight);
                 }
             }
+            // For monochrome icon reported height is doubled
+            // because it contains both AND and XOR masks.
+            if ( info.hbmColor == NULL )
+            {
+                size.y /= 2;
+            }
         }
     }
 
     if ( !size.x )
     {
         // use default icon size on this hardware
-        const wxWindow* win = wxTheApp ? wxTheApp->GetTopWindow() : NULL;
+        const wxWindow* win = wxApp::GetMainTopWindow();
         size.x = wxGetSystemMetrics(SM_CXICON, win);
         size.y = wxGetSystemMetrics(SM_CYICON, win);
     }

@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if !wxUSE_EXCEPTIONS
     #error "This sample only works with wxUSE_EXCEPTIONS == 1"
@@ -567,7 +564,7 @@ void MyFrame::OnShowAssert(wxCommandEvent& WXUNUSED(event))
 {
     // provoke an assert from wxArrayString
     wxArrayString arr;
-    arr[0];
+    wxUnusedVar(arr[0]);
 }
 
 #if wxUSE_THREADS

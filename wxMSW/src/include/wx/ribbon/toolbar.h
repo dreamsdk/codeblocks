@@ -131,14 +131,18 @@ public:
 
     virtual wxRibbonToolBarToolBase* FindById(int tool_id)const;
     virtual wxRibbonToolBarToolBase* GetToolByPos(size_t pos)const;
+    virtual wxRibbonToolBarToolBase* GetToolByPos(wxCoord x, wxCoord y)const;
     virtual size_t GetToolCount() const;
     virtual int GetToolId(const wxRibbonToolBarToolBase* tool)const;
+    virtual wxRibbonToolBarToolBase* GetActiveTool() const;
+
 
     virtual wxObject* GetToolClientData(int tool_id)const;
     virtual bool GetToolEnabled(int tool_id)const;
     virtual wxString GetToolHelpString(int tool_id)const;
     virtual wxRibbonButtonKind GetToolKind(int tool_id)const;
     virtual int GetToolPos(int tool_id)const;
+    virtual wxRect GetToolRect(int tool_id)const;
     virtual bool GetToolState(int tool_id)const;
 
     virtual bool Realize() wxOVERRIDE;

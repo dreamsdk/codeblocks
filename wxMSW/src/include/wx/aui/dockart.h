@@ -21,12 +21,12 @@
 
 #include "wx/pen.h"
 #include "wx/brush.h"
-#include "wx/bitmap.h"
+#include "wx/bmpbndl.h"
 #include "wx/colour.h"
 
 // dock art provider code - a dock provider provides all drawing
 // functionality to the wxAui dock manager.  This allows the dock
-// manager to have plugable look-and-feels
+// manager to have pluggable look-and-feels
 
 class WXDLLIMPEXP_AUI wxAuiDockArt
 {
@@ -35,6 +35,7 @@ public:
     wxAuiDockArt() { }
     virtual ~wxAuiDockArt() { }
 
+    virtual wxAuiDockArt* Clone() = 0;
     virtual int GetMetric(int id) = 0;
     virtual void SetMetric(int id, int newVal) = 0;
     virtual void SetFont(int id, const wxFont& font) = 0;
@@ -92,6 +93,7 @@ public:
 
     wxAuiDefaultDockArt();
 
+    wxAuiDockArt* Clone() wxOVERRIDE;
     int GetMetric(int metricId) wxOVERRIDE;
     void SetMetric(int metricId, int newVal) wxOVERRIDE;
     wxColour GetColour(int id) wxOVERRIDE;
@@ -157,14 +159,14 @@ protected:
     wxBrush m_backgroundBrush;
     wxBrush m_gripperBrush;
     wxFont m_captionFont;
-    wxBitmap m_inactiveCloseBitmap;
-    wxBitmap m_inactivePinBitmap;
-    wxBitmap m_inactiveMaximizeBitmap;
-    wxBitmap m_inactiveRestoreBitmap;
-    wxBitmap m_activeCloseBitmap;
-    wxBitmap m_activePinBitmap;
-    wxBitmap m_activeMaximizeBitmap;
-    wxBitmap m_activeRestoreBitmap;
+    wxBitmapBundle m_inactiveCloseBitmap;
+    wxBitmapBundle m_inactivePinBitmap;
+    wxBitmapBundle m_inactiveMaximizeBitmap;
+    wxBitmapBundle m_inactiveRestoreBitmap;
+    wxBitmapBundle m_activeCloseBitmap;
+    wxBitmapBundle m_activePinBitmap;
+    wxBitmapBundle m_activeMaximizeBitmap;
+    wxBitmapBundle m_activeRestoreBitmap;
     wxPen m_gripperPen1;
     wxPen m_gripperPen2;
     wxPen m_gripperPen3;

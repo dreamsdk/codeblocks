@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PROPGRID
 
@@ -168,7 +165,11 @@ wxNumericPropertyValidator::
         allowedChars += wxS("-+eE");
 
         // Use locale-specific decimal point
-        allowedChars += wxString::Format(wxS("%g"), 1.1)[1];
+
+        // Don't optimize away this "useless" string, it avoids bogus ABI
+        // breakage error, see the commit adding it.
+        wxString s(wxNumberFormatter::GetDecimalSeparator());
+        allowedChars.append(s.at(0));
     }
 
     SetStyle(style);
@@ -194,7 +195,7 @@ bool wxNumericPropertyValidator::Validate(wxWindow* parent)
 // wxNumericProperty
 // -----------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxNumericProperty, wxPGProperty)
+wxIMPLEMENT_ABSTRACT_CLASS(wxNumericProperty, wxPGProperty);
 
 wxNumericProperty::wxNumericProperty(const wxString& label, const wxString& name)
     : wxPGProperty(label, name)
@@ -256,7 +257,7 @@ namespace {
         // Round value to the required precision.
         wxVariant variant = value;
         wxString strVal = prop->ValueToString(variant, wxPG_FULL_VALUE);
-        strVal.ToDouble(&value);
+        wxNumberFormatter::FromString(strVal, &value);
         return value;
     }
 } // namespace
@@ -976,16 +977,14 @@ wxString wxFloatProperty::ValueToString( wxVariant& value,
 
 bool wxFloatProperty::StringToValue( wxVariant& variant, const wxString& text, int argFlags ) const
 {
-    wxString s;
-    double value;
-
     if ( text.empty() )
     {
         variant.MakeNull();
         return true;
     }
 
-    bool res = text.ToDouble(&value);
+    double value;
+    bool res = wxNumberFormatter::FromString(text, &value);
     if ( res )
     {
         if ( variant != value )
@@ -1516,7 +1515,7 @@ void wxFlagsProperty::Init()
     // Generate children
     //
 
-    unsigned int prevChildCount = m_children.size();
+    size_t prevChildCount = m_children.size();
 
     int oldSel = -1;
     if ( prevChildCount )
@@ -1540,10 +1539,8 @@ void wxFlagsProperty::Init()
         state->DoClearSelection();
     }
 
-    unsigned int i;
-
     // Delete old children
-    for ( i=0; i<prevChildCount; i++ )
+    for ( size_t i=0; i<prevChildCount; i++ )
         delete m_children[i];
 
     m_children.clear();
@@ -1557,7 +1554,7 @@ void wxFlagsProperty::Init()
     {
         const wxPGChoices& choices = m_choices;
 
-        for ( i=0; i<GetItemCount(); i++ )
+        for ( unsigned int i=0; i<GetItemCount(); i++ )
         {
             bool child_val;
             child_val = ( value & choices.GetValue(i) )?true:false;
@@ -1855,8 +1852,8 @@ bool wxFlagsProperty::DoSetAttribute( const wxString& name, wxVariant& value )
 
 wxPG_IMPLEMENT_PROPERTY_CLASS(wxDirProperty, wxEditorDialogProperty, TextCtrlAndButton)
 
-wxDirProperty::wxDirProperty( const wxString& name, const wxString& label, const wxString& value )
-    : wxEditorDialogProperty(name, label)
+wxDirProperty::wxDirProperty( const wxString& label, const wxString& name, const wxString& value )
+    : wxEditorDialogProperty(label, name)
 {
     m_flags &= ~wxPG_PROP_ACTIVE_BTN; // Property button enabled only in not read-only mode.
     SetValue(value);
@@ -1961,7 +1958,7 @@ public:
 // wxDialogProperty
 // -----------------------------------------------------------------------
 
-wxIMPLEMENT_ABSTRACT_CLASS(wxEditorDialogProperty, wxPGProperty)
+wxIMPLEMENT_ABSTRACT_CLASS(wxEditorDialogProperty, wxPGProperty);
 
 wxEditorDialogProperty::wxEditorDialogProperty(const wxString& label, const wxString& name)
     : wxPGProperty(label, name)
@@ -2191,9 +2188,9 @@ bool wxFileProperty::DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value)
 {
     wxASSERT_MSG(value.IsType(wxS("string")), "Function called for incompatible property");
 
-    wxString strVal = value.GetString();
-    wxFileName filename = strVal;
+    wxFileName filename(value.GetString());
     wxString path = filename.GetPath();
+    wxString file = filename.GetFullName();
 
     if ( path.empty() && !m_basePath.empty() )
         path = m_basePath;
@@ -2201,8 +2198,8 @@ bool wxFileProperty::DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& value)
     wxFileDialog dlg(pg->GetPanel(),
         m_dlgTitle.empty() ? _("Choose a file") : m_dlgTitle,
         m_initialPath.empty() ? path : m_initialPath,
-        strVal,
-        m_wildcard.empty() ? wxALL_FILES : m_wildcard,
+        file,
+        m_wildcard.empty() ? _(wxALL_FILES) : m_wildcard,
         m_dlgStyle,
         wxDefaultPosition);
 
@@ -2417,7 +2414,7 @@ bool wxPGArrayEditorDialog::Create( wxWindow *parent,
 
     // Populate the list box
     wxArrayString arr;
-    for ( unsigned int i=0; i<ArrayGetCount(); i++ )
+    for ( size_t i=0; i<ArrayGetCount(); i++ )
         arr.push_back(ArrayGet(i));
     m_elb->SetStrings(arr);
 
@@ -2577,8 +2574,7 @@ void wxPGArrayEditorDialog::OnEndLabelEdit(wxListEvent& event)
     else
     {
         // Change an existing item
-        int index = GetSelection();
-        wxASSERT( index != wxNOT_FOUND );
+        long index = event.GetIndex();
         if ( ArraySet(index, str) )
             m_modified = true;
         else
@@ -2634,6 +2630,7 @@ bool wxPGArrayStringEditorDialog::ArrayInsert( const wxString& str, int index )
 
 bool wxPGArrayStringEditorDialog::ArraySet( size_t index, const wxString& str )
 {
+    wxCHECK_MSG(index < m_array.size(), false, "Index out of range");
     m_array[index] = str;
     return true;
 }
@@ -2688,27 +2685,22 @@ void wxArrayStringProperty::OnSetValue()
     GenerateValueAsString();
 }
 
-void
-wxArrayStringProperty::ConvertArrayToString(const wxArrayString& arr,
-                                            wxString* pString,
-                                            const wxUniChar& delimiter) const
+wxString wxArrayStringProperty::ConvertArrayToString(const wxArrayString& arr,
+                                                     const wxUniChar& delimiter) const
 {
+    int flag;
     if ( delimiter == '"' || delimiter == '\'' )
     {
         // Quoted strings
-        ArrayStringToString(*pString,
-                            arr,
-                            delimiter,
-                            Escape | QuoteStrings);
+        flag = Escape | QuoteStrings;
     }
     else
     {
         // Regular delimiter
-        ArrayStringToString(*pString,
-                            arr,
-                            delimiter,
-                            0);
+        flag = 0;
     }
+
+    return ArrayStringToString(arr, delimiter, flag);
 }
 
 wxString wxArrayStringProperty::ValueToString( wxVariant& WXUNUSED(value),
@@ -2722,25 +2714,19 @@ wxString wxArrayStringProperty::ValueToString( wxVariant& WXUNUSED(value),
     }
 
     wxArrayString arr = m_value.GetArrayString();
-    wxString s;
-    ConvertArrayToString(arr, &s, m_delimiter);
-    return s;
+    return ConvertArrayToString(arr, m_delimiter);
 }
 
 // Converts wxArrayString to a string separated by delimiters and spaces.
 // preDelim is useful for "str1" "str2" style. Set flags to 1 to do slash
 // conversion.
-void
-wxArrayStringProperty::ArrayStringToString( wxString& dst,
-                                            const wxArrayString& src,
-                                            wxUniChar delimiter, int flags )
+wxString wxArrayStringProperty::ArrayStringToString(const wxArrayString& src,
+                                                    wxUniChar delimiter, int flags)
 {
     wxString pdr;
     wxString preas;
 
-    unsigned int itemCount = src.size();
-
-    dst.Empty();
+    size_t itemCount = src.size();
 
     if ( flags & Escape )
     {
@@ -2749,12 +2735,14 @@ wxArrayStringProperty::ArrayStringToString( wxString& dst,
         pdr += delimiter;
     }
 
+    wxString dst;
+
     if ( itemCount )
         dst.append( preas );
 
     wxString delimStr(delimiter);
 
-    for ( unsigned int i = 0; i < itemCount; i++ )
+    for ( size_t i = 0; i < itemCount; i++ )
     {
         wxString str( src.Item(i) );
 
@@ -2779,12 +2767,14 @@ wxArrayStringProperty::ArrayStringToString( wxString& dst,
         else if ( flags & QuoteStrings )
             dst.append( delimStr );
     }
+
+    return dst;
 }
 
 void wxArrayStringProperty::GenerateValueAsString()
 {
     wxArrayString arr = m_value.GetArrayString();
-    ConvertArrayToString(arr, &m_display, m_delimiter);
+    m_display = ConvertArrayToString(arr, m_delimiter);
 }
 
 // Default implementation doesn't do anything.
@@ -2842,29 +2832,23 @@ bool wxArrayStringProperty::DisplayEditorDialog(wxPropertyGrid* pg, wxVariant& v
 
         int res = dlg->ShowModal();
 
-        if ( res == wxID_OK && dlg->IsModified() )
-        {
-            wxVariant curValue = dlg->GetDialogValue();
-            if ( !curValue.IsNull() )
-            {
-                wxArrayString actualValue = curValue.GetArrayString();
-                wxString tempStr;
-                ConvertArrayToString(actualValue, &tempStr, m_delimiter);
-            #if wxUSE_VALIDATORS
-                if ( dialogValidator.DoValidate(pg, validator,
-                                                tempStr) )
-            #endif
-                {
-                    value = actualValue;
-                    retVal = true;
-                    break;
-                }
-            }
-            else
-                break;
-        }
-        else
+        if ( res != wxID_OK || !dlg->IsModified() )
             break;
+
+        wxVariant curValue = dlg->GetDialogValue();
+        if ( curValue.IsNull() )
+            break;
+
+        wxArrayString actualValue = curValue.GetArrayString();
+#if wxUSE_VALIDATORS
+        wxString tempStr = ConvertArrayToString(actualValue, m_delimiter);
+        if ( dialogValidator.DoValidate(pg, validator, tempStr) )
+#endif
+        {
+            value = actualValue;
+            retVal = true;
+            break;
+        }
     }
 
     delete dlg;

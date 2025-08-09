@@ -18,9 +18,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_RADIOBOX
 
@@ -165,8 +162,10 @@ bool wxRadioBox::Create(wxWindow *parent,
     wxSize actualSize = GetSize();
     DoMoveWindow(actualPos.x, actualPos.y, actualSize.x, actualSize.y);
 
-    // radiobox should already have selection so select at least one item
-    SetSelection(0);
+    // Select first radio button if we have any buttons at all, as the radiobox
+    // should always have some selection.
+    if ( n != 0 )
+        SetSelection(0);
 
     return true;
 }

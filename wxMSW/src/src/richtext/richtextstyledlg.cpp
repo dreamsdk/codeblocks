@@ -11,10 +11,6 @@
 // For compilers that support precompilation, includes "wx/wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #if wxUSE_RICHTEXT
 
 #ifndef WX_PRECOMP
@@ -350,7 +346,7 @@ void wxRichTextStyleOrganiserDialog::CreateControls()
     else
     {
         // Avoid the Escape key logic falling back on OK after finding
-        // a hidden wxID_CANCEL contol
+        // a hidden wxID_CANCEL control
         m_closeButton->SetId(wxID_HIGHEST);
         m_buttonSizer->Show(m_closeButton, false);
     }

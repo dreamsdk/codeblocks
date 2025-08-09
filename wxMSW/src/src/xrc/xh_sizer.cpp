@@ -10,9 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC
 
@@ -255,6 +252,13 @@ wxObject* wxSizerXmlHandler::Handle_sizer()
     m_parentSizer = sizer;
     m_isInside = true;
     m_isGBS = (m_class == wxT("wxGridBagSizer"));
+
+    if (m_isGBS)
+    {
+        wxSize cellsize = GetSize(wxT("empty_cellsize"));
+        if (cellsize != wxDefaultSize)
+            static_cast<wxGridBagSizer*>(sizer)->SetEmptyCellSize(cellsize);
+    }
 
     wxObject* parent = m_parent;
 #if wxUSE_STATBOX

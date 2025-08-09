@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_HEADERCTRL
 
@@ -126,6 +123,9 @@ protected:
                            int sizeFlags = wxSIZE_AUTO) wxOVERRIDE;
     virtual void MSWUpdateFontOnDPIChange(const wxSize& newDPI) wxOVERRIDE;
 
+    // This function can be used as event handle for wxEVT_DPI_CHANGED event.
+    void WXHandleDPIChanged(wxDPIChangedEvent& event);
+
 private:
     // override MSW-specific methods needed for new control
     virtual WXDWORD MSWGetStyle(long style, WXDWORD *exstyle) const wxOVERRIDE;
@@ -225,6 +225,8 @@ void wxMSWHeaderCtrl::Init()
     m_colBeingDragged = -1;
     m_isColBeingResized = false;
     m_customDraw = NULL;
+
+    Bind(wxEVT_DPI_CHANGED, &wxMSWHeaderCtrl::WXHandleDPIChanged, this);
 }
 
 bool wxMSWHeaderCtrl::Create(wxWindow *parent,
@@ -333,6 +335,18 @@ void wxMSWHeaderCtrl::MSWUpdateFontOnDPIChange(const wxSize& newDPI)
     {
         customDraw->m_attr.SetFont(m_font);
     }
+}
+
+void wxMSWHeaderCtrl::WXHandleDPIChanged(wxDPIChangedEvent& event)
+{
+    delete m_imageList;
+    m_imageList = NULL;
+    for (unsigned int i = 0; i < m_numColumns; ++i)
+    {
+        UpdateHeader(i);
+    }
+
+    event.Skip();
 }
 
 // ----------------------------------------------------------------------------
@@ -446,35 +460,29 @@ void wxMSWHeaderCtrl::DoInsertItem(const wxHeaderColumn& col, unsigned int idx)
     hdi.pszText = buf.data();
     hdi.cchTextMax = wxStrlen(buf);
 
-    const wxBitmap bmp = col.GetBitmap();
-    if ( bmp.IsOk() )
+    const wxBitmapBundle& bb = col.GetBitmapBundle();
+    if ( bb.IsOk() )
     {
         hdi.mask |= HDI_IMAGE;
 
         if ( HasFlag(wxHD_BITMAP_ON_RIGHT) )
             hdi.fmt |= HDF_BITMAP_ON_RIGHT;
 
-        const int bmpWidth = bmp.GetWidth(),
-                  bmpHeight = bmp.GetHeight();
-
+        wxSize bmpSize;
         if ( !m_imageList )
         {
-            m_imageList = new wxImageList(bmpWidth, bmpHeight);
+            bmpSize = bb.GetPreferredBitmapSizeFor(this);
+            m_imageList = new wxImageList(bmpSize.x, bmpSize.y);
             (void) // suppress mingw32 warning about unused computed value
             Header_SetImageList(GetHwnd(), GetHimagelistOf(m_imageList));
         }
         else // already have an image list
         {
-            // check that all bitmaps we use have the same size
-            int imageWidth,
-                imageHeight;
-            m_imageList->GetSize(0, imageWidth, imageHeight);
-
-            wxASSERT_MSG( imageWidth == bmpWidth && imageHeight == bmpHeight,
-                          "all column bitmaps must have the same size" );
+            // use the same size for all bitmaps
+            bmpSize = m_imageList->GetSize();
         }
 
-        m_imageList->Add(bmp);
+        m_imageList->Add(bb.GetBitmap(bmpSize));
         hdi.iImage = m_imageList->GetImageCount() - 1;
     }
 
@@ -1048,9 +1056,11 @@ bool wxHeaderCtrl::Create(wxWindow *parent,
                                   wxID_ANY,
                                   wxDefaultPosition,
                                   wxDefaultSize,
-                                  ApplyHeaderReorderFlagToStyle(wxNO_BORDER),
+                                  wxNO_BORDER,
                                   wxMSWHeaderCtrlNameStr) )
         return false;
+
+    SetWindowStyle(newStyle);
 
     Bind(wxEVT_SIZE, &wxHeaderCtrl::OnSize, this);
 
@@ -1136,16 +1146,18 @@ void wxHeaderCtrl::SetWindowStyleFlag(long style)
 
     // Update the native control style.
     long flags = m_nativeControl->GetWindowStyleFlag();
-    flags = ApplyHeaderReorderFlagToStyle(flags);
-    m_nativeControl->SetWindowStyleFlag(flags);
-}
 
-long wxHeaderCtrl::ApplyHeaderReorderFlagToStyle(long style)
-{
     if ( HasFlag(wxHD_ALLOW_REORDER) )
-        return style | wxHD_ALLOW_REORDER;
+        flags |= wxHD_ALLOW_REORDER;
+    else
+        flags &= ~wxHD_ALLOW_REORDER;
 
-    return style & ~wxHD_ALLOW_REORDER;
+    if ( HasFlag(wxHD_BITMAP_ON_RIGHT) )
+        flags |= wxHD_BITMAP_ON_RIGHT;
+    else
+        flags &= ~wxHD_BITMAP_ON_RIGHT;
+
+    m_nativeControl->SetWindowStyleFlag(flags);
 }
 
 #endif // wxHAS_GENERIC_HEADERCTRL

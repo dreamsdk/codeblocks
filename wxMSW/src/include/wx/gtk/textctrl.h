@@ -27,7 +27,7 @@ public:
                const wxSize &size = wxDefaultSize,
                long style = 0,
                const wxValidator& validator = wxDefaultValidator,
-               const wxString &name = wxTextCtrlNameStr);
+               const wxString &name = wxASCII_STR(wxTextCtrlNameStr));
 
     virtual ~wxTextCtrl();
 
@@ -38,7 +38,7 @@ public:
                 const wxSize &size = wxDefaultSize,
                 long style = 0,
                 const wxValidator& validator = wxDefaultValidator,
-                const wxString &name = wxTextCtrlNameStr);
+                const wxString &name = wxASCII_STR(wxTextCtrlNameStr));
 
     // implement base class pure virtuals
     // ----------------------------------
@@ -96,6 +96,13 @@ public:
     // Overridden wxWindow methods
     virtual void SetWindowStyleFlag( long style ) wxOVERRIDE;
 
+#if wxUSE_SPELLCHECK && defined(__WXGTK3__)
+    // Use native spelling and grammar checking functions.
+    virtual bool EnableProofCheck(const wxTextProofOptions& options
+                                    = wxTextProofOptions::Default()) wxOVERRIDE;
+    virtual wxTextProofOptions GetProofCheckOptions() const wxOVERRIDE;
+#endif // wxUSE_SPELLCHECK && __WXGTK3__
+
     // Implementation from now on
     void OnDropFiles( wxDropFilesEvent &event );
     void OnChar( wxKeyEvent &event );
@@ -143,6 +150,7 @@ public:
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);
 
     void GTKOnTextChanged() wxOVERRIDE;
+    void GTKAfterLayout();
 
 protected:
     // overridden wxWindow virtual methods
@@ -216,8 +224,9 @@ private:
     // a dummy one when frozen
     GtkTextBuffer *m_buffer;
 
-    GtkTextMark* m_showPositionOnThaw;
+    GtkTextMark* m_showPositionDefer;
     GSList* m_anonymousMarkList;
+    unsigned m_afterLayoutId;
 
     // For wxTE_AUTO_URL
     void OnUrlMouseEvent(wxMouseEvent&);

@@ -112,20 +112,25 @@ bool wxMenuItem::IsChecked() const
 }
 
 
-void wxMenuItem::SetBitmap(const wxBitmap& bitmap)
+void wxMenuItem::SetBitmap(const wxBitmapBundle& bitmap)
 {
     if ( m_kind == wxITEM_NORMAL )
     {
         m_bitmap = bitmap;
-        if ( !m_bitmap.IsNull() )
+        if ( m_bitmap.IsOk() )
         {
-            m_qtAction->setIcon( QIcon(*m_bitmap.GetHandle()) );
+            m_qtAction->setIcon( QIcon(*GetBitmapFromBundle(m_bitmap).GetHandle()) );
         }
     }
     else
     {
         wxFAIL_MSG("only normal menu items can have bitmaps");
     }
+}
+
+void wxMenuItem::SetFont(const wxFont& font)
+{
+    m_qtAction->setFont(font.GetHandle());
 }
 
 QAction *wxMenuItem::GetHandle() const

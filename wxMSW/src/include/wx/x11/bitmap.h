@@ -11,19 +11,8 @@
 #ifndef _WX_BITMAP_H_
 #define _WX_BITMAP_H_
 
-#include "wx/defs.h"
-#include "wx/object.h"
-#include "wx/string.h"
 #include "wx/palette.h"
 #include "wx/gdiobj.h"
-
-//-----------------------------------------------------------------------------
-// classes
-//-----------------------------------------------------------------------------
-
-class WXDLLIMPEXP_FWD_CORE wxMask;
-class WXDLLIMPEXP_FWD_CORE wxBitmap;
-class WXDLLIMPEXP_FWD_CORE wxImage;
 
 //-----------------------------------------------------------------------------
 // wxMask
@@ -69,16 +58,10 @@ public:
     wxBitmap() {}
     wxBitmap( int width, int height, int depth = -1 ) { Create( width, height, depth ); }
     wxBitmap( const wxSize& sz, int depth = -1 ) { Create( sz, depth ); }
+    wxBitmap( int width, int height, const wxDC& dc ) { Create(width, height, dc); }
 
     wxBitmap( const char bits[], int width, int height, int depth = 1 );
     wxBitmap( const char* const* bits );
-#ifdef wxNEEDS_CHARPP
-    // needed for old GCC
-    wxBitmap(char** data)
-    {
-        *this = wxBitmap(const_cast<const char* const*>(data));
-    }
-#endif
     wxBitmap( const wxString &filename, wxBitmapType type = wxBITMAP_DEFAULT_TYPE );
     virtual ~wxBitmap();
 
@@ -101,12 +84,10 @@ public:
 
 #if wxUSE_IMAGE
     wxBitmap( const wxImage& image, int depth = -1, double WXUNUSED(scale) = 1.0 ) { (void)CreateFromImage(image, depth); }
+    wxBitmap( const wxImage& image, const wxDC& WXUNUSED(dc) ) { (void)CreateFromImage(image); }
     wxImage ConvertToImage() const;
     bool CreateFromImage(const wxImage& image, int depth = -1);
 #endif // wxUSE_IMAGE
-
-    // copies the contents and mask of the given (colour) icon to the bitmap
-    virtual bool CopyFromIcon(const wxIcon& icon);
 
     wxMask *GetMask() const;
     void SetMask( wxMask *mask );
@@ -138,6 +119,10 @@ public:
     WXPixmap GetDrawable() const;
 
     WXDisplay *GetDisplay() const;
+
+    // This is provided only for compatibility with the other ports, there is
+    // no alpha support in X11 bitmaps.
+    bool HasAlpha() const { return false; }
 
 protected:
     virtual wxGDIRefData *CreateGDIRefData() const;

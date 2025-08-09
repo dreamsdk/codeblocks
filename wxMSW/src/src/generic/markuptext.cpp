@@ -18,9 +18,6 @@
 // for compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_MARKUP
 
@@ -214,7 +211,7 @@ public:
         // Adjust the position (unfortunately we need to do this manually as
         // there is no notion of current text position in wx API) rectangle to
         // ensure that all text segments use the same baseline (as there is
-        // nothing equivalent to Windows SetTextAlign(TA_BASELINE) neither).
+        // nothing equivalent to Windows SetTextAlign(TA_BASELINE) either).
         wxRect rect(m_rect);
         rect.x = m_pos;
 

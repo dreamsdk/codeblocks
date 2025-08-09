@@ -15,6 +15,7 @@
 #include "wx/toolbar.h"
 
 #include "wx/gtk/private.h"
+#include "wx/gtk/private/image.h"
 #include "wx/gtk/private/gtk3-compat.h"
 
 // ----------------------------------------------------------------------------
@@ -34,8 +35,8 @@ public:
     wxToolBarTool(wxToolBar *tbar,
                   int id,
                   const wxString& label,
-                  const wxBitmap& bitmap1,
-                  const wxBitmap& bitmap2,
+                  const wxBitmapBundle& bitmap1,
+                  const wxBitmapBundle& bitmap2,
                   wxItemKind kind,
                   wxObject *clientData,
                   const wxString& shortHelpString,
@@ -169,70 +170,38 @@ enter_notify_event(GtkWidget*, GdkEventCrossing* event, wxToolBarTool* tool)
 }
 
 //-----------------------------------------------------------------------------
-// "expose_event" from GtkImage inside m_item
-//-----------------------------------------------------------------------------
 
-extern "C" {
-static gboolean
-#ifdef __WXGTK3__
-image_draw(GtkWidget* widget, cairo_t* cr, wxToolBarTool* tool)
-#else
-image_expose_event(GtkWidget* widget, GdkEventExpose*, wxToolBarTool* tool)
-#endif
+namespace
+{
+struct BitmapProvider: wxGtkImage::BitmapProvider
+{
+    BitmapProvider(wxToolBarTool* tool) : m_tool(tool) { }
+
+    virtual wxBitmap Get(int scale) const wxOVERRIDE;
+    wxToolBarTool* const m_tool;
+};
+
+wxBitmap BitmapProvider::Get(int scale) const
 {
 #ifdef __WXGTK3__
-    wxBitmap bitmap(tool->GetNormalBitmap());
-    if (!tool->IsEnabled())
+    const bool isEnabled = m_tool->IsEnabled();
+    const wxBitmapBundle bundle(
+        isEnabled ? m_tool->GetNormalBitmapBundle() : m_tool->GetDisabledBitmapBundle());
+    wxBitmap bitmap(GetAtScale(bundle, scale));
+    if (!isEnabled && !bitmap.IsOk())
     {
-        wxBitmap disabled(tool->GetDisabledBitmap());
-        // if no disabled bitmap and normal bitmap is scaled
-        if (!disabled.IsOk() && bitmap.IsOk() && bitmap.GetScaleFactor() > 1)
-        {
-            // make scaled disabled bitmap from normal one
-
-            disabled.CreateScaled(bitmap.GetScaledHeight(), bitmap.GetScaledWidth(),
-                32, bitmap.GetScaleFactor());
-            cairo_t* cr2 = disabled.CairoCreate();
-            // clear to transparent
-            cairo_set_operator(cr2, CAIRO_OPERATOR_SOURCE);
-            cairo_set_source_rgba(cr2, 0, 0, 0, 0);
-            cairo_paint(cr2);
-            // draw in normal bitmap
-            bitmap.Draw(cr2, 0, 0);
-            // create disabled appearance, this seems to be how GTK does it
-            cairo_set_source_rgba(cr2, 0, 0, 0, 0);
-            cairo_paint_with_alpha(cr2, 0.5);
-            cairo_destroy(cr2);
-        }
-        bitmap = disabled;
+        // Create disabled bitmap from normal one
+        bitmap = GetAtScale(m_tool->GetNormalBitmapBundle(), scale).CreateDisabled();
     }
-    if (!bitmap.IsOk() || (tool->IsEnabled() && bitmap.GetScaleFactor() <= 1))
-        return false;
+    return bitmap;
 #else
-    const wxBitmap& bitmap = tool->GetDisabledBitmap();
-    if (tool->IsEnabled() || !bitmap.IsOk())
-        return false;
+    wxUnusedVar(scale);
+    if (!m_tool->IsEnabled())
+        return m_tool->GetDisabledBitmap();
+    return wxBitmap();
 #endif
-
-    GtkAllocation alloc;
-    gtk_widget_get_allocation(widget, &alloc);
-    int x = (alloc.width - bitmap.GetScaledWidth()) / 2;
-    int y = (alloc.height - bitmap.GetScaledHeight()) / 2;
-#ifdef __WXGTK3__
-    gtk_render_background(gtk_widget_get_style_context(widget),
-        cr, 0, 0, alloc.width, alloc.height);
-    bitmap.Draw(cr, x, y);
-#else
-    x += alloc.x;
-    y += alloc.y;
-    gdk_draw_pixbuf(
-        gtk_widget_get_window(widget), gtk_widget_get_style(widget)->black_gc, bitmap.GetPixbuf(),
-        0, 0, x, y,
-        -1, -1, GDK_RGB_DITHER_NORMAL, 0, 0);
-#endif
-    return true;
 }
-}
+} // namespace
 
 //-----------------------------------------------------------------------------
 // "toggled" from dropdown menu button
@@ -294,26 +263,9 @@ void wxToolBar::AddChildGTK(wxWindowGTK* child)
 void wxToolBarTool::SetImage()
 {
     const wxBitmap& bitmap = GetNormalBitmap();
-    wxCHECK_RET(bitmap.IsOk(), "invalid bitmap for wxToolBar icon");
 
     GtkWidget* image = gtk_tool_button_get_icon_widget(GTK_TOOL_BUTTON(m_item));
-#ifdef __WXGTK3__
-    if (bitmap.GetScaleFactor() > 1)
-    {
-        // Use a placeholder pixbuf with the correct size.
-        // The original will be used by our "draw" signal handler.
-        GdkPixbuf* pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8,
-            bitmap.GetScaledWidth(), bitmap.GetScaledHeight());
-        gtk_image_set_from_pixbuf(GTK_IMAGE(image), pixbuf);
-        g_object_unref(pixbuf);
-    }
-    else
-#endif
-    {
-        // always use pixbuf, because pixmap mask does not
-        // work with disabled images in some themes
-        gtk_image_set_from_pixbuf(GTK_IMAGE(image), bitmap.GetPixbuf());
-    }
+    WX_GTK_IMAGE(image)->Set(bitmap);
 }
 
 // helper to create a dropdown menu item
@@ -415,8 +367,8 @@ void wxToolBarTool::SetLabel(const wxString& label)
 
 wxToolBarToolBase *wxToolBar::CreateTool(int id,
                                          const wxString& text,
-                                         const wxBitmap& bitmap1,
-                                         const wxBitmap& bitmap2,
+                                         const wxBitmapBundle& bitmap1,
+                                         const wxBitmapBundle& bitmap2,
                                          wxItemKind kind,
                                          wxObject *clientData,
                                          const wxString& shortHelpString,
@@ -505,7 +457,6 @@ bool wxToolBar::Create( wxWindow *parent,
     else
     {
         m_widget = gtk_event_box_new();
-        ConnectWidget( m_widget );
     }
     gtk_container_add(GTK_CONTAINER(m_widget), GTK_WIDGET(m_toolbar));
     wxGCC_WARNING_RESTORE()
@@ -614,7 +565,7 @@ bool wxToolBar::DoInsertTool(size_t pos, wxToolBarToolBase *toolBase)
                     break;
                 default:
                     wxFAIL_MSG("unknown toolbar child type");
-                    // fall through
+                    wxFALLTHROUGH;
                 case wxITEM_DROPDOWN:
                 case wxITEM_NORMAL:
                     tool->m_item = gtk_tool_button_new(NULL, "");
@@ -624,18 +575,11 @@ bool wxToolBar::DoInsertTool(size_t pos, wxToolBarToolBase *toolBase)
             }
             if (!HasFlag(wxTB_NOICONS))
             {
-                GtkWidget* image = gtk_image_new();
+                GtkWidget* image = wxGtkImage::New(new BitmapProvider(tool));
                 gtk_tool_button_set_icon_widget(
                     GTK_TOOL_BUTTON(tool->m_item), image);
                 tool->SetImage();
                 gtk_widget_show(image);
-#ifdef __WXGTK3__
-                g_signal_connect(image, "draw",
-                    G_CALLBACK(image_draw), tool);
-#else
-                g_signal_connect(image, "expose_event",
-                    G_CALLBACK(image_expose_event), tool);
-#endif
             }
             if (!tool->GetLabel().empty())
             {
@@ -700,6 +644,12 @@ bool wxToolBar::DoInsertTool(size_t pos, wxToolBarToolBase *toolBase)
 #else
             tool->m_item = GTK_TOOL_ITEM(gtk_widget_get_parent(gtk_widget_get_parent(control->m_widget)));
 #endif
+            // The widget size is not controlled by wx, so at least make sure
+            // that its minimal size is respected by GTK (note that this works
+            // fine even if minSize is not set).
+            const wxSize minSize = control->GetBestSize();
+            gtk_widget_set_size_request(control->m_widget, minSize.x, minSize.y);
+
             if (gtk_toolbar_get_item_index(m_toolbar, tool->m_item) != int(pos))
             {
                 g_object_ref(tool->m_item);
@@ -845,7 +795,7 @@ void wxToolBar::SetToolShortHelp( int id, const wxString& helpString )
     }
 }
 
-void wxToolBar::SetToolNormalBitmap( int id, const wxBitmap& bitmap )
+void wxToolBar::SetToolNormalBitmap( int id, const wxBitmapBundle& bitmap )
 {
     wxToolBarTool* tool = static_cast<wxToolBarTool*>(FindById(id));
     if ( tool )
@@ -857,7 +807,7 @@ void wxToolBar::SetToolNormalBitmap( int id, const wxBitmap& bitmap )
     }
 }
 
-void wxToolBar::SetToolDisabledBitmap( int id, const wxBitmap& bitmap )
+void wxToolBar::SetToolDisabledBitmap( int id, const wxBitmapBundle& bitmap )
 {
     wxToolBarTool* tool = static_cast<wxToolBarTool*>(FindById(id));
     if ( tool )

@@ -195,6 +195,9 @@ public:
 
         Pass a print preview object plus other normal frame arguments.
         The print preview object will be destroyed by the frame when it closes.
+
+        Note that @a size typically should @e not be specified explicitly to
+        let the frame use its default size, adapted to its contents.
     */
     wxPreviewFrame(wxPrintPreviewBase* preview, wxWindow* parent,
                    const wxString& title = "Print Preview",
@@ -290,7 +293,7 @@ public:
     created. In particular, printing code relying on wxDC::GetTextExtent()
     heavily (for example, wxHtmlEasyPrinting and other wxHTML classes do) is
     affected. It is recommended to use native preview functionality on
-    platforms that offer it (OS X, GTK+).
+    platforms that offer it (macOS, GTK+).
 
     @library{wxcore}
     @category{printing}
@@ -372,6 +375,13 @@ public:
     virtual wxPrintout* GetPrintoutForPrinting() const;
 
     /**
+        Gets the current percentage zoom level of the preview canvas.
+
+        @see SetZoom()
+    */
+    virtual int GetZoom() const;
+
+    /**
         Returns @true if the wxPrintPreview is valid, @false otherwise.
 
         It could return @false if there was a problem initializing the printer
@@ -427,6 +437,8 @@ public:
 
     /**
         Sets the percentage preview zoom, and refreshes the preview canvas accordingly.
+
+        @see GetZoom()
     */
     virtual void SetZoom(int percent);
 };
@@ -805,7 +817,7 @@ public:
         page rectangle, or page margins rectangle to perform your own scaling.
 
         @note
-        While the underlying drawing model of OS X is floating-point,
+        While the underlying drawing model of macOS is floating-point,
         wxWidgets's drawing model scales from integer coordinates.
     */
     void MapScreenSizeToDevice();

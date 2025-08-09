@@ -461,10 +461,10 @@ public:
         controls which are initially empty.
 
         Notice that hints are known as <em>cue banners</em> under MSW or
-        <em>placeholder strings</em> under OS X.
+        <em>placeholder strings</em> under macOS.
 
         @remarks Currently implemented natively on Windows (Vista and later
-            only), OS X and GTK+ (3.2 and later).
+            only), macOS and GTK+ (3.2 and later).
 
             For the platforms without native hints support, the implementation
             has several known limitations. Notably, the hint display will not
@@ -497,7 +497,7 @@ public:
      */
     virtual wxString GetHint() const;
 
-    //@{
+    ///@{
     /**
         Attempts to set the control margins. When margins are given as wxPoint,
         x indicates the left and y the top margin. Use -1 to indicate that
@@ -510,7 +510,7 @@ public:
     */
     bool SetMargins(const wxPoint& pt);
     bool SetMargins(wxCoord left, wxCoord top = -1);
-    //@}
+    ///@}
 
     /**
         Returns the margins used by the control. The @c x field of the returned

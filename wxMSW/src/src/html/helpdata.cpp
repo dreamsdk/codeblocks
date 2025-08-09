@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_HTML && wxUSE_STREAMS
 
@@ -279,7 +276,6 @@ bool wxHtmlHelpData::LoadMSProject(wxHtmlBookRecord *book, wxFileSystem& fsys,
     wxFSFile *f;
     wxHtmlFilterHTML filter;
     wxString buf;
-    wxString string;
 
     HP_Parser parser;
     HP_TagHandler *handler = new HP_TagHandler(book);
@@ -296,7 +292,7 @@ bool wxHtmlHelpData::LoadMSProject(wxHtmlBookRecord *book, wxFileSystem& fsys,
     }
     else
     {
-        wxLogError(_("Cannot open contents file: %s"), contentsfile.c_str());
+        wxLogError(_("Cannot open contents file: %s"), contentsfile);
     }
 
     f = ( indexfile.empty() ? NULL : fsys.OpenFile(indexfile) );
@@ -310,7 +306,7 @@ bool wxHtmlHelpData::LoadMSProject(wxHtmlBookRecord *book, wxFileSystem& fsys,
     }
     else if (!indexfile.empty())
     {
-        wxLogError(_("Cannot open index file: %s"), indexfile.c_str());
+        wxLogError(_("Cannot open index file: %s"), indexfile);
     }
     return true;
 }
@@ -502,16 +498,12 @@ bool wxHtmlHelpData::AddBookParam(const wxFSFile& bookfile,
                                   const wxString& indexfile, const wxString& deftopic,
                                   const wxString& path)
 {
-#if wxUSE_WCHAR_T
-        #if wxUSE_UNICODE
-            #define CORRECT_STR(str, conv) \
-                str = wxString((str).mb_str(wxConvISO8859_1), conv)
-        #else
-            #define CORRECT_STR(str, conv) \
-                str = wxString((str).wc_str(conv), wxConvLocal)
-        #endif
+#if wxUSE_UNICODE
+    #define CORRECT_STR(str, conv) \
+        str = wxString((str).mb_str(wxConvISO8859_1), conv)
 #else
-    #define CORRECT_STR(str, conv)
+    #define CORRECT_STR(str, conv) \
+        str = wxString((str).wc_str(conv), wxConvLocal)
 #endif
 
     wxFileSystem fsys;
@@ -655,7 +647,6 @@ bool wxHtmlHelpData::AddBook(const wxString& book)
     wxFileSystem fsys;
 
     wxString title = _("noname"),
-             safetitle,
              start,
              contents,
              index,
@@ -664,7 +655,7 @@ bool wxHtmlHelpData::AddBook(const wxString& book)
     fi = fsys.OpenFile(book);
     if (fi == NULL)
     {
-        wxLogError(_("Cannot open HTML help book: %s"), book.c_str());
+        wxLogError(_("Cannot open HTML help book: %s"), book);
         return false;
     }
     fsys.ChangePathTo(book);

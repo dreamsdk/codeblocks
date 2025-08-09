@@ -74,9 +74,6 @@ public:
 
     void OnRightClick(wxMouseEvent& event);
 
-    virtual void CheckItem(long item, bool check) wxOVERRIDE;
-    virtual bool IsItemChecked(long item) const wxOVERRIDE;
-
 private:
     void ShowContextMenu(const wxPoint& pos, long item);
     void SetColumnImage(int col, int image);
@@ -133,6 +130,7 @@ protected:
     void OnSetFgColour(wxCommandEvent& event);
     void OnSetBgColour(wxCommandEvent& event);
     void OnSetRowLines(wxCommandEvent& event);
+    void OnSetRowLinesOnBlank(wxCommandEvent& event);
     void OnCustomHeaderAttr(wxCommandEvent& event);
     void OnToggleMultiSel(wxCommandEvent& event);
     void OnShowColInfo(wxCommandEvent& event);
@@ -147,9 +145,6 @@ protected:
     void OnToggleLines(wxCommandEvent& event);
     void OnToggleHeader(wxCommandEvent& event);
     void OnToggleBell(wxCommandEvent& event);
-#ifdef __WXOSX__
-    void OnToggleMacUseGeneric(wxCommandEvent& event);
-#endif // __WXOSX__
     void OnFind(wxCommandEvent& event);
     void OnToggleItemCheckBox(wxCommandEvent& event);
     void OnGetItemCheckBox(wxCommandEvent& event);
@@ -161,8 +156,8 @@ protected:
     void OnUpdateToggleHeader(wxUpdateUIEvent& event);
     void OnUpdateRowLines(wxUpdateUIEvent& event);
 
-    wxImageList *m_imageListNormal;
-    wxImageList *m_imageListSmall;
+    wxVector<wxBitmapBundle> m_imagesNormal;
+    wxVector<wxBitmapBundle> m_imagesSmall;
 
     wxPanel *m_panel;
     MyListCtrl *m_listCtrl;
@@ -223,6 +218,7 @@ enum
     LIST_SET_FG_COL,
     LIST_SET_BG_COL,
     LIST_ROW_LINES,
+    LIST_ROW_LINES_ON_BLANK,
     LIST_CUSTOM_HEADER_ATTR,
     LIST_TOGGLE_MULTI_SEL,
     LIST_TOGGLE_HEADER,
@@ -243,9 +239,6 @@ enum
     LIST_FREEZE,
     LIST_THAW,
     LIST_TOGGLE_LINES,
-#ifdef __WXOSX__
-    LIST_MAC_USE_GENERIC,
-#endif
     LIST_CHECKVISIBILITY,
     LIST_CTRL                   = 1000
 };

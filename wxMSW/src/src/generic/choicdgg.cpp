@@ -19,9 +19,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_CHOICEDLG
 
@@ -375,7 +372,6 @@ bool wxAnyChoiceDialog::Create(wxWindow *parent,
     SetSizer( topsizer );
 
     topsizer->SetSizeHints( this );
-    topsizer->Fit( this );
 
     if ( styleDlg & wxCENTRE )
         Centre(wxBOTH);

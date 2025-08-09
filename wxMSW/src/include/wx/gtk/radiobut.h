@@ -13,7 +13,7 @@
 // wxRadioButton
 //-----------------------------------------------------------------------------
 
-class WXDLLIMPEXP_CORE wxRadioButton: public wxControl
+class WXDLLIMPEXP_CORE wxRadioButton: public wxRadioButtonBase
 {
 public:
     wxRadioButton() { }
@@ -24,10 +24,12 @@ public:
                    const wxSize& size = wxDefaultSize,
                    long style = 0,
                    const wxValidator& validator = wxDefaultValidator,
-                   const wxString& name = wxRadioButtonNameStr )
+                   const wxString& name = wxASCII_STR(wxRadioButtonNameStr) )
     {
         Create( parent, id, label, pos, size, style, validator, name );
     }
+
+    virtual ~wxRadioButton();
 
     bool Create( wxWindow *parent,
                  wxWindowID id,
@@ -36,11 +38,11 @@ public:
                  const wxSize& size = wxDefaultSize,
                  long style = 0,
                  const wxValidator& validator = wxDefaultValidator,
-                 const wxString& name = wxRadioButtonNameStr );
+                 const wxString& name = wxASCII_STR(wxRadioButtonNameStr) );
 
     virtual void SetLabel(const wxString& label) wxOVERRIDE;
-    virtual void SetValue(bool val);
-    virtual bool GetValue() const;
+    virtual void SetValue(bool val) wxOVERRIDE;
+    virtual bool GetValue() const wxOVERRIDE;
 
     static wxVisualAttributes
     GetClassDefaultAttributes(wxWindowVariant variant = wxWINDOW_VARIANT_NORMAL);

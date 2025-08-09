@@ -27,7 +27,7 @@ public:
                         const wxPoint& pos = wxDefaultPosition,
                         const wxSize& size = wxDefaultSize,
                         long style = wxDEFAULT_FRAME_STYLE,
-                        const wxString& name = wxFrameNameStr)
+                        const wxString& name = wxASCII_STR(wxFrameNameStr))
     {
         Init();
 
@@ -42,7 +42,7 @@ public:
                 const wxPoint& pos = wxDefaultPosition,
                 const wxSize& size = wxDefaultSize,
                 long style = wxDEFAULT_FRAME_STYLE,
-                const wxString& name = wxFrameNameStr);
+                const wxString& name = wxASCII_STR(wxFrameNameStr));
 
     bool Create(wxWindow *parent, WXWindow nativeWindow);
 
@@ -64,9 +64,12 @@ public:
     virtual bool IsActive() wxOVERRIDE;
 
     virtual void ShowWithoutActivating() wxOVERRIDE;
-    bool EnableFullScreenView(bool enable = true) wxOVERRIDE;
+    bool EnableFullScreenView(bool enable = true, long style = wxFULLSCREEN_ALL) wxOVERRIDE;
     virtual bool ShowFullScreen(bool show, long style = wxFULLSCREEN_ALL) wxOVERRIDE;
     virtual bool IsFullScreen() const wxOVERRIDE;
+
+    virtual wxContentProtection GetContentProtection() const wxOVERRIDE;
+    virtual bool SetContentProtection(wxContentProtection contentProtection) wxOVERRIDE;
 
     // implementation from now on
     // --------------------------

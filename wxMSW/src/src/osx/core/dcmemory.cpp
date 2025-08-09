@@ -77,8 +77,8 @@ void wxMemoryDCImpl::DoSelect( const wxBitmap& bitmap )
                      "Bitmap is selected in another wxMemoryDC, delete the first wxMemoryDC or use SelectObject(NULL)" );
 
         m_selected.SetSelectedInto(GetOwner());
-        m_width = bitmap.GetScaledWidth();
-        m_height = bitmap.GetScaledHeight();
+        m_width = bitmap.GetLogicalWidth();
+        m_height = bitmap.GetLogicalHeight();
         m_contentScaleFactor = bitmap.GetScaleFactor();
         CGColorSpaceRef genericColorSpace  = wxMacGetGenericRGBColorSpace();
         CGContextRef bmCtx = (CGContextRef) m_selected.GetHBITMAP();
@@ -89,7 +89,9 @@ void wxMemoryDCImpl::DoSelect( const wxBitmap& bitmap )
             CGContextSetStrokeColorSpace( bmCtx, genericColorSpace );
             SetGraphicsContext( wxGraphicsContext::CreateFromNative( bmCtx ) );
             if (m_graphicContext)
-                m_graphicContext->EnableOffset(m_contentScaleFactor <= 1);
+            {
+                m_graphicContext->SetContentScaleFactor(m_contentScaleFactor);
+            }
         }
         m_ok = (m_graphicContext != NULL) ;
     }
@@ -104,9 +106,9 @@ void wxMemoryDCImpl::DoGetSize( int *width, int *height ) const
     if (m_selected.IsOk())
     {
         if (width)
-            (*width) = m_selected.GetScaledWidth();
+            (*width) = m_selected.GetLogicalWidth();
         if (height)
-            (*height) = m_selected.GetScaledHeight();
+            (*height) = m_selected.GetLogicalHeight();
     }
     else
     {

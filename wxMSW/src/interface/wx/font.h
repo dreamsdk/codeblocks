@@ -322,16 +322,12 @@ public:
     /**
         Constructor setting the font size in points to use.
 
-        The canonical type of @a pointSize argument is @c float, however any
-        other integer type, as well as @c double, is also accepted for
-        compatibility.
-
-        Notice that until wxWidgets 3.1.2, the type could only be @c int.
+        Note that until wxWidgets 3.1.2 fractional point sizes were not
+        supported, and the type of @a pointSize was @c int.
 
         @see wxFont::SetPointSize()
      */
-    template <typename T>
-    explicit wxFontInfo(T pointSize);
+    explicit wxFontInfo(double pointSize);
 
     /**
         Constructor setting the font size in pixels to use.
@@ -661,7 +657,7 @@ public:
     /**
         @name Getters
     */
-    //@{
+    ///@{
 
     /**
        Returns a font with the same face/size as the given one but with normal
@@ -743,7 +739,7 @@ public:
         This method can be used to allow this application to use the font from
         the given file even if it is not globally installed on the system.
 
-        Under OS X this method actually doesn't do anything other than check
+        Under macOS this method actually doesn't do anything other than check
         for the existence of the file in the "Fonts" subdirectory of the
         application bundle "Resources" directory. You are responsible for
         actually making the font file available in this directory and setting
@@ -786,7 +782,7 @@ public:
 
         @since 3.1.2
     */
-    virtual float  GetFractionalPointSize() const;
+    virtual double GetFractionalPointSize() const;
 
     /**
         Gets the pixel size.
@@ -857,7 +853,7 @@ public:
     */
     virtual bool IsOk() const;
 
-    //@}
+    ///@}
 
 
     /**
@@ -867,7 +863,7 @@ public:
         a new font similar to the given one but with its weight, style or size
         changed.
      */
-    //@{
+    ///@{
 
     /**
         Returns a bold version of this font.
@@ -1017,7 +1013,7 @@ public:
      */
     wxFont Scaled(float x) const;
 
-    //@}
+    ///@}
 
     /**
         @name Setters
@@ -1025,7 +1021,7 @@ public:
         These functions internally recreate the native font object with the new
         specified property.
     */
-    //@{
+    ///@{
 
     /**
         Sets the encoding for this font.
@@ -1139,7 +1135,7 @@ public:
 
         @since 3.1.2
     */
-    virtual void SetFractionalPointSize(float pointSize);
+    virtual void SetFractionalPointSize(double pointSize);
 
     /**
         Sets the pixel size.
@@ -1235,7 +1231,7 @@ public:
     */
     virtual void SetNumericWeight(int weight);
 
-    //@}
+    ///@}
 
 
     /**
@@ -1292,7 +1288,7 @@ public:
      */
     static int GetNumericWeightOf(wxFontWeight weight);
 
-    //@{
+    ///@{
     /**
         This function takes the same parameters as the relative
         @ref wxFont::wxFont "wxFont constructor" and returns a new font
@@ -1327,7 +1323,7 @@ public:
     static wxFont *New(const wxNativeFontInfo& nativeInfo);
     static wxFont *New(const wxString& nativeInfoString);
 
-    //@}
+    ///@}
 };
 
 
@@ -1420,7 +1416,7 @@ wxFontList* wxTheFontList;
 // ============================================================================
 
 /** @addtogroup group_funcmacro_misc */
-//@{
+///@{
 
 /**
     Converts string to a wxFont best represented by the given string. Returns
@@ -1441,5 +1437,5 @@ bool wxFromString(const wxString& string, wxFont* font);
 */
 wxString wxToString(const wxFont& font);
 
-//@}
+///@}
 

@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_BOOKCTRL
 
@@ -91,7 +88,6 @@ void wxPropertySheetDialog::Init()
 // Layout the dialog, to be called after pages have been created
 void wxPropertySheetDialog::LayoutDialog(int centreFlags)
 {
-    GetSizer()->Fit(this);
     GetSizer()->SetSizeHints(this);
     if (centreFlags)
         Centre(centreFlags);

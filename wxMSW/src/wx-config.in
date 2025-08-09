@@ -45,7 +45,8 @@ usage()
  wx-config [--prefix[=DIR]] [--exec-prefix[=DIR]] [--release] [--version-full]
            [--list] [--selected-config] [--host=HOST] [--toolkit=TOOLKIT]
            [--universal[=yes|no]] [--unicode[=yes|no]] [--static[=yes|no]]
-           [--debug[=yes|no]] [--version[=VERSION]] [--basename] [--cc] [--cxx]
+           [--debug[=yes|no]] [--version[=VERSION]] [--flavour=FLAVOUR]
+           [--basename] [--cc] [--cxx]
            [--cppflags [base]] [--cxxflags [base]] [--cflags]
            [--rescomp] [--linkdeps] [--ld] [--utility=UTIL]
            [--libs [LIBS...]] [--optional-libs [LIBS...]]
@@ -54,19 +55,20 @@ usage()
   your system.  It may be used to retrieve the information required to build
   applications using these libraries using --cppflags, --cxxflags, --cflags,
   and --libs options. And you may query the properties of this configuration
-  using --query-{host,toolkit,widgetset,chartype,debugtype,version,linkage}.
+  using  --query-{host,toolkit,widgetset,chartype,debugtype,version,flavour,
+  linkage}.
 
     NOTE:    Usage of --debug and --query-debugtype are only relevant if you
   have any  versions prior to 2.9 installed  and use the --version option to
   select an earlier version.
 
     If multiple builds of wxWidgets  are available,  you can use the options
-  --prefix, --host, --toolkit, --unicode, --static, --universal or --version
-  to select from them.  The  --selected-config  option shows the name of the
-  current configuration and --list  shows available alternatives which match
-  specified criteria.  The  --utility  option returns the correct version of
-  UTIL to use with the selected build.  The  --linkdeps  option returns only
-  static libraries for your makefile link rule dependencies.
+  --prefix, --host, --toolkit,  --unicode, --static, --universal,  --version
+  or --flavour to select from them.  The --selected-config option shows  the
+  name of the current configuration and --list  shows available alternatives
+  which match specified criteria.  The --utility option  returns the correct
+  version of  UTIL to use with  the selected build.  The  --linkdeps  option
+  returns only static libraries for your makefile link rule dependencies.
 
     The LIBS arguments (comma or space separated) may be used to specify the
   wxWidgets libraries that  you wish to use. The "std" label may be used  to
@@ -86,10 +88,6 @@ EOF
 
 # Unfussy people are the easiest to deal with, get them out of the way now.
 [ $# -gt 0 ] || usage 1
-
-
-# Contentious tools determined by configure.
-EGREP="@EGREP@"
 
 
 # For the people who know what they want, or think they do:
@@ -518,11 +516,11 @@ fi
 # find_eligible_delegates _mask
 # Outputs all the config files installed which match the
 # (extended regex) _mask passed as an argument.
-find_eligible_delegates() { echo "$installed_configs" | $EGREP "$1" 2> /dev/null; }
+find_eligible_delegates() { echo "$installed_configs" | grep -E "$1" 2> /dev/null; }
 
 # user_mask_fits _config
 # Returns true if the string _config satisfies the user specified mask.
-user_mask_fits()          { echo "$1" | $EGREP "$configmask" > /dev/null 2>&1; }
+user_mask_fits()          { echo "$1" | grep -E "$configmask" > /dev/null 2>&1; }
 
 # count_fields _word
 # Returns the number of IFS split fields in _word
@@ -671,7 +669,7 @@ find_best_legacy_config()
     if [ -n "$_legacy_configs" ]; then
         _legacy_mask=`get_legacy_mask`
         for d in $_legacy_configs; do
-            if echo $d | $EGREP $_legacy_mask > /dev/null 2>&1 ; then
+            if echo $d | grep -E $_legacy_mask > /dev/null 2>&1 ; then
                 echo "$d"
                 return
             fi
@@ -1216,7 +1214,7 @@ if is_monolithic; then
         # We still need the core lib deps for a static build though
         if is_static; then
             link_deps="${libdir}/libwx_@TOOLCHAIN_NAME@.a"
-            wx_libs="$wx_libs $link_deps $ldlibs_core $ldlibs_base"
+            wx_libs="$wx_libs $link_deps $ldlibs_html $ldlibs_media $ldlibs_stc $ldlibs_webview $ldlibs_core $ldlibs_xml $ldlibs_base"
         else
             wx_libs="$wx_libs -lwx_@TOOLCHAIN_NAME@"
         fi
@@ -1295,8 +1293,8 @@ _cppflags=`echo "-I${libdir}/wx/include/@TOOLCHAIN_FULLNAME@" $_include_cppflags
 
 # now without further ado, we can answer these too.
 [ -z "$output_option_cppflags" ] || echo $_cppflags
-[ -z "$output_option_cflags"   ] || echo $_cppflags "@WXCONFIG_CFLAGS@"
-[ -z "$output_option_cxxflags" ] || echo $_cppflags "@WXCONFIG_CXXFLAGS@"
+[ -z "$output_option_cflags"   ] || echo $_cppflags @WXCONFIG_CFLAGS@
+[ -z "$output_option_cxxflags" ] || echo $_cppflags @WXCONFIG_CXXFLAGS@
 [ -z "$output_option_gl_libs"  ] || echo `lib_flags_for gl`
 [ -z "$output_option_linkdeps" ] || echo $link_deps
 
@@ -1309,12 +1307,12 @@ if [ -n "$output_option_libs" ]; then
         _ldflags="-L$libdir"
 
     if [ -n "$MAC_FRAMEWORK" ]; then
-	wx_libs="-framework $MAC_FRAMEWORK"
-	if [ -n "$MAC_FRAMEWORK_PREFIX" ]; then
-	    _ldflags="-F$MAC_FRAMEWORK_PREFIX"
-	else
-	    _ldflags=""
-	fi
+        wx_libs="-framework $MAC_FRAMEWORK"
+        if [ -n "$MAC_FRAMEWORK_PREFIX" ]; then
+            _ldflags="-F$MAC_FRAMEWORK_PREFIX"
+        else
+            _ldflags=""
+        fi
     fi
 
     is_installed || [ -n "$flag_option_no_rpath" ] || _rpath="@WXCONFIG_RPATH@"

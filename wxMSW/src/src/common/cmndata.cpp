@@ -19,18 +19,12 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_PRINTING_ARCHITECTURE
 
 #include "wx/cmndata.h"
 
 #ifndef WX_PRECOMP
-    #if defined(__WXMSW__)
-        #include "wx/msw/wrapcdlg.h"
-    #endif // MSW
     #include <stdio.h>
     #include "wx/string.h"
     #include "wx/utils.h"
@@ -107,8 +101,7 @@ wxPrintData::~wxPrintData()
     if (m_nativeData->m_ref == 0)
         delete m_nativeData;
 
-    if (m_privData)
-        delete [] m_privData;
+    delete[] m_privData;
 }
 
 void wxPrintData::ConvertToNative()

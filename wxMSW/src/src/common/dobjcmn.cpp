@@ -11,9 +11,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_DATAOBJ
 
@@ -23,6 +20,7 @@
     #include "wx/app.h"
 #endif
 
+#include "wx/mstream.h"
 #include "wx/textbuf.h"
 
 // ----------------------------------------------------------------------------
@@ -432,8 +430,16 @@ bool wxTextDataObject::GetDataHere(void *buf) const
 
 bool wxTextDataObject::SetData(size_t len, const void *buf)
 {
-    const wxString
-        text = wxString(static_cast<const wxChar*>(buf), len/sizeof(wxChar));
+    const wxChar* const cbuf = static_cast<const wxChar*>(buf);
+
+    // Input data is normally NUL-terminated and we don't want to make this NUL
+    // part of the string, so take everything up to but excluding it, but take
+    // all if anything doesn't conform to our expectations for compatibility.
+    size_t size = len/sizeof(wxChar);
+    if ( len && !(len % sizeof(wxChar)) && !cbuf[size - 1] )
+        size--;
+
+    const wxString text(cbuf, size);
     SetText(wxTextBuffer::Translate(text, wxTextFileType_Unix));
 
     return true;
@@ -518,7 +524,7 @@ bool wxHTMLDataObject::GetDataHere(void *buf) const
     sprintf(ptr+12, "%08u", (unsigned)(strstr(buffer, "<!--EndFrag") - buffer));
     *(ptr+12+8) = '\r';
 #else
-    strcpy(buffer, html);
+    memcpy(buffer, html, html.length());
 #endif // __WXMSW__
 
     return true;
@@ -621,6 +627,59 @@ bool wxCustomDataObject::SetData(size_t size, const void *buf)
     memcpy( m_data, buf, m_size );
 
     return true;
+}
+
+// ----------------------------------------------------------------------------
+// wxImageDataObject
+// ----------------------------------------------------------------------------
+
+#if defined(__WXMSW__)
+#define wxIMAGE_FORMAT_DATA wxDF_PNG
+#define wxIMAGE_FORMAT_BITMAP_TYPE wxBITMAP_TYPE_PNG
+#define wxIMAGE_FORMAT_NAME "PNG"
+#elif defined(__WXGTK__)
+#define wxIMAGE_FORMAT_DATA wxDF_BITMAP
+#define wxIMAGE_FORMAT_BITMAP_TYPE wxBITMAP_TYPE_PNG
+#define wxIMAGE_FORMAT_NAME "PNG"
+#elif defined(__WXOSX__)
+#define wxIMAGE_FORMAT_DATA wxDF_BITMAP
+#define wxIMAGE_FORMAT_BITMAP_TYPE wxBITMAP_TYPE_TIFF
+#define wxIMAGE_FORMAT_NAME "TIFF"
+#else
+#define wxIMAGE_FORMAT_DATA wxDF_BITMAP
+#define wxIMAGE_FORMAT_BITMAP_TYPE wxBITMAP_TYPE_PNG
+#define wxIMAGE_FORMAT_NAME "PNG"
+#endif
+
+wxImageDataObject::wxImageDataObject(const wxImage& image)
+    : wxCustomDataObject(wxIMAGE_FORMAT_DATA)
+{
+    if ( image.IsOk() )
+    {
+        SetImage(image);
+    }
+}
+
+void wxImageDataObject::SetImage(const wxImage& image)
+{
+    wxCHECK_RET(wxImage::FindHandler(wxIMAGE_FORMAT_BITMAP_TYPE) != NULL,
+        wxIMAGE_FORMAT_NAME " image handler must be installed to use clipboard with image");
+
+    wxMemoryOutputStream mem;
+    image.SaveFile(mem, wxIMAGE_FORMAT_BITMAP_TYPE);
+
+    SetData(mem.GetLength(), mem.GetOutputStreamBuffer()->GetBufferStart());
+}
+
+wxImage wxImageDataObject::GetImage() const
+{
+    wxCHECK_MSG(wxImage::FindHandler(wxIMAGE_FORMAT_BITMAP_TYPE) != NULL, wxNullImage,
+        wxIMAGE_FORMAT_NAME " image handler must be installed to use clipboard with image");
+
+    wxMemoryInputStream mem(GetData(), GetSize());
+    wxImage image;
+    image.LoadFile(mem, wxIMAGE_FORMAT_BITMAP_TYPE);
+    return image;
 }
 
 // ============================================================================
