@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9832 $
- * $Id: wizpage.cpp 9832 2014-06-25 00:31:36Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/scriptedwizard/wizpage.cpp $
+ * $Revision: 12999 $
+ * $Id: wizpage.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/scriptedwizard/wizpage.cpp $
  */
 
 #include <sdk.h>
@@ -22,16 +22,17 @@
     #include <cbexception.h>
 #endif
 
-#include <scripting/bindings/sc_base_types.h>
-
 #include "wizpage.h"
-#include "infopanel.h"
-#include "projectpathpanel.h"
-#include "compilerpanel.h"
+
 #include "buildtargetpanel.h"
+#include "compilerpanel.h"
 #include "filepathpanel.h"
 #include "genericselectpath.h"
 #include "genericsinglechoicelist.h"
+#include "infopanel.h"
+#include "projectpathpanel.h"
+#include "scripting/bindings/sc_utils.h"
+#include "scripting/bindings/sc_typeinfo_all.h"
 
 namespace Wizard {
 
@@ -115,21 +116,23 @@ WizPageBase::~WizPageBase()
 
 wxWizardPage* WizPageBase::GetPrev() const
 {
-    try
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    ScriptBindings::Caller caller(scriptMgr->GetVM());
+
+    const wxString sig = _T("OnGetPrevPage_") + m_PageName;
+    if (caller.SetupFunc(cbU2C(sig)))
     {
-        wxString sig = _T("OnGetPrevPage_") + m_PageName;
-        SqPlus::SquirrelFunction<wxString&> cb(cbU2C(sig));
-        if (cb.func.IsNull())
-            return wxWizardPageSimple::GetPrev();
-        wxString prev = cb();
-        if (prev.IsEmpty())
-            return 0;
-        return s_PagesByName[prev];
+        wxString *result = nullptr;
+        if (caller.CallAndReturn0(result))
+        {
+            if (result->empty())
+                return nullptr;
+            return s_PagesByName[*result];
+        }
+        else
+            scriptMgr->DisplayErrors(true);
     }
-    catch (SquirrelError& e)
-    {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
-    }
+
     return wxWizardPageSimple::GetPrev();
 }
 
@@ -137,58 +140,59 @@ wxWizardPage* WizPageBase::GetPrev() const
 
 wxWizardPage* WizPageBase::GetNext() const
 {
-    try
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    ScriptBindings::Caller caller(scriptMgr->GetVM());
+
+    const wxString sig = _T("OnGetNextPage_") + m_PageName;
+    if (caller.SetupFunc(cbU2C(sig)))
     {
-        wxString sig = _T("OnGetNextPage_") + m_PageName;
-        SqPlus::SquirrelFunction<wxString&> cb(cbU2C(sig));
-        if (cb.func.IsNull())
-            return wxWizardPageSimple::GetNext();
-        wxString next = cb();
-        if (next.IsEmpty())
-            return 0;
-        return s_PagesByName[next];
+        wxString *result = nullptr;
+        if (caller.CallAndReturn0(result))
+        {
+            if (result->empty())
+                return nullptr;
+            return s_PagesByName[*result];
+        }
+        else
+            scriptMgr->DisplayErrors(true);
     }
-    catch (SquirrelError& e)
-    {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
-    }
+
     return wxWizardPageSimple::GetNext();
 }
 
 void WizPageBase::OnPageChanging(wxWizardEvent& event)
 {
     Manager::Get()->GetConfigManager(_T("scripts"))->Write(_T("/generic_wizard/") + m_PageName + _T("/skip"), (bool)m_SkipPage);
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    ScriptBindings::Caller caller(scriptMgr->GetVM());
 
-    try
+    const wxString sig = _T("OnLeave_") + m_PageName;
+    if (caller.SetupFunc(cbU2C(sig)))
     {
-        wxString sig = _T("OnLeave_") + m_PageName;
-        SqPlus::SquirrelFunction<bool> cb(cbU2C(sig));
-        if (cb.func.IsNull())
-            return;
-        bool allow = cb(event.GetDirection() != 0); // !=0 forward, ==0 backward
-        if (!allow)
-            event.Veto();
-    }
-    catch (SquirrelError& e)
-    {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
+        bool result;
+        const bool forward = (event.GetDirection() != 0); // !=0 forward, ==0 backward
+        if (caller.CallAndReturn1(result, forward))
+        {
+            if (result != true)
+                event.Veto();
+        }
+        else
+            scriptMgr->DisplayErrors(true);
     }
 }
 
 //------------------------------------------------------------------------------
 void WizPageBase::OnPageChanged(wxWizardEvent& event)
 {
-    try
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    ScriptBindings::Caller caller(scriptMgr->GetVM());
+
+    const wxString sig = _T("OnEnter_") + m_PageName;
+    if (caller.SetupFunc(cbU2C(sig)))
     {
-        wxString sig = _T("OnEnter_") + m_PageName;
-        SqPlus::SquirrelFunction<void> cb(cbU2C(sig));
-        if (cb.func.IsNull())
-            return;
-        cb(event.GetDirection() != 0); // !=0 forward, ==0 backward
-    }
-    catch (SquirrelError& e)
-    {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
+        const bool forward = (event.GetDirection() != 0); // !=0 forward, ==0 backward
+        if (!caller.Call1(forward))
+            scriptMgr->DisplayErrors(true);
     }
 }
 
@@ -222,20 +226,18 @@ void WizPage::OnButton(wxCommandEvent& event)
     wxWindow* win = FindWindowById(event.GetId(), this);
     if (!win)
     {
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("Can't locate window with id %d"), event.GetId()));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Can't locate window with id %d", event.GetId()));
         return;
     }
-    try
+
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    ScriptBindings::Caller caller(scriptMgr->GetVM());
+
+    const wxString sig = _T("OnClick_") + win->GetName();
+    if (caller.SetupFunc(cbU2C(sig)))
     {
-        wxString sig = _T("OnClick_") + win->GetName();
-        SqPlus::SquirrelFunction<void> cb(cbU2C(sig));
-        if (cb.func.IsNull())
-            return;
-        cb();
-    }
-    catch (SquirrelError& e)
-    {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
+        if (!caller.Call0())
+            scriptMgr->DisplayErrors(true);
     }
 }
 
@@ -469,7 +471,8 @@ void WizGenericSelectPathPanel::OnPageChanging(wxWizardEvent& event)
 {
     if (event.GetDirection() != 0) // !=0 forward, ==0 backward
     {
-        wxString dir = Manager::Get()->GetMacrosManager()->ReplaceMacros(m_pGenericSelectPath->txtFolder->GetValue());
+        const wxString &originalDir = m_pGenericSelectPath->txtFolder->GetValue();
+        wxString dir = Manager::Get()->GetMacrosManager()->ReplaceMacros(originalDir);
         if (!wxDirExists(dir))
         {
             cbMessageBox(_("Please select a valid location..."), _("Error"), wxICON_ERROR, GetParent());

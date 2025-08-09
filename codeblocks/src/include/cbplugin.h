@@ -37,7 +37,7 @@
 // this is the plugins SDK version number
 // it will change when the SDK interface breaks
 #define PLUGIN_SDK_VERSION_MAJOR   2
-#define PLUGIN_SDK_VERSION_MINOR   0
+#define PLUGIN_SDK_VERSION_MINOR   25
 #define PLUGIN_SDK_VERSION_RELEASE 0
 
 // class decls
@@ -113,7 +113,12 @@ class PLUGIN_EXPORT cbPlugin : public wxEvtHandler
           * @param parent The parent window.
           * @return A pointer to the plugin's cbConfigurationPanel. It is deleted by the caller.
           */
-        virtual cbConfigurationPanel* GetConfigurationPanel(cb_optional wxWindow* parent){ return nullptr; }
+        virtual cbConfigurationPanel* GetConfigurationPanel(cb_optional wxWindow* parent) { return nullptr; }
+        virtual cbConfigurationPanel* GetConfigurationPanelEx(wxWindow* parent,
+                                                              cb_optional cbConfigurationPanelColoursInterface *colourInterface)
+        {
+            return GetConfigurationPanel(parent);
+        }
 
         /** Return plugin's configuration panel for projects.
           * The panel returned from this function will be added in the project's
@@ -122,7 +127,7 @@ class PLUGIN_EXPORT cbPlugin : public wxEvtHandler
           * @param project The project that is being edited.
           * @return A pointer to the plugin's cbConfigurationPanel. It is deleted by the caller.
           */
-        virtual cbConfigurationPanel* GetProjectConfigurationPanel(cb_optional wxWindow* parent, cb_optional cbProject* project){ return nullptr; }
+        virtual cbConfigurationPanel* GetProjectConfigurationPanel(cb_optional wxWindow* parent, cb_optional cbProject* project) { return nullptr; }
 
         /** This method is called by Code::Blocks and is used by the plugin
           * to add any menu items it needs on Code::Blocks's menu bar.\n
@@ -528,8 +533,7 @@ class PLUGIN_EXPORT cbDebuggerPlugin: public cbPlugin
         ///        of the watch, else it would be delayed until UpdateWatch/UpdateWatches is called
         ///        or some stepping command finishes. Passing false is useful if you want to add
         ///        multiple watches in one batch.
-        virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size,
-                                                       const wxString &symbol, bool update) = 0;
+        virtual cb::shared_ptr<cbWatch> AddMemoryRange(uint64_t address, uint64_t size, const wxString &symbol, bool update) = 0;
         virtual void DeleteWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual bool HasWatch(cb::shared_ptr<cbWatch> watch) = 0;
         virtual void ShowWatchProperties(cb::shared_ptr<cbWatch> watch) = 0;
@@ -969,6 +973,9 @@ class PLUGIN_EXPORT cbCodeCompletionPlugin : public cbPlugin
           */
         virtual void DoAutocomplete(const wxString& token, cbEditor* ed);
 
+        virtual bool DoShowDiagnostics(cb_unused cbEditor* ed, cb_unused int line) {return false;}
+
+
     protected:
         /** @brief Has this plugin been selected to provide content for the editor.
           *
@@ -1048,7 +1055,7 @@ class PLUGIN_EXPORT cbWizardPlugin : public cbPlugin
   * The hook gets installed during OnAttach.
   */
 class cbStyledTextCtrl;
-class cbSmartIndentPlugin : public cbPlugin
+class PLUGIN_EXPORT cbSmartIndentPlugin : public cbPlugin
 {
     public:
         cbSmartIndentPlugin();

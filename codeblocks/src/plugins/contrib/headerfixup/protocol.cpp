@@ -2,16 +2,20 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10286 $
- * $Id: protocol.cpp 10286 2015-05-15 10:58:20Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/protocol.cpp $
+ * $Revision: 13553 $
+ * $Id: protocol.cpp 13553 2024-09-14 04:38:09Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/protocol.cpp $
  */
 
 #include "protocol.h"
 
 //(*InternalHeaders(Protocol)
-#include <wx/string.h>
+#include <wx/button.h>
 #include <wx/intl.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/string.h>
+#include <wx/textctrl.h>
 //*)
 
 #include <wx/event.h>
@@ -23,7 +27,7 @@
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
 //(*IdInit(Protocol)
-const long Protocol::ID_TXT_PROTOCOL = wxNewId();
+const wxWindowID Protocol::ID_TXT_PROTOCOL = wxNewId();
 //*)
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
@@ -39,9 +43,9 @@ Protocol::Protocol(wxWindow* parent,wxWindowID /*id*/)
 {
   //(*Initialize(Protocol)
   wxBoxSizer* sizMain;
-  wxStaticText* lblProtocol;
-  wxStaticBoxSizer* sizProtocol;
   wxButton* btnOK;
+  wxStaticBoxSizer* sizProtocol;
+  wxStaticText* lblProtocol;
 
   Create(parent, wxID_ANY, _("Header Fixup - Protocol"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER, _T("wxID_ANY"));
   sizMain = new wxBoxSizer(wxVERTICAL);
@@ -57,11 +61,10 @@ Protocol::Protocol(wxWindow* parent,wxWindowID /*id*/)
   btnOK->SetToolTip(_("Click to exit the protocol and return to C::B."));
   sizMain->Add(btnOK, 0, wxBOTTOM|wxALIGN_CENTER_HORIZONTAL, 5);
   SetSizer(sizMain);
-  sizMain->Fit(this);
   sizMain->SetSizeHints(this);
   Center();
 
-  Connect(wxID_OK,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&Protocol::OnBtnOKClick);
+  Connect(wxID_OK,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(Protocol::OnBtnOKClick));
   //*)
 }// Protocol
 

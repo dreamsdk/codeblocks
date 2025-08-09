@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxsscrollbar.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsscrollbar.h $
+* $Revision: 13547 $
+* $Id: wxsscrollbar.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsscrollbar.h $
 */
 
 #ifndef WXSSCROLLBAR_H
@@ -35,8 +35,8 @@ class wxsScrollBar: public wxsWidget
     private:
 
         virtual void OnBuildCreatingCode();
-        virtual wxObject* OnBuildPreview(wxWindow* Parent,long Flags);
-        virtual void OnEnumWidgetProperties(long Flags);
+        virtual wxObject* OnBuildPreview(wxWindow* Parent,long _Flags);
+        virtual void OnEnumWidgetProperties(long _Flags);
 
         long Value;
         long ThumbSize;

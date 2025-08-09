@@ -9,11 +9,9 @@ pluginlib_LTLIBRARIES = libBrowseTracker.la
 libBrowseTracker_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undefined -avoid-version
 
 libBrowseTracker_la_LIBADD = ../../../sdk/libcodeblocks.la \
-			$(WX_LIBS) \
-			$(CB_TINYXML_LIBS)
+			$(WX_LIBS)
 
 libBrowseTracker_la_SOURCES = BrowseTracker.cpp \
-			BrowseSelector.cpp \
 			Version.cpp \
 			BrowseMarks.cpp \
 			BrowseTrackerConfPanel.cpp \
@@ -21,12 +19,13 @@ libBrowseTracker_la_SOURCES = BrowseTracker.cpp \
 			ConfigPanel.cpp \
 			ProjectData.cpp \
 			JumpTracker.cpp \
-			JumpData.cpp
+			JumpTrackerView.cpp \
+			JumpData.cpp \
+			btswitcherdlg.cpp \
+			helpers.cpp
 
 noinst_HEADERS =  	BrowseTracker.h \
-			BrowseSelector.h \
 			Version.h \
-			wx_pch.h \
 			BrowseMarks.h \
 			BrowseTrackerDefs.h \
 			BrowseTrackerConfPanel.h \
@@ -34,7 +33,10 @@ noinst_HEADERS =  	BrowseTracker.h \
 			ConfigPanel.h \
 			ProjectData.h \
 			JumpTracker.h \
-			JumpData.h
+			JumpTrackerView.h \
+			JumpData.h \
+			btswitcherdlg.h \
+			helpers.h
 
 resources_forZIP = \
 	BrowseTrackerToolbar.xrc \
@@ -101,8 +103,14 @@ resources_forZIP = \
 	images/64x64/mark_prev.png \
 	images/64x64/next.png \
 	images/64x64/prev.png \
-	images/64x64/signpost.png
-
+	images/64x64/signpost.png \
+	images/svg/mark_clear.svg \
+	images/svg/mark_next.svg \
+	images/svg/mark.svg \
+	images/svg/mark_prev.svg \
+	images/svg/next.svg \
+	images/svg/prev.svg \
+	images/svg/signpost.svg
 
 EXTRA_DIST = \
 	$(srcdir)/*.cbp \

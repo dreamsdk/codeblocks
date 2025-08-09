@@ -2,13 +2,7 @@ SUBDIRS = resources
 
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/src/sdk/wxscintilla/include \
-			-I$(top_srcdir)/src/include/mozilla_chardet \
-			-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
-			-I$(top_srcdir)/src/include/mozilla_chardet/nsprpub/pr/include \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
+			-I$(top_srcdir)/src/sdk/wxscintilla/include
 
 pluginlibdir = $(pkglibdir)/plugins
 
@@ -17,8 +11,11 @@ pluginlib_LTLIBRARIES = libcodecompletion.la
 libcodecompletion_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undefined -avoid-version
 
 libcodecompletion_la_LIBADD = ../../sdk/libcodeblocks.la\
-			$(WX_LIBS) \
-			$(CB_TINYXML_LIBS)
+			$(WX_LIBS)
+
+if ! CODEBLOCKS_NT
+libcodecompletion_la_LIBADD += $(CB_TINYXML_LIBS)
+endif
 
 libcodecompletion_la_SOURCES = ccoptionsdlg.cpp \
 			ccoptionsprjdlg.cpp \
@@ -30,8 +27,8 @@ libcodecompletion_la_SOURCES = ccoptionsdlg.cpp \
 			doxygen_parser.cpp \
 			gotofunctiondlg.cpp \
 			insertclassmethoddlg.cpp \
-			nativeparser.cpp \
-			nativeparser_base.cpp \
+			parsemanager.cpp \
+			parsemanager_base.cpp \
 			selectincludefile.cpp \
 			systemheadersthread.cpp \
 			parser/ccdebuginfo.cpp \
@@ -57,8 +54,8 @@ noinst_HEADERS = ccoptionsdlg.h \
 			doxygen_parser.h \
 			gotofunctiondlg.h \
 			insertclassmethoddlg.h \
-			nativeparser.h \
-			nativeparser_base.h \
+			parsemanager.h \
+			parsemanager_base.h \
 			selectincludefile.h \
 			systemheadersthread.h \
 			parser/ccdebuginfo.h \

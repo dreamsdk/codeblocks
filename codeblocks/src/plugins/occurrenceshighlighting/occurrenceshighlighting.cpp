@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11358 $
- * $Id: occurrenceshighlighting.cpp 11358 2018-04-01 17:11:49Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/occurrenceshighlighting/occurrenceshighlighting.cpp $
+ * $Revision: 12833 $
+ * $Id: occurrenceshighlighting.cpp 12833 2022-06-10 14:59:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/occurrenceshighlighting/occurrenceshighlighting.cpp $
  */
 
 #include <sdk.h> // Code::Blocks SDK
@@ -173,13 +173,13 @@ void OccurrencesHighlighting::BuildModuleMenu(const ModuleType type, wxMenu* men
 
     if ( m_texts.find(word) == m_texts.end() )
     {
-        const wxString label = _("Permanently Highlight '") + word + _T("'");
+        const wxString label(wxString::Format(_("Permanently Highlight '%s'"), word));
         const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
         menu->Insert(position, idMenuEntryPermanent, label);
     }
     else
     {
-        const wxString label = _("Don't Highlight '") + word + _T("'");
+        const wxString label(wxString::Format(_("Don't Highlight '%s'"), word));
         const int position = Manager::Get()->GetPluginManager()->FindSortedMenuItemPosition(*menu, label);
         menu->Insert(position, idMenuEntryRemove, label);
     }

@@ -1,8 +1,8 @@
-AC_PREREQ(2.50)
+AC_PREREQ([2.71])
 
 m4_include([revision.m4])
 
-AC_INIT([codeblocks], SVN_REVISION)
+AC_INIT([codeblocks],[SVN_REVISION])
 
 AC_CANONICAL_TARGET
 
@@ -24,8 +24,8 @@ AM_INIT_AUTOMAKE([foreign dist-bzip2 no-dist-gzip subdir-objects])
 AC_DISABLE_STATIC
 
 LT_INIT
-
-AC_CONFIG_HEADER([src/include/config.h])
+AC_CONFIG_MACRO_DIRS([m4])
+AC_CONFIG_HEADERS([src/include/config.h])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
@@ -42,13 +42,23 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_PROG_AWK
 
+AX_CXX_COMPILE_STDCXX(11, noext)
+
 CODEBLOCKS_CHECK_LINK_FLAG([-Wl,--no-undefined],[LDFLAGS="-Wl,--no-undefined $LDFLAGS"])
 
 CODEBLOCKS_SETUP_FOR_TARGET
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
-AC_HEADER_STDC
+m4_warn([obsolete],
+[The preprocessor macro `STDC_HEADERS' is obsolete.
+  Except in unusual embedded environments, you can safely include all
+  ISO C90 headers unconditionally.])dnl
+# Autoupdate added the next two lines to ensure that your configure
+# script's behavior did not change.  They are probably safe to remove.
+AC_CHECK_INCLUDES_DEFAULT
+AC_PROG_EGREP
+
 AC_CHECK_HEADERS([fcntl.h limits.h stdlib.h string.h sys/param.h unistd.h malloc.h sys/malloc.h malloc/malloc.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -56,7 +66,20 @@ AC_HEADER_STDBOOL
 AC_C_CONST
 AC_C_INLINE
 AC_TYPE_SIZE_T
-AC_HEADER_TIME
+m4_warn([obsolete],
+[Update your code to rely only on HAVE_SYS_TIME_H,
+then remove this warning and the obsolete code below it.
+All current systems provide time.h; it need not be checked for.
+Not all systems provide sys/time.h, but those that do, all allow
+you to include it and time.h simultaneously.])dnl
+AC_CHECK_HEADERS_ONCE([sys/time.h])
+# Obsolete code to be removed.
+if test $ac_cv_header_sys_time_h = yes; then
+  AC_DEFINE([TIME_WITH_SYS_TIME],[1],[Define to 1 if you can safely include both <sys/time.h>
+	     and <time.h>.  This macro is obsolete.])
+fi
+# End of obsolete code.
+
 AC_C_VOLATILE
 
 dnl Checks for library functions.
@@ -108,8 +131,6 @@ ifdef([PKG_CHECK_MODULES],[],[
 ])
 
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([SQUIRREL], [squirrel], [HAVE_SQUIRREL=yes], [HAVE_SQUIRREL=no])
-AM_CONDITIONAL([HAVE_SQUIRREL], [test "$HAVE_SQUIRREL" = yes])
 
 PKG_CHECK_MODULES([TINYXML], [tinyxml], [HAVE_TINYXML=yes], [HAVE_TINYXML=no])
 AM_CONDITIONAL([HAVE_TINYXML], [test "$HAVE_TINYXML" = yes])
@@ -139,7 +160,7 @@ CODEBLOCKS_GET_PLATFORM
 CODEBLOCKS_ENABLE_SETTINGS
 
 AM_OPTIONS_WXCONFIG
-AM_PATH_WXCONFIG(2.8.12, wxWin=1)
+AM_PATH_WXCONFIG(3.0.0, wxWin=1)
     if test "$wxWin" != 1; then
         AC_MSG_ERROR([
                 wxWidgets must be installed on your system.
@@ -148,17 +169,8 @@ AM_PATH_WXCONFIG(2.8.12, wxWin=1)
                 where wxWidgets libraries are installed (returned by
                 'wx-config --libs' or 'wx-config --static --libs' command)
                 is in LD_LIBRARY_PATH or equivalent variable and
-                wxWindows version is 2.8.0 or above.
+                wxWindows version is 3.0.0 or above.
                 ])
-	else
-		# check for wx2.8.3 which is known to behave badly for us
-		if test "$WX_VERSION" = "2.8.3"; then
-			AC_MSG_ERROR([
-		wxWidgets version 2.8.3 is known to behave badly with
-		Code::Blocks. Please upgrade to a newer (or downgrade to an
-		earlier) wxWidgets version...
-			])
-		fi
     fi
 
 dnl		CPPFLAGS="$CPPFLAGS $WX_CPPFLAGS"
@@ -233,12 +245,6 @@ case $WX_BASENAME in
 				fi
 			fi
 
-			if test "x$BUILD_FILEMANAGER_TRUE" = "x" ; then
-				if test "x$HAVE_PKG_CONFIG" = "xyes"; then
-					PKG_CHECK_MODULES([GAMIN], [gamin])
-				fi
-			fi
-
 			if test "x$BUILD_EXPORTER_TRUE" = "x" ; then
 				if test "x$HAVE_PKG_CONFIG" = "xyes"; then
 					PKG_CHECK_MODULES([FONTCONFIG], [fontconfig])
@@ -255,8 +261,6 @@ case $WX_BASENAME in
 
 		CB_GLIB2_CFLAGS="$GLIB2_CFLAGS"
 		CB_GLIB2_LIBS="$GLIB2_LIBS"
-		CB_GAMIN_CFLAGS="$GAMIN_CFLAGS"
-		CB_GAMIN_LIBS="$GAMIN_LIBS"
 		CB_HUNSPELL_CFLAGS="$HUNSPELL_CFLAGS"
 		CB_HUNSPELL_LIBS="$HUNSPELL_LIBS"
 		CB_FONTCONFIG_CFLAGS="$FONTCONFIG_CFLAGS"
@@ -274,6 +278,17 @@ case $WX_BASENAME in
     ;;
     *wx_msw*)
         AC_MSG_RESULT(wxMSW)
+
+		AC_CHECK_TOOL(WINDRES, [windres])
+
+		if test "x$BUILD_SPELLCHECKER_TRUE" = "x" ; then
+			if test "x$HAVE_PKG_CONFIG" = "xyes"; then
+				PKG_CHECK_MODULES([HUNSPELL], [hunspell])
+			fi
+		fi
+
+		CB_HUNSPELL_CFLAGS="$HUNSPELL_CFLAGS"
+		CB_HUNSPELL_LIBS="$HUNSPELL_LIBS"
     ;;
     *wx_mac*)
         AC_MSG_RESULT(wxMac)
@@ -309,42 +324,15 @@ case $WX_BASENAME in
 esac
 
 CB_GCC_VERSION
-AM_CONDITIONAL([HAVE_GCC48], [test $GCC_MAJOR_VERSION -gt 4 -o $GCC_MAJOR_VERSION -eq 4 -a $GCC_MINOR_VERSION -ge 8])
 
-AC_MSG_CHECKING([for wxWidgets >= 2.9.0])
-AM_CONDITIONAL([HAVE_WX29], [test $wx_config_major_version -gt 2 -o $wx_config_major_version -eq 2 -a $wx_config_minor_version -ge 9])
+AC_MSG_RESULT(yes (version $WX_VERSION))
+AC_MSG_NOTICE([(Re)setting libs for wxWidgets $WX_VERSION])
+WX_LIBS=`$WX_CONFIG_WITH_ARGS --libs std,aui,propgrid,richtext`
+SCINTILLA_GTK_CFLAGS="$WX_GDK_CFLAGS"
+SCINTILLA_GTK_LIBS="$WX_GDK_LIBS"
 
-if test "x$HAVE_WX29_TRUE" = "x" ; then
-    AC_MSG_RESULT(yes (version $WX_VERSION))
-    AC_MSG_NOTICE([(Re)setting libs for wxWidgets $WX_VERSION])
-    WX_LIBS=`$WX_CONFIG_WITH_ARGS --libs std,aui,propgrid,richtext`
-    WXPROPGRID_DIR=
-    WXPROPGRID_LIB=
-    WXPROPGRID_INCLUDE=
-    SCINTILLA_GTK_CFLAGS="$WX_GDK_CFLAGS"
-    SCINTILLA_GTK_LIBS="$WX_GDK_LIBS"
-else
-    AC_MSG_RESULT(no)
-    WXPROPGRID_DIR=wxpropgrid
-    WXPROPGRID_LIB=wxpropgrid/libwxpropgrid.la
-    WXPROPGRID_INCLUDE=-I\$\(top_srcdir\)/src/sdk/wxpropgrid/include
-
-    if test "x$HAVE_GCC48_TRUE" = "x" ; then
-	gcc48_flags="-Wno-unused-local-typedefs"
-        AC_MSG_NOTICE([setting additional flags for gcc $GCC_FULL_VERSION]: $gcc48_flags)
-        CXXFLAGS="$gcc48_flags $CXXFLAGS"
-    fi
-    SCINTILLA_GTK_CFLAGS="$WX_GTK_CFLAGS $WX_GDK_CFLAGS"
-    SCINTILLA_GTK_LIBS="$WX_GTK_LIBS $WX_GDK_LIBS"
-fi
-
-if test "x$HAVE_SQUIRREL_TRUE" = "x" ; then
-	CB_SQUIRREL_CFLAGS="$SQUIRREL_CFLAGS"
-	CB_SQUIRREL_LIBS="$SQUIRREL_LIBS"
-else
-	CB_SQUIRREL_CFLAGS="-I\$(top_srcdir)/src/include/scripting/include"
-	CB_SQUIRREL_LIBS="\$(top_builddir)/src/sdk/scripting/squirrel/libsquirrel.la \$(top_builddir)/src/sdk/scripting/sqstdlib/libsqstdlib.la"
-fi
+CB_SQUIRREL_CFLAGS="-I\$(top_srcdir)/src/include/scripting/include"
+CB_SQUIRREL_LIBS="\$(top_builddir)/src/sdk/scripting/squirrel/libsquirrel.la \$(top_builddir)/src/sdk/scripting/sqstdlib/libsqstdlib.la"
 
 if test "x$HAVE_TINYXML_TRUE" = "x" ; then
 	CB_TINYXML_CFLAGS="$TINYXML_CFLAGS"
@@ -364,18 +352,12 @@ AC_SUBST(SCINTILLA_GTK_CFLAGS)
 AC_SUBST(SCINTILLA_GTK_LIBS)
 AC_SUBST(CB_GLIB2_CFLAGS)
 AC_SUBST(CB_GLIB2_LIBS)
-AC_SUBST(CB_GAMIN_CFLAGS)
-AC_SUBST(CB_GAMIN_LIBS)
 AC_SUBST(CB_HUNSPELL_CFLAGS)
 AC_SUBST(CB_HUNSPELL_LIBS)
 AC_SUBST(CB_FONTCONFIG_CFLAGS)
 AC_SUBST(CB_FONTCONFIG_LIBS)
 AC_SUBST(WX_X11_CFLAGS)
 AC_SUBST(WX_X11_LIBS)
-AC_SUBST(WXPROPGRID_DIR)
-AC_SUBST(WXPROPGRID_LIB)
-AC_SUBST(WXPROPGRID_INCLUDE)
-AC_SUBST(WXPROPGRID_HEADERS)
 
 AC_SUBST(POSTLINK_COMMAND)
 AC_SUBST(MACSETFILE)
@@ -402,8 +384,6 @@ CPPFLAGS="$CPPFLAGS -DPIC $CB_TINYXML_CFLAGS"
 CXXFLAGS="$CXXFLAGS $PIC_CFLAGS -fexceptions"
 AC_SUBST(codeblocks_PCH_FLAGS, "$PCH_FLAGS")
 
-AX_CXX_COMPILE_STDCXX(11, noext)
-
 dnl AM_PATH_GTK(1.2.7, ,
 dnl             AC_MSG_ERROR(Cannot find GTK: Is gtk-config in path?),
 dnl             gthread)
@@ -429,17 +409,12 @@ AC_CONFIG_FILES([Makefile
 	src/include/scripting/Makefile
 	src/include/scripting/bindings/Makefile
 	src/include/scripting/include/Makefile
-	src/include/scripting/sqplus/Makefile
-	src/include/scripting/sqstdlib/Makefile
-	src/include/scripting/squirrel/Makefile
 	src/include/tinyxml/Makefile
 	src/sdk/Makefile
-	src/sdk/wxpropgrid/Makefile
 	src/sdk/scripting/Makefile
 	src/sdk/scripting/bindings/Makefile
 	src/sdk/scripting/squirrel/Makefile
 	src/sdk/scripting/sqstdlib/Makefile
-	src/sdk/scripting/sqplus/Makefile
 	src/sdk/wxscintilla/Makefile
 	src/sdk/resources/Makefile
 	src/sdk/resources/lexers/Makefile
@@ -464,6 +439,7 @@ AC_CONFIG_FILES([Makefile
 	src/plugins/debuggergdb/resources/Makefile
 	src/plugins/defaultmimehandler/Makefile
 	src/plugins/defaultmimehandler/resources/Makefile
+	src/plugins/displayevents/Makefile
 	src/plugins/openfileslist/Makefile
 	src/plugins/occurrenceshighlighting/Makefile
 	src/plugins/occurrenceshighlighting/resources/Makefile
@@ -529,7 +505,6 @@ AC_CONFIG_FILES([Makefile
 	src/plugins/contrib/CppCheck/resources/Makefile
 	src/plugins/contrib/cb_koders/Makefile
 	src/plugins/contrib/codesnippets/Makefile
-	src/plugins/contrib/codesnippets/resources/Makefile
 	src/plugins/contrib/codestat/Makefile
 	src/plugins/contrib/codestat/resources/Makefile
 	src/plugins/contrib/copystrings/Makefile
@@ -561,6 +536,8 @@ AC_CONFIG_FILES([Makefile
 	src/plugins/contrib/regex_testbed/Makefile
 	src/plugins/contrib/ReopenEditor/Makefile
 	src/plugins/contrib/rndgen/Makefile
+	src/plugins/contrib/clangd_client/Makefile
+	src/plugins/contrib/clangd_client/src/resources/Makefile
 	src/plugins/contrib/ThreadSearch/Makefile
 	src/plugins/contrib/ToolsPlus/Makefile
 	src/plugins/contrib/ToolsPlus/Resources/Makefile
@@ -575,7 +552,6 @@ AC_CONFIG_FILES([Makefile
 	src/plugins/contrib/wxContribItems/cb_wxflatnotebook.pc
 	src/plugins/contrib/wxContribItems/cb_wxspeedbutton.pc
 	src/plugins/contrib/wxContribItems/cb_wxKWIC.pc
-	src/plugins/contrib/wxContribItems/cb_wxtreelist.pc
 	src/plugins/contrib/wxContribItems/cb_wxled.pc
 	src/plugins/contrib/wxContribItems/cb_wxmathplot.pc
 	src/plugins/contrib/wxContribItems/wxchart/Makefile
@@ -586,7 +562,6 @@ AC_CONFIG_FILES([Makefile
 	src/plugins/contrib/wxContribItems/KWIC/Makefile
 	src/plugins/contrib/wxContribItems/KWIC/include/wx/KWIC/Makefile
 	src/plugins/contrib/wxContribItems/KWIC/include/wx/xrc/Makefile
-	src/plugins/contrib/wxContribItems/wxTreeList/Makefile
 	src/plugins/contrib/wxContribItems/wxled/Makefile
 	src/plugins/contrib/wxContribItems/wxled/gizmosled/include/wx/gizmos/Makefile
 	src/plugins/contrib/wxContribItems/wxled/lcdWindow/include/wx/Makefile

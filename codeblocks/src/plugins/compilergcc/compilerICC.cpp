@@ -4,7 +4,7 @@
  *
  * $Revision: 11399 $
  * $Id: compilerICC.cpp 11399 2018-05-08 21:54:03Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerICC.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerICC.cpp $
  */
 
 #include <sdk.h>

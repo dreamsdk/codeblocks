@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7897 $
- * $Id: asktypedlg.cpp 7897 2012-03-13 21:39:52Z danselmi $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/todo/asktypedlg.cpp $
+ * $Revision: 12834 $
+ * $Id: asktypedlg.cpp 12834 2022-06-10 15:06:45Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/todo/asktypedlg.cpp $
  */
 
 #include "sdk.h"
@@ -19,18 +19,16 @@
 
 AskTypeDlg::AskTypeDlg(wxWindow* parent, const wxString StreamStart, const wxString StreamEnd)
 {
-    wxXmlResource::Get()->LoadObject(this, parent, _T("dlgAskType"),_T("wxScrollingDialog"));
+    wxXmlResource::Get()->LoadObject(this, parent, "dlgAskType", "wxScrollingDialog");
 
     wxChoice *choice = XRCCTRL(*this, "chcCorrect", wxChoice);
     choice->Clear();
-    choice->Append( _T("keep line comment style and move it to the end of the line") );
-    choice->Append( _T("keep line comment style at the current position") );
+    choice->Append(_("keep line comment style and move it to the end of the line"));
+    choice->Append(_("keep line comment style at the current position"));
 
-    if (!StreamStart.IsEmpty())
-    {
-        wxString str = _("switch to stream style comment (") + StreamStart + _T(" ... ") + StreamEnd + _T(")");
-        choice->Append(str);
-    }
+    if (!StreamStart.empty())
+        choice->Append(wxString::Format(_("switch to stream style comment (%s ... %s)"), StreamStart, StreamEnd));
+
     choice->SetSelection(0);
 }
 

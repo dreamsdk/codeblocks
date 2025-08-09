@@ -5,14 +5,14 @@
 		<Option title="RegExTestbed wx3.1.x" />
 		<Option pch_mode="2" />
 		<Option default_target="default" />
-		<Option compiler="gnu_gcc_compiler_32-bit" />
+		<Option compiler="gcc" />
 		<Build>
 			<Target title="default">
 				<Option output="../../../devel31/share/CodeBlocks/plugins/RegExTestbed" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/regex_testbed" />
 				<Option external_deps="../../../devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --multiple-instance -na -ns -nd -p debug" />
 				<Option host_application="../../../devel31/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -35,7 +35,6 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="-pipe" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
@@ -48,9 +47,9 @@
 			<Add option="-DBUILDING_PLUGIN" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DSUPPORT_UTF8" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add option="-std=gnu++11" />
 			<Add directory="$(#WX31.include)" />
+			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
@@ -72,6 +71,8 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="regexdlg.cpp" />
 		<Unit filename="regexdlg.h" />
+		<Unit filename="regexdlg.xrc" />
+		<Unit filename="wxsmith/RegExDlg.wxs" />
 		<Extensions>
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />

@@ -21,7 +21,8 @@
 					<Add option="-fexceptions" />
 					<Add option="-Wno-unused-local-typedefs" />
 					<Add option="-DBUILDING_PLUGIN" />
-					<Add option="-DNOPCH" />
+					<Add option="-Winvalid-pch" />
+					<Add option="-DCB_PRECOMP" />
 					<Add option="-DHAVE_W32API_H" />
 					<Add option="-D__WXMSW__" />
 					<Add option="-D_WIN64" />
@@ -44,20 +45,19 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
+			<Add option="-std=gnu++11" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 		</Compiler>
 		<Linker>
 			<Add library="codeblocks" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="../../../devel31_64" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="zip -j9 ..\..\..\devel31_64\share\CodeBlocks\keybinder.zip manifest.xml" />
@@ -66,7 +66,7 @@
 		<Unit filename="cJSON.cpp" />
 		<Unit filename="cJSON.h" />
 		<Unit filename="cbKeyConfigPanel.h" />
-		<Unit filename="cbkeyConfigPanel.cpp" />
+		<Unit filename="cbKeyConfigPanel.cpp" />
 		<Unit filename="cbkeybinder.cpp" />
 		<Unit filename="cbkeybinder.h" />
 		<Unit filename="clKeyboardBindingConfig.cpp" />
@@ -82,7 +82,6 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="menuutils.cpp" />
 		<Unit filename="menuutils.h" />
-		<Unit filename="wxstringhash.h" />
 		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

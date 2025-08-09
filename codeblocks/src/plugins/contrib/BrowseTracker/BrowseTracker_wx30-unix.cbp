@@ -21,13 +21,13 @@
 					<Add option="-DPIC" />
 					<Add option="-DNO_LOGGING" />
 					<Add option="-DCB_PRECOMP" />
+					<Add option="-DcbDEBUG" />
 					<Add directory="../../../include" />
 					<Add directory="../../../include/tinyxml" />
 					<Add directory="../../../sdk/wxscintilla/include" />
 				</Compiler>
 				<Linker>
-					<Add option="-s" />
-					<Add option="`$(WX_CONFIG) --libs`" />
+					<Add option="`$(WX_CONFIG) --libs std,aui`" />
 					<Add option="-Wl,--no-undefined" />
 					<Add library="codeblocks" />
 					<Add directory="../../../devel30" />
@@ -46,7 +46,6 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 		</Compiler>
@@ -68,16 +67,18 @@
 		<Unit filename="JumpData.h" />
 		<Unit filename="JumpTracker.cpp" />
 		<Unit filename="JumpTracker.h" />
+		<Unit filename="JumpTrackerView.cpp" />
+		<Unit filename="JumpTrackerView.h" />
 		<Unit filename="Makefile.am" />
 		<Unit filename="ProjectData.cpp" />
 		<Unit filename="ProjectData.h" />
 		<Unit filename="Version.cpp" />
 		<Unit filename="Version.h" />
+		<Unit filename="btswitcherdlg.cpp" />
+		<Unit filename="btswitcherdlg.h" />
+		<Unit filename="helpers.h" />
+		<Unit filename="helpers.cpp" />
 		<Unit filename="manifest.xml" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

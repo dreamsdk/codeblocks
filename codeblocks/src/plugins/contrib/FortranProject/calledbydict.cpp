@@ -1,6 +1,7 @@
 
 #include "calledbydict.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
     #include <wx/string.h>
     #include <wx/arrstr.h>
@@ -83,7 +84,7 @@ void CalledByDict::FillCalledByDict(TokensArrayF* tokens, std::set<wxString> &de
                 }
                 else
                 {
-                    name = submod->m_AncestorModuleName + _T(":") + submod->m_ParentSubmoduleName;
+                    name = submod->m_AncestorModuleName + ":" + submod->m_ParentSubmoduleName;
                 }
             }
             else

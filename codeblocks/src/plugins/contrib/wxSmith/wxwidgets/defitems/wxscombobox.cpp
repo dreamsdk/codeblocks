@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11000 $
-* $Id: wxscombobox.cpp 11000 2017-02-06 19:12:28Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscombobox.cpp $
+* $Revision: 13547 $
+* $Id: wxscombobox.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscombobox.cpp $
 */
 
 #include <wx/combobox.h>
@@ -94,7 +94,7 @@ void wxsComboBox::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsComboBox::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsComboBox::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxComboBox* Preview = new wxComboBox(Parent,GetId(),_T(""),Pos(Parent),Size(Parent),ArrayChoices, Style());
 
@@ -107,11 +107,11 @@ wxObject* wxsComboBox::OnBuildPreview(wxWindow* Parent,long Flags)
         }
     }
 
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsComboBox::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsComboBox::OnEnumWidgetProperties(cb_unused long _Flags)
 {
-    WXS_ARRAYSTRING(wxsComboBox,ArrayChoices,_("Choices"),_T("content"),_T("item"))
-    WXS_LONG(wxsComboBox,DefaultSelection,_("Selection"),_T("selection"),-1)
+    WXS_ARRAYSTRING(wxsComboBox,ArrayChoices, _("Choices"), "content", "item")
+    WXS_LONG(wxsComboBox,DefaultSelection, _("Selection"), "selection", -1)
 }

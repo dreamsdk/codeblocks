@@ -1,13 +1,11 @@
 
 #include "changecase.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <wx/tokenzr.h>
-
     #include <cbauibook.h>
     #include <cbeditor.h>
     #include <cbproject.h>
-    #include <cbstyledtextctrl.h>
     #include <editormanager.h>
     #include <editorcolourset.h>
     #include <logmanager.h>
@@ -15,6 +13,10 @@
     #include <projectfile.h>
 #endif
 #include <set>
+
+#include <wx/tokenzr.h>
+
+#include <cbstyledtextctrl.h>
 
 #include "fortranfileext.h"
 #include "textcutter.h"
@@ -76,9 +78,9 @@ ChangeCase::~ChangeCase()
 	//*)
 }
 
-void ChangeCase::OnOK(wxCommandEvent& event)
+void ChangeCase::OnOK(cb_unused wxCommandEvent& event)
 {
-    Manager::Get()->GetLogManager()->DebugLog(_T("ChangeCase::OnOK is called"));
+    Manager::Get()->GetLogManager()->DebugLog("ChangeCase::OnOK is called");
 
     ChangeCaseIn chin;
     if (rb_ChCActiveProject->GetValue())
@@ -134,7 +136,7 @@ void ChangeCase::MakeChangeCase(ChangeCaseIn chin, int chfor, ChangeCaseTo chto)
             wxString mstr;
             if (nonFFiles.size() == 1)
             {
-                mstr = _("File \"") + nonFFiles[0] + _("\" was not recognized as a Fortran file.");
+                mstr = wxString::Format(_("File \"%s\" was not recognized as a Fortran file."), nonFFiles[0]);
                 mstr << _(" The change-case was not applied for it.");
             }
             else
@@ -144,15 +146,14 @@ void ChangeCase::MakeChangeCase(ChangeCaseIn chin, int chfor, ChangeCaseTo chto)
                 size_t imax=5;
                 while (i < nonFFiles.size() && i < imax)
                 {
-                    mstr << _("\n\"") << nonFFiles[i] << _T("\"");
+                    mstr << "\n\"" << nonFFiles[i] << "\"";
                     i++;
                 }
                 if (nonFFiles.size() > imax)
-                    mstr << _T("...\n");
+                    mstr << "...\n";
                 else
-                    mstr << _T("\n");
-                mstr << wxString::Format(_T("(%d "), int(nonFFiles.size())) << _("files) ");
-                mstr << _("were not recognized as the Fortran files.");
+                    mstr << "\n";
+                mstr << wxString::Format(_("(%zu files) were not recognized as the Fortran files."), nonFFiles.size());
                 mstr << _(" The change-case was not applied for them.");
                 cbMessageBox(mstr, _("Info"), wxICON_INFORMATION);
             }
@@ -210,12 +211,12 @@ bool ChangeCase::EditorChangeCase(cbEditor* ed, ChangeCaseIn chin, int chfor, Ch
     EditorColourSet* theme = ed->GetColourSet();
     if (!theme)
         return false;
-    HighlightLanguage lang = _T("Fortran");
+    HighlightLanguage lang = "Fortran";
 
     for (int i = 0; i <= wxSCI_KEYWORDSET_MAX; ++i)
     {
         wxString keywords = theme->GetKeywords(lang, i);
-        wxStringTokenizer tkz(keywords, _T(" \t\r\n"), wxTOKEN_STRTOK);
+        wxStringTokenizer tkz(keywords, " \t\r\n", wxTOKEN_STRTOK);
         while (tkz.HasMoreTokens())
         {
             kwset.insert(tkz.GetNextToken().Lower());
@@ -224,9 +225,9 @@ bool ChangeCase::EditorChangeCase(cbEditor* ed, ChangeCaseIn chin, int chfor, Ch
     FortranSourceForm fsForm = fsfFree;
     if (!g_FortranFileExt.IsFileFortran(ed->GetFilename(), fsForm))
     {
-        if( cbMessageBox( _("Are you sure \n") + ed->GetFilename() +
-            _("\n is a Fortran Source File?\nContinue to change-case?"), _("Question"),
-            wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT ) == wxID_NO )
+        if (cbMessageBox(wxString::Format(_("Are you sure '%s' is a Fortran Source File?\nContinue to change-case?"), ed->GetFilename()),
+            _("Question"),
+            wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT ) == wxID_NO)
             return false;
     }
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7109 $
- * $Id: symtab.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/symtab/symtab.cpp $
+ * $Revision: 12602 $
+ * $Id: symtab.cpp 12602 2021-12-21 07:26:04Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/symtab/symtab.cpp $
  */
 
 #include "sdk.h"
@@ -40,7 +40,7 @@ namespace
 
 /* ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- */
 
-SymTab::SymTab() : CfgDlg(0L), ExeDlg(0L)
+SymTab::SymTab() : CfgDlg(nullptr), ExeDlg(nullptr)
 {
   //ctor
   if(!Manager::LoadResource(_T("SymTab.zip")))
@@ -77,8 +77,8 @@ void SymTab::OnRelease(bool /*appShutDown*/)
   // which means you must not use any of the SDK Managers
   // NOTE: after this function, the inherited member variable
   // IsAttached() will be FALSE...
-  if (CfgDlg) {CfgDlg->Destroy(); CfgDlg = 0L;}
-  if (ExeDlg) {ExeDlg->Destroy(); ExeDlg = 0L;}
+  if (CfgDlg) {CfgDlg->Destroy(); CfgDlg = nullptr;}
+  if (ExeDlg) {ExeDlg->Destroy(); ExeDlg = nullptr;}
 }// OnRelease
 
 /* ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- */

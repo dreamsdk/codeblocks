@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11929 $
- * $Id: dlgabout.cpp 11929 2019-12-11 08:14:05Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/dlgabout.cpp $
+ * $Revision: 13628 $
+ * $Id: dlgabout.cpp 13628 2025-03-02 18:35:53Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/dlgabout.cpp $
  */
 
 #include "sdk.h"
@@ -13,16 +13,14 @@
     #ifdef __WXMAC__
         #include <wx/font.h>
     #endif //__WXMAC__
-    #include <wx/button.h>    // wxImage
+    #include <wx/button.h>   // wxImage
     #include <wx/image.h>    // wxImage
     #include <wx/intl.h>
     #include <wx/stattext.h>
     #include <wx/string.h>
     #include <wx/textctrl.h>
     #include <wx/xrc/xmlres.h>
-    #if wxCHECK_VERSION(3, 0, 0)
-        #include <wx/versioninfo.h>
-    #endif // wxCHECK_VERSION
+    #include <wx/versioninfo.h>
 
     #include "licenses.h"
     #include "configmanager.h"
@@ -31,18 +29,49 @@
 
 #include <wx/bitmap.h>
 #include <wx/dcmemory.h>    // wxMemoryDC
+#include <wx/display.h>
 #include <wx/statbmp.h>
+
+#include <algorithm>        // for std::sort only
 
 #include "appglobals.h"
 #include "dlgabout.h" // class's header file
 #include "configmanager.h"
+#include "pluginmanager.h"
 #include "splashscreen.h"
+
+struct Item
+{
+    wxString name, value;
+};
+
+static bool IsLess(const Item& a, const Item& b)
+{
+    return a.name.CmpNoCase(b.name) < 0;
+}
+
+static wxString FormatItems(const std::vector <Item> & items)
+{
+    int maxNameLength = 0;
+    for (const Item& item : items)
+        maxNameLength = std::max(maxNameLength, int(item.name.length()));
+
+    wxString information;
+    for (const Item& item : items)
+    {
+        information += item.name;
+        information += wxString(' ', maxNameLength - int(item.name.length()));
+        information += ": " + item.value + '\n';
+    }
+
+    return information;
+}
 
 // class constructor
 
 dlgAbout::dlgAbout(wxWindow* parent)
 {
-    if (!wxXmlResource::Get()->LoadObject(this, parent, _T("dlgAbout"), _T("wxScrollingDialog")))
+    if (!wxXmlResource::Get()->LoadObject(this, parent, "dlgAbout", "wxScrollingDialog"))
     {
         cbMessageBox(_("There was an error loading the \"About\" dialog from XRC file."),
                      _("Information"), wxICON_EXCLAMATION);
@@ -53,8 +82,8 @@ dlgAbout::dlgAbout(wxWindow* parent)
     cancelButton->SetDefault();
     cancelButton->SetFocus();
 
-    const wxString description = _("Welcome to ") + appglobals::AppName + _T(" ") +
-                                 appglobals::AppVersion + _T("!\n") + appglobals::AppName +
+    const wxString description = wxString::Format(_("Welcome to %s %s!\n"), appglobals::AppName, appglobals::AppVersion) +
+                                 appglobals::AppName +
                                  _(" is a full-featured IDE (Integrated Development Environment) "
                                    "aiming to make the individual developer (and the development team) "
                                    "work in a nice programming environment offering everything he/they "
@@ -63,7 +92,7 @@ dlgAbout::dlgAbout(wxWindow* parent)
                                    "any kind of functionality to the core program, through the use of "
                                    "plugins...\n");
 
-    wxString file = ConfigManager::ReadDataPath() + _T("/images/splash_1312.png");
+    wxString file = ConfigManager::ReadDataPath() + "/images/splash_1312.png";
 
     wxImage im;
     im.LoadFile(file, wxBITMAP_TYPE_PNG);
@@ -83,8 +112,10 @@ dlgAbout::dlgAbout(wxWindow* parent)
     wxTextCtrl *txtDescription = XRCCTRL(*this, "txtDescription", wxTextCtrl);
     txtDescription->SetValue(description);
 
+    // Thanks tab
     wxTextCtrl *txtThanksTo = XRCCTRL(*this, "txtThanksTo", wxTextCtrl);
-    txtThanksTo->SetValue(_(
+    // Note: Keep this is sync with the AUTHORS file in SVN.
+    const wxString developers(_(
         "Developers:\n"
         "--------------\n"
         "Yiannis Mandravellos: Developer - Project leader\n"
@@ -100,13 +131,15 @@ dlgAbout::dlgAbout(wxWindow* parent)
         "Yuanhui Zhang       : Developer\n"
         "Damien Moore        : Developer\n"
         "Micah Ng            : Developer\n"
+        "BlueHazzard         : Developer\n"
+        "Miguel Gimenez      : Developer\n"
         "Ricardo Garcia      : All-hands person\n"
         "Paul A. Jimenez     : Help and AStyle plugins\n"
         "Thomas Lorblanches  : CodeStat and Profiler plugins\n"
         "Bartlomiej Swiecki  : wxSmith RAD plugin\n"
         "Jerome Antoine      : ThreadSearch plugin\n"
         "Pecan Heber         : Keybinder, BrowseTracker, DragScroll\n"
-        "                      CodeSnippets plugins\n"
+        "                      CodeSnippets, clangd-client plugins\n"
         "Arto Jonsson        : CodeSnippets plugin (passed on to Pecan)\n"
         "Darius Markauskas   : Fortran support\n"
         "Mario Cupelli       : Compiler support for embedded systems\n"
@@ -114,7 +147,9 @@ dlgAbout::dlgAbout(wxWindow* parent)
         "Jonas Zinn          : Misc. wxSmith AddOns and plugins\n"
         "Mirai Computing     : cbp2make tool\n"
         "Anders F Bjoerklund : wxMac compatibility\n"
-        "\n"
+        "\n"));
+
+    const wxString contributors(_(
         "Contributors (in no special order):\n"
         "-----------------------------------\n"
         "Daniel Orb          : RPM spec file and packages\n"
@@ -131,61 +166,105 @@ dlgAbout::dlgAbout(wxWindow* parent)
         "Alexandr Efremo     : Providing OpenSuSe packages\n"
         "Huki                : Misc. Code-Completion improvements\n"
         "stahta01            : Misc. patches for several enhancements\n"
-        "BlueHazzard         : Misc. patches for several enhancements\n"
-        "\n"
+        "Gerard Durand       : Translation infrastructure, documentation writer\n"
+        "\n"));
+
+    const wxString others(_(
         "All contributors that provided patches.\n"
-        "The wxWidgets project (http://www.wxwidgets.org).\n"
-        "wxScintilla (http://sourceforge.net/projects/wxscintilla).\n"
-        "TinyXML parser (http://www.grinninglizard.com/tinyxml).\n"
+        "The wxWidgets project (https://www.wxwidgets.org).\n"
+        "wxScintilla (https://sourceforge.net/projects/wxscintilla).\n"
+        "TinyXML parser (https://www.grinninglizard.com/tinyxml).\n"
         "Squirrel scripting language (http://www.squirrel-lang.org).\n"
-        "The GNU Software Foundation (http://www.gnu.org).\n"
+        "The GNU Software Foundation (https://www.gnu.org).\n"
         "Last, but not least, the open-source community."));
+
+    txtThanksTo->SetValue(developers + contributors + others);
+
+    // License tab
     wxTextCtrl *txtLicense = XRCCTRL(*this, "txtLicense", wxTextCtrl);
     txtLicense->SetValue(LICENSE_GPL);
 
-#if wxCHECK_VERSION(3, 0, 0)
+    // Information tab
     const wxVersionInfo scintillaVersion = wxScintilla::GetLibraryVersionInfo();
-    const wxString scintillaStr = wxString::Format(wxT("%d.%d.%d"),
+    const wxString scintillaStr = wxString::Format("%d.%d.%d",
                                                    scintillaVersion.GetMajor(),
                                                    scintillaVersion.GetMinor(),
                                                    scintillaVersion.GetMicro());
-#else
-    const wxString scintillaStr = wxSCINTILLA_VERSION;
-#endif // wxCHECK_VERSION
 
-    struct Item
-    {
-        wxString name, value;
-    };
-    std::vector<Item> items;
+    std::vector <Item> items;
     items.push_back({_("Name"), appglobals::AppName});
     items.push_back({_("Version"), appglobals::AppActualVersion});
     items.push_back({_("SDK Version"), appglobals::AppSDKVersion});
     items.push_back({_("Scintilla Version"), scintillaStr});
+
     items.push_back({_("Author"), _("The Code::Blocks Team")});
     items.push_back({_("E-mail"), appglobals::AppContactEmail});
     items.push_back({_("Website"), appglobals::AppUrl});
 
-    int maxNameLength = 0;
-    for (const Item &item : items)
+    const wxPlatformInfo &platform = wxPlatformInfo::Get();
+
+    items.push_back({_("OS"), platform.GetOperatingSystemDescription()});
+    const wxString desktopEnv = platform.GetDesktopEnvironment();
+    if (!desktopEnv.empty())
+        items.push_back({_("Desktop environment"), desktopEnv });
+
+    items.push_back({_("Scaling factor"), wxString::Format("%f", cbGetContentScaleFactor(*this))});
+    items.push_back({_("Detected scaling factor"),
+                     wxString::Format("%f", cbGetActualContentScaleFactor(*this))});
+    const wxSize displayPPI = wxGetDisplayPPI();
+    items.push_back({_("Display PPI"), wxString::Format("%dx%d", displayPPI.x, displayPPI.y)});
+
+    unsigned displays = wxDisplay::GetCount();
+    items.push_back({_("Display count"), wxString::Format("%u", displays)});
+
+    for (unsigned ii = 0; ii < displays; ++ii)
     {
-        maxNameLength = std::max(maxNameLength, int(item.name.length()));
+        wxDisplay display(ii);
+
+        Item item;
+        item.name = wxString::Format(_("Display %u"), ii);
+
+        const wxString &name = display.GetName();
+        if (!name.empty())
+            item.name += " (" + name + ")";
+
+        const wxRect geometry = display.GetGeometry();
+        item.value= wxString::Format(_("XY=[%d,%d]; Size=[%d,%d]; %s"), geometry.GetLeft(),
+                                     geometry.GetTop(), geometry.GetWidth(), geometry.GetHeight(),
+                                     (display.IsPrimary() ? _("Primary") : wxString()));
+        items.push_back(item);
     }
 
-    wxString information;
-    for (const Item &item : items)
-    {
-        information += item.name;
-        information += wxString(wxT(' '), maxNameLength - int(item.name.length()));
-        information += wxT(": ") + item.value + wxT("\n");
-    }
-
-#if wxCHECK_VERSION(3, 0, 0)
-    information += wxT("\n") + wxGetLibraryVersionInfo().GetDescription();
-#endif // wxCHECK_VERSION(3, 0, 0)
+    wxString information(FormatItems(items));
+    information += "\n" + wxGetLibraryVersionInfo().GetDescription();
 
     wxTextCtrl *txtInformation = XRCCTRL(*this, "txtInformation", wxTextCtrl);
     txtInformation->SetValue(information);
+
+    // Plugins tab
+    PluginManager *plugman = Manager::Get()->GetPluginManager();
+    if (plugman)
+    {
+        std::vector <Item> plugins;
+        const PluginElementsArray &pluginlist = plugman->GetPlugins();
+        const size_t numplugins = pluginlist.GetCount();
+        for (size_t i = 0; i < numplugins; ++i)
+        {
+            const wxString name(pluginlist[i]->info.name);
+            const bool active = Manager::Get()->GetConfigManager("plugins")->ReadBool("/"+name, true);
+            if (active)
+                plugins.push_back({wxGetTranslation(pluginlist[i]->info.title), pluginlist[i]->info.version});
+        }
+
+        wxTextCtrl *txtPlugins = XRCCTRL(*this, "txtPlugins", wxTextCtrl);
+        if (plugins.empty())
+            txtPlugins->SetValue(_("There are no active plugins")+'\n');
+        else
+        {
+            std::sort(plugins.begin(), plugins.end(), IsLess);
+            txtPlugins->SetValue(FormatItems(plugins));
+        }
+    }
 
 #ifdef __WXMAC__
     // Courier 8 point is not readable on Mac OS X, increase font size:

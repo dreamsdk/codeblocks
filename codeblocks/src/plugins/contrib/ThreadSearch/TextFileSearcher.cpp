@@ -26,16 +26,17 @@ TextFileSearcher* TextFileSearcher::BuildTextFileSearcher(const wxString& search
                                                           bool matchCase,
                                                           bool matchWordBegin,
                                                           bool matchWord,
+                                                          bool matchInComments,
                                                           bool regEx)
 {
     TextFileSearcher* pFileSearcher = NULL;
     if ( regEx == true )
     {
-        pFileSearcher = new TextFileSearcherRegEx(searchText, matchCase, matchWordBegin, matchWord);
+        pFileSearcher = new TextFileSearcherRegEx(searchText, matchCase, matchWordBegin, matchWord, matchInComments);
     }
     else
     {
-        pFileSearcher = new TextFileSearcherText(searchText, matchCase, matchWordBegin, matchWord);
+        pFileSearcher = new TextFileSearcherText(searchText, matchCase, matchWordBegin, matchWord, matchInComments);
     }
 
     // Tests if construction is OK
@@ -50,7 +51,9 @@ TextFileSearcher* TextFileSearcher::BuildTextFileSearcher(const wxString& search
 }
 
 
-TextFileSearcher::eFileSearcherReturn TextFileSearcher::FindInFile(const wxString& filePath, wxArrayString &foundLines)
+TextFileSearcher::eFileSearcherReturn TextFileSearcher::FindInFile(const wxString& filePath,
+                                                                   wxArrayString &foundLines,
+                                                                   std::vector<int> &matchedPositions)
 {
     eFileSearcherReturn success=idStringNotFound;
     wxString line;
@@ -139,18 +142,38 @@ TextFileSearcher::eFileSearcherReturn TextFileSearcher::FindInFile(const wxStrin
         for ( size_t i = 0; i < m_TextFile.GetLineCount(); ++i )
         {
             line = m_TextFile.GetLine(i);
-            if ( MatchLine(line) )
+
+            std::vector<int>::size_type idxMatchedCount = matchedPositions.size();
+
+            if ( MatchLine(&matchedPositions, line) )
             {
                 success=idStringFound;
                 // An interesting line is found. We clean and add it to the provided array
                 line.Replace(_T("\t"), _T(" "));
                 line.Replace(_T("\r"), _T(" "));
                 line.Replace(_T("\n"), _T(" "));
+
+                int compensateStart = line.length();
                 line.Trim(false);
+                compensateStart = compensateStart - line.length();
+
                 line.Trim(true);
 
-                foundLines.Add(wxString::Format(wxT("%lu"), static_cast<unsigned long>(i + 1)));
+                foundLines.Add(wxString::Format("%zu", i + 1));
                 foundLines.Add(line);
+
+                // We have to compensate any trimming on the left. If we don't do it the matched
+                // positions would be incorrect.
+                if (idxMatchedCount < matchedPositions.size())
+                {
+                    const int count = matchedPositions[idxMatchedCount];
+                    for (int matchedIdx = 0; matchedIdx < count; ++matchedIdx)
+                    {
+                        const std::vector<int>::size_type index = idxMatchedCount + 1 + matchedIdx * 2;
+                        const int oldStart = matchedPositions[index];
+                        matchedPositions[index] = std::max(oldStart - compensateStart, 0);
+                    }
+                }
             }
         }
 

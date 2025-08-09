@@ -1,0 +1,7 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)" stroke="#000">
+    <rect transform="matrix(.4513 0 0 .4513 11.91 288.3)" x="-25.5" y="1.5" width="17" height="17" fill="#fff" stroke-linecap="round" stroke-width=".5862"/>
+    <rect transform="matrix(.6468 0 0 .6468 3.263 286)" x="-3" y="6" width="9" height="9" fill="#808080" stroke-linecap="round" stroke-width=".8182"/>
+    <path transform="matrix(.2646 0 0 .2646 0 288.3)" d="m5 17h22" fill="none" stroke-width="2"/>
+  </g>
+</svg>

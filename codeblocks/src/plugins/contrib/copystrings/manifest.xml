@@ -7,8 +7,8 @@
         <Value description="This plugin copies all the strings in the current editor, into the clipboard.
 Duplicated strings are removed." />
         <Value author="Ricardo Garcia" />
-        <Value authorEmail="rick_g22 <at> yahoo <dot> com" />
-        <Value authorWebsite="http://www.codeblocks.org/" />
+        <Value authorEmail="rick_g22 &lt;at&gt; yahoo &lt;dot&gt; com" />
+        <Value authorWebsite="https://www.codeblocks.org/" />
         <Value thanksTo="The Code::Blocks team!" />
         <Value license="wxWidgets" />
     </Plugin>

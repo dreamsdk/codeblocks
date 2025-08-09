@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11901 $
- * $Id: configmanager.cpp 11901 2019-11-04 19:35:26Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/configmanager.cpp $
+ * $Revision: 13575 $
+ * $Id: configmanager.cpp 13575 2024-09-30 06:50:24Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/configmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -39,11 +39,7 @@
 #endif
 
 #ifdef __WXMAC__
-#if wxCHECK_VERSION(3, 0, 0)
 #include "wx/osx/core/cfstring.h"
-#else
-#include "wx/mac/corefoundation/cfstring.h"
-#endif
 #include "wx/intl.h"
 
 #include <CoreFoundation/CFBundle.h>
@@ -57,8 +53,8 @@
 #include <glib.h>
 #endif // __linux__
 
-template<> CfgMgrBldr* Mgr<CfgMgrBldr>::instance = nullptr;
-template<> bool  Mgr<CfgMgrBldr>::isShutdown = false;
+template<> CfgMgrBldr* DLLIMPORT Mgr<CfgMgrBldr>::instance = nullptr;
+template<> bool DLLIMPORT Mgr<CfgMgrBldr>::isShutdown = false;
 
 wxString ConfigManager::alternate_user_data_path;
 bool ConfigManager::has_alternate_user_data_path=false;
@@ -73,7 +69,6 @@ wxString ConfigManager::plugin_path_global;
 wxString ConfigManager::app_path;
 wxString ConfigManager::temp_folder;
 
-
 namespace CfgMgrConsts
 {
     const wxString app_path(_T("app_path"));
@@ -81,7 +76,6 @@ namespace CfgMgrConsts
     const wxString dotDot(_T(".."));
     const int version = 1;
 }
-
 
 namespace
 {
@@ -124,11 +118,7 @@ namespace
             CFRelease(resourcesURL);
             CFStringRef cfStrPath = CFURLCopyFileSystemPath(absoluteURL,kCFURLPOSIXPathStyle);
             CFRelease(absoluteURL);
-            #if wxCHECK_VERSION(3, 0, 0)
-              wxString str = wxCFStringRef(cfStrPath).AsString(wxLocale::GetSystemEncoding());
-            #else
-              wxString str = wxMacCFStringHolder(cfStrPath).AsString(wxLocale::GetSystemEncoding());
-            #endif
+            wxString str = wxCFStringRef(cfStrPath).AsString(wxLocale::GetSystemEncoding());
             if (!str.Contains(wxString(_T("/Resources"))))
                return ::DetermineExecutablePath() + _T("/.."); // not a bundle, use relative path
             return str;
@@ -137,7 +127,6 @@ namespace
         #endif
     }
 }
-
 
 inline void ConfigManager::Collapse(wxString& str) const
 {
@@ -166,9 +155,6 @@ ISerializable::ISerializable()
 
 ISerializable::~ISerializable()
 {}
-
-
-
 
 /* ------------------------------------------------------------------------------------------------------------------
 *  "Builder pattern" class for ConfigManager
@@ -202,7 +188,6 @@ CfgMgrBldr::CfgMgrBldr() : doc(nullptr), volatile_doc(nullptr), r(false)
     SwitchTo(cfg);
 }
 
-
 wxString CfgMgrBldr::FindConfigFile(const wxString& filename)
 {
 
@@ -222,7 +207,7 @@ wxString CfgMgrBldr::FindConfigFile(const wxString& filename)
     return wxEmptyString;
 }
 
-/// Print error message an allow the user to either discard the old config or close the application.
+/// Print error message and allow the user to either discard the old config or close the application.
 /// Call this function when you've detected an error while reading the config.
 static void handleConfigError(TiXmlDocument &doc, const wxString &fileName, const wxString &additionalMessage)
 {
@@ -239,9 +224,7 @@ static void handleConfigError(TiXmlDocument &doc, const wxString &fileName, cons
     wxMessageDialog dlg(Manager::Get()->GetAppWindow(),
                         message + _("\n\nDiscard old config file?"), _("Config file read error"),
                         wxSTAY_ON_TOP|wxCENTRE|wxYES|wxNO|wxNO_DEFAULT|wxICON_ERROR);
-#if wxCHECK_VERSION(3, 0, 0)
     dlg.SetYesNoLabels(_("&Discard"), _("&Close"));
-#endif
     if (dlg.ShowModal() != wxID_YES)
         cbThrow(message);
 
@@ -265,13 +248,12 @@ void CfgMgrBldr::SwitchTo(const wxString& fileName)
     TiXmlElement* docroot = doc->FirstChildElement("CodeBlocksConfig");
     if (!docroot)
     {
-        const wxString message = wxString::Format(wxT("Cannot find docroot in config file '%s'"),
-                                                  fileName.wx_str());
+        const wxString message = wxString::Format(_("Cannot find docroot in config file '%s'"), fileName);
         handleConfigError(*doc, fileName, message);
         docroot = doc->FirstChildElement("CodeBlocksConfig");
 
         if (!docroot)
-            cbThrow(wxT("Something really bad happened while reading the config file. Aborting!"));
+            cbThrow(_("Something really bad happened while reading the config file. Aborting!"));
     }
 
     const char *vers = docroot->Attribute("version");
@@ -337,15 +319,8 @@ void CfgMgrBldr::SwitchToR(const wxString& absFileName)
         {
             size_t size = is->GetSize();
             wxString str;
-            #if wxCHECK_VERSION(3, 0, 0)
             wxChar* c = wxStringBuffer(str, size);
-            #else
-            wxChar* c = str.GetWriteBuf(size);
-            #endif
             is->Read(c, size);
-            #if !wxCHECK_VERSION(3, 0, 0)
-            str.UngetWriteBuf(size);
-            #endif
 
             doc = new TiXmlDocument();
 
@@ -357,7 +332,7 @@ void CfgMgrBldr::SwitchToR(const wxString& absFileName)
             }
             if (Manager::Get()->GetLogManager())
             {
-                Manager::Get()->GetLogManager()->DebugLog(_T("##### Error loading or parsing remote config file"));
+                Manager::Get()->GetLogManager()->DebugLog(_("##### Error loading or parsing remote config file"));
                 Manager::Get()->GetLogManager()->DebugLog(cbC2U(doc->ErrorDesc()));
                 doc->ClearError();
             }
@@ -393,10 +368,9 @@ void CfgMgrBldr::Flush()
                 else
                 {
                     AnnoyingDialog dlg(_("Error"),
-                                       F(_T("Could not save config file '%s'!"), cfg.wx_str()),
+                                       wxString::Format(_("Could not save config file '%s'!"), cfg),
                                        wxART_ERROR, AnnoyingDialog::TWO_BUTTONS,
                                        AnnoyingDialog::rtTWO, _("&Retry"), _("&Close"));
-                    PlaceWindow(&dlg);
                     switch (dlg.ShowModal())
                     {
                         case AnnoyingDialog::rtONE:
@@ -426,17 +400,15 @@ void CfgMgrBldr::Close()
     doc = nullptr;
 }
 
-
 ConfigManager* CfgMgrBldr::GetConfigManager(const wxString& name_space)
 {
     return Get()->Build(name_space);
 }
 
-
 ConfigManager* CfgMgrBldr::Build(const wxString& name_space)
 {
     if (name_space.IsEmpty())
-        cbThrow(_T("You attempted to get a ConfigManager instance without providing a namespace."));
+        cbThrow(_("You attempted to get a ConfigManager instance without providing a namespace."));
 
     wxCriticalSectionLocker locker(cs);
     NamespaceMap::iterator it = namespaces.find(name_space);
@@ -461,7 +433,7 @@ ConfigManager* CfgMgrBldr::Build(const wxString& name_space)
         if (!docroot)
         {
             wxString err(_("Fatal error parsing supplied configuration file.\nParser error message:\n"));
-            err << wxString::Format(_T("%s\nAt row %d, column: %d."), cbC2U(doc->ErrorDesc()).c_str(), doc->ErrorRow(), doc->ErrorCol());
+            err << wxString::Format(_("%s\nAt row %d, column %d."), cbC2U(doc->ErrorDesc()), doc->ErrorRow(), doc->ErrorCol());
             cbThrow(err);
         }
     }
@@ -475,7 +447,7 @@ ConfigManager* CfgMgrBldr::Build(const wxString& name_space)
     }
 
     if (!root) // now what!
-        cbThrow(_T("Unable to create namespace in document tree (actually not possible..?)"));
+        cbThrow(_("Unable to create namespace in document tree (actually not possible..?)"));
 
     ConfigManager *c = new ConfigManager(root);
     namespaces[name_space] = c;
@@ -494,13 +466,8 @@ wxString CfgMgrBldr::GetConfigFile() const
 */
 inline void to_upper(wxString& s)
 {
-    #if wxCHECK_VERSION(3, 0, 0)
     wxStringCharType *p = const_cast<wxStringCharType*>(s.wx_str());
     wxStringCharType q;
-    #else
-    wxChar *p = (wxChar*) s.c_str();
-    wxChar q;
-    #endif
     size_t len = s.length()+1;
     for (;--len;++p)
     {
@@ -512,13 +479,8 @@ inline void to_upper(wxString& s)
 
 inline void to_lower(wxString& s)
 {
-    #if wxCHECK_VERSION(3, 0, 0)
     wxStringCharType *p = const_cast<wxStringCharType*>(s.wx_str());
     wxStringCharType q;
-    #else
-    wxChar *p = (wxChar*) s.c_str();
-    wxChar q;
-    #endif
     size_t len = s.length()+1;
     for (;--len;++p)
     {
@@ -540,7 +502,6 @@ wxString ConfigManager::GetProxy()
 {
     return Manager::Get()->GetConfigManager(_T("app"))->Read(_T("network_proxy"));
 }
-
 
 wxString ConfigManager::GetFolder(SearchDirs dir)
 {
@@ -612,13 +573,15 @@ inline wxString ConfigManager::GetUserDataFolder()
         return wxStandardPathsBase::Get().GetUserDataDir();
 #else
 #ifdef __linux__
-    return wxString::FromUTF8(g_build_filename (g_get_user_config_dir(), "codeblocks", NULL));
+    gchar *filename = g_build_filename(g_get_user_config_dir(), "codeblocks", nullptr);
+    wxString result=wxString::FromUTF8(filename);
+    g_free(filename);
+    return result;
 #else
     return wxStandardPathsBase::Get().GetUserDataDir();
 #endif // __linux__
 #endif // __WINDOWS__
 }
-
 
 bool ConfigManager::SetUserDataFolder(const wxString &user_data_path)
 {
@@ -673,8 +636,6 @@ wxString ConfigManager::LocateDataFile(const wxString& filename, int search_dirs
     return searchPaths.FindValidPath(filename);
 }
 
-
-
 /* ------------------------------------------------------------------------------------------------------------------
 *  ConfigManager
 */
@@ -682,9 +643,6 @@ wxString ConfigManager::LocateDataFile(const wxString& filename, int search_dirs
 ConfigManager::ConfigManager(TiXmlElement* r) : doc(r->GetDocument()), root(r), pathNode(r)
 {
 }
-
-
-
 
 /* ------------------------------------------------------------------------------------------------------------------
 *  Configuration path handling
@@ -719,15 +677,14 @@ void ConfigManager::SetPath(const wxString& path)
 wxString ConfigManager::InvalidNameMessage(const wxString& what, const wxString& sub, TiXmlElement *localPath) const
 {
     wxString s;
-    s.Printf(_T("The %s %s (child of node \"%s\" in namespace \"%s\") does not meet the standard for path naming (must start with a letter)."),
-    what.c_str(),
-    sub.c_str(),
+    s.Printf(_("The %s %s (child of node \"%s\" in namespace \"%s\") does not meet the standard for path naming (must start with a letter)."),
+    what,
+    sub,
     cbC2U(localPath->Value()).c_str(),
     cbC2U(root->Value()).c_str());
 
     return s;
 }
-
 
 TiXmlElement* ConfigManager::AssertPath(wxString& path)
 {
@@ -780,7 +737,6 @@ TiXmlElement* ConfigManager::AssertPath(wxString& path)
     return localPath;
 }
 
-
 /* -----------------------------------------------------------------------------------------------------
 *  Clear all nodes from your namespace or delete the namespace alltogether (removing it from the config file).
 *  After Delete() returns, the pointer to your instance is invalid.
@@ -813,7 +769,7 @@ void ConfigManager::DeleteAll()
     const wxString ns(cbC2U(root->Value()));
 
     if (!ns.IsSameAs(_T("app")))
-        cbThrow(_T("Illegal attempt to invoke DeleteAll()."));
+        cbThrow(_("Illegal attempt to invoke DeleteAll()."));
 
     wxCriticalSectionLocker(bld->cs);
     doc->RootElement()->Clear();
@@ -851,8 +807,6 @@ void ConfigManager::SetNodeText(TiXmlElement* n, const TiXmlText& t)
     else
         n->InsertEndChild(t);
 }
-
-
 
 /* ------------------------------------------------------------------------------------------------------------------
 *  Write and read values
@@ -1035,7 +989,6 @@ bool ConfigManager::Read(const wxString& name,  int* value)
     return false;
 }
 
-
 void ConfigManager::Write(const wxString& name,  bool value)
 {
     wxString key(name);
@@ -1071,7 +1024,6 @@ bool ConfigManager::Read(const wxString& name,  bool* value)
     return false;
 }
 
-
 void ConfigManager::Write(const wxString& name,  double value)
 {
     wxString key(name);
@@ -1104,7 +1056,6 @@ bool ConfigManager::Read(const wxString& name,  double* value)
     return false;
 }
 
-
 void ConfigManager::Set(const wxString& name)
 {
     wxString key(name);
@@ -1131,8 +1082,6 @@ bool ConfigManager::Exists(const wxString& name)
 
     return leaf;
 }
-
-
 
 void ConfigManager::Write(const wxString& name,  const wxArrayString& arrayString)
 {
@@ -1225,7 +1174,6 @@ wxString ConfigManager::ReadBinary(const wxString& name)
     return wxEmptyString;
 }
 
-
 wxArrayString ConfigManager::EnumerateSubPaths(const wxString& path)
 {
     wxString key(path + _T('/')); // the trailing slash hack is required because AssertPath expects a key name
@@ -1237,11 +1185,7 @@ wxArrayString ConfigManager::EnumerateSubPaths(const wxString& path)
     {
         while (e->IterateChildren(curr) && (curr = e->IterateChildren(curr)->ToElement()))
         {
-            #if wxCHECK_VERSION(3, 0, 0)
             wxUniChar c = cbC2U(curr->Value())[0];
-            #else
-            wxChar c = *(cbC2U(curr->Value()));
-            #endif
             if (c < _T('A') || c > _T('Z')) // first char must be a letter, uppercase letters are key names
                 ret.Add(cbC2U(curr->Value()));
         }
@@ -1311,7 +1255,6 @@ void ConfigManager::DeleteSubPath(const wxString& thePath)
     }
 }
 
-
 wxArrayString ConfigManager::EnumerateKeys(const wxString& path)
 {
     wxString key(path + _T('/')); // the trailing slash hack is required because AssertPath expects a key name
@@ -1323,11 +1266,7 @@ wxArrayString ConfigManager::EnumerateKeys(const wxString& path)
     {
         while (e->IterateChildren(curr) && (curr = e->IterateChildren(curr)->ToElement()))
         {
-            #if wxCHECK_VERSION(3, 0, 0)
             wxUniChar c = cbC2U(curr->Value())[0];
-            #else
-            wxChar c = *(cbC2U(curr->Value()));
-            #endif
             if (c >= _T('A') && c <= _T('Z')) // opposite of the above
                 ret.Add(cbC2U(curr->Value()));
         }
@@ -1463,11 +1402,6 @@ ConfigManagerContainer::IntToStringMap ConfigManager::ReadISMap(const wxString& 
     return ret;
 }
 
-
-
-
-
-
 void ConfigManager::Write(const wxString& name, const ConfigManagerContainer::StringSet& set)
 {
     wxString key(name);
@@ -1492,7 +1426,6 @@ void ConfigManager::Write(const wxString& name, const ConfigManagerContainer::St
     }
 }
 
-
 void ConfigManager::Read(const wxString& name, ConfigManagerContainer::StringSet* set)
 {
     wxString key(name);
@@ -1516,7 +1449,6 @@ ConfigManagerContainer::StringSet ConfigManager::ReadSSet(const wxString& name)
     return ret;
 }
 
-
 void ConfigManager::Write(const wxString& name, const ConfigManagerContainer::SerializableObjectMap* map)
 {
     wxString key(name);
@@ -1537,7 +1469,6 @@ void ConfigManager::Write(const wxString& name, const ConfigManagerContainer::Se
     }
 }
 
-
 void ConfigManager::InitPaths()
 {
     ConfigManager::config_folder = ConfigManager::GetUserDataFolder();
@@ -1549,7 +1480,11 @@ void ConfigManager::InitPaths()
     if (data_path_global.IsEmpty())
     {
         if (platform::windows)
+#ifdef CB_AUTOCONF
+            ConfigManager::data_path_global = app_path + _T("/../share/codeblocks");
+#else
             ConfigManager::data_path_global = app_path + _T("\\share\\codeblocks");
+#endif
         else if (platform::macosx)
             ConfigManager::data_path_global = res_path + _T("/share/codeblocks");
         else
@@ -1562,7 +1497,7 @@ void ConfigManager::InitPaths()
     if (plugin_path_global.IsEmpty())
     {
         if (platform::windows)
-            ConfigManager::plugin_path_global = data_path_global;
+            ConfigManager::plugin_path_global = app_path + _T("\\..\\lib\\codeblocks\\plugins");
         else if (platform::macosx)
             ConfigManager::plugin_path_global = data_path_global + _T("/plugins");
         else
@@ -1586,7 +1521,11 @@ void ConfigManager::InitPaths()
     wxString dataPathUser = ConfigManager::config_folder + wxFILE_SEP_PATH + _T("share");
 #ifdef __linux__
     if (!has_alternate_user_data_path)
-      dataPathUser = wxString::FromUTF8(g_build_filename (g_get_user_data_dir(), NULL));
+    {
+        gchar *filename = g_build_filename(g_get_user_data_dir(), nullptr);
+        dataPathUser = wxString::FromUTF8(filename);
+        g_free(filename);
+    }
 #endif // __linux__
 
     ConfigManager::data_path_user = dataPathUser + wxFILE_SEP_PATH + _T("codeblocks");
@@ -1594,7 +1533,7 @@ void ConfigManager::InitPaths()
     // if user- and global-datapath are the same (can happen in portable mode) we run in conflicts
     // so we extend the user-datapath with the users name
     if (wxFileName(ConfigManager::data_path_user) == wxFileName(ConfigManager::data_path_global))
-        ConfigManager::data_path_user.append(_(".")+wxGetUserId());
+        ConfigManager::data_path_user.append("." + wxGetUserId());
 
     CreateDirRecursively(ConfigManager::config_folder);
     CreateDirRecursively(ConfigManager::data_path_user   + _T("/plugins/"));
@@ -1612,14 +1551,14 @@ void ConfigManager::MigrateFolders()
 
     // ConfigManager::config_folder might be the portable-path but we want to migrate the standard-conform folder,
     // but only if it not already exists
-    wxString newConfigFolder = wxString::FromUTF8(g_build_filename (g_get_user_config_dir(), "codeblocks", NULL));
+    wxString newConfigFolder = wxString::FromUTF8(g_build_filename (g_get_user_config_dir(), "codeblocks", nullptr));
     // if the new config folder already exist, we step out immediately
     if (wxDirExists(newConfigFolder))
         return;
 
     wxString oldConfigFolder = wxStandardPaths::Get().GetUserDataDir();
     wxString oldDataFolder = oldConfigFolder + wxFILE_SEP_PATH + _T("share") + wxFILE_SEP_PATH + _T("codeblocks");
-    wxString newDataFolder = wxString::FromUTF8(g_build_filename (g_get_user_data_dir(), NULL)) + wxFILE_SEP_PATH + _T("codeblocks");
+    wxString newDataFolder = wxString::FromUTF8(g_build_filename (g_get_user_data_dir(), nullptr)) + wxFILE_SEP_PATH + _T("codeblocks");
     wxString msg;
     msg = F(_("The places where the configuration files and user-data files are stored\n"
               "have been changed to be more standard-conform.\n"
@@ -1688,6 +1627,7 @@ bool ConfigManagerWrapper::Read(const wxString& key, wxString* str)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     return c->Read(key, str);
 }
+
 void ConfigManagerWrapper::Write(const wxString& key, const char* str)
 {
     if (m_namespace.empty())
@@ -1703,6 +1643,7 @@ void ConfigManagerWrapper::Write(const wxString& name, int value)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     c->Write(m_basepath + name, value);
 }
+
 bool ConfigManagerWrapper::Read(const wxString& name, int* value)
 {
     if (m_namespace.empty())
@@ -1726,6 +1667,7 @@ void ConfigManagerWrapper::Write(const wxString& name, bool value)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     c->Write(m_basepath + name, value);
 }
+
 bool ConfigManagerWrapper::Read(const wxString& name, bool* value)
 {
     if (m_namespace.empty())
@@ -1733,6 +1675,7 @@ bool ConfigManagerWrapper::Read(const wxString& name, bool* value)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     return c->Read(m_basepath + name, value);
 }
+
 bool ConfigManagerWrapper::ReadBool(const wxString& name, bool defaultVal)
 {
     if (m_namespace.empty())
@@ -1748,6 +1691,7 @@ void ConfigManagerWrapper::Write(const wxString& name, double value)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     c->Write(m_basepath + name, value);
 }
+
 bool ConfigManagerWrapper::Read(const wxString& name, double* value)
 {
     if (m_namespace.empty())
@@ -1755,6 +1699,7 @@ bool ConfigManagerWrapper::Read(const wxString& name, double* value)
     ConfigManager *c = Manager::Get()->GetConfigManager(m_namespace);
     return c->Read(m_basepath + name, value);
 }
+
 double ConfigManagerWrapper::ReadDouble(const wxString& name, double defaultVal)
 {
     if (m_namespace.empty())
@@ -1766,7 +1711,11 @@ double ConfigManagerWrapper::ReadDouble(const wxString& name, double defaultVal)
 static wxString getCompilerPluginFilename()
 {
     if (platform::windows)
+#ifdef CB_AUTOCONF
+        return wxT("libcompiler.dll");
+#else
         return wxT("compiler.dll");
+#endif
     else if (platform::darwin || platform::macosx)
         return wxT("libcompiler.dylib");
     else

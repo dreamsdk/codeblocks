@@ -201,7 +201,7 @@ private:
     cbSearchResultsLog *m_SearchResultLog;
 };
 
-template <class MgrT> class DLLIMPORT Mgr
+template <class MgrT> class Mgr
 {
     static MgrT *instance;
     static bool isShutdown;
@@ -224,7 +224,9 @@ public:
             if (isShutdown == false)
                 instance = new MgrT();
             else
+            {
                 cbAssert(false && "Calling Get after the subsystem has been shutdown is an error!");
+            }
         }
         return instance;
     }

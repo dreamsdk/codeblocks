@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10684 $
-* $Id: wxsdeleteitemres.cpp 10684 2016-01-22 10:49:37Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdeleteitemres.cpp $
+* $Revision: 13547 $
+* $Id: wxsdeleteitemres.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsdeleteitemres.cpp $
 */
 
 #include "wxsdeleteitemres.h"
@@ -25,15 +25,15 @@
 #include <prep.h>
 
 //(*InternalHeaders(wxsDeleteItemRes)
-#include <wx/intl.h>
 #include <wx/button.h>
+#include <wx/intl.h>
 #include <wx/string.h>
 //*)
 
 //(*IdInit(wxsDeleteItemRes)
-const long wxsDeleteItemRes::ID_CHECKBOX1 = wxNewId();
-const long wxsDeleteItemRes::ID_CHECKBOX2 = wxNewId();
-const long wxsDeleteItemRes::ID_CHECKBOX3 = wxNewId();
+const wxWindowID wxsDeleteItemRes::ID_CHECKBOX1 = wxNewId();
+const wxWindowID wxsDeleteItemRes::ID_CHECKBOX2 = wxNewId();
+const wxWindowID wxsDeleteItemRes::ID_CHECKBOX3 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(wxsDeleteItemRes,wxScrollingDialog)
@@ -44,9 +44,9 @@ END_EVENT_TABLE()
 wxsDeleteItemRes::wxsDeleteItemRes()
 {
     //(*Initialize(wxsDeleteItemRes)
-    wxStaticText* StaticText1;
     wxBoxSizer* BoxSizer1;
     wxStaticBoxSizer* StaticBoxSizer1;
+    wxStaticText* StaticText1;
     wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
     Create(0, wxID_ANY, _("Deleting resource"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("wxID_ANY"));
@@ -71,8 +71,8 @@ wxsDeleteItemRes::wxsDeleteItemRes()
     StdDialogButtonSizer1->Realize();
     BoxSizer1->Add(StdDialogButtonSizer1, 0, wxTOP|wxALIGN_CENTER_HORIZONTAL, 5);
     SetSizer(BoxSizer1);
-    BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
+    Center();
 
     Connect(ID_CHECKBOX2,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(wxsDeleteItemRes::Onm_DeleteSourcesClick));
     //*)

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8335 $
-* $Id: wxsitemres.h 8335 2012-09-03 07:43:04Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemres.h $
+* $Revision: 13150 $
+* $Id: wxsitemres.h 13150 2023-01-14 11:37:46Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemres.h $
 */
 
 #ifndef WXSITEMRES_H
@@ -109,7 +109,8 @@ class wxsItemRes: public wxWidgetsRes, public wxsItemResFunctions
 
         /** \brief Ctor for external resource
          *  \param FileName name of XRC file
-         *  \param Object Xml node with XRC resource
+         *  \param XrcElem Xml node with XRC resource
+         *  \param ResourceType name of resource type (f.ex. wxDialog)
          */
         wxsItemRes(const wxString& FileName,const TiXmlElement* XrcElem,const wxString& ResourceType);
 
@@ -119,16 +120,25 @@ class wxsItemRes: public wxWidgetsRes, public wxsItemResFunctions
         /** \brief Creating new resource and building files if necessarry */
         virtual bool CreateNewResource(NewResourceParams& Params);
 
+        /* Getters */
         inline const wxString& GetWxsFileName() { return m_WxsFileName; }
         inline const wxString& GetSrcFileName() { return m_SrcFileName; }
         inline const wxString& GetHdrFileName() { return m_HdrFileName; }
         inline const wxString& GetXrcFileName() { return m_XrcFileName; }
+
+        bool Rename(const wxString& oldName, const wxString& newName) override;
 
         /** \brief Getting current edit mode */
         EditMode GetEditMode();
 
         /** \brief Building data object for this resource */
         wxsItemResData* BuildResData(wxsItemEditor* Editor);
+
+        /** \brief Check if I18N is enabled */
+        bool IsI18N() const { return m_UseI18n; }
+
+        /** \brief Modify I18N */
+        void SetI18N(bool Value);
 
     protected:
 

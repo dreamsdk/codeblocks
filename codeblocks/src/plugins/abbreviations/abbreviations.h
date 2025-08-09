@@ -34,19 +34,19 @@ public:
       * in configuration dialogs. Lower numbers mean the plugin's
       * configuration is put higher in the list.
       */
-    virtual int GetConfigurationPriority() const { return 50; }
+    int GetConfigurationPriority() const override { return 50; }
 
     /** Return the configuration group for this plugin. Default is cgUnknown.
       * Notice that you can logically OR more than one configuration groups,
       * so you could set it, for example, as "cgCompiler | cgContribPlugin".
       */
-    virtual int GetConfigurationGroup() const { return cgEditor; }
+    int GetConfigurationGroup() const override { return cgEditor; }
 
     /** Return plugin's configuration panel.
       * @param parent The parent window.
       * @return A pointer to the plugin's cbConfigurationPanel. It is deleted by the caller.
       */
-    virtual cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent);
+    cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent) override;
 
     /** This method is called by Code::Blocks and is used by the plugin
       * to add any menu items it needs on Code::Blocks's menu bar.\n
@@ -55,7 +55,7 @@ public:
       * just do nothing ;)
       * @param menuBar the wxMenuBar to create items in
       */
-    virtual void BuildMenu(wxMenuBar* menuBar);
+    void BuildMenu(wxMenuBar* menuBar) override;
 
 protected:
     /** Any descendent plugin should override this virtual method and
@@ -68,7 +68,7 @@ protected:
       * This means that a plugin might be loaded but <b>not</b> activated...\n
       * Think of this method as the actual constructor...
       */
-    virtual void OnAttach();
+    void OnAttach() override;
 
     /** Any descendent plugin should override this virtual method and
       * perform any necessary de-initialization. This method is called by
@@ -79,30 +79,17 @@ protected:
       *         case *don't* use Manager::Get()->Get...() functions or the
       *         behaviour is undefined...
       */
-    virtual void OnRelease(bool appShutDown);
+    void OnRelease(bool appShutDown) override;
 
 public:
-    /** Try to auto-complete the current word.
-      *
-      * This has nothing to do with code-completion plugins. Editor auto-completion
-      * is a feature that saves typing common blocks of code, e.g.
-      *
-      * If you have typed "forb" (no quotes) and select auto-complete, then
-      * it will convert "forb" to "for ( ; ; ){ }".
-      * If the word up to the caret position is an unknown keyword, nothing happens.
-      *
-      * These keywords/code pairs can be edited in the editor configuration
-      * dialog.
-      */
-    static void AutoComplete(cbEditor& ed);
 
     static void ExchangeTabAndSpaces(AutoCompleteMap& map);
 
-private:
     /** \brief Function returing singleton instance */
     static Abbreviations* Get() { return m_Singleton; }
 
     void DoAutoComplete(cbEditor* ed);
+private:
     static Abbreviations* m_Singleton; ///< \brief Singleton object
 
     /** \brief Registering scripting stuff */

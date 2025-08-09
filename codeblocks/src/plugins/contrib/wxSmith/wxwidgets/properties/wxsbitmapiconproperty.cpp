@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10682 $
-* $Id: wxsbitmapiconproperty.cpp 10682 2016-01-22 10:46:00Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconproperty.cpp $
+* $Revision: 12304 $
+* $Id: wxsbitmapiconproperty.cpp 12304 2021-03-16 23:28:31Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconproperty.cpp $
 */
 
 #include "wxsbitmapiconproperty.h"
@@ -162,6 +162,7 @@ wxString wxsBitmapIconProperty::GetStr(wxsPropertyContainer* Object)
 bool wxsBitmapIconProperty::ShowEditor(wxsPropertyContainer* Object)
 {
     wxsBitmapIconEditorDlg Dlg(0,VALUE,DefaultClient);
+    PlaceWindow(&Dlg);
     return Dlg.ShowModal() == wxID_OK;
 }
 

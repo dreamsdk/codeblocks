@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11371 $
-* $Id: cbEditorPanel.cpp 11371 2018-04-23 00:53:05Z d_anselmi $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/NassiShneiderman/cbEditorPanel.cpp $
+* $Revision: 12524 $
+* $Id: cbEditorPanel.cpp 12524 2021-09-04 11:32:54Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/NassiShneiderman/cbEditorPanel.cpp $
 */
 
 #include <wx/cmdproc.h>
@@ -26,7 +26,7 @@
 
 
 cbEditorPanel::cbEditorPanel( const wxString& fileName, const wxString& /*title*/, FileContent *fc ):
-    EditorBase( (wxWindow*)Manager::Get()->GetEditorManager()->GetNotebook(), fileName ),
+    EditorBase( (wxWindow*)Manager::Get()->GetEditorManager()->GetNotebook(), fileName, true),
     m_IsOK(false),
     m_filecontent(fc)
     //m_cmdprocessor(0)
@@ -93,7 +93,7 @@ bool cbEditorPanel::SaveAs()
                       fname.GetFullName(),
                       m_filecontent->GetWildcard(),
                       wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
-
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() != wxID_OK) // cancelled out
     {
         UpdateModified();

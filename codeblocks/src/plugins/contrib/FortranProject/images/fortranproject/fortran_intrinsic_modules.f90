@@ -41,11 +41,12 @@ module iso_c_binding
         type(c_ptr or c_funptr) :: c_ptr_1, c_ptr_2
     end function
 
-    subroutine c_f_pointer(cptr, fptr[, shape])
+    subroutine c_f_pointer(cptr, fptr[, shape, lower])
         ! Assign the target the C pointer CPTR to the Fortran pointer FPTR and specify its shape.
         type(c_ptr), intent(in) :: cptr
         type(*), intent(out), pointer :: fptr
         integer, optional, intent(in) :: shape(:)
+        integer, optional, intent(in) :: lower(:)
     end subroutine
 
     subroutine c_f_procpointer(cptr, fptr)
@@ -60,6 +61,20 @@ module iso_c_binding
         ! The return value is of type C_FUNPTR and contains the C address of the argument.
         procedure(function_interface) :: x ! Interoperable function or pointer to such function.
     end function
+
+    character(len=*) function f_c_string(string [, asis])
+        ! Return a character scalar whose value is string//c null char if asis is present
+        ! with the value true and is trim(string)//c null char otherwise.
+        character(kind=c_char), intent(in) :: string
+        logical, optional, intent(in) :: asis
+    end function
+
+    subroutine c_f_strpointer (cstrarray, fstrptr[, nchars])
+        ! Get pointer array to C character array.
+        character(kind=c_char, len=1), intent(in) :: cstrarray(:)
+        character(kind=c_char), pointer :: fstrptr
+        integer, intent(in) :: nchars
+    end subroutine
 
     type(c_ptr) function c_loc(x)
         ! Determines the C address of the argument.
@@ -96,14 +111,16 @@ module iso_fortran_env
     integer, parameter :: iostat_eor
     integer, parameter :: iostat_inquire_internal_unit
     integer, parameter :: logical_kinds(:)
+    integer, parameter :: logical8, logical16, logical32, logical64
     integer, parameter :: numeric_storage_size
     integer, parameter :: output_unit
     integer, parameter :: real_kinds(:)
-    integer, parameter :: real32, real64, real128
+    integer, parameter :: real16, real32, real64, real128
     integer, parameter :: stat_locked
     integer, parameter :: stat_locked_other_image
     integer, parameter :: stat_stopped_image
     integer, parameter :: stat_unlocked
+    integer, parameter :: current_team
     integer, parameter :: initial_team
     integer, parameter :: parent_team
     integer, parameter :: stat_failed_image
@@ -117,6 +134,9 @@ module iso_fortran_env
     end type
     
     type team_type
+    end type
+
+    type notify_type
     end type
 
     character(len=*) function compiler_options()
@@ -254,6 +274,22 @@ module ieee_arithmetic
 
     function ieee_logb(x)
         ! Exponent.
+    end function
+
+    function ieee_max(x, y)
+        ! Return max value.
+    end function
+
+    function ieee_max_mag(x, y)
+        ! Return x or y with max absolute value.
+    end function
+
+    function ieee_min(x, y)
+        ! Return min value.
+    end function
+
+    function ieee_min_mag(x, y)
+        ! Return x or y with min absolute value.
     end function
 
     function ieee_next_after(x, y)

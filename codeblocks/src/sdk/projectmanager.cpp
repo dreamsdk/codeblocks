@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11898 $
- * $Id: projectmanager.cpp 11898 2019-11-04 19:35:16Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectmanager.cpp $
+ * $Revision: 13437 $
+ * $Id: projectmanager.cpp 13437 2024-01-31 11:51:59Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/projectmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -36,8 +36,8 @@
 //#include "filefilters.h"
 #include "filegroupsandmasks.h"
 
-template<> ProjectManager* Mgr<ProjectManager>::instance = nullptr;
-template<> bool  Mgr<ProjectManager>::isShutdown = false;
+template<> ProjectManager* DLLIMPORT Mgr<ProjectManager>::instance = nullptr;
+template<> bool DLLIMPORT Mgr<ProjectManager>::isShutdown = false;
 
 // static
 bool ProjectManager::s_CanShutdown = true;
@@ -70,6 +70,7 @@ class NullProjectManagerUI : public cbProjectManagerUI
         void ConfigureProjectDependencies(cb_unused cbProject* base,
                                           cb_unused wxWindow *parent) override {}
         void SwitchToProjectsPage() override {}
+        void ReloadFileSystemWatcher(cb_unused cbProject* prj) override {}
 };
 
 // class constructor
@@ -188,8 +189,8 @@ void ProjectManager::SetProject(cbProject* project, bool refresh)
 
     long time = timer.Time();
     if (time >= 50)
-        Manager::Get()->GetLogManager()->Log(F(wxT("ProjectManager::SetProject took: %.3f seconds."),
-                                               time / 1000.0f));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("ProjectManager::SetProject() took: %.3f seconds."),
+                                                              time / 1000.0f));
 }
 
 cbProject* ProjectManager::IsOpen(const wxString& filename)
@@ -290,8 +291,8 @@ cbProject* ProjectManager::LoadProject(const wxString& filename, bool activateIt
     long time = timer.Time();
     if (time >= 100)
     {
-        LogManager *log = Manager::Get()->GetLogManager();
-        log->Log(F(wxT("ProjectManager::LoadProject took: %.3f seconds."), time / 1000.0f));
+        LogManager* log = Manager::Get()->GetLogManager();
+        log->Log(wxString::Format(_("ProjectManager::LoadProject took: %.3f seconds."), time / 1000.0f));
     }
 
     return result;
@@ -435,7 +436,7 @@ bool ProjectManager::CloseAllProjects(bool dontsave)
     if (time >= 100)
     {
         LogManager *log = Manager::Get()->GetLogManager();
-        log->Log(F(wxT("ProjectManager::CloseAllProjects took: %.3f seconds."), time / 1000.0f));
+        log->Log(wxString::Format(_("ProjectManager::CloseAllProjects took: %.3f seconds."), time / 1000.0f));
     }
 
     return true;
@@ -541,14 +542,14 @@ bool ProjectManager::SaveActiveProjectAs()
 bool ProjectManager::SaveAllProjects()
 {
     m_ui->FreezeTree();
-    int prjCount = m_pProjects->GetCount();
+    const int prjCount = m_pProjects->GetCount();
     int count = 0;
     for (int i = 0; i < prjCount; ++i)
     {
         cbProject* project = m_pProjects->Item(i);
         if (project)
         {
-            bool isModified = project->GetModified();
+            const bool isModified = project->GetModified();
             if (isModified && SaveProject(project))
                 ++count;
         }
@@ -691,11 +692,10 @@ bool ProjectManager::IsClosingWorkspace()
     return m_IsClosingWorkspace;
 }
 
-
-int ProjectManager::DoAddFileToProject(const wxString& filename, cbProject* project, wxArrayInt& targets)
+bool SetupTargets(wxArrayInt &targets, cbProject *project, cbProjectManagerUI *ui)
 {
-    if (!project)
-        return 0;
+    cbAssert(project);
+    cbAssert(ui);
 
     // do we have to ask for target?
     if (targets.GetCount() == 0)
@@ -706,16 +706,28 @@ int ProjectManager::DoAddFileToProject(const wxString& filename, cbProject* proj
         // else display multiple target selection dialog
         else
         {
-            targets = m_ui->AskForMultiBuildTargetIndex(project);
+            targets = ui->AskForMultiBuildTargetIndex(project);
             if (targets.GetCount() == 0)
-                return 0;
+                return false;
         }
     }
+    return true;
+}
+
+int ProjectManager::DoAddFileToProject(const wxString& filename, cbProject* project, wxArrayInt& targets)
+{
+    if (!project)
+        return 0;
+
+    if (!SetupTargets(targets, project, m_ui))
+        return 0;
 
     // make sure filename is relative to project path
     wxFileName fname(filename);
-    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE, project->GetBasePath());
-    fname.MakeRelativeTo(project->GetBasePath());
+
+    const wxString basePath = project->GetBasePath();
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE, basePath);
+    fname.MakeRelativeTo(basePath);
 
     // add the file to the project first
     ProjectFile* pf = project->AddFile(-1, fname.GetFullPath());
@@ -739,7 +751,9 @@ int ProjectManager::AddFileToProject(const wxString& filename, cbProject* projec
         project = GetActiveProject();
 
     wxArrayInt targets;
-    targets.Add(target);
+    if(target != -1)
+        targets.Add(target);
+
     if (AddFileToProject(filename, project, targets) == 1)
         return targets[0];
     return -1;
@@ -767,30 +781,49 @@ int ProjectManager::AddMultipleFilesToProject(const wxArrayString& filelist, cbP
         project = GetActiveProject();
 
     wxArrayInt targets;
-    targets.Add(target);
+    if(target != -1)
+        targets.Add(target);
+
     if (AddMultipleFilesToProject(filelist, project, targets) == 1)
         return targets[0];
     return -1;
 }
 
-int ProjectManager::AddMultipleFilesToProject(const wxArrayString& filelist, cbProject* project, wxArrayInt& targets)
+int ProjectManager::AddMultipleFilesToProject(const wxArrayString& filelist, cbProject* project,
+                                              wxArrayInt& targets)
 {
-    wxProgressDialog progress(_("Project Manager"), _("Please wait while adding files to project..."), filelist.GetCount(), Manager::Get()->GetAppFrame());
-
     if (!project)
         project = GetActiveProject();
 
-    if (project)
+    if (!project)
+        return 0;
+
+    if (SetupTargets(targets, project, m_ui))
     {
+        wxStopWatch timer;
+
+        wxProgressDialog progress(_("Project Manager"),
+                                  _("Please wait while adding files to project..."),
+                                  filelist.GetCount(),
+                                  Manager::Get()->GetAppFrame());
+
         project->BeginAddFiles();
+
+        wxStopWatch updateProgressTimer;
 
         wxArrayString addedFiles; // to know which files were added successfully
         for (unsigned int i = 0; i < filelist.GetCount(); ++i)
         {
             if (DoAddFileToProject(filelist[i], project, targets) != 0)
                 addedFiles.Add(filelist[i]);
-            progress.Update(i);
+
+            if ((i % 256 == 0) && (updateProgressTimer.Time() >= 100))
+            {
+                progress.Update(i);
+                updateProgressTimer.Start();
+            }
         }
+        progress.Update(filelist.GetCount());
 
         if (addedFiles.GetCount() != 0)
         {
@@ -804,6 +837,14 @@ int ProjectManager::AddMultipleFilesToProject(const wxArrayString& filelist, cbP
         }
 
         project->EndAddFiles();
+
+        const long time = timer.Time();
+        if (time >= 100)
+        {
+            LogManager *log = Manager::Get()->GetLogManager();
+            log->Log(wxString::Format(_("ProjectManager::AddMultipleFilesToProject took: %.3f seconds for %d files."),
+                                      time / 1000.0f, int(addedFiles.GetCount())));
+        }
     }
 
     return targets.GetCount();
@@ -859,7 +900,10 @@ bool ProjectManager::AddProjectDependency(cbProject* base, cbProject* dependsOn)
         arr->Add(dependsOn);
         if (m_pWorkspace)
             m_pWorkspace->SetModified(true);
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("%s now depends on %s (%lu deps)"), base->GetTitle().wx_str(), dependsOn->GetTitle().wx_str(), static_cast<unsigned long>(arr->GetCount())));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("%s now depends on %s (%zu deps)",
+                                                                   base->GetTitle(),
+                                                                   dependsOn->GetTitle(),
+                                                                   arr->GetCount()));
     }
     return true;
 }
@@ -876,7 +920,10 @@ void ProjectManager::RemoveProjectDependency(cbProject* base, cbProject* doesNot
     ProjectsArray* arr = it->second;
     arr->Remove(doesNotDependOn);
 
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("%s now does not depend on %s (%lu deps)"), base->GetTitle().wx_str(), doesNotDependOn->GetTitle().wx_str(), static_cast<unsigned long>(arr->GetCount())));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("%s now does not depend on %s (%lu deps)",
+                                              base->GetTitle(),
+                                              doesNotDependOn->GetTitle(),
+                                              arr->GetCount()));
     // if it was the last dependency, delete the array
     if (!arr->GetCount())
     {
@@ -941,7 +988,7 @@ void ProjectManager::RemoveProjectFromAllDependencies(cbProject* base)
         else
             ++it;
     }
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("Removed %s from all deps"), base->GetTitle().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Removed %s from all deps", base->GetTitle()));
 }
 
 const ProjectsArray* ProjectManager::GetDependenciesForProject(cbProject* base)
@@ -1001,8 +1048,6 @@ void ProjectManager::RemoveFileFromProject(ProjectFile *pfile, cbProject* projec
     evt.SetProject(project);
     evt.SetString(filename);
     Manager::Get()->GetPluginManager()->NotifyPlugins(evt);
-
-    Manager::Get()->GetLogManager()->DebugLog(_T("Removed ") + filename + _T(" from ") + project->GetTitle());
 }
 
 bool ProjectManager::BeginLoadingProject()

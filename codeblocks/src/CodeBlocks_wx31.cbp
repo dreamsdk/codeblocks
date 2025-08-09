@@ -2,17 +2,18 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="Code::Blocks wx3.1.x" />
+		<Option title="Code::Blocks wx3.1.x (32 bit)" />
 		<Option default_target="src" />
-		<Option compiler="gnu_gcc_compiler_32-bit" />
+		<Option compiler="gcc" />
 		<Build>
 			<Target title="tinyXML">
 				<Option output="devel31/txml" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-DEXPORT_LIB" />
 					<Add directory="include/tinyxml" />
 				</Compiler>
 			</Target>
@@ -20,7 +21,7 @@
 				<Option output="$(TARGET_OBJECT_DIR)/autorevision" prefix_auto="1" extension_auto="1" />
 				<Option object_output=".objs31" />
 				<Option type="1" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="-v +wx +int +t .. include/autorevision.h" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
@@ -36,7 +37,7 @@
 				<Option working_dir="tools/ConsoleRunner" />
 				<Option object_output=".objs31" />
 				<Option type="1" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-Os" />
@@ -47,37 +48,10 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-fno-inline" />
+					<Add option="-DEXPORT_LIB" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/squirrel" />
-				</Compiler>
-			</Target>
-			<Target title="Squirrel std lib">
-				<Option output="devel31/sqstdlib" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
-				<Option object_output=".objs31" />
-				<Option external_deps="devel31/libsquirrel.a;" />
-				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
-				<Compiler>
-					<Add option="-fno-inline" />
-					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqstdlib" />
-				</Compiler>
-			</Target>
-			<Target title="SqPlus">
-				<Option output="devel31/sqplus" prefix_auto="1" extension_auto="1" />
-				<Option working_dir="" />
-				<Option object_output=".objs31" />
-				<Option external_deps="devel31/libsquirrel.a;devel31/libsqstdlib.a;" />
-				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
-				<Compiler>
-					<Add option="-fno-inline" />
-					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
 				</Compiler>
 			</Target>
 			<Target title="scintilla">
@@ -85,7 +59,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-D__WX__" />
 					<Add option="-DWINVER=0x0501" />
@@ -111,9 +85,8 @@
 				<Option output="devel31/codeblocks" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="devel31" />
 				<Option object_output=".objs31" />
-				<Option external_deps="devel31/libtxml.a;devel31/libsquirrel.a;devel31/libsqstdlib.a;devel31/libsqplus.a;devel31/libwxscintilla_cb.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --verbose -p debug" />
 				<Option createStaticLib="1" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -124,27 +97,23 @@
 					<Add option="-DWXMAKINGDLL_SCI" />
 					<Add directory="include" />
 					<Add directory="include/tinyxml" />
-					<Add directory="include/scripting/bindings" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
-					<Add directory="include/mozilla_chardet" />
-					<Add directory="include/mozilla_chardet/mfbt" />
-					<Add directory="include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="include/mozilla_chardet/xpcom" />
-					<Add directory="include/mozilla_chardet/xpcom/base" />
-					<Add directory="include/mozilla_chardet/xpcom/glue" />
+					<Add directory="sdk/mozilla_chardet/include" />
+					<Add directory="sdk/mozilla_chardet/include/mfbt" />
+					<Add directory="sdk/mozilla_chardet/include/nsprpub/pr/include" />
+					<Add directory="sdk/mozilla_chardet/include/xpcom" />
+					<Add directory="sdk/mozilla_chardet/include/xpcom/base" />
+					<Add directory="sdk/mozilla_chardet/include/xpcom/glue" />
+					<Add directory="sdk/scripting/bindings" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
-					<Add option="-Wl,--export-all-symbols" />
 					<Add option="-Wl,--add-stdcall-alias" />
 					<Add option="-Wl,--enable-auto-import" />
 					<Add option="-Wl,--no-undefined" />
 					<Add library="shfolder" />
 					<Add library="txml" />
 					<Add library="wxscintilla_cb" />
-					<Add library="sqplus" />
-					<Add library="sqstdlib" />
 					<Add library="squirrel" />
 					<Add library="gdi32" />
 				</Linker>
@@ -152,7 +121,7 @@
 					<Add before="$(TARGET_OBJECT_DIR)\autorevision +wx +int +t .. include/autorevision.h" />
 					<Add after="cmd /c if not exist devel31\share\CodeBlocks mkdir devel31\share\CodeBlocks" />
 					<Add after="zip -jq9 devel31\share\CodeBlocks\manager_resources.zip sdk\resources\*.xrc" />
-					<Add after='cmd /c &quot;cd sdk\resources &amp; zip -0 -q ..\..\devel31\share\CodeBlocks\manager_resources.zip images\*.png images\8x8\*.png images\10x10\*.png images\12x12\*.png images\16x16\*.png images\20x20\*.png images\24x24\*.png images\28x28\*.png images\32x32\*.png images\40x40\*.png images\48x48\*.png images\56x56\*.png images\64x64\*.png&quot;' />
+					<Add after='cmd /c &quot;cd sdk\resources &amp; zip -0 -q ..\..\devel31\share\CodeBlocks\manager_resources.zip images\*.png images\8x8\*.png images\10x10\*.png images\12x12\*.png images\16x16\*.png images\20x20\*.png images\24x24\*.png images\28x28\*.png images\32x32\*.png images\40x40\*.png images\48x48\*.png images\56x56\*.png images\64x64\*.png images\svg\*.svg&quot;' />
 					<Mode after="always" />
 				</ExtraCommands>
 			</Target>
@@ -162,20 +131,13 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="0" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add directory="include" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
-					<Add directory="include/mozilla_chardet" />
-					<Add directory="include/mozilla_chardet/mfbt" />
-					<Add directory="include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="include/mozilla_chardet/xpcom" />
-					<Add directory="include/mozilla_chardet/xpcom/base" />
-					<Add directory="include/mozilla_chardet/xpcom/glue" />
 					<Add directory="exchndl/win32/include" />
 				</Compiler>
 				<ResourceCompiler>
@@ -185,7 +147,7 @@
 					<Add option="-Wl,--enable-auto-import" />
 					<Add option="-Wl,--no-undefined" />
 					<Add library="codeblocks" />
-					<Add library="exchndl" />
+					<Add library="exchndl.dll" />
 					<Add library="shfolder" />
 					<Add library="kernel32" />
 					<Add library="user32" />
@@ -220,7 +182,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -229,8 +191,6 @@
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add directory="include" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
-					<Add directory="include/scripting/bindings" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -253,7 +213,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -285,7 +245,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -314,7 +274,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs31" />
 				<Option type="2" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-DDEPSLIB_WINDOWS" />
 				</Compiler>
@@ -329,7 +289,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;devel31/libdepslib.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -339,7 +299,6 @@
 					<Add directory="include" />
 					<Add directory="plugins/compilergcc/depslib/src" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -354,7 +313,7 @@
 				<ExtraCommands>
 					<Add after="cmd /c if not exist devel31\share\CodeBlocks mkdir devel31\share\CodeBlocks" />
 					<Add after="zip -jq9 devel31\share\CodeBlocks\compiler.zip plugins\compilergcc\resources\manifest.xml plugins\compilergcc\resources\*.xrc" />
-					<Add after='cmd /c &quot;cd plugins\compilergcc\resources &amp; zip -0 -q ..\..\..\devel31\share\CodeBlocks\compiler.zip images\*.png images\16x16\*.png&quot;' />
+					<Add after='cmd /c &quot;cd plugins\compilergcc\resources &amp; zip -0 -q ..\..\..\devel31\share\CodeBlocks\compiler.zip images\*.png images\16x16\*.png images\20x20\*.png images\24x24\*.png images\28x28\*.png images\32x32\*.png images\40x40\*.png images\48x48\*.png images\56x56\*.png images\64x64\*.png images\svg\*.svg&quot;' />
 					<Add after="cmd /c if not exist devel31\share\CodeBlocks\compilers mkdir devel31\share\CodeBlocks\compilers" />
 					<Add after="cmd /c xcopy /D /Y plugins\compilergcc\resources\compilers\*.* devel31\share\CodeBlocks\compilers" />
 					<Mode after="always" />
@@ -366,7 +325,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -396,21 +355,14 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-DBUILDING_PLUGIN" />
-					<Add option="-DCC_NO_COLLAPSE_ITEM" />
 					<Add directory="include" />
-					<Add directory="include/mozilla_chardet" />
-					<Add directory="include/mozilla_chardet/mfbt" />
-					<Add directory="include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="include/mozilla_chardet/xpcom" />
-					<Add directory="include/mozilla_chardet/xpcom/base" />
-					<Add directory="include/mozilla_chardet/xpcom/glue" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -433,7 +385,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -463,7 +415,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -493,7 +445,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -523,7 +475,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -553,7 +505,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -561,12 +513,6 @@
 				<Compiler>
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add directory="include" />
-					<Add directory="include/mozilla_chardet" />
-					<Add directory="include/mozilla_chardet/mfbt" />
-					<Add directory="include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="include/mozilla_chardet/xpcom" />
-					<Add directory="include/mozilla_chardet/xpcom/base" />
-					<Add directory="include/mozilla_chardet/xpcom/glue" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -589,7 +535,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -598,7 +544,6 @@
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add directory="include" />
 					<Add directory="include/scripting/include" />
-					<Add directory="include/scripting/sqplus" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -621,7 +566,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -629,12 +574,6 @@
 				<Compiler>
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add directory="include" />
-					<Add directory="include/mozilla_chardet" />
-					<Add directory="include/mozilla_chardet/mfbt" />
-					<Add directory="include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="include/mozilla_chardet/xpcom" />
-					<Add directory="include/mozilla_chardet/xpcom/base" />
-					<Add directory="include/mozilla_chardet/xpcom/glue" />
 				</Compiler>
 				<Linker>
 					<Add option="-Wl,--enable-auto-image-base" />
@@ -657,7 +596,7 @@
 				<Option object_output=".objs31" />
 				<Option external_deps="devel31/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -688,34 +627,33 @@
 			</Environment>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All" targets="tinyXML;AutoRevision;ConsoleRunner;Squirrel;Squirrel std lib;SqPlus;scintilla;sdk;src;Abbreviations;AStyle;Autosave;Compiler depslib;Compiler;Debugger;Code-completion;Class wizard;Default MIME handler;Occurrences Highlighting;Open files list;Projects-workspaces importer;Scripted wizard;To-do;XP look &amp; feel;" />
+			<Add alias="All" targets="tinyXML;AutoRevision;ConsoleRunner;Squirrel;scintilla;sdk;src;Abbreviations;AStyle;Autosave;Compiler depslib;Compiler;Debugger;Code-completion;Class wizard;Default MIME handler;Occurrences Highlighting;Open files list;Projects-workspaces importer;Scripted wizard;To-do;XP look &amp; feel;" />
 			<Add alias="Core app &amp; plugins" targets="sdk;src;Abbreviations;AStyle;Autosave;Compiler depslib;Compiler;Debugger;Code-completion;Class wizard;Default MIME handler;Occurrences Highlighting;Open files list;Projects-workspaces importer;Scripted wizard;To-do;XP look &amp; feel;" />
-			<Add alias="Third-party libs" targets="tinyXML;AutoRevision;ConsoleRunner;Squirrel;Squirrel std lib;SqPlus;scintilla;Compiler depslib;" />
+			<Add alias="Third-party libs" targets="tinyXML;AutoRevision;ConsoleRunner;Squirrel;scintilla;Compiler depslib;" />
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
 			<Add option="-Winvalid-pch" />
+			<Add option="-std=gnu++11" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DCB_PRECOMP" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />
+			<Add directory="$(#WX31.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="sdk/wxscintilla/include" />
 			<Add directory="include/tinyxml" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#WX31)/lib/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31.include)" />
+			<Add directory="$(#WX31)/lib/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 		</ResourceCompiler>
 		<Linker>
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
@@ -839,6 +777,9 @@
 		<Unit filename="include/crc32.h">
 			<Option target="sdk" />
 		</Unit>
+		<Unit filename="include/cygwin.h">
+			<Option target="sdk" />
+		</Unit>
 		<Unit filename="include/debuggermanager.h">
 			<Option target="sdk" />
 		</Unit>
@@ -852,6 +793,9 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/editor_hooks.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="include/editor_utils.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/editorbase.h">
@@ -944,129 +888,6 @@
 		<Unit filename="include/misctreeitemdata.h">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/mozilla_chardet/CharDistribution.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/JpCntx.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Alignment.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Assertions.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Attributes.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Compiler.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Likely.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/NullPtr.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/TypedEnum.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Types.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/mfbt/mozilla/Util.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsBig5Prober.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsCharSetProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsCodingStateMachine.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsEUCJPProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsEUCKRProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsEUCTWProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsEscCharsetProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsGB2312Prober.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsHebrewProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsLatin1Prober.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsMBCSGroupProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsPkgInt.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsSBCSGroupProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsSBCharSetProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsSJISProber.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsUTF8Prober.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsUniversalDetector.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg_darwin.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg_linux.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg_openbsd.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg_win95.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prcpucfg_winnt.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prmem.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/nsprpub/pr/include/prtypes.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/xpcom/base/ErrorList.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/xpcom/base/nsError.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/xpcom/base/nscore.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/xpcom/glue/nsDebug.h">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="include/mozilla_chardet/xpcom/glue/nsMemory.h">
-			<Option target="sdk" />
-		</Unit>
 		<Unit filename="include/multiselectdlg.h">
 			<Option target="sdk" />
 		</Unit>
@@ -1121,118 +942,37 @@
 		<Unit filename="include/safedelete.h">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/scripting/bindings/sc_base_types.h">
-			<Option target="sdk" />
-		</Unit>
 		<Unit filename="include/scripting/bindings/sc_plugin.h">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/scripting/bindings/scriptbindings.h">
+		<Unit filename="include/scripting/bindings/sc_typeinfo_all.h">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/scripting/include/sqdbgserver.h">
-			<Option target="Squirrel" />
+		<Unit filename="include/scripting/bindings/sc_utils.h">
+			<Option target="sdk" />
 		</Unit>
-		<Unit filename="include/scripting/include/sqrdbg.h">
+		<Unit filename="include/scripting/include/sqconfig.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdaux.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdblob.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdio.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdmath.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdstring.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/sqstdsystem.h">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scripting/include/squirrel.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/SqPlusConst.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/SquirrelBindingsUtils.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/SquirrelBindingsUtilsWin32.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/SquirrelObject.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/SquirrelVM.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/sqplus.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqplus/sqplusWin32.h">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="include/scripting/sqstdlib/sqstdblobimpl.h">
-			<Option target="Squirrel std lib" />
-		</Unit>
-		<Unit filename="include/scripting/sqstdlib/sqstdstream.h">
-			<Option target="Squirrel std lib" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqarray.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqclass.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqclosure.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqcompiler.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqfuncproto.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqfuncstate.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqlexer.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqmem.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqobject.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqopcodes.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqpcheader.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqstate.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqstring.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqtable.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/squserdata.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/squtils.h">
-			<Option target="Squirrel" />
-		</Unit>
-		<Unit filename="include/scripting/squirrel/sqvm.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="include/scriptingmanager.h">
@@ -1288,6 +1028,9 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/workspaceloader.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="include/wxstringhash.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="include/xtra_res.h">
@@ -1460,16 +1203,16 @@
 		<Unit filename="plugins/codecompletion/insertclassmethoddlg.h">
 			<Option target="Code-completion" />
 		</Unit>
-		<Unit filename="plugins/codecompletion/nativeparser.cpp">
+		<Unit filename="plugins/codecompletion/parsemanager.cpp">
 			<Option target="Code-completion" />
 		</Unit>
-		<Unit filename="plugins/codecompletion/nativeparser.h">
+		<Unit filename="plugins/codecompletion/parsemanager.h">
 			<Option target="Code-completion" />
 		</Unit>
-		<Unit filename="plugins/codecompletion/nativeparser_base.cpp">
+		<Unit filename="plugins/codecompletion/parsemanager_base.cpp">
 			<Option target="Code-completion" />
 		</Unit>
-		<Unit filename="plugins/codecompletion/nativeparser_base.h">
+		<Unit filename="plugins/codecompletion/parsemanager_base.h">
 			<Option target="Code-completion" />
 		</Unit>
 		<Unit filename="plugins/codecompletion/parser/ccdebuginfo.cpp">
@@ -1662,6 +1405,12 @@
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/compilerMSVC10.h">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/compilerMSVC17.cpp">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/compilerMSVC17.h">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/compilerMSVC8.cpp">
@@ -1858,16 +1607,43 @@
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_dmd.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_gcc-mingw64.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_gcc-msys2-mingw32.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_gcc-msys2-mingw64.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_gcc-tdm-32.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_gcc-tdm-64.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_ldc.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_lm32-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_lm8-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_msp430-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_mw.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_null.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_pgifortran.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_powerpc-eabi.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_ppc-gcc.xml">
@@ -1882,6 +1658,12 @@
 		<Unit filename="plugins/compilergcc/resources/compilers/compiler_tricore-gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/compiler_zpu-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_android-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_arm-elf-gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
@@ -1889,6 +1671,9 @@
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_bcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_bfin-elf-gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_clang.xml">
@@ -1945,6 +1730,21 @@
 		<Unit filename="plugins/compilergcc/resources/compilers/options_g95.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc-mingw64.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc-msys2-mingw32.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc-msys2-mingw64.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc-tdm-32.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc-tdm-64.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
@@ -1975,6 +1775,12 @@
 		<Unit filename="plugins/compilergcc/resources/compilers/options_ldc.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_lm32-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_lm8-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_msp430-gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
@@ -1987,6 +1793,9 @@
 		<Unit filename="plugins/compilergcc/resources/compilers/options_msvctk.xml">
 			<Option target="Compiler" />
 		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_mw.xml">
+			<Option target="Compiler" />
+		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_null.xml">
 			<Option target="Compiler" />
 		</Unit>
@@ -1994,6 +1803,9 @@
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_pgifortran.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_powerpc-eabi.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_ppc-gcc.xml">
@@ -2006,6 +1818,9 @@
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/compilers/options_tricore-gcc.xml">
+			<Option target="Compiler" />
+		</Unit>
+		<Unit filename="plugins/compilergcc/resources/compilers/options_zpu-gcc.xml">
 			<Option target="Compiler" />
 		</Unit>
 		<Unit filename="plugins/compilergcc/resources/manifest.xml">
@@ -2281,12 +2096,6 @@
 		<Unit filename="plugins/scriptedwizard/resources/d/wizard.script">
 			<Option target="Scripted wizard" />
 		</Unit>
-		<Unit filename="plugins/scriptedwizard/resources/dc/wizard.script">
-			<Option target="Scripted wizard" />
-		</Unit>
-		<Unit filename="plugins/scriptedwizard/resources/dc/wizard.xrc">
-			<Option target="Scripted wizard" />
-		</Unit>
 		<Unit filename="plugins/scriptedwizard/resources/directx/wizard.script">
 			<Option target="Scripted wizard" />
 		</Unit>
@@ -2440,6 +2249,12 @@
 		<Unit filename="plugins/todo/resources/settings.xrc">
 			<Option target="To-do" />
 		</Unit>
+		<Unit filename="plugins/todo/todo_parser.cpp">
+			<Option target="To-do" />
+		</Unit>
+		<Unit filename="plugins/todo/todo_parser.h">
+			<Option target="To-do" />
+		</Unit>
 		<Unit filename="plugins/todo/todolist.cpp">
 			<Option target="To-do" />
 		</Unit>
@@ -2480,6 +2295,9 @@
 			<Option target="src" />
 		</Unit>
 		<Unit filename="scripts/tests/script_test_plugin.script">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="scripts/tests/sdk_test.script">
 			<Option target="src" />
 		</Unit>
 		<Unit filename="scripts/tests/test_base.script">
@@ -2588,6 +2406,9 @@
 		<Unit filename="sdk/crc32.cpp">
 			<Option target="sdk" />
 		</Unit>
+		<Unit filename="sdk/cygwin.cpp">
+			<Option target="sdk" />
+		</Unit>
 		<Unit filename="sdk/debuggermanager.cpp">
 			<Option target="sdk" />
 		</Unit>
@@ -2601,6 +2422,9 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/editor_hooks.cpp">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/editor_utils.cpp">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/editorbase.cpp">
@@ -2670,6 +2494,129 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/menuitemsmanager.cpp">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/CharDistribution.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/JpCntx.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Alignment.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Assertions.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Attributes.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Compiler.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Likely.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/NullPtr.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/TypedEnum.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Types.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/mfbt/mozilla/Util.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsBig5Prober.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsCharSetProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsCodingStateMachine.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsEUCJPProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsEUCKRProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsEUCTWProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsEscCharsetProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsGB2312Prober.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsHebrewProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsLatin1Prober.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsMBCSGroupProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsPkgInt.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsSBCSGroupProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsSBCharSetProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsSJISProber.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsUTF8Prober.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsUniversalDetector.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg_darwin.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg_linux.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg_openbsd.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg_win95.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prcpucfg_winnt.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prmem.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/nsprpub/pr/include/prtypes.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/xpcom/base/ErrorList.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/xpcom/base/nsError.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/xpcom/base/nscore.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/xpcom/glue/nsDebug.h">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/mozilla_chardet/include/xpcom/glue/nsMemory.h">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/mozilla_chardet/src/Big5Freq.tab">
@@ -2850,12 +2797,6 @@
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/resources/generic_multiline_notes.xrc">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="sdk/resources/get_global_uservar.xrc">
-			<Option target="sdk" />
-		</Unit>
-		<Unit filename="sdk/resources/global_uservars.xrc">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/resources/lexers/lexer_A68k.sample">
@@ -3233,9 +3174,6 @@
 		<Unit filename="sdk/scripting/bindings/sc_consts.cpp">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="sdk/scripting/bindings/sc_dialog.cpp">
-			<Option target="sdk" />
-		</Unit>
 		<Unit filename="sdk/scripting/bindings/sc_globals.cpp">
 			<Option target="sdk" />
 		</Unit>
@@ -3251,52 +3189,52 @@
 		<Unit filename="sdk/scripting/bindings/sc_util_dialogs.cpp">
 			<Option target="sdk" />
 		</Unit>
+		<Unit filename="sdk/scripting/bindings/sc_utils.cpp">
+			<Option target="sdk" />
+		</Unit>
 		<Unit filename="sdk/scripting/bindings/sc_wxtypes.cpp">
+			<Option target="sdk" />
+		</Unit>
+		<Unit filename="sdk/scripting/bindings/sc_tinyxml.cpp">
 			<Option target="sdk" />
 		</Unit>
 		<Unit filename="sdk/scripting/bindings/scriptbindings.cpp">
 			<Option target="sdk" />
 		</Unit>
-		<Unit filename="sdk/scripting/sqplus/SqPlus.cpp">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="sdk/scripting/sqplus/SquirrelBindingsUtils.cpp">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="sdk/scripting/sqplus/SquirrelBindingsUtilsWin32.cpp">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="sdk/scripting/sqplus/SquirrelObject.cpp">
-			<Option target="SqPlus" />
-		</Unit>
-		<Unit filename="sdk/scripting/sqplus/SquirrelVM.cpp">
-			<Option target="SqPlus" />
-		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdaux.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdblob.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/sqstdlib/sqstdblobimpl.h">
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdio.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdmath.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdrex.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdstream.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/sqstdlib/sqstdstream.h">
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdstring.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/sqstdlib/sqstdsystem.cpp">
-			<Option target="Squirrel std lib" />
+			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqapi.cpp">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqarray.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqbaselib.cpp">
@@ -3305,16 +3243,34 @@
 		<Unit filename="sdk/scripting/squirrel/sqclass.cpp">
 			<Option target="Squirrel" />
 		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqclass.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqclosure.h">
+			<Option target="Squirrel" />
+		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqcompiler.cpp">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqcompiler.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqdebug.cpp">
 			<Option target="Squirrel" />
 		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqfuncproto.h">
+			<Option target="Squirrel" />
+		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqfuncstate.cpp">
 			<Option target="Squirrel" />
 		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqfuncstate.h">
+			<Option target="Squirrel" />
+		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqlexer.cpp">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqlexer.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqmem.cpp">
@@ -3323,13 +3279,40 @@
 		<Unit filename="sdk/scripting/squirrel/sqobject.cpp">
 			<Option target="Squirrel" />
 		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqobject.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqopcodes.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqpcheader.h">
+			<Option target="Squirrel" />
+		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqstate.cpp">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqstate.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqstring.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqtable.cpp">
 			<Option target="Squirrel" />
 		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqtable.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/squserdata.h">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/squtils.h">
+			<Option target="Squirrel" />
+		</Unit>
 		<Unit filename="sdk/scripting/squirrel/sqvm.cpp">
+			<Option target="Squirrel" />
+		</Unit>
+		<Unit filename="sdk/scripting/squirrel/sqvm.h">
 			<Option target="Squirrel" />
 		</Unit>
 		<Unit filename="sdk/scriptingmanager.cpp">
@@ -4085,6 +4068,18 @@
 		<Unit filename="src/dlgaboutplugin.h">
 			<Option target="src" />
 		</Unit>
+		<Unit filename="src/editprojectglobsdlg.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/editprojectglobsdlg.h">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/manageglobsdlg.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/manageglobsdlg.h">
+			<Option target="src" />
+		</Unit>
 		<Unit filename="src/editkeywordsdlg.cpp">
 			<Option target="src" />
 		</Unit>
@@ -4137,14 +4132,6 @@
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/notebookstyles.h">
-			<Option target="src" />
-		</Unit>
-		<Unit filename="src/prefix.cpp">
-			<Option compile="0" />
-			<Option link="0" />
-			<Option target="src" />
-		</Unit>
-		<Unit filename="src/prefix.h">
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/printdlg.cpp">
@@ -4211,6 +4198,12 @@
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/resources/env_settings.xrc">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/resources/get_global_uservar.xrc">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/resources/global_uservars.xrc">
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/resources/ia64.manifest">
@@ -4289,6 +4282,12 @@
 		<Unit filename="src/threadsdlg.h">
 			<Option target="src" />
 		</Unit>
+		<Unit filename="src/uservardlgs.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/uservardlgs.h">
+			<Option target="src" />
+		</Unit>
 		<Unit filename="src/virtualbuildtargetsdlg.cpp">
 			<Option target="src" />
 		</Unit>
@@ -4352,6 +4351,12 @@
 		<Unit filename="wxsmith/debuggersettingspanel.wxs">
 			<Option target="src" />
 		</Unit>
+		<Unit filename="wxsmith/editprojectglobsdlg.wxs">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="wxsmith/manageglobsdlg.wxs">
+			<Option target="src" />
+		</Unit>
 		<Unit filename="wxsmith/goto_file.wxs">
 			<Option target="src" />
 		</Unit>
@@ -4376,6 +4381,8 @@
 					<wxPanel wxs="wxsmith/debuggersettingscommonpanel.wxs" src="src/debuggersettingscommonpanel.cpp" hdr="src/debuggersettingscommonpanel.h" fwddecl="0" i18n="1" name="DebuggerSettingsCommonPanel" language="CPP" />
 					<wxDialog wxs="wxsmith/goto_file.wxs" src="src/goto_file.cpp" hdr="src/goto_file.h" fwddecl="1" i18n="1" name="GotoFile" language="CPP" />
 					<wxDialog wxs="plugins/codecompletion/wxsmith/goto_function.wxs" src="plugins/codecompletion/gotofunctiondlg.cpp" hdr="plugins/codecompletion/gotofunctiondlg.h" fwddecl="1" i18n="1" name="GotoFunctionDlg" language="CPP" />
+					<wxDialog wxs="wxsmith/manageglobsdlg.wxs" src="src/manageglobsdlg.cpp" hdr="src/manageglobsdlg.h" fwddecl="0" i18n="1" name="ManageGlobsDlg" language="CPP" />
+					<wxDialog wxs="wxsmith/editprojectglobsdlg.wxs" src="src/editprojectglobsdlg.cpp" hdr="src/editprojectglobsdlg.h" fwddecl="0" i18n="1" name="EditProjectGlobsDlg" language="CPP" />
 				</resources>
 			</wxsmith>
 		</Extensions>

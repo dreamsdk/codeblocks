@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxschecklistbox.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxschecklistbox.cpp $
+* $Revision: 13547 $
+* $Id: wxschecklistbox.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxschecklistbox.cpp $
 */
 
 #include <wx/defs.h> // to have wxUSE_CHECKLISTBOX defined in the checklst.h header
@@ -93,7 +93,7 @@ void wxsCheckListBox::OnBuildCreatingCode()
 }
 
 
-wxObject* wxsCheckListBox::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsCheckListBox::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxCheckListBox* Preview = new wxCheckListBox(Parent,GetId(),Pos(Parent),Size(Parent),0,0,Style());
     for ( size_t i = 0; i < ArrayChoices.GetCount(); ++i )
@@ -104,10 +104,10 @@ wxObject* wxsCheckListBox::OnBuildPreview(wxWindow* Parent,long Flags)
             Preview->Check(Val);
         }
     }
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsCheckListBox::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsCheckListBox::OnEnumWidgetProperties(cb_unused long _Flags)
 {
-    WXS_ARRAYSTRINGCHECK(wxsCheckListBox,ArrayChoices,ArrayChecks,_("Choices"),_T("content"),_T("item"));
+    WXS_ARRAYSTRINGCHECK(wxsCheckListBox,ArrayChoices,ArrayChecks, _("Choices"), "content", "item");
 }

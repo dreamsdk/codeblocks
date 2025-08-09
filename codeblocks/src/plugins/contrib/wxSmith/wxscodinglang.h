@@ -15,15 +15,17 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10686 $
-* $Id: wxscodinglang.h 10686 2016-01-22 10:53:43Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxscodinglang.h $
+* $Revision: 12722 $
+* $Id: wxscodinglang.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxscodinglang.h $
 */
 
 #ifndef WXSCODINGLANG_H
 #define WXSCODINGLANG_H
 
 #include <wx/string.h>
+
+#include <cbplugin.h>
 
 /** \brief This enumeration contains all coding languages supported in wxSmith */
 enum wxsCodingLang
@@ -65,7 +67,7 @@ namespace wxsCodeMarks
     bool ValidateIdentifier(wxsCodingLang Lang,const wxString& Identifier);
 
     /** \brief Posting notification message about unknown coding language */
-    void Unknown(const wxString& Function,wxsCodingLang Lang);
+    PLUGIN_EXPORT void Unknown(const wxString& Function,wxsCodingLang Lang);
 }
 
 #endif

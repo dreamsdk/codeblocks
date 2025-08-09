@@ -1,0 +1,19 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="b">
+      <stop stop-color="#f0492d" offset="0"/>
+      <stop stop-color="#fbd6d0" offset="1"/>
+    </linearGradient>
+    <linearGradient id="c" x1="5.953" x2="1.588" y1="293" y2="289.3" gradientTransform="translate(-.265 .397)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffb854" offset="0"/>
+      <stop stop-color="#ffd59a" offset="1"/>
+    </linearGradient>
+    <linearGradient id="d" x1="7.276" x2="5.953" y1="290.4" y2="289.1" gradientTransform="matrix(1.5 0 0 1.5 -3.175 -139.2)" gradientUnits="userSpaceOnUse" xlink:href="#b"/>
+    <linearGradient id="f" x1="7.276" x2="5.953" y1="290.4" y2="289.1" gradientTransform="matrix(1.5 0 0 1.5 -3.175 -144.5)" gradientUnits="userSpaceOnUse" xlink:href="#b"/>
+  </defs>
+  <g transform="translate(0 -288.5)" stroke-width=".2646">
+    <path d="M.926 289.724v2.381c0 1.059 1.19 1.588 1.852 1.588h1.058v1.19h.265l1.852-1.852-1.852-1.852h-.265v1.19h-.529c-.529 0-1.058 0-1.058-.925l-.013-1.717c-.001-.265-.384-.532-.649-.532-.264 0-.661.264-.661.529z" fill="url(#c)" stroke="#945904"/>
+    <circle cx="6.747" cy="295.5" r=".794" fill="url(#d)" stroke="#b81a00"/>
+    <circle cx="6.747" cy="290.3" r=".794" fill="url(#f)" stroke="#b81a00"/>
+  </g>
+</svg>

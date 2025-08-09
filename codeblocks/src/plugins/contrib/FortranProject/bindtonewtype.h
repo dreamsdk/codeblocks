@@ -2,10 +2,10 @@
 #define BINDTONEWTYPE_H
 
 //(*Headers(BindtoNewType)
+#include <wx/dialog.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
-#include <wx/dialog.h>
 //*)
 
 class BindtoNewType: public wxDialog
@@ -16,9 +16,9 @@ class BindtoNewType: public wxDialog
 		virtual ~BindtoNewType();
 
 		//(*Declarations(BindtoNewType)
-		wxTextCtrl* tc_Fortran;
-		wxTextCtrl* tc_C;
 		wxTextCtrl* tc_BindC;
+		wxTextCtrl* tc_C;
+		wxTextCtrl* tc_Fortran;
 		//*)
 		void SetEditType(const wxString& ft, const wxString& bt, const wxString& ct);
 		wxString GetFortranType();
@@ -28,9 +28,9 @@ class BindtoNewType: public wxDialog
 	protected:
 
 		//(*Identifiers(BindtoNewType)
-		static const long ID_TEXTCTRL1;
-		static const long ID_TEXTCTRL2;
-		static const long ID_TEXTCTRL3;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_TEXTCTRL2;
+		static const wxWindowID ID_TEXTCTRL3;
 		//*)
 
 	private:

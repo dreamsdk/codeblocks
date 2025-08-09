@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11505 $
- * $Id: parser.cpp 11505 2018-10-20 14:29:48Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parser.cpp $
+ * $Revision: 13627 $
+ * $Id: parser.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/parser.cpp $
  */
 
 #include <sdk.h>
@@ -32,9 +32,10 @@
 
 #include "parser.h"
 #include "parserthreadedtask.h"
-
+#include "../parsemanager.h"    //(ph 2025/02/04)
+#include "annoyingdialog.h"     //(ph 2025/02/14)
 #include "../classbrowser.h"
-#include "../classbrowserbuilderthread.h"
+//unused - #include "../classbrowserbuilderthread.h"
 
 
 #ifndef CB_PRECOMP
@@ -58,12 +59,12 @@
         CCLogger::Get()->DebugLog(F(format, ##args))
     #define TRACE2(format, args...)
 #elif CC_PARSER_DEBUG_OUTPUT == 2
-    #define TRACE(format, args...)                                              \
-        do                                                                      \
-        {                                                                       \
-            if (g_EnableDebugTrace)                                             \
-                CCLogger::Get()->DebugLog(F(format, ##args));                   \
-        }                                                                       \
+    #define TRACE(format, args...)                            \
+        do                                                    \
+        {                                                     \
+            if (g_EnableDebugTrace)                           \
+                CCLogger::Get()->DebugLog(F(format, ##args)); \
+        }                                                     \
         while (false)
     #define TRACE2(format, args...) \
         CCLogger::Get()->DebugLog(F(format, ##args))
@@ -72,7 +73,9 @@
     #define TRACE2(format, args...)
 #endif
 
+// ----------------------------------------------------------------------------
 namespace ParserCommon
+// ----------------------------------------------------------------------------
 {
     static const int PARSER_BATCHPARSE_TIMER_DELAY           = 300;
     static const int PARSER_BATCHPARSE_TIMER_RUN_IMMEDIATELY = 10;
@@ -95,7 +98,9 @@ namespace ParserCommon
 
 }// namespace ParserCommon
 
+// ----------------------------------------------------------------------------
 Parser::Parser(wxEvtHandler* parent, cbProject* project) :
+    // ----------------------------------------------------------------------------
     m_Parent(parent),
     m_Project(project),
     m_UsingCache(false),
@@ -270,7 +275,9 @@ void Parser::AddParse(const wxString& filename)
     CC_LOCKER_TRACK_P_MTX_UNLOCK(ParserCommon::s_ParserMutex)
 }
 
+// ----------------------------------------------------------------------------
 bool Parser::Parse(const wxString& filename, bool isLocal, bool locked)
+// ----------------------------------------------------------------------------
 {
     // most ParserThreadOptions was copied from m_Options
     ParserThreadOptions opts;
@@ -323,6 +330,15 @@ bool Parser::Parse(const wxString& filename, bool isLocal, bool locked)
         // if m_NeedsReparse is true, thus means we need to load the file content from the editor
         // buffer instead of the hard disk.
         opts.loader = Manager::Get()->GetFileManager()->Load(filename, m_NeedsReparse);
+
+        //(ph 2024/01/26)
+        cbProject* pProject = Manager::Get()->GetProjectManager()->GetActiveProject();
+        if (pProject)
+        {
+            bool canLog = Manager::Get()->GetConfigManager("code_completion")->ReadBool("CCDebugLogging");
+            if (canLog and pProject->GetFileByFilename(filename, /*isRelative*/false))
+                CCLogger::Get()->DebugLog("Parsing: " + filename); //(ph 2024/01/26)
+        }
 
         // we are going to parse this file, so create a ParserThread
         ParserThread* thread = new ParserThread(this, filename, isLocal, opts, m_TokenTree);
@@ -634,10 +650,10 @@ void Parser::OnAllThreadsDone(CodeBlocksEvent& event)
 
         CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
 
-        parseEndLog.Printf(_T("Project '%s' parsing stage done (%lu total parsed files, ")
-                           _T("%lu tokens in %ld minute(s), %ld.%03ld seconds)."), prj.wx_str(),
-                           m_TokenTree ? static_cast<unsigned long>(m_TokenTree->GetFileMapSize()) : 0,
-                           m_TokenTree ? static_cast<unsigned long>(m_TokenTree->realsize())       : 0,
+        parseEndLog.Printf("Project '%s' parsing stage done (%zu total parsed files, "
+                           "%zu tokens in %ld minute(s), %ld.%03ld seconds).", prj,
+                           m_TokenTree ? m_TokenTree->GetFileMapSize() : 0,
+                           m_TokenTree ? m_TokenTree->realsize()       : 0,
                            (m_LastStopWatchTime / 60000),
                            (m_LastStopWatchTime / 1000) % 60,
                            (m_LastStopWatchTime % 1000) );
@@ -700,7 +716,9 @@ void Parser::OnReparseTimer(wxTimerEvent& event)
     event.Skip();
 }
 
+// ----------------------------------------------------------------------------
 void Parser::OnBatchTimer(cb_unused wxTimerEvent& event)
+// ----------------------------------------------------------------------------
 {
     if (Manager::IsAppShuttingDown())
         return;
@@ -902,20 +920,82 @@ void Parser::ReadOptions()
     wxUnusedVar(ft_dummy);
 }
 
-void Parser::WriteOptions()
+// ----------------------------------------------------------------------------
+void Parser::WriteOptions(bool classBrowserOnly)
+// ----------------------------------------------------------------------------
 {
+     // Global settings bug fix (ph 2025/02/12)
+     //https://forums.codeblocks.org/index.php/topic,25955 Hiccups while typing
+
+    // Assemble status to determine if a Parser or Project changed a global setting.
+    ProjectManager* pPrjMgr        = Manager::Get()->GetProjectManager();
+    ParseManager*   pParseMgr      = (ParseManager*)m_Parent;
+    ParserBase*     pTempParser    = pParseMgr->GetTempParser();
+    ParserBase*     pClosingParser = pParseMgr->GetClosingParser(); //see ParseManger::DeleteParser()
+    ParserBase*     pCurrentParser = &(pParseMgr->GetParser());     //aka: m_parser
+
+    bool isClosingParser  = pClosingParser != nullptr;
+    bool isClosingProject = pPrjMgr->IsClosingProject(); wxUnusedVar(isClosingProject);
+    bool isTempParser     = pTempParser == pCurrentParser;
+
+    bool globalOptionChanged = pParseMgr->GetOptsChangedByParser() or pParseMgr->GetOptsChangedByProject();
+
+    // **Debugging**
+    //bool useSmartSense    = m_Options.useSmartSense;
+    //bool parseWhileTyping =  m_Options.whileTyping;
+
+    // If this is a parser close, do not allow CB global settings writes.
+    bool allowGlobalUpdate = false;
+
+    // When not closing parser and CB globals were changed, write to .conf
+    if ( (not isClosingParser) and globalOptionChanged)
+        allowGlobalUpdate = true;
+
+    // Closing parsers are not allowed to write to CB globals.
+    //  CB Globals were already written when when user changed the setting.
+    if (isClosingParser)
+        allowGlobalUpdate = false;
+
+    // If no changes to the CB globals, no need to write
+    if (not globalOptionChanged)
+        allowGlobalUpdate = false; // no global settings have changed
+
+    // Don't write CB globals if this is for ClassBrowser options only. //(ph 2025/02/13)
+    if (classBrowserOnly)
+        allowGlobalUpdate = false;
+
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("code_completion"));
 
-    // Page "Code Completion"
-    cfg->Write(_T("/use_SmartSense"),                m_Options.useSmartSense);
-    cfg->Write(_T("/while_typing"),                  m_Options.whileTyping);
+    // ----------------------------------------------------------------------------
+    // set any user changed CB global settings for CodeCompletion
+    // ----------------------------------------------------------------------------
+    if (allowGlobalUpdate)
+    {
+        // Page "Code Completion"
+        cfg->Write(_T("/use_SmartSense"),                m_Options.useSmartSense);
+        cfg->Write(_T("/while_typing"),                  m_Options.whileTyping);
 
-    // Page "C / C++ parser"
-    cfg->Write(_T("/parser_follow_local_includes"),  m_Options.followLocalIncludes);
-    cfg->Write(_T("/parser_follow_global_includes"), m_Options.followGlobalIncludes);
-    cfg->Write(_T("/want_preprocessor"),             m_Options.wantPreprocessor);
-    cfg->Write(_T("/parse_complex_macros"),          m_Options.parseComplexMacros);
-    cfg->Write(_T("/platform_check"),                m_Options.platformCheck);
+        // Page "C / C++ parser"
+        cfg->Write(_T("/parser_follow_local_includes"),  m_Options.followLocalIncludes);
+        cfg->Write(_T("/parser_follow_global_includes"), m_Options.followGlobalIncludes);
+        cfg->Write(_T("/want_preprocessor"),             m_Options.wantPreprocessor);
+        cfg->Write(_T("/parse_complex_macros"),          m_Options.parseComplexMacros);
+        cfg->Write(_T("/platform_check"),                m_Options.platformCheck);
+
+        ShowGlobalChangeAnnoyingMsg(); // warn user to re-parse projects
+
+    }
+    // clean out any parser flags used to guard CB global settings
+    pParseMgr->SetOptsChangedByParser(nullptr);  //(ph 2025/02/12)
+    pParseMgr->SetOptsChangedByProject(nullptr); //(ph 2025/02/12)
+    pParseMgr->SetClosingParser(nullptr);
+    // if currrent parser == TempParser, force it to update, else the next
+    // display of the setting dialog will show TempParser stale cached settings.
+    if (isTempParser) pTempParser->ReadOptions();
+
+    // ----------------------------------------------------------------------------
+    // set any user changed ClassBrowser settings
+    // ----------------------------------------------------------------------------
 
     // Page "Symbol browser"
     cfg->Write(_T("/browser_show_inheritance"),      m_BrowserOptions.showInheritance);
@@ -929,6 +1009,32 @@ void Parser::WriteOptions()
     // Page "Documentation":
     // m_Options.storeDocumentation will be written by DocumentationPopup
 }
+// ----------------------------------------------------------------------------
+void Parser::ShowGlobalChangeAnnoyingMsg()
+// ----------------------------------------------------------------------------
+{
+    // Tell the user that global changes are not applied until projects are reparsed.
+    ParseManager* pParseMgr = (ParseManager*)m_Parent;
+
+    // Get number of active parsers (from m_ParserList)
+    std::unordered_map<cbProject*,ParserBase*>* pActiveParsers = pParseMgr->GetActiveParsers();
+
+    if (pActiveParsers->size() > 0)
+    {
+        wxString warningMsg;
+        warningMsg = _("The global settings change does not take effect\n"
+                       "until the projects are either reloaded or reparsed.\n\n"
+                       "You can selectively reparse projects by right clicking\n"
+                       "on the project title in the Workspace tree and selecting\n"
+                       "'Reparse current project'.");
+                   // << "Projects needing reparse:\n"
+                   // << projectNames;
+
+        AnnoyingDialog dlg(_("Global settings warning"), warningMsg, wxART_WARNING,
+                           AnnoyingDialog::OK);
+        dlg.ShowModal();
+    }//endif size
+}//end ShowGlobalChangeAnnoyingMsg
 
 void Parser::AddParserThread(cbThreadedTask* task)
 {

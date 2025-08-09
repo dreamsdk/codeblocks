@@ -1,0 +1,26 @@
+<svg width="16" height="16" version="1.1" viewBox="0 0 4.233 4.233" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <path id="a" d="m0-360 69.42 215.8 212-80.3-125.5 188.9 195 115.7-225.9 19.65 31.1 224.6-156.2-164.3-156.2 164.3 31.1-224.6-225.9-19.65 195-115.7-125.5-188.9 212 80.3z"/>
+    <path id="d" d="m0-210 54.86 134.5 144.9 10.61-111 93.74 34.67 141.1-123.4-76.56-123.4 76.56 34.67-141.1-111-93.74 144.9-10.61z"/>
+    <clipPath id="b">
+      <path d="M0 0v1.5h7V3H6zm6 0H3v3.5H0V3z"/>
+    </clipPath>
+    <use id="c" transform="scale(2.1)" xlink:href="#a"/>
+  </defs>
+  <g transform="translate(0 -292.8)">
+    <path d="m-0.265 293.3h5.821v2.91h-5.82z" fill="#012169" stroke-width=".0004725"/>
+    <path d="m-0.265 293.3 2.91 1.455m0-1.455-2.91 1.455" stroke="#fff" stroke-width=".2381"/>
+    <path transform="matrix(.4851 0 0 .4851 -.265 293.3)" d="m0 0 6 3m0-3-6 3" clip-path="url(#b)" stroke="#e4002b" stroke-width=".3273"/>
+    <path d="m1.19 293.3v1.698m-1.455-0.97h3.396" stroke="#fff" stroke-width=".3969"/>
+    <path d="m1.19 293.3v1.698m-1.455-0.97h3.396" stroke="#e4002b" stroke-width=".2381"/>
+    <path d="m-0.265 294.8h2.91v-1.455h0.971v1.94h-3.88z" fill="#012169" stroke-width=".0004725"/>
+    <g fill="#fff" stroke-width=".8182">
+      <use transform="matrix(.00058 0 0 .00058 -.265 293.3)" x="2520" y="3780" width="100%" height="100%" xlink:href="#c"/>
+      <use transform="matrix(.00058 0 0 .00058 -.794 293.3)" x="7560" y="4200" width="100%" height="100%" xlink:href="#a"/>
+      <use transform="matrix(.00058 0 0 .00058 -.53 293.3)" x="6300" y="2205" width="100%" height="100%" xlink:href="#a"/>
+      <use transform="matrix(.00058 0 0 .00058 -.794 293.3)" x="7560" y="840" width="100%" height="100%" xlink:href="#a"/>
+      <use transform="matrix(.00058 0 0 .00058 -.794 293.3)" x="8680" y="1869" width="100%" height="100%" xlink:href="#a"/>
+      <use transform="matrix(.00058 0 0 .00058 -.794 293.3)" x="8064" y="2730" width="100%" height="100%" xlink:href="#d"/>
+    </g>
+  </g>
+</svg>

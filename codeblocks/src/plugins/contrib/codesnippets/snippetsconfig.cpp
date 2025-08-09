@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetsconfig.cpp 11345 2018-03-23 00:40:30Z pecanh $
+// RCS-ID: $Id: snippetsconfig.cpp 12648 2022-01-13 20:06:39Z wh11204 $
 #ifdef WX_PRECOMP
     #include "wx_pch.h"
 #endif
@@ -80,11 +80,11 @@ CodeSnippetsConfig::CodeSnippetsConfig()
     AppVersion SnippetVersion;
 
     AppName = wxEmptyString;
-    pMainFrame = 0;
-    m_pMenuBar = 0;
-    pSnippetsWindow = 0;
-    pSnippetsTreeCtrl = 0;
-    pSnippetsSearchCtrl = 0;
+    pMainFrame = nullptr;
+    m_pMenuBar = nullptr;
+    pSnippetsWindow = nullptr;
+    pSnippetsTreeCtrl = nullptr;
+    pSnippetsSearchCtrl = nullptr;
     m_bIsPlugin = 0;
 	SettingsExternalEditor  = wxEmptyString;
 	SettingsSnippetsCfgPath = wxEmptyString;
@@ -96,7 +96,7 @@ CodeSnippetsConfig::CodeSnippetsConfig()
 	SettingsToolTipsOption = true;
 	m_SearchConfig.caseSensitive = false;
 	m_SearchConfig.scope = SCOPE_BOTH;
-    pSnipImages = 0;
+    pSnipImages = nullptr;
     nEditDlgWidth = 0;
     nEditDlgHeight = 0;
     bEditDlgMaximized = false;
@@ -108,9 +108,9 @@ CodeSnippetsConfig::CodeSnippetsConfig()
     //-m_sWindowHandle = wxEmptyString;
     m_SettingsWindowState = wxT("Floating");
     m_bWindowStateChanged = false;
-    m_pOpenFilesList = 0;
-    m_pThreadSearchPlugin = 0;
-    m_pDragScrollPlugin = 0;
+    m_pOpenFilesList = nullptr;
+    m_pThreadSearchPlugin = nullptr;
+    m_pDragScrollPlugin = nullptr;
     g_lKeepAlivePid = 0;
     m_AppParent = wxEmptyString;
 

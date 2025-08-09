@@ -59,19 +59,21 @@ function BeginWizard()
     local wiz_type = Wizard.GetWizardType();
     if (wiz_type == wizProject)
     {
-        local intro_msg = _T("Welcome to the new TriCore project wizard!\n" +
-                             "This wizard will guide you to create a new TriCore project.\n\n" +
-                             "When you 're ready to proceed, please click \"Next\"...");
+        local intro_msg = _("Welcome to the new TriCore project wizard!\n") +
+                          _("This wizard will guide you to create a new TriCore project.\n\n") +
+                          _("When you're ready to proceed, please click \"Next\"...");
+
         Wizard.AddInfoPage(_T("TriCoreIntro"), intro_msg);
         Wizard.AddProjectPathPage();
-        Wizard.AddCompilerPage(_T("GNU TriCore GCC Compiler"), _T("tricore*"), false, false);
+        Wizard.AddCompilerPage(_("GNU TriCore GCC Compiler"), _T("tricore*"), false, false);
         Wizard.AddPage(_T("processorChoice"));
     }
     else if (wiz_type == wizTarget)
     {
-        local intro_msg = _T("Welcome to the new TriCore target wizard!\n" +
-                             "This wizard will generate a build target for flash version of your program.\n\n" +
-                             "When you 're ready to proceed, please click \"Next\"...");
+        local intro_msg = _("Welcome to the new TriCore target wizard!\n") +
+                          _("This wizard will generate a build target for flash version of your program.\n\n") +
+                          _("When you're ready to proceed, please click \"Next\"...");
+
         Wizard.AddInfoPage(_T("TriCoreIntro"), intro_msg);
         Wizard.AddPage(_T("processorChoice"));
     }
@@ -117,13 +119,18 @@ function CheckOptions(options)
             Processor_t = TriCoreConfig[Processor.tostring()];
             if (Processor.Matches(_T("tc1765")) || Processor.Matches(_T("tc1775")) || Processor.Matches(_T("tc1920")))
             {
-                ShowMessage(_T("Processor ") + Processor.Upper() + _T(" is not supported by this wizard. Please select one of the supported one."));
+                local msg = _("Processor $1 is not supported by this wizard. Please select one of the supported one.");
+                msg.Replace(_T("$1"), Processor.Upper());
+                ShowMessage(msg);
             }
             else
             {
                 if (!Board.IsEmpty())
                     Wizard.EnableWindow(_T("comboboxProc"), false);
-                ShowMessage(_T("For the Flash version of new build target ROM the processor ") + Processor.Upper() + _T(" will be used."));
+
+                local msg = _("For the Flash version of new build target ROM the processor $1 will be used.");
+                msg.Replace(_T("$1"), Processor.Upper());
+                ShowMessage(msg);
                 return true;
             }
         }
@@ -141,7 +148,7 @@ function OnClick_comboboxFlashType()
 {
     GetHardware();
     if (Processor.IsEmpty())
-        ShowMessage(_T("You must select a Processor"));
+        ShowMessage(_("You must select a Processor"));
     else
         GetFlashType();
 }
@@ -158,7 +165,11 @@ function GetFlashType()
 {
     FlashType = Wizard.GetComboboxStringSelection(_T("comboboxFlashType"));
     if (Processor_t.flashtype.Find(FlashType) == -1)
-        ShowMessage(Processor.Upper() + _T(" ") + _T("does not support this type of flash."));
+    {
+        local msg = _("$1 does not support this type of flash.");
+        msg.Replace(_T("$1"), Processor.Upper());
+        ShowMessage(msg);
+    }
 }
 
 function OnLeave_processorChoice(fwd)
@@ -315,8 +326,10 @@ function SetupTarget(target,is_debug)
         target.SetVar(_T("FLASHTYPE"), FlashType, false);
         if (!FlashType.Matches(_T("intern")))
         {
-            LogWarning(_T("Please adjust in ") + Processor_t.linkerfile_rom + _T(" the symbol __EBMCFG for 16-Bit or 32-Bit access of external Flash."));
-            project.SetNotes(_T("Please look at the tab Code::Blocks in the 'Log & others' console to see how to do adjust your settings for using external Flash."));
+            local msg = _("Please adjust in $1 the symbol __EBMCFG for 16-Bit or 32-Bit access of external Flash.");
+            msg.Replace(_T("$1"), Processor_t.linkerfile_rom);
+            LogWarning(msg);
+            project.SetNotes(_("Please look at the tab Code::Blocks in the 'Log & others' console to see how to do adjust your settings for using external Flash."));
             project.ShowNotes(true,false);
             project.SetShowNotesOnLoad(true);
         }
@@ -358,10 +371,10 @@ function SubstituteMacros(buffer)
 	// handle [IF] / [ENDIF] pairs
 	buffer.Replace(_T("[!PXROS_NAME!]"), _T("") + _T("test"));
 
-	buffer.Replace(_T("[!NOW!]"), ReplaceMacros(_T("$(NOW_L)"), true));
-	buffer.Replace(_T("[!TODAY!]"), ReplaceMacros(_T("$(TODAY)"), true));
-	buffer.Replace(_T("[!PROJECTNAME!]"), ReplaceMacros(_T("$(PROJECTNAME)"), true));
-	buffer.Replace(_T("[!PROJECTDIR!]"), ReplaceMacros(_T("$(PROJECTDIR)"), true));
+	buffer.Replace(_T("[!NOW!]"), ReplaceMacros(_T("$(NOW_L)")));
+	buffer.Replace(_T("[!TODAY!]"), ReplaceMacros(_T("$(TODAY)")));
+	buffer.Replace(_T("[!PROJECTNAME!]"), ReplaceMacros(_T("$(PROJECTNAME)")));
+	buffer.Replace(_T("[!PROJECTDIR!]"), ReplaceMacros(_T("$(PROJECTDIR)")));
 
 	return buffer;
 }

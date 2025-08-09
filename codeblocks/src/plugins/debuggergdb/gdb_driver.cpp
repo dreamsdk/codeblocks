@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11876 $
- * $Id: gdb_driver.cpp 11876 2019-10-10 23:13:33Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/gdb_driver.cpp $
+ * $Revision: 13627 $
+ * $Id: gdb_driver.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/gdb_driver.cpp $
  */
 
 #include <sdk.h>
@@ -12,17 +12,14 @@
 #include "gdb_commands.h"
 #include "debuggeroptionsdlg.h"
 #include "debuggerstate.h"
+
 #include <cbdebugger_interfaces.h>
-#include <manager.h>
-#include <macrosmanager.h>
 #include <configmanager.h>
+#include <cygwin.h>
 #include <globals.h>
 #include <infowindow.h>
-
-#ifdef __WXMSW__
-// for Registry detection of Cygwin
-#include "wx/msw/wrapwin.h"     // Wraps windows.h
-#endif
+#include <manager.h>
+#include <macrosmanager.h>
 
 // the ">>>>>>" is a hack: sometimes, especially when watching uninitialized char*
 // some random control codes in the stream (like 'delete') will mess-up our prompt and the debugger
@@ -33,8 +30,8 @@
 #define FULL_GDB_PROMPT _T(">>>>>>") GDB_PROMPT
 
 //[Switching to thread 2 (Thread 1082132832 (LWP 12298))]#0  0x00002aaaac5a2aca in pthread_cond_wait@@GLIBC_2.3.2 () from /lib/libpthread.so.0
-static wxRegEx reThreadSwitch(_T("^\\[Switching to thread .*\\]#0[ \t]+(0x[A-Fa-f0-9]+) in (.*) from (.*)"));
-static wxRegEx reThreadSwitch2(_T("^\\[Switching to thread .*\\]#0[ \t]+(0x[A-Fa-f0-9]+) in (.*) from (.*):([0-9]+)"));
+static wxRegEx reThreadSwitch(_T("^\\[Switching to thread .*\\]#0[[:blank:]]+(0x[A-Fa-f0-9]+) in (.*) from (.*)"));
+static wxRegEx reThreadSwitch2(_T("^\\[Switching to thread .*\\]#0[[:blank:]]+(0x[A-Fa-f0-9]+) in (.*) from (.*):([0-9]+)"));
 
 // Regular expresion for breakpoint. wxRegEx don't want to recognize '?' command, so a bit more general rule is used
 // here.
@@ -56,30 +53,29 @@ static wxRegEx reCatchThrowNoFile(_T("^Catchpoint ([0-9]+) \\(exception thrown\\
 
 // Pending breakpoint "C:/Devel/libs/irr_svn/source/Irrlicht/CSceneManager.cpp:1077" resolved
 #ifdef __WXMSW__
-static wxRegEx rePendingFound(_T("^Pending[ \t]+breakpoint[ \t]+[\"]+([A-Za-z]:)([^:]+):([0-9]+)\".*"));
+static wxRegEx rePendingFound(_T("^Pending[[:blank:]]+breakpoint[[:blank:]]+[\"]+([A-Za-z]:)([^:]+):([0-9]+)\".*"));
 #else
-static wxRegEx rePendingFound(_T("^Pending[ \t]+breakpoint[ \t]+[\"]+([^:]+):([0-9]+)\".*"));
+static wxRegEx rePendingFound(_T("^Pending[[:blank:]]+breakpoint[[:blank:]]+[\"]+([^:]+):([0-9]+)\".*"));
 #endif
 // Breakpoint 2, irr::scene::CSceneManager::getSceneNodeFromName (this=0x3fa878, name=0x3fbed8 "MainLevel", start=0x3fa87c) at CSceneManager.cpp:1077
-static wxRegEx rePendingFound1(_T("^Breakpoint[ \t]+([0-9]+),.*"));
+static wxRegEx rePendingFound1(_T("^Breakpoint[[:blank:]]+([0-9]+),.*"));
 
 // Temporary breakpoint 2, main () at /path/projects/tests/main.cpp:136
-static wxRegEx reTempBreakFound(wxT("^[Tt]emporary[ \t]breakpoint[ \t]([0-9]+),.*"));
+static wxRegEx reTempBreakFound(wxT("^[Tt]emporary[[:blank:]]breakpoint[[:blank:]]([0-9]+),.*"));
 
 
 // [Switching to Thread -1234655568 (LWP 18590)]
 // [New Thread -1234655568 (LWP 18590)]
-static wxRegEx reChildPid1(_T("Thread[ \t]+[xA-Fa-f0-9-]+[ \t]+\\(LWP ([0-9]+)\\)]"));
+static wxRegEx reChildPid1(_T("Thread[[:blank:]]+[xA-Fa-f0-9-]+[[:blank:]]+\\(LWP ([0-9]+)\\)]"));
 // MinGW GDB 6.8 and later
 // [New Thread 2684.0xf40] or [New thread 2684.0xf40]
-static wxRegEx reChildPid2(_T("\\[New [tT]hread[ \t]+[0-9]+\\.[xA-Fa-f0-9-]+\\]"));
+static wxRegEx reChildPid2(_T("\\[New [tT]hread[[:blank:]]+[0-9]+\\.[xA-Fa-f0-9-]+\\]"));
 
-static wxRegEx reInferiorExited(wxT("^\\[Inferior[ \\t].+[ \\t]exited normally\\]$"), wxRE_EXTENDED);
-static wxRegEx reInferiorExitedWithCode(wxT("^\\[[Ii]nferior[ \\t].+[ \\t]exited[ \\t]with[ \\t]code[ \\t]([0-9]+)\\]$"), wxRE_EXTENDED);
+static wxRegEx reInferiorExited(wxT("^\\[Inferior[[:blank:]].+[[:blank:]]exited normally\\]$"), wxRE_EXTENDED);
+static wxRegEx reInferiorExitedWithCode(wxT("^\\[[Ii]nferior[[:blank:]].+[[:blank:]]exited[[:blank:]]with[[:blank:]]code[[:blank:]]([0-9]+)\\]$"), wxRE_EXTENDED);
 
 GDB_driver::GDB_driver(DebuggerGDB* plugin) :
     DebuggerDriver(plugin),
-    m_CygwinPresent(false),
     m_BreakOnEntry(false),
     m_ManualBreakOnEntry(false),
     m_IsStarted(false),
@@ -91,6 +87,9 @@ GDB_driver::GDB_driver(DebuggerGDB* plugin) :
     //ctor
     m_needsUpdate = false;
     m_forceUpdate = false;
+
+    if (platform::windows)
+        m_CygwinPresent = cbIsDetectedCygwinCompiler();
 }
 
 GDB_driver::~GDB_driver()
@@ -107,7 +106,17 @@ wxString GDB_driver::GetCommandLine(const wxString& debugger, const wxString& de
     cmd << _T(" -fullname");    // report full-path filenames when breaking
     cmd << _T(" -quiet");       // don't display version on startup
     cmd << wxT(" ") << userArguments;
-    cmd << _T(" -args ") << debuggee;
+
+    wxString actualDebuggee;
+    if (platform::windows && m_CygwinPresent)
+    {
+        actualDebuggee = debuggee;
+        cbGetCygwinPathFromWindowsPath(actualDebuggee);
+    }
+    else
+        actualDebuggee = debuggee;
+
+    cmd << _T(" -args ") << actualDebuggee;
     return cmd;
 }
 
@@ -133,32 +142,33 @@ void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebuggin
 {
     // default initialization
 
-    // for the possibility that the program to be debugged is compiled under Cygwin
-    if (platform::windows)
-        DetectCygwinMount();
-
     // make sure we 're using the prompt that we know and trust ;)
-    QueueCommand(new DebuggerCmd(this, wxString(_T("set prompt ")) + FULL_GDB_PROMPT));
+    QueueCommand(new DebuggerCmd(this, wxString("set prompt ") + FULL_GDB_PROMPT));
 
     // debugger version
-    QueueCommand(new DebuggerCmd(this, _T("show version")));
+    QueueCommand(new DebuggerCmd(this, "show version"));
     // no confirmation
-    QueueCommand(new DebuggerCmd(this, _T("set confirm off")));
+    QueueCommand(new DebuggerCmd(this, "set confirm off"));
     // no wrapping lines
-    QueueCommand(new DebuggerCmd(this, _T("set width 0")));
+    QueueCommand(new DebuggerCmd(this, "set width 0"));
     // no pagination
-    QueueCommand(new DebuggerCmd(this, _T("set height 0")));
+    QueueCommand(new DebuggerCmd(this, "set height 0"));
     // allow pending breakpoints
-    QueueCommand(new DebuggerCmd(this, _T("set breakpoint pending on")));
+    QueueCommand(new DebuggerCmd(this, "set breakpoint pending on"));
     // show pretty function names in disassembly
-    QueueCommand(new DebuggerCmd(this, _T("set print asm-demangle on")));
+    QueueCommand(new DebuggerCmd(this, "set print asm-demangle on"));
     // unwind stack on signal
-    QueueCommand(new DebuggerCmd(this, _T("set unwindonsignal on")));
+    QueueCommand(new DebuggerCmd(this, "set unwindonsignal on"));
     // disable result string truncations
-    QueueCommand(new DebuggerCmd(this, wxString::Format(wxT("set print elements %d"), printElements)));
+    QueueCommand(new DebuggerCmd(this, wxString::Format("set print elements %d", printElements)));
+    // Make sure backtraces use absolute paths, so it is more reliable to find where the sources
+    // file when trying to open it in the editor.
+    QueueCommand(new DebuggerCmd(this, "set filename-display absolute"));
+    // Disable ANSI escape sequences, new in GDB 8.2
+    QueueCommand(new DebuggerCmd(this, "set style enabled off"));
 
     if (platform::windows && isConsole)
-        QueueCommand(new DebuggerCmd(this, _T("set new-console on")));
+        QueueCommand(new DebuggerCmd(this, "set new-console on"));
 
     flavour = m_pDBG->GetActiveConfigEx().GetDisassemblyFlavorCommand();
     QueueCommand(new DebuggerCmd(this, flavour));
@@ -167,7 +177,7 @@ void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebuggin
     {
         m_catchThrowIndex = -1;
         // catch exceptions
-        QueueCommand(new GdbCmd_SetCatch(this, wxT("throw"), &m_catchThrowIndex));
+        QueueCommand(new GdbCmd_SetCatch(this, "throw", &m_catchThrowIndex));
     }
 
     // pass user init-commands
@@ -185,7 +195,7 @@ void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebuggin
 
     // set arguments
     if (!m_Args.IsEmpty())
-        QueueCommand(new DebuggerCmd(this, _T("set args ") + m_Args));
+        QueueCommand(new DebuggerCmd(this, "set args " + m_Args));
 
     // Send additional gdb commands before establishing remote connection.
     // These are executed no matter if doing remote debugging or not.
@@ -204,7 +214,7 @@ void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebuggin
         for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
         {
             macrosManager->ReplaceMacros(initCmds[i]);
-            QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
+            QueueCommand(new DebuggerCmd(this, "shell " + initCmds[i]));
         }
     }
 
@@ -234,126 +244,17 @@ void GDB_driver::Prepare(bool isConsole, int printElements, const RemoteDebuggin
         for (unsigned int i = 0; i < initCmds.GetCount(); ++i)
         {
             macrosManager->ReplaceMacros(initCmds[i]);
-            QueueCommand(new DebuggerCmd(this, _T("shell ") + initCmds[i]));
+            QueueCommand(new DebuggerCmd(this, "shell " + initCmds[i]));
         }
     }
 }
-
-// Cygwin check code
-#ifdef __WXMSW__
-
-enum{ BUFSIZE = 64 };
-
-// routines to handle cygwin compiled programs on a Windows compiled C::B IDE
-void GDB_driver::DetectCygwinMount(void)
-{
-    LONG lRegistryAPIresult;
-    HKEY hKey_CU;
-    HKEY hKey_LM;
-    TCHAR szCygwinRoot[BUFSIZE];
-    DWORD dwBufLen=BUFSIZE*sizeof(TCHAR);
-
-    // checking if cygwin mounts are present under HKCU
-    lRegistryAPIresult = RegOpenKeyEx( HKEY_CURRENT_USER,
-                         TEXT("Software\\Cygnus Solutions\\Cygwin\\mounts v2"),
-                         0, KEY_QUERY_VALUE, &hKey_CU );
-    if ( lRegistryAPIresult == ERROR_SUCCESS )
-    {
-        // try to readback cygwin root (might not exist!)
-        lRegistryAPIresult = RegQueryValueEx( hKey_CU, TEXT("cygdrive prefix"), NULL, NULL,
-                             (LPBYTE) szCygwinRoot, &dwBufLen);
-    }
-
-    // lRegistryAPIresult can be erroneous for two reasons:
-    // 1.) Cygwin entry is not present (could not be opened) in HKCU
-    // 2.) "cygdrive prefix" is not present (could not be read) in HKCU
-    if ( lRegistryAPIresult != ERROR_SUCCESS )
-    {
-        // Now check if probably present under HKLM
-        lRegistryAPIresult = RegOpenKeyEx( HKEY_LOCAL_MACHINE,
-                             TEXT("SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2"),
-                             0, KEY_QUERY_VALUE, &hKey_LM );
-        if ( lRegistryAPIresult != ERROR_SUCCESS )
-        {
-            // cygwin definitely not installed
-            m_CygwinPresent = false;
-            return;
-        }
-
-        // try to readback cygwin root (now it really should exist here)
-        lRegistryAPIresult = RegQueryValueEx( hKey_LM, TEXT("cygdrive prefix"), NULL, NULL,
-                             (LPBYTE) szCygwinRoot, &dwBufLen);
-    }
-
-    // handle a possible query error
-    if ( (lRegistryAPIresult != ERROR_SUCCESS) || (dwBufLen > BUFSIZE*sizeof(TCHAR)) )
-    {
-        // bit of an assumption, but we won't be able to find the root without it
-        m_CygwinPresent = false;
-        return;
-    }
-
-    // close opened keys
-    RegCloseKey( hKey_CU ); // ignore key close errors
-    RegCloseKey( hKey_LM ); // ignore key close errors
-
-    m_CygwinPresent  = true;           // if we end up here all was OK
-    m_CygdrivePrefix = (szCygwinRoot); // convert to wxString type for later use
-}
-
-void GDB_driver::CorrectCygwinPath(wxString& path)
-{
-    unsigned int i=0, EscCount=0;
-
-    // preserve any escape characters at start of path - this is true for
-    // breakpoints - value is 2, but made dynamic for safety as we
-    // are only checking for the CDprefix not any furthur correctness
-    if (path.GetChar(0)==g_EscapeChar)
-    {
-        while ( (i<path.Len()) && (path.GetChar(i)==g_EscapeChar) )
-        {
-            // get character
-            EscCount++;
-            i++;
-        }
-    }
-
-    // prepare to convert to a valid path if Cygwin is being used
-
-    // step over the escape characters
-    wxString PathWithoutEsc(path); PathWithoutEsc.Remove(0, EscCount);
-
-    if (PathWithoutEsc.StartsWith(m_CygdrivePrefix))
-    {
-        // remove cygwin prefix
-        if (m_CygdrivePrefix.EndsWith(_T("/"))) // for the case   "/c/path"
-          PathWithoutEsc.Remove(0, m_CygdrivePrefix.Len()  );
-        else                                    // for cases e.g. "/cygdrive/c/path"
-          PathWithoutEsc.Remove(0, m_CygdrivePrefix.Len()+1);
-
-        // insert ':' after drive label by reading and removing drive the label
-        // and adding ':' and the drive label back
-        wxString DriveLetter = PathWithoutEsc.GetChar(0);
-        PathWithoutEsc.Replace(DriveLetter, DriveLetter + _T(":"), false);
-    }
-
-    // Compile corrected path
-    path = wxEmptyString;
-    for (i=0; i<EscCount; i++)
-        path += g_EscapeChar;
-    path += PathWithoutEsc;
-}
-#else
-    void GDB_driver::DetectCygwinMount(void){/* dummy */}
-    void GDB_driver::CorrectCygwinPath(cb_unused wxString& path){/* dummy */}
-#endif
 
 #ifdef __WXMSW__
 bool GDB_driver::UseDebugBreakProcess()
 {
     return !m_isRemoteDebugging;
 }
-#endif
+#endif // __WXMSW__
 
 wxString GDB_driver::GetDisassemblyFlavour(void)
 {
@@ -509,11 +410,43 @@ void GDB_driver::SetMemoryRangeValue(uint64_t addr, const wxString& value)
     dataStr << wxT("}");
 
     wxString commandStr;
+// Check if build is for WX MS Windows
 #ifdef __WXMSW__
     commandStr.Printf(wxT("set {char [%ul]} 0x%" PRIx64 "="), size, addr);
 #else
     commandStr.Printf(wxT("set {char [%zu]} 0x%" PRIx64 "="), size, addr);
 #endif // __WXMSW__
+    commandStr << dataStr;
+
+    QueueCommand(new DebuggerCmd(this, commandStr));
+}
+
+void GDB_driver::SetMemoryRangeValue(wxString address, const wxString& value)
+{
+    const size_t size = value.size();
+    wxULongLong_t llAddres;
+
+    if ((size == 0) || (!address.ToULongLong(&llAddres, 16)))
+        return;
+
+    wxString dataStr = wxT("{");
+    const wxCharBuffer &data = value.To8BitData();
+    for (size_t i = 0; i < size; i++)
+    {
+        if (i != 0)
+            dataStr << wxT(",");
+        dataStr << wxString::Format(wxT("0x%x"), uint8_t(data[i]));
+    }
+    dataStr << wxT("}");
+
+    wxString commandStr;
+    // Check if build is for WX MS Windows
+    #ifdef __WXMSW__
+        commandStr.Printf(wxT("set {char [%ul]} 0x%" PRIx64 "="), size, uint64_t(llAddres));
+    #else
+        commandStr.Printf(wxT("set {char [%zu]} 0x%" PRIx64 "="), size, uint64_t(llAddres));
+    #endif // __WXMSW__
+
     commandStr << dataStr;
 
     QueueCommand(new DebuggerCmd(this, commandStr));
@@ -572,7 +505,7 @@ void GDB_driver::EnableCatchingThrow(bool enable)
 void GDB_driver::SwitchThread(size_t threadIndex)
 {
     ResetCursor();
-    QueueCommand(new DebuggerCmd(this, wxString::Format(_T("thread %lu"), static_cast<unsigned long>(threadIndex))));
+    QueueCommand(new DebuggerCmd(this, wxString::Format("thread %zu", threadIndex)));
     if (Manager::Get()->GetDebuggerManager()->UpdateBacktrace())
         QueueCommand(new GdbCmd_Backtrace(this));
 }
@@ -586,7 +519,7 @@ void GDB_driver::AddBreakpoint(cb::shared_ptr<DebuggerBreakpoint> bp)
     {
         if (bp->func.IsEmpty() && !bp->lineText.IsEmpty())
         {
-            wxRegEx reCtorDtor(_T("([0-9A-z_]+)::([~]?)([0-9A-z_]+)[ \t\(]*"));
+            wxRegEx reCtorDtor(_T("([0-9A-z_]+)::([~]?)([0-9A-z_]+)[[:blank:]\(]*"));
             if (reCtorDtor.Matches(bp->lineText))
             {
                 wxString strBase = reCtorDtor.GetMatch(bp->lineText, 1);
@@ -793,16 +726,9 @@ void GDB_driver::ParseOutput(const wxString& output)
     // non-command messages (e.g. breakpoint hits)
     // break them up in lines
 
-    wxArrayString lines = GetArrayFromString(buffer, _T('\n'));
+    const wxArrayString lines = GetArrayFromString(buffer, _T('\n'));
     for (unsigned int i = 0; i < lines.GetCount(); ++i)
     {
-//            Log(_T("DEBUG: ") + lines[i]); // write it in the full debugger log
-
-        // Check for possibility of a cygwin compiled program
-        // convert to valid path
-        if (platform::windows && m_CygwinPresent)
-            CorrectCygwinPath(lines.Item(i));
-
         // log GDB's version
         if (lines[i].StartsWith(_T("GNU gdb")))
         {
@@ -812,7 +738,7 @@ void GDB_driver::ParseOutput(const wxString& output)
             wxRegEx re(_T("([0-9.]+)"));
             if (!re.Matches(lines[i]))
             {
-                m_pDBG->Log(_T("Unable to determine the version of gdb"));
+                m_pDBG->Log(_("Unable to determine the version of gdb"));
                 break;
             }
             wxString major = re.GetMatch(lines[i],0);
@@ -926,7 +852,7 @@ void GDB_driver::ParseOutput(const wxString& output)
 
                 if (rePendingFound1.Matches(newbpstr))
                 {
-//                    m_pDBG->Log(_T("MATCH"));
+//                    m_pDBG->Log(_("MATCH"));
 
                     wxString file;
                     wxString lineStr;
@@ -942,8 +868,12 @@ void GDB_driver::ParseOutput(const wxString& output)
                         lineStr = rePendingFound.GetMatch(bpstr, 2);
                     }
 
-                    file = UnixFilename(file);
-    //                m_pDBG->Log(wxString::Format(_T("file: %s, line: %s"), file.c_str(), lineStr.c_str()));
+                    if (platform::windows && m_CygwinPresent)
+                        cbGetWindowsPathFromCygwinPath(file);
+                    else
+                        file = UnixFilename(file);
+
+    //                m_pDBG->Log(wxString::Format(_("file: %s, line: %s"), file, lineStr));
                     long line;
                     lineStr.ToLong(&line);
                     DebuggerState& state = m_pDBG->GetState();
@@ -951,7 +881,7 @@ void GDB_driver::ParseOutput(const wxString& output)
                     cb::shared_ptr<DebuggerBreakpoint> bp = state.GetBreakpoint(bpindex);
                     if (bp)
                     {
-    //                    m_pDBG->Log(_T("Found BP!!! Updating index..."));
+    //                    m_pDBG->Log(_("Found BP!!! Updating index..."));
                         long index;
                         wxString indexStr = rePendingFound1.GetMatch(newbpstr, 1);
                         indexStr.ToLong(&index);
@@ -993,7 +923,7 @@ void GDB_driver::ParseOutput(const wxString& output)
         }
 
         // cursor change
-        else if (lines[i].StartsWith(g_EscapeChar)) // ->->
+        else if (!lines[i].empty() && lines[i][0] == wxUniChar(26)) // ->->
         {
             // breakpoint, e.g.
             // C:/Devel/tmp/test_console_dbg/tmp/main.cpp:14:171:beg:0x401428
@@ -1015,6 +945,7 @@ void GDB_driver::ParseOutput(const wxString& output)
         }
         else
         {
+            bool isFileUpdated = false;
             // other break info, e.g.
             // 0x7c9507a8 in ntdll!KiIntSystemCall () from C:\WINDOWS\system32\ntdll.dll
             wxRegEx* re = 0;
@@ -1027,21 +958,23 @@ void GDB_driver::ParseOutput(const wxString& output)
             {
                 m_Cursor.file = re->GetMatch(lines[i], 3);
                 m_Cursor.function = re->GetMatch(lines[i], 2);
-                wxString lineStr = _T("");
+                // wxString lineStr = _T("");
                 m_Cursor.address = re->GetMatch(lines[i], 1);
                 m_Cursor.line = -1;
                 m_Cursor.changed = true;
                 m_needsUpdate = true;
+                isFileUpdated = true;
             }
             else if ( reThreadSwitch2.Matches(lines[i]) )
             {
                 m_Cursor.file = reThreadSwitch2.GetMatch(lines[i], 3);
                 m_Cursor.function = reThreadSwitch2.GetMatch(lines[i], 2);
-                wxString lineStr = reThreadSwitch2.GetMatch(lines[i], 4);
+                // wxString lineStr = reThreadSwitch2.GetMatch(lines[i], 4);
                 m_Cursor.address = reThreadSwitch2.GetMatch(lines[i], 1);
                 m_Cursor.line = -1;
                 m_Cursor.changed = true;
                 m_needsUpdate = true;
+                isFileUpdated = true;
             }
             else if (reBreak3.Matches(lines[i]) )
             {
@@ -1070,6 +1003,9 @@ void GDB_driver::ParseOutput(const wxString& output)
                 m_Cursor.changed = true;
                 m_needsUpdate = true;
             }
+
+            if (isFileUpdated && platform::windows && m_CygwinPresent)
+                cbGetWindowsPathFromCygwinPath(m_Cursor.file);
         }
     }
     buffer.Clear();
@@ -1120,11 +1056,13 @@ void GDB_driver::HandleMainBreakPoint(const wxRegEx& reBreak_in, wxString line)
             if (platform::windows)
             {
                 m_Cursor.file = reBreak_in.GetMatch(line, 1) + reBreak_in.GetMatch(line, 2);
+                if (m_CygwinPresent)
+                    cbGetWindowsPathFromCygwinPath(m_Cursor.file);
             }
             else
             {
-                // For debuging of usual linux application 'GetMatch(line, 1)' is empty.
-                // While for debuging of application under wine the name of the disk is useless.
+                // For debugging of usual linux application 'GetMatch(line, 1)' is empty.
+                // While for debugging of application under wine the name of the disk is useless.
                 m_Cursor.file = reBreak_in.GetMatch( line, 2);
             }
 

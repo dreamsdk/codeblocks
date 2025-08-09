@@ -16,36 +16,43 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsflexgridsizer.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsflexgridsizer.cpp $
+* $Revision: 13547 $
+* $Id: wxsflexgridsizer.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsflexgridsizer.cpp $
 */
 
 #include "wxsflexgridsizer.h"
 
 namespace
 {
-    wxArrayInt GetArray(const wxString& String,bool* Valid = 0)
+    wxArrayInt GetArray(const wxString& String, bool* Valid = nullptr)
     {
-        wxStringTokenizer Tokens(String,_T(","));
+        bool ok = true;
         wxArrayInt Array;
-        if ( Valid )
-        {
-            *Valid = true;
-        }
 
-        while ( Tokens.HasMoreTokens() )
+        wxStringTokenizer Tokens(String, ",");
+        while (Tokens.HasMoreTokens())
         {
             long Value;
             wxString Token = Tokens.GetNextToken();
             Token.Trim(true);
             Token.Trim(false);
-            if ( !Token.ToLong(&Value) && Valid )
+            if (!Token.ToLong(&Value) || (Value < 0))
             {
-                *Valid = false;
+                // Reject invalid values and signal error
+                ok = false;
             }
-            Array.Add((int)Value);
+            else
+            {
+                // Reject repeated values
+                // AddGrowable[Col|Row]() cannot be called twice with the same index
+                if (Array.Index((int)Value) == wxNOT_FOUND)
+                    Array.Add((int)Value);
+            }
         }
+
+        if (Valid)
+            *Valid = ok;
 
         return Array;
     }
@@ -53,16 +60,17 @@ namespace
     bool FixupList(wxString& List)
     {
         bool Ret;
-        wxArrayInt Array = GetArray(List,&Ret);
+        wxArrayInt Array = GetArray(List, &Ret);
         List.Clear();
         for ( size_t i=0; i<Array.Count(); i++ )
         {
-            List.Append(wxString::Format(_T("%d"),Array[i]));
+            List << Array[i];
             if ( i < Array.Count() - 1 )
             {
-                List.Append(_T(','));
+                List << ',';
             }
         }
+
         return Ret;
     }
 
@@ -78,20 +86,25 @@ wxsFlexGridSizer::wxsFlexGridSizer(wxsItemResData* Data):
 
 wxSizer* wxsFlexGridSizer::OnBuildSizerPreview(wxWindow* Parent)
 {
-    wxFlexGridSizer* Sizer = new wxFlexGridSizer(Rows,Cols,
-        VGap.GetPixels(Parent),HGap.GetPixels(Parent));
+    wxFlexGridSizer* Sizer = new wxFlexGridSizer(Rows, Cols,
+        VGap.GetPixels(Parent), HGap.GetPixels(Parent));
 
     wxArrayInt _Cols = GetArray(GrowableCols);
     for ( size_t i=0; i<_Cols.Count(); i++ )
     {
-        Sizer->AddGrowableCol(_Cols[i]);
+        // Do not call the method with an out-of-range index
+        if (_Cols[i] < Cols)
+            Sizer->AddGrowableCol(_Cols[i]);
     }
 
     wxArrayInt _Rows = GetArray(GrowableRows);
     for ( size_t i=0; i<_Rows.Count(); i++ )
     {
-        Sizer->AddGrowableRow(_Rows[i]);
+        // Do not call the method with an out-of-range index
+        if (_Rows[i] < Rows)
+            Sizer->AddGrowableRow(_Rows[i]);
     }
+
     return Sizer;
 }
 
@@ -109,12 +122,14 @@ void wxsFlexGridSizer::OnBuildSizerCreatingCode()
             wxArrayInt _Cols = GetArray(GrowableCols);
             for ( size_t i=0; i<_Cols.Count(); i++ )
             {
+                // Do not check range here, let the runtime assert
                 Codef(_T("%AAddGrowableCol(%d);\n"),_Cols[i]);
             }
 
             wxArrayInt _Rows = GetArray(GrowableRows);
             for ( size_t i=0; i<_Rows.Count(); i++ )
             {
+                // Do not check range here, let the runtime assert
                 Codef(_T("%AAddGrowableRow(%d);\n"),_Rows[i]);
             }
 
@@ -129,16 +144,16 @@ void wxsFlexGridSizer::OnBuildSizerCreatingCode()
     }
 }
 
-void wxsFlexGridSizer::OnEnumSizerProperties(cb_unused long Flags)
+void wxsFlexGridSizer::OnEnumSizerProperties(cb_unused long _Flags)
 {
     FixupList(GrowableCols);
     FixupList(GrowableRows);
     WXS_LONG(wxsFlexGridSizer,Cols,_("Cols"),_T("cols"),0);
     WXS_LONG(wxsFlexGridSizer,Rows,_("Rows"),_T("rows"),0);
     WXS_DIMENSION(wxsFlexGridSizer,VGap,_("V-Gap"),_("V-Gap in dialog units"),_T("vgap"),0,false);
-    WXS_DIMENSION(wxsFlexGridSizer,HGap,_("H-Gap"),_("H,y-Gap in dialog units"),_T("hgap"),0,false);
-    WXS_SHORT_STRING(wxsFlexGridSizer,GrowableCols,_("Growable cols"),_T("growablecols"),_T(""),false);
-    WXS_SHORT_STRING(wxsFlexGridSizer,GrowableRows,_("Growable rows"),_T("growablerows"),_T(""),false);
+    WXS_DIMENSION(wxsFlexGridSizer,HGap,_("H-Gap"),_("H-Gap in dialog units"),_T("hgap"),0,false);
+    WXS_SHORT_STRING_T(wxsFlexGridSizer, GrowableCols, _("Growable cols"), _T("growablecols"), _T(""), false, _("Comma-separated list of growable columns"));
+    WXS_SHORT_STRING_T(wxsFlexGridSizer, GrowableRows, _("Growable rows"), _T("growablerows"), _T(""), false, _("Comma-separated list of growable rows"));
     FixupList(GrowableCols);
     FixupList(GrowableRows);
 }

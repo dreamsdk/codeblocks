@@ -4,7 +4,7 @@
  *
  * $Revision: 8680 $
  * $Id: devcpploader.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/devcpploader.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/projectsimporter/devcpploader.cpp $
  */
 
 #include "sdk.h"

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsresource.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsresource.h $
+* $Revision: 13541 $
+* $Id: wxsresource.h 13541 2024-08-11 18:01:17Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsresource.h $
 */
 
 #ifndef WXSRESOURCE_H
@@ -43,16 +43,14 @@ class wxsResource: public wxObject
     DECLARE_CLASS(wxsResource)
     public:
 
-        /** \brief Ctor
+        /** \brief Constructor
          *  \param Owner project owning resource
-         *  \param ResourceName name of resource (f.ex. class name)
          *  \param ResourceType name of resource type (f.ex. wxDialog)
          *  \param GUI name of GUI using this resource, put empty string if this is universal resource like bitmap file
-         *  \param Language coding language used for this resource
          */
         wxsResource(wxsProject* Owner,const wxString& ResourceType,const wxString& GUI);
 
-        /** \brief dctor */
+        /** \brief Destructor */
         virtual ~wxsResource();
 
         /** \brief Getting resource type */
@@ -80,9 +78,9 @@ class wxsResource: public wxObject
         void EditClose();
 
         /** \brief Checking if editor for this resource is opened */
-        inline bool IsEditorOpened() { return m_Editor!=0; }
+        inline bool IsEditorOpened() { return m_Editor != nullptr; }
 
-        /** \brief Getting pointer to editor or 0 if there's none */
+        /** \brief Getting pointer to editor or nullptr if there's none */
         inline wxsEditor* GetEditor() { return m_Editor; }
 
         /** \brief Getting tree item id in resource browser */
@@ -92,12 +90,12 @@ class wxsResource: public wxObject
         void BuildTreeEntry(const wxsResourceItemId& Parent);
 
         /** \brief Getting name of declaration file
-          * \note this function is only a wrapper to OnGetDeclarationFile (to hold consistency of functions to override)
+          * \note This function is only a wrapper to OnGetDeclarationFile (to hold consistency of functions to override)
           */
         inline wxString GetDeclarationFile() { return OnGetDeclarationFile(); }
 
         /** \brief Getting code creating this resource
-         *  \note this function is only a wrapper to OnGetAppBuildingCode (to hold consistency of functions to override)
+         *  \note This function is only a wrapper to OnGetAppBuildingCode (to hold consistency of functions to override)
          */
         inline wxString GetAppBuildingCode() { return OnGetAppBuildingCode(); }
 
@@ -108,13 +106,21 @@ class wxsResource: public wxObject
         bool WriteConfig(TiXmlElement* Node);
 
         /** \brief Helper function for fetching project path */
-        inline wxString GetProjectPath() { return m_Owner ? m_Owner->GetProjectPath() : _T(""); }
+        inline wxString GetProjectPath() { return m_Owner ? m_Owner->GetProjectPath() : wxString(); }
 
         /** \brief Getting project owning this resource */
         inline wxsProject* GetProject() { return m_Owner; }
 
         /** \brief Cleaning up before deleting this resource from project */
         inline bool DeleteCleanup(bool ShowDialog=true) { return OnDeleteCleanup(ShowDialog); }
+
+        /** \brief Rename components (if any)
+         *  \param oldName Current name
+         *  \param newName Desired name
+         *  \retval true If something has been renamed
+         *  \retval false Nothing has changed
+         */
+        virtual bool Rename(cb_unused const wxString &oldName, cb_unused const wxString &newName) { return false; }
 
     protected:
 

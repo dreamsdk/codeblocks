@@ -17,51 +17,34 @@
 
 #include "ThreadSearchViewManagerBase.h"
 
+class wxBitmap;
+#if wxCHECK_VERSION(3, 1, 6)
+class wxBitmapBundle;
+#endif
 class wxWindow;
 class ThreadSearchView;
 class ThreadSearchLogger;
 
-
 class ThreadSearchViewManagerMessagesNotebook : public ThreadSearchViewManagerBase
 {
 public:
-    /** Constructor. */
     ThreadSearchViewManagerMessagesNotebook(ThreadSearchView* pThreadSearchView)
-        : ThreadSearchViewManagerBase(pThreadSearchView)
+        : ThreadSearchViewManagerBase(pThreadSearchView), m_Bitmap(nullptr)
     {}
+    ~ThreadSearchViewManagerMessagesNotebook() override;
 
-    /** Destructor. */
-    virtual ~ThreadSearchViewManagerMessagesNotebook();
-
-    eManagerTypes GetManagerType() {return TypeMessagesNotebook;}
-
-    /** By default, view is not managed by the manager.
-      * This method adds view to manager if not already managed.
-      * No parameters because only m_pThreadSearchView is managed
-      * and given in constructor.
-      */
-    virtual void AddViewToManager();
-
-    /** By default, view is not managed by the manager.
-      * This method removes view from manager if managed.
-      * No parameters because only m_pThreadSearchView is managed
-      * and given in constructor.
-      * m_pThreadSearchView is not modified.
-      */
-    virtual void RemoveViewFromManager();
-
-    /** Return true if success. Fails if view is not managed.
-      * @param show : true => show, false => hide
-      * @return true if success.
-      */
-    virtual bool ShowView(bool show = true);
-
-    /** Return true if view is visible.
-      * @return true if view is visible.
-      */
-    bool IsViewShown();
-
-    virtual void Raise();
+    eManagerTypes GetManagerType() override { return TypeMessagesNotebook; }
+    void AddViewToManager() override;
+    void RemoveViewFromManager() override;
+    bool ShowView(uint32_t flags) override;
+    bool IsViewShown() override;
+    void Raise() override;
+private:
+#if wxCHECK_VERSION(3, 1, 6)
+    wxBitmapBundle *m_Bitmap;
+#else
+    wxBitmap *m_Bitmap;
+#endif
 };
 
 #endif // THREAD_SEARCH_VIEW_MANAGER_MESSAGES_NOTEBOOK_H

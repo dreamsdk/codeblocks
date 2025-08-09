@@ -17,7 +17,7 @@
 *
 * $Revision: 7109 $
 * $Id: ExpressionParser.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/ExpressionParser.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/ExpressionParser.h $
 */
 
 #ifndef EXPRESSIONPARSER_H

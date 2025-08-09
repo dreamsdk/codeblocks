@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsdatepickerctrl.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsdatepickerctrl.cpp $
+* $Revision: 13547 $
+* $Id: wxsdatepickerctrl.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsdatepickerctrl.cpp $
 */
 
 #include "wxsdatepickerctrl.h"
@@ -86,22 +86,22 @@ void wxsDatePickerCtrl::OnBuildCreatingCode()
 /*! \brief    Build the control preview.
  *
  * \param parent wxWindow*    The parent window.
- * \param flags long                The control flags.
+ * \param _Flags long                The control flags.
  * \return wxObject*                 The constructed control.
  *
  */
-wxObject* wxsDatePickerCtrl::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsDatePickerCtrl::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxDatePickerCtrl* Preview = new wxDatePickerCtrl(Parent,GetId(),wxDefaultDateTime,Pos(Parent),Size(Parent),Style());
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
 /*! \brief Enumerate the control's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsDatePickerCtrl::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsDatePickerCtrl::OnEnumWidgetProperties(cb_unused long _Flags)
 {
 }

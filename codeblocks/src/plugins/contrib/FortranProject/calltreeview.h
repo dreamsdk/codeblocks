@@ -24,6 +24,7 @@ class CallTreeToken : public TokenF
 
         wxString m_CallFilename;
         unsigned int m_CallLine;
+        bool wereChildrenConnnected;
 };
 
 class CTVData : public wxTreeItemData

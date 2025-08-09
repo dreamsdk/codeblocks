@@ -17,7 +17,7 @@
 *
 * $Revision: 8574 $
 * $Id: wxsresourcetreeitemdata.h 8574 2012-11-18 15:59:14Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsresourcetreeitemdata.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsresourcetreeitemdata.h $
 */
 
 #ifndef WXSRESOURCETREEITEMDATA_H

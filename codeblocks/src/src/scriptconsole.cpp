@@ -2,15 +2,16 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10260 $
- * $Id: scriptconsole.cpp 10260 2015-05-15 10:56:23Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/scriptconsole.cpp $
+ * $Revision: 13569 $
+ * $Id: scriptconsole.cpp 13569 2024-09-14 04:47:37Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/scriptconsole.cpp $
  */
 
 #include <sdk.h>
-#include <sqplus.h>
 
 #include "scriptconsole.h"
+#include "squirrel.h"
+#include "scripting/bindings/sc_utils.h"
 
 #ifndef CB_PRECOMP
     #include <globals.h>
@@ -22,40 +23,50 @@
 #include <wx/filedlg.h>
 
 //(*InternalHeaders(ScriptConsole)
-#include <wx/settings.h>
-#include <wx/string.h>
-#include <wx/intl.h>
-#include <wx/font.h>
+#include <wx/artprov.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
-#include <wx/artprov.h>
+#include <wx/intl.h>
+#include <wx/settings.h>
+#include <wx/string.h>
 //*)
 
 //(*IdInit(ScriptConsole)
-const long ScriptConsole::ID_TEXTCTRL1 = wxNewId();
-const long ScriptConsole::ID_STATICTEXT1 = wxNewId();
-const long ScriptConsole::ID_COMBOBOX1 = wxNewId();
-const long ScriptConsole::ID_BITMAPBUTTON1 = wxNewId();
-const long ScriptConsole::ID_BITMAPBUTTON2 = wxNewId();
-const long ScriptConsole::ID_BITMAPBUTTON3 = wxNewId();
-const long ScriptConsole::ID_PANEL1 = wxNewId();
+const wxWindowID ScriptConsole::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID ScriptConsole::ID_STATICTEXT1 = wxNewId();
+const wxWindowID ScriptConsole::ID_COMBOBOX1 = wxNewId();
+const wxWindowID ScriptConsole::ID_BITMAPBUTTON1 = wxNewId();
+const wxWindowID ScriptConsole::ID_BITMAPBUTTON2 = wxNewId();
+const wxWindowID ScriptConsole::ID_BITMAPBUTTON3 = wxNewId();
+const wxWindowID ScriptConsole::ID_PANEL1 = wxNewId();
 //*)
 
 static ScriptConsole* s_Console = nullptr;
 static SQPRINTFUNCTION s_OldPrintFunc = nullptr;
+static SQPRINTFUNCTION s_OldErrorFunc = nullptr;
 
 static void ScriptConsolePrintFunc(HSQUIRRELVM /*v*/, const SQChar * s, ...)
 {
-    static SQChar temp[2048];
     va_list vl;
     va_start(vl,s);
-    scvsprintf( temp,s,vl);
-    wxString msg = cbC2U(temp);
+    wxString msg;
+    ScriptBindings::PrintSquirrelToWxString(msg, s, vl);
     va_end(vl);
 
     if (s_Console)
         s_Console->Log(msg);
-    Manager::Get()->GetScriptingManager()->InjectScriptOutput(msg);
+}
+
+static void ScriptConsoleErrorFunc(HSQUIRRELVM /*v*/, const SQChar * s, ...)
+{
+    va_list vl;
+    va_start(vl,s);
+    wxString msg;
+    ScriptBindings::PrintSquirrelToWxString(msg, s, vl);
+    va_end(vl);
+
+    if (s_Console)
+        s_Console->LogError(msg);
 }
 
 BEGIN_EVENT_TABLE(ScriptConsole,wxPanel)
@@ -66,14 +77,12 @@ END_EVENT_TABLE()
 ScriptConsole::ScriptConsole(wxWindow* parent,wxWindowID id)
 {
     //(*Initialize(ScriptConsole)
-    wxBoxSizer* BoxSizer2;
     wxBoxSizer* BoxSizer1;
+    wxBoxSizer* BoxSizer2;
 
     Create(parent, id, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("id"));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     txtConsole = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY|wxHSCROLL, wxDefaultValidator, _T("ID_TEXTCTRL1"));
-    wxFont txtConsoleFont(10,wxFONTFAMILY_MODERN,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,false,wxEmptyString,wxFONTENCODING_DEFAULT);
-    txtConsole->SetFont(txtConsoleFont);
     BoxSizer1->Add(txtConsole, 1, wxALL|wxEXPAND, 0);
     Panel1 = new wxPanel(this, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     Panel1->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
@@ -81,8 +90,6 @@ ScriptConsole::ScriptConsole(wxWindow* parent,wxWindowID id)
     lblCommand = new wxStaticText(Panel1, ID_STATICTEXT1, _("Command:"), wxDefaultPosition, wxDefaultSize, 0, _T("ID_STATICTEXT1"));
     BoxSizer2->Add(lblCommand, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5);
     txtCommand = new wxComboBox(Panel1, ID_COMBOBOX1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, 0, wxCB_DROPDOWN|wxTE_PROCESS_ENTER, wxDefaultValidator, _T("ID_COMBOBOX1"));
-    wxFont txtCommandFont(10,wxFONTFAMILY_MODERN,wxFONTSTYLE_NORMAL,wxFONTWEIGHT_NORMAL,false,wxEmptyString,wxFONTENCODING_DEFAULT);
-    txtCommand->SetFont(txtCommandFont);
     BoxSizer2->Add(txtCommand, 1, wxALL|wxALIGN_CENTER_VERTICAL, 0);
     btnExecute = new wxBitmapButton(Panel1, ID_BITMAPBUTTON1, wxArtProvider::GetBitmap(wxART_MAKE_ART_ID_FROM_STR(_T("wxART_EXECUTABLE_FILE")),wxART_BUTTON), wxDefaultPosition, wxDefaultSize, wxBU_AUTODRAW, wxDefaultValidator, _T("ID_BITMAPBUTTON1"));
     btnExecute->SetToolTip(_("Execute current command"));
@@ -96,25 +103,32 @@ ScriptConsole::ScriptConsole(wxWindow* parent,wxWindowID id)
     btnClear->SetToolTip(_("Clear output window"));
     BoxSizer2->Add(btnClear, 0, wxALL|wxALIGN_CENTER_VERTICAL, 0);
     Panel1->SetSizer(BoxSizer2);
-    BoxSizer2->Fit(Panel1);
-    BoxSizer2->SetSizeHints(Panel1);
     BoxSizer1->Add(Panel1, 0, wxALL|wxEXPAND, 0);
     SetSizer(BoxSizer1);
-    BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
-    Connect(ID_COMBOBOX1,wxEVT_COMMAND_TEXT_ENTER,(wxObjectEventFunction)&ScriptConsole::OnbtnExecuteClick);
-    Connect(ID_BITMAPBUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ScriptConsole::OnbtnExecuteClick);
-    Connect(ID_BITMAPBUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ScriptConsole::OnbtnLoadClick);
-    Connect(ID_BITMAPBUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ScriptConsole::OnbtnClearClick);
+    Connect(ID_COMBOBOX1,wxEVT_COMMAND_TEXT_ENTER,wxCommandEventHandler(ScriptConsole::OnbtnExecuteClick));
+    Connect(ID_BITMAPBUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ScriptConsole::OnbtnExecuteClick));
+    Connect(ID_BITMAPBUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ScriptConsole::OnbtnLoadClick));
+    Connect(ID_BITMAPBUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ScriptConsole::OnbtnClearClick));
     //*)
+
+    {
+        // Use the Messages logs' font size for the console.
+        ConfigManager *mcfg = Manager::Get()->GetConfigManager(_T("message_manager"));
+        const int fontSize = mcfg->ReadInt(_T("/log_font_size"), (platform::macosx ? 10 : 8));
+        wxFont defaultFont(fontSize, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+        txtConsole->SetFont(defaultFont);
+    }
 
     txtCommand->Append(wxEmptyString);
     if (!s_Console)
     {
         s_Console = this;
-        s_OldPrintFunc = sq_getprintfunc(SquirrelVM::GetVMPtr());
-        sq_setprintfunc(SquirrelVM::GetVMPtr(), ScriptConsolePrintFunc);
+        HSQUIRRELVM vm = ScriptingManager::Get()->GetVM();
+        s_OldPrintFunc = sq_getprintfunc(vm);
+        s_OldErrorFunc = sq_geterrorfunc(vm);
+        sq_setprintfunc(vm, ScriptConsolePrintFunc, ScriptConsoleErrorFunc);
     }
 
     Log(_("Welcome to the script console!"));
@@ -122,23 +136,61 @@ ScriptConsole::ScriptConsole(wxWindow* parent,wxWindowID id)
 
 ScriptConsole::~ScriptConsole()
 {
-    if (s_Console == this)
+    if (s_Console == this && !Manager::IsAppShuttingDown())
     {
         s_Console = nullptr;
-        if (SquirrelVM::GetVMPtr())
-            sq_setprintfunc(SquirrelVM::GetVMPtr(), s_OldPrintFunc);
+        HSQUIRRELVM vm = ScriptingManager::Get()->GetVM();
+        if (vm)
+            sq_setprintfunc(vm, s_OldPrintFunc, s_OldErrorFunc);
     }
-
     //(*Destroy(ScriptConsole)
     //*)
 }
 
 void ScriptConsole::Log(const wxString& msg)
 {
+    if (msg.empty())
+        return;
     txtConsole->AppendText(msg);
     if (msg.Last() != _T('\n'))
         txtConsole->AppendText(_T('\n'));
-//    txtConsole->ScrollLines(-1);
+    Manager::ProcessPendingEvents();
+}
+
+void ScriptConsole::LogError(const wxString& msg)
+{
+    if (msg.empty())
+        return;
+
+    wxString::size_type newLinePos = 0;
+    do
+    {
+        const wxString::size_type startPos = newLinePos;
+        newLinePos = msg.find('\n', newLinePos);
+        if (newLinePos != wxString::npos)
+        {
+            if (startPos == newLinePos)
+                txtConsole->AppendText(_("error:\n"));
+            else
+            {
+                const wxString &line = msg.substr(startPos, newLinePos - startPos);
+
+                txtConsole->AppendText(_("error: ") + line + "\n");
+            }
+
+            // Move past the '\n' character, so we won't enter infinite loop.
+            newLinePos = newLinePos + 1;
+        }
+        else
+        {
+            // Not found, append the rest of the string and break the loop.
+            const wxString &line = msg.substr(startPos);
+            if (!line.empty())
+                txtConsole->AppendText(_("error: ") + line + "\n");
+            break;
+        }
+    } while (1);
+
     Manager::ProcessPendingEvents();
 }
 
@@ -160,8 +212,7 @@ void ScriptConsole::OnbtnExecuteClick(cb_unused wxCommandEvent& event)
             txtCommand->Insert(cmd, 1); // right after the blank entry
         txtCommand->SetValue(wxEmptyString);
     }
-    else
-        txtConsole->AppendText(Manager::Get()->GetScriptingManager()->GetErrorString());
+
     txtCommand->SetFocus();
 }
 
@@ -175,17 +226,16 @@ void ScriptConsole::OnbtnLoadClick(cb_unused wxCommandEvent& event)
                      wxEmptyString,
                      _T("Script files (*.script)|*.script"),
                      wxFD_OPEN | compatibility::wxHideReadonly);
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
         mgr->Write(_T("/file_dialogs/file_run_script/directory"), dlg.GetDirectory());
         if (Manager::Get()->GetScriptingManager()->LoadScript(dlg.GetPath()))
             Log(_("Script loaded successfully"));
         else
-        {
-            Log(_("Loading script failed."));
-            txtConsole->AppendText(Manager::Get()->GetScriptingManager()->GetErrorString());
-        }
+            Log(_("error: Loading script failed."));
     }
+
     txtCommand->SetFocus();
 }
 

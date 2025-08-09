@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 8208 $
-* $Id: lib_finder.cpp 8208 2012-08-07 22:08:06Z killerbot $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/lib_finder.cpp $
+* $Revision: 12999 $
+* $Id: lib_finder.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/lib_finder.cpp $
 */
 
 
@@ -38,8 +38,9 @@
 #include <projectloader_hooks.h>
 #include <compiler.h>
 #include <compilerfactory.h>
-#include <sqplus.h>
-#include <sc_base_types.h>
+#include <scripting/bindings/sc_utils.h>
+#include <scripting/bindings/sc_typeinfo_all.h>
+#include <scriptingmanager.h>
 #include <logmanager.h>
 
 #include "resultmap.h"
@@ -54,11 +55,6 @@ namespace
 {
     // Register the plugin
     PluginRegistrant<lib_finder> reg(_T("lib_finder"));
-
-    // Some class required for scripting
-    class LibFinder
-    {
-    };
 
     static const bool ExtraEventPresent = true;
 };
@@ -128,6 +124,7 @@ void lib_finder::OnRelease(bool /*appShutDown*/)
 int lib_finder::Execute()
 {
     LibrariesDlg m_Dlg(Manager::Get()->GetAppWindow(),m_KnownLibraries);
+    PlaceWindow(&m_Dlg);
     m_Dlg.ShowModal();
 	return -1;
 }
@@ -299,7 +296,9 @@ void lib_finder::SetupTarget(CompileTargetBase* Target,const wxArrayString& Libs
 
         if ( cbMessageBox( Message, _("LibFinder - error"), wxYES_NO|wxICON_EXCLAMATION ) == wxID_YES )
         {
-            ProjectMissingLibs(Manager::Get()->GetAppWindow() ,NotFound,m_KnownLibraries).ShowModal();
+            ProjectMissingLibs dlg(Manager::Get()->GetAppWindow(), NotFound, m_KnownLibraries);
+            PlaceWindow(&dlg);
+            dlg.ShowModal();
         }
     }
 }
@@ -381,27 +380,106 @@ bool lib_finder::TryAddLibrary(CompileTargetBase* Target,LibraryResult* Result)
     return true;
 }
 
+namespace ScriptBindings
+{
+
+// Dummy type
+struct LibFinder{};
+
+template<>
+struct TypeInfo<LibFinder> {
+    static uint32_t typetag;
+    static constexpr const SQChar *className = _SC("LibFinder");
+    using baseClass = void;
+};
+
+uint32_t TypeInfo<LibFinder>::typetag = uint32_t(TypeTag::Unassigned);
+
+template<bool (*func)(const wxString &, cbProject *, const wxString &)>
+SQInteger LibFinder_LibraryToProject(HSQUIRRELVM v)
+{
+    // env table, LibName, Project, TargetName
+    ExtractParams4<SkipParam, const wxString *, cbProject *, const wxString *> extractor(v);
+    if (!extractor.Process("LibFinder::LibraryToProject"))
+        return extractor.ErrorMessage();
+    const bool result = func(*extractor.p1, extractor.p2, *extractor.p3);
+    sq_pushbool(v, result);
+    return 1;
+}
+
+SQInteger LibFinder_SetupTargetManually(HSQUIRRELVM v)
+{
+    // env table, Target
+    ExtractParams2<SkipParam, CompileTargetBase *> extractor(v);
+    if (!extractor.Process("LibFinder::SetupTargetManually"))
+        return extractor.ErrorMessage();
+    const bool result = lib_finder::SetupTargetManually(extractor.p1);
+    sq_pushbool(v, result);
+    return 1;
+}
+
+SQInteger LibFinder_EnsureIsDefined(HSQUIRRELVM v)
+{
+    // env table, ShortCode
+    ExtractParams2<SkipParam, const wxString *> extractor(v);
+    if (!extractor.Process("LibFinder::EnsureIsDefined"))
+        return extractor.ErrorMessage();
+    const bool result = lib_finder::EnsureIsDefined(*extractor.p1);
+    sq_pushbool(v, result);
+    return 1;
+}
+
+} // namespace ScriptBindings
+
 void lib_finder::RegisterScripting()
 {
-    SqPlus::SQClassDef<LibFinder>("LibFinder")
-        .staticFunc(&lib_finder::AddLibraryToProject,"AddLibraryToProject")
-        .staticFunc(&lib_finder::IsLibraryInProject,"IsLibraryInProject")
-        .staticFunc(&lib_finder::RemoveLibraryFromProject,"RemoveLibraryFromProject")
-        .staticFunc(&lib_finder::SetupTargetManually,"SetupTarget")
-        .staticFunc(&lib_finder::EnsureIsDefined,"EnsureLibraryDefined")
-    ;
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+    HSQUIRRELVM v = scriptMgr->GetVM();
+    if (v)
+    {
+        using namespace ScriptBindings;
+
+        TypeInfo<LibFinder>::typetag = scriptMgr->RequestClassTypeTag();
+
+        PreserveTop preserveTop(v);
+
+        sq_pushroottable(v);
+        const SQInteger classDecl = CreateClassDecl<LibFinder>(v);
+        BindDisabledCtor(v);
+        BindStaticMethod(v, _SC("AddLibraryToProject"),
+                         LibFinder_LibraryToProject<lib_finder::AddLibraryToProject>,
+                         _SC("LibFinder::AddLibraryToProject"));
+        BindStaticMethod(v, _SC("IsLibraryInProject"),
+                         LibFinder_LibraryToProject<lib_finder::IsLibraryInProject>,
+                         _SC("LibFinder::IsLibraryInProject"));
+        BindStaticMethod(v, _SC("RemoveLibraryFromProject"),
+                         LibFinder_LibraryToProject<lib_finder::RemoveLibraryFromProject>,
+                         _SC("LibFinder::RemoveLibraryFromProject"));
+        BindStaticMethod(v, _SC("SetupTargetManually"), LibFinder_SetupTargetManually,
+                         _SC("LibFinder::SetupTargetManually"));
+        BindStaticMethod(v, _SC("EnsureIsDefined"), LibFinder_EnsureIsDefined,
+                         _SC("LibFinder::EnsureIsDefined"));
+
+        // Put the class in the root table. This must be last!
+        sq_newslot(v, classDecl, SQFalse);
+
+        sq_poptop(v); // Pop root table.
+    }
 }
 
 void lib_finder::UnregisterScripting()
 {
-    Manager::Get()->GetScriptingManager();
-    HSQUIRRELVM v = SquirrelVM::GetVMPtr();
-    if ( v )
+    HSQUIRRELVM v = Manager::Get()->GetScriptingManager()->GetVM();
+    if (v)
     {
+        using namespace ScriptBindings;
+        PreserveTop preserveTop(v);
         sq_pushroottable(v);
-        sq_pushstring(v,"LibFinder",-1);
-        sq_deleteslot(v,-2,false);
+        sq_pushstring(v, _SC("LibFinder"), -1);
+        sq_deleteslot(v, -2, false);
         sq_poptop(v);
+
+        TypeInfo<LibFinder>::typetag = uint32_t(TypeTag::Unassigned);
     }
 }
 
@@ -515,7 +593,7 @@ bool lib_finder::TryDownload(const wxString& ShortCode,const wxString& FileName)
         wxURL UrlData(Url);
         if ( !UrlData.IsOk() )
         {
-            LogManager::Get()->LogWarning(F(_T("lib_finder: Invalid url '%s'"),Url.wx_str()));
+            LogManager::Get()->LogWarning(wxString::Format(_("lib_finder: Invalid url '%s'"), Url));
             continue;
         }
         UrlData.SetProxy( ConfigManager::GetProxy() );
@@ -523,7 +601,7 @@ bool lib_finder::TryDownload(const wxString& ShortCode,const wxString& FileName)
         wxInputStream* is = UrlData.GetInputStream();
         if ( !is || !is->IsOk() )
         {
-            LogManager::Get()->LogWarning(F(_T("lib_finder: Couldn't open stream for '%s'"),Url.wx_str()));
+            LogManager::Get()->LogWarning(wxString::Format(_("lib_finder: Couldn't open stream for '%s'"), Url));
             delete is;
             continue;
         }
@@ -531,7 +609,7 @@ bool lib_finder::TryDownload(const wxString& ShortCode,const wxString& FileName)
         wxFileOutputStream Output(FileName);
         if ( !Output.IsOk() )
         {
-            LogManager::Get()->LogWarning(F(_T("lib_finder: Couldn't write to file '%s'"),FileName.wx_str()));
+            LogManager::Get()->LogWarning(wxString::Format(_("lib_finder: Couldn't write to file '%s'"), FileName));
             delete is;
             return false;
         }
@@ -542,7 +620,7 @@ bool lib_finder::TryDownload(const wxString& ShortCode,const wxString& FileName)
         return ret;
     }
 
-    LogManager::Get()->LogWarning(F(_T("lib_finder: Couldn't find suitable download url for '%s'"),ShortCode.wx_str()));
+    LogManager::Get()->LogWarning(wxString::Format(_("lib_finder: Couldn't find suitable download url for '%s'"), ShortCode));
     return false;
 }
 

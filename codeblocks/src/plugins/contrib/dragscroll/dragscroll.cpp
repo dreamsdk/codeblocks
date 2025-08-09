@@ -25,6 +25,8 @@
 #include <wx/fileconf.h> // wxFileConfig
 #include <wx/html/htmlwin.h>
 #include <wx/tokenzr.h>
+#include <wx/window.h>
+
 #include "cbstyledtextctrl.h"
 #include "dragscroll.h"
 #include "dragscrollcfg.h"
@@ -96,7 +98,7 @@ cbDragScroll::~cbDragScroll()
 {
 	//dtor
 	delete m_pMouseEventsHandler;
-	m_pMouseEventsHandler = 0;
+	m_pMouseEventsHandler = nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -231,7 +233,7 @@ void cbDragScroll::OnAttach()
         LOGIT(_T("MouseHtmlFontSize:%d"),       m_MouseHtmlFontSize ) ;
         LOGIT(_T("ZoomWindowIds:[%s]"),         m_ZoomWindowIds.c_str() ) ;
         LOGIT(_T("ZoomFontSizes:[%s]"),         m_ZoomFontSizes.c_str() ) ;
-        LOGIT(_T("MouseWheelZoomReverse:[%d]"), m_MouseWheelZoomReverse.c_str() ) ; //2019/03/30
+        LOGIT(_T("MouseWheelZoomReverse:[%d]"), m_MouseWheelZoomReverse ) ;
     #endif //LOGGING
 
     // Fill ZoomWindowIds and ZoomFontSizes arrays from config strings
@@ -247,6 +249,23 @@ void cbDragScroll::OnAttach()
     Connect( wxEVT_DESTROY,
         (wxObjectEventFunction) (wxEventFunction)
         (wxCommandEventFunction) &cbDragScroll::OnWindowClose);
+
+    // Catch External requests to support a window //(2021/06/25)
+    Connect(idDragScrollAddWindow, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Connect(idDragScrollRemoveWindow, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Connect(idDragScrollRescan, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Connect(idDragScrollReadConfig, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Connect(idDragScrollInvokeConfig, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
 
     // Set current plugin version
 	PluginInfo* pInfo = (PluginInfo*)(Manager::Get()->GetPluginManager()->GetPluginInfo(this));
@@ -277,6 +296,34 @@ void cbDragScroll::OnRelease(bool /*appShutDown*/)
 	// IsAttached() will be FALSE...
 
 	// Remove all Mouse event handlers
+    // Disconnect from creation of windows //(2021/06/25)
+    Disconnect( wxEVT_CREATE,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnWindowOpen);
+
+    // Disonnect from Destroyed windows
+    Disconnect( wxEVT_DESTROY,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnWindowClose);
+
+    // Disconnect from External requests to support a window
+    Disconnect(idDragScrollAddWindow, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Disconnect(idDragScrollRemoveWindow, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Disconnect(idDragScrollRescan, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Disconnect(idDragScrollReadConfig, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+    Disconnect(idDragScrollInvokeConfig, wxEVT_COMMAND_MENU_SELECTED,
+        (wxObjectEventFunction) (wxEventFunction)
+        (wxCommandEventFunction) &cbDragScroll::OnDragScrollEvent_Dispatcher);
+
+	// Disconnect all Mouse event handlers
 	DetachAll();
 }
 // ----------------------------------------------------------------------------
@@ -318,7 +365,7 @@ int cbDragScroll::Configure(wxWindow* parent)
 	if (panel)
 	{
 		dlg.AttachConfigurationPanel(panel);
-		if (parent)
+        if (parent)
             CenterChildOnParent( parent, &dlg);
         else
             PlaceWindow(&dlg,pdlConstrain);
@@ -381,7 +428,7 @@ void cbDragScroll::OnDialogDone(cbDragScrollCfg* pDlg)
      LOGIT(_T("MouseContextDelay:%d"),          MouseContextDelay);
      LOGIT(_T("MouseMouseWheelZoom:%d"),        MouseWheelZoom);
      LOGIT(_T("PropagateLogZoomSize:%d"),       PropagateLogZoomSize);
-     LOGIT(_T("MouseMouseWheelZoomReverse:%d"), MouseWheelZoomReverse); //2019/03/30
+     LOGIT(_T("MouseMouseWheelZoomReverse:%d"), m_MouseWheelZoomReverse); //2019/03/30
      LOGIT(_T("-----------------------------"));
     #endif //LOGGING
 
@@ -483,38 +530,40 @@ void cbDragScroll::OnDragScrollEvent_Dispatcher(wxCommandEvent& event )
     if ( not IsAttached() )
         return;
 
-    switch ( event.GetId() )
+    int id = event.GetId();
+
+    switch ( id )
     {
-	    case idDragScrollAddWindow:
+        default:
+	    if (id == idDragScrollAddWindow)
 	    {
 	        if (not GetMouseDragScrollEnabled() )
                 return;
             OnDragScrollEventAddWindow( event );
 	        break;
 	    }
-	    case idDragScrollRemoveWindow:
+	    else if (id == idDragScrollRemoveWindow)
 	    {
             OnDragScrollEventRemoveWindow( event );
 	        break;
 	    }
-	    case idDragScrollRescan:
+	    else if (id == idDragScrollRescan)
 	    {
  	        if (not GetMouseDragScrollEnabled() )
                 return;
-           OnDragScrollEventRescan( event );
+            OnDragScrollEventRescan( event );
 	        break;
 	    }
-	    case idDragScrollReadConfig:
+	    else if (id == idDragScrollReadConfig)
         {
             OnDragScrollEvent_RereadConfig( event );
 	        break;
         }
-	    case idDragScrollInvokeConfig:
+	    else if (id == idDragScrollInvokeConfig)
         {
             OnDragScrollEvent_InvokeConfig( event );
 	        break;
         }
-        default: break;
     }//switch
 }
 // ----------------------------------------------------------------------------
@@ -546,7 +595,12 @@ void cbDragScroll::OnDragScrollEventRemoveWindow(wxCommandEvent& event )
 
     #if defined(LOGGING)
     int windowID = event.GetId();
-    LOGIT( _T("cbDragScroll::OnDragScrollEvent RemoveWindow[%d][%p][%s]"), windowID, pWin, pWin->GetName().c_str());
+    wxString winName = "NotFound";
+    if (winExists(pWin))
+        winName = pWin->GetName();
+    //Don't try to obtain window internals. Window could be destroyed already.
+    //wxString winName = pWin->GetName().GetData(); <== causes crash
+    LOGIT( _T("cbDragScroll::OnDragScrollEvent RemoveWindow[%d][%p][%s]"), windowID, pWin, winName);
     #endif
 }
 // ----------------------------------------------------------------------------
@@ -649,7 +703,7 @@ void cbDragScroll::CleanUpWindowPointerArray()
     unsigned int i = 0;
     while (i < m_WindowPtrs.GetCount() )
     {
-    	if ( not winExists((wxWindow*)m_WindowPtrs.Item(i)) )
+        if ( not winExists((wxWindow*)m_WindowPtrs.Item(i)) )
         {    m_WindowPtrs.RemoveAt(i);
             #if defined(LOGGING)
             //LOGIT( _T("csDragScroll CleanedUp[%d][%p]"), i, m_WindowPtrs.Item(i));
@@ -874,7 +928,7 @@ void cbDragScroll::DetachAll()
 {
 	// delete all handlers
 	#if defined(LOGGING)
-	LOGIT(wxT("cbDS:DetachAll - detaching all [%lu] targets"), static_cast<unsigned long>(m_WindowPtrs.GetCount()) );
+	LOGIT(wxString::Format("cbDS:DetachAll - detaching all [%zu] targets", m_WindowPtrs.GetCount()));
 	#endif
 
     // Detach from memorized windows and remove event handlers
@@ -992,11 +1046,7 @@ void cbDragScroll::OnAppStartupDoneInit()
         wheelEvt.m_controlDown = true;
         wheelEvt.m_wheelRotation = 0;
         wheelEvt.m_wheelDelta = 1; //Avoid FPE wx3.0
-        #if wxCHECK_VERSION(3, 0, 0)
         pWindow->GetEventHandler()->AddPendingEvent(wheelEvt);
-        #else
-        pWindow->AddPendingEvent(wheelEvt);
-        #endif
     }while(0);
 
     // Issue SetFont() for saved font sizes on our monitored windows
@@ -1037,11 +1087,7 @@ void cbDragScroll::OnAppStartupDoneInit()
                 wheelEvt.m_controlDown = true;
                 wheelEvt.m_wheelRotation = 0;
                 wheelEvt.m_wheelDelta = 1; //Avoid FPE wx3.0
-                #if wxCHECK_VERSION(3, 0, 0)
                 pWindow->GetEventHandler()->AddPendingEvent(wheelEvt);
-                #else
-                pWindow->AddPendingEvent(wheelEvt);
-                #endif
                 #if defined(LOGGING)
                 //LOGIT( _T("OnAppStartupDoneInit Issued Wheel Zoom event 0[%p]size[%d]"),pWindow, fontSize);
                 #endif
@@ -1094,18 +1140,18 @@ void cbDragScroll::OnStartShutdown(CodeBlocksEvent& /*event*/)
         for (size_t i=0; i<m_WindowPtrs.GetCount(); ++i )
         {
             #if defined(LOGGING)
-            //LOGIT( _T("OnStartShutdown[%d][%p][%d]"), i, m_WindowPtrs.Item(i),((wxWindow*)m_WindowPtrs.Item(i))->GetId());
+            LOGIT( _T("OnStartShutdown[%d][%p][%d]"), int(i), m_WindowPtrs.Item(i),int(((wxWindow*)m_WindowPtrs.Item(i))->GetId()));
             #endif
             zoomWindowIds << wxString::Format(_T("%d,"),((wxWindow*)m_WindowPtrs.Item(i))->GetId() );
             wxFont font = ((wxWindow*)m_WindowPtrs.Item(i))->GetFont();
             zoomFontSizes << wxString::Format(_T("%d,"),font.GetPointSize() );
-            //#if defined(LOGGING)
-            //LOGIT( _T("WindowPtr[%p]Id[%d]fontSize[%d]"),
-            //    m_WindowPtrs.Item(i),
-            //    ((wxWindow*)m_WindowPtrs.Item(i))->GetId(),
-            //    font.GetPointSize()
-            //);
-            //#endif
+            #if defined(LOGGING)
+            LOGIT( _T("WindowPtr[%p]Id[%d]fontSize[%d]"),
+                m_WindowPtrs.Item(i),
+                ((wxWindow*)m_WindowPtrs.Item(i))->GetId(),
+                font.GetPointSize()
+            );
+            #endif
         }
         // Remove trailing comma
         zoomWindowIds.Truncate(zoomWindowIds.Length()-1);
@@ -1148,9 +1194,9 @@ void cbDragScroll::OnWindowOpen(wxEvent& event)
         wxWindow* pWindow = (wxWindow*)(event.GetEventObject());
         if ( pWindow )
         {
-            //#if defined(LOGGING)
-            //LOGIT( _T("OnWindowOpen by[%s]"), pWindow->GetName().GetData());
-            //#endif
+            #if defined(LOGGING)
+            LOGIT( _T("OnWindowOpen by[%s]"), pWindow->GetName().GetData());
+            #endif
             if ( (pWindow->GetName() ==  _T("SCIwindow"))
                 or (pWindow->GetName() ==  _T("htmlWindow")) )
             {
@@ -1163,7 +1209,7 @@ void cbDragScroll::OnWindowOpen(wxEvent& event)
                     LOGIT( _T("OnWindowOpen Attaching:%p name: %s"),
                             pWindow, pWindow->GetName().GetData() );
                 #endif //LOGGING
-
+                // Cleanly re-attach the window
                 Attach(pWindow);
             }
         }//fi (ed)
@@ -1179,11 +1225,7 @@ void cbDragScroll::OnWindowOpen(wxEvent& event)
                     wheelEvt.m_controlDown = true;
                     wheelEvt.m_wheelRotation = 0; //set user font
                     wheelEvt.m_wheelDelta = 1; //Avoid FPE wx3.0
-                    #if wxCHECK_VERSION(3, 0, 0)
                     pWindow->GetEventHandler()->AddPendingEvent(wheelEvt);
-                    #else
-                    pWindow->AddPendingEvent(wheelEvt);
-                    #endif
                     #if defined(LOGGING)
                     //LOGIT( _T("OnWindowOpen Issued htmlWindow Zoom event"));
                     #endif
@@ -1510,6 +1552,18 @@ void MouseEventsHandler::OnMouseEvent(wxMouseEvent& event)    //MSW
         // also allows auto activating the editor during long compiles
         if (pDS->GetMouseEditorFocusEnabled() && pStyledTextCtrl )
             ((wxWindow*)pEvtObject)->SetFocus();
+        else if (pDS->GetMouseEditorFocusEnabled())
+        {   // For focus-follows-mouse,
+            // test for movement. We can get here on clicks even though docs say otherwise.
+            if (event.Moving())
+            {   // If no movement leave focus where it is.
+                wxPoint startXY = ((wxWindow*)pEvtObject)->ScreenToClient(wxGetMousePosition());
+                wxMilliSleep(10);
+                wxPoint endXY = ((wxWindow*)pEvtObject)->ScreenToClient(wxGetMousePosition());
+                if ( (abs(startXY.x - endXY.x) >2) or (abs(startXY.y - endXY.y) >2) )
+                    ((wxWindow*)pEvtObject)->SetFocus();
+            }
+        }
     }
 
     int scrollx;
@@ -1607,8 +1661,8 @@ void MouseEventsHandler::OnMouseEvent(wxMouseEvent& event)    //MSW
         // slider values 1...2...3...4...5...6...7...8...9...10   //v0.14
         // divisn values 90  80  70  60 50   40  30  20  10   1
         int nThreshold = 1+( 100-(pDS->GetMouseDragSensitivity()*10) );
-        m_RatioX += (abs(dX)/nThreshold);
-        m_RatioY += (abs(dY)/nThreshold);
+        m_RatioX += (double(abs(dX))/double(nThreshold));
+        m_RatioY += (double(abs(dY))/double(nThreshold));
 
         // scroll the client area
         if (abs(dX) > abs(dY))

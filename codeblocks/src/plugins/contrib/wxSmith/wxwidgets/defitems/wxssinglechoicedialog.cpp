@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxssinglechoicedialog.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssinglechoicedialog.cpp $
+* $Revision: 13547 $
+* $Id: wxssinglechoicedialog.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssinglechoicedialog.cpp $
 */
 
 #include "wxssinglechoicedialog.h"
@@ -72,6 +72,7 @@ void wxsSingleChoiceDialog::OnBuildCreatingCode()
                   (m_Content.IsEmpty()?_T("0"):ChoicesName.wx_str()));
 
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             return;
         }
 
@@ -83,9 +84,9 @@ void wxsSingleChoiceDialog::OnBuildCreatingCode()
     }
 }
 
-void wxsSingleChoiceDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsSingleChoiceDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
-    WXS_SHORT_STRING(wxsSingleChoiceDialog,m_Message,_("Message"),_T("message"),_T(""),false);
-    WXS_SHORT_STRING(wxsSingleChoiceDialog,m_Caption,_("Caption"),_T("caption"),_T(""),false);
-    WXS_ARRAYSTRING (wxsSingleChoiceDialog,m_Content,_("Items"),  _T("content"),_T("item"));
+    WXS_SHORT_STRING(wxsSingleChoiceDialog, m_Message, _("Message"), "message", "", false);
+    WXS_SHORT_STRING(wxsSingleChoiceDialog, m_Caption, _("Caption"), "caption", "", false);
+    WXS_ARRAYSTRING (wxsSingleChoiceDialog, m_Content, _("Items"),   "content", "item");
 }

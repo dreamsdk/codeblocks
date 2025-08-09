@@ -26,7 +26,8 @@
 					<Add option="-DWXUSINGDLL" />
 					<Add option="-DBUILDING_PLUGIN" />
 					<Add option="-DcbDEBUG" />
-					<Add option="-DNOPCH" />
+					<Add option="-Winvalid-pch" />
+					<Add option="-DCB_PRECOMP" />
 					<Add option="-DwxUSE_UNICODE" />
 					<Add directory="$(#WX31_64.include)" />
 					<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
@@ -54,7 +55,6 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
@@ -83,7 +83,8 @@
 		<Unit filename="wxsmith/execution.wxs" />
 		<Unit filename="wxsmith/protocol.wxs" />
 		<Extensions>
-			<SVNInside Login="" Password="" ConnectStatus="1" NeedsPassword="0" />
+			<code_completion />
+			<envvars />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="" main="" init_handlers="necessary" language="CPP" />
 				<resources>
@@ -92,6 +93,7 @@
 					<wxScrollingDialog wxs="wxsmith/protocol.wxs" src="protocol.cpp" hdr="protocol.h" fwddecl="1" i18n="1" name="Protocol" language="CPP" />
 				</resources>
 			</wxsmith>
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

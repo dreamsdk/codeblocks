@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10138 $
- * $Id: expression.cpp 10138 2015-03-10 02:50:53Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/expression.cpp $
+ * $Revision: 13316 $
+ * $Id: expression.cpp 13316 2023-07-02 05:02:03Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/expression.cpp $
  */
 
 #include <sdk.h>
@@ -45,12 +45,12 @@
             CCLogger::Get()->DebugLog(F(format, ##args))
         #define TRACE2(format, args...)
     #elif CC_EXPRESSION_DEBUG_OUTPUT == 2
-    #define TRACE(format, args...)                                              \
-        do                                                                      \
-        {                                                                       \
-            if (g_EnableDebugTrace)                                             \
-                CCLogger::Get()->DebugLog(F(format, ##args));                   \
-        }                                                                       \
+    #define TRACE(format, args...)                            \
+        do                                                    \
+        {                                                     \
+            if (g_EnableDebugTrace)                           \
+                CCLogger::Get()->DebugLog(F(format, ##args)); \
+        }                                                     \
         while (false)
         #define TRACE2(format, args...) \
             CCLogger::Get()->DebugLog(F(format, ##args))

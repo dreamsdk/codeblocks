@@ -1,0 +1,11 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="b" x1="1.886" x2="6.367" y1="294" y2="290.2" gradientTransform="translate(1.72 2.249)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3bb234" offset="0"/>
+      <stop stop-color="#95e891" offset="1"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 -288.5)" stroke-width=".8065">
+    <path transform="matrix(-1.24 0 0 1.24 10.29 -72.77)" d="M2.432 295.963h3.414v.854h.214l1.92-1.814-1.92-1.813h-.214v.853c-2.05.01-2.88 0-3.414 0-.213.213-.213.564-.213.964s0 .743.213.956z" fill="url(#b)" stroke="#075503" stroke-width=".2134"/>
+  </g>
+</svg>

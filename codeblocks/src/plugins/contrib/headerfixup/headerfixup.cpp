@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11535 $
- * $Id: headerfixup.cpp 11535 2018-12-20 11:16:02Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/headerfixup.cpp $
+ * $Revision: 12304 $
+ * $Id: headerfixup.cpp 12304 2021-03-16 23:28:31Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/headerfixup.cpp $
  */
 
 #include <wx/window.h>
@@ -68,6 +68,7 @@ int HeaderFixup::Execute()
   }
 
   Execution Dlg(NULL);
+  PlaceWindow(&Dlg);
   Dlg.ShowModal();
   return 0;
 }// Execute

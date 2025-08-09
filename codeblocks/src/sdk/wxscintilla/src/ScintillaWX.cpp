@@ -16,10 +16,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
 #ifndef WX_PRECOMP
     #include <wx/scrolbar.h>
     #include <wx/math.h>
@@ -1247,6 +1243,8 @@ int  ScintillaWX::DoKeyDown(const wxKeyEvent& evt, bool* consumed)
                 *consumed = false;
             return 0;
         }
+    default:
+      break;
     }
 
     int rv = KeyDownWithModifiers

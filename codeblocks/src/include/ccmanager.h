@@ -11,6 +11,8 @@
 #ifndef CB_PRECOMP
     #include <wx/timer.h>
     #include "cbplugin.h"
+#else
+    #include "sdk_precomp.h" //needed to avoid massive clangd error msgs
 #endif
 
 class UnfocusablePopupWindow;
@@ -44,7 +46,7 @@ class wxScintillaEvent;
  * list or the doxygen popup, the scroll event is instead sent there (and skipped for the editor
  * window).
  */
-class DLLIMPORT CCManager : public Mgr<CCManager>, wxEvtHandler
+class DLLIMPORT CCManager : public Mgr<CCManager>, public wxEvtHandler
 {
     public:
         friend class Mgr<CCManager>;
@@ -86,6 +88,10 @@ class DLLIMPORT CCManager : public Mgr<CCManager>, wxEvtHandler
 
         /** Called after env settings have changed, so the changes can be applied. */
         void UpdateEnvSettings();
+
+        /** Show the diagnostics of the line if available*/
+        bool DoShowDiagnostics( cbEditor* ed, int line);
+
     private:
         CCManager();
         ~CCManager() override;
@@ -195,6 +201,12 @@ class DLLIMPORT CCManager : public Mgr<CCManager>, wxEvtHandler
          * to determine its dimensions (so the scroll event can be sent to it, if relevant)
          */
         wxListView* m_pAutocompPopup;
+
+        /**
+         * List of editors holding an event connect to popup mouse scroll event
+         * for AutoCompPopup and html Documentation popup
+         */
+        std::set<cbEditor*> m_EdAutocompMouseTraps;
 #endif // __WXMSW__
 
         cbEditor* m_pLastEditor; //!< Last editor operated on.
@@ -223,6 +235,7 @@ class DLLIMPORT CCManager : public Mgr<CCManager>, wxEvtHandler
             int caretStart;
             int tokenStart;
             int editorZoom;
+            wxString trigger;
         };
 
         LastACLaunchState m_LastACLaunchState;

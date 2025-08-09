@@ -29,35 +29,35 @@ class ThreadSearchEvent;
 
 // MessageLog inheritance is necessary to be able to
 // add logger to Messages notebook.
-class ThreadSearchLoggerTree : public wxEvtHandler, public ThreadSearchLoggerBase
+class ThreadSearchLoggerTree : public ThreadSearchLoggerBase
 {
 public:
     /** Constructor. */
     ThreadSearchLoggerTree(ThreadSearchView& threadSearchView, ThreadSearch& threadSearchPlugin,
-                            InsertIndexManager::eFileSorting fileSorting, wxPanel* pParent, long id);
+                            InsertIndexManager::eFileSorting fileSorting, wxWindow* pParent, long id);
 
     /** Destructor. */
-    virtual ~ThreadSearchLoggerTree();
+    ~ThreadSearchLoggerTree() override;
 
     /** Getter */
-    virtual eLoggerTypes GetLoggerType() {return TypeTree;}
+    eLoggerTypes GetLoggerType() override { return TypeTree; }
 
     /** Called by ThreadSearchView to process a ThreadSearchEvent
       * sent by worker thread.
       */
-    virtual void OnThreadSearchEvent(const ThreadSearchEvent& event);
+    void OnThreadSearchEvent(const ThreadSearchEvent& event) override;
 
     /** Removes all items from logger. */
-    virtual void Clear();
+    void Clear() override;
 
     /** Called on search begin to prepare logger. */
-    virtual void OnSearchBegin(const ThreadSearchFindData& findData);
+    void OnSearchBegin(const ThreadSearchFindData& findData) override;
 
     /** Returns the logger window. */
-    virtual wxWindow* GetWindow();
+    wxWindow* GetWindow() override;
 
     /** Sets focus on list window. */
-    virtual void SetFocus();
+    void SetFocus() override;
 
     /** Single click event handler */
     void OnLoggerTreeClick(wxTreeEvent& event);
@@ -65,7 +65,7 @@ public:
     /** Double click event handler */
     void OnLoggerTreeDoubleClick(wxTreeEvent& event);
 
-protected:
+private:
     /** GetFileLineFromTreeEvent
       * Return the file path at index from the list control using dir and file columns.
       * @param event    : list control event
@@ -81,10 +81,10 @@ protected:
     bool hasResultLineForTreeItem(wxTreeItemId treeItemId);
 
     /** Dynamic events connection. */
-    virtual void ConnectEvents(wxEvtHandler* pEvtHandler);
+    void ConnectEvents(wxEvtHandler* pEvtHandler);
 
     /** Dynamic events disconnection. */
-    virtual void DisconnectEvents(wxEvtHandler* pEvtHandler);
+    void DisconnectEvents(wxEvtHandler* pEvtHandler);
 
     /** Contextual menu event handler */
     void OnLoggerTreeContextualMenu(wxTreeEvent& event);

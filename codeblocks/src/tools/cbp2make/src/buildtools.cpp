@@ -119,8 +119,10 @@ CString CBuildTool::TypeName(const CBuildTool::ToolType Type)
     case CBuildTool::btNativeLinker: {
         return "Native binary linker";
     }
-
-        //case CBuildTool::btBuildManager,
+    case CBuildTool::btDependencyGenerator: // fall-through
+    case CBuildTool::btBuildManager: {      // fall-through
+        return "Other";
+    }
     }
     return "Other";
 }
@@ -158,8 +160,10 @@ CString CBuildTool::AbbrevTypeName(const CBuildTool::ToolType Type)
     case CBuildTool::btNativeLinker:     {
         return "nl";
     }
-
-        //case CBuildTool::btBuildManager,
+    case CBuildTool::btDependencyGenerator: // fall-through
+    case CBuildTool::btBuildManager: {      // fall-through
+        return "bt";
+    }
     }
     return "bt";
 }
@@ -580,6 +584,8 @@ void CDynamicLinker::Reset(const CPlatform::OS_Type OS)
 {
     CLinker::Reset(OS);
     switch (OS) {
+    case CPlatform::OS_Count: // fall-through
+    case CPlatform::OS_Other: // fall-through
     default:
     case CPlatform::OS_Unix: {
         m_LibraryExtension = "so";
@@ -1722,7 +1728,6 @@ void CIntelDynamicLinker::Reset(const CPlatform::OS_Type OS)
         m_LibraryDirSwitch = "-L";
         m_LinkLibrarySwitch = "-l";
         m_ObjectExtension = "o";
-        m_LibraryPrefix = "";
         m_LibraryPrefix = "lib";
         m_LibraryExtension = "a";
         m_NeedLibraryPrefix = false;

@@ -9,7 +9,7 @@
 #include <wx/intl.h>
 #include "configurationpanel.h"
 #include <settings.h>
-#include "nativeparser.h"
+#include "parsemanager.h"
 #include "parser/parser.h"
 
 class CodeCompletion;
@@ -18,16 +18,15 @@ class DocumentationHelper;
 class CCOptionsDlg : public cbConfigurationPanel
 {
 public:
-    CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* cc, DocumentationHelper* dh);
-    virtual ~CCOptionsDlg();
+    CCOptionsDlg(wxWindow* parent, ParseManager* pm, CodeCompletion* cc, DocumentationHelper* dh);
+    ~CCOptionsDlg() override;
 
-    virtual wxString GetTitle() const          { return _("Code completion"); }
-    virtual wxString GetBitmapBaseName() const { return _T("codecompletion"); }
-    virtual void OnApply();
-    virtual void OnCancel()                    { ; }
+    wxString GetTitle() const override { return _("Code completion"); }
+    wxString GetBitmapBaseName() const override { return _T("codecompletion"); }
+    void OnApply() override;
+    void OnCancel() override {}
 
 protected:
-    void OnChooseColour(wxCommandEvent& event);
     void OnCCDelayScroll(wxScrollEvent& event);
 
     void OnUpdateUI(wxUpdateUIEvent& event);
@@ -36,7 +35,7 @@ private:
     void UpdateCCDelayLabel();
     bool ValidateReplacementToken(wxString& from, wxString& to);
 
-    NativeParser*        m_NativeParser;
+    ParseManager*        m_ParseManager;
     CodeCompletion*      m_CodeCompletion;
     ParserBase&          m_Parser;
     DocumentationHelper* m_Documentation;

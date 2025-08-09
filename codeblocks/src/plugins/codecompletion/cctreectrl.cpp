@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9043 $
- * $Id: cctreectrl.cpp 9043 2013-05-04 04:39:36Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/cctreectrl.cpp $
+ * $Revision: 12999 $
+ * $Id: cctreectrl.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/cctreectrl.cpp $
  */
 
 #include <sdk.h>
@@ -29,7 +29,8 @@ CCTreeCtrlData::CCTreeCtrlData(SpecialFolder sf, Token* token, short int kindMas
     m_TokenKind(token ? token->m_TokenKind : tkUndefined),
     m_TokenName(token ? token->m_Name : _T("")),
     m_ParentIndex(parentIdx),
-    m_Ticket(token ? token->GetTicket() : 0)
+    m_Ticket(token ? token->GetTicket() : 0),
+    m_MirrorNode(nullptr)
 {
 }
 
@@ -179,6 +180,6 @@ void CCTreeCtrl::RemoveDoubles(const wxTreeItemId& parent)
             existing = GetPrevSibling(existing);
     }
 #ifdef CC_BUILDTREE_MEASURING
-    CCLogger::Get()->DebugLog(F(_T("RemoveDoubles took : %ld"), sw.Time()));
+    CCLogger::Get()->DebugLog(wxString::Format("RemoveDoubles took: %ld ms", sw.Time()));
 #endif
 }

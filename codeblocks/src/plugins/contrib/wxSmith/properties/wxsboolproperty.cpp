@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsboolproperty.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsboolproperty.cpp $
+* $Revision: 12298 $
+* $Id: wxsboolproperty.cpp 12298 2021-03-06 15:47:09Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsboolproperty.cpp $
 */
 
 #include "wxsboolproperty.h"
@@ -36,7 +36,9 @@ wxsBoolProperty::wxsBoolProperty(const wxString& PGName,const wxString& DataName
 
 void wxsBoolProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
-    wxPGId ID = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxBoolProperty(GetPGName(),wxPG_LABEL,VALUE));
+    wxBoolProperty *Property = new wxBoolProperty(GetPGName(),wxPG_LABEL,VALUE);
+    Property->SetHelpString(m_HelpString);
+    wxPGId ID = Grid->AppendIn(Parent, Property);
     Grid->SetPropertyAttribute(ID,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
     PGRegister(Object,Grid,ID);
 }

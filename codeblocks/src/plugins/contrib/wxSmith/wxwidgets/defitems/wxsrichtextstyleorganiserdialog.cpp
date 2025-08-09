@@ -91,7 +91,8 @@ void wxsRichTextStyleOrganiserDialog::OnBuildCreatingCode()
     switch(GetLanguage())
     {
         case wxsCPP:
-            AddHeader(_T(" <wx/richtext/richtextstyledlg.h>"), GetInfo().ClassName, 0);
+            AddHeader(_T("<wx/dialog.h>"), GetInfo().ClassName, 0);
+            AddHeader(_T("<wx/richtext/richtextstyledlg.h>"), GetInfo().ClassName, 0);
 
             for(int i = 0;arrStyleValueNames[i];i++){
                 if((m_iFlags & arrStyleValues[i]) == arrStyleValues[i]){
@@ -115,6 +116,7 @@ void wxsRichTextStyleOrganiserDialog::OnBuildCreatingCode()
                   sFlags.wx_str(), sStyleSheetName.wx_str(), m_sCaption.wx_str());
 
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             break;
 
         case wxsUnknownLanguage: // fall-through
@@ -125,11 +127,11 @@ void wxsRichTextStyleOrganiserDialog::OnBuildCreatingCode()
 
 /*! \brief Enumerate the dialogue's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsRichTextStyleOrganiserDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsRichTextStyleOrganiserDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     // Default to wxRICHTEXT_ORGANISER_ORGANISE.
     WXS_FLAGS(wxsRichTextStyleOrganiserDialog, m_iFlags, _("Style Flags"), _T("style_flags"), arrStyleValues, arrStyleValueNames,

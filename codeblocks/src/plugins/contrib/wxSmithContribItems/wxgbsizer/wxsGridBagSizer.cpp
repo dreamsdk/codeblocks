@@ -89,10 +89,6 @@ namespace
 		false);
 }
 
-
-
-
-
 wxsGridBagSizerExtra::wxsGridBagSizerExtra():wxsSizerExtra(), colspan(1), rowspan(1), col(-1), row(-1)
 {
 	ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("wxsmith"));
@@ -101,6 +97,7 @@ wxsGridBagSizerExtra::wxsGridBagSizerExtra():wxsSizerExtra(), colspan(1), rowspa
 	col = cfg->ReadInt(_T("/defsizer/col"), col);
 	row = cfg->ReadInt(_T("/defsizer/row"), row);
 }
+
 void wxsGridBagSizerExtra::OnEnumProperties(long _Flags)
 {
 	static const int Priority = 100;
@@ -117,12 +114,12 @@ wxString wxsGridBagSizerExtra::AllParamsCode(wxsCoderContext* Ctx)
 		case wxsCPP:
 		{
 			wxString str;
-			str = wxString::Format(_("wxGBPosition(%ld, %ld), "), row, col);
+			str = wxString::Format("wxGBPosition(%ld, %ld), ", row, col);
 			if (rowspan == 1 && colspan == 1)
-				str += _("wxDefaultSpan, ");
+				str += "wxDefaultSpan, ";
 			else
-				str += wxString::Format(_("wxGBSpan(%ld, %ld), "), rowspan, colspan);
-			str += wxsSizerFlagsProperty::GetString(Flags) + _T(", ") << Border.GetPixelsCode(Ctx);
+				str += wxString::Format("wxGBSpan(%ld, %ld), ", rowspan, colspan);
+			str += wxsSizerFlagsProperty::GetString(Flags) + ", " << Border.GetPixelsCode(Ctx);
 			return str;
 		}
 		case wxsUnknownLanguage: // fall-though
@@ -132,36 +129,34 @@ wxString wxsGridBagSizerExtra::AllParamsCode(wxsCoderContext* Ctx)
 	return wxEmptyString;
 }
 
-
-
-
-
-
-
 wxsGridBagSizer::wxsGridBagSizer(wxsItemResData* Data):wxsSizer(Data,&Reg.Info)
 {
 }
+
 wxsPropertyContainer* wxsGridBagSizer::OnBuildExtra()
 {
 	return new wxsGridBagSizerExtra();
 }
+
 void wxsGridBagSizer::OnEnumSizerProperties(cb_unused long Flags)
 {
 	FixupList(GrowableCols);
 	FixupList(GrowableRows);
-	WXS_DIMENSION(wxsGridBagSizer,VGap,_("V-Gap"),_("V-Gap in dialog units"),_T("vgap"),0,false);
-	WXS_DIMENSION(wxsGridBagSizer,HGap,_("H-Gap"),_("H,y-Gap in dialog units"),_T("hgap"),0,false);
-	WXS_SHORT_STRING(wxsGridBagSizer,GrowableCols,_("Growable cols"),_T("growablecols"),_T(""),false);
-	WXS_SHORT_STRING(wxsGridBagSizer,GrowableRows,_("Growable rows"),_T("growablerows"),_T(""),false);
+	WXS_DIMENSION(wxsGridBagSizer,VGap, _("V-Gap"), _("V-Gap in dialog units"), "vgap", 0, false);
+	WXS_DIMENSION(wxsGridBagSizer,HGap, _("H-Gap"), _("H-Gap in dialog units"), "hgap", 0, false);
+	WXS_SHORT_STRING_T(wxsGridBagSizer, GrowableCols, _("Growable cols"), "growablecols", "", false, _("Comma-separated list of columns"));
+	WXS_SHORT_STRING_T(wxsGridBagSizer, GrowableRows, _("Growable rows"), "growablerows", "", false, _("Comma-separated list of rows"));
 	FixupList(GrowableCols);
 	FixupList(GrowableRows);
 }
+
 wxGridBagSizer* wxsGridBagSizer::OnBuildSizerPreview(wxWindow* Parent)
 {
 	wxGridBagSizer* Sizer = new wxGridBagSizer(VGap.GetPixels(Parent),HGap.GetPixels(Parent));
 
 	return Sizer;
 }
+
 wxObject* wxsGridBagSizer::OnBuildPreview(wxWindow* Parent,long Flags)
 {
 	wxWindow* NewParent = Parent;
@@ -239,15 +234,19 @@ wxObject* wxsGridBagSizer::OnBuildPreview(wxWindow* Parent,long Flags)
 	}
 
     const wxArrayInt Cols = GetArray(GrowableCols);
+    const int ColsCount = Sizer->GetEffectiveColsCount();
     for (size_t i = 0; i < Cols.Count(); i++)
     {
-        Sizer->AddGrowableCol(Cols[i]);
+        if (Cols[i] < ColsCount)
+            Sizer->AddGrowableCol(Cols[i]);
     }
 
     const wxArrayInt Rows = GetArray(GrowableRows);
+    const int RowsCount = Sizer->GetEffectiveRowsCount();
     for (size_t i = 0; i < Rows.Count(); i++)
     {
-        Sizer->AddGrowableRow(Rows[i]);
+        if (Rows[i] < RowsCount)
+            Sizer->AddGrowableRow(Rows[i]);
     }
 
 	if ( !(Flags & pfExact) )
@@ -270,6 +269,7 @@ wxObject* wxsGridBagSizer::OnBuildPreview(wxWindow* Parent,long Flags)
 	}
 	return Sizer;
 }
+
 void wxsGridBagSizer::OnBuildSizerCreatingCode()
 {
 	switch ( GetLanguage() )
@@ -278,13 +278,8 @@ void wxsGridBagSizer::OnBuildSizerCreatingCode()
 		{
 			AddHeader(_T("<wx/gbsizer.h>"),GetInfo().ClassName,hfInPCH);
 			Codef(_T("%C(%s, %s);\n"),
-				#if wxCHECK_VERSION(3, 0, 0)
 				VGap.GetPixelsCode(GetCoderContext()).wx_str(),
 				HGap.GetPixelsCode(GetCoderContext()).wx_str());
-				#else
-				VGap.GetPixelsCode(GetCoderContext()).c_str(),
-				HGap.GetPixelsCode(GetCoderContext()).c_str());
-				#endif
 
 			return;
 		}
@@ -348,13 +343,15 @@ void wxsGridBagSizer::OnBuildCreatingCode()
             const wxArrayInt Cols = GetArray(GrowableCols);
             for (size_t i = 0; i < Cols.Count(); i++)
             {
-                Codef(wxT("%AAddGrowableCol(%d);\n"), Cols[i]);
+                // Do not check if Cols[i] < GetEffectiveColsCount() so user can notice the problem at runtime
+                Codef("%AAddGrowableCol(%d);\n", Cols[i]);
             }
 
             const wxArrayInt Rows = GetArray(GrowableRows);
             for (size_t i = 0; i < Rows.Count(); i++)
             {
-                Codef(wxT("%AAddGrowableRow(%d);\n"), Rows[i]);
+                // Do not check if Rows[i] < GetEffectiveRowsCount() so user can notice the problem at runtime
+                Codef("%AAddGrowableRow(%d);\n", Rows[i]);
             }
             break;
         }

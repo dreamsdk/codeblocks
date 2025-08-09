@@ -103,12 +103,12 @@ void wxsImagePanel::OnBuildCreatingCode()
     else
     {
         iname  = image->GetVarName();
-        iname += _("_BMP");
+        iname += "_BMP";
     }
 
 // include files
 
-    AddHeader(_("\"wx/wxImagePanel.h\""), GetInfo().ClassName, 0);
+    AddHeader("\"wx/wxImagePanel.h\"", GetInfo().ClassName, 0);
 
 // create the panel
 
@@ -127,11 +127,7 @@ void wxsImagePanel::OnBuildCreatingCode()
         tt.Printf(_("// Set the bitmap for %s.\n"), vname.wx_str());
         AddEventCode(tt);
 
-#if wxCHECK_VERSION(3, 0, 0)
         tt.Printf(_T("%s->SetBitmap(*%s);\n"), vname.wx_str(), iname.wx_str());
-#else
-        tt.Printf(_T("%s->SetBitmap(*%s);\n"), vname.c_str(), iname.c_str());
-#endif
         AddEventCode(tt);
     }
     else if (!mImage.IsEmpty() && mImage != _T("<none>"))
@@ -214,33 +210,30 @@ void wxsImagePanel::OnEnumContainerProperties(cb_unused long Flags)
 {
     static wxString      sImageNames[128];
     static const wxChar *pImageNames[128];
-    int                  i,n,k;
-    wxsItemResData      *res;
-    wxsTool             *tool;
-    wxString             ss, tt;
 
 // find available images, and pointer to current imagelist
 
-    res = GetResourceData();
-    n = 0;
-    sImageNames[n] = _("<none>");
-    pImageNames[n] = (const wxChar *) sImageNames[n];
-    n += 1;
-    k = res->GetToolsCount();
-    for (i=0; i<k; i++)
-    {
-        tool = res->GetTool(i);
-        ss = tool->GetUserClass();
+    wxsItemResData* res = GetResourceData();
+    sImageNames[0] = _("<none>");
+    pImageNames[0] = sImageNames[0].wx_str();
 
-        if ((ss == _T("wxImage")) && (n < 127))
+    int n = 1;
+    const int k = res->GetToolsCount();
+    for (int i = 0; i < k; ++i)
+    {
+        wxsTool* tool = res->GetTool(i);
+        wxString ss(tool->GetUserClass());
+
+        if ((ss == "wxImage") && (n < 127))
         {
             ss = tool->GetVarName();
             sImageNames[n] = ss;
-            pImageNames[n] = (const wxChar *) sImageNames[n];
-            n += 1;
+            pImageNames[n] = sImageNames[n].wx_str();
+            n++;
         }
     }
-    pImageNames[n] = NULL;
+
+    pImageNames[n] = nullptr;
 
     WXS_EDITENUM(wxsImagePanel, mImage, _("Image"), _T("image"), pImageNames, _("<none>"))
 

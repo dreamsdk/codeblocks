@@ -6,7 +6,7 @@
 #ifndef CODEREFACTORING_H
 #define CODEREFACTORING_H
 
-#include "nativeparser.h"
+#include "parsemanager.h"
 
 struct crSearchData
 {
@@ -26,7 +26,7 @@ class CodeRefactoring
     typedef std::map<wxString, SearchDataList> SearchDataMap;
 
 public:
-    CodeRefactoring(NativeParser& np);
+    CodeRefactoring(ParseManager& np);
     virtual ~CodeRefactoring();
 
     void FindReferences();
@@ -47,7 +47,7 @@ private:
     bool Parse();
 
 private:
-    NativeParser& m_NativeParser;
+    ParseManager& m_ParseManager;
     SearchDataMap m_SearchDataMap;
 };
 

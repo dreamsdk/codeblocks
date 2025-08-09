@@ -1,0 +1,39 @@
+<svg width="16" height="16" version="1.1" viewBox="0 0 4.233 4.233" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <clipPath id="c">
+      <path d="M0 0h600v300H0z"/>
+    </clipPath>
+    <clipPath id="d">
+      <path d="m0 0 300 150H0zm300 0h300L300 150zm0 150h300v150zm0 0v150H0z"/>
+    </clipPath>
+    <g id="e">
+      <g id="b">
+        <path transform="translate(0 -.325)" d="M0 0v.5L1 0z"/>
+        <path transform="rotate(-36 .5 -.162)" d="M0 0v-.5L1 0z"/>
+      </g>
+      <use transform="scale(-1 1)" xlink:href="#b"/>
+      <use transform="rotate(72)" xlink:href="#b"/>
+      <use transform="rotate(-72)" xlink:href="#b"/>
+      <use transform="scale(-1 1) rotate(72)" xlink:href="#b"/>
+    </g>
+  </defs>
+  <g transform="translate(0 -292.8)">
+    <path d="m-0.265 293.3h5.821v2.91h-5.821z" fill="#00247d" stroke-width=".004851"/>
+    <path transform="translate(-.265 293.3) scale(.00485)" d="m0 0 600 300M0 300 600 0" clip-path="url(#c)" stroke="#fff" stroke-width="60"/>
+    <path transform="translate(-.265 293.3) scale(.00485)" d="m0 0 600 300M0 300 600 0" clip-path="url(#d)" stroke="#cc142b" stroke-width="40"/>
+    <path transform="translate(-.265 293.3) scale(.00485)" d="M300 0v300M0 150h600" clip-path="url(#c)" stroke="#fff" stroke-width="100"/>
+    <path transform="translate(-.265 293.3) scale(.00485)" d="M300 0v300M0 150h600" clip-path="url(#c)" stroke="#cc142b" stroke-width="60"/>
+    <use transform="translate(3.363 294) scale(.2202)" width="100%" height="100%" fill="#fff" xlink:href="#e"/>
+    <use transform="translate(3.363 294) scale(.1455)" width="100%" height="100%" fill="#cc142b" xlink:href="#e"/>
+    <g transform="rotate(82 -164.9 147.3) scale(.00485)">
+      <use transform="rotate(-82 519 -457.7) scale(40.4)" width="100%" height="100%" fill="#fff" xlink:href="#e"/>
+      <use transform="rotate(-82 519 -457.7) scale(25)" width="100%" height="100%" fill="#cc142b" xlink:href="#e"/>
+    </g>
+    <g transform="rotate(82 -164.7 147.4) scale(.00485)">
+      <use transform="rotate(-82 668.6 -327.7) scale(45.4)" width="100%" height="100%" fill="#fff" xlink:href="#e"/>
+      <use transform="rotate(-82 668.6 -327.7) scale(30)" width="100%" height="100%" fill="#cc142b" xlink:href="#e"/>
+    </g>
+    <use transform="matrix(.2445 0 0 .2445 3.363 295.7)" width="100%" height="100%" fill="#fff" xlink:href="#e"/>
+    <use transform="matrix(.1698 0 0 .1698 3.363 295.7)" width="100%" height="100%" fill="#cc142b" xlink:href="#e"/>
+  </g>
+</svg>

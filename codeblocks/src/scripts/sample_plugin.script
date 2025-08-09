@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7443 $
- * $Id: sample_plugin.script 7443 2011-09-01 16:29:16Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/scripts/sample_plugin.script $
+ * $Revision: 11975 $
+ * $Id: sample_plugin.script 11975 2020-03-04 20:47:39Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/scripts/sample_plugin.script $
  */
 
 // Script plugins must extend cbScriptPlugin
@@ -44,14 +44,14 @@ class TestPlugin extends cbScriptPlugin
 
 		return entries;
 	}
-	
+
 	// optional to support ExecutePlugin(pluginNameString)
 	function Execute()
     {
         ::ShowMessage(_T("Ho-ho was here ;)"));
         return 0;
     }
-    
+
     // optional calback for menubar items clicking
 	function OnMenuClicked(index)
 	{

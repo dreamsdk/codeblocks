@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11789 $
- * $Id: coderefactoring.cpp 11789 2019-07-14 15:00:57Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/coderefactoring.cpp $
+ * $Revision: 13471 $
+ * $Id: coderefactoring.cpp 13471 2024-02-20 02:38:52Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/coderefactoring.cpp $
  */
 
 #include <sdk.h>
@@ -31,7 +31,7 @@
 #include <searchresultslog.h>
 
 #include "coderefactoring.h"
-#include "nativeparser.h"
+#include "parsemanager.h"
 
 #define CC_CODEREFACTORING_DEBUG_OUTPUT 0
 
@@ -50,12 +50,12 @@
         CCLogger::Get()->DebugLog(F(format, ##args))
     #define TRACE2(format, args...)
 #elif CC_CODEREFACTORING_DEBUG_OUTPUT == 2
-    #define TRACE(format, args...)                                              \
-        do                                                                      \
-        {                                                                       \
-            if (g_EnableDebugTrace)                                             \
-                CCLogger::Get()->DebugLog(F(format, ##args));                   \
-        }                                                                       \
+    #define TRACE(format, args...)                            \
+        do                                                    \
+        {                                                     \
+            if (g_EnableDebugTrace)                           \
+                CCLogger::Get()->DebugLog(F(format, ##args)); \
+        }                                                     \
         while (false)
     #define TRACE2(format, args...) \
         CCLogger::Get()->DebugLog(F(format, ##args))
@@ -119,8 +119,8 @@ private:
 const long ScopeDialog::ID_OPEN_FILES = wxNewId();
 const long ScopeDialog::ID_PROJECT_FILES = wxNewId();
 
-CodeRefactoring::CodeRefactoring(NativeParser& np) :
-    m_NativeParser(np)
+CodeRefactoring::CodeRefactoring(ParseManager& pm) :
+    m_ParseManager(pm)
 {
 }
 
@@ -140,11 +140,11 @@ wxString CodeRefactoring::GetSymbolUnderCursor()
     if (control->IsString(style) || control->IsComment(style))
         return wxEmptyString;
 
-    if (!m_NativeParser.GetParser().Done())
+    if (!m_ParseManager.GetParser().Done())
     {
         wxString msg(_("The Parser is still parsing files."));
         cbMessageBox(msg, _("Code Refactoring"), wxOK | wxICON_WARNING);
-        msg += m_NativeParser.GetParser().NotDoneReason();
+        msg += m_ParseManager.GetParser().NotDoneReason();
         CCLogger::Get()->DebugLog(msg);
 
         return wxEmptyString;
@@ -168,7 +168,7 @@ bool CodeRefactoring::Parse()
 
     TokenIdxSet targetResult;
     const int endOfWord = editor->GetControl()->WordEndPosition(editor->GetControl()->GetCurrentPos(), true);
-    m_NativeParser.MarkItemsByAI(targetResult, true, false, true, endOfWord);
+    m_ParseManager.MarkItemsByAI(targetResult, true, false, true, endOfWord);
     if (targetResult.empty())
     {
         cbMessageBox(_("Symbol not found under cursor!"), _("Code Refactoring"), wxOK | wxICON_WARNING);
@@ -178,7 +178,7 @@ bool CodeRefactoring::Parse()
     // handle local variables
     bool isLocalVariable = false;
 
-    TokenTree* tree = m_NativeParser.GetParser().GetTokenTree();
+    TokenTree* tree = m_ParseManager.GetParser().GetTokenTree();
 
     CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
 
@@ -193,12 +193,13 @@ bool CodeRefactoring::Parse()
     CC_LOCKER_TRACK_TT_MTX_UNLOCK(s_TokenTreeMutex)
 
     wxArrayString files;
-    cbProject* project = m_NativeParser.GetProjectByEditor(editor);
+    cbProject* project = m_ParseManager.GetProjectByEditor(editor);
     if (isLocalVariable || !project)
         files.Add(editor->GetFilename());
     else
     {
         ScopeDialog scopeDlg(Manager::Get()->GetAppWindow(), _("Code Refactoring"));
+        PlaceWindow(&scopeDlg);
         const int ret = scopeDlg.ShowModal();
         if (ret == ScopeDialog::ID_OPEN_FILES)
             GetOpenedFiles(files);
@@ -297,7 +298,7 @@ size_t CodeRefactoring::VerifyResult(const TokenIdxSet& targetResult, const wxSt
     const Token* parentOfLocalVariable = nullptr;
     if (isLocalVariable)
     {
-        TokenTree* tree = m_NativeParser.GetParser().GetTokenTree();
+        TokenTree* tree = m_ParseManager.GetParser().GetTokenTree();
 
         CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
 
@@ -373,7 +374,7 @@ size_t CodeRefactoring::VerifyResult(const TokenIdxSet& targetResult, const wxSt
             // do cc search
             const int endOfWord = itList->pos + targetText.Len();
             control->GotoPos(endOfWord);
-            m_NativeParser.MarkItemsByAI(&searchData, result, true, false, true, endOfWord);
+            m_ParseManager.MarkItemsByAI(&searchData, result, true, false, true, endOfWord);
             if (result.empty())
             {
                 it->second.erase(itList++);
@@ -397,7 +398,7 @@ size_t CodeRefactoring::VerifyResult(const TokenIdxSet& targetResult, const wxSt
                 {
                     bool do_continue = false;
 
-                    TokenTree* tree = m_NativeParser.GetParser().GetTokenTree();
+                    TokenTree* tree = m_ParseManager.GetParser().GetTokenTree();
 
                     CC_LOCKER_TRACK_TT_MTX_LOCK(s_TokenTreeMutex)
 
@@ -514,7 +515,7 @@ void CodeRefactoring::DoRenameSymbols(const wxString& targetText, const wxString
     if (!editor)
         return;
 
-    cbProject* project = m_NativeParser.GetProjectByEditor(editor);
+    cbProject* project = m_ParseManager.GetProjectByEditor(editor);
     for (SearchDataMap::iterator it = m_SearchDataMap.begin(); it != m_SearchDataMap.end(); ++it)
     {
         // check if the file is already opened in built-in editor and do search in it

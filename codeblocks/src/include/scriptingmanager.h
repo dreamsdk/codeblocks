@@ -6,20 +6,20 @@
 #ifndef SCRIPTING_H
 #define SCRIPTING_H
 
-#include <map>
-#include <set>
-
 #ifndef CB_PRECOMP
     #include "cbexception.h" // cbThrow
     #include "globals.h" // cbC2U
+    #include "settings.h"
+    #include "manager.h"
+    #include "menuitemsmanager.h"
+
+    #include <wx/intl.h>
 #endif
 
-#include "settings.h"
-#include "manager.h"
-#include "menuitemsmanager.h"
-#include <wx/intl.h>
-
-struct SquirrelError;
+/// Forward declare the Squirrel VM type. I'm doing this because including squirrel.h would require
+/// changing include paths in a lot of projects. Unfortunately we have to keep this in sync with the
+/// one in squirrel.h.
+typedef struct SQVM* cbHSQUIRRELVM;
 
 /** @brief Provides scripting in Code::Blocks.
   *
@@ -36,21 +36,25 @@ struct SquirrelError;
   * @code
   * // int return value
   * // C++ equivalent: int retValue = FunctionName("str_arg", 5, 1.0);
-  * SqPlus::SquirrelFunction<int> myfunc("FunctionName");
-  * int retValue = myfunc(_T("str_arg"), 5, 1.0);
+  * Caller caller(vm);
+  * wxString strArg("str_arg");
+  * SQInteger result;
+  * if (!caller.CallAndReturn3(_SC("FunctionName"), &strArg, 5, 1.0))
+  *     <handleTheErrorAppropriately>
   * // void return
   * // C++ equivalent: FunctionName("str_arg", 5, 1.0);
-  * SqPlus::SquirrelFunction<void> myfunc("FunctionName");
-  * myfunc(_T("str_arg"), 5, 1.0);
+  * Caller caller(vm);
+  * wxString strArg("str_arg");
+  * if (!caller.Call3(_SC("FunctionName"), &strArg, 5, 1.0))
+  *     <handleTheErrorAppropriately>
   * @endcode
   *
   * The templated type denotes the function's return type. Also note that the
   * function name is not unicode (we 're not using Squirrel in unicode mode).
   */
-class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>, public wxEvtHandler
+class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>
 {
         friend class Mgr<ScriptingManager>;
-        wxCriticalSection cs;
     public:
         /// Script trusts container struct
         struct TrustedScriptProps
@@ -62,6 +66,8 @@ class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>, public wxEvtHan
         // script filename -> props
         /// Script trusts container struct
         typedef std::map<wxString, TrustedScriptProps> TrustedScripts;
+
+        cbHSQUIRRELVM GetVM();
 
         /** @brief Loads a script.
           *
@@ -87,36 +93,22 @@ class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>, public wxEvtHan
 
         /** @brief Returns an accumulated error string.
           *
-          * Returns an error string for the passed exception (if any) plus
-          * any accumulated script engine errors (e.g. from failed function calls).
-          * @param exception A pointer to the exception object containing the error. Can be NULL (default).
+          * Returns an error string any accumulated script engine errors (e.g. from failed function
+          * calls).
           * @param clearErrors If true (default), when this function returns all
           *        accumulated error messages are cleared.
           * @return The error string. If empty, it means "no errors".
           */
-        wxString GetErrorString(SquirrelError* exception = nullptr, bool clearErrors = true);
+        wxString GetErrorString(bool clearErrors = true);
 
         /** @brief Display error dialog.
           *
-          * Displays an error dialog containing exception info and any other
-          * script errors. Calls GetErrorString() internally.
-          * You should normally call this function inside your catch handler for
-          * SquirrelFunction<>() calls.
-          * @param exception A pointer to the exception object containing the error. Can be NULL (default).
+          * Displays an error dialog containing info about script errors. Calls GetErrorString()
+          * internally.
           * @param clearErrors If true (default), when this function returns all
           *        accumulated error messages are cleared.
           */
-        void DisplayErrors(SquirrelError* exception = nullptr, bool clearErrors = true);
-
-        /** @brief Injects script output.
-          *
-          * This function is for advanced uses. It's used when some code sets a different
-          * print function for the scripting engine. When this happens, ScriptingManager
-          * no longer receives engine output. If you do something like that,
-          * use this function to "forward" all script output to ScriptingManager.
-          * @param output The engine's output to inject.
-          */
-        void InjectScriptOutput(const wxString& output);
+        void DisplayErrors(bool clearErrors = true);
 
         /** @brief Configure scripting in Code::Blocks.
           *
@@ -159,6 +151,13 @@ class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>, public wxEvtHan
           * @return True on success, false on failure.
           */
         bool UnRegisterAllScriptMenus();
+
+        /// Register an integer constant.
+        void BindIntConstant(const char *name, int64_t value);
+        /// Register a bool constant
+        void BindBoolConstant(const char *name, bool value);
+        /// Register a string constant.
+        void BindWxStringConstant(const char *name, const wxString &value);
 
         /** @brief Security function.
           *
@@ -215,62 +214,23 @@ class DLLIMPORT ScriptingManager : public Mgr<ScriptingManager>, public wxEvtHan
           */
         const TrustedScripts& GetTrustedScripts();
 
-        // needed for SqPlus bindings
-        ScriptingManager& operator=(cb_unused const ScriptingManager& rhs) // prevent assignment operator
-        {
-        	cbThrow(_T("Can't assign a ScriptingManager* !!!"));
-        	return *this;
-		}
+        /// Return a type tag which can be used to register a class to squirrel.
+        /// This is not infinite resource, so you have to call this rarely.
+        /// Use TypeTag::Unassigned if you want to reset your type tag.
+        uint32_t RequestClassTypeTag();
+
+        ScriptingManager(const ScriptingManager& rhs) = delete;
+        ScriptingManager& operator=(const ScriptingManager& rhs) = delete;
+
     private:
-        // needed for SqPlus bindings
-        ScriptingManager(cb_unused const ScriptingManager& rhs); // prevent copy construction
-
-        void OnScriptMenu(wxCommandEvent& event);
-        void OnScriptPluginMenu(wxCommandEvent& event);
-        void RegisterScriptFunctions();
-
         ScriptingManager();
         ~ScriptingManager() override;
 
-        TrustedScripts m_TrustedScripts;
+    public:
+        struct Data;
+    private:
 
-        // container for script menus
-        // script menuitem_ID -> script_filename
-        struct MenuBoundScript
-        {
-            wxString scriptOrFunc;
-            bool isFunc;
-        };
-        typedef std::map<int, MenuBoundScript> MenuIDToScript;
-        MenuIDToScript m_MenuIDToScript;
-
-        bool m_AttachedToMainWindow;
-
-        /** \brief This variable stores a stack of currently running script files. The back points to the current running file
-         *
-         * This variable is used to track the current running script for determine the working directory so it is possible to use relative paths with the
-         * "include" script function. This has to be a stack, because includes can go over several levels and every level can use relative paths.
-         * ~~~~~~
-         * main.script  --> include("scripts/include1.script")
-         * scripts
-         *   |----- include1.script     --> include("library/library.script")
-         *   |-----library
-         *            |----- library.script
-         * ~~~~~~
-         * The back of the stack will always point to the current running script and can be used to get the relative path of the include statements.
-         * The stack is pushed and popped in the LoadScript() function
-         */
-        std::vector<wxString> m_RunningScriptFileStack;
-
-        typedef std::set<wxString> IncludeSet;
-        IncludeSet m_IncludeSet;
-
-        MenuItemsManager m_MenuItemsManager;
-
-        DECLARE_EVENT_TABLE()
+        Data *m_data;
 };
-
-typedef char SQChar; // HACK, MUST match with the type as defined for the dedicated platform in squirrel.h
-void PrintSquirrelToWxString(wxString& msg, const SQChar* s, va_list& vl);
 
 #endif // SCRIPTING_H

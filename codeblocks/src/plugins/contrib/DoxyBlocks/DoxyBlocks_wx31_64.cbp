@@ -28,7 +28,8 @@
 					<Add option="-D_WIN64" />
 					<Add option="-DWXUSINGDLL" />
 					<Add option="-DcbDEBUG" />
-					<Add option="-DNOPCH" />
+					<Add option="-Winvalid-pch" />
+					<Add option="-DCB_PRECOMP" />
 					<Add option="-DwxUSE_UNICODE" />
 					<Add directory="../../../include" />
 					<Add directory="../../../include/tinyxml" />
@@ -54,6 +55,7 @@
 					<Add after="zip -Rq9 ..\..\..\devel31_64\share\codeblocks\DoxyBlocks.zip images\16x16\*.png images\20x20\*.png images\24x24\*.png" />
 					<Add after="zip -Rq9 ..\..\..\devel31_64\share\codeblocks\DoxyBlocks.zip images\28x28\*.png images\32x32\*.png images\40x40\*.png" />
 					<Add after="zip -Rq9 ..\..\..\devel31_64\share\codeblocks\DoxyBlocks.zip images\48x48\*.png images\56x56\*.png images\64x64\*.png" />
+					<Add after="zip -Rq9 ..\..\..\devel31_64\share\codeblocks\DoxyBlocks.zip images\svg\*.svg" />
 					<Add after="update31_64.bat" />
 					<Mode after="always" />
 				</ExtraCommands>
@@ -68,10 +70,8 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-std=gnu++11" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Unit filename="AutoDoc.cpp" />
 		<Unit filename="ChangeLog.txt" />
@@ -92,6 +92,7 @@
 		<Unit filename="update31" />
 		<Unit filename="update31_64.bat" />
 		<Unit filename="version.h" />
+		<Unit filename="wxsmith/ConfigPanel.wxs" />
 		<Extensions>
 			<AutoVersioning>
 				<Scheme minor_max="10" build_max="0" rev_max="0" rev_rand_max="10" build_times_to_increment_minor="100" />

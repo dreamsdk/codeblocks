@@ -1,22 +1,39 @@
-AM_CPPFLAGS = -I$(top_srcdir)/src/include/scripting/include \
-				-I$(top_srcdir)/src/include/scripting/squirrel
+AM_CPPFLAGS = -I$(top_srcdir)/src/include/scripting/include
+
+if CODEBLOCKS_NT
+AM_CPPFLAGS += -D__WXMSW__ -DEXPORT_LIB
+endif
 
 noinst_LTLIBRARIES = libsquirrel.la
 
-libsquirrel_la_SOURCES = sqfuncstate.cpp \
-                        sqcompiler.cpp \
-                        sqmem.cpp \
-                        sqlexer.cpp \
-                        sqstate.cpp \
-                        sqvm.cpp \
-                        sqtable.cpp \
-                        sqbaselib.cpp \
-                        sqclass.cpp \
-                        sqobject.cpp \
-                        sqapi.cpp \
-                        sqdebug.cpp
+noinst_HEADERS = \
+	sqarray.h \
+	sqclass.h \
+	sqclosure.h \
+	sqcompiler.h \
+	sqfuncproto.h \
+	sqfuncstate.h \
+	sqlexer.h \
+	sqobject.h \
+	sqopcodes.h \
+	sqpcheader.h \
+	sqstate.h \
+	sqstring.h \
+	sqtable.h \
+	squserdata.h \
+	squtils.h \
+	sqvm.h
 
-EXTRA_DIST = squirrel71.vcproj \
-            squirrel.cbp \
-            squirrellib.cbp \
-            squirrel.vcproj
+libsquirrel_la_SOURCES = \
+	sqapi.cpp \
+	sqbaselib.cpp \
+	sqclass.cpp \
+	sqcompiler.cpp \
+	sqdebug.cpp \
+	sqfuncstate.cpp \
+	sqlexer.cpp \
+	sqmem.cpp \
+	sqobject.cpp \
+	sqstate.cpp \
+	sqtable.cpp \
+	sqvm.cpp

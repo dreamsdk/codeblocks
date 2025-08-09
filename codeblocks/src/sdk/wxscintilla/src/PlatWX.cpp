@@ -7,9 +7,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 #ifndef WX_PRECOMP
     #include <wx/menu.h>
     #include <wx/menu.h>
@@ -324,10 +321,10 @@ void SurfaceImpl::InitPixMap(int width, int height, Surface *surface, WindowID w
 /* C::B begin */
 #if wxCHECK_VERSION(3, 0, 0)
     bitmap = new wxBitmap();
-    bitmap->CreateScaled(width, height,wxBITMAP_SCREEN_DEPTH,((wxWindow*)winid)->GetContentScaleFactor());
+    bitmap->CreateScaled(width, height, wxBITMAP_SCREEN_DEPTH, ((wxWindow*)winid)->GetContentScaleFactor());
 #else
     bitmap = new wxBitmap(width, height);
-#endif // wxCHECK_VERSION
+#endif  // wxCHECK_VERSION
 /* C::B end */
 #endif // __WXMSW__
     ((wxMemoryDC*)hdc)->SelectObject(*bitmap);
@@ -2022,6 +2019,7 @@ void Window::SetCursor(Cursor curs) {
     case cursorHand:
         cursorId = wxCURSOR_HAND;
         break;
+    case cursorInvalid: // fall-through
     default:
         cursorId = wxCURSOR_ARROW;
         break;
@@ -2121,10 +2119,19 @@ private:
     wxListView*         lv;
     CallBackAction      doubleClickAction;
     void*               doubleClickActionData;
+    int iconHeight = 0; int iconWidth = 0; // Cached from IconWidth() See ticket #1458
+public:
+
 public:
     wxSCIListBoxWin(wxWindow* parent, wxWindowID id, Point WXUNUSED(location)) :
         wxPopupWindow(parent, wxBORDER_SIMPLE)
     {
+
+/* C::B begin */
+#ifdef __WXMSW__
+        SetExtraStyle(GetExtraStyle() & ~wxWS_EX_BLOCK_EVENTS);
+#endif // __WXMSW__
+/* C::B end */
 
         lv = new wxSCIListBox(parent, id, wxPoint(-50,-50), wxDefaultSize,
                               wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_NO_HEADER | wxBORDER_NONE);
@@ -2180,11 +2187,18 @@ public:
     }
 
 
+    // Starting with gtk 3.2, an extra OnSize() is being issued that calls
+    // IconWidth(), but with an invalid lv pointer. So now, we cache iconWidth
+    // while the pointer is still valid. This solves the crash. See ticket #1458.
     int IconWidth() {
+        if (iconWidth)
+            return iconWidth;
         wxImageList* il = lv->GetImageList(wxIMAGE_LIST_SMALL);
         if (il != NULL) {
             int w, h;
             il->GetSize(0, w, h);
+            iconWidth = w;
+            iconHeight = h;
             return w;
         }
         return 0;
@@ -2409,6 +2423,9 @@ ListBoxImpl::ListBoxImpl()
     : lineHeight(10), unicodeMode(false),
       desiredVisibleRows(5), aveCharWidth(8), maxStrWidth(0),
       imgList(NULL), imgTypeMap(NULL)
+/* C::B begin */
+      , technology(wxSCI_TECHNOLOGY_DEFAULT)
+/* C::B end */
 {
 }
 
@@ -2419,14 +2436,35 @@ ListBoxImpl::~ListBoxImpl() {
 
 
 void ListBoxImpl::SetFont(Font &font) {
-    GETLB(wid)->SetFont(*((wxFont*)font.GetID()));
+/* C::B begin */
+    // GETLB(wid)->SetFont(*((wxFont*)font.GetID()));
+    wxFont *NewFont = (wxFont*)font.GetID();
+#if wxCHECK_VERSION(3, 1, 4)
+         const double scale = GETLB(wid)->GetDPIScaleFactor();
+ #else
+         const double scale = GETLB(wid)->GetContentScaleFactor();
+ #endif
+
+    if (technology == wxSCI_TECHNOLOGY_DIRECTWRITE)
+        GETLB(wid)->SetFont(NewFont->Scaled(72.0/(96.0*scale)));
+    else // non direct write mode (wxSCI_TECHNOLOGY_DEFAULT)
+        #if wxCHECK_VERSION(3, 1, 4) && defined(__WXMSW__)
+        //scale by desiredDPI/rawDPI (72.0/(72.0*scale)) Simplified below
+        GETLB(wid)->SetFont(NewFont->Scaled(1.0/scale));
+        #else
+        GETLB(wid)->SetFont(*NewFont);
+        #endif
 }
+/* C::B end */
 
 
-void ListBoxImpl::Create(Window &parent, int ctrlID, Point location_, int lineHeight_, bool unicodeMode_, int WXUNUSED(technology_)) {
+void ListBoxImpl::Create(Window &parent, int ctrlID, Point location_, int lineHeight_, bool unicodeMode_, int technology_) {
     location = location_;
     lineHeight =  lineHeight_;
     unicodeMode = unicodeMode_;
+/* C::B begin */
+    technology = technology_;
+/* C::B end */
     maxStrWidth = 0;
     wid = new wxSCIListBoxWin(GETWIN(parent.GetID()), ctrlID, location);
     if (imgList != NULL)
@@ -2457,6 +2495,17 @@ PRectangle ListBoxImpl::GetDesiredRect() {
     // wxListCtrl doesn't have a DoGetBestSize, so instead we kept track of
     // the max size in Append and calculate it here...
     int maxw = maxStrWidth * aveCharWidth;
+/* C::B begin */
+    if (technology == wxSCI_TECHNOLOGY_DIRECTWRITE)
+    {
+#if wxCHECK_VERSION(3, 1, 4)
+        const double scale = GETLB(wid)->GetDPIScaleFactor();
+#else
+        const double scale = GETLB(wid)->GetContentScaleFactor();
+#endif
+        maxw = (maxw*96*scale)/72;
+    }
+/* C::B end */
     int maxh ;
 
     // give it a default if there are no lines, and/or add a bit more
@@ -2491,6 +2540,7 @@ PRectangle ListBoxImpl::GetDesiredRect() {
     rc.left = 0;
     rc.right = maxw;
     rc.bottom = maxh;
+
     return rc;
 }
 
@@ -2896,7 +2946,34 @@ double ElapsedTime::Duration(bool reset) {
     result /= 1000.0;
     return result;
 }
+#if wxCHECK_VERSION(3, 1, 4) && defined(__WXMSW__)
+// #include <windows.h> already included at top of file
+double Platform::GetActiveWindowDPIScaleFactor()
+{
+    // Get the handle of the active window
+    HWND activeWindow = GetForegroundWindow();
+    if (NULL == activeWindow)
+        return 1; //unlikely, but can happen during deactivation
 
+    //GetDC() returns a handle to the window whose DC is to be retrieved.
+    // If this value is NULL, GetDC retrieves the DC for the entire screen.
+    HDC hdc = GetDC(activeWindow);
+    int dpiX = GetDeviceCaps(hdc, LOGPIXELSX);
+    int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+    wxUnusedVar(dpiY);
+
+    ReleaseDC(activeWindow, hdc);
+
+    double dpi96ScaleFactor = dpiX/96.0;
+    double dpi72ScaleFactor = dpiX/72.0;
+
+    int stdPPI = wxDisplay::GetStdPPIValue();
+    if ( stdPPI == 96)
+        return dpi96ScaleFactor;
+    else
+        return dpi72ScaleFactor;
+}
+#endif // Version 3.1.4 && __WXMSW__
 
 //----------------------------------------------------------------------
 

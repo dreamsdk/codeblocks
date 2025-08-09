@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11840 $
- * $Id: watchesdlg.cpp 11840 2019-09-08 18:12:30Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/watchesdlg.cpp $
+ * $Revision: 13496 $
+ * $Id: watchesdlg.cpp 13496 2024-04-01 00:03:34Z pecanh $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/watchesdlg.cpp $
  */
 
 #include "sdk.h"
@@ -27,8 +27,10 @@
 #include <map>
 #include <algorithm>
 
-#include <wx/propgrid/propgrid.h>
+#include <wx/clipbrd.h>
+#include <wx/display.h>
 #include <wx/propgrid/editors.h>
+#include <wx/propgrid/propgrid.h>
 
 #include "watchesdlg.h"
 
@@ -49,6 +51,9 @@ namespace
     const long idMenuExamineMemory = wxNewId();
     const long idMenuAutoUpdate = wxNewId();
     const long idMenuUpdate = wxNewId();
+    const long idMenuCopyToClipboardData = wxNewId();
+    const long idMenuCopyToClipboardRow = wxNewId();
+    const long idMenuCopyToClipboardTree = wxNewId();
 }
 
 BEGIN_EVENT_TABLE(WatchesDlg, wxPanel)
@@ -70,11 +75,10 @@ BEGIN_EVENT_TABLE(WatchesDlg, wxPanel)
     EVT_MENU(idMenuExamineMemory, WatchesDlg::OnMenuExamineMemory)
     EVT_MENU(idMenuAutoUpdate, WatchesDlg::OnMenuAutoUpdate)
     EVT_MENU(idMenuUpdate, WatchesDlg::OnMenuUpdate)
+    EVT_MENU(idMenuCopyToClipboardData, WatchesDlg::OnMenuCopyToClipboardData)
+    EVT_MENU(idMenuCopyToClipboardRow, WatchesDlg::OnMenuCopyToClipboardRow)
+    EVT_MENU(idMenuCopyToClipboardTree, WatchesDlg::OnMenuCopyToClipboardTree)
 END_EVENT_TABLE()
-
-#if wxCHECK_VERSION(3, 0, 0)
-typedef wxString wxPG_CONST_WXCHAR_PTR;
-#endif
 
 struct WatchesDlg::WatchItemPredicate
 {
@@ -93,7 +97,7 @@ class cbDummyEditor : public wxPGEditor
     DECLARE_DYNAMIC_CLASS(cbDummyEditor)
 public:
     cbDummyEditor() {}
-    wxPG_CONST_WXCHAR_PTR GetName() const override
+    wxString GetName() const override
     {
         return wxT("cbDummyEditor");
     }
@@ -103,8 +107,7 @@ public:
                                   cb_unused const wxPoint& pos,
                                   cb_unused const wxSize& sz) const override
     {
-        wxPGWindowList const list;
-        return list;
+        return wxPGWindowList(nullptr, nullptr);
     }
     void UpdateControl(cb_unused wxPGProperty* property, cb_unused wxWindow* ctrl) const override {}
     bool OnEvent(cb_unused wxPropertyGrid* propgrid, cb_unused wxPGProperty* property,
@@ -130,7 +133,7 @@ class cbTextCtrlAndButtonTooltipEditor : public wxPGTextCtrlAndButtonEditor
 {
     DECLARE_DYNAMIC_CLASS(cbTextCtrlAndButtonTooltipEditor)
 public:
-    wxPG_CONST_WXCHAR_PTR GetName() const override
+    wxString GetName() const override
     {
         return wxT("cbTextCtrlAndButtonTooltipEditor");
     }
@@ -157,7 +160,8 @@ class WatchesProperty : public wxStringProperty
 
         WatchesProperty(){}
     public:
-        WatchesProperty(const wxString& label, const wxString& value, cb::shared_ptr<cbWatch> watch, bool readonly) :
+        WatchesProperty(const wxString& label, const wxString& value, cb::shared_ptr<cbWatch> watch,
+                        bool readonly) :
             wxStringProperty(label, wxPG_LABEL, value),
             m_watch(watch),
             m_readonly(readonly)
@@ -298,7 +302,8 @@ class WatchRawDialog : public wxScrollingDialog
             }
         }
 
-        static void WatchToString(wxString &result, const cbWatch &watch, const wxString &indent = wxEmptyString)
+        static void WatchToString(wxString &result, const cbWatch &watch,
+                                  const wxString &indent = wxEmptyString)
         {
             wxString sym, value;
             watch.GetSymbol(sym);
@@ -380,10 +385,13 @@ WatchesDlg::WatchesDlg() :
     m_grid = new wxPropertyGrid(this, idGrid, wxDefaultPosition, wxDefaultSize,
                                 wxPG_SPLITTER_AUTO_CENTER | wxTAB_TRAVERSAL /*| wxWANTS_CHARS*/);
 
-#if wxCHECK_VERSION(3, 0, 0)
-    #define wxPG_EX_DISABLE_TLP_TRACKING 0x00000000
+    long extraStyles = wxPG_EX_HELP_AS_TOOLTIPS;
+#if wxCHECK_VERSION(3, 0, 3)
+    // This makes it possible for the watches window to get a focus when the user clicks on it with
+    // the mouse.
+    extraStyles |= wxPG_EX_ALWAYS_ALLOW_FOCUS;
 #endif
-    m_grid->SetExtraStyle(wxPG_EX_DISABLE_TLP_TRACKING | wxPG_EX_HELP_AS_TOOLTIPS);
+    m_grid->SetExtraStyle(extraStyles);
     m_grid->SetDropTarget(new WatchesDropTarget);
     m_grid->SetColumnCount(3);
     m_grid->SetVirtualWidth(0);
@@ -392,24 +400,10 @@ WatchesDlg::WatchesDlg() :
     SetSizer(bs);
 
     if (!watchesPropertyEditor)
-    {
-#if wxCHECK_VERSION(3, 0, 0)
         watchesPropertyEditor = wxPropertyGrid::RegisterEditorClass(new cbTextCtrlAndButtonTooltipEditor, true);
-#else
-        watchesPropertyEditor = wxPropertyGrid::RegisterEditorClass(new cbTextCtrlAndButtonTooltipEditor,
-                                                                    wxT("cbTextCtrlAndButtonTooltipEditor"),
-                                                                    true);
-#endif
-    }
 
     if (!watchesDummyEditor)
-    {
-#if wxCHECK_VERSION(3, 0, 0)
         watchesDummyEditor = wxPropertyGrid::RegisterEditorClass(new cbDummyEditor, true);
-#else
-        watchesDummyEditor = wxPropertyGrid::RegisterEditorClass(new cbDummyEditor, wxT("cbDummyEditor"), true);
-#endif
-    }
 
     m_grid->SetColumnProportion(0, 40);
     m_grid->SetColumnProportion(1, 40);
@@ -431,7 +425,7 @@ WatchesDlg::WatchesDlg() :
                                new Functor(this, &WatchesDlg::OnDebuggerUpdated));
 }
 
-inline void AppendChildren(wxPropertyGrid &grid, wxPGProperty &property, cbWatch &watch,
+static void AppendChildren(wxPropertyGrid &grid, wxPGProperty &property, cbWatch &watch,
                            bool readonly, const wxColour &changedColour)
 {
     for(int ii = 0; ii < watch.GetChildCount(); ++ii)
@@ -459,19 +453,14 @@ inline void AppendChildren(wxPropertyGrid &grid, wxPGProperty &property, cbWatch
             WatchRawDialog::UpdateValue(static_cast<const WatchesProperty*>(prop));
         }
         else
-        {
-#if wxCHECK_VERSION(3, 0, 0)
             grid.SetPropertyColoursToDefault(prop);
-#else
-            grid.SetPropertyColourToDefault(prop);
-#endif
-        }
 
         AppendChildren(grid, *prop, *child.get(), readonly, changedColour);
     }
 }
 
-inline void UpdateWatch(wxPropertyGrid *grid, wxPGProperty *property, cb::shared_ptr<cbWatch> watch, bool readonly)
+static void UpdateWatch(wxPropertyGrid *grid, wxPGProperty *property, cb::shared_ptr<cbWatch> watch,
+                        bool readonly)
 {
     if (!property)
         return;
@@ -487,13 +476,7 @@ inline void UpdateWatch(wxPropertyGrid *grid, wxPGProperty *property, cb::shared
     if (watch->IsChanged())
         grid->SetPropertyTextColour(property, changedColour);
     else
-    {
-#if wxCHECK_VERSION(3, 0, 0)
         grid->SetPropertyColoursToDefault(property);
-#else
-        grid->SetPropertyColourToDefault(property);
-#endif
-    }
     grid->SetPropertyAttribute(property, wxT("Units"), type);
     if (value.empty())
         grid->SetPropertyHelpString(property, wxEmptyString);
@@ -520,7 +503,7 @@ inline void UpdateWatch(wxPropertyGrid *grid, wxPGProperty *property, cb::shared
     WatchRawDialog::UpdateValue(static_cast<const WatchesProperty*>(property));
 }
 
-inline void SetValue(WatchesProperty *prop)
+static void SetValue(WatchesProperty *prop)
 {
     if (prop)
     {
@@ -565,7 +548,8 @@ void WatchesDlg::AddWatch(cb::shared_ptr<cbWatch> watch)
 
         WatchesProperty *watches_prop = static_cast<WatchesProperty*>(last_prop);
         watches_prop->SetWatch(watch);
-        m_grid->Append(new WatchesProperty(wxEmptyString, wxEmptyString, cb::shared_ptr<cbWatch>(), false));
+        m_grid->Append(new WatchesProperty(wxEmptyString, wxEmptyString, cb::shared_ptr<cbWatch>(),
+                                           false));
     }
     else
     {
@@ -580,7 +564,8 @@ void WatchesDlg::AddWatch(cb::shared_ptr<cbWatch> watch)
 
 void WatchesDlg::AddSpecialWatch(cb::shared_ptr<cbWatch> watch, bool readonly)
 {
-    WatchItems::iterator it = std::find_if(m_watches.begin(), m_watches.end(), WatchItemPredicate(watch));
+    WatchItems::iterator it = std::find_if(m_watches.begin(), m_watches.end(),
+                                           WatchItemPredicate(watch));
     if (it != m_watches.end())
         return;
     wxPGProperty *first_prop = m_grid->wxPropertyGridInterface::GetFirst(wxPG_ITERATE_ALL);
@@ -660,17 +645,19 @@ void WatchesDlg::OnPropertyLableEditEnd(wxPropertyGridEvent &event)
     RenameWatch(event.GetProperty(), label);
 }
 
-void WatchesDlg::OnIdle(cb_unused wxIdleEvent &event)
+void WatchesDlg::OnIdle(wxIdleEvent &event)
 {
     if (m_append_empty_watch)
     {
         wxPGProperty *new_prop = m_grid->Append(new WatchesProperty(wxEmptyString, wxEmptyString,
-                                                                    cb::shared_ptr<cbWatch>(), false));
+                                                                    cb::shared_ptr<cbWatch>(),
+                                                                    false));
         m_grid->SelectProperty(new_prop, false);
         m_grid->Refresh();
         m_append_empty_watch = false;
         m_grid->BeginLabelEdit(0);
     }
+    event.Skip();
 }
 
 void WatchesDlg::OnPropertySelected(wxPropertyGridEvent &event)
@@ -779,7 +766,7 @@ void WatchesDlg::OnPropertyRightClick(wxPropertyGridEvent &event)
     {
         wxMenu m;
         m.Append(idMenuRename, _("Rename"), _("Rename the watch"));
-        m.Append(idMenuAddDataBreak, _("Add Data breakpoint"), _("Add Data breakpoing"));
+        m.Append(idMenuAddDataBreak, _("Add Data breakpoint"), _("Add Data breakpoint"));
         m.AppendSeparator();
         m.AppendCheckItem(idMenuAutoUpdate, _("Auto update"),
                           _("Flag which controls if this watch should be auto updated."));
@@ -788,12 +775,26 @@ void WatchesDlg::OnPropertyRightClick(wxPropertyGridEvent &event)
         m.Append(idMenuProperties, _("Properties"), _("Show the properties for the watch"));
         m.Append(idMenuDelete, _("Delete"), _("Delete the currently selected watch"));
         m.Append(idMenuDeleteAll, _("Delete All"), _("Delete all watches"));
+        m.AppendSeparator();
 
         if (prop->GetLabel()==wxEmptyString)
             return;
+
         cb::shared_ptr<cbWatch> watch = prop->GetWatch();
         if (watch)
         {
+
+            wxString value;
+            watch->GetValue(value);
+
+            if (!value.IsEmpty())
+                m.Append(idMenuCopyToClipboardData, _("Copy data to clipboard"), _("Copy data to the clipboard"));
+
+            m.Append(idMenuCopyToClipboardRow, _("Copy row to clipboard"), _("Copy row data to the clipboard"));
+
+            if (watch->GetChildCount() > 0)
+                m.Append(idMenuCopyToClipboardTree, _("Copy tree to clipboard"), _("Copy tree data to the clipboard"));
+
             int disabled = cbDebuggerPlugin::WatchesDisabledMenuItems::Empty;
             DebuggerManager *dbgManager = Manager::Get()->GetDebuggerManager();
             cb::shared_ptr<cbWatch> rootWatch = cbGetRootWatch(watch);
@@ -998,6 +999,119 @@ void WatchesDlg::OnMenuUpdate(cb_unused wxCommandEvent &event)
         plugin->UpdateWatch(watch);
 }
 
+void WatchesDlg::WatchToString(wxString &result, const cbWatch &watch, const wxString &indent)
+{
+    wxString symbol, value;
+    watch.GetSymbol(symbol);
+    watch.GetValue(value);
+
+    result += wxString::Format(_("%s[symbol =%s]\n"), indent , symbol);
+    result += wxString::Format(_("%s[value =%s]\n"), indent , value);
+
+    if (watch.GetChildCount()> 0)
+    {
+        result += wxString::Format(_("%s[children = %d]\n"), indent, watch.GetChildCount());
+
+        for(int child_index = 0; child_index < watch.GetChildCount(); ++child_index)
+        {
+            cb::shared_ptr<const cbWatch> child = watch.GetChild(child_index);
+            result += wxString::Format(_("%s[child %d]\n"), indent, child_index);
+            WatchToString(result, *child, indent + "    ");
+        }
+    }
+}
+
+void WatchesDlg::OnMenuCopyToClipboardData(cb_unused wxCommandEvent &event)
+{
+    if (wxTheClipboard->Open())
+    {
+        if (wxTheClipboard->IsSupported( wxDF_TEXT ))
+        {
+            WatchesProperty *selected = static_cast<WatchesProperty*>(m_grid->GetSelection());
+            if (selected)
+            {
+                cb::shared_ptr<cbWatch> watch = selected->GetWatch();
+                if (watch)
+                {
+                    wxString result;
+                    watch->GetValue(result);
+                    wxTheClipboard->SetData( new wxTextDataObject(result) );
+                }
+            }
+        }
+        wxTheClipboard->Close();
+    }
+}
+
+void WatchesDlg::OnMenuCopyToClipboardRow(cb_unused wxCommandEvent &event)
+{
+    if (wxTheClipboard->Open())
+    {
+        if (wxTheClipboard->IsSupported( wxDF_TEXT ))
+        {
+            WatchesProperty *selected = static_cast<WatchesProperty*>(m_grid->GetSelection());
+            if (selected)
+            {
+                cb::shared_ptr<cbWatch> watch = selected->GetWatch();
+                if (watch)
+                {
+                    wxString result, symbol, value;
+                    watch->GetSymbol(symbol);
+                    watch->GetValue(value);
+
+                    result = wxString::Format(_("[symbol =%s] , [value =%s]\n"), symbol , value );
+
+                    wxTheClipboard->SetData( new wxTextDataObject(result) );
+                }
+            }
+        }
+        wxTheClipboard->Close();
+    }
+}
+
+void WatchesDlg::OnMenuCopyToClipboardTree(cb_unused wxCommandEvent &event)
+{
+    if (wxTheClipboard->Open())
+    {
+        if (wxTheClipboard->IsSupported( wxDF_TEXT ))
+        {
+            wxBusyCursor wait;
+
+            WatchesProperty *selected = static_cast<WatchesProperty*>(m_grid->GetSelection());
+            if (selected)
+            {
+                cb::shared_ptr<cbWatch> watch = selected->GetWatch();
+                if (watch)
+                {
+                    wxString watchRootSymbol, result, resultWatch;
+
+                    // Get parent until one less than root.
+                    cb::shared_ptr<cbWatch> watchRoot = cbGetRootWatch(watch);
+                    watchRoot->GetSymbol(watchRootSymbol);
+
+                    while ((watchRoot != watch) && (watchRoot != watch->GetParent()))
+                    {
+                        watch = watch->GetParent();
+                    }
+                    // If not Local variable go up again to the variable root
+                    if (!watchRootSymbol.IsSameAs("Locals") && (watchRoot != watch))
+                    {
+                        watch = watch->GetParent();
+                    }
+
+                    result += wxString('-', 20) + '\n';
+                    WatchToString(resultWatch, *watch);
+                    result += resultWatch;
+                    result += wxString('-', 20) + '\n';
+
+                    wxTheClipboard->SetData( new wxTextDataObject(result) );
+                }
+            }
+        }
+        wxTheClipboard->Close();
+    }
+}
+
 void WatchesDlg::RenameWatch(wxObject *prop, const wxString &newSymbol)
 {
     cbDebuggerPlugin *active_plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
@@ -1082,19 +1196,15 @@ BEGIN_EVENT_TABLE(ValueTooltip, wxWindow)
     EVT_TIMER(idTooltipTimer, ValueTooltip::OnTimer)
 END_EVENT_TABLE()
 
-inline wxPGProperty* GetRealRoot(wxPropertyGrid *grid)
+static wxPGProperty* GetRealRoot(wxPropertyGrid *grid)
 {
     wxPGProperty *property = grid->GetRoot();
     return property ? grid->GetFirstChild(property) : nullptr;
 }
 
-inline void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, int width[3])
+static void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *root, int width[3])
 {
-#if wxCHECK_VERSION(3, 0, 0)
     wxPropertyGridPageState *state = grid->GetState();
-#else
-    wxPropertyGridState *state = grid->GetState();
-#endif
 
     width[0] = width[1] = width[2] = 0;
     int minWidths[3] = { state->GetColumnMinWidth(0),
@@ -1105,9 +1215,15 @@ inline void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *
     {
         wxPGProperty* p = root->Item(ii);
 
+#if wxCHECK_VERSION(3, 1, 7)
+        width[0] = std::max(width[0], state->GetColumnFullWidth(p, 0));
+        width[1] = std::max(width[1], state->GetColumnFullWidth(p, 1));
+        width[2] = std::max(width[2], state->GetColumnFullWidth(p, 2));
+#else
         width[0] = std::max(width[0], state->GetColumnFullWidth(dc, p, 0));
         width[1] = std::max(width[1], state->GetColumnFullWidth(dc, p, 1));
         width[2] = std::max(width[2], state->GetColumnFullWidth(dc, p, 2));
+#endif
     }
     for (unsigned ii = 0; ii < root->GetChildCount(); ++ii)
     {
@@ -1127,14 +1243,15 @@ inline void GetColumnWidths(wxClientDC &dc, wxPropertyGrid *grid, wxPGProperty *
     width[2] = std::max(width[2], minWidths[2]);
 }
 
-inline void GetColumnWidths(wxPropertyGrid *grid, wxPGProperty *root, int width[3])
+static void GetColumnWidths(wxPropertyGrid *grid, wxPGProperty *root, int width[3])
 {
     wxClientDC dc(grid);
     dc.SetFont(grid->GetFont());
     GetColumnWidths(dc, grid, root, width);
 }
 
-inline void SetMinSize(wxPropertyGrid *grid)
+static void GridSetMinSize(wxPropertyGrid *grid, const wxPoint &position,
+                           const wxRect &displayClientRect)
 {
     wxPGProperty *p = GetRealRoot(grid);
     wxPGProperty *first = grid->wxPropertyGridInterface::GetFirst(wxPG_ITERATE_ALL);
@@ -1149,29 +1266,54 @@ inline void SetMinSize(wxPropertyGrid *grid)
 
     int width[3];
     GetColumnWidths(grid, grid->GetRoot(), width);
+    // Add a bit of breathing room to prevent the appearance of a horizontal scroll for short
+    // expressions - example "int a=5;".
+    // This more of a workaround, a proper fix would require a thorough investigation of the
+    // wxPropGrid code, but I don't have the time at the moment.
+    width[0] += 10;
+    width[1] += 10;
+    width[2] += 10;
+
     rect.width = std::accumulate(width, width+3, 0);
 
-    int minWidth = (wxSystemSettings::GetMetric(wxSYS_SCREEN_X, grid->GetParent())*3)/2;
-    int minHeight = (wxSystemSettings::GetMetric(wxSYS_SCREEN_Y, grid->GetParent())*3)/2;
+    const int minWidth = (wxSystemSettings::GetMetric(wxSYS_SCREEN_X, grid->GetParent())*3)/2;
+    const int minHeight = (wxSystemSettings::GetMetric(wxSYS_SCREEN_Y, grid->GetParent())*3)/2;
 
-#if wxCHECK_VERSION(3, 0, 0)
-    wxSize size(std::min(minWidth, rect.width), std::min(minHeight, height));
-#else
-    wxSize size(std::min(minWidth, rect.width + grid->GetMarginWidth()), std::min(minHeight, height));
-#endif
+    const wxSize fullSize(std::min(minWidth, rect.width), std::min(minHeight, height));
+    wxSize size = fullSize;
+    int virtualWidth = -1;
+
+    // We have a display rect, so we can use it to make sure the window fits inside it.
+    if (displayClientRect.GetSize().x > 0)
+    {
+        const wxSize sizeClipped = wxRect(position, size).Intersect(displayClientRect).GetSize();
+        if (size != sizeClipped)
+        {
+            virtualWidth = size.x;
+            size = sizeClipped;
+        }
+    }
+
     grid->SetMinSize(size);
 
     int proportions[3];
-    proportions[0] = static_cast<int>(floor((double)width[0]/size.x*100.0+0.5));
-    proportions[1] = static_cast<int>(floor((double)width[1]/size.x*100.0+0.5));
+    proportions[0] = wxRound((width[0]*100.0)/fullSize.x);
+    proportions[1] = wxRound((width[1]*100.0)/fullSize.x);
     proportions[2]= std::max(100 - proportions[0] - proportions[1], 0);
     grid->SetColumnProportion(0, proportions[0]);
     grid->SetColumnProportion(1, proportions[1]);
     grid->SetColumnProportion(2, proportions[2]);
     grid->ResetColumnSizes(true);
+
+    // This enables the horizontal scroll. Unfortunately the last column is still placed on the left
+    // so manual resizing of the value column is required if the sum of the max-widths of the
+    // columns makes the window to be too big and so it doesn't fit on the screen, so we've shrunk
+    // it.
+    grid->SetVirtualWidth(virtualWidth);
 }
 
-ValueTooltip::ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *parent) :
+ValueTooltip::ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *parent,
+                           const wxPoint &screenPosition) :
 #ifndef __WXMAC__
     wxPopupWindow(parent, wxBORDER_NONE|wxWANTS_CHARS),
 #else
@@ -1181,10 +1323,14 @@ ValueTooltip::ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *paren
     m_outsideCount(0),
     m_watch(watch)
 {
-    m_panel = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxSize(200, 200));
-    m_grid = new wxPropertyGrid(m_panel, idTooltipGrid, wxDefaultPosition, wxSize(400,400), wxPG_SPLITTER_AUTO_CENTER);
+    m_grid = new wxPropertyGrid(this, idTooltipGrid, wxDefaultPosition, wxSize(200, 200),
+                                wxPG_SPLITTER_AUTO_CENTER);
 
-    m_grid->SetExtraStyle(wxPG_EX_DISABLE_TLP_TRACKING /*| wxPG_EX_HELP_AS_TOOLTIPS*/);
+    long extraStyles = 0;
+#if wxCHECK_VERSION(3, 0, 3)
+    extraStyles |= wxPG_EX_ALWAYS_ALLOW_FOCUS;
+#endif
+    m_grid->SetExtraStyle(extraStyles);
     m_grid->SetDropTarget(new WatchesDropTarget);
 
     wxNativeFontInfo fontInfo;
@@ -1199,19 +1345,41 @@ ValueTooltip::ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *paren
     m_watch->GetValue(value);
     wxPGProperty *root = m_grid->Append(new WatchesProperty(symbol, value, m_watch, true));
     m_watch->MarkAsChangedRecursive(false);
-    ::UpdateWatch(m_grid, root, m_watch, true);
 
-    ::SetMinSize(m_grid);
+    // If we leave the watch expanded and the user decides to collapse the root, the window refuses
+    // to shrink.
+    // This makes the min size to be as large as a single non-expanded property.
+    // Later we'll expand.
+    const bool oldExpanded = m_watch->IsExpanded();
+    if (oldExpanded)
+        m_watch->Expand(false);
+    ::UpdateWatch(m_grid, root, m_watch, true);
 
     m_sizer = new wxBoxSizer( wxVERTICAL );
     m_sizer->Add(m_grid, 0, wxALL | wxEXPAND, 0);
 
-    m_panel->SetAutoLayout(true);
-    m_panel->SetSizer(m_sizer);
-    m_sizer->Fit(m_panel);
-    m_sizer->Fit(this);
+    // Apply the calculated min size.
+    const int idx = wxDisplay::GetFromWindow(parent);
+    wxDisplay display(idx != wxNOT_FOUND ? idx : 0);
+    GridSetMinSize(m_grid, screenPosition, display.GetClientArea());
+    SetSizer(m_sizer);
+
+    // Expand here after the min size calculation is done.
+    if (oldExpanded)
+    {
+        m_watch->Expand(true);
+        //m_grid->Refresh();
+        m_grid->Expand(root);
+        UpdateSizeAndFit(parent, screenPosition);
+    }
+    else
+        Fit();
 
     m_timer.Start(100);
+
+#ifndef __WXMAC__
+    Position(screenPosition, wxSize(0, 0));
+#endif
 }
 
 ValueTooltip::~ValueTooltip()
@@ -1221,10 +1389,13 @@ ValueTooltip::~ValueTooltip()
 
 void ValueTooltip::UpdateWatch()
 {
+    // Sanity check
+    if (not m_watch)
+        return;
     m_watch->MarkAsChangedRecursive(false);
     ::UpdateWatch(m_grid, GetRealRoot(m_grid), m_watch, true);
     m_grid->Refresh();
-    Fit();
+    UpdateSizeAndFit(this, GetScreenPosition());
 }
 
 void ValueTooltip::ClearWatch()
@@ -1250,13 +1421,12 @@ void ValueTooltip::OnDismiss()
     ClearWatch();
 }
 
-void ValueTooltip::Fit()
+void ValueTooltip::UpdateSizeAndFit(wxWindow *usedToGetDisplay, const wxPoint &screenPosition)
 {
-    ::SetMinSize(m_grid);
-    m_sizer->Fit(m_panel);
-    wxPoint pos = GetScreenPosition();
-    wxSize size = m_panel->GetScreenRect().GetSize();
-    SetSize(pos.x, pos.y, size.x, size.y);
+    const int idx = wxDisplay::GetFromWindow(usedToGetDisplay);
+    wxDisplay display(idx != wxNOT_FOUND ? idx : 0);
+    GridSetMinSize(m_grid, screenPosition, display.GetClientArea());
+    Fit();
 }
 
 void ValueTooltip::OnCollapse(wxPropertyGridEvent &event)
@@ -1267,7 +1437,7 @@ void ValueTooltip::OnCollapse(wxPropertyGridEvent &event)
     cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
     if (plugin)
         plugin->CollapseWatch(prop->GetWatch());
-    Fit();
+    UpdateSizeAndFit(this, GetScreenPosition());
 }
 
 void ValueTooltip::OnExpand(wxPropertyGridEvent &event)
@@ -1278,7 +1448,7 @@ void ValueTooltip::OnExpand(wxPropertyGridEvent &event)
     cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
     if (plugin)
         plugin->ExpandWatch(prop->GetWatch());
-    Fit();
+    UpdateSizeAndFit(this, GetScreenPosition());
 }
 
 void ValueTooltip::OnTimer(cb_unused wxTimerEvent &event)

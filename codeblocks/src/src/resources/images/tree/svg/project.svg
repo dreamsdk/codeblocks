@@ -1,0 +1,18 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g transform="translate(0 -288.5)" shape-rendering="crispEdges">
+    <g>
+      <path d="M0 292.767h4.233V297H0z" fill="#ff0"/>
+      <path d="m4.233 288.5h4.233v4.233h-4.233z" fill="#0f0"/>
+      <path d="M0 288.533h4.233v4.233H0z" fill="red"/>
+      <path d="M4.233 292.767h4.233V297H4.233z" fill="#00f"/>
+    </g>
+    <g fill="#272727" fill-opacity=".7608" fill-rule="evenodd">
+      <path d="M0 288.533h8.467v.265H0z" style="paint-order:stroke markers fill"/>
+      <path d="M0 296.735h8.467V297H0z" style="paint-order:stroke markers fill"/>
+      <path d="M0 288.798h.265v7.937H0zM8.202 288.798h.265v7.937h-.265zM.265 292.502h3.969v.265H.265z" style="paint-order:stroke markers fill"/>
+      <path d="m4.233 288.8h0.265v3.969h-0.265z" style="paint-order:stroke markers fill"/>
+      <path d="m4.233 292.8h3.969v0.265h-3.969z" style="paint-order:stroke markers fill"/>
+      <path d="m3.969 292.8h0.265v3.969h-0.265z" style="paint-order:stroke markers fill"/>
+    </g>
+  </g>
+</svg>

@@ -17,7 +17,7 @@
 *
 * $Revision: 10851 $
 * $Id: FileContentDisk.cpp 10851 2016-05-12 00:11:55Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/FileContentDisk.cpp $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/FileContentDisk.cpp $
 */
 
 #include "FileContentDisk.h"

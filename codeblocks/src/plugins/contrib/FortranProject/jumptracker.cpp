@@ -41,7 +41,7 @@ void JumpTracker::TakeJump(LineAddress& jumpStart, LineAddress& jumpFinish)
     }
     else
     {
-        if (!m_JumpHome.GetFilename().IsEmpty() && m_JumpHome.IsFinish() && !m_JumpHome.IsSameAs(jumpStart))
+        if (!m_JumpHome.GetFilename().empty() && m_JumpHome.IsFinish() && !m_JumpHome.IsSameAs(jumpStart))
         {
             m_JumpBack.push_front(m_JumpHome);
         }

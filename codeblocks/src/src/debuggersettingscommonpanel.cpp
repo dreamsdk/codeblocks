@@ -3,8 +3,8 @@
 
 #ifndef CB_PRECOMP
     //(*InternalHeadersPCH(DebuggerSettingsCommonPanel)
-    #include <wx/string.h>
     #include <wx/intl.h>
+    #include <wx/string.h>
     //*)
 
     #include <wx/fontutil.h>
@@ -18,14 +18,14 @@
 //*)
 
 //(*IdInit(DebuggerSettingsCommonPanel)
-const long DebuggerSettingsCommonPanel::ID_AUTOBUILD = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_AUTOSWITCH = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_DEBUGGERS_LOG = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_JUMP_ON_DOUBLE_CLICK = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_REQUIRE_CTRL_FOR_TOOLTIPS = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_VALUE_TOOLTIP_LABEL = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_BUTTON_CHOOSE_FONT = wxNewId();
-const long DebuggerSettingsCommonPanel::ID_CHOICE_PERSPECTIVE = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_AUTOBUILD = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_AUTOSWITCH = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_DEBUGGERS_LOG = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_JUMP_ON_DOUBLE_CLICK = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_REQUIRE_CTRL_FOR_TOOLTIPS = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_VALUE_TOOLTIP_LABEL = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_BUTTON_CHOOSE_FONT = wxNewId();
+const wxWindowID DebuggerSettingsCommonPanel::ID_CHOICE_PERSPECTIVE = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(DebuggerSettingsCommonPanel,wxPanel)
@@ -36,11 +36,11 @@ END_EVENT_TABLE()
 DebuggerSettingsCommonPanel::DebuggerSettingsCommonPanel(wxWindow* parent)
 {
 	//(*Initialize(DebuggerSettingsCommonPanel)
-	wxFlexGridSizer* flexSizer;
+	wxBoxSizer* BoxSizer1;
 	wxBoxSizer* mainSizer;
 	wxButton* chooseFont;
+	wxFlexGridSizer* flexSizer;
 	wxStaticBoxSizer* valueTooltipSizer;
-	wxBoxSizer* BoxSizer1;
 	wxStaticText* labelPerspective;
 
 	Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("wxID_ANY"));
@@ -74,21 +74,21 @@ DebuggerSettingsCommonPanel::DebuggerSettingsCommonPanel(wxWindow* parent)
 	m_perspective->Append(_("Only one perspective"));
 	m_perspective->Append(_("One perspective per Debugger"));
 	m_perspective->SetSelection( m_perspective->Append(_("One perspective per Debugger configuration")) );
+	m_perspective->Append(_("Use current"));
+	m_perspective->SetToolTip(_("When debugging is started the perspective would be changed to a debugging perspective. The name of perspective which will be used is controlled by this option."));
 	BoxSizer1->Add(m_perspective, 1, wxLEFT|wxEXPAND, 5);
 	flexSizer->Add(BoxSizer1, 1, wxTOP|wxLEFT|wxRIGHT|wxEXPAND, 5);
 	mainSizer->Add(flexSizer, 1, wxALL|wxALIGN_LEFT, 0);
 	SetSizer(mainSizer);
-	mainSizer->Fit(this);
 	mainSizer->SetSizeHints(this);
 
-	Connect(ID_BUTTON_CHOOSE_FONT,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&DebuggerSettingsCommonPanel::OnChooseFontClick);
+	Connect(ID_BUTTON_CHOOSE_FONT,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(DebuggerSettingsCommonPanel::OnChooseFontClick));
 	//*)
 
     m_autoBuild->SetValue(cbDebuggerCommonConfig::GetFlag(cbDebuggerCommonConfig::AutoBuild));
     m_autoBuild->SetToolTip(_("Automatic project build before debug session is started."));
 
     m_autoSwitch->SetValue(cbDebuggerCommonConfig::GetFlag(cbDebuggerCommonConfig::AutoSwitchFrame));
-    m_autoSwitch->SetToolTip(_("When stopping, auto-switch to first frame with valid source info."));
 
     m_debuggersLog->SetValue(cbDebuggerCommonConfig::GetFlag(cbDebuggerCommonConfig::ShowDebuggersLog));
     m_debuggersLog->SetToolTip(_("If enabled, the debugger's raw input/output will be logged in a separate log page."));

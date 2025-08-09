@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8705 $
- * $Id: fileanalysis.cpp 8705 2012-12-23 20:42:29Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/fileanalysis.cpp $
+ * $Revision: 12999 $
+ * $Id: fileanalysis.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/fileanalysis.cpp $
  */
 
 #include <sdk.h>
@@ -23,8 +23,8 @@
 #include "cbstyledtextctrl.h"
 #include "fileanalysis.h"
 
-const wxString reInclude = _T("^[ \t]*#[ \t]*include[ \t]+[\"<]([^\">]+)[\">]");
-const wxString reFwdDecl = _T("class[ \\t]*([A-Za-z]+[A-Za-z0-9_]*);");
+const wxString reInclude = _T("^[[:blank:]]*#[[:blank:]]*include[[:blank:]]+[\"<]([^\">]+)[\">]");
+const wxString reFwdDecl = _T("class[[:blank:]]*([A-Za-z]+[A-Za-z0-9_]*);");
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
@@ -105,19 +105,19 @@ void FileAnalysis::SaveFile(const wxString& Prepend)
     wxFFile File;
     if ( !File.Open(m_FileName,_T("wb")) )
     {
-      Manager::Get()->GetLogManager()->DebugLog(F(_T("[HeaderFixup]: ")+m_FileName+_T("\" could not be updated (opened).")));
+      Manager::Get()->GetLogManager()->DebugLog(wxString::Format("[HeaderFixup]: \"%s\" could not be updated (opened).", m_FileName));
       return;
     }
 
     if ( !File.Write(m_FileContent,wxConvUTF8) )
     {
-      Manager::Get()->GetLogManager()->DebugLog(F(_T("[HeaderFixup]: ")+m_FileName+_T("\" could not be updated (written).")));
+      Manager::Get()->GetLogManager()->DebugLog(wxString::Format("[HeaderFixup]: \"%s\" could not be updated (written).", m_FileName));
       return;
     }
 
     if ( !File.Close() )
     {
-      Manager::Get()->GetLogManager()->DebugLog(F(_T("[HeaderFixup]: ")+m_FileName+_T("\" could not be closed.")));
+      Manager::Get()->GetLogManager()->DebugLog(wxString::Format("[HeaderFixup]: \"%s\" could not be closed.", m_FileName));
       return;
     }
   }

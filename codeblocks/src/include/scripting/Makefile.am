@@ -1,5 +1,3 @@
-SUBDIRS = sqplus bindings
-DIST_SUBDIRS = squirrel sqstdlib sqplus bindings include
-if ! HAVE_SQUIRREL
-SUBDIRS += squirrel sqstdlib include
-endif
+SUBDIRS = bindings
+DIST_SUBDIRS = bindings include
+SUBDIRS += bindings include

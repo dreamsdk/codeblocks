@@ -23,9 +23,9 @@ class ProjectOptionsDlg : public wxScrollingDialog
         // class constructor
         ProjectOptionsDlg(wxWindow* parent, cbProject* project);
         // class destructor
-        ~ProjectOptionsDlg();
+        ~ProjectOptionsDlg() override;
 
-        void EndModal(int retCode);
+        void EndModal(int retCode) override;
         void OnFileOptionsClick(wxCommandEvent& event);
         void OnFileToggleMarkClick(wxCommandEvent& event);
         void OnFileMarkOnClick(wxCommandEvent& event);
@@ -69,7 +69,7 @@ class ProjectOptionsDlg : public wxScrollingDialog
         void DoTargetChange(bool saveOld = true);
         void DoBeforeTargetChange(bool force = false);
         bool DoCheckScripts(CompileTargetBase* base);
-        bool IsScriptValid(ProjectBuildTarget* target, const wxString& script);
+        bool IsScriptValid(ProjectBuildTarget* target, const wxString& script, wxString &errorMsg);
         bool ValidateTargetName(const wxString& name);
         void UpdateTargetControls();
         cbProject* m_Project;

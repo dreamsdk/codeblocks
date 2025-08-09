@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11897 $
- * $Id: headerguard.cpp 11897 2019-11-03 17:14:44Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/headerguard/headerguard.cpp $
+ * $Revision: 12250 $
+ * $Id: headerguard.cpp 12250 2020-12-22 14:39:11Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/headerguard/headerguard.cpp $
  */
 
 #include "sdk.h"
@@ -48,12 +48,8 @@ void HeaderGuard::OnSave(CodeBlocksEvent& event)
 	unsigned int s1 = 257, s2 = 123, b = 9737333, c = 174440041;
 	for(unsigned int i = 0; i < n.length(); ++i)
 	{
-#if wxCHECK_VERSION(3,0,0)
 		wxUniCharRef n_i = n[i];
 		b = (b*33) + (s1 += n_i.GetValue());
-#else
-		b = (b*33) + (s1 += n[i]);
-#endif
 		(c *= 47) += s2;
 		s2 += s1;
 	}

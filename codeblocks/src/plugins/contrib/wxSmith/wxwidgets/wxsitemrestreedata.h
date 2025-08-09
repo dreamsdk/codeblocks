@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsitemrestreedata.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemrestreedata.h $
+* $Revision: 13453 $
+* $Id: wxsitemrestreedata.h 13453 2024-02-17 03:11:41Z ollydbg $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemrestreedata.h $
 */
 
 #ifndef WXSITEMRESTREEDATA_H
@@ -42,6 +42,7 @@ class wxsItemResTreeData: public wxsResourceTreeItemData
 
         virtual void OnSelect();
         virtual void OnRightClick();
+        virtual bool OnPopup(cb_unused long Id);
 
         wxsItem* m_Item;
 };

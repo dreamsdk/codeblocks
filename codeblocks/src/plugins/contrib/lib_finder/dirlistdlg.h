@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10290 $
-* $Id: dirlistdlg.h 10290 2015-05-15 10:58:40Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/dirlistdlg.h $
+* $Revision: 13570 $
+* $Id: dirlistdlg.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/dirlistdlg.h $
 */
 
 #ifndef DIRLISTDLG_H
@@ -31,11 +31,11 @@
 
 //(*Headers(DirListDlg)
 #include "scrollingdialog.h"
-class wxTextCtrl;
-class wxStaticBoxSizer;
-class wxFlexGridSizer;
-class wxButton;
 class wxBoxSizer;
+class wxButton;
+class wxFlexGridSizer;
+class wxStaticBoxSizer;
+class wxTextCtrl;
 //*)
 
 
@@ -53,12 +53,12 @@ class DirListDlg: public wxScrollingDialog
 	private:
 
         //(*Declarations(DirListDlg)
-        wxFlexGridSizer* FlexGridSizer1;
-        wxButton* Button4;
-        wxButton* Button3;
-        wxTextCtrl* DirList;
-        wxBoxSizer* BoxSizer2;
         wxBoxSizer* BoxSizer1;
+        wxBoxSizer* BoxSizer2;
+        wxButton* Button3;
+        wxButton* Button4;
+        wxFlexGridSizer* FlexGridSizer1;
+        wxTextCtrl* DirList;
         //*)
 
 		//(*Handlers(DirListDlg)
@@ -69,11 +69,11 @@ class DirListDlg: public wxScrollingDialog
 		//*)
 
 		//(*Identifiers(DirListDlg)
-		static const long ID_TEXTCTRL1;
-		static const long ID_BUTTON1;
-		static const long ID_BUTTON2;
-		static const long ID_BUTTON3;
-		static const long ID_BUTTON4;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_BUTTON1;
+		static const wxWindowID ID_BUTTON2;
+		static const wxWindowID ID_BUTTON3;
+		static const wxWindowID ID_BUTTON4;
 		//*)
 
 		DECLARE_EVENT_TABLE()

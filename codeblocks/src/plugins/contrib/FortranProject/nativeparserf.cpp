@@ -11,7 +11,6 @@
     #include <wx/regex.h>
     #include <wx/log.h>
     #include <wx/string.h>
-    #include <wx/tokenzr.h>
     #include <wx/dir.h>
     #include <wx/wfstream.h>
     #include <wx/stopwatch.h>
@@ -21,16 +20,22 @@
     #include <editormanager.h>
     #include <projectmanager.h>
     #include <pluginmanager.h>
+    #include <macrosmanager.h>
     #include <logmanager.h>
     #include <cbauibook.h>
     #include <cbeditor.h>
     #include <cbproject.h>
     #include <cbexception.h>
     #include <projectloader_hooks.h>
-    #include <cbstyledtextctrl.h>
     #include <tinyxml/tinyxml.h>
 #endif
 #include <cctype>
+#include <vector>
+
+#include <wx/tokenzr.h>
+#include <wx/filefn.h>
+
+#include <cbstyledtextctrl.h>
 
 #include "workspacebrowserf.h"
 #include "workspacebrowserbuilder.h"
@@ -39,7 +44,15 @@
 #include "bufferparserthread.h"
 #include "adddirparserthread.h"
 
+#define DISABLED_LINE_STYLE wxSCI_MARK_BACKGROUND
+// C_MARKER_MARGIN is defined in cbeditor.cpp (not accessible here). Should it be used or a new can be defined?
+#define C_MARKER_MARGIN 1
+// Marker number can be between 8 and 24. 1-7 are used by C::B (see cbeditor.cpp)
+#define DISABLED_LINE_MARKER    10
+
+
 static wxCriticalSection s_CurrentBufferCritSect;
+static wxCriticalSection s_ProjCPPMacrosSect;
 
 
 int idWSPThreadEvent          = wxNewId();
@@ -48,7 +61,7 @@ int idBPThreadEvent           = wxNewId();
 int idWorkspaceReparseTimer   = wxNewId();
 int idASearchDirsReparseTimer = wxNewId();
 BEGIN_EVENT_TABLE(NativeParserF, wxEvtHandler)
-    EVT_COMMAND(idWSPThreadEvent, wxEVT_COMMAND_ENTER, NativeParserF::OnUpdateWorkspaceBrowser)
+    EVT_COMMAND(idWSPThreadEvent, wxEVT_COMMAND_ENTER, NativeParserF::OnWSParserThreadFinished)
     EVT_COMMAND(idADirPThreadEvent, wxEVT_COMMAND_ENTER, NativeParserF::OnUpdateADirTokens)
     EVT_COMMAND(idBPThreadEvent, wxEVT_COMMAND_ENTER, NativeParserF::OnUpdateCurrentFileTokens)
     EVT_TIMER(idWorkspaceReparseTimer, NativeParserF::OnReparseWorkspaceTimer)
@@ -63,6 +76,7 @@ NativeParserF::NativeParserF(FortranProject* forproj)
       m_ThreadPool(this, wxNewId(), 2, 2 * 1024 * 1024),
       m_ASearchDirsReparseTimer(this, idASearchDirsReparseTimer)
 {
+    m_Parser.SetAdditionalIncludeFiles(&m_AIncludeFiles);
 }
 
 NativeParserF::~NativeParserF()
@@ -73,10 +87,10 @@ NativeParserF::~NativeParserF()
 
 void NativeParserF::CreateWorkspaceBrowser()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
-    m_WorkspaceBrowserIsFloating = cfg->ReadBool(_T("/as_floating_window"), false);
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
+    m_WorkspaceBrowserIsFloating = cfg->ReadBool("/as_floating_window", false);
 
-    if (cfg->ReadBool(_T("/use_symbols_browser"), true))
+    if (cfg->ReadBool("/use_symbols_browser", true))
     {
         if (!m_pWorkspaceBrowser)
         {
@@ -93,7 +107,7 @@ void NativeParserF::CreateWorkspaceBrowser()
                 m_pWorkspaceBrowser = new WorkspaceBrowserF(Manager::Get()->GetAppWindow(), this, &m_Parser);
                 CodeBlocksDockEvent evt(cbEVT_ADD_DOCK_WINDOW);
 
-                evt.name = _T("FSymbolsBrowser");
+                evt.name = "FSymbolsBrowser";
                 evt.title = _("FSymbols browser");
                 evt.pWindow = m_pWorkspaceBrowser;
                 evt.dockSide = CodeBlocksDockEvent::dsRight;
@@ -195,7 +209,8 @@ void NativeParserF::AddFileToParser(const wxString& projectFilename, const wxStr
     FortranSourceForm fsForm;
     if (IsFileFortran(filename, fsForm))
     {
-        m_Parser.Reparse(projectFilename, filename, fsForm);
+        const std::vector<wxString>* pCppMacros = GetProjectCPPMacros(projectFilename);
+        m_Parser.Reparse(projectFilename, filename, fsForm, pCppMacros);
     }
 }
 
@@ -225,15 +240,29 @@ void NativeParserF::ParseProject(cbProject* project)
     }
     if (!files.IsEmpty())
     {
-        m_Parser.BatchParse(prFilenameArr, files, fileForms);
+        const std::vector<wxString>* pCppMacros = GetProjectCPPMacros(prFName);
+        m_Parser.BatchParse(prFilenameArr, files, fileForms, pCppMacros);
     }
 }
 
-void NativeParserF::ReparseFile(const wxString& projectFilename, const wxString& filename)
+bool NativeParserF::ReparseFile(const wxString& projectFilename, const wxString& filename)
 {
+    bool wasReparsed = false;
     FortranSourceForm fsForm;
     if (IsFileFortran(filename, fsForm))
-        m_Parser.Reparse(projectFilename, filename, fsForm);
+    {
+        const std::vector<wxString>* pCppMacros = GetProjectCPPMacros(projectFilename);
+        wasReparsed = m_Parser.Reparse(projectFilename, filename, fsForm, pCppMacros);
+
+        if (m_CppShadow)
+        {
+            // Mark (shadow) skipped lines.
+            cbEditor* editor = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
+            if(editor)
+                MarkDisabledLines(editor);
+        }
+    }
+    return wasReparsed;
 }
 
 void NativeParserF::ReparseProject(cbProject* project)
@@ -250,7 +279,7 @@ void NativeParserF::ReparseProject(cbProject* project)
         }
     }
 
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("NativeParserF::ReparseProject: Reparse poject took %d ms."), sw.Time()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("NativeParserF::ReparseProject: Reparse project took %ld ms.", sw.Time()));
 }
 
 void NativeParserF::ForceReparseWorkspace()
@@ -317,15 +346,47 @@ void NativeParserF::MakeADirFileList()
 
     for (auto it=m_ASearchDirs.begin(); it != m_ASearchDirs.end(); ++it)
     {
+        // m_ASearchDirs may contain directory and file names (not only directories!)
         wxArrayString files;
         wxArrayString* pDirs = &it->second;
         for (size_t i=0; i<pDirs->size(); ++i)
         {
-            wxDir::GetAllFiles(pDirs->Item(i), &files, wxEmptyString, wxDIR_FILES);
+            wxString dir = pDirs->Item(i);
+            Manager::Get()->GetMacrosManager()->ReplaceMacros(dir);
+            if (wxDirExists(dir))
+            {
+                wxDir::GetAllFiles(dir, &files, wxEmptyString, wxDIR_FILES);
+            }
+            else if (wxFileExists(dir))
+            {
+                files.Add(dir);
+            }
+            else
+            {
+                // Note: I don't really understand, however 'wxFileExists' does return 'false' when file contains relative path.
+                //       It seems that current dir is not a project dir.
+                // Try with absolute paths.
+
+                wxFileName prFilename(it->first);
+
+                wxFileName fname;
+                fname.AssignDir(dir); // try as a dir
+                fname.MakeAbsolute(prFilename.GetPath());
+
+                if (wxDirExists(fname.GetPath()))
+                {
+                    wxDir::GetAllFiles(fname.GetPath(), &files, wxEmptyString, wxDIR_FILES);
+                }
+                else
+                {
+                    // Assume, it is a file.
+                    files.Add(fname.GetPath());
+                }
+            }
         }
 
         size_t nfiles = files.size();
-        for (size_t i=0; i<nfiles; i++)
+        for (size_t i=0; i<nfiles; ++i)
         {
             if (IsFileFortran(files.Item(i), fsForm))
             {
@@ -343,6 +404,36 @@ void NativeParserF::MakeADirFileList()
                     wxArrayString* prarr = &m_ADirFNameToProjMap[files.Item(i)];
                     prarr->Add(it->first);
                 }
+            }
+        }
+    }
+}
+
+void NativeParserF::MakeAIncludeFileList()
+{
+    // Make additional include files list.
+    m_AIncludeFiles.clear();
+
+    for (auto it=m_AIncludeDirs.begin(); it != m_AIncludeDirs.end(); ++it)
+    {
+        wxFileName prFilename(it->first);
+        wxArrayString* pDirs = &it->second;
+        for (size_t i=0; i<pDirs->size(); ++i)
+        {
+            wxString dir = pDirs->Item(i);
+            Manager::Get()->GetMacrosManager()->ReplaceMacros(dir);
+            wxFileName dirName;
+            dirName.AssignDir(dir);
+            dirName.MakeAbsolute(prFilename.GetPath());
+
+            wxArrayString files;
+            wxDir::GetAllFiles(dirName.GetPath(), &files, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
+
+            size_t nfiles = files.size();
+            for (size_t j=0; j<nfiles; ++j)
+            {
+                wxFileName fname(files.Item(j));
+                m_AIncludeFiles[fname.GetFullName()] = files.Item(j);
             }
         }
     }
@@ -373,10 +464,50 @@ ArrayOfFortranSourceForm* NativeParserF::GetADirFileForms()
     return &m_ADirFileForms;
 }
 
-void NativeParserF::OnUpdateWorkspaceBrowser(wxCommandEvent& /*event*/)
+std::map<wxString,wxString>* NativeParserF::GetAdditionalIncludeFiles()
+{
+    return &m_AIncludeFiles;
+}
+
+wxString NativeParserF::FindIncludeFile(const wxString& checkDir,  const wxString& filename)
+{
+    // Check if the include file is in checkDir folder.
+    wxFileName fpart(filename);
+    wxFileName fnameInclude(checkDir, wxEmptyString, wxPATH_UNIX);
+    wxArrayString dirs = fpart.GetDirs();
+    for (size_t i=0; i<dirs.size(); ++i)
+    {
+        fnameInclude.AppendDir(dirs[i]);
+    }
+    fnameInclude.SetFullName(fpart.GetFullName());
+    if (wxFileExists(fnameInclude.GetFullPath()))
+    {
+        return fnameInclude.GetFullPath();
+    }
+    else
+    {
+        // Include file not in the checkDir.
+        // Check if this file is between additional directories for includes.
+        wxFileName fname(filename);
+        wxString filename_ux = fname.GetFullPath(wxPATH_UNIX);
+        if (m_AIncludeFiles.count(filename_ux) == 1)
+            return m_AIncludeFiles[filename_ux];
+    }
+
+    return wxEmptyString;
+}
+
+void NativeParserF::OnWSParserThreadFinished(wxCommandEvent& /*event*/)
 {
     m_Parser.ConnectToNewTokens();
     UpdateWorkspaceBrowser();
+
+    // Mark skipped lines.
+    m_Parser.ConnectToNewSkippedLines();
+    cbEditor* editor = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
+    if(!editor)
+        return;
+    MarkDisabledLines(editor);
 }
 
 void NativeParserF::OnUpdateADirTokens(wxCommandEvent& /*event*/)
@@ -417,16 +548,102 @@ void NativeParserF::OnEditorClose(EditorBase* editor)
     }
 }
 
+void NativeParserF::MarkDisabledLines(cbEditor* editor)
+{
+    if (!m_CppShadow)
+        return;
+
+    if (!editor)
+        return;
+
+    cbStyledTextCtrl* control = editor->GetControl();
+    if (!control)
+        return;
+
+    // C_MARKER_MARGIN
+    control->SetMarginMask(C_MARKER_MARGIN,
+                           control->GetMarginMask(1) | (1 << DISABLED_LINE_MARKER) );
+    control->MarkerDefine(DISABLED_LINE_MARKER, DISABLED_LINE_STYLE);
+
+    std::vector<int>* skippedLines = m_Parser.GetSkippedLines(editor->GetFilename());
+    if (!skippedLines || skippedLines->empty())
+    {
+        control->MarkerDeleteAll(DISABLED_LINE_MARKER);
+        return;
+    }
+
+    control->MarkerDeleteAll(DISABLED_LINE_MARKER);
+    control->MarkerSetBackground(DISABLED_LINE_MARKER, m_CppShadowColour);
+    //control->MarkerSetForeground(DISABLED_LINE_MARKER, wxColour(214, 69, 49)); -it makes no difference.
+    control->MarkerSetAlpha(DISABLED_LINE_MARKER, m_CppShadowOpacity);
+
+    int edLineCount = control->GetLineCount();
+    int skipCount = skippedLines->size();
+    for (int i=0; i<skipCount; ++i)
+    {
+        if ((*skippedLines)[i] > edLineCount)
+            break;
+
+        control->MarkerAdd((*skippedLines)[i], DISABLED_LINE_MARKER);
+    }
+}
+
 void NativeParserF::UpdateWorkspaceFilesDependency()
 {
     ClearWSDependency();
+    UpdateWSFilesDependency();
+}
+
+void NativeParserF::UpdateWSFilesDependency()
+{
     ProjectsArray* projects = Manager::Get()->GetProjectManager()->GetProjects();
 
+    ProjectFilesArray pfs;
     for (size_t i = 0; i < projects->GetCount(); ++i)
     {
         cbProject* proj = projects->Item(i);
-        if (!proj->IsMakefileCustom())
-            UpdateProjectFilesDependency(proj);
+        if (proj->IsMakefileCustom()) continue;
+
+        proj->SaveAllFiles();
+
+        FilesList& flist = proj->GetFilesList();
+        for (FilesList::iterator it = flist.begin(); it != flist.end(); ++it)
+        {
+            ProjectFile* pf = *it;
+            if (IsFileFortran(pf->relativeFilename))
+            {
+                pfs.push_back(pf);
+            }
+        }
+    }
+
+    wxString name = "### WorkspaceAllFortranFiles ###";
+    WSDependencyMap::iterator pos;
+    pos = m_WSDependency.find(name);
+    if (pos == m_WSDependency.end())
+    {
+        pos = m_WSDependency.insert(std::make_pair(name,new ProjectDependencies())).first;
+    }
+    if (pfs.size() > 0)
+    {
+        ProjectDependencies* projDep = pos->second;
+        projDep->MakeProjectFilesDependencies(pfs, m_Parser);
+        projDep->EnsureUpToDateObjs();
+
+        for (size_t i=0; i<pfs.size(); i++)
+        {
+            wxString fn2 = pfs[i]->file.GetFullPath();
+            unsigned short int wt = projDep->GetFileWeight(fn2);
+            pfs[i]->weight = wt;
+        }
+        if (projDep->HasInfiniteDependences())
+        {
+            wxString msg = "Warning. FortranProject plugin:\n";
+            msg << "     'It seems you have a circular dependency in Fortran files. Check your USE or INCLUDE statements.'";
+            Manager::Get()->GetLogManager()->Log(msg);
+            cbMessageBox(_("It seems you have a circular dependency in Fortran files. Check your USE or INCLUDE statements."),
+                         _("Warning"));
+        }
     }
 }
 
@@ -435,7 +652,8 @@ void NativeParserF::UpdateProjectFilesDependency(cbProject* project)
     project->SaveAllFiles();
 
     ProjectFilesArray pfs;
-    for (FilesList::iterator it = project->GetFilesList().begin(); it != project->GetFilesList().end(); ++it)
+    FilesList& flist = project->GetFilesList();
+    for (FilesList::iterator it = flist.begin(); it != flist.end(); ++it)
     {
         ProjectFile* pf = *it;
         if (IsFileFortran(pf->relativeFilename))
@@ -449,23 +667,24 @@ void NativeParserF::UpdateProjectFilesDependency(cbProject* project)
     pos = m_WSDependency.find(fn);
     if (pos == m_WSDependency.end())
     {
-        pos = m_WSDependency.insert(std::make_pair(fn,new ProjectDependencies(project))).first;
+        pos = m_WSDependency.insert(std::make_pair(fn,new ProjectDependencies())).first;
     }
     if (pfs.size() > 0)
     {
-        pos->second->MakeProjectFilesDependencies(pfs, m_Parser);
-        pos->second->EnsureUpToDateObjs();
+        ProjectDependencies* projDep = pos->second;
+        projDep->MakeProjectFilesDependencies(pfs, m_Parser);
+        projDep->EnsureUpToDateObjs();
 
         for (size_t i=0; i<pfs.size(); i++)
         {
             wxString fn2 = pfs[i]->file.GetFullPath();
-            unsigned short int wt = pos->second->GetFileWeight(fn2);
+            unsigned short int wt = projDep->GetFileWeight(fn2);
             pfs[i]->weight = wt;
         }
-        if (pos->second->HasInfiniteDependences())
+        if (projDep->HasInfiniteDependences())
         {
-            wxString msg = _T("Warning. FortranProject plugin:\n");
-            msg << _T("     'It seems you have a circular dependency in Fortran files. Check your USE or INCLUDE statements.'");
+            wxString msg = "Warning. FortranProject plugin:\n";
+            msg << "     'It seems you have a circular dependency in Fortran files. Check your USE or INCLUDE statements.'";
             Manager::Get()->GetLogManager()->Log(msg);
             cbMessageBox(_("It seems you have a circular dependency in Fortran files. Check your USE or INCLUDE statements."),
                          _("Warning"));
@@ -581,9 +800,9 @@ void NativeParserF::CollectInformationForCallTip(int& commasAll, int& commasUnti
     lineText.Trim();
     wxString lineTextMinus = lineText.Mid(0,lineText.Len()-lastName.Len());
     wxString beforLast = GetLastName(lineTextMinus);
-    if (beforLast.IsSameAs(_T("subroutine"),false) || beforLast.IsSameAs(_T("function"),false))
+    if (beforLast.IsSameAs("subroutine", false) || beforLast.IsSameAs("function", false))
     {
-        lastName = _T("");
+        lastName = "";
         return; // we don't want calltips during procedure declaration
     }
 
@@ -789,30 +1008,45 @@ void NativeParserF::GetDummyVarName(cbEditor* ed, wxString& lastDummyVar)
     if (asig == wxNOT_FOUND)
         return;
 
-    int endIdx = 0;
-    int nest = 0;
-    bool inA  = false;
-    bool inDA = false;
-    for (int i=line.Len()-1; i>=0; --i)
+    // Mark every position if it is in a character string.
+    size_t lineLen = line.Len();
+    std::vector<bool> inString;
+    inString.resize(lineLen, false);
+    for (size_t i=0; i<lineLen; ++i)
     {
         wxChar c = line.GetChar(i);
-        if (c == '\'' && !inA && !inDA)
-            inA = true;
-        else if (c == '\'' && inA)
-            inA = false;
-        else if (c == '"' && !inA && !inDA)
-            inDA = true;
-        else if (c == '"' && inDA)
-            inDA = false;
-        else if ((c == ')' || c == ']') && !inA && !inDA)
+        if (c == '\'' || c == '\"')
+        {
+            wxChar machChar = c;
+            inString[i] = true;
+            i++;
+            while (i<lineLen)
+            {
+                inString[i] = true;
+                if (line.GetChar(i) == machChar)
+                    break;
+                i++;
+            }
+        }
+    }
+
+    // Take index of '=' (first on the left side from the end)
+    int endIdx = 0;
+    int nest = 0;
+    for (size_t i=lineLen-1; i>=0; --i)
+    {
+        if (inString[i]) continue; // we are in a string
+        wxChar c = line.GetChar(i);
+
+        if ((c == ')' || c == ']'))
             nest++;
-        else if ((c == '(' || c == '[') && nest == 0 && !inA && !inDA)
+        else if ((c == '(' || c == '[') && nest == 0)
             break;
-        else if ((c == '(' || c == '[') && !inA && !inDA)
+        else if (c == '(' || c == '[')
             nest--;
-        else if (c == ',' && nest == 0 && !inA && !inDA)
+        else if (c == ',' && nest == 0)
             break;
-        else if (c == '=' && nest == 0 && !inA && !inDA)
+        else if (c == '=' && nest == 0)
         {
             endIdx = i;
             break;
@@ -828,7 +1062,7 @@ void NativeParserF::GetDummyVarName(cbEditor* ed, wxString& lastDummyVar)
 void NativeParserF::GetCallTips(const wxString& name, bool onlyUseAssoc, bool onlyPublicNames, wxArrayString& callTips, TokensArrayFlat* result)
 {
     int tokKind;
-    if (Manager::Get()->GetConfigManager(_T("fortran_project"))->ReadBool(_T("/call_tip_arrays"), true))
+    if (Manager::Get()->GetConfigManager("fortran_project")->ReadBool("/call_tip_arrays", true))
         tokKind = tkFunction | tkSubroutine | tkInterface | tkType | tkVariable;
     else
         tokKind = tkFunction | tkSubroutine | tkInterface | tkType;
@@ -979,7 +1213,7 @@ void NativeParserF::GetCallTipsForVariable(TokenFlat* token, wxString& callTip)
     if (!(token->m_TokenKind == tkVariable))
         return;
 
-    int dstart = token->m_TypeDefinition.Lower().Find(_T("dimension"));
+    int dstart = token->m_TypeDefinition.Lower().Find("dimension");
     if (dstart != wxNOT_FOUND)
     {
         wxString dim = token->m_TypeDefinition.Mid(dstart+9);
@@ -990,7 +1224,7 @@ void NativeParserF::GetCallTipsForVariable(TokenFlat* token, wxString& callTip)
                 callTip = dim.Mid(0,last+1);
         }
     }
-    else if (token->m_Args.StartsWith(_T("(")))
+    else if (token->m_Args.StartsWith("("))
     {
         int last = token->m_Args.Find(')');
         if (last != wxNOT_FOUND)
@@ -1016,12 +1250,12 @@ void NativeParserF::GetCallTipsForType(TokenFlat* token, wxString& callTip)
         if (resultTmp->Item(i)->m_TokenKind != tkVariable)
             continue;
 
-        names << resultTmp->Item(i)->m_DisplayName << _T(", ");
+        names << resultTmp->Item(i)->m_DisplayName << ", ";
     }
 
     if (!names.IsEmpty())
     {
-        callTip << _T("(") << names.Mid(0,names.Length()-2) << _T(")");
+        callTip << "(" << names.Mid(0,names.length()-2) << ")";
     }
 }
 
@@ -1056,7 +1290,7 @@ void NativeParserF::MarkCurrentSymbol(bool selectCurrentSymbol)
 
 void NativeParserF::RereadOptions()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
     // disabled?
     if (cfg->ReadBool(_("/use_symbols_browser"), true))
     {
@@ -1065,7 +1299,7 @@ void NativeParserF::RereadOptions()
             CreateWorkspaceBrowser();
         }
         // change class-browser docking settings
-        else if (m_WorkspaceBrowserIsFloating != cfg->ReadBool(_T("/as_floating_window"), false))
+        else if (m_WorkspaceBrowserIsFloating != cfg->ReadBool("/as_floating_window", false))
         {
             RemoveWorkspaceBrowser();
             CreateWorkspaceBrowser();
@@ -1103,7 +1337,7 @@ void NativeParserF::GenMakefile()
     cbProject* project = Manager::Get()->GetProjectManager()->GetActiveProject();
     if (!project)
     {
-        Manager::Get()->GetLogManager()->Log(_T("No active project was found. Makefile was not generated."));
+        Manager::Get()->GetLogManager()->Log("No active project was found. Makefile was not generated.");
         cbMessageBox(_("No active project was found.\nMakefile was not generated."), _("Error"), wxICON_ERROR);
         return;
     }
@@ -1120,7 +1354,7 @@ void NativeParserF::GenMakefile()
         MakefileGen::GenerateMakefile(project, pos->second, this);
     else
     {
-        Manager::Get()->GetLogManager()->Log(_T("Active project doesn't have Fortran files."));
+        Manager::Get()->GetLogManager()->Log("Active project doesn't have Fortran files.");
         cbMessageBox(_("Active project doesn't have Fortran files.\nMakefile was not generated."), _("Information"), wxICON_INFORMATION);
     }
 }
@@ -1131,6 +1365,20 @@ void NativeParserF::GetCurrentBuffer(wxString& buffer, wxString& filename, wxStr
     buffer   = m_CurrentEditorBuffer;
     filename = m_CurrentEditorFilename;
     projFilename = m_CurrentEditorProjectFN;
+}
+
+void NativeParserF::SetInterpretCPP(bool interpretCPP, bool cppShadow, const wxColour& cppShadowColour, int cppShadowOpacity)
+{
+    m_InterpretCPP = interpretCPP;
+    m_Parser.SetInterpretCPP(interpretCPP);
+    m_CppShadow = cppShadow;
+    m_CppShadowColour = cppShadowColour;
+    m_CppShadowOpacity = cppShadowOpacity;
+}
+
+bool NativeParserF::DoInterpretCPP()
+{
+    return m_InterpretCPP;
 }
 
 void NativeParserF::ReparseCurrentEditor()
@@ -1157,7 +1405,7 @@ void NativeParserF::ReparseCurrentEditor()
             }
         }
         else
-            m_CurrentEditorProjectFN = _T("");
+            m_CurrentEditorProjectFN = "";
     }
 
     if (BufferParserThread::s_BPTInstances <= 1)
@@ -1190,6 +1438,74 @@ void NativeParserF::SetProjectSearchDirs(cbProject* project, wxArrayString& sear
         return;
 
     m_ASearchDirs[project->GetFilename()] = searchDirs;
+}
+
+void NativeParserF::SetProjectIncludeDirs(cbProject* project, wxArrayString& includeDirs)
+{
+    if (!project)
+        return;
+
+    m_AIncludeDirs[project->GetFilename()] = includeDirs;
+}
+
+wxArrayString NativeParserF::GetProjectIncludeDirs(cbProject* project)
+{
+    wxArrayString dirs;
+    if (!project)
+        return dirs;
+    wxString pfn = project->GetFilename();
+    if (m_AIncludeDirs.count(pfn) == 0)
+        return dirs;
+
+    return m_AIncludeDirs[pfn];
+}
+
+void NativeParserF::DelProjectIncludeDirs(cbProject* project)
+{
+    if (!project)
+        return;
+
+    m_AIncludeDirs.erase(project->GetFilename());
+}
+
+const std::vector<wxString>* NativeParserF::GetProjectCPPMacros(const wxString& projFilename)
+{
+    if (m_CPPMacros.count(projFilename) == 0)
+        return NULL; // No macros for this project.
+
+    return &m_CPPMacros[projFilename];
+}
+
+std::vector<wxString>* NativeParserF::GetProjectCPPMacrosCopy(const wxString& projFilename)
+{
+    wxCriticalSectionLocker locker(s_ProjCPPMacrosSect);
+    if (m_CPPMacros.count(projFilename) == 0)
+        return NULL; // No macros for this project.
+
+    std::vector<wxString>* strMacrosVec = new std::vector<wxString>();
+    *strMacrosVec = m_CPPMacros[projFilename];
+
+    return strMacrosVec;
+}
+
+void NativeParserF::SetProjectCPPMacros(cbProject* project, const wxString& strMacros)
+{
+    if (!project)
+        return;
+
+    wxStringTokenizer tokenizer(strMacros, " ;\t\r\n", wxTOKEN_STRTOK);
+    std::set<wxString> macrosSet;
+    while ( tokenizer.HasMoreTokens() )
+    {
+        macrosSet.insert(tokenizer.GetNextToken());
+    }
+    std::vector<wxString> strMacrosVec;
+    for (auto m : macrosSet)
+    {
+        strMacrosVec.push_back(m);
+    }
+    wxCriticalSectionLocker locker(s_ProjCPPMacrosSect);
+    m_CPPMacros[project->GetFilename()] = strMacrosVec;
 }
 
 bool NativeParserF::HasFortranFiles(cbProject* project)

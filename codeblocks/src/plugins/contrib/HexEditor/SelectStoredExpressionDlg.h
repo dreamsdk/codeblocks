@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10288 $
-* $Id: SelectStoredExpressionDlg.h 10288 2015-05-15 10:58:29Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/SelectStoredExpressionDlg.h $
+* $Revision: 13570 $
+* $Id: SelectStoredExpressionDlg.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/SelectStoredExpressionDlg.h $
 */
 
 #ifndef SELECTSTOREDEXPRESSIONDLG_H
@@ -26,13 +26,13 @@
 #include <map>
 
 //(*Headers(SelectStoredExpressionDlg)
-#include <wx/sizer.h>
-#include <wx/button.h>
 #include "scrollingdialog.h"
+#include <wx/button.h>
+#include <wx/listbox.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/timer.h>
-#include <wx/listbox.h>
 //*)
 
 
@@ -50,25 +50,25 @@ class SelectStoredExpressionDlg: public wxScrollingDialog
         wxString m_Expression;
 
 		//(*Declarations(SelectStoredExpressionDlg)
-		wxButton* Button4;
 		wxButton* Button1;
 		wxButton* Button2;
 		wxButton* Button3;
-		wxStaticText* StaticText1;
-		wxTimer Timer1;
+		wxButton* Button4;
 		wxListBox* m_Expressions;
+		wxStaticText* StaticText1;
 		wxTextCtrl* m_Filter;
+		wxTimer Timer1;
 		//*)
 
 		//(*Identifiers(SelectStoredExpressionDlg)
-		static const long ID_LISTBOX1;
-		static const long ID_STATICTEXT1;
-		static const long ID_TEXTCTRL1;
-		static const long ID_BUTTON1;
-		static const long ID_BUTTON2;
-		static const long ID_BUTTON3;
-		static const long ID_BUTTON4;
-		static const long ID_TIMER1;
+		static const wxWindowID ID_LISTBOX1;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_BUTTON1;
+		static const wxWindowID ID_BUTTON2;
+		static const wxWindowID ID_BUTTON3;
+		static const wxWindowID ID_BUTTON4;
+		static const wxWindowID ID_TIMER1;
 		//*)
 
 		//(*Handlers(SelectStoredExpressionDlg)

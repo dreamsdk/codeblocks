@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11884 $
- * $Id: compiletargetbase.cpp 11884 2019-10-26 09:11:35Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compiletargetbase.cpp $
+ * $Revision: 12999 $
+ * $Id: compiletargetbase.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/compiletargetbase.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -313,7 +313,7 @@ void CompileTargetBase::GenerateTargetFilename(wxString& filename) const
     }
 
 #ifdef command_line_generation
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GenerateTargetFilename got %s and returns: '%s'"), fname.GetFullPath().wx_str(), filename.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GenerateTargetFilename got %s and returns: '%s'", fname.GetFullPath(), filename));
 #endif
 }
 
@@ -372,7 +372,7 @@ wxString CompileTargetBase::GetDynamicLibFilename() const
         wxString out = m_Filename;
         GenerateTargetFilename(out);
 #ifdef command_line_generation
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetDynamicLibFilename [0] returns: '%s'"), out.wx_str()));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetDynamicLibFilename [0] returns: '%s'", out));
 #endif
         return out;
     }
@@ -382,7 +382,7 @@ wxString CompileTargetBase::GetDynamicLibFilename() const
     fname.SetExt(FileFilters::DYNAMICLIB_EXT);
 
 #ifdef command_line_generation
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetDynamicLibFilename [1] returns: '%s'"), fname.GetFullPath().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetDynamicLibFilename [1] returns: '%s'", fname.GetFullPath()));
 #endif
     return fname.GetFullPath();
 }
@@ -398,7 +398,7 @@ wxString CompileTargetBase::GetDynamicLibImportFilename()
     wxFileName fname(m_ImportLibraryFilename);
 
 #ifdef command_line_generation
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetDynamicLibImportFilename returns: '%s'"), fname.GetFullPath().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetDynamicLibImportFilename returns: '%s'", fname.GetFullPath()));
 #endif
     return fname.GetFullPath();
 }
@@ -414,7 +414,7 @@ wxString CompileTargetBase::GetDynamicLibDefFilename()
     wxFileName fname(m_DefinitionFileFilename);
 
 #ifdef command_line_generation
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetDynamicLibDefFilename returns: '%s'"), fname.GetFullPath().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetDynamicLibDefFilename returns: '%s'", fname.GetFullPath()));
 #endif
     return fname.GetFullPath();
 }
@@ -436,7 +436,7 @@ wxString CompileTargetBase::GetStaticLibFilename() const
         wxString out = m_Filename;
         GenerateTargetFilename(out);
 #ifdef command_line_generation
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetStaticLibFilename [0] returns: '%s'"), out.wx_str()));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetStaticLibFilename [0] returns: '%s'", out));
 #endif
         return out;
     }
@@ -456,7 +456,7 @@ wxString CompileTargetBase::GetStaticLibFilename() const
     fname.SetExt(suffix);
 
 #ifdef command_line_generation
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("CompileTargetBase::GetStaticLibFilename [1] returns: '%s'"), fname.GetFullPath().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CompileTargetBase::GetStaticLibFilename [1] returns: '%s'", fname.GetFullPath()));
 #endif
     return fname.GetFullPath();
 }
@@ -545,19 +545,3 @@ void CompileTargetBase::SetMakeCommandFor(MakeCommand cmd, const wxString& make)
     m_MakeCommandsModified = true;
     SetModified(true);
 }
-
-// DreamSDK::Start
-wxString CompileTargetBase::GetLoaderArguments()
-{
-    return m_LoaderArgs;
-}
-
-void CompileTargetBase::SetLoaderArguments(const wxString& loaderArgs)
-{
-    if (m_LoaderArgs == loaderArgs)
-        return;
-
-    m_LoaderArgs = loaderArgs;
-    SetModified(true);
-}
-// DreamSDK::End

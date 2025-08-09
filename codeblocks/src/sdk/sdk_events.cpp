@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11631 $
- * $Id: sdk_events.cpp 11631 2019-04-20 16:54:57Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/sdk_events.cpp $
+ * $Revision: 12887 $
+ * $Id: sdk_events.cpp 12887 2022-09-10 10:32:25Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/sdk_events.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -25,7 +25,11 @@ IMPLEMENT_DYNAMIC_CLASS(CodeBlocksLogEvent, wxEvent)
 IMPLEMENT_DYNAMIC_CLASS(CodeBlocksThreadEvent, wxCommandEvent)
 
 
+#if wxCHECK_VERSION(3, 1, 6)
+CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, Logger* logger_in, const wxString& title_in, wxBitmapBundle *icon_in)
+#else
 CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, Logger* logger_in, const wxString& title_in, wxBitmap *icon_in)
+#endif
     : wxEvent(wxID_ANY, commandType),
     logger(logger_in), logIndex(-1), icon(icon_in), title(title_in), window(nullptr)
 {
@@ -45,14 +49,22 @@ CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, Logger* logger_i
     logIndex = Manager::Get()->GetLogManager()->FindIndex(logger);
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, int logIndex_in, const wxString& title_in, wxBitmapBundle *icon_in)
+#else
 CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, int logIndex_in, const wxString& title_in, wxBitmap *icon_in)
+#endif
     : wxEvent(wxID_ANY, commandType),
     logger(nullptr), logIndex(logIndex_in), icon(icon_in), title(title_in), window(nullptr)
 {
     logger = Manager::Get()->GetLogManager()->Slot(logIndex).GetLogger();
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, wxWindow* window_in, const wxString& title_in, wxBitmapBundle *icon_in)
+#else
 CodeBlocksLogEvent::CodeBlocksLogEvent(wxEventType commandType, wxWindow* window_in, const wxString& title_in, wxBitmap *icon_in)
+#endif
     : wxEvent(wxID_ANY, commandType),
     logger(nullptr), logIndex(-1), icon(icon_in), title(title_in), window(window_in)
 {
@@ -104,6 +116,7 @@ const wxEventType cbEVT_PROJECT_END_REMOVE_FILES = wxNewEventType();
 const wxEventType cbEVT_PROJECT_FILE_ADDED = wxNewEventType();
 const wxEventType cbEVT_PROJECT_FILE_REMOVED = wxNewEventType();
 const wxEventType cbEVT_PROJECT_FILE_CHANGED = wxNewEventType();
+const wxEventType cbEVT_PROJECT_FILE_RENAMED = wxNewEventType();
 const wxEventType cbEVT_PROJECT_POPUP_MENU = wxNewEventType();
 const wxEventType cbEVT_PROJECT_TARGETS_MODIFIED = wxNewEventType();
 const wxEventType cbEVT_PROJECT_RENAMED = wxNewEventType();

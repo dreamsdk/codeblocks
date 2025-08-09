@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10392 $
-* $Id: wxssizer.h 10392 2015-08-15 08:49:17Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxssizer.h $
+* $Revision: 13547 $
+* $Id: wxssizer.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxssizer.h $
 */
 
 #ifndef WXSSIZER_H
@@ -27,11 +27,12 @@
 #include "wxsflags.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 using namespace wxsFlags;
 
 /** \brief Structure containing additional parameters for each widget insidee sizer */
-class wxsSizerExtra: public wxsPropertyContainer
+class PLUGIN_EXPORT wxsSizerExtra: public wxsPropertyContainer
 {
     public:
         long Proportion;                ///< \brief Proportion param (see wxW documentation for details)
@@ -60,7 +61,7 @@ class wxsSizerExtra: public wxsPropertyContainer
 
     protected:
 
-        virtual void OnEnumProperties(long Flags);
+        virtual void OnEnumProperties(long _Flags);
 };
 
 
@@ -70,7 +71,7 @@ class wxsSizerExtra: public wxsPropertyContainer
  *       extra information it requires, random identifier will be generated
  *       for it when editing in source mode.
  */
-class wxsSizer: public wxsParent
+class PLUGIN_EXPORT wxsSizer: public wxsParent
 {
     public:
 
@@ -100,7 +101,7 @@ class wxsSizer: public wxsParent
          * which are not common for all sizers but are used in one
          * type of sizer only
          */
-        virtual void OnEnumSizerProperties(long Flags) = 0;
+        virtual void OnEnumSizerProperties(long _Flags) = 0;
 
         /** \brief Adding extra QPP panel for specified sizer only
          *
@@ -142,7 +143,7 @@ class wxsSizer: public wxsParent
          * When there's no exact mode, there's additional panel on which
          * guidelines are drawn.
          */
-         wxObject* OnBuildPreview(wxWindow* Parent,long Flags);
+         wxObject* OnBuildPreview(wxWindow* Parent,long _Flags);
 
         /** \brief Function creating additional data
          *
@@ -164,7 +165,7 @@ class wxsSizer: public wxsParent
         virtual wxString OnXmlGetExtraObjectClass();
 
         /** \brief Function enumerating properties for sizers*/
-        virtual void OnEnumItemProperties(long Flags);
+        virtual void OnEnumItemProperties(long _Flags);
 
         /** \brief Adding generic sizer properties to QPP */
         virtual void OnAddItemQPP(wxsAdvQPP* QPP);

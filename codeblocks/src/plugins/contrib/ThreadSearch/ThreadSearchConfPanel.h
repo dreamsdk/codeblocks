@@ -24,11 +24,14 @@
 #include "configurationpanel.h"
 
 
-class wxWindow;
-class wxRadioBox;
 class wxCheckBox;
-class wxStaticBox;
+class ResetableColourPicker;
+class wxColourPickerEvent;
 class wxCommandEvent;
+class wxNotebook;
+class wxRadioBox;
+class wxStaticBox;
+class wxWindow;
 
 class ThreadSearch;
 class SearchInPanel;
@@ -41,23 +44,29 @@ public:
     // end wxGlade
 
     /** Constructor. */
-    ThreadSearchConfPanel(ThreadSearch& threadSearchPlugin, wxWindow* parent = NULL, wxWindowID id = -1);
+    ThreadSearchConfPanel(ThreadSearch& threadSearchPlugin,
+                          cbConfigurationPanelColoursInterface *coloursInterface,
+                          wxWindow* parent);
+
+    void SetSearchAndMaskHistory(const wxArrayString &dirHistory, const wxArrayString &maskHistory);
 
     /** Returns the title displayed in the left column of the "Settings/Environment" dialog. */
-    wxString GetTitle()          const {return _("Thread search");}
+    wxString GetTitle() const override { return _("Thread search"); }
 
     /** Returns string used to build active/inactive images path in the left column
       * of the "Settings/Environment" dialog.
       */
-    wxString GetBitmapBaseName() const {return wxT("ThreadSearch");}
+    wxString GetBitmapBaseName() const override { return wxT("ThreadSearch"); }
 
     /** Called automatically when user clicks on OK
       */
-    void OnApply();
+    void OnApply() override;
 
     /** Called automatically when user clicks on Cancel
       */
-    void OnCancel() {}
+    void OnCancel() override {}
+
+    void OnPageChanging() override;
 
 private:
     // begin wxGlade: ThreadSearchConfPanel::methods
@@ -66,19 +75,25 @@ private:
     // end wxGlade
 
     ThreadSearch& m_ThreadSearchPlugin;  // Reference on the ThreadSearch plugin we configure
-
-protected:
+    /// Pointer to interface for accessing modified colour in the colour manager.
+    /// Can be null if the this is not shown from the Environment Settings dialog.
+    cbConfigurationPanelColoursInterface *m_ColoursInterface;
+private:
     // begin wxGlade: ThreadSearchConfPanel::attributes
-    wxStaticBox* SizerThreadSearchLayout_staticbox;
     wxStaticBox* SizerListControlOptions_staticbox;
     wxStaticBox* SizerThreadSearchLayoutGlobal_staticbox;
     wxStaticBox* SizerThreadSearchOptions_staticbox;
     wxStaticBox* SizerSearchIn_staticbox;
+    wxStaticBox *STCColours_staticbox;
+    constexpr static int STCColoursCount = 5;
+    wxStaticText *m_STCColoursLabels[STCColoursCount];
+    ResetableColourPicker *m_STCColourPickers[STCColoursCount*2];
     SearchInPanel* m_pPnlSearchIn;
     DirectoryParamsPanel* m_pPnlDirParams;
     wxCheckBox* m_pChkWholeWord;
     wxCheckBox* m_pChkStartWord;
     wxCheckBox* m_pChkMatchCase;
+    wxCheckBox* m_pChkMatchInComments;
     wxCheckBox* m_pChkRegExp;
     wxCheckBox* m_pChkThreadSearchEnable;
     wxCheckBox* m_pChkUseDefaultOptionsForThreadSearch;
@@ -91,6 +106,9 @@ protected:
     wxCheckBox* m_pChkDisplayLogHeaders;
     wxCheckBox* m_pChkDrawLogLines;
     wxCheckBox* m_pChkAutosizeLogColumns;
+    wxNotebook *m_Notebook;
+    wxPanel *m_PageGeneral;
+    wxPanel *m_PageLayout;
     wxRadioBox* m_pRadPanelManagement;
     wxRadioBox* m_pRadLoggerType;
     wxRadioBox* m_pRadSplitterWndMode;
@@ -112,6 +130,8 @@ public:
     void OnChkShowMissingFilesErrorClick(wxCommandEvent &event); // wxGlade: <event_handler>
     void OnChkShowCantOpenFileErrorClick(wxCommandEvent &event); // wxGlade: <event_handler>
 
+    void OnColourPickerChanged(wxColourPickerEvent &event);
+    void OnColourPickerContext(wxContextMenuEvent &event);
 }; // wxGlade: end class
 
 

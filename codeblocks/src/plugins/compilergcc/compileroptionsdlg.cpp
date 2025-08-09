@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11883 $
- * $Id: compileroptionsdlg.cpp 11883 2019-10-26 09:11:12Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compileroptionsdlg.cpp $
+ * $Revision: 13366 $
+ * $Id: compileroptionsdlg.cpp 13366 2023-09-27 16:44:07Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compileroptionsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -102,10 +102,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_UPDATE_UI(            XRCID("btnResComp"),                      CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("txtMake"),                         CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnMake"),                         CompilerOptionsDlg::OnUpdateUI)
-	// DreamSDK::Start
-	EVT_UPDATE_UI(            XRCID("txtLoader"),                       CompilerOptionsDlg::OnUpdateUI)
-    EVT_UPDATE_UI(            XRCID("btnLoader"),                       CompilerOptionsDlg::OnUpdateUI)
-	// DreamSDK::End
     EVT_UPDATE_UI(            XRCID("cmbCompiler"),                     CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreAdd"),                    CompilerOptionsDlg::OnUpdateUI)
     EVT_UPDATE_UI(            XRCID("btnIgnoreRemove"),                 CompilerOptionsDlg::OnUpdateUI)
@@ -155,9 +151,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_BUTTON(                XRCID("btnLibLinker"),                   CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnResComp"),                     CompilerOptionsDlg::OnSelectProgramClick)
     EVT_BUTTON(                XRCID("btnMake"),                        CompilerOptionsDlg::OnSelectProgramClick)
-	// DreamSDK::Start
-	EVT_BUTTON(                XRCID("btnLoader"),                      CompilerOptionsDlg::OnSelectProgramClick)
-	// DreamSDK::End
     EVT_BUTTON(                XRCID("btnAdvanced"),                    CompilerOptionsDlg::OnAdvancedClick)
     EVT_BUTTON(                XRCID("btnIgnoreAdd"),                   CompilerOptionsDlg::OnIgnoreAddClick)
     EVT_BUTTON(                XRCID("btnIgnoreRemove"),                CompilerOptionsDlg::OnIgnoreRemoveClick)
@@ -194,9 +187,6 @@ BEGIN_EVENT_TABLE(CompilerOptionsDlg, wxPanel)
     EVT_PG_CHANGED(            XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionChanged)
     EVT_PG_RIGHT_CLICK(        XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnFlagsPopup)
     EVT_PG_DOUBLE_CLICK(       XRCID("pgCompilerFlags"),                CompilerOptionsDlg::OnOptionDoubleClick)
-
-	// DreamSDK
-	EVT_TEXT(                  XRCID("txtLoaderArguments"),             CompilerOptionsDlg::OnDirty)
 END_EVENT_TABLE()
 
 class ScopeTreeData : public wxTreeItemData
@@ -210,17 +200,70 @@ class ScopeTreeData : public wxTreeItemData
         ProjectBuildTarget* m_Target;
 };
 
-struct DebuggerClientData : wxClientData
-{
-    DebuggerClientData(const wxString &s) : string(s) {}
-    wxString string;
-};
-
 struct VariableListClientData : wxClientData
 {
     VariableListClientData(const wxString &key, const wxString &value) : key(key), value(value) {}
     wxString key, value;
 };
+
+class IntClientData : public wxClientData
+{
+    public:
+        IntClientData(int value) : m_data(value) {}
+        void SetData(int value) {m_data = value;}
+        int GetData() const {return m_data;}
+
+    private:
+        int m_data;
+};
+
+namespace
+{
+    int GetIndex(wxChoice* choice, int n)
+    {
+        if (!choice || (n == -1))
+            return -1;
+
+        IntClientData* data = dynamic_cast <IntClientData *> (choice->GetClientObject(n));
+        return data ? data->GetData() : -1;
+    }
+
+    int GetSelectionIndex(wxChoice* choice)
+    {
+        if (!choice)
+            return -1;
+
+        return GetIndex(choice, choice->GetSelection());
+    }
+
+    int GetIndexPosition(wxChoice* choice, int index)
+    {
+        int position = -1;
+        if (choice)
+        {
+            const int count = choice->GetCount();
+            for (int n = 0; n < count; ++n)
+            {
+                if (GetIndex(choice, n) == index)
+                {
+                    position = n;
+                    break;
+                }
+            }
+        }
+
+        return position;
+    }
+
+    int SetSelection(wxChoice* choice, int index)
+    {
+        const int pos = GetIndexPosition(choice, index);
+        if (choice)
+            choice->SetSelection(pos);
+
+        return pos;
+    }
+}
 
 /*
     CompilerOptions can exist on 3 different levels :
@@ -303,9 +346,6 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
         XRCCTRL(*this, "txtMakeCmd_DistClean", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->Enable(en);
         XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->Enable(en);
-
-		// DreamSDK
-		XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetToolTip(wxT("Leave the field blank to use the default"));
     }
 
     // let's start filling in all the panels of the configuration dialog
@@ -335,7 +375,7 @@ CompilerOptionsDlg::CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, 
                      "If you click \"Cancel\", the project/target will remain configured for\n"
                      "that compiler and consequently can not be configured and will not be built."),
                     CompilerId.wx_str());
-        Compiler* comp = 0;
+        Compiler* comp = nullptr;
         if ((m_pTarget && m_pTarget->SupportsCurrentPlatform()) || (!m_pTarget && m_pProject))
             comp = CompilerFactory::SelectCompilerUI(msg);
 
@@ -411,9 +451,20 @@ void CompilerOptionsDlg::DoFillCompilerSets(int compilerIdx)
 {
     wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
     cmb->Clear();
-    for (unsigned int i = 0; i < CompilerFactory::GetCompilersCount(); ++i)
+    const int defaultCompilerIdx = CompilerFactory::GetCompilerIndex(CompilerFactory::GetDefaultCompilerID());
+    const int compilerCount = CompilerFactory::GetCompilersCount();
+    for (int i = 0; i < compilerCount; ++i)
     {
-        cmb->Append(CompilerFactory::GetCompiler(i)->GetName());
+        Compiler* compiler = CompilerFactory::GetCompiler(i);
+        if (compiler) // && (!m_pProject || compiler->IsValid()))
+        {
+            wxString compilerName = compiler->GetName();
+            if (i == defaultCompilerIdx)
+                compilerName += " " + _("(default)");
+
+            cmb->Append(compilerName, new IntClientData(i));
+        }
+
     }
 
 //    int compilerIdx = CompilerFactory::GetCompilerIndex(CompilerFactory::GetDefaultCompilerID());
@@ -425,8 +476,7 @@ void CompilerOptionsDlg::DoFillCompilerSets(int compilerIdx)
 //    if (!CompilerFactory::GetCompiler(compilerIdx))
 //        compilerIdx = 0;
 //    m_Options = CompilerFactory::GetCompiler(compilerIdx)->GetOptions();
-    if (compilerIdx != -1)
-        cmb->SetSelection(compilerIdx);
+    SetSelection(cmb, compilerIdx);
 
 //    m_CurrentCompilerIdx = compilerIdx;
 } // DoFillCompilerSets
@@ -487,8 +537,6 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
         return;
     const CompilerPrograms& progs = compiler->GetPrograms();
 
-	XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(compiler->GetLoaderArguments()); // DreamSDK
-
     XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->SetValue(compiler->GetMasterPath());
     XRCCTRL(*this, "txtCcompiler", wxTextCtrl)->SetValue(progs.C);
     XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->SetValue(progs.CPP);
@@ -499,7 +547,7 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
     {
         cmbDebugger->Clear();
         // Add an invalid debugger entry and store the old value in the client data, so no user settings are changed.
-        cmbDebugger->Append(_("--- Invalid debugger ---"), new DebuggerClientData(progs.DBGconfig));
+        cmbDebugger->Append(_("--- Invalid debugger ---"), new wxStringClientData(progs.DBGconfig));
         cmbDebugger->SetSelection(0);
 
         const DebuggerManager::RegisteredPlugins &plugins = Manager::Get()->GetDebuggerManager()->GetAllDebuggers();
@@ -512,7 +560,7 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
             {
                 const wxString &def = it->first->GetSettingsName() + wxT(":") + (*itConf)->GetName();
                 int index = cmbDebugger->Append(it->first->GetGUIName() + wxT(" : ") + (*itConf)->GetName(),
-                                                new DebuggerClientData(def));
+                                                new wxStringClientData(def));
                 if (def == progs.DBGconfig)
                     cmbDebugger->SetSelection(index);
             }
@@ -521,9 +569,6 @@ void CompilerOptionsDlg::DoFillCompilerPrograms()
 
     XRCCTRL(*this, "txtResComp", wxTextCtrl)->SetValue(progs.WINDRES);
     XRCCTRL(*this, "txtMake", wxTextCtrl)->SetValue(progs.MAKE);
-
-	// DreamSDK
-	XRCCTRL(*this, "txtLoader", wxTextCtrl)->SetValue(progs.LOADER);
 
     const wxArrayString& extraPaths = compiler->GetExtraPaths();
     ArrayString2ListBox(extraPaths, XRCCTRL(*this, "lstExtraPaths", wxListBox));
@@ -535,7 +580,7 @@ void CompilerOptionsDlg::DoFillVars()
     if (!lst)
         return;
     lst->Clear();
-    const StringHash* vars = 0;
+    const StringHash* vars = nullptr;
     const CompileOptionsBase* base = GetVarsOwner();
     if (base)
     {
@@ -555,60 +600,62 @@ void CompilerOptionsDlg::DoFillOthers()
     if (m_pProject)
         return; // projects don't have Other tab
 
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("compiler");
+
     wxCheckBox* chk = XRCCTRL(*this, "chkIncludeFileCwd", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/include_file_cwd"), false));
+        chk->SetValue(cfg->ReadBool("/include_file_cwd", false));
 
     chk = XRCCTRL(*this, "chkIncludePrjCwd", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/include_prj_cwd"), false));
+        chk->SetValue(cfg->ReadBool("/include_prj_cwd", false));
 
     chk = XRCCTRL(*this, "chkSkipIncludeDeps", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/skip_include_deps"), false));
+        chk->SetValue(cfg->ReadBool("/skip_include_deps", false));
 
     chk = XRCCTRL(*this, "chkSaveHtmlLog", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/save_html_build_log"), false));
+        chk->SetValue(cfg->ReadBool("/save_html_build_log", false));
 
     chk = XRCCTRL(*this, "chkFullHtmlLog", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/save_html_build_log/full_command_line"), false));
+        chk->SetValue(cfg->ReadBool("/save_html_build_log/full_command_line", false));
 
     chk = XRCCTRL(*this, "chkBuildProgressBar", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/build_progress/bar"), false));
+        chk->SetValue(cfg->ReadBool("/build_progress/bar", false));
 
     chk = XRCCTRL(*this, "chkBuildProgressPerc", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/build_progress/percentage"), false));
+        chk->SetValue(cfg->ReadBool("/build_progress/percentage", false));
 
     wxSpinCtrl* spn = XRCCTRL(*this, "spnParallelProcesses", wxSpinCtrl);
     if (spn)
-        spn->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadInt(_T("/parallel_processes"), 0));
+        spn->SetValue(cfg->ReadInt("/parallel_processes", 0));
 
     spn = XRCCTRL(*this, "spnMaxErrors", wxSpinCtrl);
     if (spn)
     {
         spn->SetRange(0, 1000);
-        spn->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadInt(_T("/max_reported_errors"), 50));
+        spn->SetValue(cfg->ReadInt("/max_reported_errors", 50));
     }
 
     chk = XRCCTRL(*this, "chkRebuildSeperately", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/rebuild_seperately"), false));
+        chk->SetValue(cfg->ReadBool("/rebuild_seperately", false));
 
     wxListBox* lst = XRCCTRL(*this, "lstIgnore", wxListBox);
     if (lst)
     {
         wxArrayString IgnoreOutput;
-        IgnoreOutput = Manager::Get()->GetConfigManager(_T("compiler"))->ReadArrayString(_T("/ignore_output"));
+        IgnoreOutput = cfg->ReadArrayString("/ignore_output");
         ArrayString2ListBox(IgnoreOutput, lst);
     }
 
     chk = XRCCTRL(*this, "chkNonPlatComp", wxCheckBox);
     if (chk)
-        chk->SetValue(Manager::Get()->GetConfigManager(_T("compiler"))->ReadBool(_T("/non_plat_comp"), false));
+        chk->SetValue(cfg->ReadBool("/non_plat_comp", false));
 } // DoFillOthers
 
 void CompilerOptionsDlg::DoFillTree()
@@ -630,7 +677,7 @@ void CompilerOptionsDlg::DoFillTree()
     {
         // project settings
         // in case you wonder : the delete of data will be done by the wxTreeCtrl
-        ScopeTreeData* data = new ScopeTreeData(m_pProject, 0L);
+        ScopeTreeData* data = new ScopeTreeData(m_pProject, nullptr);
         root = tc->AddRoot(m_pProject->GetTitle(), -1, -1, data);
         selectedItem = root;
         for (int x = 0; x < m_pProject->GetBuildTargetsCount(); ++x)
@@ -645,7 +692,7 @@ void CompilerOptionsDlg::DoFillTree()
     // normally the target should be found in the targets of the project
     // in case it is not, we will reset m_pTarget to 0 (in sync with tree selection)
     if (selectedItem == root)
-        m_pTarget = 0;
+        m_pTarget = nullptr;
 
     tc->Expand(root);
     tc->SelectItem(selectedItem);
@@ -695,13 +742,9 @@ void CompilerOptionsDlg::DoFillOptions()
     wxPGProperty *root = m_FlagsPG->GetRoot();
     if (root)
     {
-        unsigned count = root->GetChildCount();
+        const unsigned count = root->GetChildCount();
         for (unsigned ii = 0; ii < count; ++ii)
-#if wxCHECK_VERSION(3, 0, 0)
             m_FlagsPG->SortChildren(root->Item(ii), wxPG_RECURSE);
-#else
-            m_FlagsPG->Sort(root->Item(ii));
-#endif
     }
     m_FlagsPG->Thaw();
 } // DoFillOptions
@@ -858,9 +901,6 @@ void CompilerOptionsDlg::DoLoadOptions()
             if (cmbLogging)
                 cmbLogging->SetSelection((int)compiler->GetSwitches().logging);
 
-			// DreamSDK
-			m_LoaderArgs = compiler->GetLoaderArguments();
-
             wxChoice *cmbLinkerExe = XRCCTRL(*this, "chLinkerExe", wxChoice);
             cmbLinkerExe->Show(false);
             wxStaticText *txtLinkerExe = XRCCTRL(*this, "txtLinkerExe", wxStaticText);
@@ -891,9 +931,6 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_DistClean",        wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcDistClean));
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pProject->GetMakeCommandFor(mcSilentBuild));
-
-			// DreamSDK
-			m_LoaderArgs = m_pProject->GetLoaderArguments();
         }
         else
         {
@@ -922,9 +959,6 @@ void CompilerOptionsDlg::DoLoadOptions()
             XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcAskRebuildNeeded));
             XRCCTRL(*this, "txtMakeCmd_SilentBuild",      wxTextCtrl)->SetValue(m_pTarget->GetMakeCommandFor(mcSilentBuild));
 
-			// DreamSDK
-			m_LoaderArgs = m_pTarget->GetLoaderArguments();
-
             const LinkerExecutableOption linkerExecutable = m_pTarget->GetLinkerExecutable();
             XRCCTRL(*this, "chLinkerExe", wxChoice)->SetSelection(int(linkerExecutable));
         }
@@ -946,9 +980,6 @@ void CompilerOptionsDlg::DoLoadOptions()
         ArrayString2TextCtrl(CommandsAfterBuild, XRCCTRL(*this, "txtCmdAfter", wxTextCtrl));
         XRCCTRL(*this, "chkAlwaysRunPost", wxCheckBox)->SetValue(AlwaysUsePost);
     }
-
-	// DreamSDK
-	XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(m_LoaderArgs);
 } // DoLoadOptions
 
 void CompilerOptionsDlg::OptionsToText()
@@ -956,8 +987,8 @@ void CompilerOptionsDlg::OptionsToText()
     wxArrayString array;
     DoGetCompileOptions(array, XRCCTRL(*this, "txtCompilerDefines", wxTextCtrl));
 
-    int compilerIdx = XRCCTRL(*this, "cmbCompiler", wxChoice)->GetSelection();
-    const Compiler* compiler = CompilerFactory::GetCompiler(compilerIdx);
+    wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
+    const Compiler* compiler = CompilerFactory::GetCompiler(GetSelectionIndex(cmb));
 
     for (unsigned int i = 0; i < array.GetCount(); ++i)
     {
@@ -1012,6 +1043,7 @@ void CompilerOptionsDlg::OptionsToText()
                  "Do you want to enable these flags?");
         AnnoyingDialog dlg(_("Enable compiler flags?"), msg, wxART_QUESTION,
                            AnnoyingDialog::YES_NO, AnnoyingDialog::rtNO);
+        PlaceWindow(&dlg);
         if (dlg.ShowModal() == AnnoyingDialog::rtNO)
         {
             // for disabled options, remove relative text option *and*
@@ -1041,9 +1073,6 @@ void CompilerOptionsDlg::DoSaveOptions()
     DoGetCompileOptions(m_ResourceCompilerOptions, XRCCTRL(*this, "txtResourceCompilerOptions", wxTextCtrl));
     DoGetCompileOptions(m_LinkerOptions,           XRCCTRL(*this, "txtLinkerOptions",           wxTextCtrl));
     OptionsToText();
-
-	// DreamSDK
-	wxString LoaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
 
     if (!m_pProject && !m_pTarget)
     {
@@ -1101,9 +1130,6 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pProject->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pProject->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
-
-			// DreamSDK
-			m_pProject->SetLoaderArguments(LoaderArgs);
         }
         else
         {
@@ -1142,9 +1168,6 @@ void CompilerOptionsDlg::DoSaveOptions()
             m_pTarget->SetMakeCommandFor(mcAskRebuildNeeded, XRCCTRL(*this, "txtMakeCmd_AskRebuildNeeded", wxTextCtrl)->GetValue());
 //            m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_SilentBuild", wxTextCtrl)->GetValue());
             m_pTarget->SetMakeCommandFor(mcSilentBuild, XRCCTRL(*this, "txtMakeCmd_Build", wxTextCtrl)->GetValue() + _T(" > $(CMD_NULL)"));
-
-			// DreamSDK
-			m_pTarget->SetLoaderArguments(LoaderArgs);
         }
     }
 } // DoSaveOptions
@@ -1156,7 +1179,6 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
         return;
 
     CompilerPrograms progs;
-	wxString loaderArgs = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue(); // DreamSDK
     wxString masterPath = XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue();
     progs.C       = (XRCCTRL(*this, "txtCcompiler",   wxTextCtrl)->GetValue()).Trim();
     progs.CPP     = (XRCCTRL(*this, "txtCPPcompiler", wxTextCtrl)->GetValue()).Trim();
@@ -1164,16 +1186,14 @@ void CompilerOptionsDlg::DoSaveCompilerPrograms()
     progs.LIB     = (XRCCTRL(*this, "txtLibLinker",   wxTextCtrl)->GetValue()).Trim();
     progs.WINDRES = (XRCCTRL(*this, "txtResComp",     wxTextCtrl)->GetValue()).Trim();
     progs.MAKE    = (XRCCTRL(*this, "txtMake",        wxTextCtrl)->GetValue()).Trim();
-	progs.LOADER  = (XRCCTRL(*this, "txtLoader",      wxTextCtrl)->GetValue()).Trim(); // DreamSDK
     wxChoice *cmbDebugger = XRCCTRL(*this, "cmbDebugger", wxChoice);
     if (cmbDebugger)
     {
-        int index = cmbDebugger->GetSelection();
-        const DebuggerClientData* data = static_cast<const DebuggerClientData*>(cmbDebugger->GetClientObject(index));
-        progs.DBGconfig = data->string;
+        const int index = cmbDebugger->GetSelection();
+        const wxStringClientData* data = static_cast <const wxStringClientData *> (cmbDebugger->GetClientObject(index));
+        progs.DBGconfig = data->GetData();
     }
     compiler->SetPrograms(progs);
-	compiler->SetLoaderArguments(loaderArgs); // DreamSDK
     compiler->SetMasterPath(masterPath);
     // and the extra paths
     wxListBox* control = XRCCTRL(*this, "lstExtraPaths", wxListBox);
@@ -1256,14 +1276,6 @@ void CompilerOptionsDlg::DoSaveCompilerDefinition()
     node = node->GetNext();
     node->AddAttribute(name, wxT("MAKE"));
     node->AddAttribute(value, compiler->GetPrograms().MAKE);
-
-	// DreamSDK::Start
-	 node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Program")));
-    node = node->GetNext();
-    node->AddAttribute(name, wxT("LOADER"));
-    node->AddAttribute(value, compiler->GetPrograms().LOADER);
-    node->AddAttribute(wxT("args"), compiler->GetLoaderArguments());
-	// DreamSDK::End
 
 
     node->SetNext(new wxXmlNode(wxXML_ELEMENT_NODE, wxT("Switch")));
@@ -1478,11 +1490,14 @@ void CompilerOptionsDlg::DoSaveCompilerDefinition()
     }
 
     wxXmlDocument doc;
-    doc.SetVersion(wxT("1.0"));
+    doc.SetVersion("1.0");
     doc.SetRoot(root);
-    if (!wxDirExists(ConfigManager::GetFolder(sdDataUser) + wxT("/compilers")))
-        wxMkdir(ConfigManager::GetFolder(sdDataUser) + wxT("/compilers"));
-    doc.Save(ConfigManager::GetFolder(sdDataUser) + wxT("/compilers/options_") + compiler->GetID() + wxT(".xml"));
+
+    const wxString folder(ConfigManager::GetFolder(sdDataUser)+"/compilers");
+    if (!wxDirExists(folder))
+        wxMkdir(folder);
+
+    doc.Save(folder+"/options_"+compiler->GetID()+".xml");
 
     // update the in-memory cache
     compiler->SetOptions(m_Options);
@@ -1535,9 +1550,12 @@ void CompilerOptionsDlg::OnTreeSelectionChange(wxTreeEvent& event)
     ScopeTreeData* data = (ScopeTreeData*)tc->GetItemData(event.GetItem());
     if (!data)
         return;
+
+    wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
     int compilerIdx = data->GetTarget() ? CompilerFactory::GetCompilerIndex(data->GetTarget()->GetCompilerID()) :
                         (data->GetProject() ? CompilerFactory::GetCompilerIndex(data->GetProject()->GetCompilerID()) :
-                        XRCCTRL(*this, "cmbCompiler", wxChoice)->GetSelection());
+                        GetSelectionIndex(cmb));
+
     // in order to support projects/targets which have an unknown "user compiler", that is on the current
     // system that compiler is not (or no longer) installed, we should check the compilerIdx, in such a case it will
     // be '-1' [NOTE : maybe to the check already on the Id ?]
@@ -1548,7 +1566,7 @@ void CompilerOptionsDlg::OnTreeSelectionChange(wxTreeEvent& event)
     if (compilerIdx != -1)
     {
         wxNotebook* nb = XRCCTRL(*this, "nbMain", wxNotebook);
-        XRCCTRL(*this, "cmbCompiler", wxChoice)->SetSelection(compilerIdx);
+        SetSelection(cmb, compilerIdx);
         // we don't update the compiler index yet, we leave that to CompilerChanged();
         m_pTarget = data->GetTarget();
         if (m_pTarget && !m_pTarget->SupportsCurrentPlatform())
@@ -1600,7 +1618,7 @@ void CompilerOptionsDlg::OnTreeSelectionChange(wxTreeEvent& event)
                     "Please choose the compiler you want to use instead and click \"OK\".\n"
                     "If you click \"Cancel\", the project/target will remain configured for that compiler and consequently can not be configured and will not be built."),
                     CompilerId.wx_str());
-        Compiler* compiler = 0;
+        Compiler* compiler = nullptr;
         if (m_pTarget && m_pTarget->SupportsCurrentPlatform())
             compiler = CompilerFactory::SelectCompilerUI(msg);
 
@@ -1608,8 +1626,7 @@ void CompilerOptionsDlg::OnTreeSelectionChange(wxTreeEvent& event)
         {   // a new compiler was chosen, proceed as if the user manually selected another compiler
             // that means set the compiler selection list accordingly
             // and go directly to (On)CompilerChanged
-            int NewCompilerIdx = CompilerFactory::GetCompilerIndex(compiler);
-            XRCCTRL(*this, "cmbCompiler", wxChoice)->SetSelection(NewCompilerIdx);
+            SetSelection(cmb, CompilerFactory::GetCompilerIndex(compiler));
             wxCommandEvent Dummy;
             OnCompilerChanged(Dummy);
         }
@@ -1688,7 +1705,7 @@ void CompilerOptionsDlg::OnCompilerChanged(cb_unused wxCommandEvent& event)
                         wxICON_EXCLAMATION|wxYES|wxNO|wxCANCEL))
         {
             case wxID_CANCEL :
-                XRCCTRL(*this, "cmbCompiler", wxChoice)->SetSelection(m_CurrentCompilerIdx);
+                SetSelection(XRCCTRL(*this, "cmbCompiler", wxChoice), m_CurrentCompilerIdx);
                 bChanged = false;
                 break;
             case wxID_YES :
@@ -1713,7 +1730,7 @@ void CompilerOptionsDlg::OnCompilerChanged(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::CompilerChanged()
 {
-    m_CurrentCompilerIdx = XRCCTRL(*this, "cmbCompiler", wxChoice)->GetSelection();
+    m_CurrentCompilerIdx = GetSelectionIndex(XRCCTRL(*this, "cmbCompiler", wxChoice));
     // in case we are not on the global level (== project/target) we need to remember this switch
     // so that on "SAVE" time we can adjust the project/target with it's new compiler
     // SAVE time for this particular setting means (Apply or TreeSelection change
@@ -1722,10 +1739,12 @@ void CompilerOptionsDlg::CompilerChanged()
     {
         m_NewProjectOrTargetCompilerId = CompilerFactory::GetCompiler(m_CurrentCompilerIdx)->GetID();
     }
+
     //load the new options (== options of the new selected compiler)
     Compiler* compiler = CompilerFactory::GetCompiler(m_CurrentCompilerIdx);
     if (compiler)
         m_Options = compiler->GetOptions();
+
     DoFillCompilerDependentSettings();
 } // CompilerChanged
 
@@ -1848,9 +1867,10 @@ void CompilerOptionsDlg::OnOptionChanged(wxPropertyGridEvent& event)
                     against = m_Options.GetOptionByAdditionalLibs(check[i]);
                 if (against && against->enabled)
                 {
-                    wxString message = (option->checkMessage.IsEmpty() ?
-                              wxT("\"") + option->name + _("\" conflicts with \"") + against->name + wxT("\".") :
-                              option->checkMessage );
+                    const wxString message(option->checkMessage.empty() ?
+                                               wxString::Format(_("\"%s\" conflicts with \"%s\"."), option->name, against->name) :
+                                               option->checkMessage);
+
                     AnnoyingDialog dlg(_("Compiler options conflict"),
                                        message,
                                        wxART_INFORMATION,
@@ -2028,7 +2048,7 @@ void CompilerOptionsDlg::OnCopyDirsClick(cb_unused wxCommandEvent& event)
 
         if (!base)
         {
-            Manager::Get()->GetLogManager()->LogWarning(_T("Could not get build target in CompilerOptionsDlg::OnCopyLibsClick"));
+            Manager::Get()->GetLogManager()->LogWarning(_("Could not get build target in CompilerOptionsDlg::OnCopyLibsClick"));
             continue;
         }
 
@@ -2056,7 +2076,7 @@ static void QuoteString(wxString &value, const wxString &caption)
 {
     if (NeedQuotes(value))
     {
-        AnnoyingDialog dlgQuestion(caption, wxT("Variable quote string"),
+        AnnoyingDialog dlgQuestion(caption, _("Variable quote string"),
                                    _("The value contains spaces or strange characters. Do you want to quote it?"),
                                    wxART_QUESTION, AnnoyingDialog::YES_NO, AnnoyingDialog::rtSAVE_CHOICE,
                                    _("&Quote"), _("&Leave unquoted"));
@@ -2162,17 +2182,15 @@ void CompilerOptionsDlg::OnClearVarClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnSetDefaultCompilerClick(cb_unused wxCommandEvent& event)
 {
-    wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
-    int idx = cmb->GetSelection();
+    const int idx = GetSelectionIndex(XRCCTRL(*this, "cmbCompiler", wxChoice));
     CompilerFactory::SetDefaultCompiler(idx);
+
     wxString msg;
     Compiler* compiler = CompilerFactory::GetDefaultCompiler();
-    #if wxCHECK_VERSION(3, 0, 0)
-    msg.Printf(_("%s is now selected as the default compiler for new projects"), compiler ? compiler->GetName().wx_str() : _("[invalid]").wx_str());
-    #else
-    msg.Printf(_("%s is now selected as the default compiler for new projects"), compiler ? compiler->GetName().c_str() : _("[invalid]"));
-    #endif
+    msg.Printf(_("%s is now selected as the default compiler for new projects"), compiler ? compiler->GetName() : _("[invalid]"));
     cbMessageBox(msg);
+
+    DoFillCompilerSets(idx);
 } // OnSetDefaultCompilerClick
 
 void CompilerOptionsDlg::OnAddCompilerClick(cb_unused wxCommandEvent& event)
@@ -2199,15 +2217,15 @@ void CompilerOptionsDlg::OnAddCompilerClick(cb_unused wxCommandEvent& event)
                 break;
         } // end switch
     }
-    wxChoice* cmb = 0;
-    cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
+
     wxString value = cbGetTextFromUser(_("Please enter the new compiler's name:"),
-                                    _("Add new compiler"),
-                                    _("Copy of ") + CompilerFactory::GetCompiler(m_CurrentCompilerIdx)->GetName());
-    if (!value.IsEmpty())
+                                       _("Add new compiler"),
+                                       wxString::Format(_("Copy of %s"), CompilerFactory::GetCompiler(m_CurrentCompilerIdx)->GetName()),
+                                       this);
+    if (!value.empty())
     {
         // make a copy of current compiler
-        Compiler* newC = 0;
+        Compiler* newC = nullptr;
         try
         {
             newC = CompilerFactory::CreateCompilerCopy(CompilerFactory::GetCompiler(m_CurrentCompilerIdx), value);
@@ -2216,7 +2234,7 @@ void CompilerOptionsDlg::OnAddCompilerClick(cb_unused wxCommandEvent& event)
         {
             // usually throws because of non-unique ID
             e.ShowErrorMessage(false);
-            newC = 0; // just to be sure
+            newC = nullptr; // just to be sure
         }
 
         if (!newC)
@@ -2228,14 +2246,15 @@ void CompilerOptionsDlg::OnAddCompilerClick(cb_unused wxCommandEvent& event)
         else
         {
             m_CurrentCompilerIdx = CompilerFactory::GetCompilerIndex(newC);
-
-            cmb->Append(value);
-            cmb->SetSelection(cmb->GetCount() - 1);
+            wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
+            cmb->Append(value, new IntClientData(m_CurrentCompilerIdx));
+            SetSelection(cmb, m_CurrentCompilerIdx);
             // refresh settings in dialog
             DoFillCompilerDependentSettings();
             cbMessageBox(_("The new compiler has been added! Don't forget to update the \"Toolchain executables\" page..."));
         }
     }
+
     if (m_bDirty)
     {   // something went wrong -> reload current settings omitting the NO-ed changes
         m_bDirty = false;
@@ -2245,15 +2264,23 @@ void CompilerOptionsDlg::OnAddCompilerClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnEditCompilerClick(cb_unused wxCommandEvent& event)
 {
-    wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
-    wxString value = cbGetTextFromUser(_("Please edit the compiler's name:"), _("Rename compiler"), cmb->GetStringSelection());
-    if (!value.IsEmpty())
+    Compiler* compiler = CompilerFactory::GetCompiler(m_CurrentCompilerIdx);
+    if (compiler)
     {
-        Compiler* compiler = CompilerFactory::GetCompiler(m_CurrentCompilerIdx);
-        if (compiler)
-            compiler->SetName(value);
-        cmb->SetString(m_CurrentCompilerIdx, value);
-        cmb->SetSelection(m_CurrentCompilerIdx);
+        const wxString curValue(compiler->GetName());
+        wxString newValue(cbGetTextFromUser(_("Please edit the compiler's name:"), _("Rename compiler"), curValue, this));
+        if (!newValue.empty() && (newValue != curValue))
+        {
+            compiler->SetName(newValue);
+            if (compiler == CompilerFactory::GetDefaultCompiler())
+                newValue << ' ' << _("(default)");
+
+            // Delete and reappend to keep order
+            wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
+            cmb->Delete(GetIndexPosition(cmb, m_CurrentCompilerIdx));
+            const int pos = cmb->Append(newValue, new IntClientData(m_CurrentCompilerIdx));
+            cmb->SetSelection(pos);
+        }
     }
 } // OnEditCompilerClick
 
@@ -2264,13 +2291,28 @@ void CompilerOptionsDlg::OnRemoveCompilerClick(cb_unused wxCommandEvent& event)
                     wxYES | wxNO| wxICON_QUESTION | wxNO_DEFAULT) == wxID_YES)
     {
         wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
-        int compilerIdx = m_CurrentCompilerIdx;
-        CompilerFactory::RemoveCompiler(CompilerFactory::GetCompiler(compilerIdx));
-        cmb->Delete(compilerIdx);
-        while (compilerIdx >= (int)(cmb->GetCount()))
-            --compilerIdx;
-        cmb->SetSelection(compilerIdx);
-        m_CurrentCompilerIdx = compilerIdx;
+        // Remove compiler from factory
+        CompilerFactory::RemoveCompiler(CompilerFactory::GetCompiler(m_CurrentCompilerIdx));
+        // Remove compiler from choice
+        const int pos = GetIndexPosition(cmb, m_CurrentCompilerIdx);
+        cmb->Delete(pos);
+        // Adjust choice indexes > m_CurrentCompilerIdx
+        const int count = (int)(cmb->GetCount());
+        for (int n = 0; n < count; ++n)
+        {
+            IntClientData* data = dynamic_cast <IntClientData *> (cmb->GetClientObject(n));
+            if (data)
+            {
+                const int idx = data->GetData();
+                if (idx > m_CurrentCompilerIdx)
+                    data->SetData(idx-1);
+            }
+        }
+
+        // Select next compiler in the choice or last if the deleted one was the last
+        cmb->SetSelection((pos < count) ? pos : (pos-1));
+        // Update current compiler index
+        m_CurrentCompilerIdx = GetSelectionIndex(cmb);
         DoFillCompilerDependentSettings();
     }
 } // OnRemoveCompilerClick
@@ -2376,8 +2418,8 @@ void CompilerOptionsDlg::OnRemoveLibClick(cb_unused wxCommandEvent& event)
     int num = lstLibs->GetSelections(sels);
     if (num == 1) // mimic old behaviour
     {
-        if (cbMessageBox(_("Remove library '")+lstLibs->GetString(sels[0])+_("' from the list?"),
-            _("Confirmation"), wxICON_QUESTION | wxOK | wxCANCEL) == wxID_OK)
+        if (cbMessageBox(wxString::Format(_("Remove library '%s' from the list?"), lstLibs->GetString(sels[0])),
+                         _("Confirmation"), wxICON_QUESTION | wxOK | wxCANCEL) == wxID_OK)
         {
             lstLibs->Delete(sels[0]);
             m_bDirty = true;
@@ -2385,7 +2427,9 @@ void CompilerOptionsDlg::OnRemoveLibClick(cb_unused wxCommandEvent& event)
     }
     else if (num > 1)
     {
-        wxString msg; msg.Printf(_("Remove all (%d) selected libraries from the list?"), num);
+        wxString msg;
+
+        msg.Printf(_("Remove all (%d) selected libraries from the list?"), num);
         if (cbMessageBox(msg, _("Confirmation"), wxICON_QUESTION | wxOK | wxCANCEL) == wxID_OK)
         {
             // remove starting with the last lib. otherwise indices will change
@@ -2563,6 +2607,25 @@ void CompilerOptionsDlg::OnIgnoreRemoveClick(cb_unused wxCommandEvent& event)
     }
 } // OnIgnoreRemoveClick
 
+void CompilerOptionsDlg::SwapItems(wxListBox* listBox, int a, int b)
+{
+    const wxString tmp(listBox->GetString(a));
+    listBox->SetString(a, listBox->GetString(b));
+    listBox->SetString(b, tmp);
+}
+
+void CompilerOptionsDlg::Reselect(wxListBox* listBox, const wxArrayInt& selected, int offset)
+{
+    const unsigned int len = listBox->GetCount();
+    for (unsigned int i = 0; i < len; ++i)
+    {
+        if (selected.Index(i+offset) != wxNOT_FOUND)
+            listBox->SetSelection(i);
+        else
+            listBox->Deselect(i);
+    }
+}
+
 void CompilerOptionsDlg::OnMoveLibUpClick(cb_unused wxCommandEvent& event)
 {
     wxListBox* lstLibs = XRCCTRL(*this, "lstLibs", wxListBox);
@@ -2570,26 +2633,24 @@ void CompilerOptionsDlg::OnMoveLibUpClick(cb_unused wxCommandEvent& event)
         return;
 
     wxArrayInt sels;
-    int num = lstLibs->GetSelections(sels);
-    if (num == 0)
+    const int num = lstLibs->GetSelections(sels);
+    if ((num == 0) || (sels[0] == 0))
         return;
 
-    // moving upwards: need to start from the first element
-    // starting at second element, the first one cannot be moved upwards
-    for (size_t i=1; i<lstLibs->GetCount(); ++i)
+    lstLibs->Freeze();
+
+    // Move
+    for (int i = 0; i < num; ++i)
     {
-        // do not move upwards if the lib before is selected, too
-        if (lstLibs->IsSelected(i) && !lstLibs->IsSelected(i-1))
-        {
-            wxString lib = lstLibs->GetString(i);
-            lstLibs->Delete(i);
-
-            lstLibs->InsertItems(1, &lib, i - 1);
-            lstLibs->SetSelection(i - 1);
-
-            m_bDirty = true;
-        }
+        const int n = sels[i];
+        SwapItems(lstLibs, n, n-1);
     }
+
+    // Reselect
+    Reselect(lstLibs, sels, 1);
+
+    lstLibs->Thaw();
+    m_bDirty = true;
 } // OnMoveLibUpClick
 
 void CompilerOptionsDlg::OnMoveLibDownClick(cb_unused wxCommandEvent& event)
@@ -2599,80 +2660,78 @@ void CompilerOptionsDlg::OnMoveLibDownClick(cb_unused wxCommandEvent& event)
         return;
 
     wxArrayInt sels;
-    int num = lstLibs->GetSelections(sels);
-    if (num == 0)
+    const int num = lstLibs->GetSelections(sels);
+    if ((num == 0) || (sels.Last() == int(lstLibs->GetCount())-1))
         return;
 
-    // moving downwards: need to start from the last element
-    // starting at pre-last element, the last one cannot be moved downwards
-    for (size_t i=lstLibs->GetCount()-1; i>0; --i)
+    lstLibs->Freeze();
+
+    // Move
+    for (int i = num-1; i >= 0; --i)
     {
-        // do not move downwards if the lib after is selected, too
-        // notice here: as started with index+1 (due to GetCount)...
-        // ... subtract 1 all the way to achieve the real index operated on
-        if (lstLibs->IsSelected(i-1) && !lstLibs->IsSelected(i))
-        {
-            wxString lib = lstLibs->GetString(i-1);
-            lstLibs->Delete(i-1);
-
-            lstLibs->InsertItems(1, &lib, i);
-            lstLibs->SetSelection(i);
-
-            m_bDirty = true;
-        }
+        const int n = sels[i];
+        SwapItems(lstLibs, n, n+1);
     }
+
+    // Reselect
+    Reselect(lstLibs, sels, -1);
+
+    lstLibs->Thaw();
+    m_bDirty = true;
 } // OnMoveLibDownClick
 
 void CompilerOptionsDlg::OnMoveDirUpClick(cb_unused wxCommandEvent& event)
 {
-    wxListBox* lst = GetDirsListBox();
-    wxArrayInt sels;
-    if (!lst || lst->GetSelections(sels) < 1)
+    wxListBox* lstDirs = GetDirsListBox();
+    if (!lstDirs)
         return;
 
-    // moving upwards: need to start from the first element
-    // starting at second element, the first one cannot be moved upwards
-    for (size_t i=1; i<lst->GetCount(); ++i)
+    wxArrayInt sels;
+    const int num = lstDirs->GetSelections(sels);
+    if ((num == 0) || (sels[0] == 0))
+        return;
+
+    lstDirs->Freeze();
+
+    // Move
+    for (int i = 0; i < num; ++i)
     {
-        // do not move upwards if the dir before is selected, too
-        if (lst->IsSelected(i) && !lst->IsSelected(i-1))
-        {
-            wxString dir = lst->GetString(i);
-            lst->Delete(i);
-
-            lst->InsertItems(1, &dir, i - 1);
-            lst->SetSelection(i - 1);
-
-            m_bDirty = true;
-        }
+        const int n = sels[i];
+        SwapItems(lstDirs, n, n-1);
     }
+
+    // Reselect
+    Reselect(lstDirs, sels, 1);
+
+    lstDirs->Thaw();
+    m_bDirty = true;
 } // OnMoveDirUpClick
 
 void CompilerOptionsDlg::OnMoveDirDownClick(cb_unused wxCommandEvent& event)
 {
-    wxListBox* lst = GetDirsListBox();
-    wxArrayInt sels;
-    if (!lst || lst->GetSelections(sels) < 1)
+    wxListBox* lstDirs = GetDirsListBox();
+    if (!lstDirs)
         return;
 
-    // moving downwards: need to start from the last element
-    // starting at pre-last element, the last one cannot be moved downwards
-    for (size_t i=lst->GetCount()-1; i>0; --i)
+    wxArrayInt sels;
+    const int num = lstDirs->GetSelections(sels);
+    if ((num == 0) || (sels.Last() == int(lstDirs->GetCount())-1))
+        return;
+
+    lstDirs->Freeze();
+
+    // Move
+    for (int i = num-1; i >= 0; --i)
     {
-        // do not move downwards if the dir after is selected, too
-        // notice here: as started with index+1 (due to GetCount)...
-        // ... subtract 1 all the way to achieve the real index operated on
-        if (lst->IsSelected(i-1) && !lst->IsSelected(i))
-        {
-            wxString dir = lst->GetString(i-1);
-            lst->Delete(i-1);
-
-            lst->InsertItems(1, &dir, i);
-            lst->SetSelection(i);
-
-            m_bDirty = true;
-        }
+        const int n = sels[i];
+        SwapItems(lstDirs, n, n+1);
     }
+
+    // Reselect
+    Reselect(lstDirs, sels, -1);
+
+    lstDirs->Thaw();
+    m_bDirty = true;
 } // OnMoveDirDownClick
 
 void CompilerOptionsDlg::OnMasterPathClick(cb_unused wxCommandEvent& event)
@@ -2694,10 +2753,8 @@ void CompilerOptionsDlg::OnAutoDetectClick(cb_unused wxCommandEvent& event)
 
 void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
 {
-	bool bSetWithFullPath = false; // DreamSDK
-
     // see who called us
-    wxTextCtrl* obj = 0L;
+    wxTextCtrl* obj = nullptr;
     if (event.GetId() == XRCID("btnCcompiler"))
         obj = XRCCTRL(*this, "txtCcompiler", wxTextCtrl);
     else if (event.GetId() == XRCID("btnCPPcompiler"))
@@ -2710,24 +2767,14 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
         obj = XRCCTRL(*this, "txtResComp", wxTextCtrl);
     else if (event.GetId() == XRCID("btnMake"))
         obj = XRCCTRL(*this, "txtMake", wxTextCtrl);
-	// DreamSDK::Start
-	else if (event.GetId() == XRCID("btnLoader"))
-    {
-        obj = XRCCTRL(*this, "txtLoader", wxTextCtrl);
-        bSetWithFullPath = true;
-    }
-	// DreamSDK::End
 
     if (!obj)
         return; // called from invalid caller
 
-    // common part follows -- DreamSDK altered
-    wxString file_selection = wxEmptyString;
+    // common part follows
+    wxString file_selection = _("All files (*)|*");
     if (platform::windows)
-    {
-        file_selection = _("Executable files (*.exe;*.cmd)|*.exe;*.cmd|");
-    }
-    file_selection += _("All files (*)|*");
+        file_selection = _("Executable files (*.exe)|*.exe");
     wxFileDialog dlg(this,
                      _("Select file"),
                      XRCCTRL(*this, "txtMasterPath", wxTextCtrl)->GetValue() + _T("/bin"),
@@ -2740,7 +2787,7 @@ void CompilerOptionsDlg::OnSelectProgramClick(wxCommandEvent& event)
     if (dlg.ShowModal() != wxID_OK)
         return;
     wxFileName fname(dlg.GetPath());
-    obj->SetValue(bSetWithFullPath ? fname.GetFullPath() : fname.GetFullName()); // DreamSDK altered
+    obj->SetValue(fname.GetFullName());
     m_bDirty = true;
 } // OnSelectProgramClick
 
@@ -2755,8 +2802,7 @@ void CompilerOptionsDlg::OnAdvancedClick(cb_unused wxCommandEvent& event)
                     wxART_QUESTION);
     if (dlg.ShowModal() == AnnoyingDialog::rtYES)
     {
-        wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
-        int compilerIdx = cmb->GetSelection();
+        const int compilerIdx = GetSelectionIndex(XRCCTRL(*this, "cmbCompiler", wxChoice));
         AdvancedCompilerOptionsDlg dlg2(this, CompilerFactory::GetCompiler(compilerIdx)->GetID());
         PlaceWindow(&dlg2);
         dlg2.ShowModal();
@@ -2768,7 +2814,7 @@ void CompilerOptionsDlg::OnAdvancedClick(cb_unused wxCommandEvent& event)
     }
 } // OnAdvancedClick
 
-static void UpdateUIListBoxAndButtons(wxListBox &list, wxButton &edit, wxButton &del, wxButton &clear, wxButton &copy,
+static void UpdateUIListBoxAndButtons(wxListBox &list, bool hasProject, wxButton &edit, wxButton &del, wxButton &clear, wxButton &copy,
                                       wxButton &up, wxButton &down)
 {
     wxArrayInt selections;
@@ -2779,7 +2825,7 @@ static void UpdateUIListBoxAndButtons(wxListBox &list, wxButton &edit, wxButton 
     edit.Enable(num == 1);
     del.Enable(en);
     clear.Enable(itemCount != 0);
-    copy.Enable(en);
+    copy.Enable(en && hasProject);
 
     if (en)
     {
@@ -2803,11 +2849,12 @@ static void UpdateUIListBoxAndButtons(wxListBox &list, wxButton &edit, wxButton 
 void CompilerOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
 {
     bool en = false;
+    const bool hasProject = m_pProject;
 
     wxListBox* control = GetDirsListBox();
     if (control)
     {
-        UpdateUIListBoxAndButtons(*control, *XRCCTRL(*this, "btnEditDir",  wxButton),
+        UpdateUIListBoxAndButtons(*control, hasProject, *XRCCTRL(*this, "btnEditDir",  wxButton),
                                   *XRCCTRL(*this, "btnDelDir",   wxButton), *XRCCTRL(*this, "btnClearDir", wxButton),
                                   *XRCCTRL(*this, "btnCopyDirs", wxButton), *XRCCTRL(*this, "btnMoveDirUp", wxButton),
                                   *XRCCTRL(*this, "btnMoveDirDown", wxButton));
@@ -2817,14 +2864,14 @@ void CompilerOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
     wxListBox* lstLibs = XRCCTRL(*this, "lstLibs", wxListBox);
     if (lstLibs)
     {
-        UpdateUIListBoxAndButtons(*lstLibs, *XRCCTRL(*this, "btnEditLib",  wxButton),
+        UpdateUIListBoxAndButtons(*lstLibs, hasProject, *XRCCTRL(*this, "btnEditLib",  wxButton),
                                   *XRCCTRL(*this, "btnDelLib",   wxButton), *XRCCTRL(*this, "btnClearLib", wxButton),
                                   *XRCCTRL(*this, "btnCopyLibs", wxButton), *XRCCTRL(*this, "btnMoveLibUp", wxButton),
                                   *XRCCTRL(*this, "btnMoveLibDown", wxButton));
     }
 
     // edit/delete/clear/copy/moveup/movedown extra path
-    if (!m_pProject)
+    if (!hasProject)
     {
         en = XRCCTRL(*this, "lstExtraPaths", wxListBox)->GetSelection() >= 0;
         XRCCTRL(*this, "btnExtraEdit",   wxButton)->Enable(en);
@@ -2849,11 +2896,12 @@ void CompilerOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
     XRCCTRL(*this, "cmbResDirsPolicy",  wxChoice)->Enable(en);
 
     // compiler set buttons
-    if (!m_pProject)
+    if (!hasProject)
     {
         en = !data; // global options selected
-        int idx   = XRCCTRL(*this, "cmbCompiler", wxChoice)->GetSelection();
-        int count = XRCCTRL(*this, "cmbCompiler", wxChoice)->GetCount(); // compilers count
+        wxChoice* cmb = XRCCTRL(*this, "cmbCompiler", wxChoice);
+        const int idx   = GetSelectionIndex(cmb);
+        const int count = cmb->GetCount(); // compilers count
         Compiler* compiler = CompilerFactory::GetCompiler(idx);
 
         XRCCTRL(*this, "btnSetDefaultCompiler", wxButton)->Enable(CompilerFactory::GetCompilerIndex(CompilerFactory::GetDefaultCompiler()) != idx);
@@ -2874,73 +2922,81 @@ void CompilerOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
 
 void CompilerOptionsDlg::OnApply()
 {
-    m_CurrentCompilerIdx = XRCCTRL(*this, "cmbCompiler", wxChoice)->GetSelection();
+    m_CurrentCompilerIdx = GetSelectionIndex(XRCCTRL(*this, "cmbCompiler", wxChoice));
     DoSaveCompilerDependentSettings();
     CompilerFactory::SaveSettings();
 
     //others (projects don't have Other tab)
     if (!m_pProject)
     {
-        ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("compiler"));
+        ConfigManager* cfg = Manager::Get()->GetConfigManager("compiler");
         wxCheckBox* chk = XRCCTRL(*this, "chkIncludeFileCwd", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/include_file_cwd"), (bool)chk->IsChecked());
+            cfg->Write("/include_file_cwd", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkIncludePrjCwd", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/include_prj_cwd"), (bool)chk->IsChecked());
+            cfg->Write("/include_prj_cwd", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkSkipIncludeDeps", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/skip_include_deps"), (bool)chk->IsChecked());
+            cfg->Write("/skip_include_deps", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkSaveHtmlLog", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/save_html_build_log"), (bool)chk->IsChecked());
+            cfg->Write("/save_html_build_log", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkFullHtmlLog", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/save_html_build_log/full_command_line"), (bool)chk->IsChecked());
+            cfg->Write("/save_html_build_log/full_command_line", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkBuildProgressBar", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/build_progress/bar"), (bool)chk->IsChecked());
+            cfg->Write("/build_progress/bar", (bool)chk->IsChecked());
+
         chk = XRCCTRL(*this, "chkBuildProgressPerc", wxCheckBox);
         if (chk)
         {
-            cfg->Write(_T("/build_progress/percentage"), (bool)chk->IsChecked());
+            cfg->Write("/build_progress/percentage", (bool)chk->IsChecked());
             m_Compiler->m_LogBuildProgressPercentage = chk->IsChecked();
         }
+
         wxSpinCtrl* spn = XRCCTRL(*this, "spnParallelProcesses", wxSpinCtrl);
-        if (spn && (((int)spn->GetValue()) != cfg->ReadInt(_T("/parallel_processes"), 0)))
+        if (spn && (((int)spn->GetValue()) != cfg->ReadInt("/parallel_processes", 0)))
         {
             if (m_Compiler->IsRunning())
                 cbMessageBox(_("You can't change the number of parallel processes while building!\nSetting ignored..."), _("Warning"), wxICON_WARNING);
             else
             {
-                cfg->Write(_T("/parallel_processes"), (int)spn->GetValue());
+                cfg->Write("/parallel_processes", (int)spn->GetValue());
                 m_Compiler->ReAllocProcesses();
             }
         }
+
         spn = XRCCTRL(*this, "spnMaxErrors", wxSpinCtrl);
         if (spn)
-            cfg->Write(_T("/max_reported_errors"), (int)spn->GetValue());
+            cfg->Write("/max_reported_errors", (int)spn->GetValue());
 
         chk = XRCCTRL(*this, "chkRebuildSeperately", wxCheckBox);
         if (chk)
-            cfg->Write(_T("/rebuild_seperately"), (bool)chk->IsChecked());
+            cfg->Write("/rebuild_seperately", (bool)chk->IsChecked());
 
         wxListBox* lst = XRCCTRL(*this, "lstIgnore", wxListBox);
         if (lst)
         {
             wxArrayString IgnoreOutput;
             ListBox2ArrayString(IgnoreOutput, lst);
-            cfg->Write(_T("/ignore_output"), IgnoreOutput);
+            cfg->Write("/ignore_output", IgnoreOutput);
         }
 
         chk = XRCCTRL(*this, "chkNonPlatComp", wxCheckBox);
-        if (chk && (chk->IsChecked() != cfg->ReadBool(_T("/non_plat_comp"), false)))
+        if (chk && (chk->IsChecked() != cfg->ReadBool("/non_plat_comp", false)))
         {
             if (m_Compiler->IsRunning())
                 cbMessageBox(_("You can't change the option to enable or disable non-platform compilers while building!\nSetting ignored..."), _("Warning"), wxICON_WARNING);
             else
             {
-                cfg->Write(_T("/non_plat_comp"), (bool)chk->IsChecked());
+                cfg->Write("/non_plat_comp", (bool)chk->IsChecked());
                 CompilerFactory::UnregisterCompilers();
                 m_Compiler->DoRegisterCompilers();
                 m_Compiler->LoadOptions();
@@ -3047,8 +3103,8 @@ void CompilerOptionsDlg::OnFlagsPopup(wxPropertyGridEvent& event)
     if (m_MenuOption == FMO_COnly)
     {
         Compiler* compiler = CompilerFactory::GetCompiler(m_CurrentCompilerIdx);
-        wxTextEntryDialog dlg(this, wxT("List flags that will only be used during C compilation"),
-                              wxT("C - only flags"), compiler->GetCOnlyFlags(), wxTextEntryDialogStyle|wxTE_MULTILINE|wxRESIZE_BORDER);
+        wxTextEntryDialog dlg(this, _("List flags that will only be used during C compilation"),
+                              _("C - only flags"), compiler->GetCOnlyFlags(), wxTextEntryDialogStyle|wxTE_MULTILINE|wxRESIZE_BORDER);
         // TODO: Hack for Ubuntu, see here: http://forums.codeblocks.org/index.php/topic,16463.msg115270.html#msg115270 (Remove if no longer needed.)
         if (dlg.GetSize().GetHeight() < 220)
         {
@@ -3072,14 +3128,15 @@ void CompilerOptionsDlg::OnFlagsPopup(wxPropertyGridEvent& event)
     else if (m_MenuOption == FMO_CPPOnly)
     {
         Compiler* compiler = CompilerFactory::GetCompiler(m_CurrentCompilerIdx);
-        wxTextEntryDialog dlg(this, wxT("List flags that will only be used during C++ compilation"),
-                              wxT("C++ - only flags"), compiler->GetCPPOnlyFlags(), wxTextEntryDialogStyle|wxTE_MULTILINE|wxRESIZE_BORDER);
+        wxTextEntryDialog dlg(this, _("List flags that will only be used during C++ compilation"),
+                              _("C++ - only flags"), compiler->GetCPPOnlyFlags(), wxTextEntryDialogStyle|wxTE_MULTILINE|wxRESIZE_BORDER);
         // TODO: Hack for Ubuntu, see here: http://forums.codeblocks.org/index.php/topic,16463.msg115270.html#msg115270 (Remove if no longer needed.)
         if (dlg.GetSize().GetHeight() < 220)
         {
             dlg.SetSize(dlg.GetPosition().x, dlg.GetPosition().y - (220 - dlg.GetSize().GetHeight()) / 2,
                         dlg.GetSize().GetWidth(), 220);
         }
+        PlaceWindow(&dlg);
         dlg.ShowModal();
         wxString flags = dlg.GetValue();
         flags.Replace(wxT("\n"), wxT(" "));
@@ -3119,6 +3176,8 @@ void CompilerOptionsDlg::OnFlagsPopup(wxPropertyGridEvent& event)
         for (size_t i = 0; i < m_Options.GetCount(); ++i)
         {
             CompOption* opt = m_Options.GetOption(i);
+            if (!opt)
+                break;
             bool known = false;
             for (size_t j = 0; j < categ.GetCount(); ++j)
             {
@@ -3134,12 +3193,13 @@ void CompilerOptionsDlg::OnFlagsPopup(wxPropertyGridEvent& event)
         if (categ.IsEmpty())
             categ.Add(wxT("General"));
         CompOption copt;
-        if (m_MenuOption == FMO_Modify)
-            copt = *m_Options.GetOptionByName(property->GetLabel());
 
         wxString categoryName;
         if (property)
         {
+            if (m_MenuOption == FMO_Modify)
+                copt = *m_Options.GetOptionByName(property->GetLabel());
+
             // If we have a selected property try to find the name of the category.
             if (property->IsCategory())
                 categoryName = property->GetLabel();
@@ -3184,21 +3244,24 @@ void CompilerOptionsDlg::OnFlagsPopup(wxPropertyGridEvent& event)
         }
         else
         {
-            CompOption* opt = m_Options.GetOptionByName(property->GetLabel());
-            wxString name = copt.name + wxT("  [");
-            if (copt.option.IsEmpty())
-                name += copt.additionalLibs;
-            else
-                name += copt.option;
-            name += wxT("]");
-            opt->name           = name;
-            opt->option         = copt.option;
-            opt->additionalLibs = copt.additionalLibs;
-            opt->category       = copt.category;
-            opt->checkAgainst   = copt.checkAgainst;
-            opt->checkMessage   = copt.checkMessage;
-            opt->supersedes     = copt.supersedes;
-            opt->exclusive      = copt.exclusive;
+            if (property)
+            {
+                CompOption* opt = m_Options.GetOptionByName(property->GetLabel());
+                wxString name = copt.name + wxT("  [");
+                if (copt.option.IsEmpty())
+                    name += copt.additionalLibs;
+                else
+                    name += copt.option;
+                name += wxT("]");
+                opt->name           = name;
+                opt->option         = copt.option;
+                opt->additionalLibs = copt.additionalLibs;
+                opt->category       = copt.category;
+                opt->checkAgainst   = copt.checkAgainst;
+                opt->checkMessage   = copt.checkMessage;
+                opt->supersedes     = copt.supersedes;
+                opt->exclusive      = copt.exclusive;
+            }
         }
     }
     DoFillOptions();

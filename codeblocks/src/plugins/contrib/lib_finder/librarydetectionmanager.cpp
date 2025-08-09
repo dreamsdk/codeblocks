@@ -18,7 +18,7 @@
 *
 * $Revision: 10874 $
 * $Id: librarydetectionmanager.cpp 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/librarydetectionmanager.cpp $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/librarydetectionmanager.cpp $
 */
 
 #include <tinyxml.h>

@@ -7,17 +7,13 @@
 // Copyright:   (c) Aleksandras Gluchovas and (c) Francesco Montorsi
 // Licence:     wxWidgets licence
 /////////////////////////////////////////////////////////////////////////////
-// RCS-ID:      $Id: menuutils.h 11708 2019-05-28 22:39:27Z pecanh $
+// RCS-ID:      $Id: menuutils.h 12012 2020-03-31 15:44:13Z mortenmacfly $
 
 // Modified menuutils.h for CodeBlocks KeyBnder v2.0 2019/04/8
 
 
 #ifndef __WX_MENUUTILS_H__
 #define __WX_MENUUTILS_H__
-
-#ifdef __GNUG__
-#pragma interface "menuutils.h"
-#endif
 
 // includes
 #include "wx/panel.h"

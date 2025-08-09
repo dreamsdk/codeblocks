@@ -4,7 +4,7 @@
  *
  * $Revision: 8300 $
  * $Id: filegroupsandmasks.cpp 8300 2012-08-31 11:35:40Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/filegroupsandmasks.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/filegroupsandmasks.cpp $
  */
 
 #include "sdk_precomp.h"

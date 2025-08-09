@@ -4,7 +4,7 @@
  *
  * $Revision: 11069 $
  * $Id: compilerMINGWgenerator.cpp 11069 2017-05-28 15:26:44Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerMINGWgenerator.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerMINGWgenerator.cpp $
  */
 
 #include <sdk.h>

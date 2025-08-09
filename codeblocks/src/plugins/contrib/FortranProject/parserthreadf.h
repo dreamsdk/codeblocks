@@ -14,7 +14,7 @@
 #include <set>
 
 #include "tokenf.h"
-#include "tokenizerf.h"
+#include "tokenizerpp.h"
 #include "usetokenf.h"
 #include "moduletokenf.h"
 #include "submoduletokenf.h"
@@ -30,32 +30,45 @@ class ParserThreadF
                              TokensArrayF* tokens,
                              FortranSourceForm fsForm,
                              bool isBuffer=false,
-                             IncludeDB* includeDB=NULL);
+                             IncludeDB* includeDB=NULL,
+                             bool interpretCPP=true,
+                             std::map<wxString,wxString>* aIncludeFiles=NULL,
+                             const std::vector<wxString>* projPPDefineTokens=NULL);
         ParserThreadF(const wxString& projectFilename,
                              const wxString& filename,
                              TokensArrayF* tokens,
                              FortranSourceForm fsForm,
                              IncludeDB* includeDB,
+                             bool interpretCPP,
+                             std::map<wxString,wxString>* aIncludeFiles,
+                             const std::vector<wxString>* projPPDefineTokens,
                              const wxString& buffer);
         virtual ~ParserThreadF();
         bool Parse();
         void ParseDeclarations(bool breakAtEnd=false, bool breakAtContains=false);
         static void SplitAssociateConstruct(const wxString& argLine, std::map<wxString,wxString>& assocMap);
+        wxString GetAdditionalIncludeFile(wxString filename);
+        std::vector<wxString> GetParsedFileNames();
+        TokenizerPP::SkippedLinesStruct* GetSkippedLines(const wxString& fileName);
+        bool HasProjPPDefineTokens(const wxString& token);
     protected:
     private:
         TokenF* DoAddToken(TokenKindF kind, const wxString& name, const wxString& args=wxEmptyString, const wxString& typeDefinition=wxEmptyString);
         TokenF* DoAddToken(TokenKindF kind, const wxString& name, const wxString& args, const unsigned int defStartLine);
         FileTokenF* DoAddFileToken(const wxString& filename, const wxString& projectFilename);
+        void DoAddDefineToken(const wxString& defTokName);
         UseTokenF* DoAddUseToken(const wxString& modName);
         ModuleTokenF* DoAddModuleToken(const wxString& modName);
         SubmoduleTokenF* DoAddSubmoduleToken(const wxString& submName, const wxString& ancestorModule, const wxString& parentSubmodule, unsigned int defStartLine);
 
-        Tokenizerf m_Tokens;
+        TokenizerPP m_Tokens;
         TokensArrayF* m_pTokens;
         TokenF* m_pLastParent;
         wxString m_Filename;
         wxArrayString m_IncludeList;
         IncludeDB* m_pIncludeDB;
+        bool m_interpretCPP;
+        std::map<wxString,wxString>* m_pAIncludeFiles;  // additional include files
 
         int m_NumberOfBlockConstruct;
 
@@ -71,6 +84,7 @@ class ParserThreadF
 
         TokensArrayF* m_pPPDefineTokens;
         int m_inIfdef;
+        bool m_addPPDefineTokens;
 
         void InitSecondEndPart();
         void HandleModule();
@@ -116,6 +130,7 @@ class ParserThreadF
         void GetWordBefore(const wxString& str, int idxEnd, wxString& funName, int& idxStart);
 
         std::set<wxString> m_KnownEndSecPart;
+        std::vector<wxString> m_ProjPPDefineTokens; // In project properties defined CPP directives.
 };
 
 #endif // PARSERTHREADF_H

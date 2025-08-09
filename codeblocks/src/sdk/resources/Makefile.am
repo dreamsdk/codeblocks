@@ -14,14 +14,15 @@ resources_forZIP = \
 	findreplacedlg.xrc \
 	generic_multiline_notes.xrc \
 	generic_multi_select.xrc \
-	get_global_uservar.xrc \
-	global_uservars.xrc \
 	new_from_template.xrc \
 	plugins_configuration.xrc \
 	projectfile_options.xrc \
 	project_manager_file_types.xrc \
 	scripting_security_dlg.xrc \
 	select_target.xrc \
+	images/8x8/breakpoint_disabled.png \
+	images/8x8/breakpoint_other.png \
+	images/8x8/breakpoint.png \
 	images/10x10/breakpoint_disabled.png \
 	images/10x10/breakpoint_other.png \
 	images/10x10/breakpoint.png \
@@ -82,9 +83,12 @@ resources_forZIP = \
 	images/64x64/missing_icon.png \
 	images/64x64/readonly.png \
 	images/64x64/select_target.png \
-	images/8x8/breakpoint_disabled.png \
-	images/8x8/breakpoint_other.png \
-	images/8x8/breakpoint.png
+	images/svg/breakpoint_disabled.svg \
+	images/svg/breakpoint_other.svg \
+	images/svg/breakpoint.svg \
+	images/svg/missing_icon.svg \
+	images/svg/readonly.svg \
+	images/svg/select_target.svg
 
 dist_noinst_DATA = \
 	$(resources_forZIP)

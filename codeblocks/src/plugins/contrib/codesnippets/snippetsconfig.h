@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetsconfig.h 10362 2015-07-26 08:13:33Z jenslody $
+// RCS-ID: $Id: snippetsconfig.h 13127 2022-12-20 22:45:22Z pecanh $
 
 
 #ifndef GLOBAL_H
@@ -24,6 +24,7 @@
 
 #include <wx/frame.h>
 #include <wx/fileconf.h>
+#include <wx/textctrl.h>
 
 #include "snippetsimages.h"
 

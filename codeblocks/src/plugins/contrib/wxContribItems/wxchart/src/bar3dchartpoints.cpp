@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: bar3dchartpoints.cpp 10749 2016-01-31 09:07:41Z mortenmacfly $
+// RCS-ID:      $Id: bar3dchartpoints.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -23,10 +23,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
@@ -352,7 +348,7 @@ void wxBar3DChartPoints::Draw(
     if ( ValMax == 0 )
         ValMax = 1;
 
-    hp->SetBrush( wxBrush(GetColor(), wxSOLID) );
+    hp->SetBrush( wxBrush(GetColor(), wxBRUSHSTYLE_SOLID));
     //hp->SetPen( *wxTRANSPARENT_PEN );
     //hp->SetPen( *wxLIGHT_GREY_PEN );
     hp->SetPen( wxPen(wxChartColors::GetDarkColor(GetColor(), 15)) );
@@ -399,7 +395,7 @@ void wxBar3DChartPoints::Draw(
         //-------------------------------------------------------------------
 
         hp->SetBrush( wxBrush(wxChartColors::GetDarkColor(GetColor(),
-            10), wxSOLID) );
+            10), wxBRUSHSTYLE_SOLID));
 
         //-------------------------------------------------------------------
         // Make sure that the difference y and y - h is at lease 1
@@ -449,7 +445,7 @@ void wxBar3DChartPoints::Draw(
 
         hp->DrawPolygon( 4, top );
 
-        hp->SetBrush( wxBrush(GetColor(), wxSOLID) );
+        hp->SetBrush( wxBrush(GetColor(), wxBRUSHSTYLE_SOLID));
 
         //-------------------------------------------------------------------
         // Only draw Label if user wants it

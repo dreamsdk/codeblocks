@@ -4,9 +4,9 @@
  *
  * Copyright: 2010 Jens Lody
  *
- * $Revision: 11770 $
- * $Id: ReopenEditor.cpp 11770 2019-07-04 22:15:32Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/ReopenEditor.cpp $
+ * $Revision: 12935 $
+ * $Id: ReopenEditor.cpp 12935 2022-10-02 10:40:25Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/ReopenEditor/ReopenEditor.cpp $
  */
 
 #include "sdk.h"
@@ -70,27 +70,19 @@ void ReopenEditor::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_CLOSE, new cbEventFunctor<ReopenEditor, CodeBlocksEvent>(this, &ReopenEditor::OnEditorClosed));
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN, new cbEventFunctor<ReopenEditor, CodeBlocksEvent>(this, &ReopenEditor::OnEditorOpened));
 
-    wxArrayString titles;
-    wxArrayInt widths;
-    titles.Add(_("Editorfile"));
-    titles.Add(_("Project"));
-    titles.Add(_("Projectfile"));
-    widths.Add(350);
-    widths.Add(100);
-    widths.Add(350);
-
-    m_pListLog = new ReopenEditorListView(titles, widths);
-
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
     m_IsManaged = cfg->ReadBool(_T("/reopen_editor/managed"),true);
 
+    wxString prefix(ConfigManager::GetDataFolder()+"/resources.zip#zip:/images/");
+#if wxCHECK_VERSION(3, 1, 6)
+    m_LogIcon = cbLoadBitmapBundleFromSVG(prefix+"svg/undo.svg", wxSize(16, 16));
+#else
     const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
-    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
-    const wxString undoImgFile = ConfigManager::GetDataFolder()
-                               + wxString::Format(_T("/resources.zip#zip:/images/%dx%d/undo.png"),
-                                                  uiSize, uiSize);
-    m_LogIcon = cbLoadBitmapScaled(undoImgFile, wxBITMAP_TYPE_PNG, uiScaleFactor);
+    prefix << wxString::Format("%dx%d/", uiSize, uiSize);
+    m_LogIcon = cbLoadBitmap(prefix+"undo.png", wxBITMAP_TYPE_PNG);
+#endif
 
+    m_pListLog = nullptr;
     ShowList();
 }
 
@@ -103,7 +95,7 @@ void ReopenEditor::OnRelease(bool /*appShutDown*/)
     // m_IsAttached will be FALSE...
     if(Manager::Get()->GetLogManager() && m_pListLog)
     {
-        if(m_IsManaged)
+        if (m_IsManaged)
         {
             CodeBlocksLogEvent evt(cbEVT_REMOVE_LOG_WINDOW, m_pListLog);
             Manager::Get()->ProcessEvent(evt);
@@ -113,8 +105,8 @@ void ReopenEditor::OnRelease(bool /*appShutDown*/)
             CodeBlocksDockEvent evt(cbEVT_REMOVE_DOCK_WINDOW);
             evt.pWindow = m_pListLog;
             Manager::Get()->ProcessEvent(evt);
+            m_pListLog->Destroy();
         }
-//        m_pListLog->Destroy();
     }
     m_pListLog = nullptr;
 }
@@ -211,7 +203,7 @@ void ReopenEditor::OnEditorClosed(CodeBlocksEvent& event)
             isPrjClosing = (m_ClosedProjects.Index(prj) != wxNOT_FOUND);
             name = prj->GetTitle();
         }
-        if(!prj || (prj && !isPrjClosing))
+        if(!prj || !isPrjClosing)
         {
             wxArrayString list;
             list.Add(eb->GetFilename());
@@ -323,29 +315,57 @@ void ReopenEditor::SetManaged(bool managed)
 
 void ReopenEditor::ShowList()
 {
-    CodeBlocksLogEvent evt1(cbEVT_REMOVE_LOG_WINDOW, m_pListLog);
-    Manager::Get()->ProcessEvent(evt1);
-
-    CodeBlocksDockEvent evt2(cbEVT_REMOVE_DOCK_WINDOW);
-    evt2.pWindow = m_pListLog;
-    Manager::Get()->ProcessEvent(evt2);
-
-    if(m_IsManaged)
+    // Create window if needed
+    if (!m_pListLog)
     {
-        CodeBlocksLogEvent evt3(cbEVT_ADD_LOG_WINDOW, m_pListLog, _("Closed files list"),
+        wxArrayString titles;
+        wxArrayInt widths;
+
+        titles.Add(_("Editorfile"));
+        widths.Add(350);
+        titles.Add(_("Project"));
+        widths.Add(100);
+        titles.Add(_("Projectfile"));
+        widths.Add(350);
+
+        m_pListLog = new ReopenEditorListView(titles, widths);
+    }
+    else
+    {
+        // Remove from the current container. m_IsManaged indicates the new container
+        // cbEVT_REMOVE_LOG_WINDOW and cbEVT_REMOVE_DOCK_WINDOW are not consistent, see comments below
+        if (!m_IsManaged)
+        {
+            ReopenEditorListView* newListView = new ReopenEditorListView(*m_pListLog);
+            CodeBlocksLogEvent evt(cbEVT_REMOVE_LOG_WINDOW, m_pListLog);  // removes and deletes m_pListLog
+            Manager::Get()->ProcessEvent(evt);
+            m_pListLog = newListView;
+        }
+        else
+        {
+            CodeBlocksDockEvent evt(cbEVT_REMOVE_DOCK_WINDOW);  // removes but not deletes m_pListLog
+            evt.pWindow = m_pListLog;
+            Manager::Get()->ProcessEvent(evt);
+        }
+    }
+
+    // Set on new parent
+    if (m_IsManaged)
+    {
+        CodeBlocksLogEvent evt1(cbEVT_ADD_LOG_WINDOW, m_pListLog, _("Closed files list"),
                                 &m_LogIcon);
-        Manager::Get()->ProcessEvent(evt3);
-        CodeBlocksLogEvent evt4(cbEVT_SWITCH_TO_LOG_WINDOW, m_pListLog);
-        Manager::Get()->ProcessEvent(evt4);
+        Manager::Get()->ProcessEvent(evt1);
+        CodeBlocksLogEvent evt2(cbEVT_SWITCH_TO_LOG_WINDOW, m_pListLog);
+        Manager::Get()->ProcessEvent(evt2);
     }
     else
     {
         m_pListLog->Reparent(Manager::Get()->GetAppFrame());
-        m_pListLog->SetSize(wxSize(800,94));
-        m_pListLog->SetInitialSize(wxSize(800,94));
+        m_pListLog->SetSize(wxSize(800, 94));
+        m_pListLog->SetInitialSize(wxSize(800, 94));
 
         CodeBlocksDockEvent evt(cbEVT_ADD_DOCK_WINDOW);
-        evt.name = _T("ReopenEditorListPane");
+        evt.name = "ReopenEditorListPane";
         evt.title = _("Closed file list");
         evt.pWindow = m_pListLog;
         evt.dockSide = CodeBlocksDockEvent::dsBottom;
@@ -356,5 +376,4 @@ void ReopenEditor::ShowList()
         evt.minimumSize.Set(350, 94);
         Manager::Get()->ProcessEvent(evt);
     }
-
 }

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxswidget.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxswidget.h $
+* $Revision: 12722 $
+* $Id: wxswidget.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxswidget.h $
 */
 
 #ifndef WXSWIDGET_H
@@ -29,6 +29,7 @@
 #include "wxsflags.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 using namespace wxsFlags;
 
@@ -44,7 +45,7 @@ using namespace wxsFlags;
  *  \li Override BuildPreview function (also declared in wxsItem)
  *
  */
-class wxsWidget: public wxsItem
+class PLUGIN_EXPORT wxsWidget: public wxsItem
 {
     public:
 

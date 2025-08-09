@@ -1,0 +1,1723 @@
+Include(_("test_base.script"));
+
+class sdkTest extends script_test_base
+{
+    function Run()
+    {
+        clear_global_test_results()
+        ::print("======= Test SDK function BEGINN ======= \n");
+
+        test_helpers();
+        test_replace_macros();
+        test_globals();
+        test_project_classes();
+        test_classes();
+        test_io();
+        test_dialogs();
+
+        ::print("======= Test SDK function END ======= \n");
+        print_global_test_result();
+    }
+
+    function test_replace_macros()
+    {
+        ::print("======= Test ReplaceMacros function BEGINN ======= \n");
+        clear_test_result();
+        test_string("no replacing", ReplaceMacros(_T("test")), "test");
+        print(_T("Open an editor to test"));
+        local testEditor = GetEditorManager().New(_T("test.ext"));
+        testEditor.SetText(_T("Line1\nLine2\nLine3"));
+        test_string("active line", ReplaceMacros(_T("$(ACTIVE_EDITOR_LINE)")), _T("1"));
+        test_string("editor name", ReplaceMacros(_T("$(ACTIVE_EDITOR_STEM)")), _T("test"));
+        test_string("editor name extension", ReplaceMacros(_T("$(ACTIVE_EDITOR_EXT)")), _T("ext"));
+
+        test_string("if true", ReplaceMacros(_T("$if(true){true}{false}")), _T("true"));
+        test_string("if 1", ReplaceMacros(_T("$if(1){true}{false}")), _T("true"));
+        test_string("if 1==1", ReplaceMacros(_T("$if(1==1){true}{false}")), _T("true"));
+        test_string("if false", ReplaceMacros(_T("$if(false){true}{false}")), _T("false"));
+        test_string("if 0", ReplaceMacros(_T("$if(0){true}{false}")), _T("false"));
+        test_string("if 1==0", ReplaceMacros(_T("$if(1==0){true}{false}")), _T("false"));
+
+        test_string("if test==test", ReplaceMacros(_T("$if(test==test){true}{false}")), _T("true"));
+        test_string("if tes<test", ReplaceMacros(_T("$if(tes<test){true}{false}")), _T("true"));
+        test_string("if 1>0", ReplaceMacros(_T("$if(1>0){true}{false}")), _T("true"));
+        test_string("if 1<0", ReplaceMacros(_T("$if(1<0){true}{false}")), _T("false"));
+
+        test_string("if [[print(_T(\"true\"))]]", ReplaceMacros(_T("$if([[print(_T(\"true\"))]]){true}{false}")), _T("true"));
+        test_string("if [[print(_T(\"false\"))]]", ReplaceMacros(_T("$if([[print(_T(\"false\"))]]){true}{false}")), _T("false"));
+        test_string("if [[print(_T(\"FALSE\"))]]", ReplaceMacros(_T("$if([[print(_T(\"FALSE\"))]]){true}{false}")), _T("false"));
+        test_string("if [[print(_T(\"0\"))]]", ReplaceMacros(_T("$if([[print(_T(\"0\"))]]){true}{false}")), _T("false"));
+
+        test_string("if [[print(_T(\"1==0\"))]]", ReplaceMacros(_T("$if([[print(_T(\"1==0\"))]]){true}{false}")), _T("false"));
+        test_string("if [[print(_T(\"1==1\"))]]", ReplaceMacros(_T("$if([[print(_T(\"1==1\"))]]){true}{false}")), _T("true"));
+        local testStr = " PS1=\"\\(awk '/MemFree/{print \\\" \\2}' \\\" /proc/meminfo) prompt > \"";
+        print(_T("bash escape string: \"" + testStr + "\""));
+        test_string("bash escaping 1.1", ReplaceMacros(_T("$if(true){" + testStr + "}{false}")), _T(testStr));
+        test_string("bash escaping 1.2", ReplaceMacros(_T("$if(false){" + testStr + "}{false}")), _T("false"));
+        testStr = " echo \"I'd say: \\\"Go for it!\\\"\"\"";
+        print(_T("bash escape string: \"" + testStr + "\""));
+        test_string("bash escaping 2.1", ReplaceMacros(_T("$if(true){" + testStr + "}{false}")), _T(testStr));
+        test_string("bash escaping 2.2", ReplaceMacros(_T("$if(false){" + testStr + "}{false}")), _T("false"));
+
+        print(_T("Close the editor "));
+        testEditor.Close();
+        print_test_result();
+        ::print("======= Test ReplaceMacros function END ======= \n");
+    }
+
+    function test_globals()
+    {
+        ::print("======= Test Globals function BEGINN ======= \n");
+        clear_test_result();
+
+        local arr = GetArrayFromString(_T(" item1, item2, item3"), _T(","), true);
+        test_equal("GetArrayFromString count", arr.GetCount(), 3);
+        test_string("GetArrayFromString item0", arr.Item(0), "item1");
+        test_string("GetArrayFromString item1", arr.Item(1), "item2");
+        test_string("GetArrayFromString item2", arr.Item(2), "item3");
+
+        local strFromArr0 = GetStringFromArray(arr, _T(";"), false);
+        local strFromArr1 = GetStringFromArray(arr, _T("<>"), true);
+        test_string("GetStringFromArray 0", strFromArr0, "item1;item2;item3");
+        test_string("GetStringFromArray 1", strFromArr1, "item1<>item2<>item3<>");
+
+        test_equal("IsNull", IsNull(_T("")), false);
+        test_string("EscapeSpaces", EscapeSpaces(_T("test  spaces")), @"test\ \ spaces");
+        test_string("UnixFilename", UnixFilename(_T("\\test\\unix.file"), ::wxPATH_UNIX),
+                    "/test/unix.file");
+
+        test_equal("FileTypeOf", FileTypeOf(_T("test.cpp")), 10);
+        // TODO: Check if this is actually correct
+        test_string( "URLEncode", URLEncode(_T("/ test")), "%2F+test");
+
+        test_equal("GetPlatformsFromString", GetPlatformsFromString(_T("Windows;Unix")), 2 | 4);
+        test_string("GetStringFromPlatforms", GetStringFromPlatforms(2 | 4, true), "Windows;Unix;");
+
+        print_test_result();
+        ::print("======= Test Globals function END ======= \n");
+    }
+
+    function MakePath(folder, name)
+    {
+        if (folder.IsEmpty())
+            return name;
+        else if (folder.GetChar(folder.length() - 1) != ::wxFILE_SEP_PATH.GetChar(0))
+            return folder + ::wxFILE_SEP_PATH + name;
+        else
+            return folder + name;
+    }
+
+    function MakeDir(folder, name)
+    {
+        local result = MakePath(folder, name);
+        if (!result.IsEmpty()
+            && (result.GetChar(result.length() - 1) != ::wxFILE_SEP_PATH.GetChar(0)))
+        {
+            result += ::wxFILE_SEP_PATH;
+        }
+        return result;
+    }
+
+    function test_helpers()
+    {
+        ::print("======= Test helpers BEGINN ======= \n");
+        clear_test_result();
+
+        test_string("MakePath 0", MakePath(_T(""), _T("name")), "name");
+        test_string("MakePath 1", MakePath(_T("path"), _T("name")), "path" + ::wxFILE_SEP_PATH + "name");
+        test_string("MakePath 2", MakePath(_T("path") + ::wxFILE_SEP_PATH, _T("name")), "path" + ::wxFILE_SEP_PATH + "name");
+
+        test_string("MakeDir 0", MakeDir(_T(""), _T("name")), "name" + ::wxFILE_SEP_PATH);
+        test_string("MakeDir 1", MakeDir(_T(""), _T("name") + ::wxFILE_SEP_PATH), "name" + ::wxFILE_SEP_PATH);
+        test_string("MakeDir 2", MakeDir(_T("path"), _T("name") + ::wxFILE_SEP_PATH), "path" + ::wxFILE_SEP_PATH + "name" + ::wxFILE_SEP_PATH);
+        test_string("MakeDir 3", MakeDir(_T("path") + ::wxFILE_SEP_PATH, _T("name") + ::wxFILE_SEP_PATH), "path" + ::wxFILE_SEP_PATH + "name" + ::wxFILE_SEP_PATH);
+
+        print_test_result();
+        ::print("======= Test helpers END ======= \n");
+    }
+
+    function test_ExtensionAPI(project)
+    {
+        StartNewSection("cbProject Extension API");
+
+        local test_ext = function(message, project, extension, expected)
+        {
+            local list = GetStringFromArray(project.ExtensionListNodes(extension), _T(";"),
+                                            false);
+            test_string(message, list, expected);
+        }
+        local test_attr = function(message, project, extension, expected)
+        {
+            local list = GetStringFromArray(project.ExtensionListNodeAttributes(extension),
+                                            _T(";"), false);
+            test_string(message, list, expected);
+        }
+
+        test_equal("cbProject::ExtensionListNodes root initial",
+                   project.ExtensionListNodes(_T("")).GetCount(), 0);
+        test_equal("cbProject::ExtensionListNodes initial",
+                   project.ExtensionListNodes(_T("rootNode")).GetCount(), 0);
+        test_string("cbProject::ExtensionAddNode root",
+                    project.ExtensionAddNode(_T(""), _T("rootNode")), "rootNode[0]");
+        test_string("cbProject::ExtensionAddNode 0",
+                    project.ExtensionAddNode(_T("rootNode[0]"), _T("child")),
+                    "rootNode[0]/child[0]");
+        test_string("cbProject::ExtensionAddNode 1",
+                    project.ExtensionAddNode(_T("rootNode[0]"), _T("multi")),
+                    "rootNode[0]/multi[0]");
+        test_string("cbProject::ExtensionAddNode 2",
+                    project.ExtensionAddNode(_T("rootNode[0]"), _T("multi")),
+                    "rootNode[0]/multi[1]");
+
+        test_ext("cbProject::ExtensionListNodes root after 1", project, _T(""), "/rootNode[0]");
+        test_ext("cbProject::ExtensionListNodes root after 2", project, _T("/"), "/rootNode[0]");
+
+        test_ext("cbProject::ExtensionListNodes after addition", project, _T("rootNode[0]"),
+                 "rootNode[0]/child[0];rootNode[0]/multi[0];rootNode[0]/multi[1]");
+
+        local multi0 = _T("rootNode[0]/multi[0]");
+        local multi1 = _T("rootNode[0]/multi[1]");
+
+        test_attr("cbProject::ExtensionListNodeAttributes multi[0]: empty", project, multi0, "");
+        test_attr("cbProject::ExtensionListNodeAttributes multi[1]: empty", project, multi1, "");
+
+        // Add some attributes to multi[0] and verify them.
+        project.ExtensionSetNodeAttribute(multi0, _T("attr0"), _T("value0"));
+        project.ExtensionSetNodeAttribute(multi0, _T("attr1"), _T("value1"));
+        test_string("cbProject::ExtensionGetNodeAttribute multi[0]: 0",
+                    project.ExtensionGetNodeAttribute(multi0, _T("attr0")), "value0");
+        test_string("cbProject::ExtensionGetNodeAttribute multi[0]: 1",
+                    project.ExtensionGetNodeAttribute(multi0, _T("attr1")), "value1");
+        test_attr("cbProject::ExtensionListNodeAttributes multi[0]: after", project, multi0,
+                  "attr0;attr1");
+
+        // Add some attributes to multi[1] and verify them. The values are different so we can
+        // later use them to do queries.
+        test_attr("cbProject::ExtensionListNodeAttributes multi[1]: empty2", project, multi1,
+                  "");
+        project.ExtensionSetNodeAttribute(multi1, _T("attr0"), _T("test0"));
+        project.ExtensionSetNodeAttribute(multi1, _T("attr1"), _T("value"));
+        test_string("cbProject::ExtensionGetNodeAttribute multi[1]: 0",
+                    project.ExtensionGetNodeAttribute(multi1, _T("attr0")), "test0");
+        test_string("cbProject::ExtensionGetNodeAttribute multi[1]: 1",
+                    project.ExtensionGetNodeAttribute(multi1, _T("attr1")), "value");
+        test_attr("cbProject::ExtensionListNodeAttributes multi[1]: after", project, multi1,
+                  "attr0;attr1");
+
+        // Complex query tests.
+        project.ExtensionSetNodeAttribute(_T("rootNode/multi(attr0=value0)"), _T("attr2"), _T("value2"));
+        project.ExtensionSetNodeAttribute(_T("rootNode/multi(attr0=test0)"), _T("attr2"), _T("test2"));
+        test_string("cbProject::ExtensionGetNodeAttribute complex query 0",
+                    project.ExtensionGetNodeAttribute(multi0, _T("attr2")), "value2");
+        test_string("cbProject::ExtensionGetNodeAttribute complex query 1",
+                    project.ExtensionGetNodeAttribute(multi1, _T("attr2")), "test2");
+
+        project.ExtensionRemoveNodeAttribute(multi0, _T("attr0"));
+        project.ExtensionRemoveNodeAttribute(multi0, _T("attr2"));
+        test_attr("cbProject::ExtensionRemoveNodeAttribute multi[0]", project, multi0, "attr1");
+
+        project.ExtensionRemoveNodeAttribute(multi1, _T("attr1"));
+        test_attr("cbProject::ExtensionRemoveNodeAttribute multi[0]", project, multi1,
+                  "attr0;attr2");
+
+        // Remove node multi1
+        project.ExtensionRemoveNode(_T("rootNode/multi(attr0=test0)"));
+        test_ext("cbProject::ExtensionRemoveNode multi 1", project, _T("rootNode[0]"),
+                 "rootNode[0]/child[0];rootNode[0]/multi[0]");
+
+        project.ExtensionRemoveNode(multi0);
+        test_ext("cbProject::ExtensionRemoveNode multi 0", project, _T("rootNode[0]"),
+                 "rootNode[0]/child[0]");
+
+        project.ExtensionRemoveNode(_T("rootNode"));
+        test_ext("cbProject::ExtensionRemoveNode root", project, _T(""), "");
+    }
+
+    function test_project_classes()
+    {
+        ::print("======= Test SDK Project related classes/functions BEGINN ======= \n");
+        clear_test_result();
+
+        local outputExt = wxString();
+        if (::PLATFORM == ::PLATFORM_MSW)
+            outputExt = _T(".exe");
+
+        local projectMgr = GetProjectManager();
+        test_false("GetProjectManager", IsNull(projectMgr));
+        test_equal("GetProjectManager equal", projectMgr, GetProjectManager());
+        test_true("ProjectManager type", projectMgr instanceof ProjectManager);
+
+        // This is here to allow consequtive runs of the suite and also to prevent messing active
+        // projects at the time of the start of the script.
+        test_true("ProjectManager::CloseWorkspace", projectMgr.CloseWorkspace());
+
+        local tempFolder = MakeDir(GetFolder(0x4), _T("sdk_tests"));
+        FolderCleanup(tempFolder);
+        print(_T("TEMP folder is=") + tempFolder + _T("\n"));
+
+        local project = projectMgr.NewProject(MakePath(tempFolder, _T("NewProject.cbp")));
+        test_false("ProjectManager::NewProject", IsNull(project));
+
+        test_true("cbProject type", project instanceof cbProject);
+        test_true("cbProject base0 type", project instanceof CompileTargetBase);
+        test_true("cbProject base1 type", project instanceof CompileOptionsBase);
+
+        test_equal("cbProject::GetBuildTargetsCount initial", project.GetBuildTargetsCount(), 0);
+
+        local debugTarget = project.AddBuildTarget(_T("Debug"));
+        test_false("cbProject::AddBuildTarget non null 0", IsNull(debugTarget));
+        test_true("ProjectBuildTarget type", debugTarget instanceof ProjectBuildTarget);
+        test_true("ProjectBuildTarget base0 type", debugTarget instanceof CompileTargetBase);
+        test_true("ProjectBuildTarget base1 type", debugTarget instanceof CompileOptionsBase);
+
+        local releaseTarget = project.AddBuildTarget(_T("Release"));
+        test_false("cbProject::AddBuildTarget non null 1", IsNull(releaseTarget));
+
+        test_equal("cbProject::GetBuildTargetsCount after add2", project.GetBuildTargetsCount(), 2);
+
+        {
+            StartNewSection("CompileOptionsBase");
+
+            test_equal("SupportedPlatforms::spMac", spMac, 1);
+            test_equal("SupportedPlatforms::spUnix", spUnix, 2);
+            test_equal("SupportedPlatforms::spWindows", spWindows, 4);
+            test_equal("SupportedPlatforms::spAll", spAll, 255);
+
+            test_equal("CompileOptionsBase::GetPlatforms", debugTarget.GetPlatforms(), spAll);
+            debugTarget.RemovePlatform(spUnix);
+            test_equal("CompileOptionsBase::RemovePlatform", debugTarget.GetPlatforms(),
+                       spAll & (~spUnix));
+            debugTarget.SetPlatforms(spUnix);
+            test_equal("CompileOptionsBase::SetPlatforms", debugTarget.GetPlatforms(), spUnix);
+            debugTarget.AddPlatform(spMac);
+            test_equal("CompileOptionsBase::AddPlatform", debugTarget.GetPlatforms(),
+                       spMac | spUnix);
+
+            debugTarget.SetPlatforms(spAll);
+            test_true("CompileOptionsBase::SupportsCurrentPlatform true",
+                      debugTarget.SupportsCurrentPlatform());
+            debugTarget.SetPlatforms(0);
+            test_false("CompileOptionsBase::SupportsCurrentPlatform false",
+                      debugTarget.SupportsCurrentPlatform());
+
+            test_equal("CompileOptionsBase::GetLinkerExecutable default",
+                       debugTarget.GetLinkerExecutable(), ::leoAutoDetect);
+            debugTarget.SetLinkerExecutable(::leoLinker);
+            test_equal("CompileOptionsBase::SetLinkerExecutable",
+                       debugTarget.GetLinkerExecutable(), ::leoLinker);
+
+            {
+                test_equal("CompileOptionsBase::GetLinkerOptions empty",
+                           debugTarget.GetLinkerOptions().GetCount(), 0);
+                debugTarget.SetLinkerOptions(GetArrayFromString(_T("-pthread;-zdef"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetLinkerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetLinkerOptions", opts, "-pthread<>-zdef");
+                debugTarget.AddLinkerOption(_T("-newOpt"));
+                opts = GetStringFromArray(debugTarget.GetLinkerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddLinkerOption", opts,
+                            "-pthread<>-zdef<>-newOpt");
+                debugTarget.ReplaceLinkerOption(_T("-zdef"), _T("-replaceOpt"));
+                opts = GetStringFromArray(debugTarget.GetLinkerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceLinkerOption", opts,
+                            "-pthread<>-replaceOpt<>-newOpt");
+                debugTarget.RemoveLinkerOption(_T("-replaceOpt"));
+                opts = GetStringFromArray(debugTarget.GetLinkerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveLinkerOption", opts,
+                            "-pthread<>-newOpt");
+            }
+            {
+                test_equal("CompileOptionsBase::GetLinkLibs empty",
+                           debugTarget.GetLinkLibs().GetCount(), 0);
+                debugTarget.SetLinkLibs(GetArrayFromString(_T("testA;testB"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetLinkLibs(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetLinkerOptions", opts, "testA<>testB");
+                debugTarget.AddLinkLib(_T("testNew"));
+                opts = GetStringFromArray(debugTarget.GetLinkLibs(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddLinkLib", opts, "testA<>testB<>testNew");
+                debugTarget.ReplaceLinkLib(_T("testB"), _T("testReplace"));
+                opts = GetStringFromArray(debugTarget.GetLinkLibs(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceLinkLib", opts,
+                            "testA<>testReplace<>testNew");
+                debugTarget.RemoveLinkLib(_T("testReplace"));
+                opts = GetStringFromArray(debugTarget.GetLinkLibs(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveLinkLib", opts, "testA<>testNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetCompilerOptions empty",
+                           debugTarget.GetCompilerOptions().GetCount(), 0);
+                debugTarget.SetCompilerOptions(GetArrayFromString(_T("-O0;-g"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetCompilerOptions", opts, "-O0<>-g");
+                debugTarget.AddCompilerOption(_T("-newOpt"));
+                opts = GetStringFromArray(debugTarget.GetCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddCompilerOption", opts, "-O0<>-g<>-newOpt");
+                debugTarget.ReplaceCompilerOption(_T("-g"), _T("-replace"));
+                opts = GetStringFromArray(debugTarget.GetCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceCompilerOption", opts,
+                            "-O0<>-replace<>-newOpt");
+                debugTarget.RemoveCompilerOption(_T("-replace"));
+                opts = GetStringFromArray(debugTarget.GetCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveCompilerOption", opts, "-O0<>-newOpt");
+            }
+            {
+                test_equal("CompileOptionsBase::GetResourceCompilerOptions empty",
+                           debugTarget.GetResourceCompilerOptions().GetCount(), 0);
+                debugTarget.SetResourceCompilerOptions(GetArrayFromString(_T("-resource1;-resource2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetResourceCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetResourceCompilerOptions", opts,
+                            "-resource1<>-resource2");
+                debugTarget.AddResourceCompilerOption(_T("-resourceNew"));
+                opts = GetStringFromArray(debugTarget.GetResourceCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddResourceCompilerOption", opts,
+                            "-resource1<>-resource2<>-resourceNew");
+                debugTarget.ReplaceResourceCompilerOption(_T("-resource2"), _T("-resourceReplace"));
+                opts = GetStringFromArray(debugTarget.GetResourceCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceResourceCompilerOption", opts,
+                            "-resource1<>-resourceReplace<>-resourceNew");
+                debugTarget.RemoveResourceCompilerOption(_T("-resourceReplace"));
+                opts = GetStringFromArray(debugTarget.GetResourceCompilerOptions(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveResourceCompilerOption", opts,
+                            "-resource1<>-resourceNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetIncludeDirs empty",
+                           debugTarget.GetIncludeDirs().GetCount(), 0);
+                debugTarget.SetIncludeDirs(GetArrayFromString(_T("dir1;dir2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetIncludeDirs", opts, "dir1<>dir2");
+                debugTarget.AddIncludeDir(_T("dirNew"));
+                opts = GetStringFromArray(debugTarget.GetIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddIncludeDir", opts, "dir1<>dir2<>dirNew");
+                debugTarget.ReplaceIncludeDir(_T("dir2"), _T("dirReplace"));
+                opts = GetStringFromArray(debugTarget.GetIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceIncludeDir", opts, "dir1<>dirReplace<>dirNew");
+                debugTarget.RemoveIncludeDir(_T("dirReplace"));
+                opts = GetStringFromArray(debugTarget.GetIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveIncludeDir", opts, "dir1<>dirNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetResourceIncludeDirs empty",
+                           debugTarget.GetResourceIncludeDirs().GetCount(), 0);
+                debugTarget.SetResourceIncludeDirs(GetArrayFromString(_T("rdir1;rdir2"), _T(";"),
+                                                                      true));
+                local opts = GetStringFromArray(debugTarget.GetResourceIncludeDirs(), _T("<>"),
+                                                false);
+                test_string("CompileOptionsBase::SetResourceIncludeDirs", opts, "rdir1<>rdir2");
+                debugTarget.AddResourceIncludeDir(_T("rdirNew"));
+                opts = GetStringFromArray(debugTarget.GetResourceIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddResourceIncludeDir", opts,
+                            "rdir1<>rdir2<>rdirNew");
+                debugTarget.ReplaceResourceIncludeDir(_T("rdir2"), _T("rdirReplace"));
+                opts = GetStringFromArray(debugTarget.GetResourceIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceResourceIncludeDir", opts,
+                            "rdir1<>rdirReplace<>rdirNew");
+                debugTarget.RemoveResourceIncludeDir(_T("rdirReplace"));
+                opts = GetStringFromArray(debugTarget.GetResourceIncludeDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveResourceIncludeDir", opts,
+                            "rdir1<>rdirNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetLibDirs empty",
+                           debugTarget.GetLibDirs().GetCount(), 0);
+                debugTarget.SetLibDirs(GetArrayFromString(_T("ldir1;ldir2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetLibDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetLibDirs", opts, "ldir1<>ldir2");
+                debugTarget.AddLibDir(_T("ldirNew"));
+                opts = GetStringFromArray(debugTarget.GetLibDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddLibDir", opts, "ldir1<>ldir2<>ldirNew");
+                debugTarget.ReplaceLibDir(_T("ldir2"), _T("ldirReplace"));
+                opts = GetStringFromArray(debugTarget.GetLibDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::ReplaceLibDir", opts,
+                            "ldir1<>ldirReplace<>ldirNew");
+                debugTarget.RemoveLibDir(_T("ldirReplace"));
+                opts = GetStringFromArray(debugTarget.GetLibDirs(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveLibDir", opts, "ldir1<>ldirNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetCommandsBeforeBuild empty",
+                           debugTarget.GetCommandsBeforeBuild().GetCount(), 0);
+                debugTarget.SetCommandsBeforeBuild(GetArrayFromString(_T("cmdBefore1;cmdBefore2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetCommandsBeforeBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetCommandsBeforeBuild", opts, "cmdBefore1<>cmdBefore2");
+                debugTarget.AddCommandsBeforeBuild(_T("cmdBeforeNew"));
+                opts = GetStringFromArray(debugTarget.GetCommandsBeforeBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddCommandsBeforeBuild", opts,
+                            "cmdBefore1<>cmdBefore2<>cmdBeforeNew");
+                debugTarget.RemoveCommandsBeforeBuild(_T("cmdBefore2"));
+                opts = GetStringFromArray(debugTarget.GetCommandsBeforeBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveCommandsBeforeBuild", opts,
+                            "cmdBefore1<>cmdBeforeNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetCommandsAfterBuild empty",
+                           debugTarget.GetCommandsAfterBuild().GetCount(), 0);
+                debugTarget.SetCommandsAfterBuild(GetArrayFromString(_T("cmdAfter1;cmdAfter2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetCommandsAfterBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetCommandsAfterBuild", opts, "cmdAfter1<>cmdAfter2");
+                debugTarget.AddCommandsAfterBuild(_T("cmdAfterNew"));
+                opts = GetStringFromArray(debugTarget.GetCommandsAfterBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddCommandsAfterBuild", opts,
+                            "cmdAfter1<>cmdAfter2<>cmdAfterNew");
+                debugTarget.RemoveCommandsAfterBuild(_T("cmdAfter2"));
+                opts = GetStringFromArray(debugTarget.GetCommandsAfterBuild(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveCommandsAfterBuild", opts,
+                            "cmdAfter1<>cmdAfterNew");
+            }
+            {
+                test_equal("CompileOptionsBase::GetBuildScripts empty",
+                           debugTarget.GetBuildScripts().GetCount(), 0);
+                debugTarget.SetBuildScripts(GetArrayFromString(_T("script1;script2"), _T(";"), true));
+                local opts = GetStringFromArray(debugTarget.GetBuildScripts(), _T("<>"), false);
+                test_string("CompileOptionsBase::SetBuildScripts", opts, "script1<>script2");
+                debugTarget.AddBuildScript(_T("scriptNew"));
+                opts = GetStringFromArray(debugTarget.GetBuildScripts(), _T("<>"), false);
+                test_string("CompileOptionsBase::AddBuildScript", opts,
+                            "script1<>script2<>scriptNew");
+                debugTarget.RemoveBuildScript(_T("script2"));
+                opts = GetStringFromArray(debugTarget.GetBuildScripts(), _T("<>"), false);
+                test_string("CompileOptionsBase::RemoveBuildScript", opts, "script1<>scriptNew");
+            }
+
+            test_true("CompileOptionsBase::GetModified", debugTarget.GetModified());
+            debugTarget.SetModified(false);
+            test_false("CompileOptionsBase::SetModified", debugTarget.GetModified());
+
+            test_false("CompileOptionsBase::GetAlwaysRunPostBuildSteps",
+                       debugTarget.GetAlwaysRunPostBuildSteps());
+            debugTarget.SetAlwaysRunPostBuildSteps(true);
+            test_true("CompileOptionsBase::SetAlwaysRunPostBuildSteps",
+                      debugTarget.GetAlwaysRunPostBuildSteps());
+
+            debugTarget.SetVar(_T("var1"), _T("value1"), false);
+            debugTarget.SetVar(_T("var2"), _T("value2"), false);
+            test_string("CompileOptionsBase::SetVar1", debugTarget.GetVar(_T("var1")), "value1");
+            test_string("CompileOptionsBase::SetVar2", debugTarget.GetVar(_T("var2")), "value2");
+            test_true("CompileOptionsBase::UnsetVar", debugTarget.UnsetVar(_T("var1")));
+            test_string("CompileOptionsBase::GetVar2", debugTarget.GetVar(_T("var2")), "value2");
+            debugTarget.UnsetAllVars();
+            test_string("CompileOptionsBase::GetVar1", debugTarget.GetVar(_T("var1")), "");
+            test_string("CompileOptionsBase::GetVar2", debugTarget.GetVar(_T("var2")), "");
+        }
+
+        {
+            StartNewSection("CompileTargetBase");
+
+            {
+                local policyDefault = debugTarget.GetTargetFilenameGenerationPolicy();
+                test_equal("CompileTargetBase::GetTargetFilenameGenerationPolicy prefix default",
+                           policyDefault.prefix, tgfpPlatformDefault);
+                test_equal("CompileTargetBase::GetTargetFilenameGenerationPolicy extension default",
+                           policyDefault.extension, tgfpPlatformDefault);
+
+                debugTarget.SetTargetFilenameGenerationPolicy(tgfpNone, tgfpNone);
+                local policy = debugTarget.GetTargetFilenameGenerationPolicy();
+                test_equal("CompileTargetBase::SetTargetFilenameGenerationPolicy prefix",
+                           policy.prefix, tgfpNone);
+                test_equal("CompileTargetBase::SetTargetFilenameGenerationPolicy extension",
+                           policy.extension, tgfpNone);
+
+                debugTarget.SetTargetFilenameGenerationPolicy(policyDefault.prefix,
+                                                              policyDefault.extension);
+            }
+
+            test_equal("CompileTargetBase::GetTargetType", debugTarget.GetTargetType(),
+                       ::ttExecutable);
+            debugTarget.SetTargetType(::ttStaticLib);
+            test_equal("CompileTargetBase::SetTargetType", debugTarget.GetTargetType(),
+                       ::ttStaticLib);
+
+            // Reset target type, because the tests below depend on it.
+            debugTarget.SetTargetType(::ttExecutable);
+
+            test_string("CompileTargetBase::GetFilename", debugTarget.GetFilename(),
+                        MakePath(tempFolder, _T("NewProject.cbp")));
+
+            test_string("CompileTargetBase::GetTitle", debugTarget.GetTitle(), "Debug");
+            debugTarget.SetTitle(_T("Debug_New"));
+            test_string("CompileTargetBase::SetTitle", debugTarget.GetTitle(), "Debug_New");
+
+            test_string("CompileTargetBase::GetOutputFilename", debugTarget.GetOutputFilename(),
+                        "NewProject" + outputExt);
+            test_string("CompileTargetBase::SuggestOutputFilename",
+                        debugTarget.SuggestOutputFilename(), "NewProject" + outputExt);
+            debugTarget.SetOutputFilename(_T("debugOutput"));
+            test_string("CompileTargetBase::SetOutputFilename", debugTarget.GetOutputFilename(),
+                        "debugOutput" + outputExt);
+            test_string("CompileTargetBase::SuggestOutputFilename after set",
+                        debugTarget.SuggestOutputFilename(), "NewProject" + outputExt);
+
+            test_string("CompileTargetBase::GetWorkingDir", debugTarget.GetWorkingDir(), ".");
+            debugTarget.SetWorkingDir(_T("workDir"));
+            test_string("CompileTargetBase::SetWorkingDir", debugTarget.GetWorkingDir(),
+                        "workDir");
+
+            test_string("CompileTargetBase::GetObjectOutput", debugTarget.GetObjectOutput(),
+                        ".objs");
+            debugTarget.SetObjectOutput(MakePath(_T(".objs"), _T("debug")));
+            test_string("CompileTargetBase::SetObjectOutput", debugTarget.GetObjectOutput(),
+                        MakePath(_T(".objs"), _T("debug")));
+
+            test_string("CompileTargetBase::GetDepsOutput", debugTarget.GetDepsOutput(), ".deps");
+            debugTarget.SetDepsOutput(MakePath(_T(".deps"), _T("debug")));
+            test_string("CompileTargetBase::SetDepsOutput", debugTarget.GetDepsOutput(),
+                        MakePath(_T(".deps"), _T("debug")));
+
+            test_equal("CompileTargetBase::GetOptionRelation",
+                        debugTarget.GetOptionRelation(::ortLinkerOptions),
+                        ::orAppendToParentOptions);
+            debugTarget.SetOptionRelation(::ortLinkerOptions, ::orUseTargetOptionsOnly);
+            test_string("CompileTargetBase::SetOptionRelation",
+                        debugTarget.GetOptionRelation(::ortLinkerOptions), ::orUseTargetOptionsOnly);
+
+            test_string("CompileTargetBase::GetExecutableFilename",
+                        debugTarget.GetExecutableFilename(),
+                        MakePath(tempFolder, _T("NewProject") + outputExt));
+            test_string("CompileTargetBase::GetDynamicLibFilename",
+                        debugTarget.GetDynamicLibFilename(),
+                        MakePath(tempFolder, _T("NewProject") + outputExt));
+            test_string("CompileTargetBase::GetDynamicLibDefFilename",
+                        debugTarget.GetDynamicLibDefFilename(),
+                        "$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME)");
+            test_string("CompileTargetBase::GetStaticLibFilename",
+                        debugTarget.GetStaticLibFilename(),
+                        MakePath(tempFolder, _T("libNewProject.a")));
+            test_string("CompileTargetBase::GetBasePath", debugTarget.GetBasePath(), tempFolder);
+
+            test_string("CompileTargetBase::GetExecutionParameters",
+                        debugTarget.GetExecutionParameters(), "");
+            debugTarget.SetExecutionParameters(_T("exec params"));
+            test_string("CompileTargetBase::SetExecutionParameters",
+                        debugTarget.GetExecutionParameters(), "exec params");
+
+            test_string("CompileTargetBase::GetHostApplication",
+                        debugTarget.GetHostApplication(), "");
+            debugTarget.SetHostApplication(_T("hostApp"));
+            test_string("CompileTargetBase::SetHostApplication",
+                        debugTarget.GetHostApplication(), "hostApp");
+
+            test_string("CompileTargetBase::GetCompilerID",
+                        debugTarget.GetCompilerID(), "gcc");
+            debugTarget.SetCompilerID(_T("gcc_test"));
+            test_string("CompileTargetBase::SetCompilerID",
+                        debugTarget.GetCompilerID(), "gcc_test");
+
+            test_false("CompileTargetBase::MakeCommandsModified",
+                       debugTarget.MakeCommandsModified());
+            test_string("CompileTargetBase::GetMakeCommandFor",
+                        debugTarget.GetMakeCommandFor(::mcBuild), "$make -f $makefile $target");
+            debugTarget.SetMakeCommandFor(::mcBuild, _T("make-me"));
+            test_string("CompileTargetBase::SetMakeCommandFor",
+                        debugTarget.GetMakeCommandFor(::mcBuild), "make-me");
+            test_true("CompileTargetBase::MakeCommandsModified after",
+                       debugTarget.MakeCommandsModified());
+        }
+
+        {
+            StartNewSection("ProjectBuildTarget");
+
+            test_equal("ProjectBuildTarget::GetParentProject", debugTarget.GetParentProject(),
+                       project);
+
+            test_string("ProjectBuildTarget::GetFullTitle", debugTarget.GetFullTitle(),
+                        "NewProject - Debug_New");
+
+            test_string("ProjectBuildTarget::GetExternalDeps", debugTarget.GetExternalDeps(), "");
+            debugTarget.SetExternalDeps(_T("extDep1; extDep2"));
+            test_string("ProjectBuildTarget::SetExternalDeps", debugTarget.GetExternalDeps(),
+                        "extDep1; extDep2");
+
+            test_string("ProjectBuildTarget::GetAdditionalOutputFiles",
+                        debugTarget.GetAdditionalOutputFiles(), "");
+            debugTarget.SetAdditionalOutputFiles(_T("output1; output2"));
+            test_string("ProjectBuildTarget::SetAdditionalOutputFiles",
+                        debugTarget.GetAdditionalOutputFiles(), "output1; output2");
+
+            // FIXME: Deprecated
+            test_false("ProjectBuildTarget::GetIncludeInTargetAll",
+                       debugTarget.GetIncludeInTargetAll());
+            debugTarget.SetIncludeInTargetAll(true);
+            test_true("ProjectBuildTarget::SetIncludeInTargetAll",
+                      debugTarget.GetIncludeInTargetAll());
+
+            test_true("ProjectBuildTarget::GetCreateDefFile",
+                      debugTarget.GetCreateDefFile());
+            debugTarget.SetCreateDefFile(false);
+            test_false("ProjectBuildTarget::SetCreateDefFile",
+                       debugTarget.GetCreateDefFile());
+
+            test_true("ProjectBuildTarget::GetCreateStaticLib",
+                      debugTarget.GetCreateStaticLib());
+            debugTarget.SetCreateStaticLib(false);
+            test_false("ProjectBuildTarget::SetCreateStaticLib",
+                       debugTarget.GetCreateStaticLib());
+
+            {
+                local oldType = debugTarget.GetTargetType();
+
+                test_false("ProjectBuildTarget::GetUseConsoleRunner",
+                           debugTarget.GetUseConsoleRunner());
+                // We need to change the target type, otherwise the SetUseConsoleRunner has no
+                // effect.
+                debugTarget.SetTargetType(::ttConsoleOnly);
+                debugTarget.SetUseConsoleRunner(true);
+                test_true("ProjectBuildTarget::SetUseConsoleRunner",
+                          debugTarget.GetUseConsoleRunner());
+
+                debugTarget.SetTargetType(oldType);
+            }
+        }
+
+        test_equal("cbProject::GetFilesCount empty", project.GetFilesCount(), 0);
+
+        projectMgr.AddFileToProject(MakePath(tempFolder, _T("file1.cpp")), project, 0);
+        projectMgr.AddFileToProject(MakePath(tempFolder, _T("file1.cpp")), project, 1);
+
+        projectMgr.RebuildTree();
+
+        test_equal("cbProject::GetFilesCount after 1 file", project.GetFilesCount(), 1);
+        local file = project.GetFile(0);
+        test_false("cbProject::GetFile non null", IsNull(file));
+
+        {
+            StartNewSection("cbProject");
+
+            test_true("cbProject::GetModified", project.GetModified());
+            project.SetModified(false);
+            test_false("cbProject::SetModified", project.GetModified());
+            test_string("cbProject::GetMakefile", project.GetMakefile(), "Makefile");
+            project.SetMakefile(_T("customMake.file"));
+            test_string("cbProject::SetMakefile", project.GetMakefile(), "customMake.file");
+
+            test_false("cbProject::IsMakefileCustom", project.IsMakefileCustom());
+            project.SetMakefileCustom(true);
+            test_true("cbProject::SetMakefileCustom", project.IsMakefileCustom());
+
+            // This is commented because the call does strange things and breaks following tests.
+            // test_true("cbProject::CloseAllFiles", project.CloseAllFiles(true));
+
+            test_true("cbProject::SaveAllFiles", project.SaveAllFiles());
+            test_true("cbProject::Save", project.Save());
+            test_true("cbProject::SaveLayout", project.SaveLayout());
+            test_true("cbProject::LoadLayout", project.LoadLayout());
+            test_string("cbProject::GetCommonTopLevelPath", project.GetCommonTopLevelPath(),
+                        tempFolder);
+            test_true("cbProject::GetFile out of range",
+                      IsNull(project.GetFile(project.GetFilesCount() + 100)));
+            test_false("cbProject::GetFileByFilename",
+                       IsNull(project.GetFileByFilename(_T("file1.cpp"), true, true)));
+            test_true("cbProject::GetFileByFilename",
+                      IsNull(project.GetFileByFilename(_T("file1_invalid.cpp"), true, true)));
+
+            {
+                local file1 = project.AddFile(_T("Debug"), _T("added1.cpp"));
+                test_false("cbProject::AddFile 1 by targetName", IsNull(file1));
+                test_true("cbProject::AddFile 1: compile flag", file1.compile);
+                test_true("cbProject::AddFile 1: link flag", file1.link);
+                test_equal("cbProject::AddFile 1: weight", file1.weight, 50);
+
+                local file2 = project.AddFile(_T("Debug"), _T("added2.cpp"), false, false, 17);
+                test_false("cbProject::AddFile 2 by targetName", IsNull(file2));
+                test_false("cbProject::AddFile 2: compile flag", file2.compile);
+                test_false("cbProject::AddFile 2: link flag", file2.link);
+                test_equal("cbProject::AddFile 2: weight", file2.weight, 17);
+
+                test_true("cbProject::RemoveFile 1", project.RemoveFile(file1));
+                test_true("cbProject::RemoveFile 2", project.RemoveFile(file2));
+            }
+            {
+                local file1 = project.AddFile(0, _T("added_idx1.cpp"));
+                test_false("cbProject::AddFile 1 by targetIndex", IsNull(file1));
+                test_true("cbProject::AddFile 1: compile flag", file1.compile);
+                test_true("cbProject::AddFile 1: link flag", file1.link);
+                test_equal("cbProject::AddFile 1: weight", file1.weight, 50);
+
+                local file2 = project.AddFile(_T("Debug"), _T("added_idx2.cpp"), false, false, 17);
+                test_false("cbProject::AddFile 2 by targetIndex", IsNull(file2));
+                test_false("cbProject::AddFile 2: compile flag", file2.compile);
+                test_false("cbProject::AddFile 2: link flag", file2.link);
+                test_equal("cbProject::AddFile 2: weight", file2.weight, 17);
+
+                test_true("cbProject::RemoveFile 1", project.RemoveFile(file1));
+                test_true("cbProject::RemoveFile 2", project.RemoveFile(file2));
+            }
+
+            test_false("cbProject::GetBuildTarget index 0", IsNull(project.GetBuildTarget(0)));
+            test_true("cbProject::GetBuildTarget index invalid", IsNull(project.GetBuildTarget(100)));
+
+            local queriedDebug = project.GetBuildTarget(_T("Debug_New"));
+            test_false("cbProject::GetBuildTarget name Debug_New", IsNull(queriedDebug));
+            test_true("cbProject::GetBuildTarget name invalid",
+                       IsNull(project.GetBuildTarget(_T("No Such Target"))));
+            test_equal("cbProject::GetBuildTarget name Debug_New equal", queriedDebug, debugTarget);
+
+            local test_targets = function(message, project, expected)
+            {
+                local strTargets = wxString();
+                local count = project.GetBuildTargetsCount();
+                for (local ii = 0; ii < count; ++ii)
+                    strTargets += project.GetBuildTarget(ii).GetTitle() + _T(";");
+                test_string(message, strTargets, expected);
+            }
+
+            test_string("cbProject::GetFirstValidBuildTargetName",
+                        project.GetFirstValidBuildTargetName(false), "Debug_New");
+
+            {
+                local dupDebugTarget = project.DuplicateBuildTarget(_T("Debug_New"),
+                                                                    _T("Debug_Duplicate"));
+                test_targets("cbProject::DuplicateBuildTarget name", project,
+                             "Debug_New;Release;Debug_Duplicate;");
+                test_string("cbProject::DuplicateBuildTarget name: title", dupDebugTarget.GetTitle(),
+                            "Debug_Duplicate");
+                test_true("cbProject::DuplicateBuildTarget name: invalid",
+                          IsNull(project.DuplicateBuildTarget(_T("Invalid"),
+                                                              _T("Invalid Duplicate"))));
+
+                test_true("cbProject::RenameBuildTarget name",
+                          project.RenameBuildTarget(_T("Debug_Duplicate"), _T("Debug_Rename")));
+                test_false("cbProject::RenameBuildTarget name: invalid",
+                           project.RenameBuildTarget(_T("Invalid"), _T("Invalid Rename")));
+                test_targets("cbProject::RenameBuildTarget name: after", project,
+                             "Debug_New;Release;Debug_Rename;");
+
+                test_true("cbProject::RemoveBuildTarget name",
+                           project.RemoveBuildTarget(dupDebugTarget.GetTitle()));
+                test_false("cbProject::RemoveBuildTarget name: invalid",
+                           project.RemoveBuildTarget(_T("Invalid")));
+                test_targets("cbProject::RemoveBuildTarget name: after", project,
+                             "Debug_New;Release;");
+
+                test_true("cbProject::BuildTargetValid",
+                          project.BuildTargetValid(_T("Debug_New"), false));
+                test_false("cbProject::BuildTargetValid not",
+                           project.BuildTargetValid(_T("Debug_Duplicate"), false));
+            }
+            {
+                local dupDebugTarget = project.DuplicateBuildTarget(0, _T("Debug_Duplicate"));
+                test_targets("cbProject::DuplicateBuildTarget index", project,
+                             "Debug_New;Release;Debug_Duplicate;");
+                test_string("cbProject::DuplicateBuildTarget index: title",
+                            dupDebugTarget.GetTitle(), "Debug_Duplicate");
+                test_true("cbProject::DuplicateBuildTarget invalid: invalid",
+                          IsNull(project.DuplicateBuildTarget(100, _T("Invalid Duplicate"))));
+
+                test_true("cbProject::RenameBuildTarget index",
+                          project.RenameBuildTarget(project.GetBuildTargetsCount() - 1,
+                                                    _T("Debug_Rename")));
+                test_false("cbProject::RenameBuildTarget index: invalid",
+                           project.RenameBuildTarget(100, _T("Invalid Rename")));
+                test_targets("cbProject::RenameBuildTarget index: after", project,
+                             "Debug_New;Release;Debug_Rename;");
+
+                test_true("cbProject::RemoveBuildTarget index",
+                           project.RemoveBuildTarget(project.GetBuildTargetsCount() - 1));
+                test_false("cbProject::RemoveBuildTarget name: invalid",
+                           project.RemoveBuildTarget(100));
+                test_targets("cbProject::RemoveBuildTarget name: after", project,
+                             "Debug_New;Release;");
+            }
+
+            // Uncomment these to test APIs which require user interaction and which aren't
+            // suitable for automated testing.
+//            print("export target: " + project.ExportTargetAsProject(_T("Debug_New")));
+//            print("export target: " + project.ExportTargetAsProject(1));
+//            print("select target: " + project.SelectTarget(1, true));
+//            print("select target: " + project.SelectTarget(1, true));
+
+            test_string("cbProject::GetDefaultExecuteTarget", project.GetDefaultExecuteTarget(), "");
+            project.SetDefaultExecuteTarget(_T("Release"));
+            test_string("cbProject::SetDefaultExecuteTarget", project.GetDefaultExecuteTarget(), "Release");
+
+            test_string("cbProject::GetActiveBuildTarget", project.GetActiveBuildTarget(), "Release");
+            project.SetActiveBuildTarget(_T("Debug_New"));
+            test_string("cbProject::SetActiveBuildTarget", project.GetActiveBuildTarget(), "Debug_New");
+
+            test_true("cbProject::GetCurrentlyCompilingTarget", IsNull(project.GetCurrentlyCompilingTarget()));
+            project.SetCurrentlyCompilingTarget(project.GetBuildTarget(0));
+            test_false("cbProject::SetCurrentlyCompilingTarget", IsNull(project.GetCurrentlyCompilingTarget()));
+            local nullVar = null; // test if null variables work
+            project.SetCurrentlyCompilingTarget(nullVar);
+
+            test_equal("cbProject::GetModeForPCH", project.GetModeForPCH(), ::pchSourceFile);
+            project.SetModeForPCH(::pchSourceDir);
+            test_equal("cbProject::SetModeForPCH", project.GetModeForPCH(), ::pchSourceDir);
+
+            test_false("cbProject::GetExtendedObjectNamesGeneration",
+                       project.GetExtendedObjectNamesGeneration());
+            project.SetExtendedObjectNamesGeneration(true);
+            test_true("cbProject::SetExtendedObjectNamesGeneration",
+                      project.GetExtendedObjectNamesGeneration());
+            project.SetExtendedObjectNamesGeneration(false);
+
+            test_string("cbProject::GetNotes", project.GetNotes(), "");
+            project.SetNotes(_T("this are my notes\n"));
+            test_string("cbProject::SetNotes", project.GetNotes(), "this are my notes\n");
+
+            test_false("cbProject::GetShowNotesOnLoad", project.GetShowNotesOnLoad());
+            project.SetShowNotesOnLoad(true);
+            test_true("cbProject::SetShowNotesOnLoad", project.GetShowNotesOnLoad());
+
+            test_true("cbProject::GetCheckForExternallyModifiedFiles",
+                      project.GetCheckForExternallyModifiedFiles());
+            project.SetCheckForExternallyModifiedFiles(false);
+            test_false("cbProject::SetCheckForExternallyModifiedFiles",
+                       project.GetCheckForExternallyModifiedFiles());
+
+            {
+                test_false("cbProject::HasVirtualBuildTarget missing",
+                           project.HasVirtualBuildTarget(_T("All")));
+
+                local targets = wxArrayString();
+                targets.Add(_T("Release"), 1);
+                test_true("cbProject::DefineVirtualBuildTarget VRelease",
+                          project.DefineVirtualBuildTarget(_T("VRelease"), targets));
+                test_true("cbProject::HasVirtualBuildTarget present",
+                          project.HasVirtualBuildTarget(_T("VRelease")));
+
+                targets.Clear();
+                local targets = wxArrayString();
+                targets.Add(_T("Debug_New"), 1);
+                targets.Add(_T("VRelease"), 1);
+                test_true("cbProject::DefineVirtualBuildTarget All",
+                          project.DefineVirtualBuildTarget(_T("All"), targets));
+
+                local virtualTargets = project.GetVirtualBuildTargets();
+                test_string("cbProject::GetVirtualBuildTargets",
+                            GetStringFromArray(virtualTargets, _T(";"), false), "All;VRelease");
+
+                local allTargets = project.GetVirtualBuildTargetGroup(_T("All"));
+                test_string("cbProject::GetVirtualBuildTargetGroup All",
+                            GetStringFromArray(allTargets, _T(";"), false), "Debug_New;VRelease");
+                allTargets = project.GetExpandedVirtualBuildTargetGroup(_T("All"));
+                test_string("cbProject::GetExpandedVirtualBuildTargetGroup All",
+                            GetStringFromArray(allTargets, _T(";"), false), "Debug_New;Release");
+
+                local vReleaseTargets = project.GetVirtualBuildTargetGroup(_T("VRelease"));
+                test_string("cbProject::GetVirtualBuildTargetGroup VRelease",
+                            GetStringFromArray(vReleaseTargets, _T(";"), false), "Release");
+
+                test_true("cbProject::RemoveVirtualBuildTarget",
+                          project.RemoveVirtualBuildTarget(_T("VRelease")));
+                test_string("cbProject::GetVirtualBuildTargets after remove",
+                            GetStringFromArray(project.GetVirtualBuildTargets(), _T(";"), false),
+                            "All");
+                test_false("cbProject::CanAddToVirtualBuildTarget",
+                           project.CanAddToVirtualBuildTarget(_T("VRelease"), _T("All")));
+            }
+
+            project.SetTitle(_T("TestTitle"));
+            test_string("cbProject::SetTitle", project.GetTitle(), "TestTitle");
+        }
+
+        test_ExtensionAPI(project);
+
+        {
+            StartNewSection("File API calls in ProjectBuildTarget");
+
+            test_equal("ProjectBuildTarget::GetFilesCount after 1 file",
+                       debugTarget.GetFilesCount(), 1);
+            local fileInTarget = debugTarget.GetFile(0);
+            test_false("ProjectBuildTarget::GetFile non null", IsNull(fileInTarget));
+            test_true("ProjectBuildTarget::GetFile out of range",
+                      IsNull(debugTarget.GetFile(debugTarget.GetFilesCount() + 100)));
+            test_equal("cbProject file == ProjectBuildTarget file", file, fileInTarget);
+            test_string("ProjectBuildTarget ProjectFile::GetBaseName", file.GetBaseName(), "file1");
+        }
+
+        {
+            StartNewSection("ProjectFile");
+
+            local file = project.GetFile(0);
+            test_false("cbProject::GetFile non null", IsNull(file));
+
+            local strTargets = GetStringFromArray(file.GetBuildTargets(), _T(";"), false);
+            test_string("ProjectFile::GetBuildTargets", strTargets, "Debug_New;Release");
+
+            test_equal("ProjectFile::GetParentProject", file.GetParentProject(), project);
+
+            local test_targets = function(message, file, expected)
+            {
+                local strTargets = GetStringFromArray(file.GetBuildTargets(), _T(";"), false);
+                test_string(message, strTargets, expected);
+            }
+
+            file.RemoveBuildTarget(_T("Debug_New"));
+            test_targets("ProjectFile::RemoveBuildTarget", file, "Release");
+
+            file.RenameBuildTarget(_T("Release"), _T("Debug_New"));
+            test_targets("ProjectFile::RenameBuildTarget", file, "Debug_New");
+
+            file.AddBuildTarget(_T("Release"));
+            test_targets("ProjectFile::AddBuildTarget", file, "Debug_New;Release");
+
+            local objExt = ".o";
+
+            test_string("ProjectFile::GetBaseName", file.GetBaseName(), "file1");
+            test_string("ProjectFile::GetObjName", file.GetObjName(), "file1" + objExt);
+            file.SetObjName(_T("changed.obj1"));
+            test_string("ProjectFile::SetObjName", file.GetObjName(), "changed" + objExt);
+
+            local compilerId = _T("gcc");
+            test_false("ProjectFile::GetUseCustomBuildCommand",
+                       file.GetUseCustomBuildCommand(compilerId));
+            file.SetUseCustomBuildCommand(compilerId, true);
+            test_true("ProjectFile::SetUseCustomBuildCommand",
+                      file.GetUseCustomBuildCommand(compilerId));
+
+            test_string("ProjectFile::GetCustomBuildCommand",
+                        file.GetCustomBuildCommand(compilerId), "");
+            file.SetCustomBuildCommand(compilerId, _T("<custom command>"));
+            test_string("ProjectFile::SetCustomBuildCommand",
+                        file.GetCustomBuildCommand(compilerId), "<custom command>");
+
+            test_string("ProjectFile::file get", file.file.GetFullPath(::wxPATH_NATIVE),
+                        MakePath(tempFolder, _T("file1.cpp")));
+            test_string("ProjectFile::relativeFilename", file.relativeFilename, "file1.cpp");
+            test_string("ProjectFile::relativeToCommonTopLevelPath",
+                        file.relativeToCommonTopLevelPath, "file1.cpp");
+
+            test_true("ProjectFile::compile get", file.compile);
+            file.compile = false;
+            test_false("ProjectFile::compile set", file.compile);
+
+            test_true("ProjectFile::link get", file.link);
+            file.link = false;
+            test_false("ProjectFile::link set", file.link);
+
+            test_equal("ProjectFile::weight get", file.weight, 50);
+            file.weight = 12;
+            test_equal("ProjectFile::weight set", file.weight, 12);
+
+            test_string("ProjectFile::compilerVar get", file.compilerVar, "CPP");
+            file.compilerVar = _T("TEST");
+            test_string("ProjectFile::compilerVar set", file.compilerVar, "TEST");
+
+            local strTargets = GetStringFromArray(file.buildTargets, _T(";"), false);
+            test_string("ProjectFile::buildTargets get", strTargets, "Debug_New;Release");
+        }
+
+        {
+            StartNewSection("ProjectManager");
+
+            projectMgr.SetDefaultPath(tempFolder);
+            test_string("ProjectManager::SetDefaultPath", projectMgr.GetDefaultPath(),
+                        MakePath(tempFolder, _T("")));
+
+            test_equal("ProjedctManager::GetActiveProject", projectMgr.GetActiveProject(), project);
+            test_equal("ProjedctManager::GetProjectCount", projectMgr.GetProjectCount(), 1);
+            test_equal("ProjedctManager::GetProject 0", projectMgr.GetProject(0), project);
+            // FIXME (squirrel) Test this invalid case
+//            test_equal("ProjedctManager::GetProject invalid", projectMgr.GetProject(1000), null);
+
+            // FIXME (squirrel) Test this invalid case
+//            projectMgr.SetProject(null, false);
+//            test_equal("ProjedctManager::SetProject", projectMgr.GetActiveProject(), null);
+
+            local project2 = projectMgr.NewProject(MakePath(tempFolder, _T("NewProject2.cbp")));
+            test_false("ProjectManager::NewProject 2: null", IsNull(project2));
+            test_true("ProjectManager::NewProject 2: equal", project != project2);
+
+            local project3 = projectMgr.NewProject(MakePath(tempFolder, _T("NewProject3.cbp")));
+            test_false("ProjectManager::NewProject 3: null", IsNull(project3));
+            test_true("ProjectManager::NewProject 3: equal", project2 != project3);
+
+            projectMgr.SetProject(project2, false);
+            test_equal("ProjedctManager::SetProject", projectMgr.GetActiveProject(), project2);
+
+            test_equal("ProjectManager::IsOpen not", projectMgr.IsOpen(_T("some/random/path.cbp")),
+                       null);
+            test_equal("ProjectManager::IsOpen NewProject",
+                       projectMgr.IsOpen(MakePath(tempFolder, _T("NewProject.cbp"))), project);
+            test_equal("ProjectManager::IsOpen NewProject2",
+                       projectMgr.IsOpen(MakePath(tempFolder, _T("NewProject2.cbp"))), project2);
+
+            test_equal("ProjectManager::GetDependenciesForProject project: initial",
+                       projectMgr.GetDependenciesForProject(project), null);
+            test_equal("ProjectManager::GetDependenciesForProject project2: initial",
+                       projectMgr.GetDependenciesForProject(project2), null);
+            test_equal("ProjectManager::GetDependenciesForProject project3: initial",
+                       projectMgr.GetDependenciesForProject(project3), null);
+
+            test_true("ProjectManager::AddProjectDependency project -> project2",
+                      projectMgr.AddProjectDependency(project, project2));
+            test_false("ProjectManager::AddProjectDependency project2 -> project",
+                       projectMgr.AddProjectDependency(project2, project));
+            test_true("ProjectManager::AddProjectDependency project3 -> project2",
+                      projectMgr.AddProjectDependency(project3, project2));
+            local depsForProject = projectMgr.GetDependenciesForProject(project);
+            test_equal("ProjectManager::AddProjectDependency project: count", depsForProject.len(),
+                       1);
+            test_equal("ProjectManager::AddProjectDependency project: value", depsForProject[0],
+                       project2);
+            test_equal("ProjectManager::AddProjectDependency project: project2 unchanged",
+                       projectMgr.GetDependenciesForProject(project2), null);
+            local depsForProject3 = projectMgr.GetDependenciesForProject(project3);
+            test_equal("ProjectManager::AddProjectDependency project3: count",
+                       depsForProject3.len(), 1);
+            test_equal("ProjectManager::AddProjectDependency project3: value", depsForProject3[0],
+                       project2);
+
+            projectMgr.RemoveProjectDependency(project, project2);
+
+            test_equal("ProjectManager::RemoveProjectDependency project",
+                       projectMgr.GetDependenciesForProject(project), null);
+            test_equal("ProjectManager::RemoveProjectDependency project2 unchanged",
+                       projectMgr.GetDependenciesForProject(project2), null);
+
+            projectMgr.ClearProjectDependencies(project3);
+            test_equal("ProjectManager::ClearProjectDependencies project3",
+                       projectMgr.GetDependenciesForProject(project3), null);
+
+            test_true("ProjectManager::RemoveProjectFromAllDependencies project -> project2",
+                      projectMgr.AddProjectDependency(project, project2));
+            test_true("ProjectManager::RemoveProjectFromAllDependencies project3 -> project2",
+                      projectMgr.AddProjectDependency(project3, project2));
+            projectMgr.RemoveProjectFromAllDependencies(project2);
+
+            test_equal("ProjectManager::RemoveProjectFromAllDependencies project empty",
+                       projectMgr.GetDependenciesForProject(project), null);
+            test_equal("ProjectManager::RemoveProjectFromAllDependencies project2 empty",
+                       projectMgr.GetDependenciesForProject(project2), null);
+            test_equal("ProjectManager::RemoveProjectFromAllDependencies project3 empty",
+                       projectMgr.GetDependenciesForProject(project3), null);
+
+            project.SetModified(true);
+            project2.SetModified(true);
+            project3.SetModified(true);
+            test_true("ProjectManager::SaveAllProjects", projectMgr.SaveAllProjects());
+
+            project.SetModified(true);
+            test_true("ProjectManager::SaveProject", projectMgr.SaveProject(project));
+
+            test_equal("ProjectManager::GetActiveProject 2", projectMgr.GetActiveProject(),
+                       project2);
+            project2.SetModified(true);
+            test_true("ProjectManager::SaveActiveProject", projectMgr.SaveActiveProject());
+
+            // FIXME (squirrel) Is this really a good idea. Probably in these cases we should just
+            // return a copy!!!
+            local project2Filename = clone project2.GetFilename();
+            test_string("ProjectManager::filename", project2Filename,
+                        MakePath(tempFolder, _T("NewProject2.cbp")));
+
+            projectMgr.CloseActiveProject(true);
+            test_equal("ProjectManager::CloseActiveProject 0", projectMgr.GetProjectCount(), 2);
+            test_equal("ProjectManager::CloseActiveProject 1", projectMgr.GetProject(0), project);
+            test_equal("ProjectManager::CloseActiveProject 2", projectMgr.GetProject(1), project3);
+            project2 = null;
+
+            test_string("ProjectManager::filename after close", project2Filename,
+                        MakePath(tempFolder, _T("NewProject2.cbp")));
+
+            project2 = projectMgr.LoadProject(project2Filename, false);
+            test_false("ProjectManager::LoadProject null", IsNull(project2));
+            test_true("ProjectManager::LoadProject active",
+                      project2 != projectMgr.GetActiveProject());
+
+            // Just test if it will be called.
+            projectMgr.RebuildTree();
+
+            // Cleanup. Must happen here.
+            test_true("ProjectManager::CloseProject project",
+                      projectMgr.CloseProject(project, true, true));
+            test_equal("ProjectManager::CloseProject project count", projectMgr.GetProjectCount(), 2);
+            test_true("ProjectManager::CloseAllProjects", projectMgr.CloseAllProjects(true));
+            test_equal("ProjectManager::CloseAllProjects count", projectMgr.GetProjectCount(), 0);
+            test_true("ProjectManager::CloseWorkspace", projectMgr.CloseWorkspace());
+
+            // Uncomment these to test APIs which require user interaction and which aren't
+            // suitable for automated testing.
+//            {
+//                local workspacePath = MakePath(tempFolder, _T("test.workspace"));
+//
+//                // Add one project to the workspace.
+//                projectMgr.LoadProject(project2Filename, false);
+//
+//                print("ProjectManager::SaveWorkspaceAs: " + projectMgr.SaveWorkspaceAs(workspacePath) + "\n");
+//                print("ProjectManager::SaveWorkspace: " + projectMgr.SaveWorkspace() + "\n");
+//                print("ProjectManager::CloseWorkspace: " + projectMgr.CloseWorkspace() + "\n");
+//                print("ProjectManager::LoadWorkspace: " + projectMgr.LoadWorkspace(workspacePath) + "\n");
+//
+//                local saveResult = projectMgr.SaveProjectAs(projectMgr.GetProject(0));
+//                print("ProjectManager::SaveProjectAs: " + saveResult + "\n");
+//
+//                projectMgr.CloseWorkspace()
+//            }
+        }
+
+        FolderCleanup(tempFolder);
+
+        print_test_result();
+        ::print("======= Test SDK Project related classes/functions END ======= \n");
+    }
+
+    function test_classes()
+    {
+        ::print("======= Test SDK classes/functions BEGINN ======= \n");
+        clear_test_result();
+
+        {
+            StartNewSection("ConfigManager");
+
+            local cfg = GetConfigManager();
+            test_false("GetConfigManager", IsNull(cfg));
+
+            cfg.Write(_T("/test/int"), 10);
+            cfg.Write(_T("/test/bool"), false);
+            cfg.Write(_T("/test/float"), 11.2);
+            cfg.Write(_T("/test/string"), _T("mystr"));
+
+            test_equal("ConfigManager int", cfg.Read(_T("/test/int"), 5), 10);
+            test_equal("ConfigManager bool", cfg.Read(_T("/test/bool"), true), false);
+            test_equal("ConfigManager float", cfg.Read(_T("/test/float"), 5.0), 11.2);
+            test_string("ConfigManager string", cfg.Read(_T("/test/string"), _T("defstr")), "mystr");
+        }
+
+        StartNewSection("editor related");
+
+        local tempFolder = MakeDir(GetFolder(0x4), _T("sdk_tests"));
+        FolderCleanup(tempFolder);
+        print(_T("TEMP folder is=") + tempFolder + _T("\n"));
+
+        local editorMgr = GetEditorManager();
+        test_false("GetEditorManager", IsNull(editorMgr));
+        test_equal("GetEditorManager equal", editorMgr, GetEditorManager());
+        test_true("EditorManager type", editorMgr instanceof EditorManager);
+
+        editorMgr.CloseAll(true);
+
+        local editor0 = editorMgr.New(MakePath(tempFolder, _T("test0.cpp")));
+        test_false("EditorManager::New", IsNull(editor0));
+        test_true("cbEditor type", editor0 instanceof cbEditor);
+        test_true("EditorBase type", editor0 instanceof EditorBase);
+
+        editor0.SetText(_T("Line1\nLine2\nLine3"));
+
+        local editor1 = editorMgr.New(MakePath(tempFolder, _T("test1.ext")));
+        test_false("EditorManager::New 2", IsNull(editor1));
+        editor1.SetText(_T("Line1\nLine2\nLine3\nLine4"));
+
+        {
+            // FIXME (squirrel) GetShortName behaves strangely. Setting the filename doesn't change
+            // the shortname. Probably this is a bug in the API.
+            StartNewSection("EditorBase");
+
+            test_string("GetFilename 0", editor0.GetFilename(),
+                        MakePath(tempFolder, _T("test0.cpp")));
+            test_string("GetFilename 1", editor1.GetFilename(),
+                        MakePath(tempFolder, _T("test1.ext")));
+            editor1.SetFilename(MakePath(tempFolder, _T("newtest1.ext")));
+            test_string("GetFilename 1", editor1.GetFilename(),
+                        MakePath(tempFolder, _T("newtest1.ext")));
+            test_string("GetShortName 0", editor0.GetShortName(), "test0.cpp");
+            test_string("GetShortName 1", editor1.GetShortName(), "test1.ext");
+
+            test_true("GetModified 0", editor0.GetModified());
+            test_true("GetModified 1", editor1.GetModified());
+            editor0.SetModified(false);
+            test_false("SetModified 0", editor0.GetModified());
+
+            test_string("GetTitle", editor0.GetTitle(), "test0.cpp");
+            editor0.SetTitle(_T("newtest0"));
+            test_string("SetTitle", editor0.GetTitle(), "newtest0");
+
+            test_true("IsBuiltinEditor", editor0.IsBuiltinEditor());
+            test_true("ThereAreOthers", editor0.ThereAreOthers());
+
+            // Just call it, we cannot verify if it really works.
+            editor0.GotoLine(2, true);
+
+            test_false("IsReadOnly", editor0.IsReadOnly());
+            test_false("HasSelection", editor0.HasSelection());
+        }
+
+        {
+            StartNewSection("cbEditor");
+            test_string("GetText 0", editor0.GetText(), "Line1\nLine2\nLine3");
+            test_string("GetText 1", editor0.GetText(), "Line1\nLine2\nLine3");
+            editor0.SetText(_T("NewLine1\nNewLine2\n   NewLine3\nNewLine4"));
+            test_string("SetText", editor0.GetText(), "NewLine1\nNewLine2\n   NewLine3\nNewLine4");
+
+            test_true("EditorBase::CanUndo", editor0.CanUndo());
+            test_false("EditorBase::CanRedo 0", editor0.CanRedo());
+
+            local startText = editor0.GetText();
+            local endText = startText + _T("\nsome_new_lines\nnew\n\n")
+            editor0.SetText(endText);
+            editor0.Undo();
+            test_equal("EditorBase::Undo", editor0.GetText(), startText);
+            test_true("EditorBase::CanRedo 1", editor0.CanRedo());
+            editor0.Redo();
+            test_equal("EditorBase::Redo", editor0.GetText(), endText);
+
+            editor0.SetEditorTitle(_T("newEditorTitle"));
+            test_string("SetEditorTitle", editor0.GetTitle(), "*newEditorTitle");
+            test_equal("GetProjectFile", editor0.GetProjectFile(), null);
+
+            // Just call these, we cannot verify if they really work.
+            editor0.FoldAll();
+            editor0.UnfoldAll();
+            editor0.ToggleAllFolds();
+            editor0.FoldBlockFromLine(2);
+            editor0.UnfoldBlockFromLine(2);
+            editor0.ToggleFoldBlockFromLine(2);
+            editor0.Touch();
+            editor0.GotoNextBreakpoint();
+            editor0.GotoPreviousBreakpoint();
+            editor0.GotoNextBookmark();
+            editor0.GotoPreviousBookmark();
+            editor0.Print(false, pcmColourOnWhite, true);
+            editor0.AutoComplete();
+
+            test_false("HasBreakpoint", editor0.HasBreakpoint(2));
+            test_true("AddBreakpoint 0", editor0.AddBreakpoint(2, true));
+            test_false("AddBreakpoint 1", editor0.AddBreakpoint(2, true));
+            test_true("AddBreakpoint 2", editor0.AddBreakpoint(3, true));
+            test_true("AddBreakpoint 3", editor0.HasBreakpoint(2));
+            test_true("AddBreakpoint 4", editor0.HasBreakpoint(3));
+
+            test_true("RemoveBreakpoint 0", editor0.RemoveBreakpoint(2, true));
+            test_false("RemoveBreakpoint 1", editor0.RemoveBreakpoint(2, true));
+            test_false("RemoveBreakpoint 2", editor0.HasBreakpoint(2));
+            test_true("RemoveBreakpoint 3", editor0.HasBreakpoint(3));
+
+            editor0.ToggleBreakpoint(3, true);
+            test_false("RemoveBreakpoint 3", editor0.HasBreakpoint(3));
+
+            test_equal("GetLineIndentInSpaces 0", editor0.GetLineIndentInSpaces(0), 0);
+            test_equal("GetLineIndentInSpaces 1", editor0.GetLineIndentInSpaces(2), 3);
+            test_string("GetLineIndentString 0", editor0.GetLineIndentString(0), "");
+            test_string("GetLineIndentString 1", editor0.GetLineIndentString(2), "   ");
+
+            test_false("HasBookmark", editor0.HasBookmark(2));
+            editor0.ToggleBookmark(2);
+            test_true("ToggleBookmark 0", editor0.HasBookmark(2));
+            editor0.ToggleBookmark(3);
+            test_true("ToggleBookmark 1", editor0.HasBookmark(2));
+            test_true("ToggleBookmark 2", editor0.HasBookmark(3));
+
+            editor0.ClearAllBookmarks();
+            test_false("ToggleBookmark 1", editor0.HasBookmark(2));
+            test_false("ToggleBookmark 2", editor0.HasBookmark(3));
+
+            local editor0Filename = clone editor0.GetFilename();
+            test_true("cbEditor::Reload", editor0.Reload(true));
+            test_equal("cbEditor::Reload: invalidate", editorMgr.IsBuiltinOpen(editor0Filename),
+                       editor0);
+            editor0.SetFilename(MakePath(tempFolder, _T("saved0.ext")));
+            test_true("cbEditor::Save", editor0.Save());
+        }
+
+        {
+            StartNewSection("EditorManager");
+
+            local editor0Filename = clone editor0.GetFilename();
+            local editor1Filename = clone editor1.GetFilename();
+            print("editor0: " + editor0Filename + "; editor1: " + editor1Filename + "\n");
+
+            // Indices start from one because of the 'start here' page.
+            test_equal("GetBuiltinEditor: index 0", editorMgr.GetBuiltinEditor(1), editor0);
+            test_equal("GetBuiltinEditor: index 1", editorMgr.GetBuiltinEditor(2), editor1);
+            test_equal("GetBuiltinEditor: filename 0", editorMgr.GetBuiltinEditor(editor0Filename),
+                       editor0);
+            test_equal("GetBuiltinEditor: filename 1", editorMgr.GetBuiltinEditor(editor1Filename),
+                       editor1);
+
+            test_equal("IsBuiltinOpen: filename 0", editorMgr.IsBuiltinOpen(editor0Filename),
+                       editor0);
+            test_equal("IsBuiltinOpen: filename 1", editorMgr.IsBuiltinOpen(editor1Filename),
+                       editor1);
+
+            editor0.Activate();
+            test_equal("GetActiveEditor 0", editorMgr.GetActiveEditor(), editor0);
+            test_equal("GetBuiltinActiveEditor 0", editorMgr.GetBuiltinActiveEditor(), editor0);
+            editor1.Activate();
+            test_equal("GetActiveEditor 1", editorMgr.GetActiveEditor(), editor1);
+            test_equal("GetBuiltinActiveEditor 1", editorMgr.GetBuiltinActiveEditor(), editor1);
+
+            editorMgr.ActivatePrevious();
+            test_equal("ActivatePrevious", editorMgr.GetActiveEditor(), editor0);
+            editorMgr.ActivateNext();
+            test_equal("ActivateNext", editorMgr.GetActiveEditor(), editor1);
+
+            editor1.SetModified(true);
+            test_true("SaveActive", editorMgr.SaveActive());
+            test_false("SaveActive: post", editor1.GetModified());
+            test_true("CloseActive", editorMgr.CloseActive(true));
+            test_equal("CloseActive: check 0", editorMgr.IsBuiltinOpen(editor0Filename), editor0);
+            test_equal("CloseActive: check 1", editorMgr.IsBuiltinOpen(editor1Filename), null);
+
+            print("editor open: '" + editor0Filename + "'\n");
+            editor1 = editorMgr.Open(editor1Filename);
+            test_false("Open 0", IsNull(editor1));
+
+            editor0.SetModified(true);
+            editor1.SetModified(true);
+            test_true("SaveAll", editorMgr.SaveAll());
+            test_false("SaveAll: check 0", editor0.GetModified());
+            test_false("SaveAll: check 1", editor1.GetModified());
+
+            // Indices start from one because of the 'start here' page.
+            test_true("Close index", editorMgr.Close(1));
+            test_equal("Close index: check 0", editorMgr.IsBuiltinOpen(editor0Filename), null);
+            test_equal("Close index: check 1", editorMgr.IsBuiltinOpen(editor1Filename), editor1);
+
+            print("editor open: '" + editor0Filename + "'\n");
+            editor0 = editorMgr.Open(editor0Filename);
+            test_false("Open 1", IsNull(editor0));
+
+            test_true("Close filename", editorMgr.Close(editor0Filename));
+            test_equal("Close filename: check 0", editorMgr.IsBuiltinOpen(editor0Filename), null);
+            test_equal("Close filename: check 1", editorMgr.IsBuiltinOpen(editor1Filename), editor1);
+
+            // This puts editor0 on the right of editor1, so the indices below are swapped.
+            print("editor open: '" + editor0Filename + "'\n");
+            editor0 = editorMgr.Open(editor0Filename);
+            test_false("Open 2", IsNull(editor0));
+
+            // Indices start from one because of the 'start here' page.
+            editor0.SetModified(true);
+            editor1.SetModified(true);
+            test_true("Save index", editorMgr.Save(2));
+            test_false("Save index: check 0", editor0.GetModified());
+            test_true("Save index: check 1", editor1.GetModified());
+
+            editor0.SetModified(true);
+            editor1.SetModified(true);
+            test_true("Save filename", editorMgr.Save(editor0Filename));
+            test_false("Save filename: check 0", editor0.GetModified());
+            test_true("Save filename: check 1", editor1.GetModified());
+
+            local editor0header = editorMgr.New(MakePath(tempFolder, _T("test0.h")));
+            test_false("EditorManager::New", IsNull(editor0header));
+            editor0 = editorMgr.Open(MakePath(tempFolder, _T("test0.cpp")));
+            test_false("Open 3", IsNull(editor0));
+
+            editor0header.Activate();
+            test_true("SwapActiveHeaderSource 0", editorMgr.SwapActiveHeaderSource());
+            test_equal("SwapActiveHeaderSource 0: active", editorMgr.GetActiveEditor(), editor0);
+            test_true("SwapActiveHeaderSource 1", editorMgr.SwapActiveHeaderSource());
+            test_equal("SwapActiveHeaderSource 1: active", editorMgr.GetActiveEditor(),
+                       editor0header);
+
+//            {
+//                // Commented because they require user intervention. To test them uncomment them.
+//                editor0.Activate();
+//                print("EditorManager::SaveActiveAs: " + editorMgr.SaveActiveAs() + "\n");
+//                print("cbEditor::SaveAs: " + editor0.SaveAs() +  "\n");
+//            }
+
+            test_true("CloseAll", editorMgr.CloseAll(true));
+            // After this call all editors must be saved or closed.
+        }
+
+        {
+            StartNewSection("CompilerFactory");
+
+            test_true("IsValidCompilerID 0", CompilerFactory.IsValidCompilerID(_T("gcc")));
+            test_false("IsValidCompilerID 1",
+                       CompilerFactory.IsValidCompilerID(_T("gcc-invalid-not-here")));
+            test_true("GetCompilerIndex 0", CompilerFactory.GetCompilerIndex(_T("gcc")) >= 0);
+            test_equal("GetCompilerIndex 1",
+                       CompilerFactory.GetCompilerIndex(_T("gcc-invalid-not-here")), -1);
+            test_false("GetDefaultCompilerID", CompilerFactory.GetDefaultCompilerID().IsEmpty());
+            local versionStr0 = CompilerFactory.GetCompilerVersionString(_T("gcc"));
+            local versionStr1 = CompilerFactory.GetCompilerVersionString(_T("gcc-invalid-not-here"));
+            test_false("GetCompilerVersionString 0", versionStr0.IsEmpty());
+            test_true("GetCompilerVersionString 1", versionStr1.IsEmpty());
+            test_false("CompilerInheritsFrom",
+                       CompilerFactory.CompilerInheritsFrom(_T("llvm"), _T("gcc")));
+            test_string("GetCompilerIDByName",
+                        CompilerFactory.GetCompilerIDByName(_T("GNU GCC Compiler")), "gcc");
+        }
+
+        {
+            StartNewSection("PluginInfo");
+
+            local info = PluginInfo();
+            info.name = _T("test_name");
+            info.title = _T("test_title");
+            info.version = _T("test_version");
+            info.description = _T("test_description");
+            info.author = _T("test_author");
+            info.authorEmail = _T("test_authorEmail");
+            info.authorWebsite = _T("test_authorWebsite");
+            info.thanksTo = _T("test_thanksTo");
+            info.license = _T("test_license");
+
+            test_string("PluginInfo name", info.name, "test_name");
+            test_string("PluginInfo title", info.title, "test_title");
+            test_string("PluginInfo version", info.version, "test_version");
+            test_string("PluginInfo description", info.description, "test_description");
+            test_string("PluginInfo author", info.author, "test_author");
+            test_string("PluginInfo authorEmail", info.authorEmail, "test_authorEmail");
+            test_string("PluginInfo authorWebsite", info.authorWebsite, "test_authorWebsite");
+            test_string("PluginInfo thanksTo", info.thanksTo, "test_thanksTo");
+            test_string("PluginInfo license", info.license, "test_license");
+        }
+
+        print_test_result();
+        ::print("======= Test SDK classes/functions END ======= \n");
+    }
+
+    function FolderCleanup(folder)
+    {
+        if (IO.DirectoryExists(folder))
+        {
+            print("Note: Deleting recursively '" + folder + "'\n");
+            if (::PLATFORM != ::PLATFORM_MSW)
+                IO.Execute(_T("rm -rf \"") + folder + _T("\""));
+            else
+                IO.Execute(_T("cmd /c rd /s /q \"") + folder + _T("\""));
+            if (IO.DirectoryExists(folder))
+                throw "Cannot delete folder: '" + folder + "'! Aborting!";
+        }
+
+        print("Note: Creating '" + folder + "'\n");
+        IO.CreateDirectory(folder, 0755);
+        if (!IO.DirectoryExists(folder))
+            throw "Cannot create folder: '" + folder + "'! Aborting!";
+    }
+
+    function test_io()
+    {
+        ::print("======= Test IO functions BEGINN ======= \n");
+        clear_test_result();
+
+        local startCwd = IO.GetCwd();
+        test_false("Start GetCWD", startCwd.IsEmpty());
+        print("Start CWD: " + startCwd + "\n");
+
+        local tempRootFolder = GetFolder(0x4);
+        local tempFolder = MakeDir(GetFolder(0x4), _T("sdk_tests"));
+        IO.SetCwd(tempRootFolder);
+        test_string("SetCwd", IO.GetCwd(), tempRootFolder);
+        test_true("DirectoryExists", IO.DirectoryExists(tempRootFolder));
+
+        test_true("allowInsecureScripts==true", allowInsecureScripts);
+
+        if (allowInsecureScripts)
+        {
+            if (IO.DirectoryExists(tempFolder))
+            {
+                local cmd = _T("rm -rf ");
+                if(::PLATFORM == ::PLATFORM_MSW)
+                    cmd = _T("cmd /c rd /q /s ")
+                cmd += _T("\"") + tempFolder + _T("\"");
+                test_equal("Execute cmd: " + cmd, IO.Execute(cmd), 0);
+                test_false("RemoveDirectory start", IO.DirectoryExists(tempFolder));
+            }
+
+            test_true("CreateDirectory", IO.CreateDirectory(tempFolder, 0755));
+            test_true("CreateDirectory test", IO.DirectoryExists(tempFolder));
+            test_true("RemoveDirectory", IO.RemoveDirectory(tempFolder));
+            test_true("CreateDirectory after delete", IO.CreateDirectory(tempFolder, 0755));
+
+            test_true("Execute fail", IO.Execute(_T("some-unknown-command")) != 0);
+
+            local filepath0 = MakePath(tempFolder, _T("file0.txt"));
+            local filepath1 = MakePath(tempFolder, _T("file1.txt"));
+            local copypath0 = MakePath(tempFolder, _T("copy-file0.txt"));
+            local renamepath1 = MakePath(tempFolder, _T("rename-file1.txt"));
+
+            test_true("WriteFileContents 0",
+                      IO.WriteFileContents(filepath0, _T("This is\nfile00000\n\n")));
+            test_true("WriteFileContents 0: exists", IO.FileExists(filepath0));
+            test_true("WriteFileContents 1",
+                      IO.WriteFileContents(filepath1, _T("This is\nfile11111\n\n")));
+            test_true("WriteFileContents 1: exists", IO.FileExists(filepath1));
+
+            test_string("ReadFileContents 0", IO.ReadFileContents(filepath0),
+                        "This is\nfile00000\n\n");
+            test_string("ReadFileContents 1", IO.ReadFileContents(filepath1),
+                        "This is\nfile11111\n\n");
+
+            test_true("CopyFile", IO.CopyFile(filepath0, copypath0, false));
+            test_false("CopyFile overwrite fail", IO.CopyFile(filepath0, copypath0, false));
+            test_true("CopyFile overwrite", IO.CopyFile(filepath0, copypath0, true));
+            test_true("CopyFile exits 0", IO.FileExists(filepath0));
+            test_true("CopyFile exits 1", IO.FileExists(copypath0));
+
+            test_true("RenameFile", IO.RenameFile(filepath1, renamepath1));
+            test_false("RenameFile exists 0", IO.FileExists(filepath1));
+            test_true("RenameFile exists 1", IO.FileExists(renamepath1));
+
+            test_true("RemoveFile", IO.RemoveFile(renamepath1));
+            test_false("RemoveFile exists", IO.FileExists(renamepath1));
+
+
+            if(::PLATFORM != ::PLATFORM_MSW)
+            {
+                test_equal("Execute 0", IO.Execute(_T("echo 1")), 0);
+                test_equal("Execute 1", IO.Execute(_T("sh -c \"exit 10\"")), 10);
+                test_string("ExecuteAndGetOutput", IO.ExecuteAndGetOutput(_T("echo output")),
+                            "output\n");
+
+                local cmdWithError = _T("sh -c \"echo error111 >&2 && echo output222\"");
+                local r = IO.ExecuteAndGetOutputAndError(cmdWithError, true);
+                test_string("ExecuteAndGetOutputAndError 0", r, "error111\noutput222\n");
+                r = IO.ExecuteAndGetOutputAndError(cmdWithError, false);
+                test_string("ExecuteAndGetOutputAndError 1", r, "output222\nerror111\n");
+            }
+
+            FolderCleanup(tempFolder);
+        }
+
+        // FIXME (squirrel) Add a variable which controls these, so all can be enabled at once.
+//        {
+//            // Uncomment these to test APIs which require user interaction and which aren't
+//            // suitable for automated testing.
+//            print("SelectDirectory: " + IO.SelectDirectory(_T("Select dir"), startCwd, true) + "\n");
+//            local file = IO.SelectFile(_T("Select file"), MakePath(startCwd, _T("file0.txt")),
+//                                       _T(""));
+//            print("SelectFile: " + file + "\n");
+//        }
+
+        // This must be the last test performed.
+        IO.SetCwd(startCwd);
+        test_string("Restore CWD", IO.GetCwd(), startCwd);
+
+        print_test_result();
+        ::print("======= Test IO functions END ======= \n");
+    }
+
+    function test_dialogs()
+    {
+        ::print("======= Test Dialog functions BEGINN ======= \n");
+        clear_test_result();
+
+        // FIXME (squirrel) Add a variable which controls these, so all can be enabled at once.
+/*
+        {
+            local progress = ProgressDialog();
+            test_true("ProgressDialog", progress.DoUpdate(100, _T("progress")));
+
+            local progress = ProgressDialog();
+            while (progress.DoUpdate(99, _T("Press the cancel button to continue")))
+                ;
+            test_false("ProgressDialog cancel", false);
+        }
+
+        {
+            local arr = GetArrayFromString(_T("press;ok"), _T(";"), true);
+
+            local dlg = EditArrayFileDlg(arr, true);
+            test_equal("EditArrayFileDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayFileDlg OK 1", GetStringFromArray(arr, _T("<>"), false),
+                        "press<>ok");
+
+            arr = GetArrayFromString(_T("delete first;press;ok"), _T(";"), true);
+            local dlg = EditArrayFileDlg(arr, true, _T("__base__"));
+            test_equal("EditArrayFileDlg delete first 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayFileDlg delete first 1", GetStringFromArray(arr, _T("<>"), false),
+                        "press<>ok");
+
+            arr = GetArrayFromString(_T("press;cancel"), _T(";"), true);
+            local dlg = EditArrayFileDlg(arr, true);
+            test_equal("EditArrayFileDlg Cancel 0", dlg.ShowModal(), wxID_CANCEL);
+            test_string("EditArrayFileDlg Cancel 1", GetStringFromArray(arr, _T("<>"), false),
+                        "press<>cancel");
+        }
+
+        {
+            local dlg = EditArrayOrderDlg(GetArrayFromString(_T("press;ok"), _T(";"), true));
+            test_equal("EditArrayOrderDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayOrderDlg OK 1",
+                        GetStringFromArray(dlg.GetArray(), _T("<>"), false), "press<>ok");
+
+            local dlg = EditArrayOrderDlg();
+            dlg.SetArray(GetArrayFromString(_T("move_me;press;ok"), _T(";"), true))
+            test_equal("EditArrayOrderDlg move 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayOrderDlg move 1",
+                        GetStringFromArray(dlg.GetArray(), _T("<>"), false), "press<>move_me<>ok");
+
+            local dlg = EditArrayOrderDlg(GetArrayFromString(_T("press;cancel"), _T(";"), true));
+            test_equal("EditArrayOrderDlg OK 0", dlg.ShowModal(), wxID_CANCEL);
+            test_string("EditArrayOrderDlg OK 1",
+                        GetStringFromArray(dlg.GetArray(), _T("<>"), false), "press<>cancel");
+        }
+
+        {
+            local arr = GetArrayFromString(_T("press;ok"), _T(";"), true);
+            local dlg = EditArrayStringDlg(arr);
+            test_equal("EditArrayStringDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayStringDlg OK 1",
+                        GetStringFromArray(arr, _T("<>"), false), "press<>ok");
+
+            local arr = GetArrayFromString(_T("delete first;press;ok"), _T(";"), true);
+            local dlg = EditArrayStringDlg(arr);
+            test_equal("EditArrayStringDlg delete first 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditArrayStringDlg delete first 1", GetStringFromArray(arr, _T("<>"), false),
+                        "press<>ok");
+
+            local arr = GetArrayFromString(_T("press;cancel"), _T(";"), true);
+            local dlg = EditArrayStringDlg(arr);
+            test_equal("EditArrayStringDlg Cancel 0", dlg.ShowModal(), wxID_CANCEL);
+            test_string("EditArrayStringDlg Cancel 1", GetStringFromArray(arr, _T("<>"), false),
+                        "press<>cancel");
+        }
+
+        {
+            local key = _T("press");
+            local value = _T("ok");
+            local dlg = EditPairDlg(key, value);
+            test_equal("EditPairDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditPairDlg OK 1", key, "press");
+            test_string("EditPairDlg OK 2", value, "ok");
+
+            local key = _T("change_to_success_and_press_ok");
+            local value = _T("");
+            local dlg = EditPairDlg(key, value, _T("Change to success"));
+            test_equal("EditPairDlg change 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditPairDlg change 1", key, "change_to_success_and_press_ok");
+            test_string("EditPairDlg change 2", value, "success");
+
+            local key = _T("press");
+            local value = _T("cancel");
+
+            test_equal("bmDisable", bmDisable, 0);
+            test_equal("bmBrowseForFile", bmBrowseForFile, 1);
+            test_equal("bmBrowseForDirectory", bmBrowseForDirectory, 2);
+
+            local dlg = EditPairDlg(key, value, _T("To Cancel"), bmBrowseForDirectory);
+            test_equal("EditPairDlg Cancel 0", dlg.ShowModal(), wxID_CANCEL);
+            test_string("EditPairDlg Cancel 1", key, "press");
+            test_string("EditPairDlg Cancel 1", value, "cancel");
+        }
+
+        {
+            local tempFolder = GetFolder(0x4);
+
+            local dlg = EditPathDlg(MakePath(tempFolder, _T("press_ok")), _T(""));
+            test_equal("EditPathDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditPathDlg OK 1", dlg.GetPath(), MakePath(tempFolder, _T("press_ok")));
+
+            local dlg = EditPathDlg(MakePath(tempFolder, _T("set_to_success")), _T(""),
+                                    _T("Press OK"),
+                                    _T("Set path to '") + MakePath(tempFolder, _T("result")) + _T("'"),
+                                    true, true, _T("Really all files|*"));
+            test_equal("EditPathDlg set 0", dlg.ShowModal(), wxID_OK);
+            test_string("EditPathDlg set 1", dlg.GetPath(), MakePath(tempFolder, _T("success")));
+
+            local dlg = EditPathDlg(MakePath(tempFolder, _T("press_cancel")), _T(""));
+            test_equal("EditPathDlg cancel 0", dlg.ShowModal(), wxID_CANCEL);
+            test_string("EditPathDlg cancel 1", dlg.GetPath(), MakePath(tempFolder,
+                                                                        _T("press_cancel")));
+        }
+
+        {
+            local dlg = GenericMultiLineNotesDlg();
+            test_equal("GenericMultiLineNotesDlg OK 0", dlg.ShowModal(), wxID_OK);
+            test_string("GenericMultiLineNotesDlg OK 1", dlg.GetNotes(), "");
+
+            local dlg = GenericMultiLineNotesDlg(_T("Set to 'result'"),
+                                                 _T("Change the text to result and press OK"),
+                                                 false);
+            test_equal("GenericMultiLineNotesDlg set 0", dlg.ShowModal(), wxID_OK);
+            test_string("GenericMultiLineNotesDlg set 1", dlg.GetNotes(), "result");
+        }
+*/
+        print_test_result();
+        ::print("======= Test Dialog functions END ======= \n");
+    }
+}

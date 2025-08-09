@@ -1,8 +1,8 @@
 #include "avChangesDlg.h"
 
 //(*InternalHeaders(avChangesDlg)
-#include <wx/string.h>
 #include <wx/intl.h>
+#include <wx/string.h>
 //*)
 
 #include <wx/arrstr.h>
@@ -22,13 +22,13 @@ const wxString strTypes[] =
 const wxArrayString g_TypesArray(sizeof(strTypes) / sizeof(wxString), strTypes);
 
 //(*IdInit(avChangesDlg)
-const long avChangesDlg::ID_ADD_BUTTON = wxNewId();
-const long avChangesDlg::ID_EDIT_BUTTON = wxNewId();
-const long avChangesDlg::ID_DELETE_BUTTON = wxNewId();
-const long avChangesDlg::ID_CHANGES_GRID = wxNewId();
-const long avChangesDlg::ID_SAVE_BUTTON = wxNewId();
-const long avChangesDlg::ID_WRITE_BUTTON = wxNewId();
-const long avChangesDlg::ID_CANCEL_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_ADD_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_EDIT_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_DELETE_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_CHANGES_GRID = wxNewId();
+const wxWindowID avChangesDlg::ID_SAVE_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_WRITE_BUTTON = wxNewId();
+const wxWindowID avChangesDlg::ID_CANCEL_BUTTON = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(avChangesDlg,wxScrollingDialog)
@@ -39,11 +39,10 @@ END_EVENT_TABLE()
 avChangesDlg::avChangesDlg(wxWindow* parent,wxWindowID /*id*/)
 {
     //(*Initialize(avChangesDlg)
-    wxBoxSizer* sizerConfirmation;
     wxBoxSizer* sizerButtons;
+    wxBoxSizer* sizerConfirmation;
 
     Create(parent, wxID_ANY, _("AutoVersioning :: Changes Log"), wxDefaultPosition, wxDefaultSize, wxCAPTION|wxRESIZE_BORDER, _T("wxID_ANY"));
-    SetClientSize(wxSize(700,300));
     BoxSizer1 = new wxBoxSizer(wxVERTICAL);
     sizerButtons = new wxBoxSizer(wxHORIZONTAL);
     btnAdd = new wxButton(this, ID_ADD_BUTTON, _("Add"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_ADD_BUTTON"));
@@ -71,24 +70,27 @@ avChangesDlg::avChangesDlg(wxWindow* parent,wxWindowID /*id*/)
     sizerConfirmation->Add(btnCancel, 1, wxALL|wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer1->Add(sizerConfirmation, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5);
     SetSizer(BoxSizer1);
-    SetSizer(BoxSizer1);
-    Layout();
+    BoxSizer1->SetSizeHints(this);
+    Center();
 
-    Connect(ID_ADD_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnAddClick);
-    Connect(ID_EDIT_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnEditClick);
-    Connect(ID_DELETE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnDeleteClick);
-    Connect(ID_SAVE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnSaveClick);
-    Connect(ID_WRITE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnWriteClick);
-    Connect(ID_CANCEL_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&avChangesDlg::OnBtnCancelClick);
+    Connect(ID_ADD_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnAddClick));
+    Connect(ID_EDIT_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnEditClick));
+    Connect(ID_DELETE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnDeleteClick));
+    Connect(ID_SAVE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnSaveClick));
+    Connect(ID_WRITE_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnWriteClick));
+    Connect(ID_CANCEL_BUTTON,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(avChangesDlg::OnBtnCancelClick));
     //*)
 
-    grdChanges->CreateGrid(0,2);
-    grdChanges->SetColLabelValue(0,_T("Type"));
-    grdChanges->SetColLabelValue(1,_T("Description"));
+    grdChanges->CreateGrid(0, 2);
+    grdChanges->SetColLabelValue(0, _("Type"));
+    grdChanges->SetColLabelValue(1, _("Description"));
 
     grdChanges->AutoSize();
-	grdChanges->SetColSize(0, 60);
-	grdChanges->SetColSize(1, 645);
+    grdChanges->SetColSize(0, 60);
+    grdChanges->SetColSize(1, 645);
+
+    btnEdit->Enable(false);
+    btnDelete->Enable(false);
 }
 
 avChangesDlg::~avChangesDlg()
@@ -104,46 +106,55 @@ void avChangesDlg::OnBtnAddClick(wxCommandEvent& /*event*/)
     grdChanges->SetCellEditor(grdChanges->GetNumberRows()-1, 0, new wxGridCellChoiceEditor(g_TypesArray,true));
     grdChanges->SetGridCursor(grdChanges->GetNumberRows()-1, 0);
     grdChanges->EnableCellEditControl(true);
+    btnEdit->Enable(true);
+    btnDelete->Enable(true);
 }
 
 void avChangesDlg::OnBtnEditClick(wxCommandEvent& /*event*/)
 {
-    grdChanges->EnableCellEditControl(true);
+    if (grdChanges->CanEnableCellControl())
+        grdChanges->EnableCellEditControl(true);
+    else
+        wxBell();
 }
 
 void avChangesDlg::OnBtnDeleteClick(wxCommandEvent& /*event*/)
 {
-    if (grdChanges->GetNumberRows() > 0)
+    const int row = grdChanges->GetGridCursorRow();
+    if (row != -1)
     {
-#if wxCHECK_VERSION(3, 0, 0)
-        int row = grdChanges->GetGridCursorRow();
-#else
-        int row = grdChanges->GetCursorRow();
-#endif
         grdChanges->SelectRow(row);
         if (wxMessageBox(_("You are about to delete the selected row"), _("Warning"), wxICON_EXCLAMATION|wxOK|wxCANCEL, this) == wxOK)
         {
             grdChanges->DeleteRows(row, 1, true);
+            if (grdChanges->GetNumberRows() == 0)
+            {
+                btnEdit->Enable(false);
+                btnDelete->Enable(false);
+            }
         }
     }
+    else
+        wxBell();
 }
 
 void avChangesDlg::OnBtnSaveClick(wxCommandEvent& /*event*/)
 {
-    if (grdChanges->GetNumberRows() > 0)
+    const int rows = grdChanges->GetNumberRows();
+    if (rows != 0)
     {
         wxFFile saveTempChangesFile;
-        saveTempChangesFile.Open(m_tempChangesFile, _T("w"));
+        saveTempChangesFile.Open(m_tempChangesFile, "w");
 
         wxString tempChanges;
 
-        for (int i=0; i<grdChanges->GetNumberRows(); ++i)
+        for (int row = 0; row < rows; ++row)
         {
-            tempChanges += grdChanges->GetCellValue(i,0);
-            tempChanges += _T("\t");
+            tempChanges += grdChanges->GetCellValue(row, 0);
+            tempChanges += '\t';
 
-            tempChanges += grdChanges->GetCellValue(i,1);
-            tempChanges += _T("\n");
+            tempChanges += grdChanges->GetCellValue(row, 1);
+            tempChanges += '\n';
         }
 
         saveTempChangesFile.Write(tempChanges);
@@ -151,26 +162,27 @@ void avChangesDlg::OnBtnSaveClick(wxCommandEvent& /*event*/)
     }
     else
     {
-        wxMessageBox(_("There are no rows in the data grid to write."), _("Error"), wxICON_ERROR );
+        wxMessageBox(_("There are no rows in the data grid to write."), _("Error"), wxICON_ERROR);
     }
 }
 
 void avChangesDlg::OnBtnWriteClick(wxCommandEvent& /*event*/)
 {
-    if (grdChanges->GetNumberRows() > 0)
+    const int rows = grdChanges->GetNumberRows();
+    if (rows != 0)
     {
-        for (int i=0; i<grdChanges->GetNumberRows(); ++i)
+        for (int row = 0; row < rows; ++row)
         {
-            if (grdChanges->GetCellValue(i,0) != _T(""))
+            if (!grdChanges->GetCellValue(row, 0).empty())
             {
-                m_changes += grdChanges->GetCellValue(i,0) + _T(": ");
+                m_changes += grdChanges->GetCellValue(row, 0) + ": ";
             }
 
-            m_changes += grdChanges->GetCellValue(i,1);
+            m_changes += grdChanges->GetCellValue(row, 1);
 
-            if(i != grdChanges->GetNumberRows()-1)
+            if (row != rows-1)
             {
-                m_changes += _T("\n");
+                m_changes += '\n';
             }
         }
 
@@ -179,7 +191,7 @@ void avChangesDlg::OnBtnWriteClick(wxCommandEvent& /*event*/)
     }
     else
     {
-        wxMessageBox(_("There are no rows in the data grid to write."), _("Error"), wxICON_ERROR );
+        wxMessageBox(_("There are no rows in the data grid to write."), _("Error"), wxICON_ERROR);
     }
 }
 
@@ -197,14 +209,14 @@ void avChangesDlg::SetTemporaryChangesFile(const wxString& fileName)
     wxFFile tempChangesFile;
     if (tempChangesFile.Open(m_tempChangesFile))
     {
-        wxString fileContent(_T("")), type(_T("")), description(_T(""));
+        wxString fileContent, type, description;
 
         tempChangesFile.ReadAll(&fileContent);
 
         bool isType = true;
         grdChanges->BeginBatch();
 
-        for( size_t i = 0; i < fileContent.Len(); ++i)
+        for (size_t i = 0; i < fileContent.Len(); ++i)
         {
             if (isType)
             {
@@ -238,6 +250,8 @@ void avChangesDlg::SetTemporaryChangesFile(const wxString& fileName)
 
         grdChanges->AutoSize();
         grdChanges->EndBatch();
+        btnEdit->Enable(grdChanges->GetNumberRows() != 0);
+        btnDelete->Enable(grdChanges->GetNumberRows() != 0);
     }
 }
 

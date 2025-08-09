@@ -4,7 +4,7 @@
  *
  * $Revision: 8649 $
  * $Id: compilerOWgenerator.cpp 8649 2012-12-12 19:18:18Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerOWgenerator.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerOWgenerator.cpp $
  */
 
 #include <sdk.h>

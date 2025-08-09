@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11541 $
- * $Id: systemheadersthread.cpp 11541 2018-12-21 09:50:03Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/systemheadersthread.cpp $
+ * $Revision: 13434 $
+ * $Id: systemheadersthread.cpp 13434 2024-01-28 00:47:55Z pecanh $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/systemheadersthread.cpp $
  */
 
 #include <sdk.h>
@@ -35,12 +35,12 @@
         CCLogger::Get()->DebugLog(F(format, ##args))
     #define TRACE2(format, args...)
 #elif CC_SYSTEMHEADERSTHREAD_DEBUG_OUTPUT == 2
-    #define TRACE(format, args...)                                              \
-        do                                                                      \
-        {                                                                       \
-            if (g_EnableDebugTrace)                                             \
-                CCLogger::Get()->DebugLog(F(format, ##args));                   \
-        }                                                                       \
+    #define TRACE(format, args...)                            \
+        do                                                    \
+        {                                                     \
+            if (g_EnableDebugTrace)                           \
+                CCLogger::Get()->DebugLog(F(format, ##args)); \
+        }                                                     \
         while (false)
     #define TRACE2(format, args...) \
         CCLogger::Get()->DebugLog(F(format, ##args))
@@ -202,6 +202,7 @@ void* SystemHeadersThread::Entry()
             wxPostEvent(m_Parent, evt);
         }
 
+        wxLogNull NoLog; //Don't error out on lock systems dirs or files
         HeaderDirTraverser traverser(this, m_SystemHeadersThreadCS, m_SystemHeadersMap, dirs[i]);
         dir.Traverse(traverser, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
 
@@ -210,10 +211,8 @@ void* SystemHeadersThread::Entry()
 
         CodeBlocksThreadEvent evt(wxEVT_COMMAND_MENU_SELECTED, idSystemHeadersThreadMessage);
         evt.SetClientData(this);
-        evt.SetString(wxString::Format(_T("SystemHeadersThread: Traversing %s finished, found %lu headers; time: %.3lf sec"),
-                                       dirs[i].wx_str(),
-                                       static_cast<unsigned long>(m_SystemHeadersMap[dirs[i]].size()),
-                                       timer.Time()*0.001));
+        evt.SetString(wxString::Format("SystemHeadersThread: Traversing %s finished, found %zu headers; time: %.3lf sec",
+                                       dirs[i], m_SystemHeadersMap[dirs[i]].size(), timer.Time()*0.001));
         wxPostEvent(m_Parent, evt);
     }
 
@@ -223,10 +222,8 @@ void* SystemHeadersThread::Entry()
         CodeBlocksThreadEvent evt(wxEVT_COMMAND_MENU_SELECTED, idSystemHeadersThreadFinish);
         evt.SetClientData(this);
         if (!dirs.IsEmpty())
-        {
-            evt.SetString(wxString::Format(_T("SystemHeadersThread: Total number of paths: %lu"),
-                                           static_cast<unsigned long>(dirs.GetCount())));
-        }
+            evt.SetString(wxString::Format("SystemHeadersThread: Total number of paths: %zu", dirs.GetCount()));
+
         wxPostEvent(m_Parent, evt);
     }
 
@@ -326,7 +323,7 @@ void HeaderDirTraverser::AddLock(bool is_file)
 
     if ((m_Files+m_Dirs) % 100 == 1)
     {
-        TRACE(_T("HeaderDirTraverser: %lu directories and %lu files traversed. Unlocking temporarily."), static_cast<unsigned long>(m_Dirs), static_cast<unsigned long>(m_Files));
+        TRACE(wxString::Format("HeaderDirTraverser: %zu directories and %zu files traversed. Unlocking temporarily.", m_Dirs, m_Files));
 
         if (m_Locked)
         {

@@ -4,7 +4,7 @@
  *
  * $Revision: 11540 $
  * $Id: autosave.cpp 11540 2018-12-20 20:07:27Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/autosave/autosave.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/autosave/autosave.cpp $
  */
 
 #include "sdk.h"

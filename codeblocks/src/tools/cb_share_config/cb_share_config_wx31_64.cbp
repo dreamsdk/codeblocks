@@ -23,10 +23,9 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-std=gnu++11" />
-			<Add option="-m64" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
+			<Add option="-m64" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
 			<Add option="-DUSE_PCH" />
@@ -35,10 +34,10 @@
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-DWXUSINGDLL" />
+			<Add option="-std=gnu++11" />
 			<Add option="-D_WIN64" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../include" />
 			<Add directory="../../include/tinyxml" />
 		</Compiler>
@@ -46,7 +45,6 @@
 			<Add directory="$(#WX31_64.include)" />
 		</ResourceCompiler>
 		<Linker>
-			<Add option="-m64" />
 			<Add option="-mthreads" />
 			<Add library="txml" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
@@ -59,12 +57,15 @@
 		<Unit filename="mainframe.h" />
 		<Unit filename="wxsmith/MainFrame.wxs" />
 		<Extensions>
+			<code_completion />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="app.cpp" main="MainFrame" init_handlers="necessary" language="CPP" />
 				<resources>
 					<wxFrame wxs="wxsmith/MainFrame.wxs" src="mainframe.cpp" hdr="mainframe.h" fwddecl="0" i18n="1" name="MainFrame" language="CPP" />
 				</resources>
 			</wxsmith>
+			<envvars />
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

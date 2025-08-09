@@ -17,7 +17,7 @@
 *
 * $Revision: 8208 $
 * $Id: CharacterView.cpp 8208 2012-08-07 22:08:06Z killerbot $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/CharacterView.cpp $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/CharacterView.cpp $
 */
 
 #include "CharacterView.h"

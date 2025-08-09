@@ -63,11 +63,7 @@ namespace
 
     while (count < sizeof(T) * 2) // be sure we don't keep adding more to ret
     {
-      #if wxCHECK_VERSION(3, 0, 0)
       switch (str[pos].GetValue())
-      #else
-      switch (str[pos])
-      #endif
       {
         case _T('0'):
         case _T('1'):
@@ -124,36 +120,36 @@ namespace
 //#31 0x004076ca in main () at C:/Devel/wxWidgets-2.6.1/include/wx/intl.h:555
 //#50  0x00410c8c in one::~one() (this=0x3d24c8) at main.cpp:14
 //#11  0x00406810 in main ()
-static wxRegEx reBT0(_T("#([0-9]+)[ \t]+(.+)[ \t]at[ \t](.+):([0-9]+)")); // case #0
-static wxRegEx reBT1(_T("#([0-9]+)[ \t]+0x([A-Fa-f0-9]+)[ \t]+in[ \t]+(.+)[ \t]+(\\([^)]*\\))[ \t]")); // all other cases (gdb 6.3)
-static wxRegEx reBTX(_T("#([0-9]+)[ \t]+0x([A-Fa-f0-9]+)[ \t]+in[ \t]+([^(]+)[ \t]*(\\([^)]*\\)[ \t]*\\([^)]*\\))")); // all other cases (gdb 5.2)
-static wxRegEx reBT2(_T("\\)[ \t]+[atfrom]+[ \t]+(.*):([0-9]+)"));
-static wxRegEx reBT3(_T("\\)[ \t]+[atfrom]+[ \t]+(.*)"));
-static wxRegEx reBT4(_T("#([0-9]+)[ \\t]+(.+)[ \\t]in[ \\t](.+)")); // case #11
+static wxRegEx reBT0(_T("#([0-9]+)[[:blank:]]+(.+)[[:blank:]]at[[:blank:]](.+):([0-9]+)")); // case #0
+static wxRegEx reBT1(_T("#([0-9]+)[[:blank:]]+0x([A-Fa-f0-9]+)[[:blank:]]+in[[:blank:]]+(.+)[[:blank:]]+(\\([^)]*\\))[[:blank:]]")); // all other cases (gdb 6.3)
+static wxRegEx reBTX(_T("#([0-9]+)[[:blank:]]+0x([A-Fa-f0-9]+)[[:blank:]]+in[[:blank:]]+([^(]+)[[:blank:]]*(\\([^)]*\\)[[:blank:]]*\\([^)]*\\))")); // all other cases (gdb 5.2)
+static wxRegEx reBT2(_T("\\)[[:blank:]]+[atfrom]+[[:blank:]]+(.*):([0-9]+)"));
+static wxRegEx reBT3(_T("\\)[[:blank:]]+[atfrom]+[[:blank:]]+(.*)"));
+static wxRegEx reBT4(_T("#([0-9]+)[[:blank:]]+(.+)[[:blank:]]in[[:blank:]](.+)")); // case #11
 // Breakpoint 1 at 0x4013d6: file main.cpp, line 8.
 static wxRegEx reBreakpoint(_T("Breakpoint ([0-9]+) at (0x[0-9A-Fa-f]+)"));
 // GDB7.4 and before will return:
 // Breakpoint 1 ("/home/jens/codeblocks-build/codeblocks-1.0svn/src/plugins/debuggergdb/gdb_commands.h:125) pending.
 // GDB7.5 and later will return:
 // Breakpoint 4 ("E:/code/cb/test_code/DebugDLLTest/TestDLL/dllmain.cpp:29") pending.
-static wxRegEx rePendingBreakpoint(_T("Breakpoint ([0-9]+)[ \t]\\(\"(.+):([0-9]+)(\"?)\\)[ \t]pending\\."));
+static wxRegEx rePendingBreakpoint(_T("Breakpoint ([0-9]+)[[:blank:]]\\(\"(.+):([0-9]+)(\"?)\\)[[:blank:]]pending\\."));
 // Hardware assisted breakpoint 1 at 0x4013d6: file main.cpp, line 8.
 static wxRegEx reHWBreakpoint(_T("Hardware assisted breakpoint ([0-9]+) at (0x[0-9A-Fa-f]+)"));
 // Hardware watchpoint 1: expr
 static wxRegEx reDataBreakpoint(_T("Hardware watchpoint ([0-9]+):.*"));
 // Temporary breakpoint 2 at 0x401203: file /home/obfuscated/projects/tests/_cb_dbg/watches/main.cpp, line 115.
-static wxRegEx reTemporaryBreakpoint(wxT("^[Tt]emporary[ \t]breakpoint[ \t]([0-9]+)[ \t]at.*"));
+static wxRegEx reTemporaryBreakpoint(wxT("^[Tt]emporary[[:blank:]]breakpoint[[:blank:]]([0-9]+)[[:blank:]]at.*"));
 // eax            0x40e66666       1088841318
-static wxRegEx reRegisters(_T("([A-z0-9]+)[ \t]+(0x[0-9A-Fa-f]+)[ \t]+(.*)"));
+static wxRegEx reRegisters(_T("([A-z0-9]+)[[:blank:]]+(0x[0-9A-Fa-f]+)[[:blank:]]+(.*)"));
 // wayne registers
-//static wxRegEx reRegisters(_T("(R[0-9]+)[ \t]+(0x[0-9A-Fa-f]+)"));
+//static wxRegEx reRegisters(_T("(R[0-9]+)[[:blank:]]+(0x[0-9A-Fa-f]+)"));
 // 0x00401390 <main+0>:    push   ebp
-static wxRegEx reDisassembly(_T("(0x[0-9A-Za-z]+)[ \t]+<.*>:[ \t]+(.*)"));
+static wxRegEx reDisassembly(_T("(0x[0-9A-Za-z]+)[[:blank:]]+<.*>:[[:blank:]]+(.*)"));
 // 9           if(argc > 1)
 // 10              strcpy(filename, argv[1]) ;
 // 11          else
 // 12          strcpy(filename, "c:\\dev\\wxwidgets\\wxWidgets-2.8.10\\build\\msw\\../../src/something.c") ;
-static wxRegEx reDisassemblySource(_T("([0-9]+)[ \t](.*)"));
+static wxRegEx reDisassemblySource(_T("([0-9]+)[[:blank:]](.*)"));
 //Stack level 0, frame at 0x22ff80:
 // eip = 0x401497 in main (main.cpp:16); saved eip 0x4011e7
 // source language c++.
@@ -161,9 +157,9 @@ static wxRegEx reDisassemblySource(_T("([0-9]+)[ \t](.*)"));
 // Locals at 0x22ff78, Previous frame's sp is 0x22ff80
 // Saved registers:
 //  ebx at 0x22ff6c, ebp at 0x22ff78, esi at 0x22ff70, edi at 0x22ff74, eip at 0x22ff7c
-static wxRegEx reDisassemblyInit(_T("^[ \t]*Stack level [0-9]+, frame at (0x[A-Fa-f0-9]+):"));
+static wxRegEx reDisassemblyInit(_T("^[[:blank:]]*Stack level [0-9]+, frame at (0x[A-Fa-f0-9]+):"));
 //  rip = 0x400931 in Bugtest<int> (/src/_cb_dbg/disassembly/main.cpp:6);
-static wxRegEx reDisassemblyInitSymbol(_T("[ \t]*[er]ip[ \t]+=[ \t]+0x[0-9a-f]+[ \t]+in[ \t]+(.+)\\((.+):([0-9]+)\\);"));
+static wxRegEx reDisassemblyInitSymbol(_T("[[:blank:]]*[er]ip[[:blank:]]+=[[:blank:]]+0x[0-9a-f]+[[:blank:]]+in[[:blank:]]+(.+)\\((.+):([0-9]+)\\);"));
 static wxRegEx reDisassemblyInitFunc(_T("eip = (0x[A-Fa-f0-9]+) in ([^;]*)"));
 // or32 variant
 #ifdef __WXMSW__
@@ -173,14 +169,14 @@ static wxRegEx reDisassemblyInitFuncOR32(_T("PC = (0x[A-Fa-f0-9]+) in ([^;]*)"))
 // if(platform::windows && m_disassemblyFlavor == _T("set disassembly-flavor or32")) blabla
 static wxRegEx reDisassemblyInitFuncOR32(_T("PC = (0x[A-Fa-f0-9]+) in ([^;]*)"));
 #endif
-static wxRegEx reDisassemblyCurPC(_T("=>[ \t]+(0x[A-Fa-f0-9]+)"));
+static wxRegEx reDisassemblyCurPC(_T("=>[[:blank:]]+(0x[A-Fa-f0-9]+)"));
 //    Using the running image of child Thread 46912568064384 (LWP 7051).
-static wxRegEx reInfoProgramThread(_T("\\(LWP[ \t]([0-9]+)\\)"));
+static wxRegEx reInfoProgramThread(_T("\\(LWP[[:blank:]]([0-9]+)\\)"));
 //    Using the running image of child process 10011.
 static wxRegEx reInfoProgramProcess(_T("child process ([0-9]+)"));
 //  2 Thread 1082132832 (LWP 8017)  0x00002aaaac5a2aca in pthread_cond_wait@@GLIBC_2.3.2 () from /lib/libpthread.so.0
 //* 1 Thread 46912568064384 (LWP 7926)  0x00002aaaac76e612 in poll () from /lib/libc.so.6
-static wxRegEx reInfoThreads(_T("(\\**)[ \t]*([0-9]+)[ \t](.*)"));
+static wxRegEx reInfoThreads(_T("(\\**)[[:blank:]]*([0-9]+)[[:blank:]](.*)"));
 static wxRegEx reGenericHexAddress(_T("(0x[A-Fa-f0-9]+)"));
 
 //mi output from 'nexti' is:
@@ -232,7 +228,7 @@ class GdbCmd_AddSourceDir : public DebuggerCmd
         {
             m_Cmd << _T("directory ") << dir;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Output:
             // Warning: C:\Devel\tmp\console\111: No such file or directory.
@@ -254,7 +250,7 @@ class GdbCmd_SetDebuggee : public DebuggerCmd
         {
             m_Cmd << _T("file ") << file;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Output:
             // Reading symbols from C:\Devel\tmp\console/console.exe...done.
@@ -278,7 +274,7 @@ class GdbCmd_AddSymbolFile : public DebuggerCmd
         {
             m_Cmd << _T("add-symbol-file ") << file;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Output:
             //
@@ -306,7 +302,7 @@ class GdbCmd_SetArguments : public DebuggerCmd
         {
             m_Cmd << _T("set args ") << args;
         }
-        void ParseOutput(cb_unused const wxString& output)
+        void ParseOutput(cb_unused const wxString& output) override
         {
             // No output
         }
@@ -325,7 +321,7 @@ class GdbCmd_AttachToProcess : public DebuggerCmd
             m_Cmd << _T("attach ") << wxString::Format(_T("%d"), pid);
             m_pDriver->Log(wxString::Format(_("Attaching to program with pid: %d"), pid));
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Output:
             // Attaching to process <pid>
@@ -364,7 +360,7 @@ class GdbCmd_Detach : public DebuggerCmd
         {
             m_Cmd << _T("detach");
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Output:
             // Attaching to process <pid>
@@ -397,7 +393,7 @@ class GdbCmd_AddBreakpointCondition : public DebuggerCmd
             if (m_BP->useCondition)
                 m_Cmd << _T(" ") << m_BP->condition;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             if (output.StartsWith(_T("No symbol ")))
             {
@@ -478,7 +474,7 @@ class GdbCmd_AddBreakpoint : public DebuggerCmd
                 // condition and ignore count will be set in ParseOutput, where we 'll have the bp number
             }
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // possible outputs (we 're only interested in 1st and 2nd samples):
             //
@@ -564,7 +560,7 @@ class GdbCmd_AddDataBreakpoint : public DebuggerCmd
             if (m_BP->enabled)
                 m_Cmd << _T("output &") << m_BP->breakAddress;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // Hardware watchpoint 1: expr
             if (output.StartsWith(_T("No symbol ")) || output.StartsWith(_T("Attempt to ")))
@@ -605,7 +601,7 @@ class GdbCmd_RemoveBreakpoint : public DebuggerCmd
                 m_Cmd << _T("delete breakpoints ") << wxString::Format(_T("%d"), (int) bp->index);
             }
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             if (!m_BP)
                 return;
@@ -638,12 +634,12 @@ class GdbCmd_SetCatch : public DebuggerCmd
             DebuggerCmd(driver),
             m_type(type),
             m_resultIndex(resultIndex),
-            m_regExp(wxT("^Catchpoint[ \\t]([0-9]+)[ \\t]\\(") + type + wxT("\\)$"), wxRE_ADVANCED)
+            m_regExp(wxT("^Catchpoint[[:blank:]]([0-9]+)[[:blank:]]\\(") + type + wxT("\\)$"), wxRE_ADVANCED)
         {
             m_Cmd = wxT("catch ") + type;
         }
 
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             if (m_regExp.Matches(output))
             {
@@ -666,7 +662,7 @@ class GdbCmd_Continue : public DebuggerContinueBaseCmd
         {
         }
 
-        virtual void Action()
+        void Action() override
         {
             m_pDriver->NotifyDebuggeeContinued();
         }
@@ -680,7 +676,7 @@ class GdbCmd_Start : public DebuggerContinueBaseCmd
         {
         }
 
-        virtual void ParseOutput(const wxString &output)
+        void ParseOutput(const wxString &output) override
         {
             const wxArrayString &lines = GetArrayFromString(output, _T('\n'));
             for (size_t ii = 0; ii < lines.GetCount(); ++ii)
@@ -710,7 +706,7 @@ class GdbCmd_InfoProgram : public DebuggerCmd
         {
             m_Cmd << _T("info program");
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             wxString pid_str;
             if (reInfoProgramThread.Matches(output))
@@ -739,7 +735,7 @@ class GdbCmd_Threads : public DebuggerCmd
         {
             m_Cmd << _T("info threads");
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             m_pDriver->GetThreads().clear();
             wxArrayString lines = GetArrayFromString(output, _T('\n'));
@@ -831,7 +827,7 @@ class GdbCmd_Watch : public DebuggerCmd
                     m_Cmd << symbol;
             }
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             wxString w = output;
             w.Trim(true);
@@ -861,20 +857,23 @@ class GdbCmd_MemoryRangeWatch : public DebuggerCmd
             DebuggerCmd(driver),
             m_watch(watch)
         {
-            // wx2.8 does not support uint64_z for wxstring::printf
-            const size_t tmpBuffSize = 20;
-            char tmpAddr[tmpBuffSize];
-            char tmpSize[tmpBuffSize];
-            memset(tmpAddr, 0, tmpBuffSize);
-            memset(tmpSize, 0, tmpBuffSize);
-            snprintf(tmpAddr, tmpBuffSize, "0x%" PRIx64, m_watch->GetAddress());
-            snprintf(tmpSize, tmpBuffSize, "%" PRIu64, m_watch->GetSize());
-
-            m_Cmd  = wxString(wxT("x /")) << wxString::FromUTF8(tmpSize) << wxT("xb ") << wxString::FromUTF8(tmpAddr);
+            // Watch is either for a memory address or a symbol, so check and adjust the GDB command
+            wxString sSymbol;
+            m_watch->GetSymbol(sSymbol);
+            if (sSymbol.empty())
+            {
+                m_Cmd  = wxString::Format("x /%lldxb %#018llx", m_watch->GetSize(), m_watch->GetAddress());
+            }
+            else
+            {
+                m_Cmd  = wxString::Format("x /%lldxb %s", m_watch->GetSize(), sSymbol);
+            }
         }
 
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
+            bool bFoundAddress = (m_watch->GetAddress() != 0);
+
             wxArrayString lines = GetArrayFromString(output, _T('\n'));
             wxString addr;
             std::vector<uint8_t> memory, lineMemory;
@@ -883,6 +882,17 @@ class GdbCmd_MemoryRangeWatch : public DebuggerCmd
                 lineMemory.clear();
                 // TODO: handle errors here!
                 ParseGDBExamineMemoryLine(addr, lineMemory, lines[i]);
+
+                if (!bFoundAddress)
+                {
+                    // Save address if one does not exist, but only for the first valid address found
+                    wxULongLong_t llBaseAddress;
+                    if (addr.ToULongLong(&llBaseAddress, 16))
+                    {
+                        m_watch->SetAddress(uint64_t(llBaseAddress));
+                        bFoundAddress = true;
+                    }
+                }
 
                 memory.insert(memory.end(), lineMemory.begin(), lineMemory.end());
             }
@@ -915,7 +925,7 @@ class GdbCmd_FindWatchType : public DebuggerCmd
             m_watch->GetSymbol(symbol);
             m_Cmd << symbol;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // happens, when wxString is passed as const reference parameter
             if (m_firstTry && output == wxT("Attempt to take contents of a non-pointer value."))
@@ -988,7 +998,7 @@ class GdbCmd_TooltipEvaluation : public DebuggerCmd
             m_Cmd << wxT("output ");
             m_Cmd << m_What;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             wxString contents = output;
             contents.Trim(true);
@@ -1044,7 +1054,7 @@ class GdbCmd_FindTooltipAddress : public DebuggerCmd
                 m_Cmd << _T('&');
             m_Cmd << m_What;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // examples:
             // type = wxString
@@ -1087,7 +1097,7 @@ class GdbCmd_FindTooltipType : public DebuggerCmd
         {
             singleUsage = false;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // examples:
             // type = wxString
@@ -1119,7 +1129,7 @@ class GdbCmd_LocalsFuncArgs : public DebuggerCmd
             else
                 m_Cmd = wxT("info args");
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             if ((m_doLocals && output == wxT("No locals.")) || (!m_doLocals && output == wxT("No arguments.")))
             {
@@ -1158,7 +1168,7 @@ class GdbCmd_ChangeFrame : public DebuggerCmd
         {
             m_Cmd << _T("frame ") << frameno;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             m_pDriver->Log(output);
         }
@@ -1175,7 +1185,7 @@ class GdbCmd_Backtrace : public DebuggerCmd
         {
             m_Cmd << _T("bt 30");
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             int validFrameNumber = -1;
             cbStackFrame validSF;
@@ -1220,7 +1230,7 @@ class GdbCmd_Backtrace : public DebuggerCmd
                     }
                     if (validSF.GetLine().ToLong(&line))
                     {
-                        m_pDriver->Log(wxString::Format(_T("Displaying first frame with valid source info (#%d)"), validFrameNumber));
+                        m_pDriver->Log(wxString::Format(_("Displaying first frame with valid source info (#%d)"), validFrameNumber));
                         m_pDriver->ShowFile(validSF.GetFilename(), line);
                     }
                 }
@@ -1230,7 +1240,7 @@ class GdbCmd_Backtrace : public DebuggerCmd
                         validFrameNumber = m_pDriver->GetUserSelectedFrame();
                     // can't call m_pDriver->SwitchToFrame() here
                     // because it causes a cascade update, never stopping...
-                    //m_pDriver->Log(wxString::Format(_T("Switching to frame #%d which has valid source info"), validFrameNumber));
+                    //m_pDriver->Log(wxString::Format(_("Switching to frame #%d which has valid source info"), validFrameNumber));
 
                     //The following output:
                     //>>>>>>cb_gdb:
@@ -1321,7 +1331,7 @@ class GdbCmd_InfoRegisters : public DebuggerCmd
             m_Cmd << _T("info registers");
         };
 
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // output is a series of:
             //
@@ -1468,7 +1478,7 @@ class GdbCmd_Disassembly : public DebuggerCmd
             else
                 m_Cmd << wxT(" 0x") << hexAddrStr;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // output for "disassemble" is a series of:
             //
@@ -1559,7 +1569,7 @@ class GdbCmd_DisassemblyInit : public DebuggerCmd
             m_Cmd << _T("info frame\n") << _T("end\n");
         };
 
-        void ParseOutput(const wxString& p_output)
+        void ParseOutput(const wxString& p_output) override
         {
             cbDisassemblyDlg *dialog = Manager::Get()->GetDebuggerManager()->GetDisassemblyDialog();
 
@@ -1568,7 +1578,7 @@ class GdbCmd_DisassemblyInit : public DebuggerCmd
             apos = p_output.find(_T("Stack level ")); //looking for 'info frame' output
             if(apos == wxString::npos)
             {
-                m_pDriver->Log(_T("Failure finding \"Stack level \""));
+                m_pDriver->Log(_("Failure finding \"Stack level \""));
                 apos = p_output.length();
             }
             reg_output = p_output.substr(0,apos);
@@ -1583,7 +1593,7 @@ class GdbCmd_DisassemblyInit : public DebuggerCmd
             }
             else
             {
-                m_pDriver->Log(_T("Failure matching reg_output"));
+                m_pDriver->Log(_("Failure matching reg_output"));
             }
             //process 'info frame'
             const wxArrayString &lines = GetArrayFromString(output, _T('\n'));
@@ -1652,7 +1662,7 @@ class GdbCmd_ExamineMemory : public DebuggerCmd
             const wxString &address = CleanStringValue(dialog->GetBaseAddress());
             m_Cmd.Printf(_T("x/%dxb %s"), dialog->GetBytes(), address.c_str());
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             cbExamineMemoryDlg *dialog = Manager::Get()->GetDebuggerManager()->GetExamineMemoryDialog();
 
@@ -1693,7 +1703,7 @@ class GdbCmd_RemoteBaud : public DebuggerCmd
             m_Cmd << _T("set remotebaud ") << baud;
             driver->Log(_("Setting serial connection speed to ") + baud);
         }
-        void ParseOutput(cb_unused const wxString& output)
+        void ParseOutput(cb_unused const wxString& output) override
         {
         }
 };
@@ -1738,7 +1748,7 @@ class GdbCmd_RemoteTarget : public DebuggerCmd
             else
                 m_pDriver->Log(_("Invalid settings for remote debugging!"));
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             // This command will either output an error or a breakpoint address info
             // Connection errors are of the form:
@@ -1802,7 +1812,7 @@ class GdbCmd_StepOrNextInstruction : public DebuggerContinueBaseCmd
         {
             m_Cmd << command;
         }
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             DebuggerManager *manager = Manager::Get()->GetDebuggerManager();
             if (!manager->UpdateDisassembly())
@@ -1867,7 +1877,7 @@ class GdbCmd_FindCursor : public DebuggerCmd
         {
         }
 
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             const wxArrayString &lines = GetArrayFromString(output, _T('\n'));
             if (lines.Count() <= 2)
@@ -1915,7 +1925,7 @@ class GdbCmd_DebugLanguage : public DebuggerCmd
             m_Cmd << _T("show language");
         }
 
-        void ParseOutput(const wxString& output)
+        void ParseOutput(const wxString& output) override
         {
             if (output.Lower().Find(wxT("fortran")) != wxNOT_FOUND)
                 g_DebugLanguage = dl_Fortran;

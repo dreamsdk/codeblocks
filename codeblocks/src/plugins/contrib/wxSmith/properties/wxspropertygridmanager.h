@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11149 $
-* $Id: wxspropertygridmanager.h 11149 2017-08-15 21:52:26Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.h $
+* $Revision: 12722 $
+* $Id: wxspropertygridmanager.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxspropertygridmanager.h $
 */
 
 #ifndef WXSPROPERTYGRIDMANAGER_H
@@ -34,10 +34,9 @@
 #include <wx/propgrid/manager.h>
 
 #include <prep.h>
+#include <cbplugin.h>
 
-#if wxCHECK_VERSION(3, 0, 0)
 #define wxPGId wxPGProperty*
-#endif
 
 class wxsPropertyContainer;
 class wxsProperty;
@@ -49,7 +48,7 @@ class wxsProperty;
  * This object is singleton and always one and not more than one should
  * be created at one time.
  */
-class wxsPropertyGridManager: public wxPropertyGridManager
+class PLUGIN_EXPORT wxsPropertyGridManager: public wxPropertyGridManager
 {
     DECLARE_CLASS(wxsPropertyGridManager)
 
@@ -62,11 +61,7 @@ class wxsPropertyGridManager: public wxPropertyGridManager
             const wxPoint& pos = wxDefaultPosition,
             const wxSize& size = wxDefaultSize,
             long style = wxPGMAN_DEFAULT_STYLE|wxPG_SPLITTER_AUTO_CENTER,
-            #if wxCHECK_VERSION(3, 0, 0)
             const char* name = wxPropertyGridManagerNameStr);
-            #else
-            const wxChar* name = wxPropertyGridManagerNameStr);
-            #endif
 
         /** \brief Dctor */
         virtual ~wxsPropertyGridManager();

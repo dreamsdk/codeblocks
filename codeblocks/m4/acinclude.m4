@@ -212,6 +212,17 @@ else
 	AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(whether to build the displayevents plugin)
+dsplayevents_default="yes"
+AC_ARG_ENABLE(displayevents, [AC_HELP_STRING([--enable-displayevents], [build the displayevents plugin (default YES)])],,
+                       enable_displayevents=$displayevents_default)
+AM_CONDITIONAL([BUILD_DISPLAYEVENTS], [test "x$enable_displayevents" = "xyes"])
+if test "x$enable_displayevents" = "xyes"; then
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+fi
+
 AC_MSG_CHECKING(whether to build the open files list plugin)
 openfiles_default="yes"
 AC_ARG_ENABLE(open-files-list, [AC_HELP_STRING([--enable-open-files-list], [build the open files list plugin (default YES)])],,
@@ -311,6 +322,14 @@ else
 	AC_MSG_RESULT(no)
 fi
 
+AC_MSG_CHECKING(whether to CodeBlocks installer documentation directory found)
+if test -f "windows_installer/Documentation/manual_codeblocks_en.chm" ; then
+    AM_CONDITIONAL([CODEBLOCKS_INSTALLERDOCS_FOUND], true)
+    AC_MSG_RESULT(yes)
+else
+    AM_CONDITIONAL([CODEBLOCKS_INSTALLERDOCS_FOUND], false)
+    AC_MSG_RESULT(no)
+fi
 
 case $host in
 	*-*-cygwin* | *-*-mingw*)
@@ -355,6 +374,7 @@ AC_DEFUN([BUILD_CONTRIB_NONE], [
 	AM_CONDITIONAL([BUILD_REGEX], [false])
 	AM_CONDITIONAL([BUILD_REOPENEDITOR], [false])
 	AM_CONDITIONAL([BUILD_RNDGEN], [false])
+	AM_CONDITIONAL([BUILD_CLANGD_CLIENT], [false])
 	AM_CONDITIONAL([BUILD_EXPORTER], [false])
 	AM_CONDITIONAL([BUILD_SMARTINDENT], [false])
 	AM_CONDITIONAL([BUILD_SPELLCHECKER], [false])
@@ -398,6 +418,7 @@ AC_DEFUN([BUILD_CONTRIB_ALL], [
 	AM_CONDITIONAL([BUILD_REGEX], [true])
 	AM_CONDITIONAL([BUILD_REOPENEDITOR], [true])
 	AM_CONDITIONAL([BUILD_RNDGEN], [true])
+	AM_CONDITIONAL([BUILD_CLANGD_CLIENT], [true])
 	AM_CONDITIONAL([BUILD_EXPORTER], [true])
 	AM_CONDITIONAL([BUILD_SMARTINDENT], [true])
 	AM_CONDITIONAL([BUILD_SPELLCHECKER], [true])
@@ -430,7 +451,7 @@ AC_ARG_WITH(contrib-plugins,
   [                        Plugin names are: AutoVersioning, BrowseTracker, byogames, Cccc, CppCheck, cbkoders, codesnippets, ]
   [                        		     codestat, copystrings, Cscope, DoxyBlocks, dragscroll, EditorConfig, EditorTweaks, envvars, exporter, ]
   [                        		     FileManager, headerfixup, help, hexeditor, incsearch, keybinder, libfinder, MouseSap, ]
-  [                        		     NassiShneiderman, ProjectOptionsManipulator, profiler, regex, ReopenEditor, rndgen, smartindent, spellchecker, ]
+  [                        		     NassiShneiderman, ProjectOptionsManipulator, profiler, regex, ReopenEditor, rndgen, clangd_client, smartindent, spellchecker, ]
   [                        		     symtab, ThreadSearch, ToolsPlus, Valgrind, wxcontrib, wxsmith, wxsmithcontrib, wxsmithaui ],
   plugins="$withval", plugins="none")
 
@@ -512,6 +533,9 @@ do
 		;;
 	rndgen)
 		AM_CONDITIONAL([BUILD_RNDGEN], [true])
+		;;
+	clangd_client)
+		AM_CONDITIONAL([BUILD_CLANGD_CLIENT], [true])
 		;;
 	exporter)
 		AM_CONDITIONAL([BUILD_EXPORTER], [true])
@@ -630,6 +654,9 @@ do
 	-rndgen)
 		AM_CONDITIONAL([BUILD_RNDGEN], [false])
 		;;
+	-clangd_client)
+		AM_CONDITIONAL([BUILD_CLANGD_CLIENT], [false])
+		;;
 	-exporter)
 		AM_CONDITIONAL([BUILD_EXPORTER], [false])
 		;;
@@ -720,6 +747,7 @@ AC_SUBST(BUILD_PROFILER)
 AC_SUBST(BUILD_REGEX)
 AC_SUBST(BUILD_REOPENEDITOR)
 AC_SUBST(BUILD_RNDGEN)
+AC_SUBST(BUILD_CLANGD_CLIENT)
 AC_SUBST(BUILD_EXPORTER)
 AC_SUBST(BUILD_SYMTAB)
 AC_SUBST(BUILD_SMARTINDENT)

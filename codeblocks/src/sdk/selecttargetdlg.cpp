@@ -4,7 +4,7 @@
  *
  * $Revision: 11113 $
  * $Id: selecttargetdlg.cpp 11113 2017-07-16 08:29:13Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/selecttargetdlg.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/selecttargetdlg.cpp $
  */
 
 #include "sdk_precomp.h"

@@ -1,17 +1,18 @@
-AM_CPPFLAGS = -I$(top_srcdir)/src/include/scripting/include \
-					-I$(top_srcdir)/src/include/scripting/sqstdlib
+AM_CPPFLAGS = -I$(top_srcdir)/src/include/scripting/include
 
 noinst_LTLIBRARIES = libsqstdlib.la
 
-libsqstdlib_la_SOURCES = sqstdsystem.cpp \
-                        sqstdmath.cpp \
-                        sqstdstream.cpp \
-                        sqstdaux.cpp \
-                        sqstdrex.cpp \
-                        sqstdstring.cpp \
-                        sqstdio.cpp \
-                        sqstdblob.cpp
+noinst_HEADERS = \
+	sqstdblobimpl.h \
+	sqstdstream.h
 
-EXTRA_DIST = sqstdlib71.vcproj \
-            sqstdlib.cbp \
-            sqstdlib.vcproj
+libsqstdlib_la_SOURCES = \
+	sqstdaux.cpp \
+	sqstdblob.cpp \
+	sqstdio.cpp \
+	sqstdlib.dsp \
+	sqstdmath.cpp \
+	sqstdrex.cpp \
+	sqstdstream.cpp \
+	sqstdstring.cpp \
+	sqstdsystem.cpp

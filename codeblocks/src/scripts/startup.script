@@ -2,12 +2,12 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7649 $
- * $Id: startup.script 7649 2011-12-29 20:02:04Z tpetrov $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/scripts/startup.script $
+ * $Revision: 13003 $
+ * $Id: startup.script 13003 2022-11-08 08:50:45Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/scripts/startup.script $
  */
 
-Log(_T("Running startup script"));
+Log(_("Running startup script"));
 
 // #include any script plugins; this will register them too
 // un-comment the line below to register a pointless sample plugin

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxscodercontext.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxscodercontext.h $
+* $Revision: 12722 $
+* $Id: wxscodercontext.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxscodercontext.h $
 */
 
 #ifndef WXSCODERCONTEXT_H
@@ -29,6 +29,8 @@
 #include <wx/hashset.h>
 #include "../wxscodinglang.h"
 
+#include <cbplugin.h>
+
 /** \brief This struct is responsible for keeping current code context while generating resource
  *
  * This struct keeps information needed to properly generate and store source code.
@@ -36,7 +38,7 @@
  * It may also contain other data stored between generation of code in different items
  * in form of wxString->wxString map.
  */
-struct wxsCoderContext
+struct PLUGIN_EXPORT wxsCoderContext
 {
     WX_DECLARE_STRING_HASH_MAP(wxString,ExtraMap);
     WX_DECLARE_HASH_SET(wxString,wxStringHash,wxStringEqual,wxStringSet);
@@ -57,6 +59,7 @@ struct wxsCoderContext
     wxArrayString m_IdInitializions;        ///< \brief Code used to initialize list of identifiers
     wxString    m_XRCFetchingCode;          ///< \brief Code which will fetch items from XRC file after it's loaded (through querying with IDs)
     wxString    m_BuildingCode;             ///< \brief Code which builds resource's items manually (when not using XRC file)
+    wxString    m_DestroyingCode;           ///< \brief Code which destroys manually added resources
     wxString    m_EventsConnectingCode;     ///< \brief Code used to connect events
 
     ExtraMap      m_Extra;                  ///< \brief Extra data used to exchange information between items while they generate code
@@ -72,6 +75,9 @@ struct wxsCoderContext
 
     /** \brief Adding Manually building code */
     void AddBuildingCode(const wxString& Code);
+
+    /** \brief Adding Manually destroying code */
+    void AddDestroyingCode(const wxString& Code);
 
     /** \brief Adding event connecting code */
     void AddEventCode(const wxString& Code);

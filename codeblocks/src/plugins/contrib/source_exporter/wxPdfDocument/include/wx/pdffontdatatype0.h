@@ -65,9 +65,10 @@ public:
   * \param s the string for which the width should be calculated
   * \param encoding the character to glyph mapping
   * \param withKerning flag indicating whether kerning should be taken into account
+  * \param charSpacing extra amount of spacing between characters (optional)
   * \return the width of the string
   */
-  virtual double GetStringWidth(const wxString& s, const wxPdfEncoding* encoding = NULL, bool withKerning = false) const;
+  virtual double GetStringWidth(const wxString& s, const wxPdfEncoding* encoding = NULL, bool withKerning = false, double charSpacing = 0) const;
 
   /// Check whether the font oan show all characters of a given string
   /**
@@ -111,23 +112,23 @@ public:
   * \param hwFirst CID of the first half-width character
   * \param hwLast CID of the last half-width character
   */
-  void SetHalfWidthRanges(bool hwRange, wxChar hwFirst, wxChar hwLast);
+  void SetHalfWidthRanges(bool hwRange, wxUniChar hwFirst, wxUniChar hwLast);
 
 protected:
   /// Check whether the font has a half width range
   bool HasHalfWidthRange() const { return m_hwRange; }
 
   /// Get the first character in the half width range
-  wxChar HalfWidthRangeFirst() const { return m_hwFirst; }
+  wxUniChar HalfWidthRangeFirst() const { return m_hwFirst; }
 
   /// Get the last character in the half width range
-  wxChar HalfWidthRangeLast() const { return m_hwLast; }
+  wxUniChar HalfWidthRangeLast() const { return m_hwLast; }
 
   bool      m_hwRange;  ///< Flag whether the font has a half width range
-  wxChar    m_hwFirst;  ///< CID of the first half width character
-  wxChar    m_hwLast;   ///< CID of the last half width character
+  wxUniChar m_hwFirst;  ///< CID of the first half width character
+  wxUniChar m_hwLast;   ///< CID of the last half width character
 
-  wxMBConv* m_conv;     ///< Assocated encoding converter
+  wxMBConv* m_conv;     ///< Associated encoding converter
 };
 
 #endif // wxUSE_UNICODE

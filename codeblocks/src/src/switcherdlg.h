@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2007-08-19
-// RCS-ID:      $Id: switcherdlg.h 7106 2011-04-15 11:06:39Z mortenmacfly $
+// RCS-ID:      $Id: switcherdlg.h 12190 2020-07-29 21:09:40Z fuscated $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWidgets licence
 /////////////////////////////////////////////////////////////////////////////
@@ -235,7 +235,7 @@ public:
     void OnEraseBackground(wxEraseEvent& event);
 
     // Overrides
-    virtual wxSize DoGetBestSize() const ;
+    wxSize DoGetBestSize() const override;
 
     // Implementation
 

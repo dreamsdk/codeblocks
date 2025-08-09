@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10909 $
-* $Id: wxsstddialogbuttonsizer.cpp 10909 2016-09-25 16:09:59Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstddialogbuttonsizer.cpp $
+* $Revision: 13584 $
+* $Id: wxsstddialogbuttonsizer.cpp 13584 2024-10-05 10:16:27Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstddialogbuttonsizer.cpp $
 */
 
 #include "wxsstddialogbuttonsizer.h"
@@ -123,15 +123,15 @@ long wxsStdDialogButtonSizer::OnGetPropertiesFlags()
     return wxsItem::OnGetPropertiesFlags();
 }
 
-void wxsStdDialogButtonSizer::OnEnumItemProperties(cb_unused long Flags)
+void wxsStdDialogButtonSizer::OnEnumItemProperties(cb_unused long _Flags)
 {
 }
 
-wxObject* wxsStdDialogButtonSizer::OnBuildPreview(wxWindow* Parent,long PreviewFlags)
+wxObject* wxsStdDialogButtonSizer::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxWindow* NewParent = Parent;
 
-    if ( !(PreviewFlags & pfExact) )
+    if ( !(_Flags & pfExact) )
     {
         NewParent = new wxsSizerPreview(Parent);
     }
@@ -149,13 +149,12 @@ wxObject* wxsStdDialogButtonSizer::OnBuildPreview(wxWindow* Parent,long PreviewF
 
     Sizer->Realize();
 
-    if ( !(PreviewFlags & pfExact) )
+    if ( !(_Flags & pfExact) )
     {
         NewParent->SetSizer(Sizer);
         Sizer->Fit(NewParent);
         Sizer->SetSizeHints(NewParent);
         wxSizer* OutSizer = new wxBoxSizer(wxHORIZONTAL);
-        OutSizer->Add(NewParent,1,wxEXPAND,0);
         Parent->SetSizer(OutSizer);
         OutSizer->SetSizeHints(Parent);
         return NewParent;
@@ -178,7 +177,8 @@ void wxsStdDialogButtonSizer::OnBuildCreatingCode()
             AddHeader(_T("<wx/sizer.h>"),GetInfo().ClassName,hfInPCH);
             AddHeader(_T("<wx/button.h>"),GetInfo().ClassName,hfLocal);
 
-            if ( IsPointer() ) Codef(_T("%C();\n"));
+            if ( IsPointer() )
+                Codef(_T("%C();\n"));
 
             for ( int i=0; i<NumButtons; i++ )
             {
@@ -187,7 +187,11 @@ void wxsStdDialogButtonSizer::OnBuildCreatingCode()
                     Codef(_T("%AAddButton(new wxButton(%W, %v, %t));\n"),IdNames[i],m_Label[i].wx_str());
                 }
             }
+
             Codef(_T("%ARealize();\n"));
+            if ( m_Use[0] )
+                Codef(_T("dynamic_cast <wxButton *> (%W->FindWindow(%v))->SetDefault();\n"), IdNames[0]);
+
             break;
 
         }
@@ -262,9 +266,9 @@ void wxsStdDialogButtonSizer::OnAddExtraProperties(wxsPropertyGridManager* Grid 
 {
     for ( int i=0; i<NumButtons; i++ )
     {
-        m_UseId[i] = Grid->Append(NEW_IN_WXPG14X wxBoolProperty(IdNames[i],wxPG_LABEL,m_Use[i]));
+        m_UseId[i] = Grid->Append(new wxBoolProperty(IdNames[i],wxPG_LABEL,m_Use[i]));
         Grid->SetPropertyAttribute(m_UseId[i],wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
-        m_LabelId[i] = Grid->Append(NEW_IN_WXPG14X wxStringProperty(IdLabels[i],wxPG_LABEL,m_Label[i]));
+        m_LabelId[i] = Grid->Append(new wxStringProperty(IdLabels[i],wxPG_LABEL,m_Label[i]));
     }
     wxsItem::OnAddExtraProperties(Grid);
 }

@@ -19,6 +19,7 @@ TokenF::TokenF()
 	m_TokenAccess(taPublic),
 	m_Pass(true),
 	m_IsAbstract(false),
+	m_WasIncluded(false),
 	m_pParent(0L)
 {
 }
@@ -30,6 +31,7 @@ TokenF::TokenF(const wxString& name, const wxString& filename, unsigned int line
 	m_TokenAccess(taPublic),
 	m_Pass(true),
 	m_IsAbstract(false),
+	m_WasIncluded(false),
 	m_pParent(0L)
 {
 	//ctor
@@ -42,7 +44,8 @@ TokenF::~TokenF()
 
 void TokenF::Clear()
 {
-    for(size_t i=0; i<m_Children.GetCount(); i++)
+    size_t nChildren = m_Children.GetCount();
+    for(size_t i=0; i<nChildren; ++i)
     {
         m_Children.Item(i)->Clear();
         delete m_Children.Item(i);
@@ -159,6 +162,14 @@ TokenFlat::TokenFlat(const TokenF* tok)
     m_DocString = tok->m_DocString;
 
     m_HostAssociated = false;
+
+    m_WasIncluded = tok->m_WasIncluded;
+    if (m_WasIncluded)
+    {
+        m_IncludeFilename = tok->m_IncludeFilename;
+        m_IncludeLineStart = tok->m_IncludeLineStart;
+        m_IncludeLineEnd = tok->m_IncludeLineEnd;
+    }
 }
 
 TokenFlat::TokenFlat(const TokenFlat* tok)
@@ -194,6 +205,13 @@ TokenFlat::TokenFlat(const TokenFlat* tok)
     m_DocString = tok->m_DocString;
     m_Rename = tok->m_Rename;
     m_HostAssociated = tok->m_HostAssociated;
+
+    m_WasIncluded = tok->m_WasIncluded;
+    if (m_WasIncluded)
+    {
+        m_IncludeFilename = tok->m_IncludeFilename;
+        m_IncludeLineStart = tok->m_IncludeLineStart;
+    }
 }
 
 TokenFlat::~TokenFlat()

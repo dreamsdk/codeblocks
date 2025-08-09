@@ -6,6 +6,7 @@
 #ifndef SDK_GLOBALS_H
 #define SDK_GLOBALS_H
 
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -45,6 +46,7 @@ enum ModuleType
     mtLogManager,
     mtOpenFilesList,
     mtEditorTab,
+    mtFileExplorer,
     mtUnknown
 };
 
@@ -148,7 +150,8 @@ enum ProjectTreeVisualState
     ptvsCategorize     = 0x01, //!< If true, use virtual folders like "Sources", "Headers", etc.
     ptvsUseFolders     = 0x02, //!< If true, create folders as needed. If false, the list is flat (not compatible with "hie folder name")
     ptvsHideFolderName = 0x04, //!< If true, the folder name will be hidden and only the file name will be shown (not compatible with "use folders")
-    ptvsDefault        = 0x03  //!< Just here for convenience, "categorise" + "use folders" ON
+    ptvsDefault        = 0x03, //!< Just here for convenience, "categorise" + "use folders" ON
+    ptvsSortAlpha      = 0x08  //!< Sort projects alphabetically
 };
 
 /** Template output types. */
@@ -268,7 +271,11 @@ extern DLLIMPORT wxString GetEOLStr(int eolMode = -1);
 
 extern DLLIMPORT wxString URLEncode(const wxString &str);
 
-extern DLLIMPORT wxString ExpandBackticks(wxString &str);
+typedef std::map<wxString, wxString> cbBackticksMap;
+
+extern DLLIMPORT wxString cbExpandBackticks(wxString &str);
+extern DLLIMPORT void cbClearBackticksCache();
+extern DLLIMPORT const cbBackticksMap& cbGetBackticksCache();
 
 /** This function creates a new wxMenu object on the heap and recursively
   * copies a given menu into it.
@@ -290,7 +297,22 @@ extern DLLIMPORT bool UsesCommonControls6();
 /// @param fs File system used to load the image from. If nullptr the default would be used.
 extern DLLIMPORT wxBitmap cbLoadBitmap(const wxString& filename,
                                        wxBitmapType bitmapType = wxBITMAP_TYPE_PNG,
-                                       wxFileSystem *fs = nullptr);
+                                       wxFileSystem* fs = nullptr);
+
+#if wxCHECK_VERSION(3, 1, 6)
+/// This function loads a bitmap bundle from disk.
+/// @param fs File system used to load the image from. If nullptr the default would be used.
+extern DLLIMPORT wxBitmapBundle cbLoadBitmapBundle(const wxString& prefix, const wxString& filename,
+                                                   int minSize,
+                                                   wxBitmapType bitmapType = wxBITMAP_TYPE_PNG,
+                                                   wxFileSystem* fs = nullptr);
+
+/// This function loads a bitmap bundle from a SVG on disk.
+/// @param fs File system used to load the image from. If nullptr the default would be used.
+extern DLLIMPORT wxBitmapBundle cbLoadBitmapBundleFromSVG(const wxString& filename,
+                                                          const wxSize &size,
+                                                          wxFileSystem* fs = nullptr);
+#endif
 
 /// Loads bitmap from this. Use it when you need a bitmap which takes into account the scaling
 /// factor of the wx toolkit used. Toolkits which need this are GTK+3 and Cocoa.
@@ -299,7 +321,7 @@ extern DLLIMPORT wxBitmap cbLoadBitmap(const wxString& filename,
 /// @param fs File system used to load the image from. If nullptr the default would be used.
 /// @sa cbLoadBitmap
 extern DLLIMPORT wxBitmap cbLoadBitmapScaled(const wxString& filename, wxBitmapType bitmapType,
-                                             double scaleFactor, wxFileSystem *fs = nullptr);
+                                             double scaleFactor, wxFileSystem* fs = nullptr);
 
 /// Wrapper function for wxWidnow::GetContentScaleFactor.
 /// It is defined only to hide its absence from wx2.8.
@@ -331,6 +353,9 @@ extern DLLIMPORT std::unique_ptr<wxImageList> cbMakeScaledImageList(int size, do
 /// @retval false If the image wasn't OK and a red square image has been added to the list.
 extern DLLIMPORT bool cbAddBitmapToImageList(wxImageList &list, const wxBitmap &bitmap, int size,
                                              int listSize, double scaleFactor);
+
+/// Returns true if the theme used for running Code::Blocks is a dark one.
+extern DLLIMPORT bool cbIsDarkTheme();
 
 // compatibility function
 inline wxBitmap LoadPNGWindows2000Hack(const wxString& filename){ return cbLoadBitmap(filename); }
@@ -394,7 +419,7 @@ enum class cbChildWindowPlacement
 /// @param appConfig Configuration manager pointing to the "app" namespace.
 /// @return The setting of the child window placement policy. It is used by PlaceWindow to decide
 ///         where to place newly created child windows.
-cbChildWindowPlacement cbGetChildWindowPlacement(ConfigManager &appConfig);
+extern DLLIMPORT cbChildWindowPlacement cbGetChildWindowPlacement(ConfigManager &appConfig);
 
 /** Fix the size and place of a window.
   *
@@ -432,11 +457,7 @@ extern DLLIMPORT wxArrayInt cbGetMultiChoiceDialog(const wxString& message, cons
                                      const wxSize& size = wxSize(300, 300),
                                      const wxArrayInt& initialSelection = wxArrayInt());
 
-#if wxCHECK_VERSION(3, 0, 0)
 extern DLLIMPORT const char *cbGetTextFromUserPromptStr;
-#else
-extern DLLIMPORT const wxChar *cbGetTextFromUserPromptStr;
-#endif // wxCHECK_VERSION
 
 extern DLLIMPORT wxString cbGetTextFromUser(const wxString &message,
                                             const wxString &caption = cbGetTextFromUserPromptStr,
@@ -479,7 +500,8 @@ namespace platform
         winver_WindowsVista,
         winver_Windows7,
         winver_Windows8,
-        winver_Windows10
+        winver_Windows10,
+        winver_Windows11
     } windows_version_t;
 
     extern DLLIMPORT windows_version_t WindowsVersion();
@@ -496,5 +518,8 @@ constexpr int cbCountOf(const T (&)[N])
 {
     return N;
 }
+
+typedef int64_t GlobId;                 /// Typedef for project globs id (see cbproject.h)
+static const GlobId InvalidGlobId = -1; /// Invalid porject glob id (see cbproject.h)
 
 #endif // SDK_GLOBALS_H

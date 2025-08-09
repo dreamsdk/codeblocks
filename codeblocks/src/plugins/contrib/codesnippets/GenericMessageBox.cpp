@@ -6,17 +6,13 @@
 // Author:      Julian Smart, Robert Roebling
 // Modified by: Pecan 2009/06/5
 // Created:     04/01/98
-// RCS-ID:      $Id$
+// RCS-ID:      $Id: GenericMessageBox.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Copyright:   (c) Julian Smart and Robert Roebling
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 //-#if wxUSE_MSGDLG && (!defined(__WXGTK20__) || defined(__WXUNIVERSAL__) || defined(__WXGPE__))
 
@@ -173,7 +169,7 @@ int GenericMessageBox(const wxString& messageIn, const wxString& captionIn, long
     wxString caption = captionIn; caption.Replace( _T("\t"), _T("    ") );
 
     GenericMessageDialog dialog(parent, message, caption, decorated_style, wxPoint(x,y));
-
+    PlaceWindow(&dialog);
     int ans = dialog.ShowModal();
     switch ( ans )
     {

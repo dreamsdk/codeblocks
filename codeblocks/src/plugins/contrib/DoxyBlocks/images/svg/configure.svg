@@ -1,0 +1,15 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <radialGradient id="b" cx="4.097" cy="292.6" r="3.854" gradientTransform="matrix(4.6 .00501 -.00108 .9948 -14.43 1.495)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" offset="0"/>
+      <stop stop-color="#c8c8da" offset="1"/>
+    </radialGradient>
+    <filter id="c" x="-.3138" y="-.3135" width="1.658" height="1.658" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation=".125"/>
+    </filter>
+  </defs>
+  <g transform="translate(0 -288.5)" stroke-width=".2646px">
+    <path d="M6.35 296.338s-2.91-2.778-3.175-3.042c-.661.132-2.249-.133-2.646-1.456-.132-.397-.185-1.355.006-1.587 0 0 .056-.109.127-.187.318.298 1.587 1.514 1.587 1.514l.397-.401.397-.395s-1.288-1.256-1.551-1.501c.106-.12.228-.22.228-.22.264-.265 1.19-.133 1.587 0 1.323.396 1.588 1.984 1.456 2.645.264.265 3.042 3.175 3.042 3.175s-.132.53-.529.926c-.53.397-.926.53-.926.53z" fill="url(#b)" fill-rule="evenodd" stroke="#484849"/>
+    <path d="M4.572 291.932s-.264.396-.529.661c-.264.265-.661.53-.661.53" fill="none" filter="url(#c)" stroke="#c8c8c8"/>
+  </g>
+</svg>

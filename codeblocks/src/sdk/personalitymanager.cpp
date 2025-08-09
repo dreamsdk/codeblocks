@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10104 $
- * $Id: personalitymanager.cpp 10104 2015-02-08 00:49:58Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/personalitymanager.cpp $
+ * $Revision: 12451 $
+ * $Id: personalitymanager.cpp 12451 2021-05-22 17:25:13Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/personalitymanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -23,31 +23,38 @@
 template<> PersonalityManager* Mgr<PersonalityManager>::instance = nullptr;
 template<> bool  Mgr<PersonalityManager>::isShutdown = false;
 
-PersonalityManager::PersonalityManager()
+PersonalityManager::PersonalityManager() : m_pers("default"), m_ready(false)
 {
-    PersonalityManager::pers = _T("default");
 }
 
 void PersonalityManager::SetPersonality(const wxString& personality, cb_unused bool createIfNotExist)
 {
-    pers = personality;
+    m_pers = personality;
 }
 
 const wxString PersonalityManager::GetPersonality()
 {
-    return pers;
+    cbAssert(m_ready);
+    return m_pers;
 }
 
 const wxArrayString PersonalityManager::GetPersonalitiesList()
 {
-    wxArrayString list;
-    wxDir::GetAllFiles(ConfigManager::GetConfigFolder(), &list, _T("*.conf"), wxDIR_FILES);
+    wxArrayString list, allConf;
+    wxDir::GetAllFiles(ConfigManager::GetConfigFolder(), &allConf, _T("*.conf"), wxDIR_FILES);
 
-    for(size_t i = 0; i < list.GetCount(); ++i)
-        list[i] = wxFileName(list[i]).GetName();
+    for(size_t i = 0; i < allConf.GetCount(); ++i)
+    {
+        // return only <personality>.conf names, exclude <personality>.some.other.conf
+        if (wxFileName(allConf[i]).GetName().Contains(wxT(".cbKeyBinder")))
+            continue;
+        list.Add(wxFileName(allConf[i]).GetName());
+    }
 
     return list;
 }
 
-wxString PersonalityManager::pers;
-
+void PersonalityManager::MarkAsReady()
+{
+    m_ready = true;
+}

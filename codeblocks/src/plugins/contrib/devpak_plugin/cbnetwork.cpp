@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7109 $
- * $Id: cbnetwork.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/devpak_plugin/cbnetwork.cpp $
+ * $Revision: 12648 $
+ * $Id: cbnetwork.cpp 12648 2022-01-13 20:06:39Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/devpak_plugin/cbnetwork.cpp $
  */
 
 #include "cbnetwork.h"
@@ -52,7 +52,7 @@ void cbNetwork::Notify(cbNetEvent event, const wxString& msg, int integer)
 
 bool cbNetwork::IsConnected()
 {
-    return m_pStream != 0;
+    return m_pStream != nullptr;
 }
 
 bool cbNetwork::IsBusy()
@@ -76,11 +76,11 @@ void cbNetwork::Disconnect()
     m_Abort = false;
     if (m_pStream)
         delete m_pStream;
-    m_pStream = 0;
+    m_pStream = nullptr;
 
     if (m_pURL)
         delete m_pURL;
-    m_pURL = 0;
+    m_pURL = nullptr;
 }
 
 bool cbNetwork::Connect(const wxString& remote)

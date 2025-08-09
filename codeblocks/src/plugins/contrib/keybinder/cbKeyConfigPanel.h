@@ -6,13 +6,13 @@
  * License:   GPL
  **************************************************************/
 // RCS-ID:      $Id: cbkeybinder.h 11580 2019-03-31 16:55:24Z pecanh $
-
+//
 #ifndef CBKEYCONFIGPANEL_H
 #define CBKEYCONFIGPANEL_H
 
-#ifdef __BORLANDC__
-	#pragma hdrstop
-#endif
+#include <configurationpanel.h> //
+#include "keybinder.h"          //(2022/12/20)
+#include "clKeyboardManager.h"  //
 
 // Modified Keybinder for CodeBlocks KeyBnder v2.0
 
@@ -31,6 +31,7 @@ class UsrConfigPanel : public cbConfigurationPanel
     wxString GetBitmapBaseName() const { return _T("onekeytobindthem"); }
 	void OnApply();
 	void OnCancel(){}
+    void OnPageChanging();
 
 	wxKeyConfigPanel* GetKeyConfigPanel(){return m_pwxKeyConfigPanel;} //(2019/04/6)
     void GetKeyConfigPanelPhaseII(wxMenuBar* pMenuBar, UsrConfigPanel* pUsrConfigPanel, int mode);
@@ -42,7 +43,7 @@ class UsrConfigPanel : public cbConfigurationPanel
     wxKeyProfileArray*  m_pKeyProfileArray;
     wxKeyProfile*       m_pPrimaryProfile;
     wxKeyConfigPanel*   m_pwxKeyConfigPanel;
-    MenuItemDataMap_t   m_cachedGlobalAccelMap;
+    MenuItemDataVec_t   m_cachedGlobalAccelMap;
     int                 m_mode;
 
     void CreateGlobalAccel(wxCmd* pCmd);

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10685 $
-* $Id: wxwidgetsgui.cpp 10685 2016-01-22 10:51:51Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsgui.cpp $
+* $Revision: 13381 $
+* $Id: wxwidgetsgui.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsgui.cpp $
 */
 
 #include "wxwidgetsgui.h"
@@ -58,7 +58,7 @@ cbConfigurationPanel* wxWidgetsGUI::OnBuildConfigurationPanel(wxWindow* Parent)
 void wxWidgetsGUI::OnRebuildApplicationCode()
 {
     bool IsAnyXRC = false;
-    wxWidgetsRes* MainResPtr = 0;
+    wxWidgetsRes* MainResPtr = nullptr;
 
     size_t Count = GetProject()->GetResourcesCount();
     for ( size_t i=0; i<Count; i++ )
@@ -132,7 +132,7 @@ void wxWidgetsGUI::OnRebuildApplicationCode()
 
     wxsCoder::Get()->AddCode(
         GetProjectPath() + m_AppFile,
-        wxsCodeMarks::Beg(m_AppLanguage,_("AppInitialize")),
+        wxsCodeMarks::Beg(m_AppLanguage, _T("AppInitialize")),
         wxsCodeMarks::End(m_AppLanguage),
         NewCode);
 
@@ -197,6 +197,7 @@ bool wxWidgetsGUI::OnCheckIfApplicationManaged()
 bool wxWidgetsGUI::OnCreateApplicationBinding()
 {
     wxWidgetsGUIAppAdoptingDlg Dlg(0,this);
+    PlaceWindow(&Dlg);
     Dlg.ShowModal();
     return OnCheckIfApplicationManaged();
 }
@@ -476,10 +477,6 @@ bool wxWidgetsGUI::CreateNewApp(const wxString& FileName)
         {
             Fl.Write(
                 _T("#include <wx/wxprec.h>\n")
-                _T("\n")
-                _T("#ifdef __BORLANDC__\n")
-                _T("    #pragma hdrstop\n")
-                _T("#endif\n")
                 _T("\n")
                 _T("#ifndef WX_PRECOMP\n")
                 _T("    #include <wx/app.h>\n")

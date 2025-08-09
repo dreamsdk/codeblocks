@@ -5,6 +5,11 @@ setlocal
 
 SETLOCAL ENABLEEXTENSIONS
 
+if "%1" == "" (
+    echo Missing target, use p.e. 31 for wxWidgets 3.1 in 32 bits mode or 32_64 for wxWidgets 3.2 in 64 bits mode
+    GOTO:EOF
+)
+
 echo Creating output directory tree
 
 set CB_DEVEL_DIR=devel%1
@@ -73,6 +78,7 @@ cd src\resources
     images\48x48\*.png ^
     images\56x56\*.png ^
     images\64x64\*.png ^
+    images\svg\*.svg ^
     images\tree\16x16\*.png ^
     images\tree\20x20\*.png ^
     images\tree\24x24\*.png ^
@@ -82,6 +88,7 @@ cd src\resources
     images\tree\48x48\*.png ^
     images\tree\56x56\*.png ^
     images\tree\64x64\*.png ^
+    images\tree\svg\*.svg ^
     images\infopane\16x16\*.png ^
     images\infopane\20x20\*.png ^
     images\infopane\24x24\*.png ^
@@ -91,6 +98,7 @@ cd src\resources
     images\infopane\48x48\*.png ^
     images\infopane\56x56\*.png ^
     images\infopane\64x64\*.png ^
+    images\infopane\svg\*.svg ^
     > nul
 cd ..\..\sdk\resources
 "%ZIPCMD%" -0 -qu "..\..\%CB_DEVEL_RESDIR%\manager_resources.zip" ^
@@ -107,6 +115,7 @@ cd ..\..\sdk\resources
     images\48x48\*.png ^
     images\56x56\*.png ^
     images\64x64\*.png ^
+    images\svg\*.svg ^
     > nul
 echo Packing plugins UI bitmaps
 cd ..\..\plugins\compilergcc\resources
@@ -120,6 +129,7 @@ cd ..\..\plugins\compilergcc\resources
     images\48x48\*.png ^
     images\56x56\*.png ^
     images\64x64\*.png ^
+    images\svg\*.svg ^
     > nul
 cd ..\..\..\plugins\codecompletion\resources
 "%ZIPCMD%" -0 -qu "..\..\..\%CB_DEVEL_RESDIR%\codecompletion.zip" ^
@@ -132,6 +142,7 @@ cd ..\..\..\plugins\codecompletion\resources
     images\48x48\*.png ^
     images\56x56\*.png ^
     images\64x64\*.png ^
+    images\svg\*.svg ^
     > nul
 cd ..\..\..\plugins\abbreviations\resources
 "%ZIPCMD%" -0 -qu "..\..\..\%CB_DEVEL_RESDIR%\abbreviations.zip" ^
@@ -144,6 +155,7 @@ cd ..\..\..\plugins\abbreviations\resources
     images\48x48\*.png ^
     images\56x56\*.png ^
     images\64x64\*.png ^
+    images\svg\*.svg ^
     > nul
 cd ..\..\..
 
@@ -179,18 +191,15 @@ del excludes%TARGET%.txt
 
 REM several contrib plugins
 echo Copying files of several contrib plugins
-if exist "%CB_DEVEL_RESDIR%\images\codesnippets" (
-    call:mkdirSilent "%CB_OUTPUT_RESDIR%\images\codesnippets"
-    xcopy /D /y "%CB_DEVEL_RESDIR%\images\codesnippets\*.png" "%CB_OUTPUT_RESDIR%\images\codesnippets" > nul
-)
-
 if exist "%CB_DEVEL_RESDIR%\images\fortranproject" (
     call:copyImageFiles "%CB_DEVEL_RESDIR%\images\fortranproject" "%CB_OUTPUT_RESDIR%\images\fortranproject"
+    call:copySvgFiles "%CB_DEVEL_RESDIR%\images\fortranproject" "%CB_OUTPUT_RESDIR%\images\fortranproject"
 )
 
 if exist "%CB_DEVEL_RESDIR%\images\wxsmith" (
     call:mkdirSilent "%CB_OUTPUT_RESDIR%\images\wxsmith"
     xcopy /D /y "%CB_DEVEL_RESDIR%\images\wxsmith\*.png" "%CB_OUTPUT_RESDIR%\images\wxsmith" > nul
+    xcopy /D /y "%CB_DEVEL_RESDIR%\images\wxsmith\*.svg" "%CB_OUTPUT_RESDIR%\images\wxsmith" > nul
 )
 
 if exist "%CB_DEVEL_RESDIR%\lib_finder" (
@@ -202,6 +211,7 @@ if exist "%CB_DEVEL_RESDIR%\SpellChecker" (
     call:mkdirSilent "%CB_OUTPUT_RESDIR%\SpellChecker"
     xcopy /D /y "%CB_DEVEL_RESDIR%\SpellChecker\*.xml" "%CB_OUTPUT_RESDIR%\SpellChecker" > nul
     call:copyImageFiles "%CB_DEVEL_RESDIR%\SpellChecker" "%CB_OUTPUT_RESDIR%\SpellChecker"
+    call:copySvgFiles "%CB_DEVEL_RESDIR%\SpellChecker" "%CB_OUTPUT_RESDIR%\SpellChecker"
 )
 
 REM misc. contrib plugin settings:
@@ -256,14 +266,19 @@ GOTO:EOF
 
 :copyImageFiles - create a directory and copy image files to it
 setlocal
-echo Copy image files from %~1 to %~1
-REM call mkdirSilent %~2
+echo Copy image files from %~1 to %~2
 for %%g in (16x16,20x20,24x24,28x28,32x32,40x40,48x48,56x56,64x64) do (
     echo From %~1\%%g to %~2\%%g
     call:mkdirSilent %~2\%%g
     xcopy /D /y %~1\%%g\*.png %~2\%%g > nul
 )
-REM     call:mkdirSilent "%CB_OUTPUT_RESDIR%\images\ThreadSearch\32x32"
-REM     xcopy /D /y "%CB_DEVEL_RESDIR%\images\ThreadSearch\32x32\*.png" "%CB_OUTPUT_RESDIR%\images\ThreadSearch\32x32" > nul
+endlocal
+GOTO:EOF
+
+:copySvgFiles - create a directory and copy avg files to it
+setlocal
+echo Copy svg files from %~1 to %~2
+call:mkdirSilent %~2\svg
+xcopy /D /y %~1\svg\*.svg %~2\svg > nul
 endlocal
 GOTO:EOF

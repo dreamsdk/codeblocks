@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11739 $
- * $Id: scriptingsettingsdlg.cpp 11739 2019-06-12 19:11:23Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/scriptingsettingsdlg.cpp $
+ * $Revision: 13293 $
+ * $Id: scriptingsettingsdlg.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/scriptingsettingsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -132,8 +132,8 @@ void ScriptingSettingsDlg::FillTrusts()
         const ScriptingManager::TrustedScriptProps& props = it->second;
 
         long item = list->InsertItem(list->GetItemCount(), it->first);
-        list->SetItem(item, 1, wxString::Format(_T("%x"), props.crc));
-        list->SetItem(item, 2, !props.permanent ? _("Yes") : _(""));
+        list->SetItem(item, 1, wxString::Format("%x", props.crc));
+        list->SetItem(item, 2, !props.permanent ? _("Yes") : wxString());
     }
 
     UpdateTrustsState();
@@ -226,7 +226,7 @@ void ScriptingSettingsDlg::SaveItem(long item)
 
 void ScriptingSettingsDlg::OnListSelection(wxListEvent& event)
 {
-//    Manager::Get()->GetLogManager()->DebugLog(F(_T("Selected %d"), event.GetIndex()));
+//    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Selected %d", event.GetIndex()));
 
     // load
     long sel = event.GetIndex();
@@ -237,7 +237,7 @@ void ScriptingSettingsDlg::OnListSelection(wxListEvent& event)
 
 void ScriptingSettingsDlg::OnListDeselection(wxListEvent& event)
 {
-//    Manager::Get()->GetLogManager()->DebugLog(F(_T("Deselected %d"), event.GetIndex()));
+//    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Deselected %d", event.GetIndex()));
 
     // save
     long sel = event.GetIndex();

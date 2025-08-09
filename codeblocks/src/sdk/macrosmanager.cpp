@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11885 $
- * $Id: macrosmanager.cpp 11885 2019-10-26 09:11:48Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/macrosmanager.cpp $
+ * $Revision: 13627 $
+ * $Id: macrosmanager.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/macrosmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -31,9 +31,6 @@
 #include <wx/stdpaths.h> // wxStandardPaths
 #include <cstdlib>
 
-#include "scripting/sqplus/sqplus.h"
-#include "scripting/bindings/scriptbindings.h"
-
 #include "cbstyledtextctrl.h"
 
 using namespace std;
@@ -49,6 +46,8 @@ static const wxString toWindowsPath(_T("$TO_WINDOWS_PATH{"));
 
 MacrosManager::MacrosManager()
 {
+    m_Valid = CompileRegexes();
+    assert(m_Valid);
     Reset();
 }
 
@@ -83,33 +82,43 @@ void MacrosManager::Reset()
     m_Plugins  = UnixFilename(ConfigManager::GetPluginsFolder());
     m_DataPath = UnixFilename(ConfigManager::GetDataFolder());
     ClearProjectKeys();
-    m_RE_Unix.Compile(_T("([^$]|^)(\\$[({]?(#?[A-Za-z_0-9.]+)[)} /\\]?)"),               wxRE_EXTENDED | wxRE_NEWLINE);
-    m_RE_DOS.Compile(_T("([^%]|^)(%(#?[A-Za-z_0-9.]+)%)"),                               wxRE_EXTENDED | wxRE_NEWLINE);
-    m_RE_If.Compile(_T("\\$if\\(([^)]*)\\)[::space::]*(\\{([^}]*)\\})(\\{([^}]*)\\})?"), wxRE_EXTENDED | wxRE_NEWLINE);
-    m_RE_IfSp.Compile(_T("[^=!<>]+|(([^=!<>]+)[ ]*(=|==|!=|>|<|>=|<=)[ ]*([^=!<>]+))"),  wxRE_EXTENDED | wxRE_NEWLINE);
-    m_RE_Script.Compile(_T("(\\[\\[(.*)\\]\\])"),                                        wxRE_EXTENDED | wxRE_NEWLINE);
-    m_RE_ToAbsolutePath.Compile(_T("\\$TO_ABSOLUTE_PATH{([^}]*)}"),
-#ifndef __WXMAC__
-                                wxRE_ADVANCED);
-#else
-                                wxRE_EXTENDED);
-#endif
-    m_RE_To83Path.Compile(_T("\\$TO_83_PATH{([^}]*)}"),
-#ifndef __WXMAC__
-                                wxRE_ADVANCED);
-#else
-                                wxRE_EXTENDED);
-#endif
-    m_RE_RemoveQuotes.Compile(_T("\\$REMOVE_QUOTES{([^}]*)}"),
-#ifndef __WXMAC__
-                                wxRE_ADVANCED);
-#else
-                                wxRE_EXTENDED);
-#endif
     m_UserVarMan = Manager::Get()->GetUserVariableManager();
     srand(time(nullptr));
-    assert(m_RE_Unix.IsValid());
-    assert(m_RE_DOS.IsValid());
+}
+
+bool MacrosManager::CompileRegexes()
+{
+    m_RE_Unix.Compile(_T("([^$]|^)(\\$[({]?(#?[A-Za-z_0-9.]+)[\\)} /\\\\]?)"),
+                      wxRE_EXTENDED | wxRE_NEWLINE);
+    wxCHECK_MSG(m_RE_Unix.IsValid(), false, "Invalid regex (m_RE_Unix) in macros manager");
+
+    m_RE_DOS.Compile(_T("([^%]|^)(%(#?[A-Za-z_0-9.]+)%)"), wxRE_EXTENDED | wxRE_NEWLINE);
+    wxCHECK_MSG(m_RE_DOS.IsValid(), false, "Invalid regex (m_RE_DOS) in macros manager");
+
+    m_RE_IfSp.Compile(_T("(([^=!<>]+)[ ]*(=|==|!=|>|<|>=|<=)[ ]*([^=!<>]+))"),
+                      wxRE_EXTENDED | wxRE_NEWLINE);
+    wxCHECK_MSG(m_RE_IfSp.IsValid(), false, "Invalid regex (m_RE_IfSp) in macros manager");
+
+    m_RE_Script.Compile(_T("(\\[\\[(.*)\\]\\])"), wxRE_EXTENDED | wxRE_NEWLINE);
+    wxCHECK_MSG(m_RE_Script.IsValid(), false, "Invalid regex (m_RE_Script) in macros manager");
+
+#ifndef __WXMAC__
+    const int flagsForMac = wxRE_ADVANCED;
+#else
+    const int flagsForMac = wxRE_EXTENDED;
+#endif
+
+    m_RE_ToAbsolutePath.Compile(_T("\\$TO_ABSOLUTE_PATH{([^}]*)}"), flagsForMac);
+    wxCHECK_MSG(m_RE_ToAbsolutePath.IsValid(), false,
+                "Invalid regex (m_RE_ToAbsolutePath) in macros manager");
+
+    m_RE_To83Path.Compile(_T("\\$TO_83_PATH{([^}]*)}"), flagsForMac);
+    wxCHECK_MSG(m_RE_To83Path.IsValid(), false, "Invalid regex (m_RE_To83Path) in macros manager");
+
+    m_RE_RemoveQuotes.Compile(_T("\\$REMOVE_QUOTES{([^}]*)}"), flagsForMac);
+    wxCHECK_MSG(m_RE_RemoveQuotes.IsValid(), false,
+                "Invalid regex (m_RE_RemoveQuotes) in macros manager");
+    return true;
 }
 
 void MacrosManager::ClearProjectKeys()
@@ -181,7 +190,7 @@ void MacrosManager::ClearProjectKeys()
     m_Macros[_T("WORKSPACEDIRECTORY")]  = m_WorkspaceDir;
 }
 
-wxString GetSelectedText()
+static wxString GetSelectedText()
 {
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (ed)
@@ -385,6 +394,10 @@ void MacrosManager::RecalcVars(const cbProject* project, EditorBase* editor, con
             wxFileName MasterPath;
             MasterPath.SetPath(c->GetMasterPath(), wxPATH_NATIVE);
             m_Macros[_T("TARGET_COMPILER_DIR")] = MasterPath.GetPathWithSep(wxPATH_NATIVE);
+
+            // support wx-config in MSYS2 MinGW
+            m_Macros[_T("TARGET_COMPILER_UNIX_PATH")] = MasterPath.GetVolume() +
+                MasterPath.GetVolumeSeparator() + MasterPath.GetPath(wxPATH_GET_VOLUME, wxPATH_UNIX);
         }
         m_Macros[_T("TARGET_OBJECT_DIR")] = target->GetObjectOutput();
     }
@@ -448,12 +461,105 @@ void MacrosManager::RecalcVars(const cbProject* project, EditorBase* editor, con
     wxDateTime january_1_2010(1, wxDateTime::Jan, 2010, 0, 0, 0, 0);
     wxTimeSpan ts = now.Subtract(january_1_2010);
     m_Macros[_T("DAYCOUNT")] = wxString::Format(_T("%d"), ts.GetDays());
+
 }
 
-void MacrosManager::ReplaceMacros(wxString& buffer, const ProjectBuildTarget* target, bool subrequest)
+/** \brief Find string between two characters (parentheses)
+ *
+ * \param input const wxString& Input string to search the character
+ * \param pos size_t&   Start position to search. After the function returns pos points to the first character after the
+ *        last closing parentheses (can also point outside string, no range checking is performed)
+ * \param openSymbol const wxChar& Open symbol for string extraction
+ * \param closeSymbol const wxChar& Close symbol for string extraction
+ * \return wxString The string between parentheses or wxEmptyString if an error occurred
+ *
+ */
+static wxString ExtractStringBetweenParentheses(const wxString& input, size_t& pos,
+                                                const wxChar& openSymbol, const wxChar& closeSymbol)
+{
+    if (pos == wxString::npos || pos >= input.size())
+        return wxEmptyString;
+
+    int countParentheses = 0;
+    int startPos = -1;
+    // First search for first opening parentheses and save the start position
+    // Search for the last closing parentheses
+    bool isString = false;
+    for (size_t i = pos; i < input.size(); ++i)
+    {
+        // We have to ignore potential strings
+        if ((input[i] == '\"' && input[i-1] != '\\') || // Normal squirrel string
+            (input[i] == '\'' && input[i-1] != '\''))   // In Bash you can also use ' for strings
+        {
+            // invert the is string variable because we either enter a string,
+            // or leave the string
+            isString = !isString;
+        }
+        if (!isString)   // If we are inside a string we ignore all parenthesis
+        {
+            if (input[i] == openSymbol)
+            {
+               countParentheses++;
+               if(startPos < 0)
+                   startPos = i + 1;    // The string begins one character after the opening symbol
+            }
+            else if (input[i] == closeSymbol)
+                countParentheses--;
+        }
+        // If countParentheses == 0 and startPos < 0 we still search the open character
+        // else if countParentheses == 0 and startPos >= 0 we have found the last closing symbol
+        if (countParentheses == 0 && startPos >= 0)
+        {
+            // extract the string in between
+            wxString returnString = input.substr(startPos, i - startPos);
+            pos = i + 1; // We return the position of the first character after the last parentheses. ! No range check is performed...
+            return returnString;
+        }
+    }
+    // There was no closing bracket so we return an empty string
+    return wxEmptyString;
+}
+
+/** \brief This function parses the $if macro function
+ *
+ * \param input const wxString& Input string to search
+ * \param pos size_t& Starting position to begin with the search (the start of $if). Return the position after the $if macro
+ * \param condition wxString& Extracted condition or empty string on error
+ * \param trueCode wxString& Extracted true cause or empty string on error
+ * \param falseCode wxString&  Extract false cause or empty string on error
+ * \return wxString Return the whole '$if(CONDITION){TRUE_CLAUSE}{FALSE_CLAUSE}' macro
+ *
+ *
+ * The syntax for the $if macro is
+ * ~~~~~~~~~~
+ * $if(CONDITION){TRUE_CLAUSE}{FALSE_CLAUSE}
+ * ~~~~~~~~~~
+ * between the parentheses there can be empty spaces, but nothing else.
+ * This function will parse the input string starting at position _pos_ and extracting CONDITION, TRUE_CLAUSE and FALSE_CLAUSE
+ * The variable _pos_ will point to after the last closing parentheses of the if expression
+ */
+static wxString ParseIfCondition(const wxString& input, size_t& pos, wxString& condition,
+                                 wxString& trueCode, wxString& falseCode)
+{
+    const size_t start = pos;
+    condition = ExtractStringBetweenParentheses(input, pos, '(', ')');
+    trueCode  = ExtractStringBetweenParentheses(input, pos, '{', '}');
+    falseCode = ExtractStringBetweenParentheses(input, pos, '{', '}');
+    const size_t end = pos;
+    const wxString ret = input.substr(start, end);
+    return ret;
+}
+
+void MacrosManager::ReplaceMacros(wxString& buffer, const ProjectBuildTarget* target,
+                                  bool subrequest)
 {
     if (buffer.IsEmpty())
         return;
+    if (!m_Valid)
+    {
+        buffer = "<invalid-macro-manager>";
+        return;
+    }
 
     static const wxString delim(_T("$%["));
     if ( buffer.find_first_of(delim) == wxString::npos )
@@ -485,16 +591,15 @@ void MacrosManager::ReplaceMacros(wxString& buffer, const ProjectBuildTarget* ta
     wxString search;
     wxString replace;
 
-    if (buffer.find(_T("$if")) != wxString::npos)
+    size_t ifPosition = buffer.find(_T("$if"));
+    while (ifPosition != wxString::npos)
     {
-        while (m_RE_If.Matches(buffer))
-        {
-            search = m_RE_If.GetMatch(buffer, 0);
-            replace = EvalCondition(m_RE_If.GetMatch(buffer, 1), m_RE_If.GetMatch(buffer, 3), m_RE_If.GetMatch(buffer, 5), target);
-            buffer.Replace(search, replace, false);
-        }
+        wxString condition, trueCondition, falseCondition;
+        search = ParseIfCondition(buffer, ifPosition, condition, trueCondition, falseCondition);
+        replace = EvalCondition(condition, trueCondition, falseCondition, target);
+        buffer.Replace(search, replace, false);
+        ifPosition = buffer.find(_T("$if"));
     }
-
     while (m_RE_Script.Matches(buffer))
     {
         search = m_RE_Script.GetMatch(buffer, 1);
@@ -636,17 +741,22 @@ wxString MacrosManager::EvalCondition(const wxString& in_cond, const wxString& t
     enum condition_codes {EQ = 1, LT = 2, GT = 4, NE = 8};
 
     wxString cond(in_cond);
-    wxString result;
 
     ReplaceMacros(cond, target, true);
 
-    if (!m_RE_IfSp.Matches(in_cond))
-        return false_clause;
+    if (m_RE_IfSp.Matches(cond) == false)
+    {
+        // If we do not match any condition we have one single word like true or false
+        // in this case we make a simple compare.
+        // Everything is true if it is not explicitly 0|false|FALSE
+        if (cond.IsEmpty() || cond.IsSameAs(_T("0")) || cond.IsSameAs(_T("false")) || cond.IsSameAs(_T("FALSE")))
+            return false_clause;
+        return true_clause;
+    }
 
-
-    wxString cmpToken(m_RE_IfSp.GetMatch(in_cond, 3).Strip(wxString::both));
-    wxString left(m_RE_IfSp.GetMatch(in_cond, 2).Strip(wxString::both));
-    wxString right(m_RE_IfSp.GetMatch(in_cond, 4).Strip(wxString::both));
+    wxString cmpToken(m_RE_IfSp.GetMatch(cond, 3).Strip(wxString::both));
+    wxString left(m_RE_IfSp.GetMatch(cond, 2).Strip(wxString::both));
+    wxString right(m_RE_IfSp.GetMatch(cond, 4).Strip(wxString::both));
 
 
     int compare = left.Cmp(right);
@@ -656,14 +766,6 @@ wxString MacrosManager::EvalCondition(const wxString& in_cond, const wxString& t
         compare = LT | NE;
     else if (compare > 0)
         compare = GT | NE;
-
-
-    if (cmpToken.IsEmpty())
-    {
-        if (cond.IsEmpty() || cond.IsSameAs(_T("0")) || cond.IsSameAs(_T("false")))
-            return false_clause;
-        return true_clause;
-    }
 
     int condCode = 0;
 

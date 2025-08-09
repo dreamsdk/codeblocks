@@ -26,7 +26,6 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -34,16 +33,17 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-local-typedefs" />
 			<Add option="-DBUILDING_PLUGIN" />
-			<Add option="-DNOPCH" />
+			<Add option="-Winvalid-pch" />
+			<Add option="-DCB_PRECOMP" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-D_WIN64" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add option="-std=gnu++11" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../src" />
@@ -53,8 +53,8 @@
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add library="codeblocks" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="../../../devel31_64" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="zip -j9 ..\..\..\devel31_64\share\CodeBlocks\DragScroll.zip manifest.xml" />
@@ -67,6 +67,10 @@
 		<Unit filename="dragscrollevent.cpp" />
 		<Unit filename="dragscrollevent.h" />
 		<Unit filename="manifest.xml" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

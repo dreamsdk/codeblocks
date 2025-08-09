@@ -109,28 +109,16 @@ wxPdfFontDataType1::LoadFontMetrics(wxXmlNode* root)
     }
     else if (child->GetName() == wxS("file"))
     {
-#if wxCHECK_VERSION(2,9,0)
       value = child->GetAttribute(wxS("name"), wxS(""));
-#else
-      value = child->GetPropVal(wxS("name"), wxS(""));
-#endif
       if (value.Length() > 0)
       {
         m_file = value;
-#if wxCHECK_VERSION(2,9,0)
         value = child->GetAttribute(wxS("size1"), wxS(""));
-#else
-        value = child->GetPropVal(wxS("size1"), wxS(""));
-#endif
         if (value.Length() > 0 && value.ToLong(&number))
         {
           bFile = true;
           m_size1 = number;
-#if wxCHECK_VERSION(2,9,0)
           value = child->GetAttribute(wxS("size2"), wxS(""));
-#else
-          value = child->GetPropVal(wxS("size2"), wxS(""));
-#endif
           if (value.Length() > 0 && value.ToLong(&number))
           {
             m_size2 = number;
@@ -154,13 +142,8 @@ wxPdfFontDataType1::LoadFontMetrics(wxXmlNode* root)
         long charId, charWidth;
         if (charNode->GetName() == wxS("char"))
         {
-#if wxCHECK_VERSION(2,9,0)
           strId = charNode->GetAttribute(wxS("id"), wxS(""));
           strWidth = charNode->GetAttribute(wxS("width"), wxS(""));
-#else
-          strId = charNode->GetPropVal(wxS("id"), wxS(""));
-          strWidth = charNode->GetPropVal(wxS("width"), wxS(""));
-#endif
           if (strId.Length() > 0 && strId.ToLong(&charId) &&
               strWidth.Length() > 0 && strWidth.ToLong(&charWidth))
           {
@@ -204,9 +187,10 @@ wxPdfFontDataType1::Initialize()
 }
 
 double
-wxPdfFontDataType1::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning) const
+wxPdfFontDataType1::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning, double charSpacing) const
 {
   // Get width of a string in the current font
+  int glyphCount = 0;
   double w = 0;
   const wxPdfChar2GlyphMap* convMap = FindEncodingMap(encoding);
   if (convMap != NULL)
@@ -263,9 +247,11 @@ wxPdfFontDataType1::GetStringWidth(const wxString& s, const wxPdfEncoding* encod
         }
       }
     }
+    ++glyphCount;
   }
   else
   {
+    glyphCount = s.Len();
   }
   if (withKerning)
   {
@@ -274,6 +260,10 @@ wxPdfFontDataType1::GetStringWidth(const wxString& s, const wxPdfEncoding* encod
     {
       w += (double) kerningWidth;
     }
+  }
+  if (charSpacing > 0)
+  {
+    w += (glyphCount * charSpacing * 1000);
   }
   return w / 1000;
 }
@@ -314,11 +304,7 @@ wxPdfFontDataType1::ConvertCID2GID(const wxString& s,
       charIter = (*convMap).find(*ch);
       if (charIter != (*convMap).end())
       {
-#if wxCHECK_VERSION(2,9,0)
         t.Append(wxUniChar(charIter->second));
-#else
-        t.Append(wxChar(charIter->second));
-#endif
       }
       else
       {

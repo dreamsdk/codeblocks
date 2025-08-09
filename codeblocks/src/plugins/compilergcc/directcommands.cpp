@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11886 $
- * $Id: directcommands.cpp 11886 2019-10-26 09:12:03Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/directcommands.cpp $
+ * $Revision: 13627 $
+ * $Id: directcommands.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/directcommands.cpp $
  */
 
 #include <sdk.h>
@@ -15,6 +15,8 @@
 #include <wx/wfstream.h>
 #include <wx/txtstrm.h>
 #include <wx/regex.h> // used in QUICK hack at line 574
+#include <wx/file.h>
+
 #include <compiler.h>
 #include <cbproject.h>
 #include <projectbuildtarget.h>
@@ -32,6 +34,8 @@
 
 const wxString COMPILER_SIMPLE_LOG(_T("SLOG:"));
 const wxString COMPILER_NOTE_LOG(_T("SLOG:NLOG:"));
+/// Print a NOTE log message to the build log, without advancing the progress counter
+const wxString COMPILER_ONLY_NOTE_LOG(_T("SLOG:ONLOG:"));
 const wxString COMPILER_WARNING_LOG(_T("SLOG:WLOG:"));
 const wxString COMPILER_ERROR_LOG(_T("SLOG:ELOG:"));
 const wxString COMPILER_TARGET_CHANGE(_T("TGT:"));
@@ -39,6 +43,7 @@ const wxString COMPILER_WAIT(_T("WAIT"));
 const wxString COMPILER_WAIT_LINK(_T("LINK"));
 
 const wxString COMPILER_NOTE_ID_LOG = COMPILER_NOTE_LOG.AfterFirst(wxT(':'));
+const wxString COMPILER_ONLY_NOTE_ID_LOG = COMPILER_ONLY_NOTE_LOG.AfterFirst(wxT(':'));
 const wxString COMPILER_WARNING_ID_LOG = COMPILER_WARNING_LOG.AfterFirst(wxT(':'));
 const wxString COMPILER_ERROR_ID_LOG = COMPILER_ERROR_LOG.AfterFirst(wxT(':'));
 
@@ -68,17 +73,17 @@ DirectCommands::DirectCommands(CompilerGCC* compilerPlugin,
     // depslib does special handling on Windows in case the CWD is a root
     // folder like "R:". But this ONLY works, if its just "R:", NOT e.g. "R:/"
     wxString depsCWD = cwd.GetPath(wxPATH_GET_VOLUME);
-    Manager::Get()->GetLogManager()->DebugLog(F(_("CWD for depslib was: %s."), depsCWD.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("CWD for depslib was: %s."), depsCWD));
     if (     (depsCWD.Len()==3)         && (depsCWD.GetChar(1)==':')
         && ( (depsCWD.GetChar(2)=='\\') || (depsCWD.GetChar(2)=='/') ) )
     {
         depsCWD.RemoveLast();
     }
-    Manager::Get()->GetLogManager()->DebugLog(F(_("CWD for depslib is: %s."), depsCWD.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("CWD for depslib is: %s."), depsCWD));
     depsSetCWD(depsCWD.mb_str());
 
     wxFileName fname(m_pProject->GetFilename());
-    fname.SetExt(_T("depend"));
+    fname.SetExt("depend");
     depsCacheRead(fname.GetFullPath().mb_str());
 }
 
@@ -96,9 +101,10 @@ DirectCommands::~DirectCommands()
         depsCacheWrite(fname.GetFullPath().mb_str());
     }
 
-    Manager::Get()->GetLogManager()->DebugLog(
-        F(_("Scanned %ld files for #includes, cache used %ld, cache updated %ld"),
-        stats.scanned, stats.cache_used, stats.cache_updated));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("Scanned %ld files for #includes, cache used %ld, cache updated %ld"),
+                                                               stats.scanned,
+                                                               stats.cache_used,
+                                                               stats.cache_updated));
 
     depsDone();
 
@@ -191,6 +197,69 @@ wxArrayString DirectCommands::CompileFile(ProjectBuildTarget* target, ProjectFil
     return ret;
 }
 
+void DirectCommands::CheckForToLongCommandLine(wxString& executableCmd, wxArrayString& outputCommandArray, const wxString& basename ,const wxString& path) const
+{
+
+#ifndef CB_COMMAND_LINE_MAX_LENGTH
+#ifdef __WXMSW__
+// the actual limit is 32767 (source: https://devblogs.microsoft.com/oldnewthing/20031210-00/?p=41553 )
+#define CB_COMMAND_LINE_MAX_LENGTH 32767
+#else
+// On Linux the limit should be inf
+// List of collected length limits: https://www.in-ulm.de/~mascheck/various/argmax/
+// Actual limit on Linux Mint 18 is 131072 (this is the limit for args + environ for exec())
+#define CB_COMMAND_LINE_MAX_LENGTH 131072
+#endif // __WXMSW__
+#endif // CB_COMMAND_LINE_MAX_LENGTH
+    const int maxLength = CB_COMMAND_LINE_MAX_LENGTH;
+    if (executableCmd.length() > maxLength)
+    {
+        wxFileName responseFileName(path);
+        responseFileName.SetName(basename);
+        responseFileName.SetExt("respFile");
+        // Path handling has to be so complicated because of wxWidgets error https://trac.wxwidgets.org/ticket/831
+        // The path for creating the folder structure has to be relative
+        const wxString responseFilePath = responseFileName.GetFullPath();
+        wxFileName relative = responseFileName;
+        relative.MakeRelativeTo(wxFileName::GetCwd());
+        if (!wxFileName::Mkdir(relative.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL))
+        {
+            outputCommandArray.Add(COMPILER_ERROR_LOG + wxString::Format(_("Could not create directory for %s"), responseFilePath));
+            return;
+        }
+
+        outputCommandArray.Add(COMPILER_ONLY_NOTE_LOG + wxString::Format(_("Command line is too long: Using responseFile: %s"), responseFilePath));
+        outputCommandArray.Add(COMPILER_ONLY_NOTE_LOG + wxString::Format(_("Complete command line: %s"), executableCmd));
+
+        // Begin from the back of the command line and search for a position to split it. A suitable position is a white space
+        // so that the resulting command line inclusive response file is shorter than the length limit
+        // we have to subtract the ' @""' characters from the response file length and the ' ' from the rfind, so totally 5 characters
+        const int responseFileLength = responseFilePath.length() + 5;
+        size_t startPos = executableCmd.rfind(' ', maxLength - responseFileLength);
+        if (startPos == 0 || startPos == wxString::npos)   // Try to find the first command again...
+            startPos = executableCmd.find(' ');
+        if (startPos > maxLength)
+        {
+            outputCommandArray.Add(COMPILER_WARNING_LOG + _("Could not split command line for response file. This probably will lead to failed compiling") );
+        }
+        wxString restCommand = executableCmd.Right(executableCmd.length() - startPos);
+        outputCommandArray.Add(COMPILER_ONLY_NOTE_LOG + wxString::Format(_("Response file: %s"), restCommand));
+        // Path escaping Needed for windows.  '\' has to be '\\' in the response file for mingw-gcc
+        restCommand.Replace("\\", "\\\\");
+        wxFile file(responseFilePath, wxFile::OpenMode::write);
+        if (!file.IsOpened())
+        {
+            outputCommandArray.Add(COMPILER_ERROR_LOG + wxString::Format(_("Could not open response file in %s"), responseFilePath));
+            return;
+        }
+
+        file.Write(restCommand);
+        file.Close();
+        executableCmd = executableCmd.Left(startPos) + " @\"" + responseFilePath + "\"";
+        outputCommandArray.Add(COMPILER_ONLY_NOTE_LOG + wxString::Format(_("New command: %s"), executableCmd));
+    }
+}
+
 wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, ProjectFile* pf) const
 {
     wxArrayString ret;
@@ -259,8 +328,8 @@ wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, 
             source_file = pfd.source_file;
 
 #ifdef command_line_generation
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("GetCompileFileCommand[1]: compiler_cmd='%s', source_file='%s', object='%s', object_dir='%s'."),
-                                                    compiler_cmd.wx_str(), source_file.wx_str(), object.wx_str(), object_dir.wx_str()));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("GetCompileFileCommand[1]: compiler_cmd='%s', source_file='%s', object='%s', object_dir='%s'.",
+                                                                   compiler_cmd, source_file, object, object_dir));
 #endif
 
         // for resource files, use short from if path because if windres bug with spaces-in-paths
@@ -270,8 +339,7 @@ wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, 
         QuoteStringIfNeeded(source_file);
 
 #ifdef command_line_generation
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("GetCompileFileCommand[2]: source_file='%s'."),
-                                                    source_file.wx_str()));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("GetCompileFileCommand[2]: source_file='%s'.", source_file));
 #endif
         m_pGenerator->GenerateCommandLine(compiler_cmd, target, pf, source_file, object,
                                           pfd.object_file_flat, pfd.dep_file);
@@ -300,6 +368,8 @@ wxArrayString DirectCommands::GetCompileFileCommand(ProjectBuildTarget* target, 
         default:
             break;
     }
+
+    CheckForToLongCommandLine(compiler_cmd, ret, pf->file.GetFullName() ,object_dir);
 
     AddCommandsToArray(compiler_cmd, ret);
 
@@ -524,7 +594,7 @@ wxArrayString DirectCommands::GetPreBuildCommands(ProjectBuildTarget* target) co
     wxArrayString buildcmds = target ? target->GetCommandsBeforeBuild() : m_pProject->GetCommandsBeforeBuild();
     if (!buildcmds.IsEmpty())
     {
-        wxString title = target ? target->GetTitle() : m_pProject->GetTitle();
+        // wxString title = target ? target->GetTitle() : m_pProject->GetTitle();
         wxArrayString tmp;
         for (size_t i = 0; i < buildcmds.GetCount(); ++i)
         {
@@ -565,7 +635,7 @@ wxArrayString DirectCommands::GetPostBuildCommands(ProjectBuildTarget* target) c
     wxArrayString buildcmds = target ? target->GetCommandsAfterBuild() : m_pProject->GetCommandsAfterBuild();
     if (!buildcmds.IsEmpty())
     {
-        wxString title = target ? target->GetTitle() : m_pProject->GetTitle();
+        // wxString title = target ? target->GetTitle() : m_pProject->GetTitle();
         wxArrayString tmp;
         for (size_t i = 0; i < buildcmds.GetCount(); ++i)
         {
@@ -638,11 +708,11 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
     {
         wxString warn;
 #ifdef NO_TRANSLATION
-        warn.Printf(wxT("WARNING: Target '%s': Unable to resolve %lu external dependenc%s:"),
-                    target->GetFullTitle().wx_str(), static_cast<unsigned long>(fileMissing.Count()), wxString(fileMissing.Count() == 1 ? wxT("y") : wxT("ies")).wx_str());
+        warn.Printf("WARNING: Target '%s': Unable to resolve %zu external dependenc%s:",
+                    target->GetFullTitle(), fileMissing.Count(), wxString(fileMissing.Count() == 1 ? "y" : "ies"));
 #else
-        warn.Printf(_("WARNING: Target '%s': Unable to resolve %lu external dependency/ies:"),
-                    target->GetFullTitle().wx_str(), static_cast<unsigned long>(fileMissing.Count()));
+        warn.Printf(_("WARNING: Target '%s': Unable to resolve %zu external dependency/ies:"),
+                    target->GetFullTitle(), fileMissing.Count());
 #endif // NO_TRANSLATION
         ret.Add(COMPILER_WARNING_LOG + warn);
         for (size_t i = 0; i < fileMissing.Count(); ++i)
@@ -776,7 +846,7 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
     Manager::Get()->GetMacrosManager()->ReplaceMacros(dstname, target);
     if (!dstname.IsEmpty() && !CreateDirRecursively(dstname, 0755))
     {
-        cbMessageBox(_("Can't create output directory ") + dstname);
+        cbMessageBox(wxString::Format(_("Can't create output directory %s"), dstname));
     }
 
     // add actual link command
@@ -817,7 +887,7 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
             break;
         default:
             wxString ex;
-            ex.Printf(_T("Encountered invalid TargetType (value = %d)"), target->GetTargetType());
+            ex.Printf(_("Encountered invalid TargetType (value = %d)"), target->GetTargetType());
             cbThrow(ex);
         break;
     }
@@ -833,7 +903,7 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
     params.hasCppFilesToLink = hasCppFilesToLink;
     m_pGenerator->GenerateCommandLine(result, params);
 
-    if (!compilerCmd.IsEmpty())
+    if (!compilerCmd.empty())
     {
         switch (compiler->GetSwitches().logging)
         {
@@ -844,13 +914,15 @@ wxArrayString DirectCommands::GetTargetLinkCommands(ProjectBuildTarget* target, 
             case clogSimple: // fall-through
             case clogNone:   // fall-through
             default: // linker always simple log (if not full)
-                ret.Add(COMPILER_SIMPLE_LOG + _("Linking ") + kind_of_output + _T(": ") + output);
+                ret.Add(COMPILER_SIMPLE_LOG + wxString::Format(_("Linking %s: %s"), kind_of_output, output));
                 break;
         }
 
         // for an explanation of the following, see GetTargetCompileCommands()
         if (target && ret.GetCount() != 0)
             ret.Add(COMPILER_TARGET_CHANGE + target->GetTitle());
+
+        CheckForToLongCommandLine(compilerCmd, ret, target->GetTitle() + "_link" , target->GetObjectOutput());
 
         // the 'true' will make sure all commands will be prepended by
         // COMPILER_WAIT signal
@@ -977,10 +1049,10 @@ bool DirectCommands::AreExternalDepsOutdated(ProjectBuildTarget* target,
                     if (timeExtDep > timeOutput)
                     {
                         // force re-link
-                        Manager::Get()->GetLogManager()->DebugLog(F(_T("Forcing re-link of '%s/%s' because '%s' is newer"),
-                                                                        target->GetParentProject()->GetTitle().wx_str(),
-                                                                        target->GetTitle().wx_str(),
-                                                                        lib.wx_str()));
+                        Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("Forcing re-link of '%s/%s' because '%s' is newer"),
+                                                                                   target->GetParentProject()->GetTitle(),
+                                                                                   target->GetTitle(),
+                                                                                   lib));
                         return true;
                     }
                     continue;
@@ -1001,10 +1073,10 @@ bool DirectCommands::AreExternalDepsOutdated(ProjectBuildTarget* target,
                     if (timeExtDep > timeOutput)
                     {
                         // force re-link
-                        Manager::Get()->GetLogManager()->DebugLog(F(_T("Forcing re-link of '%s/%s' because '%s' is newer"),
-                                                                        target->GetParentProject()->GetTitle().wx_str(),
-                                                                        target->GetTitle().wx_str(),
-                                                                        dir.wx_str()));
+                        Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("Forcing re-link of '%s/%s' because '%s' is newer"),
+                                                                                   target->GetParentProject()->GetTitle(),
+                                                                                   target->GetTitle(),
+                                                                                   dir));
                         return true;
                     }
                 }

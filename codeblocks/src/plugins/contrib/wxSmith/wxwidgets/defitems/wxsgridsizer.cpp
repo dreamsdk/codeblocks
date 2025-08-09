@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsgridsizer.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgridsizer.cpp $
+* $Revision: 13547 $
+* $Id: wxsgridsizer.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgridsizer.cpp $
 */
 
 #include "wxsgridsizer.h"
@@ -61,10 +61,10 @@ void wxsGridSizer::OnBuildSizerCreatingCode()
     }
 }
 
-void wxsGridSizer::OnEnumSizerProperties(cb_unused long Flags)
+void wxsGridSizer::OnEnumSizerProperties(cb_unused long _Flags)
 {
     WXS_LONG(wxsGridSizer,Cols,_("Cols"),_T("cols"),0);
     WXS_LONG(wxsGridSizer,Rows,_("Rows"),_T("rows"),0);
     WXS_DIMENSION(wxsGridSizer,VGap,_("V-Gap"),_("V-Gap in dialog units"),_T("vgap"),0,false);
-    WXS_DIMENSION(wxsGridSizer,HGap,_("H-Gap"),_("H,y-Gap in dialog units"),_T("hgap"),0,false);
+    WXS_DIMENSION(wxsGridSizer,HGap,_("H-Gap"),_("H-Gap in dialog units"),_T("hgap"),0,false);
 }

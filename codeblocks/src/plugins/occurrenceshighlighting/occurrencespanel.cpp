@@ -4,7 +4,7 @@
  *
  * $Revision: 10269 $
  * $Id: occurrencespanel.cpp 10269 2015-05-15 10:56:59Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/occurrenceshighlighting/occurrencespanel.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/occurrenceshighlighting/occurrencespanel.cpp $
  */
 
 #include "occurrencespanel.h"

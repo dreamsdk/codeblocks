@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11783 $
-* $Id: wxsstatusbar.cpp 11783 2019-07-08 19:39:27Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstatusbar.cpp $
+* $Revision: 13547 $
+* $Id: wxsstatusbar.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstatusbar.cpp $
 */
 
 #include <wx/statusbr.h>
@@ -88,7 +88,7 @@ void wxsStatusBar::OnBuildCreatingCode()
     }
 }
 
-void wxsStatusBar::OnEnumToolProperties(cb_unused long Flags)
+void wxsStatusBar::OnEnumToolProperties(cb_unused long _Flags)
 {
 }
 
@@ -139,24 +139,20 @@ bool wxsStatusBar::OnCanAddToParent(cb_unused wxsParent* Item,bool ShowMessage)
 
 void wxsStatusBar::OnAddExtraProperties(wxsPropertyGridManager* Grid)
 {
-    #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(0);
-    #else
-    Grid->SetTargetPage(0);
-    #endif
-    m_FieldsId = Grid->Append(NEW_IN_WXPG14X wxIntProperty(_("Fields"),wxPG_LABEL,m_Fields));
+    m_FieldsId = Grid->Append(new wxIntProperty(_("Fields"),wxPG_LABEL,m_Fields));
 
     m_FieldsId->SetAttribute(wxPG_ATTR_MIN, 1);
     m_FieldsId->SetAttribute(wxPG_ATTR_MAX, 30);
 
     for ( int i=0; i<m_Fields; i++ )
     {
-        wxPGId ParentProp = Grid->Append(NEW_IN_WXPG14X wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
+        wxPGId ParentProp = Grid->Append(new wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
         ParentProp->ChangeFlag(wxPG_PROP_READONLY, true);
-        m_WidthsIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
-        m_VarWidthIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
+        m_WidthsIds[i] = Grid->AppendIn(ParentProp,new wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
+        m_VarWidthIds[i] = Grid->AppendIn(ParentProp,new wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
         Grid->SetPropertyAttribute(m_VarWidthIds[i],wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
-        m_StylesIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxEnumProperty(_("Style"),wxPG_LABEL,FieldStyles,FieldStylesVal,m_Styles[i]));
+        m_StylesIds[i] = Grid->AppendIn(ParentProp,new wxEnumProperty(_("Style"),wxPG_LABEL,FieldStyles,FieldStylesVal,m_Styles[i]));
         m_ParentIds[i] = ParentProp;
     }
 
@@ -180,30 +176,22 @@ void wxsStatusBar::OnExtraPropertyChanged(wxsPropertyGridManager* Grid,wxPGId Id
         {
             for ( int i=NewFields; i<m_Fields; i++ )
             {
-                #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
                 Grid->DeleteProperty(m_ParentIds[i]);
-                #else
-                Grid->Delete(m_ParentIds[i]);
-                #endif
             }
         }
         else if ( NewFields > m_Fields )
         {
             // Adding new properties
-            #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
             Grid->SelectPage(0);
-            #else
-            Grid->SetTargetPage(0);
-            #endif
             UpdateArraysSize(NewFields);
             for ( int i = m_Fields; i<NewFields; i++ )
             {
-                wxPGId ParentProp = Grid->Append(NEW_IN_WXPG14X wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
+                wxPGId ParentProp = Grid->Append(new wxParentProperty(wxString::Format(_("Field %d"),i+1),wxPG_LABEL));
                 ParentProp->ChangeFlag(wxPG_PROP_READONLY, true);
-                m_WidthsIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
-                m_VarWidthIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
+                m_WidthsIds[i] = Grid->AppendIn(ParentProp,new wxIntProperty(_("Width"),wxPG_LABEL,m_Widths[i]));
+                m_VarWidthIds[i] = Grid->AppendIn(ParentProp,new wxBoolProperty(_T("Variable width"),wxPG_LABEL,m_VarWidth[i]));
                 Grid->SetPropertyAttribute(m_VarWidthIds[i],wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
-                m_StylesIds[i] = Grid->AppendIn(ParentProp,NEW_IN_WXPG14X wxEnumProperty(_("Style"),wxPG_LABEL,FieldStyles,FieldStylesVal,m_Styles[i]));
+                m_StylesIds[i] = Grid->AppendIn(ParentProp,new wxEnumProperty(_("Style"),wxPG_LABEL,FieldStyles,FieldStylesVal,m_Styles[i]));
                 m_ParentIds[i] = ParentProp;
             }
         }

@@ -24,37 +24,38 @@
 #ifndef WXSIMAGE_H
 #define WXSIMAGE_H
 
+#include <cbplugin.h>
+
 #include "../wxstool.h"
 #include "../wxsitemresdata.h"
 
 /*! \brief Class for the wxsImage tool.
  *    \note For reasons unknown, GCC emits a warning that the image is declared but not used when "Use Include File" is set.
  */
-class wxsImage : public wxsTool
+class PLUGIN_EXPORT wxsImage : public wxsTool
 {
     public:
 
         wxsImage(wxsItemResData* Data);
-        wxBitmap  GetPreview(void);
-        void            DoBuild(void);
+        wxBitmap GetPreview(void);
+        void     DoBuild(void);
 
 
     private:
 
-        virtual void        OnBuildCreatingCode();
-        virtual void        OnEnumToolProperties(long Flags);
-        virtual void        OnBuildDeclarationsCode();
+        virtual void OnBuildCreatingCode();
+        virtual void OnEnumToolProperties(long _Flags);
+        virtual void OnBuildDeclarationsCode();
 
         void StoreXpmData(void);
 
-        bool                            m_IsBuilt;              //!<  Only build the code once.
-        wxsCoderContext     *m_Context;            //!< Coder context.
-        wxArrayString           m_ImageData;     //!< The XPM data for the image.
-        bool                            m_Include;            //!< Save as #include file?
-        wxString                    m_Base;                //!< Base file name of source and include files.
-        wxString                    m_IDir;                   //!< The absolute path to the image include directory.
-        wxString                    m_RDir;                 //!< Relative directory specified for image files.
+        bool             m_IsBuilt;   //!<  Only build the code once.
+        wxsCoderContext* m_Context;   //!< Coder context.
+        wxArrayString    m_ImageData; //!< The XPM data for the image.
+        bool             m_Include;   //!< Save as #include file?
+        wxString         m_Base;      //!< Base file name of source and include files.
+        wxString         m_IDir;      //!< The absolute path to the image include directory.
+        wxString         m_RDir;      //!< Relative directory specified for image files.
 };
-
 
 #endif      // WXSIMAGE_H

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11313 $
- * $Id: editorbase.cpp 11313 2018-03-10 11:00:49Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editorbase.cpp $
+ * $Revision: 13644 $
+ * $Id: editorbase.cpp 13644 2025-03-29 05:36:19Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editorbase.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -112,16 +112,15 @@ wxString EditorBase::CreateUniqueFilename()
     }
 }
 
-EditorBase::EditorBase(wxWindow* parent, const wxString& filename)
+EditorBase::EditorBase(wxWindow* parent, const wxString& filename, bool addCustomEditor)
         : wxPanel(parent, -1),
         m_IsBuiltinEditor(false),
-        m_Shortname(_T("")),
-        m_Filename(_T("")),
         m_WinTitle(filename)
 {
     m_pData = new EditorBaseInternalData(this);
 
-    Manager::Get()->GetEditorManager()->AddCustomEditor(this);
+    if (addCustomEditor)
+        Manager::Get()->GetEditorManager()->AddCustomEditor(this);
     InitFilename(filename);
     SetTitle(m_Shortname);
 }
@@ -141,7 +140,7 @@ EditorBase::~EditorBase()
     delete m_pData;
 }
 
-const wxString& EditorBase::GetTitle()
+const wxString& EditorBase::GetTitle() const
 {
     return m_WinTitle;
 }
@@ -166,9 +165,12 @@ void EditorBase::SetTitle(const wxString& newTitle)
     cbAuiNotebook* nb = Manager::Get()->GetEditorManager()->GetNotebook();
     if (nb)
     {
-        int idx = nb->GetPageIndex(this);
-        nb->SetPageToolTip(idx, toolTip);
-        Manager::Get()->GetEditorManager()->MarkReadOnly(idx, IsReadOnly() || (fname.FileExists() && !wxFile::Access(fname.GetFullPath(), wxFile::write)) );
+        const int idx = nb->GetPageIndex(this);
+        if (idx != wxNOT_FOUND)
+        {
+            nb->SetPageToolTip(idx, toolTip);
+            Manager::Get()->GetEditorManager()->MarkReadOnly(idx, IsReadOnly() || (fname.FileExists() && !wxFile::Access(fname.GetFullPath(), wxFile::write)));
+        }
     }
 }
 
@@ -268,7 +270,7 @@ void EditorBase::BasicAddToContextMenu(wxMenu* popup, ModuleType type)
     }
 }
 
-void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
+void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type, wxWindow *menuParent)
 {
     bool noeditor = (type != mtEditorManager);
     // noeditor:
@@ -296,11 +298,11 @@ void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
 
         if (!text.IsEmpty())
         {
-            popup->Append(idGoogle,        _("Search the Internet for \"")  + text + _T("\""));
-            popup->Append(idMsdn,          _("Search MSDN for \"")          + text + _T("\""));
-            popup->Append(idStackOverflow, _("Search StackOverflow for \"") + text + _T("\""));
-            popup->Append(idCodeProject,   _("Search CodeProject for \"")   + text + _T("\""));
-            popup->Append(idCPlusPlusCom,  _("Search CplusPlus.com for \"") + text + _T("\""));
+            popup->Append(idGoogle,        wxString::Format(_("Search the Internet for \"%s\""),  text));
+            popup->Append(idMsdn,          wxString::Format(_("Search MSDN for \"%s\""),          text));
+            popup->Append(idStackOverflow, wxString::Format(_("Search StackOverflow for \"%s\""), text));
+            popup->Append(idCodeProject,   wxString::Format(_("Search CodeProject for \"%s\""),   text));
+            popup->Append(idCPlusPlusCom,  wxString::Format(_("Search CplusPlus.com for \"%s\""), text));
         }
         lastWord = text;
 
@@ -340,7 +342,10 @@ void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
     {
         wxMenuItem *last = popupItems[popupItems.GetCount() - 1];
         if (last && last->IsSeparator())
-            popup->Remove(last);
+        {
+            wxMenuItem *removed = popup->Remove(last);
+            delete removed;
+        }
     }
 
     // Insert a separator at the end of the "Find XXX" menu group of items.
@@ -362,11 +367,17 @@ void EditorBase::DisplayContextMenu(const wxPoint& position, ModuleType type)
     }
     else
     {
-        clientpos = ScreenToClient(position);
+        if (menuParent)
+            clientpos = menuParent->ScreenToClient(position);
+        else
+            clientpos = ScreenToClient(position);
     }
 
     m_pData->m_DisplayingPopupMenu = true;
-    PopupMenu(popup, clientpos);
+    if (menuParent)
+        menuParent->PopupMenu(popup, clientpos);
+    else
+        PopupMenu(popup, clientpos);
     delete popup;
     m_pData->m_DisplayingPopupMenu = false;
 

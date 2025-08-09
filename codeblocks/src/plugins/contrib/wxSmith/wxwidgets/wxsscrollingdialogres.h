@@ -17,7 +17,7 @@
 *
 * $Revision: 7443 $
 * $Id: wxsscrollingdialogres.h 7443 2011-09-01 16:29:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsscrollingdialogres.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsscrollingdialogres.h $
 */
 
 #ifndef WXSSCROLLINGDIALOGRES_H

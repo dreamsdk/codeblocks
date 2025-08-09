@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10686 $
-* $Id: wxsmith.cpp 10686 2016-01-22 10:53:43Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsmith.cpp $
+* $Revision: 13381 $
+* $Id: wxsmith.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsmith.cpp $
 */
 
 #include "wxsmith.h"
@@ -35,8 +35,9 @@
 #include <configmanager.h>
 #include <projectmanager.h>
 #include <logmanager.h>
-#include <sqplus.h>
-#include <sc_base_types.h>
+#include <scriptingmanager.h>
+#include <scripting/bindings/sc_utils.h>
+#include <scripting/bindings/sc_typeinfo_all.h>
 
 namespace
 {
@@ -74,7 +75,7 @@ namespace
     inline int GetBrowserPlacements() { return Manager::Get()->GetConfigManager(_T("wxsmith"))->ReadInt(_T("/browserplacements"),0); }
 }
 
-wxSmith* wxSmith::m_Singleton = 0;
+wxSmith* wxSmith::m_Singleton = nullptr;
 
 BEGIN_EVENT_TABLE(wxSmith, cbPlugin)
     EVT_UPDATE_UI(ViewWxSmithId,wxSmith::OnUpdateUI)
@@ -100,7 +101,7 @@ void wxSmith::OnAttach()
     // No more instances of wxSmith class can be found here,
     // even if it's on another dll/so, m_Singleton will point
     // to different memory locations
-    wxASSERT(m_Singleton == 0);
+    wxASSERT(m_Singleton == nullptr);
 
     // Creating properties and resource browser
     BuildBrowsers();
@@ -117,6 +118,7 @@ void wxSmith::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_OPEN, new cbEventFunctor<wxSmith, CodeBlocksEvent>(this, &wxSmith::OnProjectOpened));
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_CLOSE, new cbEventFunctor<wxSmith, CodeBlocksEvent>(this, &wxSmith::OnProjectClose));
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_RENAMED, new cbEventFunctor<wxSmith, CodeBlocksEvent>(this, &wxSmith::OnProjectRenamed));
+    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_FILE_RENAMED, new cbEventFunctor<wxSmith, CodeBlocksEvent>(this, &wxSmith::OnProjectFileRenamed));
 
     // register scripting stuff
     RegisterScripting();
@@ -125,9 +127,9 @@ void wxSmith::OnAttach()
 void wxSmith::BuildBrowserParents()
 {
     // Zero pointers to minimize segfault possibility ;)
-    m_Splitter = 0;
-    m_ResourceBrowserParent = 0;
-    m_PropertyBrowserParent = 0;
+    m_Splitter = nullptr;
+    m_ResourceBrowserParent = nullptr;
+    m_PropertyBrowserParent = nullptr;
 
     switch ( GetBrowserPlacements() )
     {
@@ -204,6 +206,7 @@ void wxSmith::BuildBrowsers()
     // Adding properties / events browser
     Sizer = new wxGridSizer(1);
     wxsPropertyGridManager* PGManager = new wxsPropertyGridManager(m_PropertyBrowserParent,-1,wxDefaultPosition,wxDefaultSize,wxPG_TOOLBAR|wxTAB_TRAVERSAL|wxPG_SPLITTER_AUTO_CENTER);
+    PGManager->SetExtraStyle(wxPG_EX_HELP_AS_TOOLTIPS);
     PGManager->AddPage(_("Properties"));
     PGManager->AddPage(_("Events"),wxBitmap(Events_xpm));
     PGManager->SelectPage(0);
@@ -221,7 +224,7 @@ void wxSmith::OnRelease(cb_unused bool appShutDown)
         if ( i->second )
         {
             delete i->second;
-            i->second = 0;
+            i->second = nullptr;
         }
     }
     wxsExtResManager::Get()->DeleteAll();
@@ -232,7 +235,7 @@ void wxSmith::OnRelease(cb_unused bool appShutDown)
 
     if ( m_Singleton == this )
     {
-        m_Singleton = 0;
+        m_Singleton = nullptr;
     }
 }
 
@@ -244,7 +247,7 @@ cbConfigurationPanel* wxSmith::GetConfigurationPanel(wxWindow* parent)
 cbConfigurationPanel* wxSmith::GetProjectConfigurationPanel(wxWindow* parent, cbProject* project)
 {
     ProjectMapI i = m_ProjectMap.find(project);
-    if ( i == m_ProjectMap.end() ) return 0;
+    if ( i == m_ProjectMap.end() ) return nullptr;
     return i->second->GetProjectConfigurationPanel(parent);
 }
 
@@ -346,19 +349,64 @@ void wxSmith::OnProjectOpened(CodeBlocksEvent& event)
 void wxSmith::OnProjectClose(CodeBlocksEvent& event)
 {
     cbProject* Proj = event.GetProject();
-    ProjectMapI i = m_ProjectMap.find(Proj);
-    if ( i == m_ProjectMap.end() ) return;
-    delete i->second;
-    m_ProjectMap.erase(i);
+    ProjectMapI it = m_ProjectMap.find(Proj);
+    if (it != m_ProjectMap.end())
+    {
+        delete it->second;
+        m_ProjectMap.erase(it);
+    }
+
     event.Skip();
 }
 
-void wxSmith::OnProjectRenamed(cb_unused CodeBlocksEvent& event)
+void wxSmith::OnProjectRenamed(CodeBlocksEvent& event)
 {
     cbProject* Proj = event.GetProject();
-    ProjectMapI i = m_ProjectMap.find(Proj);
-    if ( i == m_ProjectMap.end() ) return;
-    i->second->UpdateName();
+    ProjectMapI it = m_ProjectMap.find(Proj);
+    if (it != m_ProjectMap.end())
+        it->second->UpdateName();
+
+    event.Skip();
+}
+
+void wxSmith::OnProjectFileRenamed(CodeBlocksEvent& event)
+{
+    cbProject *projectCB = event.GetProject();
+    ProjectMapI it = m_ProjectMap.find(projectCB);
+    if (it == m_ProjectMap.end())
+    {
+        event.Skip();
+        return;
+    }
+
+    wxsProject *projectWX = it->second;
+    if (projectWX)
+    {
+        const wxString projectPath(projectCB->GetCommonTopLevelPath());
+
+        // Get absolute old file name
+        wxFileName oldFileName(event.GetString(), event.GetOldFileName());
+        // Get relative (to project) old file name
+        oldFileName.MakeRelativeTo(projectPath);
+        const wxString relativeOldFullPath(oldFileName.GetFullPath(wxPATH_UNIX));
+
+        // Get absolute new file name
+        wxFileName newFileName(event.GetString(), event.GetNewFileName());
+        // Get relative (to project) new file name
+        newFileName.MakeRelativeTo(projectPath);
+        const wxString relativeNewFullPath(newFileName.GetFullPath(wxPATH_UNIX));
+
+        // Scan all resources looking if the renamed file belongs to any of them
+        // The file should not belong to more than one resource, but better safe than sorry...
+        const int resourceCount = projectWX->GetResourcesCount();
+        for (int resourceIndex = 0; resourceIndex < resourceCount; ++resourceIndex)
+        {
+            wxsResource *resource = projectWX->GetResource(resourceIndex);
+            if (resource->Rename(relativeOldFullPath, relativeNewFullPath))
+                projectWX->NotifyChange();
+        }
+    }
+
     event.Skip();
 }
 
@@ -438,29 +486,8 @@ void wxSmith::ShowResourcesTab()
     Notebook->SetSelection( Notebook->GetPageIndex(m_Splitter) );
 }
 
-void wxSmith::RegisterScripting()
-{
-    Manager::Get()->GetScriptingManager();
-    if ( SquirrelVM::GetVMPtr() )
-    {
-        SqPlus::RegisterGlobal( &wxSmith::RecoverWxsFile, "WxsRecoverWxsFile" );
-    }
-}
-
-void wxSmith::UnregisterScripting()
-{
-    Manager::Get()->GetScriptingManager();
-    HSQUIRRELVM v = SquirrelVM::GetVMPtr();
-    if ( v )
-    {
-        sq_pushroottable(v);
-        sq_pushstring(v,"WxsRecoverWxsFile",-1);
-        sq_deleteslot(v,-2,false);
-        sq_poptop(v);
-    }
-}
-
-bool wxSmith::RecoverWxsFile( const wxString& WxsResourceSettings )
+/** \brief Function allowing to recover invalid wxs file */
+static bool RecoverWxsFile( const wxString& WxsResourceSettings )
 {
     wxSmith* This = wxSmith::Get();
     if ( !This ) return false;
@@ -470,6 +497,48 @@ bool wxSmith::RecoverWxsFile( const wxString& WxsResourceSettings )
     if ( !project ) return false;
 
     return project->RecoverWxsFile( WxsResourceSettings );
+}
+
+namespace ScriptBindings
+{
+
+SQInteger WxsRecoverWxsFile(HSQUIRRELVM v)
+{
+    // evn table, WxsResourceSettings
+    ExtractParams2<SkipParam, const wxString *> extractor(v);
+    if (!extractor.Process("WxsRecoverWxsFile"))
+        return extractor.ErrorMessage();
+    sq_pushbool(v, RecoverWxsFile(*extractor.p1));
+    return 1;
+}
+
+} // namespace ScriptBindings
+
+void wxSmith::RegisterScripting()
+{
+    HSQUIRRELVM vm = Manager::Get()->GetScriptingManager()->GetVM();
+    if (vm)
+    {
+        ScriptBindings::PreserveTop preserveTop(vm);
+
+        sq_pushroottable(vm);
+        ScriptBindings::BindMethod(vm, _SC("WxsRecoverWxsFile"), ScriptBindings::WxsRecoverWxsFile,
+                                   nullptr);
+        sq_poptop(vm); // Pop root table
+    }
+}
+
+void wxSmith::UnregisterScripting()
+{
+    HSQUIRRELVM v = Manager::Get()->GetScriptingManager()->GetVM();
+    if (v)
+    {
+        ScriptBindings::PreserveTop preserveTop(v);
+        sq_pushroottable(v);
+        sq_pushstring(v, _SC("WxsRecoverWxsFile"), -1);
+        sq_deleteslot(v, -2, false);
+        sq_poptop(v);
+    }
 }
 
 // TODO: Move to resources\wxwidgets
@@ -557,7 +626,7 @@ void wxSmith::OnImportXrc(wxCommandEvent& event)
     if ( !Test )
     {
         // Something went wrong - default factory is not working ?
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("wxSmith: Internal error - did not found one of base items when importing XRC")));
+        Manager::Get()->GetLogManager()->DebugLog("wxSmith: Internal error - did not found one of base items when importing XRC");
         return;
     }
 

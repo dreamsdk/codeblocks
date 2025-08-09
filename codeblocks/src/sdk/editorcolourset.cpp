@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11482 $
- * $Id: editorcolourset.cpp 11482 2018-09-29 12:20:40Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editorcolourset.cpp $
+ * $Revision: 12995 $
+ * $Id: editorcolourset.cpp 12995 2022-10-28 07:22:31Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editorcolourset.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -111,7 +111,7 @@ void EditorColourSet::LoadAvailableSets()
     wxString path = ConfigManager::GetFolder(sdDataUser) + _T("/lexers/");
     if (wxDirExists(path) && dir.Open(path))
     {
-        Manager::Get()->GetLogManager()->Log(F(_("Scanning for lexers in %s..."), path.wx_str()));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Scanning for lexers in %s..."), path));
         bool ok = dir.GetFirst(&filename, _T("lexer_*.xml"), wxDIR_FILES);
         while (ok)
         {
@@ -119,7 +119,7 @@ void EditorColourSet::LoadAvailableSets()
             ok = dir.GetNext(&filename);
             ++count;
         }
-        Manager::Get()->GetLogManager()->Log(F(_("Found %d lexers"), count));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Found %d lexers"), count));
         count = 0;
     }
 
@@ -127,7 +127,7 @@ void EditorColourSet::LoadAvailableSets()
     path = ConfigManager::GetFolder(sdDataGlobal) + _T("/lexers/");
     if (wxDirExists(path) && dir.Open(path))
     {
-        Manager::Get()->GetLogManager()->Log(F(_("Scanning for lexers in %s..."), path.wx_str()));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Scanning for lexers in %s..."), path));
         bool ok = dir.GetFirst(&filename, _T("lexer_*.xml"), wxDIR_FILES);
         while (ok)
         {
@@ -135,7 +135,7 @@ void EditorColourSet::LoadAvailableSets()
             ok = dir.GetNext(&filename);
             ++count;
         }
-        Manager::Get()->GetLogManager()->Log(F(_("Found %d lexers"), count));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Found %d lexers"), count));
     }
 
     EditorLexerLoader lex(this);
@@ -430,7 +430,7 @@ HighlightLanguage EditorColourSet::GetLanguageForFilename(const wxString& filena
             line = text.ReadLine();
         if (!line.IsEmpty())
         {
-            wxRegEx reSheBang(wxT("#![ \t]*([a-zA-Z/]+)[ \t]*([a-zA-Z/]*)"));
+            wxRegEx reSheBang("#![[:blank:]]*([a-zA-Z/]+)[[:blank:]]*([a-zA-Z/]*)");
             if (reSheBang.Matches(line))
             {
                 wxString prog = reSheBang.GetMatch(line, 1);
@@ -542,7 +542,6 @@ void EditorColourSet::Apply(HighlightLanguage lang, cbStyledTextCtrl* control, b
 {
     if (!control)
         return;
-    control->StyleClearAll();
 
     if (lang == HL_NONE)
     {
@@ -551,22 +550,15 @@ void EditorColourSet::Apply(HighlightLanguage lang, cbStyledTextCtrl* control, b
         lang = m_PlainTextLexerID;
     }
 
-    // first load the default colours to all styles used by the actual lexer (ignoring some built-in styles)
+    // First we set the style for the "Default" style, then the call to StyleClearAll would
+    // replicate it to all the other styles.
     OptionSet& mset = m_Sets[lang];
     OptionColour* defaults = ::GetDefaultOption(mset);
-    control->SetLexer(mset.m_Lexers);
-    control->SetStyleBits(control->GetStyleBitsNeeded());
     if (defaults)
-    {
-        int countStyles = 1 << control->GetStyleBits();
-        // walk until countStyles, otherwise the background-colour is only set for characters,
-        // not for empty background
-        for (int i = 0; i <= countStyles; ++i)
-        {
-            if (i < 33 || (i > 39 && i < wxSCI_STYLE_MAX))
-                DoApplyStyle(control, i, defaults);
-        }
-    }
+        DoApplyStyle(control, wxSCI_STYLE_DEFAULT, defaults);
+    control->StyleClearAll();
+
+    control->SetLexer(mset.m_Lexers);
 
     // Calling StyleClearAll above clears the style for the line numbers, so we have to re-apply it.
     ColourManager *colours = Manager::Get()->GetColourManager();
@@ -843,11 +835,7 @@ void EditorColourSet::SetKeywords(HighlightLanguage lang, int idx, const wxStrin
         wxString tmp(_T(' '), keywords.length()); // faster than using Alloc()
 
         const wxChar *src = keywords.c_str();
-        #if wxCHECK_VERSION(3, 0, 0)
         wxStringCharType *dst = const_cast<wxStringCharType*>(tmp.wx_str());
-        #else
-        wxChar *dst = (wxChar *) tmp.c_str();
-        #endif
         wxChar c;
         size_t len = 0;
 

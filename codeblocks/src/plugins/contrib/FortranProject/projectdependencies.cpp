@@ -24,10 +24,11 @@
 #include "nativeparserf.h"
 
 
-ProjectDependencies::ProjectDependencies(cbProject* project)
+ProjectDependencies::ProjectDependencies()
 {
-    m_Project = project;
     //ctor
+    m_WasInfiniteLoop = false;
+    m_FilesAreUniqueInWorkspace = true;
 }
 
 ProjectDependencies::~ProjectDependencies()
@@ -86,6 +87,7 @@ void ProjectDependencies::MakeProjectFilesDependencies(ProjectFilesArray& prFile
 {
     Clear();
 
+    m_FilesAreUniqueInWorkspace = true;
     m_prFilesArr = prFilesArr;
     wxArrayString fnames;
 
@@ -94,9 +96,12 @@ void ProjectDependencies::MakeProjectFilesDependencies(ProjectFilesArray& prFile
 	{
         ProjectFile* pf = m_prFilesArr[i];
         wxString ffp = pf->file.GetFullPath();
+        if (m_FileIndexMap.count(ffp) > 0)
+            m_FilesAreUniqueInWorkspace = false;
+
         m_FileIndexMap.insert(std::make_pair(ffp,i));
 
-        wxString fname = pf->file.GetName() + _T(".") + pf->file.GetExt();
+        wxString fname = pf->file.GetName() + "." + pf->file.GetExt();
         fnames.Add(fname);
 	}
 
@@ -198,6 +203,7 @@ unsigned short int ProjectDependencies::GetFileWeightByIndex(size_t idx)
     {
         return 0;
     }
+    cbProject* project = m_prFilesArr[idx]->GetParentProject();
     unsigned short int wt;
     unsigned short int wt_max = 0;
     StringSet* fileUseModules = m_pUseModules[idx];
@@ -212,7 +218,17 @@ unsigned short int ProjectDependencies::GetFileWeightByIndex(size_t idx)
         {
             size_t fidx = m_ModuleFileIdxMap[*pos];
             if (fidx == idx)
-                continue; // module defined and is used in the same file.
+                continue; // Module defined and is used in the same file.
+            cbProject* project2 = m_prFilesArr[fidx]->GetParentProject();
+            if (m_FilesAreUniqueInWorkspace && project != project2)
+            {
+                // If files are unique:
+                //       Files are from different projects. File weight is limited to the same project.
+                // If files are not unique:
+                //       It could be, that this file is in the current project too.
+                //       Weights on the workspace level are calculated in that case.
+                continue;
+            }
             m_Deep++;
             wt = 1 + GetFileWeightByIndex(fidx);
             m_Deep--;
@@ -383,7 +399,7 @@ void ProjectDependencies::MakeFileChildren(IntSet* children, size_t fileIndex)
 
     ProjectFile* pf = m_prFilesArr[fileIndex];
     wxString fname = pf->file.GetName();
-    wxString fnameExt = fname + _T(".") + pf->file.GetExt();
+    wxString fnameExt = fname + "." + pf->file.GetExt();
     size_t nIncludes = m_pIncludes.size();
     for (size_t k=0; k < nIncludes; ++k)
     {
@@ -421,7 +437,8 @@ void ProjectDependencies::EnsureUpToDateObjs()
         const wxArrayString& btarr = pf->GetBuildTargets();
         if (btarr.IsEmpty())
             continue;
-        ProjectBuildTarget* bTarget = m_Project->GetBuildTarget(btarr[0]);
+        cbProject* curProject = pf->GetParentProject();
+        ProjectBuildTarget* bTarget = curProject->GetBuildTarget(btarr[0]);
         const pfDetails& pfd = pf->GetFileDetails(bTarget);
         time_t time_src = wxFileModificationTime(pfd.source_file_absolute_native);
 
@@ -430,12 +447,12 @@ void ProjectDependencies::EnsureUpToDateObjs()
         for (pos=children->begin(); pos != children->end(); ++pos)
         {
             ProjectFile* pfChild = m_prFilesArr[*pos];
-
+            cbProject* childProject = pfChild->GetParentProject();
             const wxArrayString& btChild_arr = pfChild->GetBuildTargets();
             size_t nChTag = btChild_arr.size();
             for (size_t iCh=0; iCh < nChTag; ++iCh)
             {
-                ProjectBuildTarget* bTargetChild = m_Project->GetBuildTarget(btChild_arr[iCh]);
+                ProjectBuildTarget* bTargetChild = childProject->GetBuildTarget(btChild_arr[iCh]);
                 Compiler* compilerChild = CompilerFactory::GetCompiler(bTargetChild->GetCompilerID());
                 if(!compilerChild)
                     continue;
@@ -464,12 +481,12 @@ void ProjectDependencies::RemoveModFiles(cbProject* pr, ProjectBuildTarget* bTar
         return;
 
     wxString comID = bTarget->GetCompilerID();
-    if (!CompilerFactory::CompilerInheritsFrom(comID, _T("gfortran")) &&
-        !CompilerFactory::CompilerInheritsFrom(comID, _T("g95")) &&
-        !CompilerFactory::CompilerInheritsFrom(comID, _T("ifcwin")) &&
-        !CompilerFactory::CompilerInheritsFrom(comID, _T("ifclin")) &&
-        !CompilerFactory::CompilerInheritsFrom(comID, _T("pgfortran")) &&
-        !CompilerFactory::CompilerInheritsFrom(comID, _T("oracfortran")) )
+    if (!CompilerFactory::CompilerInheritsFrom(comID, "gfortran") &&
+        !CompilerFactory::CompilerInheritsFrom(comID, "g95") &&
+        !CompilerFactory::CompilerInheritsFrom(comID, "ifcwin") &&
+        !CompilerFactory::CompilerInheritsFrom(comID, "ifclin") &&
+        !CompilerFactory::CompilerInheritsFrom(comID, "pgfortran") &&
+        !CompilerFactory::CompilerInheritsFrom(comID, "oracfortran") )
     {
         bool haveFortran = false;
         for (FilesList::iterator it = pr->GetFilesList().begin(); it != pr->GetFilesList().end(); ++it)
@@ -492,7 +509,7 @@ void ProjectDependencies::RemoveModFiles(cbProject* pr, ProjectBuildTarget* bTar
         wxString filename;
         wxFileName fname;
         fname.AssignDir(objDir);
-        wxString filespec = _T("*.mod");
+        wxString filespec = "*.mod";
         bool cont = odir.GetFirst(&filename, filespec, wxDIR_FILES);
         while (cont)
         {
@@ -501,7 +518,7 @@ void ProjectDependencies::RemoveModFiles(cbProject* pr, ProjectBuildTarget* bTar
             cont = odir.GetNext(&filename);
         }
 
-        filespec = _T("*.smod");
+        filespec = "*.smod";
         cont = odir.GetFirst(&filename, filespec, wxDIR_FILES);
         while (cont)
         {
@@ -514,28 +531,47 @@ void ProjectDependencies::RemoveModFiles(cbProject* pr, ProjectBuildTarget* bTar
 
 void ProjectDependencies::RemoveModFilesWS(NativeParserF* nativeParser)
 {
-    //Remove all *.mod files in Workspace
+    //Remove all *.mod and *.smod files in Workspace
+    cbProject* activeProject = Manager::Get()->GetProjectManager()->GetActiveProject();
+    if (!activeProject)
+        return;
+    wxString activeTargetName = activeProject->GetActiveBuildTarget();
     ProjectsArray* projects = Manager::Get()->GetProjectManager()->GetProjects();
     for (size_t i = 0; i < projects->GetCount(); ++i)
     {
         cbProject* pr = projects->Item(i);
         if (!pr->IsMakefileCustom())
         {
-            ProjectBuildTarget* bTarget = pr->GetBuildTarget(pr->GetActiveBuildTarget());
-            RemoveModFiles(pr, bTarget, nativeParser);
+            ProjectBuildTarget* bTarget = pr->GetBuildTarget(activeTargetName);
+            if (!bTarget)
+            {
+                const wxArrayString virtTagGroup = pr->GetVirtualBuildTargetGroup(activeTargetName);
+                for (size_t j = 0; j < virtTagGroup.GetCount(); ++j)
+                {
+                    bTarget = pr->GetBuildTarget(virtTagGroup[j]);
+                    if (bTarget)
+                    {
+                        RemoveModFiles(pr, bTarget, nativeParser);
+                    }
+                }
+            }
+            else
+            {
+                RemoveModFiles(pr, bTarget, nativeParser);
+            }
         }
     }
 }
 
 void ProjectDependencies::PrintChildrenTable()
 {
-    Manager::Get()->GetLogManager()->DebugLog(_T("\nProjectDependencies::PrintChildrenTable"));
+    Manager::Get()->GetLogManager()->DebugLog("\nProjectDependencies::PrintChildrenTable");
 
     for(size_t i=0; i < m_ChildrenTable.size(); i++)
     {
         ProjectFile* pfile = m_prFilesArr[i];
 
-        Manager::Get()->GetLogManager()->DebugLog(_T("\n")+pfile->file.GetName());
+        Manager::Get()->GetLogManager()->DebugLog("\n" + pfile->file.GetName());
 
         IntSet* children = m_ChildrenTable[i];
         IntSet::iterator pos;
@@ -543,7 +579,7 @@ void ProjectDependencies::PrintChildrenTable()
         {
             ProjectFile* pf = m_prFilesArr[*pos];
             wxString fname = pf->file.GetName();
-            Manager::Get()->GetLogManager()->DebugLog(_T("        ")+fname);
+            Manager::Get()->GetLogManager()->DebugLog("        " + fname);
         }
     }
 }

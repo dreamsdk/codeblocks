@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10912 $
- * $Id: printdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/printdlg.cpp $
+ * $Revision: 13293 $
+ * $Id: printdlg.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/printdlg.cpp $
  */
 
 #include "sdk.h"

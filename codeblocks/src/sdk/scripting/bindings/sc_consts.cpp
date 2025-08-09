@@ -2,31 +2,36 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11887 $
- * $Id: sc_consts.cpp 11887 2019-10-26 09:12:28Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/scripting/bindings/sc_consts.cpp $
+ * $Revision: 12794 $
+ * $Id: sc_consts.cpp 12794 2022-04-14 22:34:58Z bluehazzard $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/scripting/bindings/sc_consts.cpp $
  */
+
 
 #include <sdk_precomp.h>
 #ifndef CB_PRECOMP
     #include <wx/string.h>
-    #include <globals.h>
-    #include <settings.h>
+    #include "cbplugin.h"
+    #include "cbproject.h"
+    #include "configmanager.h"
+    #include "globals.h"
+    #include "printing_types.h"
+    #include "scriptingmanager.h"
+    #include "settings.h"
 #endif
 
 #include <filefilters.h>
-#include "sc_base_types.h"
 
-// helper macros to bind constants
-#define BIND_INT_CONSTANT(a) SqPlus::BindConstant<SQInteger>(a, #a);
-#define BIND_INT_CONSTANT_NAMED(a,n) SqPlus::BindConstant<SQInteger>(a, n);
-#define BIND_WXSTR_CONSTANT_NAMED(a,n) BindVariable(const_cast<wxString*>(&a), n, SqPlus::VAR_ACCESS_CONSTANT);
 
 namespace ScriptBindings
 {
+    #define BIND_INT_CONSTANT(a) manager->BindIntConstant(#a, a)
+    #define BIND_INT_CONSTANT_NAMED(a,n) manager->BindIntConstant(n, a)
+    #define BIND_WXSTR_CONSTANT_NAMED(a,n) manager->BindWxStringConstant(n, a)
+
     wxString s_PathSep = wxFILE_SEP_PATH;
 
-    void Register_Constants()
+    void Register_Constants(ScriptingManager *manager)
     {
         // platform constants
         BIND_INT_CONSTANT_NAMED(0,  "PLATFORM_MSW");
@@ -53,6 +58,10 @@ namespace ScriptBindings
         BIND_INT_CONSTANT_NAMED(PLUGIN_SDK_VERSION_MAJOR, "PLUGIN_SDK_VERSION_MAJOR");
         BIND_INT_CONSTANT_NAMED(PLUGIN_SDK_VERSION_MINOR, "PLUGIN_SDK_VERSION_MINOR");
         BIND_INT_CONSTANT_NAMED(PLUGIN_SDK_VERSION_RELEASE, "PLUGIN_SDK_VERSION_RELEASE");
+
+        BIND_INT_CONSTANT_NAMED(2, "SCRIPTING_VERSION_MAJOR");
+        BIND_INT_CONSTANT_NAMED(0, "SCRIPTING_VERSION_MINOR");
+        BIND_INT_CONSTANT_NAMED(0, "SCRIPTING_VERSION_RELEASE");
 
         // path separator for filenames
         BIND_WXSTR_CONSTANT_NAMED(s_PathSep, "wxFILE_SEP_PATH");
@@ -177,6 +186,8 @@ namespace ScriptBindings
         BIND_INT_CONSTANT(mtEditorManager);
         BIND_INT_CONSTANT(mtLogManager);
         BIND_INT_CONSTANT(mtOpenFilesList);
+        BIND_INT_CONSTANT(mtEditorTab);
+        BIND_INT_CONSTANT(mtFileExplorer);
         BIND_INT_CONSTANT(mtUnknown);
 
         // FileTreeDataKind
@@ -284,4 +295,5 @@ namespace ScriptBindings
         BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::CppCompiler), "leoCppCompiler");
         BIND_INT_CONSTANT_NAMED(int32_t(LinkerExecutableOption::Linker), "leoLinker");
     }
-};
+
+} // namespace ScriptBindings

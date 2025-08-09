@@ -32,6 +32,10 @@ class TextCtrlLogger;
 
 class DLLIMPORT cbBreakpoint
 {
+    public: //typedefs for debuggers gdb/mi and DAP
+        typedef cb::shared_ptr<cbBreakpoint> Pointer;
+        typedef cb::shared_ptr<const cbBreakpoint> ConstPointer;
+
     public:
         virtual ~cbBreakpoint() {}
 
@@ -51,12 +55,21 @@ class DLLIMPORT cbWatch
         cbWatch& operator =(cbWatch &);
         cbWatch(cbWatch &);
 
+    public: //typedefs for gdb/mi and DAP debuggers
+        typedef cb::shared_ptr<cbWatch> Pointer;
+        typedef cb::shared_ptr<const cbWatch> ConstPointer;
+
     public:
         cbWatch();
     public:
         virtual void GetSymbol(wxString &symbol) const = 0;
+        virtual void SetSymbol(const wxString &symbol) = 0;
+        virtual uint64_t GetAddress() const = 0;
+        virtual void SetAddress(uint64_t address) = 0;
         virtual void GetValue(wxString &value) const = 0;
         virtual bool SetValue(const wxString &value) = 0;
+        virtual bool GetIsValueErrorMessage() = 0;
+        virtual void SetIsValueErrorMessage(bool value) = 0;
         virtual void GetFullWatchString(wxString &full_watch) const = 0;
         virtual void GetType(wxString &type) const = 0;
         virtual void SetType(const wxString &type) = 0;
@@ -110,6 +123,10 @@ cb::shared_ptr<cbWatch> DLLIMPORT cbGetRootWatch(cb::shared_ptr<cbWatch> watch);
 
 class DLLIMPORT cbStackFrame
 {
+    public:  // typedefs for gdb/mi and DAP debuggers
+        typedef cb::shared_ptr<cbStackFrame> Pointer;
+        typedef cb::shared_ptr<const cbStackFrame> ConstPointer;
+
     public:
         cbStackFrame();
 
@@ -137,6 +154,10 @@ class DLLIMPORT cbStackFrame
 
 class DLLIMPORT cbThread
 {
+    public: // typedefs for gdb/mi and DAP debuggers
+        typedef cb::shared_ptr<cbThread> Pointer;
+        typedef cb::shared_ptr<const cbThread> ConstPointer;
+
     public:
         cbThread();
         cbThread(bool active, int number, const wxString& info);
@@ -204,7 +225,8 @@ struct DLLIMPORT cbDebuggerCommonConfig
     {
         OnlyOne = 0,
         OnePerDebugger,
-        OnePerDebuggerConfig
+        OnePerDebuggerConfig,
+        UseCurrent
     };
 
     static bool GetFlag(Flags flag);
@@ -354,7 +376,7 @@ class DLLIMPORT DebuggerManager : public Mgr<DebuggerManager>
         void FindTargetsDebugger();
         void RefreshUI();
         void CreateWindows();
-        void DestoryWindows();
+        void DestroyWindows();
 
         void OnProjectActivated(CodeBlocksEvent& event);
         void OnTargetSelected(CodeBlocksEvent& event);

@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: chartwindow.cpp 7947 2012-04-28 10:01:45Z mortenmacfly $
+// RCS-ID:      $Id: chartwindow.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -20,10 +20,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
@@ -103,7 +99,7 @@ void wxChartWindow::Draw(
 	//-----------------------------------------------------------------------
 	// Draw all charts
 	//-----------------------------------------------------------------------
-	m_Chart.Draw( hp, &r );
+    m_Chart.Draw( hp, &r );
 }
 
 //+++-S-cf-------------------------------------------------------------------

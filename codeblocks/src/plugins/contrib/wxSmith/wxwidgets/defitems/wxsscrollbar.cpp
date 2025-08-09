@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsscrollbar.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsscrollbar.cpp $
+* $Revision: 13547 $
+* $Id: wxsscrollbar.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsscrollbar.cpp $
 */
 
 #include <wx/scrolbar.h>
@@ -88,15 +88,15 @@ void wxsScrollBar::OnBuildCreatingCode()
 }
 
 
-wxObject* wxsScrollBar::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsScrollBar::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxScrollBar* Preview = new wxScrollBar(Parent,GetId(),Pos(Parent),Size(Parent),Style());
     Preview->SetScrollbar(Value,ThumbSize,Range,PageSize);
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
 
-void wxsScrollBar::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsScrollBar::OnEnumWidgetProperties(cb_unused long _Flags)
 {
    WXS_LONG(wxsScrollBar,Value,_("Value"),_T("value"),0)
    WXS_LONG(wxsScrollBar,ThumbSize,_("ThumbSize"),_T("thumbsize"),0)

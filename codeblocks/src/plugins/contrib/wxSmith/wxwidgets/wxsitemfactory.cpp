@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsitemfactory.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemfactory.cpp $
+* $Revision: 13381 $
+* $Id: wxsitemfactory.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemfactory.cpp $
 */
 
 #include "wxsitemfactory.h"
@@ -27,7 +27,7 @@
 wxsItem* wxsItemFactory::Build(const wxString& Name,wxsItemResData* Data)
 {
     ItemMapT::iterator it = ItemMap().find(Name);
-    if ( it == ItemMap().end() ) return 0;
+    if ( it == ItemMap().end() ) return nullptr;
     wxsItem* Item = it->second->OnBuild(Data);
 
     // Checking few things in item's info
@@ -38,7 +38,7 @@ wxsItem* wxsItemFactory::Build(const wxString& Name,wxsItemResData* Data)
             {
                 // Fake item
                 delete Item;
-                return 0;
+                return nullptr;
             }
             break;
 
@@ -47,7 +47,7 @@ wxsItem* wxsItemFactory::Build(const wxString& Name,wxsItemResData* Data)
             {
                 // Fake item
                 delete Item;
-                return 0;
+                return nullptr;
             }
             break;
 
@@ -59,7 +59,7 @@ wxsItem* wxsItemFactory::Build(const wxString& Name,wxsItemResData* Data)
         case wxsTInvalid:
         default:
             delete Item;
-            return 0;
+            return nullptr;
     }
 
     return Item;
@@ -68,21 +68,21 @@ wxsItem* wxsItemFactory::Build(const wxString& Name,wxsItemResData* Data)
 const wxsItemInfo* wxsItemFactory::GetInfo(const wxString& Name)
 {
     ItemMapT::iterator it = ItemMap().find(Name);
-    if ( it == ItemMap().end() ) return 0;
+    if ( it == ItemMap().end() ) return nullptr;
     return it->second->m_Info;
 }
 
 const wxsItemInfo* wxsItemFactory::GetFirstInfo()
 {
     m_Iter = ItemMap().begin();
-    return (m_Iter==ItemMap().end()) ? 0 : m_Iter->second->m_Info;
+    return (m_Iter==ItemMap().end()) ? nullptr : m_Iter->second->m_Info;
 }
 
 const wxsItemInfo* wxsItemFactory::GetNextInfo()
 {
-    if ( m_Iter==ItemMap().end() ) return 0;
+    if ( m_Iter==ItemMap().end() ) return nullptr;
     ++m_Iter;
-    return (m_Iter==ItemMap().end()) ? 0 : m_Iter->second->m_Info;
+    return (m_Iter==ItemMap().end()) ? nullptr : m_Iter->second->m_Info;
 }
 
 wxImageList& wxsItemFactory::GetImageList()

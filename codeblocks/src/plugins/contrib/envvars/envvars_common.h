@@ -11,27 +11,19 @@
 
 class wxCheckListBox;
 
-
-#if (defined (__WIN32__) || defined (_WIN64)) && !wxCHECK_VERSION(3, 0, 0)
-    #define CHECK_LIST_BOX_CLIENT_DATA 0
-#else
-    #define CHECK_LIST_BOX_CLIENT_DATA 1
-#endif
-
-#define EV_DBGLOG nsEnvVars::EnvVarsDebugLog
+#define EV_DBGLOG(fmt, ...)   {if (nsEnvVars::EnvVarsDebugLog()) Manager::Get()->GetLogManager()->DebugLog(wxString::Format(wxString("EnvVars: ")+fmt, __VA_ARGS__));}
 
 // ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- ----- -----
 
 namespace nsEnvVars
 {
-  extern const wxString EnvVarsSep;     //!< separator for envvars in config
-  extern const wxString EnvVarsDefault; //!< name of default envvar set
+  extern const wxUniChar EnvVarsSep;     //!< separator for envvars in config
+  extern const wxString  EnvVarsDefault; //!< name of default envvar set
 
-  /** Prints a message to C::B's debug log depending on debug activated or not
-    * \param msg Message to print at C::B's debug log
+  /** Checks if debug activated or not
+    * \return Debug activated or not
     */
-  void          EnvVarsDebugLog(const wxChar* msg, ...);
-  void          EnvVarsDebugLog(const wxString& msg, ...);
+  bool          EnvVarsDebugLog();
 
   /** Tokenises an envvar string into sub-strings
     * \param str String to tokenise (envvars set format to array string)
@@ -111,14 +103,11 @@ namespace nsEnvVars
     */
   void          EnvvarSetDiscard(const wxString& set_name);
 
-
-#if CHECK_LIST_BOX_CLIENT_DATA==1
   struct EnvVariableListClientData : wxClientData
   {
       EnvVariableListClientData(const wxString &_key, const wxString &_value) : key(_key), value(_value) {}
       wxString key, value;
   };
-#endif
 
 }// nsEnvVars
 

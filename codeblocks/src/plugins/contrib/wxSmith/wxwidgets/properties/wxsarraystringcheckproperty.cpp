@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsarraystringcheckproperty.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsarraystringcheckproperty.cpp $
+* $Revision: 12868 $
+* $Id: wxsarraystringcheckproperty.cpp 12868 2022-08-15 15:53:42Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsarraystringcheckproperty.cpp $
 */
 
 #include "wxsarraystringcheckproperty.h"
@@ -39,6 +39,7 @@ wxsArrayStringCheckProperty::wxsArrayStringCheckProperty(const wxString& PGName,
 bool wxsArrayStringCheckProperty::ShowEditor(wxsPropertyContainer* Object)
 {
     wxsArrayStringCheckEditorDlg Dlg(0,VALUE,CHECK);
+    PlaceWindow(&Dlg);
     return Dlg.ShowModal() == wxID_OK;
 }
 
@@ -117,7 +118,8 @@ bool wxsArrayStringCheckProperty::PropStreamWrite(wxsPropertyContainer* Object,w
     for ( size_t i=0; i<Count; i++ )
     {
         Stream->PutString(DataSubName,VALUE[i],wxEmptyString);
-        Stream->PutBool(DataSubName + _T("_checked"),CHECK[i],false);
+        bool Checked = CHECK[i];
+        Stream->PutBool(DataSubName + "_checked", Checked, false);
     }
     Stream->PopCategory();
     return true;

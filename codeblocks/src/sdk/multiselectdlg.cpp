@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11366 $
- * $Id: multiselectdlg.cpp 11366 2018-04-12 07:02:45Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/multiselectdlg.cpp $
+ * $Revision: 11996 $
+ * $Id: multiselectdlg.cpp 11996 2020-03-26 21:04:41Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/multiselectdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -152,7 +152,7 @@ void MultiSelectDlg::OnWildcard(cb_unused wxCommandEvent& event)
     wxString wild = cbGetTextFromUser(_("Enter a selection wildcard\n(e.g. \"dlg*.cpp\" "
                                         "would select all files starting with \"dlg\" and "
                                         "ending in \".cpp\")\nSeparate multiple masks with \";\":"),
-                                        _("Wildcard selection"));
+                                      _("Wildcard selection"), wxString(), this);
     if (wild.IsEmpty())
         return;
 

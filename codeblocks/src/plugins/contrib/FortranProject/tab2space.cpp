@@ -3,16 +3,17 @@
 
 #include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <wx/tokenzr.h>
-
     #include <cbeditor.h>
     #include <cbproject.h>
-    #include <cbstyledtextctrl.h>
     #include <editormanager.h>
     #include <logmanager.h>
     #include <projectmanager.h>
 #endif
 #include <set>
+
+#include <wx/tokenzr.h>
+
+#include <cbstyledtextctrl.h>
 
 #include "fortranfileext.h"
 #include "textcutter.h"
@@ -71,9 +72,9 @@ Tab2Space::~Tab2Space()
 	//*)
 }
 
-void Tab2Space::OnOK(wxCommandEvent& event)
+void Tab2Space::OnOK(cb_unused wxCommandEvent& event)
 {
-    Manager::Get()->GetLogManager()->DebugLog(_T("Tab2Space::OnOK is called"));
+    Manager::Get()->GetLogManager()->DebugLog("Tab2Space::OnOK is called");
 
     Tab2SpaceIn chin;
     if (rb_ChCActiveProject->GetValue())
@@ -119,7 +120,7 @@ void Tab2Space::MakeTab2Space(Tab2SpaceIn chin, int tabSize)
             wxString mstr;
             if (nonFFiles.size() == 1)
             {
-                mstr = _("File \"") + nonFFiles[0] + _("\" was not recognized as a Fortran file.");
+                mstr = wxString::Format(_("File \"%s\" was not recognized as a Fortran file."), nonFFiles[0]);
                 mstr << _(" The tab2space was not applied for it.");
             }
             else
@@ -129,15 +130,14 @@ void Tab2Space::MakeTab2Space(Tab2SpaceIn chin, int tabSize)
                 size_t imax=5;
                 while (i < nonFFiles.size() && i < imax)
                 {
-                    mstr << _("\n\"") << nonFFiles[i] << _T("\"");
+                    mstr << "\n\"" << nonFFiles[i] << "\"";
                     i++;
                 }
                 if (nonFFiles.size() > imax)
-                    mstr << _T("...\n");
+                    mstr << "...\n";
                 else
-                    mstr << _T("\n");
-                mstr << wxString::Format(_T("(%d "), int(nonFFiles.size())) << _("files) ");
-                mstr << _("were not recognized as the Fortran files.");
+                    mstr << "\n";
+                mstr << wxString::Format(_("(%zu files) were not recognized as the Fortran files."), nonFFiles.size());
                 mstr << _(" The tab2space was not applied for them.");
                 cbMessageBox(mstr, _("Info"), wxICON_INFORMATION);
             }
@@ -193,8 +193,7 @@ bool Tab2Space::EditorTab2Space(cbEditor* ed, Tab2SpaceIn chin, int tabSize)
     FortranSourceForm fsForm;
     if (!g_FortranFileExt.IsFileFortran(ed->GetFilename(), fsForm))
     {
-        cbMessageBox( _("The file \n") + ed->GetFilename() +
-            _("\n is not recognized as a Fortran Source File."), _("Info"),
+        cbMessageBox(wxString::Format(_("The file \n%s\n is not recognized as a Fortran Source File."), ed->GetFilename()), _("Info"),
             wxICON_INFORMATION);
         return false;
     }
@@ -214,7 +213,7 @@ bool Tab2Space::EditorTab2Space(cbEditor* ed, Tab2SpaceIn chin, int tabSize)
     if (allText.size() == 0)
         return false;
 
-    wxString contDigit = _T("123456789");
+    wxString contDigit = "123456789";
 
     size_t ncur = 0;
     while (1)
@@ -240,11 +239,11 @@ bool Tab2Space::EditorTab2Space(cbEditor* ed, Tab2SpaceIn chin, int tabSize)
         if (fsForm == fsfFixed)
         {
             if (line.GetChar(0) == '\t' && contDigit.Find(line.GetChar(1)) != wxNOT_FOUND)
-                lineNew << _T("     ");
+                lineNew << "     ";
             else if (line.GetChar(0) == '\t')
-                lineNew << _T("      ");
+                lineNew << "      ";
             else if (line.GetChar(0) == '\n')
-                lineNew << _T("\n");
+                lineNew << "\n";
             else
                 lineNew << line.GetChar(0);
         }

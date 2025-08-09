@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10681 $
-* $Id: wxsfontfaceeditordlg.cpp 10681 2016-01-22 10:45:30Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontfaceeditordlg.cpp $
+* $Revision: 13547 $
+* $Id: wxsfontfaceeditordlg.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontfaceeditordlg.cpp $
 */
 
 #include "wxsfontfaceeditordlg.h"
@@ -31,8 +31,8 @@
 //*)
 
 //(*IdInit(wxsFontFaceEditorDlg)
-const long wxsFontFaceEditorDlg::ID_TEXTCTRL1 = wxNewId();
-const long wxsFontFaceEditorDlg::ID_BUTTON1 = wxNewId();
+const wxWindowID wxsFontFaceEditorDlg::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID wxsFontFaceEditorDlg::ID_BUTTON1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(wxsFontFaceEditorDlg,wxScrollingDialog)
@@ -44,8 +44,8 @@ wxsFontFaceEditorDlg::wxsFontFaceEditorDlg(wxWindow* parent,wxString& _Face,wxWi
     Face(_Face)
 {
     //(*Initialize(wxsFontFaceEditorDlg)
-    wxBoxSizer* BoxSizer2;
     wxBoxSizer* BoxSizer1;
+    wxBoxSizer* BoxSizer2;
     wxStaticBoxSizer* StaticBoxSizer1;
 
     Create(parent, id, _("Selecting font face"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
@@ -66,7 +66,6 @@ wxsFontFaceEditorDlg::wxsFontFaceEditorDlg(wxWindow* parent,wxString& _Face,wxWi
     BoxSizer2->Add(-1,-1,1, wxALIGN_CENTER_VERTICAL, 5);
     BoxSizer1->Add(BoxSizer2, 0, wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL, 5);
     SetSizer(BoxSizer1);
-    BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
     Center();
 

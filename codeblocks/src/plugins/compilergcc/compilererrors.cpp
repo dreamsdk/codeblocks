@@ -4,7 +4,7 @@
  *
  * $Revision: 11376 $
  * $Id: compilererrors.cpp 11376 2018-04-28 15:15:57Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilererrors.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilererrors.cpp $
  */
 
 #include "sdk.h"

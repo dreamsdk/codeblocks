@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: crc32.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/crc32.cpp $
+ * $Revision: 12605 $
+ * $Id: crc32.cpp 12605 2021-12-22 08:53:19Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/crc32.cpp $
  */
 
 /*
@@ -63,7 +63,7 @@ wxUint32 wxCrc32::FromFile(const wxString& file)
 
 wxUint32 wxCrc32::FromString(const wxString& text)
 {
-    static wxUint32 *crc_table = NULL;
+    static wxUint32 *crc_table = nullptr;
     wxUint32 crc = 0;
     unsigned int i = 0;
 
@@ -78,11 +78,7 @@ wxUint32 wxCrc32::FromString(const wxString& text)
             // Calculate the checksum
             crc = 0xFFFFFFFFUL;
             while (text[i])
-            #if wxCHECK_VERSION(3, 0, 0)
                 { crc = (crc>>8) ^ crc_table[ (crc^(text[i++].GetValue())) & 0xFF ]; }
-            #else
-                { crc = (crc>>8) ^ crc_table[ (crc^(text[i++])) & 0xFF ]; }
-            #endif
 
             crc ^= 0xFFFFFFFFUL ;
         }
@@ -93,7 +89,7 @@ wxUint32 wxCrc32::FromString(const wxString& text)
 
     // Set it to a null pointer, the have it (re)created on next calls to this
     // function
-    crc_table = NULL;
+    crc_table = nullptr;
 
     // Return the checksum result
     return( crc ) ;

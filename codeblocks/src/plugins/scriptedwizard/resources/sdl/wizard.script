@@ -12,20 +12,22 @@ SDLPath           <- _T("");
 
 function BeginWizard()
 {
-    local intro_msg = _T("Welcome to the new SDL project wizard!\n\n" +
-                         "This wizard will guide you to create a new project\n" +
-                         "using the SDL graphics library.\n\n" +
-                         "When you 're ready to proceed, please click \"Next\"...");
-
-    local sdlpath_descr = _T("Please select the location of SDL on your computer.\n" +
-                             "This is the top-level folder where SDL was installed (unpacked).\n" +
-                             "To help you, this folder must contain the subfolders\n" +
-                             "\"include\" and \"lib\".");
+    local intro_msg = _("Welcome to the new SDL project wizard!\n\n") +
+                      _("This wizard will guide you to create a new project\nusing the SDL graphics library.\n\n") +
+                      _("When you're ready to proceed, please click \"Next\"...");
 
     Wizard.AddInfoPage(_T("SDLIntro"), intro_msg);
     Wizard.AddProjectPathPage();
     if (PLATFORM == PLATFORM_MSW)
-        Wizard.AddGenericSelectPathPage(_T("SDLPath"), sdlpath_descr, _T("Please select SDL's location:"), SDLPathDefault);
+    {
+        local sdlpath_descr = _("Please select the location of SDL on your computer.\n") +
+                              _("This is the top-level folder where SDL was installed (unpacked).\n") +
+                              _("To help you, this folder must contain the subfolders\n\"include\" and \"lib\".\n\n") +
+                              _("You can also use a global variable, p.e. $(#sdl)\n");
+
+        Wizard.AddGenericSelectPathPage(_T("SDLPath"), sdlpath_descr, _("Please select SDL's location:"), SDLPathDefault);
+    }
+
     Wizard.AddCompilerPage(_T(""), _T("*"), true, true);
 }
 
@@ -47,24 +49,24 @@ function OnLeave_SDLPath(fwd)
         local dir_nomacro_inc = GetCompilerIncludeDir(dir, SDLPathDefault, SDLPathDefaultInc);
         if (dir_nomacro_inc.IsEmpty())
             return false;
-            
+
         if (!IO.FileExists(dir_nomacro_inc + wxFILE_SEP_PATH + _T("SDL.h")))
         {
-            if (VerifyFile(dir_nomacro_inc, _T("SDL/SDL.h"), _T("SDL's include")))
+            if (VerifyFile(dir_nomacro_inc, _T("SDL/SDL.h"), _("SDL's include")))
                 SDLPathDefaultInc = SDLPathDefaultInc + _T("/SDL");
             else
                 return false;
         }
-        
+
         // verify library dependencies
         local dir_nomacro_lib = GetCompilerLibDir(dir, SDLPathDefault, SDLPathDefaultLib);
         if (dir_nomacro_lib.IsEmpty())
             return false;
 
-        if (!VerifyLibFile(dir_nomacro_lib, _T("SDLmain"), _T("SDL's")))
+        if (!VerifyLibFile(dir_nomacro_lib, _T("SDLmain"), _("SDL's")))
             return false;
 
-        if (!VerifyLibFile(dir_nomacro_lib, _T("SDL.dll"), _T("SDL's")))
+        if (!VerifyLibFile(dir_nomacro_lib, _T("SDL.dll"), _("SDL's")))
             return false;
 
         SDLPath = dir; // Remember the original selection.

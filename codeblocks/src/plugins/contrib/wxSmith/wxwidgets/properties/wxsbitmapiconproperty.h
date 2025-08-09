@@ -15,13 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxsbitmapiconproperty.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconproperty.h $
+* $Revision: 12722 $
+* $Id: wxsbitmapiconproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconproperty.h $
 */
 
 #ifndef WXSBITMAPICONPROPERTY_H
 #define WXSBITMAPICONPROPERTY_H
+
+#include <cbplugin.h>
 
 #include "../../properties/wxsproperties.h"
 #include "../wxscodercontext.h"
@@ -34,7 +36,7 @@
  * if both Id and FileName are empty, no bitmap is given
  */
 
-struct wxsBitmapIconData
+struct PLUGIN_EXPORT wxsBitmapIconData
 {
     wxString Id;
     wxString Client;
@@ -62,7 +64,7 @@ typedef wxsBitmapIconData wxsIconData;
  * \note This property doesn't take any default value.
  *       By default array is cleared.
  */
-class wxsBitmapIconProperty: public wxsCustomEditorProperty
+class PLUGIN_EXPORT wxsBitmapIconProperty: public wxsCustomEditorProperty
 {
     public:
 

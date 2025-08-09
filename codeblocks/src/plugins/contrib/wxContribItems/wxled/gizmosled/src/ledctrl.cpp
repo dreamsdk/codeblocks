@@ -4,10 +4,6 @@
 
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif  //__BORLANDC__
-
 #ifndef WX_PRECOMP
     #include "wx/dcclient.h"
     #include "wx/dcmemory.h"
@@ -176,7 +172,7 @@ void wxLEDNumberCtrl::OnPaint(wxPaintEvent &WXUNUSED(event))
     MemDc.SelectObject(*pMemoryBitmap);
 
     // Draw background.
-    MemDc.SetBrush(wxBrush(GetBackgroundColour(), wxSOLID));
+    MemDc.SetBrush(wxBrush(GetBackgroundColour(), wxBRUSHSTYLE_SOLID));
     MemDc.DrawRectangle(wxRect(0, 0, Width, Height));
     MemDc.SetBrush(wxNullBrush);
 
@@ -262,7 +258,7 @@ void wxLEDNumberCtrl::DrawDigit(wxDC &Dc, int Digit, int Column)
     int XPos = m_LeftStartPos + Column * (m_LineLength + m_DigitMargin);
 
     // Create a pen and draw the lines.
-    wxPen Pen(LineColor, m_LineWidth, wxSOLID);
+    wxPen Pen(LineColor, m_LineWidth, wxPENSTYLE_SOLID);
     Dc.SetPen(Pen);
 
     if ((Digit & LINE1))

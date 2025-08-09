@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11525 $
- * $Id: compilerMINGW.cpp 11525 2018-12-15 16:16:44Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerMINGW.cpp $
+ * $Revision: 13388 $
+ * $Id: compilerMINGW.cpp 13388 2023-11-07 12:08:54Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerMINGW.cpp $
  */
 
 #include <sdk.h>
@@ -54,116 +54,184 @@ CompilerCommandGenerator* CompilerMINGW::GetCommandGenerator(cbProject *project)
 
 AutoDetectResult CompilerMINGW::AutoDetectInstallationDir()
 {
-    // try to find MinGW in environment variable PATH first
+    LogManager* logMgr = Manager::Get()->GetLogManager();
+    logMgr->DebugLog("MinGW compiler detection for compiler ID: '" + GetID() + "' (parent ID= '" + GetParentID()
+                   + "') - C program '" + m_Programs.C + "' or 'mingw32-" + m_Programs.C + "'");
+
+    const wxString sep(wxFileName::GetPathSeparator());
+
+    // Check if current configuration (after translating macros) is valid
+    if (!m_MasterPath.empty())
+    {
+        wxString path_no_macros(m_MasterPath);
+        Manager::Get()->GetMacrosManager()->ReplaceMacros(path_no_macros);
+        wxString program_no_macros(m_Programs.C);
+        Manager::Get()->GetMacrosManager()->ReplaceMacros(program_no_macros);
+        if (wxFileExists(path_no_macros + sep + "bin" + sep + program_no_macros))
+        {
+            logMgr->DebugLog("Already configured MinGW master path='" + path_no_macros + "', compiler='" + program_no_macros + "'");
+            return adrDetected;
+        }
+    }
+
+    wxString bin_gcc        = sep + "bin" + sep + m_Programs.C;
+    wxString bin_mingw32gcc = sep + "bin" + sep + "mingw32-" + m_Programs.C;
+
+    // Try to find MinGW in environment variable PATH first
+    logMgr->DebugLog("Checking [PATH] master path='" + m_MasterPath + "'");
     wxString pathValues;
-    wxGetEnv(_T("PATH"), &pathValues);
+    wxGetEnv("PATH", &pathValues);
     if (!pathValues.IsEmpty())
     {
-        wxString sep = platform::windows ? _T(";") : _T(":");
-        wxChar pathSep = platform::windows ? _T('\\') : _T('/');
-        wxArrayString pathArray = GetArrayFromString(pathValues, sep);
+        wxString list_sep = platform::windows ? ";"  : ":";
+        wxChar   path_sep = platform::windows ? '\\' : '/';
+        wxArrayString pathArray = GetArrayFromString(pathValues, list_sep);
         for (size_t i = 0; i < pathArray.GetCount(); ++i)
         {
-            if (wxFileExists(pathArray[i] + pathSep + m_Programs.C))
+            if (   wxFileExists(pathArray[i] + sep + m_Programs.C)
+                || wxFileExists(pathArray[i] + sep + "mingw32-" + m_Programs.C) )
             {
-                if (pathArray[i].AfterLast(pathSep).IsSameAs(_T("bin")))
+                if (pathArray[i].AfterLast(path_sep).IsSameAs("bin"))
                 {
-                    m_MasterPath = pathArray[i].BeforeLast(pathSep);
+                    m_MasterPath = pathArray[i].BeforeLast(path_sep);
+                    if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+                        m_Programs.C = "mingw32-" + m_Programs.C;
+                    logMgr->DebugLog("Final MinGW master path='" + m_MasterPath + "', compiler='" + m_Programs.C + "'");
                     return adrDetected;
                 }
             }
         }
     }
 
-    wxString sep = wxFileName::GetPathSeparator();
     if (platform::windows)
     {
-        // look first if MinGW was installed with Code::Blocks (new in beta6)
+        // Look first if MinGW was installed with Code::Blocks (new in beta6)
         m_MasterPath = ConfigManager::GetExecutableFolder();
-        if (!wxFileExists(m_MasterPath + sep + _T("bin") + sep + m_Programs.C))
-            // if that didn't do it, look under C::B\MinGW, too (new in 08.02)
-            m_MasterPath += sep + _T("MinGW");
-        if (!wxFileExists(m_MasterPath + sep + _T("bin") + sep + m_Programs.C))
+
+        logMgr->DebugLog("Checking [C::B\\bin] master path='" + m_MasterPath + "'");
+        if (   !wxFileExists(m_MasterPath + bin_gcc)
+            && !wxFileExists(m_MasterPath + bin_mingw32gcc) )
         {
-            // no... search for MinGW installation dir
+            // If that didn't do it, look under [C::B]\MinGW, too (new in 08.02)
+            m_MasterPath += sep + "MinGW";
+        }
+        else if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+            m_Programs.C = "mingw32-" + m_Programs.C;
+
+        logMgr->DebugLog("Checking [C::B\\MinGW] master path='" + m_MasterPath + "'");
+        if (   !wxFileExists(m_MasterPath + bin_gcc)
+            && !wxFileExists(m_MasterPath + bin_mingw32gcc) )
+        {
+            // No... now search for MinGW installation dir
             wxString windir = wxGetOSDirectory();
-            wxFileConfig ini(_T(""), _T(""), windir + _T("/MinGW.ini"), _T(""), wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_NO_ESCAPE_CHARACTERS);
-            m_MasterPath = ini.Read(_T("/InstallSettings/InstallPath"), _T("C:\\MinGW"));
-            if (!wxFileExists(m_MasterPath + sep + _T("bin") + sep + m_Programs.C))
+            wxFileConfig ini("", "", windir + sep + "MinGW.ini", "", wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_NO_ESCAPE_CHARACTERS);
+            m_MasterPath = ini.Read("/InstallSettings/InstallPath", "C:\\MinGW");
+
+            logMgr->DebugLog("Checking [INI] master path='" + m_MasterPath + "'");
+            if (!wxFileExists(m_MasterPath + bin_gcc))
             {
 #ifdef __WXMSW__ // for wxRegKey
-                // not found...
-                // look for dev-cpp installation
+                // Look for dev-cpp installation in Registry
                 wxRegKey key; // defaults to HKCR
-                key.SetName(_T("HKEY_LOCAL_MACHINE\\Software\\Dev-C++"));
+                key.SetName("HKEY_LOCAL_MACHINE\\Software\\Dev-C++");
                 if (key.Exists() && key.Open(wxRegKey::Read))
                 {
                     // found; read it
-                    key.QueryValue(_T("Install_Dir"), m_MasterPath);
+                    key.QueryValue("Install_Dir", m_MasterPath);
+                    logMgr->DebugLog("Checking [registry] master path='" + m_MasterPath + "'");
                 }
                 else
                 {
-                    // installed by inno-setup
+                    // Look for MinGW/TDM installtion using inno-setup
                     // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Minimalist GNU for Windows 4.1_is1
                     // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\TDM-GCC
                     wxString name;
                     long index;
-                    key.SetName(_T("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall"));
-                    for (int i = 0; i < 2; ++i)
+                    // Prepare Round 1: 32 bit Windows
+                    key.SetName("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+                    for (int i = 0; i < 2; ++i) // Round 1: 32 bit Windows; Round 2: 64 bit Windows
                     {
                         bool ok = key.GetFirstKey(name, index);
-                        while (ok && !name.StartsWith(wxT("Minimalist GNU for Windows")) && name != wxT("TDM-GCC"))
+                        while ( ok && !name.StartsWith("Minimalist GNU for Windows")
+                                   && !name.IsSameAs("TDM-GCC") )
                         {
                             ok = key.GetNextKey(name, index);
                         }
                         if (ok)
                         {
-                            name = key.GetName() + wxT("\\") + name;
+                            name = key.GetName() + "\\" + name;
                             key.SetName(name);
                             if (key.Exists() && key.Open(wxRegKey::Read))
                             {
-                                key.QueryValue(wxT("InstallLocation"), m_MasterPath);
-                                // determine configuration, eg: "x86_64-w64-mingw32-gcc.exe"
-                                wxDir binFolder(m_MasterPath + sep + wxT("bin"));
-                                if (binFolder.IsOpened() && binFolder.GetFirst(&name, wxT("*mingw32-gcc*.exe"), wxDIR_FILES))
+                                key.QueryValue("InstallLocation", m_MasterPath);
+                                logMgr->DebugLog("Checking [registry] master path='" + m_MasterPath + "'");
+
+                                // Determine compiler executable, eg: "x86_64-w64-mingw32-gcc.exe", "mingw32-gcc.exe" or "gcc.exe"
+                                wxDir binFolder(m_MasterPath + sep + "bin");
+                                if (binFolder.IsOpened() && binFolder.GetFirst(&name, "*gcc*.exe", wxDIR_FILES))
                                 {
                                     m_Programs.C = name;
                                     while (binFolder.GetNext(&name))
                                     {
                                         if (name.Length() < m_Programs.C.Length())
-                                            m_Programs.C = name; // avoid "x86_64-w64-mingw32-gcc-4.8.1.exe"
+                                            m_Programs.C = name; // Avoid "x86_64-w64-mingw32-gcc-4.8.1.exe" or "gcc-ar.exe"
                                     }
                                     m_Programs.CPP = m_Programs.C;
-                                    m_Programs.CPP.Replace(wxT("mingw32-gcc"), wxT("mingw32-g++"));
+                                    m_Programs.CPP.Replace("mingw32-gcc", "mingw32-g++");
                                     m_Programs.LD = m_Programs.CPP;
                                     break;
                                 }
                             }
                         }
-                        // on 64 bit Windows
-                        key.SetName(wxT("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall"));
+                        // Prepare Round 2: 64 bit Windows
+                        key.SetName("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
                     }
                 }
-#endif
+#endif // __WXMSW__
             }
-            // check for PortableApps.com installation
-            if (!wxFileExists(m_MasterPath + sep + _T("bin") + sep + m_Programs.C))
+
+            // Check for PortableApps.com installation
+            if ( platform::windows && !wxFileExists(m_MasterPath + bin_gcc)
+                                   && !wxFileExists(m_MasterPath + bin_mingw32gcc) )
             {
-                wxString drive = wxFileName(ConfigManager::GetExecutableFolder()).GetVolume() + wxT(":\\");
-                if (wxFileExists(drive + wxT("PortableApps\\CommonFiles\\MinGW\\bin\\") + m_Programs.C))
-                    m_MasterPath = drive + wxT("PortableApps\\CommonFiles\\MinGW");
-                else if (wxFileExists(drive + wxT("CommonFiles\\MinGW\\bin\\") + m_Programs.C))
-                    m_MasterPath = drive + wxT("CommonFiles\\MinGW");
-                else if (wxFileExists(drive + wxT("MinGW\\bin\\") + m_Programs.C))
-                    m_MasterPath = drive + wxT("MinGW");
+                wxString drive = wxFileName(ConfigManager::GetExecutableFolder()).GetVolume() + ":\\";
+                logMgr->DebugLog("Checking [PortableApps] master path='" + drive + "PortableApps\\CommonFiles\\MinGW" + "'");
+                logMgr->DebugLog("Checking [PortableApps] master path='" + drive + "CommonFiles\\MinGW"               + "'");
+                logMgr->DebugLog("Checking [PortableApps] master path='" + drive + "MinGW"                            + "'");
+                if (   wxFileExists(drive + "PortableApps\\CommonFiles\\MinGW" + bin_gcc)
+                    || wxFileExists(drive + "PortableApps\\CommonFiles\\MinGW" + bin_mingw32gcc) )
+                {
+                    m_MasterPath = drive + "PortableApps\\CommonFiles\\MinGW";
+                    if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+                        m_Programs.C = "mingw32-" + m_Programs.C;
+                }
+                else if (   wxFileExists(drive + "CommonFiles\\MinGW" + bin_gcc)
+                         || wxFileExists(drive + "CommonFiles\\MinGW" + bin_mingw32gcc) )
+                {
+                    m_MasterPath = drive + "CommonFiles\\MinGW";
+                    if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+                        m_Programs.C = "mingw32-" + m_Programs.C;
+                }
+                else if (   wxFileExists(drive + "MinGW" + bin_gcc)
+                         || wxFileExists(drive + "MinGW" + bin_mingw32gcc) )
+                {
+                    m_MasterPath = drive + "MinGW";
+                    if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+                        m_Programs.C = "mingw32-" + m_Programs.C;
+                }
             }
+            else if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+                m_Programs.C = "mingw32-" + m_Programs.C;
         }
+        else if (wxFileExists(m_MasterPath + bin_mingw32gcc))
+            m_Programs.C = "mingw32-" + m_Programs.C;
     }
     else
-        m_MasterPath = _T("/usr");
+        m_MasterPath = "/usr";
 
-    AutoDetectResult ret = wxFileExists(m_MasterPath + sep + _T("bin") + sep + m_Programs.C) ? adrDetected : adrGuessed;
-    // don't add lib/include dirs. GCC knows where its files are located
+    logMgr->DebugLog("Final MinGW master path='" + m_MasterPath + "', compiler='" + m_Programs.C + "'");
+    AutoDetectResult ret = (wxFileExists(m_MasterPath + bin_gcc) || (wxFileExists(m_MasterPath + bin_mingw32gcc))) ? adrDetected : adrGuessed;
+    // Don't add lib/include dirs for MinGW/GCC. GCC knows itself where its files are located
 
     SetVersionString();
     return ret;
@@ -171,9 +239,9 @@ AutoDetectResult CompilerMINGW::AutoDetectInstallationDir()
 
 void CompilerMINGW::SetVersionString()
 {
-//    Manager::Get()->GetLogManager()->DebugLog(_T("Compiler detection for compiler ID: '") + GetID() + _T("' (parent ID= '") + GetParentID() + _T("')"));
+//    Manager::Get()->GetLogManager()->DebugLog("Compiler detection for compiler ID: '" + GetID() + "' (parent ID= '" + GetParentID() + "')");
 
-    wxArrayString output, errors;
+    wxArrayString output;
     wxString sep = wxFileName::GetPathSeparator();
     wxString master_path = m_MasterPath;
     wxString compiler_exe = m_Programs.C;
@@ -182,7 +250,7 @@ void CompilerMINGW::SetVersionString()
      * the m_MasterPath is empty if AutoDetectInstallationDir() is not
      * called
      */
-    ConfigManager* cmgr = Manager::Get()->GetConfigManager(_T("compiler"));
+    ConfigManager* cmgr = Manager::Get()->GetConfigManager("compiler");
     if (cmgr)
     {
         wxString settings_path;
@@ -190,13 +258,13 @@ void CompilerMINGW::SetVersionString()
         /* Differ between user-defined compilers (copies of base compilers) */
         if (GetParentID().IsEmpty())
         {
-            settings_path = _T("/sets/")      + GetID() + _T("/master_path");
-            compiler_path = _T("/sets/")      + GetID() + _T("/c_compiler");
+            settings_path = "/sets/"      + GetID() + "/master_path";
+            compiler_path = "/sets/"      + GetID() + "/c_compiler";
         }
         else
         {
-            settings_path = _T("/user_sets/") + GetID() + _T("/master_path");
-            compiler_path = _T("/user_sets/") + GetID() + _T("/c_compiler");
+            settings_path = "/user_sets/" + GetID() + "/master_path";
+            compiler_path = "/user_sets/" + GetID() + "/c_compiler";
         }
         cmgr->Read(settings_path, &master_path);
         cmgr->Read(compiler_path, &compiler_exe);
@@ -208,51 +276,42 @@ void CompilerMINGW::SetVersionString()
          * Thus the following might even return a wrong command!
          */
         if (platform::windows)
-            master_path = _T("C:\\MinGW");
+            master_path = "C:\\MinGW";
         else
-            master_path = _T("/usr");
+            master_path = "/usr";
     }
-    wxString gcc_command = master_path + sep + _T("bin") + sep + compiler_exe;
+    wxString gcc_command = master_path + sep + "bin" + sep + compiler_exe;
 
     Manager::Get()->GetMacrosManager()->ReplaceMacros(gcc_command);
     if (!wxFileExists(gcc_command))
     {
-//        Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version detection: Compiler not found: ") + gcc_command);
+//        Manager::Get()->GetLogManager()->DebugLog("Compiler version detection: Compiler not found: " + gcc_command);
         return;
     }
 
-//    Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version detection: Issuing command: ") + gcc_command);
+//    Manager::Get()->GetLogManager()->DebugLog("Compiler version detection: Issuing command: " + gcc_command);
 
-    int flags = wxEXEC_SYNC;
-#if wxCHECK_VERSION(3, 0, 0)
-    // Stop event-loop while wxExecute runs, to avoid a deadlock on startup,
-    // that occurs from time to time on wx3
-    flags |= wxEXEC_NOEVENTS;
-#else
-    flags |= wxEXEC_NODISABLE;
-#endif
-    long result = wxExecute(gcc_command + _T(" --version"), output, errors, flags );
-    if(result != 0)
+    if ( Execute(gcc_command + " --version", output) != 0 )
     {
-//        Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version detection: Error executing command."));
+//        Manager::Get()->GetLogManager()->DebugLog("Compiler version detection: Error executing command.");
     }
     else
     {
         if (output.GetCount() > 0)
         {
-//            Manager::Get()->GetLogManager()->DebugLog(_T("Extracting compiler version from: ") + output[0]);
+//            Manager::Get()->GetLogManager()->DebugLog("Extracting compiler version from: " + output[0]);
             wxRegEx reg_exp;
-            if (reg_exp.Compile(_T("[0-9]+[.][0-9]+[.][0-9]+")) && reg_exp.Matches(output[0]))
+            if (reg_exp.Compile("[0-9]+[.][0-9]+[.][0-9]+") && reg_exp.Matches(output[0]))
             {
                 m_VersionString = reg_exp.GetMatch(output[0]);
-//                Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version via RegExp: ") + m_VersionString);
+//                Manager::Get()->GetLogManager()->DebugLog("Compiler version via RegExp: " + m_VersionString);
             }
             else
             {
                 m_VersionString = output[0].Mid(10);
                 m_VersionString = m_VersionString.Left(5);
                 m_VersionString.Trim(false);
-//                Manager::Get()->GetLogManager()->DebugLog(_T("Compiler version: ") + m_VersionString);
+//                Manager::Get()->GetLogManager()->DebugLog("Compiler version: " + m_VersionString);
             }
         }
     }

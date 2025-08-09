@@ -16,9 +16,14 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: BrowseMarks.h 11347 2018-03-26 14:24:13Z pecanh $
+// RCS-ID: $Id: BrowseMarks.h 13627 2025-03-02 18:17:10Z mortenmacfly $
 #ifndef BROWSEMARKS_H
 #define BROWSEMARKS_H
+
+#include "cbeditor.h"
+#include "cbstyledtextctrl.h"
+#include "editormanager.h"
+#include <wx/string.h>
 
 extern int gBrowse_MarkerId;
 extern int gBrowse_MarkerStyle;
@@ -64,15 +69,13 @@ class BrowseMarks
     private:
         BrowseMarks();
 
-        enum {MaxEntries = 20};
-
         EditorManager* m_pEdMgr;
 
         wxString    m_filePath;
         wxString    m_fileShortName;
         int         m_currIndex;    //index of current cursor posn
         int         m_lastIndex;    //insertion index
-        wxArrayInt  m_EdPosnArray;
+        wxArrayInt  m_EdPosnArray;  // contains editor line numbers
 };
 
 #endif // BROWSEMARKS_H

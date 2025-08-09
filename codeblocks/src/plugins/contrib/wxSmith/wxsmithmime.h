@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsmithmime.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsmithmime.h $
+* $Revision: 12722 $
+* $Id: wxsmithmime.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsmithmime.h $
 */
 
 #ifndef WXSMITHMIME_H
@@ -26,7 +26,7 @@
 #include <cbplugin.h>
 
 /** \brief Helper plugin dealing with mime types */
-class wxSmithMime : public cbMimePlugin
+class PLUGIN_EXPORT wxSmithMime : public cbMimePlugin
 {
     public:
 

@@ -15,6 +15,7 @@
 
 #include <wx/string.h>
 #include <wx/textfile.h>
+#include <vector>
 
 class TextFileSearcher
 {
@@ -36,6 +37,7 @@ public:
                                                    bool matchCase,
                                                    bool matchWordBegin,
                                                    bool matchWord,
+                                                   bool matchInComments,
                                                    bool regEx);
 
 
@@ -48,7 +50,7 @@ public:
       * @param line : the text line to match.
       * @return true if line matches search text.
       */
-    virtual bool MatchLine(wxString line) = 0;
+    virtual bool MatchLine(std::vector<int> *outMatchedPositions, const wxString &line) = 0;
 
     /** Return true if object is OK.
       * Exists to test validity of the object, mainly for reg ex syntax errors.
@@ -66,22 +68,25 @@ public:
       * @return true if success (error can only come from bad reg ex or file open
       * failure).
       */
-    eFileSearcherReturn FindInFile(const wxString& filePath, wxArrayString &foundLines);
+    eFileSearcherReturn FindInFile(const wxString& filePath, wxArrayString &foundLines,
+                                   std::vector<int> &matchedPositions);
 
 protected:
     /** Constructor. */
     // We don't use ThreadSearchFindData to limit coupling
-    TextFileSearcher(const wxString& searchText, bool matchCase, bool matchWordBegin, bool matchWord):
+    TextFileSearcher(const wxString& searchText, bool matchCase, bool matchWordBegin, bool matchWord, bool matchInComments):
                      m_SearchText(searchText),
                      m_MatchCase(matchCase),
                      m_MatchWordBegin(matchWordBegin),
-                     m_MatchWord(matchWord)
+                     m_MatchWord(matchWord),
+                     m_MatchInComments(matchInComments)
     {}
 
     wxString   m_SearchText;
     bool       m_MatchCase;
     bool       m_MatchWordBegin;
     bool       m_MatchWord;
+    bool       m_MatchInComments;
     wxTextFile m_TextFile;
 };
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11066 $
- * $Id: devpakupdater.cpp 11066 2017-05-27 20:29:39Z d_anselmi $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/devpak_plugin/devpakupdater.cpp $
+ * $Revision: 12304 $
+ * $Id: devpakupdater.cpp 12304 2021-03-16 23:28:31Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/devpak_plugin/devpakupdater.cpp $
  */
 
 #include "devpakupdater.h"
@@ -99,6 +99,7 @@ int DevPakUpdater::Execute()
     if (!ConfigurationValid())
         return -1;
     UpdateDlg dlg(Manager::Get()->GetAppWindow());
+    PlaceWindow(&dlg);
     dlg.ShowModal();
     return 0;
 }

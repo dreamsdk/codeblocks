@@ -1,0 +1,11 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g transform="translate(0 -288.5)" stroke-width=".7111px">
+    <path transform="matrix(.3715 0 0 .3727 -.207 288.1)" d="M.914 4.33.91 17.434 7.5 20.5s.163-1.42.34-1.986c.16-.514 1.02-.982 1.712-.89 1.855.249 2.45.861 3.16-.279.355-.567 1.032-3.522-.03-4.654C12.07 12.037 11 12.5 10 12.5c-1.302 0-2.5-1.5-2.5-3V7z" fill="#ffba00" stroke="#f90"/>
+    <path transform="matrix(.3715 0 0 .3727 -.021 288.1)" d="M.199 4.177 8 1l6.5 2.5L7 7Z" fill="#ff0" stroke="#f90" stroke-linecap="round" stroke-linejoin="bevel"/>
+    <g stroke="#0d4399">
+      <path transform="matrix(.3715 0 0 .3727 -.021 288.1)" d="M15.225 3.953 22.5 6.5 15 10 7.514 7.563z" fill="#77b7fd" stroke-linejoin="bevel"/>
+      <path transform="matrix(.3715 0 0 .3727 -.021 288.1)" d="M22.5 6.5V20L15 23.5V10Z" fill="#3699fd" stroke-linejoin="round"/>
+      <path transform="matrix(.3715 0 0 .3727 -.021 288.1)" d="m15 10-.022 13.492-7.234-2.625c-.1-.022.082-1.006.193-1.691.137-.848.804-.954 2.002-.647 1.741.445 2.237.098 2.804-.643.406-.53 1.429-3.974.02-5.614-.905-1.052-2.093-.52-3.036-.486-1.3.046-1.995-1.186-1.995-2.186L7.73 7.524z" fill="#0a6fb9" shape-rendering="crispEdges" stroke-linejoin="bevel"/>
+    </g>
+  </g>
+</svg>

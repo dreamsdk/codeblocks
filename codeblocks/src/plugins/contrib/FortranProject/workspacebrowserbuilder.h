@@ -112,6 +112,7 @@ class WorkspaceBrowserBuilder
         wxArrayString m_ExpandedNodes;
 
     private:
+        bool m_DeletingTopRootChildren;
 };
 
 #endif // WORKSPACEBROWSERBUILDER_H

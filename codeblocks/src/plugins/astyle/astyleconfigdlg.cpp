@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11437 $
- * $Id: astyleconfigdlg.cpp 11437 2018-08-07 07:13:40Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/astyleconfigdlg.cpp $
+ * $Revision: 12018 $
+ * $Id: astyleconfigdlg.cpp 12018 2020-04-02 14:45:18Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/astyle/astyleconfigdlg.cpp $
  */
 
 #include <sdk.h>
@@ -220,7 +220,7 @@ int Foo(bool isBar)\n\
 #define AS_1TBS "\
 int Foo(bool isBar)\n\
 {\n\
-    if (isFoo) {\n\
+    if (isBar) {\n\
         bar();\n\
         return 1;\n\
     } else {\n\

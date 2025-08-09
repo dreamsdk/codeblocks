@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11820 $
- * $Id: debugger_defs.cpp 11820 2019-07-30 17:26:39Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debugger_defs.cpp $
+ * $Revision: 13404 $
+ * $Id: debugger_defs.cpp 13404 2023-12-09 19:02:13Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/debugger_defs.cpp $
  */
 
 #include "sdk.h"
@@ -82,6 +82,7 @@ class DebuggerInfoWindow : public wxScrollingDialog
 void DebuggerInfoCmd::ParseOutput(const wxString& output)
 {
     DebuggerInfoWindow win(Manager::Get()->GetAppWindow(), m_Title.wx_str(), output);
+    PlaceWindow(&win);
     win.ShowModal();
 }
 
@@ -193,7 +194,8 @@ GDBWatch::GDBWatch(wxString const &symbol) :
     m_array_start(0),
     m_array_count(0),
     m_is_array(false),
-    m_forTooltip(false)
+    m_forTooltip(false),
+    m_address(0)
 {
 }
 GDBWatch::~GDBWatch()
@@ -202,6 +204,18 @@ GDBWatch::~GDBWatch()
 void GDBWatch::GetSymbol(wxString &symbol) const
 {
     symbol = m_symbol;
+}
+void GDBWatch::SetSymbol(const wxString& symbol)
+{
+    m_symbol = symbol;
+}
+uint64_t GDBWatch::GetAddress() const
+{
+    return  m_address;
+}
+void GDBWatch::SetAddress(uint64_t address)
+{
+    m_address = address;
 }
 void GDBWatch::GetValue(wxString &value) const
 {
@@ -216,13 +230,27 @@ bool GDBWatch::SetValue(const wxString &value)
     }
     return true;
 }
+
+bool GDBWatch::GetIsValueErrorMessage()
+{
+    return m_raw_value_is_message;
+}
+
+void GDBWatch::SetIsValueErrorMessage(bool value)
+{
+    m_raw_value_is_message = value;
+}
+
 void GDBWatch::GetFullWatchString(wxString &full_watch) const
 {
     cb::shared_ptr<const cbWatch> parent = GetParent();
     if (parent)
     {
         parent->GetFullWatchString(full_watch);
-        full_watch += wxT(".") + m_symbol;
+        if (full_watch.StartsWith("*"))
+            full_watch = "(" + full_watch + ")";
+
+        full_watch += "." + m_symbol;
     }
     else
         full_watch = m_symbol;
@@ -255,11 +283,6 @@ bool GDBWatch::IsPointerType() const
 void GDBWatch::SetDebugValue(wxString const &value)
 {
     m_debug_value = value;
-}
-
-void GDBWatch::SetSymbol(const wxString& symbol)
-{
-    m_symbol = symbol;
 }
 
 void GDBWatch::DoDestroy()
@@ -341,23 +364,99 @@ wxString GDBMemoryRangeWatch::MakeSymbolToAddress() const
     return wxString::FromUTF8(tmpAddress);
 };
 
-bool IsPointerType(wxString type)
+struct PtrTypeToken
 {
-    type.Trim(true);
-    type.Trim(false);
+    bool Match(const wxString &base, const char *term, size_t count) const
+    {
+        return base.compare(start, end - start, term, count) == 0;
+    }
 
-    if (type.Contains(wxT("char *")) || type.Contains(wxT("char const *")))
+    size_t start, end;
+};
+
+/// Extract a token from a C/C++ type definition.
+/// Tokens are things separated by white space.
+/// '*' characters start or end tokens.
+/// C++ template parameters are parsed as a single token.
+static PtrTypeToken ConsumeToken(const wxString &s, size_t pos)
+{
+    while (pos > 0 && (s[pos - 1] == ' ' || s[pos - 1] == '\t'))
+    {
+        --pos;
+    }
+
+    PtrTypeToken result;
+    result.end = pos;
+
+    int openedAngleBrackets = 0;
+
+    while (pos > 0)
+    {
+        const char ch = s[pos - 1];
+        // We want to ignore any '*' inside the angle brackets of a C++ template declaration.
+        // To do so we expand the token until the end of the angle brackets.
+        if (ch == '>')
+            openedAngleBrackets++;
+        else if (ch == '<')
+            openedAngleBrackets--;
+        else if (openedAngleBrackets == 0)
+        {
+            if (ch == ' ' || ch == '\t')
+                break;
+            if (ch == '*')
+            {
+                // If this is the start of the token consume the star and make a single character
+                // token. If this is not the start of the token, just end the token, so the star
+                // could be parsed at a separate token on the next iteration.
+                if (pos == result.end)
+                    --pos;
+                break;
+            }
+        }
+        --pos;
+    }
+
+    result.start = pos;
+    return result;
+}
+
+/// The function expects valid type C/C++ type declarations, so there is no code to detect invalid
+/// ones.
+bool IsPointerType(const wxString &type)
+{
+    if (type.empty())
         return false;
-    else if (type.EndsWith(wxT("*")))
-        return true;
-    else if (type.EndsWith(wxT("* const")))
-        return true;
-    else if (type.EndsWith(wxT("* volatile")))
-        return true;
-    else if (type.EndsWith(wxT("* const volatile")))
-        return true;
-    else if (type.EndsWith(wxT("restrict"))) // restrict is only for pointer types
-        return true;
+
+    int numberOfStars = 0;
+    size_t pos = type.length();
+    do
+    {
+        const PtrTypeToken token = ConsumeToken(type, pos);
+        if (token.start == token.end)
+            return numberOfStars > 0;
+
+        pos = token.start;
+
+        if (token.end - token.start == 1)
+        {
+            if (type[token.start] == '*')
+                numberOfStars++;
+            else if (type[token.start] == '&')
+                return false;
+        }
+        else
+        {
+            // char*, const char*, wchar_t and const wchar* should be treated as string and not as
+            // array. This is some kind of arbitrary decision, I'm not 100% sure that it is useful.
+            if (token.Match(type, "char", cbCountOf("char") - 1))
+                return numberOfStars > 1;
+            else if (token.Match(type, "wchar_t", cbCountOf("wchar_t") - 1))
+                return numberOfStars > 1;
+        }
+
+    } while (true);
+
+    // Should be unreachable
     return false;
 }
 

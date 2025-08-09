@@ -1,0 +1,7 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g transform="translate(0 -288.5)" fill="#04049b">
+    <rect transform="matrix(.2646 0 0 .4097 1.058 289)" x="2" y="1.5" width="3" height="15.5" ry="0" style="paint-order:markers stroke fill"/>
+    <path transform="matrix(.2065 0 0 .2268 2.62 288.9)" d="M-5 3h20.5v3.5H-5z" style="paint-order:markers fill stroke"/>
+    <path transform="matrix(.1549 0 0 .2268 2.362 291.6)" d="M-5 3h20.5v3.5H-5z" shape-rendering="crispEdges" style="paint-order:markers fill stroke"/>
+  </g>
+</svg>

@@ -26,9 +26,11 @@
 					<Add option="-D_WIN64" />
 					<Add option="-DWXUSINGDLL" />
 					<Add option="-DcbDEBUG" />
-					<Add option="-DNOPCH" />
+					<Add option="-Winvalid-pch" />
+					<Add option="-DCB_PRECOMP" />
 					<Add option="-DwxUSE_UNICODE" />
 					<Add directory="../../include" />
+					<Add directory="../../include/tinyxml" />
 					<Add directory="../../sdk/wxscintilla/include" />
 					<Add directory="$(#WX31_64.include)" />
 					<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
@@ -54,12 +56,13 @@
 		<VirtualTargets>
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
-		<Compiler>
-			<Add option="-DwxDEBUG_LEVEL=0" />
-		</Compiler>
 		<Unit filename="headerguard.cpp" />
 		<Unit filename="headerguard.h" />
 		<Unit filename="manifest.xml" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

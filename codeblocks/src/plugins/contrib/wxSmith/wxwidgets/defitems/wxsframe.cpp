@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsframe.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsframe.cpp $
+* $Revision: 13547 $
+* $Id: wxsframe.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsframe.cpp $
 */
 
 #include <wx/app.h>        // wxTheApp
@@ -32,7 +32,6 @@ namespace
 
     WXS_ST_BEGIN(wxsFrameStyles,_T("wxDEFAULT_FRAME_STYLE"))
         WXS_ST_CATEGORY("wxFrame")
-        WXS_ST(wxSTAY_ON_TOP)
         WXS_ST(wxCAPTION)
         WXS_ST(wxDEFAULT_DIALOG_STYLE)
         WXS_ST(wxDEFAULT_FRAME_STYLE)
@@ -46,7 +45,6 @@ namespace
         WXS_ST(wxMAXIMIZE_BOX)
         WXS_ST(wxMINIMIZE_BOX)
         WXS_ST(wxSTAY_ON_TOP)
-        WXS_ST(wxTAB_TRAVERSAL)
         WXS_EXST(wxFRAME_EX_METAL)
         WXS_EXST(wxFRAME_EX_CONTEXTHELP)
         WXS_ST_DEFAULTS()
@@ -54,6 +52,11 @@ namespace
 
     WXS_EV_BEGIN(wxsFrameEvents)
         WXS_EVI(EVT_CLOSE,wxEVT_CLOSE_WINDOW,wxCloseEvent,Close)
+        WXS_EVI(EVT_ACTIVATE,wxEVT_ACTIVATE,wxActivateEvent,Activate)
+        WXS_EVI(EVT_ICONIZE,wxEVT_ICONIZE,wxIconizeEvent,Iconize)
+        WXS_EVI(EVT_MENU_OPEN,wxEVT_MENU_OPEN,wxMenuEvent,MenuOpen)
+        WXS_EVI(EVT_MENU_CLOSE,wxEVT_MENU_CLOSE,wxMenuEvent,MenuClose)
+        WXS_EVI(EVT_MENU_HIGHLIGHT_ALL,wxEVT_MENU_HIGHLIGHT,wxMenuEvent,MenuHighlightAll)
         WXS_EV_DEFAULTS()
     WXS_EV_END()
 
@@ -115,14 +118,14 @@ void wxsFrame::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
-    wxWindow* NewItem = 0;
-    wxFrame* Frm = 0;
+    wxWindow* NewItem = nullptr;
+    wxFrame* Frm = nullptr;
 
     // In case of frame and dialog when in "Exact" mode, we do not create
     // new object, but use Parent and call Create for it.
-    if ( Flags & pfExact )
+    if ( _Flags & pfExact )
     {
         Frm = wxDynamicCast(Parent,wxFrame);
         if ( Frm )
@@ -132,7 +135,7 @@ wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long Flags)
             Frm->Move(Pos(wxTheApp->GetTopWindow()));
         }
         NewItem = Frm;
-        SetupWindow(NewItem,Flags);
+        SetupWindow(NewItem,_Flags);
         if ( !Icon.IsEmpty() )
         {
             wxIcon FrameIcon;
@@ -140,7 +143,7 @@ wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long Flags)
             Frm->SetIcon(FrameIcon);
         }
 
-        AddChildrenPreview(NewItem,Flags);
+        AddChildrenPreview(NewItem,_Flags);
         if ( Centered )
         {
             Frm->Centre();
@@ -151,8 +154,8 @@ wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long Flags)
     {
         NewItem = new wxsGridPanel(Parent,GetId(),wxDefaultPosition,Size(Parent),0);
         NewItem->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_APPWORKSPACE));
-        SetupWindow(NewItem,Flags);
-        AddChildrenPreview(NewItem,Flags);
+        SetupWindow(NewItem,_Flags);
+        AddChildrenPreview(NewItem,_Flags);
 
         // wxPanel tends to behave very strange when it has children and no sizer,
         // we have to manually resize it's content
@@ -180,7 +183,7 @@ wxObject* wxsFrame::OnBuildPreview(wxWindow* Parent,long Flags)
     return NewItem;
 }
 
-void wxsFrame::OnEnumContainerProperties(cb_unused long Flags)
+void wxsFrame::OnEnumContainerProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsFrame,Title,_("Title"),_T("title"),_T(""),false)
     WXS_BOOL(wxsFrame,Centered,_("Centered"),_T("centered"),false);

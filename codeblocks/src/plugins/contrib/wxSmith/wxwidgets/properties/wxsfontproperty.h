@@ -15,19 +15,21 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10025 $
-* $Id: wxsfontproperty.h 10025 2014-11-06 09:23:37Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontproperty.h $
+* $Revision: 12722 $
+* $Id: wxsfontproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontproperty.h $
 */
 
 #ifndef WXSFONTPROPERTY_H
 #define WXSFONTPROPERTY_H
 
+#include <cbplugin.h>
+
 #include "../../properties/wxsproperties.h"
 #include "../wxscodercontext.h"
 
 /** \brief Structure holding font configuration */
-struct wxsFontData
+struct PLUGIN_EXPORT wxsFontData
 {
     long Size;
     wxFontStyle Style;
@@ -79,7 +81,7 @@ struct wxsFontData
 
 /** \brief Property for editing font properties
  */
-class wxsFontProperty: public wxsCustomEditorProperty
+class PLUGIN_EXPORT wxsFontProperty: public wxsCustomEditorProperty
 {
     public:
 

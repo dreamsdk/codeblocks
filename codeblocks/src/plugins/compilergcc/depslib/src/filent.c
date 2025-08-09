@@ -9,7 +9,7 @@
  * This file is part of jam.
  *
  * License is hereby granted to use this software and distribute it
- * freely, as long as this copyright notice is retained and modifications 
+ * freely, as long as this copyright notice is retained and modifications
  * are clearly marked.
  *
  * ALL WARRANTIES ARE HEREBY DISCLAIMED.
@@ -43,6 +43,7 @@
  * 01/08/01 (seiwald) - closure param for file_dirscan/file_archscan
  * 11/04/02 (seiwald) - const-ing for string literals
  * 01/23/03 (seiwald) - long long handles for NT IA64
+ * 03/29/21 (gd_on)   - replace FINDTYPE by intptr_t (it's the compiler which set it's length correctly for 32/64 bits)
  */
 
 # include "jam.h"
@@ -63,18 +64,14 @@
 # include <io.h>
 # include <sys/stat.h>
 
+# include <stdint.h>
+
 /*
  * file_dirscan() - scan a directory for files
  */
 
-# ifdef _M_IA64
-# define FINDTYPE long long
-# else
-# define FINDTYPE long
-# endif
-
 void
-file_dirscan( 
+file_dirscan(
 	const char *dir,
 	scanback func,
 	void	*closure )
@@ -82,7 +79,7 @@ file_dirscan(
 	PATHNAME f;
 	char filespec[ MAXJPATH ];
 	char filename[ MAXJPATH ];
-	FINDTYPE handle;
+	intptr_t handle;
 	int ret;
 	struct _finddata_t finfo[1];
 
@@ -96,7 +93,7 @@ file_dirscan(
 	dir = *dir ? dir : ".";
 
  	/* Special case \ or d:\ : enter it */
- 
+
  	if( f.f_dir.len == 1 && f.f_dir.ptr[0] == '\\' )
  	    (*func)( closure, dir, 0 /* not stat()'ed */, (time_t)0 );
  	else if( f.f_dir.len == 3 && f.f_dir.ptr[1] == ':' )
@@ -130,7 +127,7 @@ file_dirscan(
 # else
 	handle = _findfirst( filespec, finfo );
 
-	if( ( ret = ( handle == (FINDTYPE)(-1) ) ) ) /* TNB */
+	if( ( ret = ( handle == (intptr_t)(-1) ) ) ) /* TNB */
 	    return;
 
 	while( !ret )
@@ -280,7 +277,7 @@ file_archscan(
 	    if( ( c = strrchr( name, '\\' ) ) ) /* TNB */
 		name = c + 1;
 
-	    sprintf( buf, "%s(%.*s)", archive, endname - name, name );
+	    sprintf( buf, "%s(%.*s)", archive, (int)(endname - name), name );
 	    (*func)( closure, buf, 1 /* time valid */, (time_t)lar_date );
 
 	    offset += SARHDR + lar_size;

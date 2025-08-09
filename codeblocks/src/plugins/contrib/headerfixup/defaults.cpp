@@ -4,7 +4,7 @@
  *
  * $Revision: 10990 $
  * $Id: defaults.cpp 10990 2017-02-06 19:11:54Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/defaults.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/defaults.cpp $
  */
 
 #include "bindings.h"

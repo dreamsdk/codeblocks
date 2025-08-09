@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9173 $
- * $Id: cbworkspace.cpp 9173 2013-07-03 20:14:50Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbworkspace.cpp $
+ * $Revision: 12999 $
+ * $Id: cbworkspace.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/cbworkspace.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -62,15 +62,15 @@ cbWorkspace::~cbWorkspace()
 void cbWorkspace::Load()
 {
     wxString fname = m_Filename.GetFullPath();
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("Loading workspace \"%s\""), fname.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Loading workspace \"%s\"", fname));
 
     if (!m_Filename.FileExists())
     {
-        Manager::Get()->GetLogManager()->DebugLog(_T("File does not exist."));
+        Manager::Get()->GetLogManager()->DebugLog("File does not exist.");
         if (!m_IsDefault)
         {
             wxString msg;
-            msg.Printf(_("Workspace '%s' does not exist..."), fname.c_str());
+            msg.Printf(_("Workspace '%s' does not exist..."), fname);
             cbMessageBox(msg, _("Error"), wxOK | wxCENTRE | wxICON_ERROR);
             // workspace wasn't loaded successfully
             m_IsOK = false;
@@ -111,12 +111,13 @@ bool cbWorkspace::Save(bool force)
     if (!force && !m_Modified)
         return true;
 
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("Saving workspace \"%s\""), m_Filename.GetFullPath().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Saving workspace \"%s\"", m_Filename.GetFullPath()));
     WorkspaceLoader wsp;
     bool ret = wsp.Save(m_Title, m_Filename.GetFullPath());
     SetModified(!ret);
-    if(!ret)
-        cbMessageBox(_("Couldn't save workspace ") + m_Filename.GetFullPath() + _("\n(Maybe the file is write-protected?)"), _("Warning"), wxICON_WARNING);
+    if (!ret)
+        cbMessageBox(wxString::Format(_("Couldn't save workspace %s\n(Maybe the file is write-protected?)"), m_Filename.GetFullPath()), _("Warning"), wxICON_WARNING);
+
     return ret;
 }
 
@@ -153,7 +154,7 @@ void cbWorkspace::SetTitle(const wxString& title)
 void cbWorkspace::SetModified(bool modified)
 {
     m_Modified = modified;
-    // Manager::Get()->GetLogManager()->DebugLog(F(_T("Setting workspace to modified = \"%s\""), modified ? _T("true") : _T("false")));
+    // Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Setting workspace to modified = \"%s\"", modified ? "true" : "false"));
 }
 
 void cbWorkspace::SetPreferredTarget(const wxString &target)
@@ -174,16 +175,18 @@ void cbWorkspace::ActiveProjectChanged()
 
 bool cbWorkspace::SaveLayout()
 {
-    LogManager *log = Manager::Get()->GetLogManager();
+    LogManager* log = Manager::Get()->GetLogManager();
     WorkspaceLoader wsl;
     wxFileName fn(m_Filename);
-    fn.SetExt( _T("workspace.layout") );
-    log->DebugLog(F(_T("Saving workspace layout \"%s\""), fn.GetFullPath().wx_str()));
-    const bool rc = wsl.SaveLayout( fn.GetFullPath() );
+    fn.SetExt("workspace.layout");
+    const wxString fullPath(fn.GetFullPath());
+    log->DebugLog(wxString::Format("Saving workspace layout \"%s\"", fullPath));
+    const bool rc = wsl.SaveLayout(fullPath);
     if (!rc)
     {
-        log->DebugLog(F(_T("Couldn't save workspace layout \"%s\""), fn.GetFullPath().wx_str()));
+        log->DebugLog(wxString::Format("Couldn't save workspace layout \"%s\"", fullPath));
     }
+
     return rc;
 }
 
@@ -193,19 +196,20 @@ bool cbWorkspace::LoadLayout()
     WorkspaceLoader wsl;
     wxFileName fn(m_Filename);
     fn.SetExt( _T("workspace.layout") );
+    const wxString fullPath(fn.GetFullPath());
     bool rc = false;
     if ( fn.FileExists() )
     {
-        log->DebugLog(F(_T("Loading workspace layout \"%s\""), fn.GetFullPath().wx_str()));
+        log->DebugLog(wxString::Format("Loading workspace layout \"%s\"", fullPath));
         rc = wsl.LoadLayout( fn.GetFullPath() );
         if (!rc)
         {
-            log->DebugLog(F(_T("Couldn't load workspace layout \"%s\""), fn.GetFullPath().wx_str()));
+            log->DebugLog(wxString::Format("Couldn't load workspace layout \"%s\"", fullPath));
         }
     }
     else
     {
-        log->DebugLog(F(_T("Workspace layout file doesn't exist \"%s\""), fn.GetFullPath().wx_str()));
+        log->DebugLog(wxString::Format("Workspace layout file doesn't exist \"%s\"", fullPath));
     }
     return rc;
 }

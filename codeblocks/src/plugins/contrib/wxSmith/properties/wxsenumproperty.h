@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 9300 $
-* $Id: wxsenumproperty.h 9300 2013-09-10 21:52:39Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsenumproperty.h $
+* $Revision: 12722 $
+* $Id: wxsenumproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsenumproperty.h $
 */
 
 #ifndef WXSENUMPROPERTY_H
@@ -25,13 +25,15 @@
 
 #include "wxsproperty.h"
 
+#include <cbplugin.h>
+
 /** \brief Property with enumerated values
  *
  * Enum property works almost the same as long property but it uses
  * predefined values from given set.
  * Note that this class is abstract and should be used as base class for others.
  */
-class wxsEnumProperty: public wxsProperty
+class PLUGIN_EXPORT wxsEnumProperty: public wxsProperty
 {
     public:
 

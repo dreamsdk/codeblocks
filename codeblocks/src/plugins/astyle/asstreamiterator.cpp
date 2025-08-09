@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11266 $
- * $Id: asstreamiterator.cpp 11266 2018-01-15 17:54:23Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/asstreamiterator.cpp $
+ * $Revision: 13359 $
+ * $Id: asstreamiterator.cpp 13359 2023-09-20 14:00:57Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/astyle/asstreamiterator.cpp $
  */
 
 #include "asstreamiterator.h"
@@ -15,13 +15,14 @@
 #include "globals.h"
 
 ASStreamIterator::ASStreamIterator(cbEditor* cbe, const wxChar* in) :
-  m_Ed(cbe),
-  m_CharPtr(in),
-  m_SavedCharPtr(0),
-  m_CurChar(0),
-  m_CurLine(0),
-  m_FoundBookmark(false),
-  m_FoundBreakpoint(false)
+    m_Ed(cbe),
+    m_CharPtr(in),
+    m_SavedCharPtr(0),
+    m_CurChar(0),
+    m_SavedCurChar(0),
+    m_CurLine(0),
+    m_FoundBookmark(false),
+    m_FoundBreakpoint(false)
 {
 }
 

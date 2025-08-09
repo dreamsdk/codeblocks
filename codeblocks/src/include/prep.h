@@ -13,6 +13,22 @@
     #include <wx/version.h>
 #endif
 
+// The Code::Blocks doesn't officially support wxWidgets versions lower than 3.0.0 on Unix and 3.1.3
+// on Windows/macOS. If you want to use unsupported version you could comment the checks below, but
+// keep in mind that any bug you report with these versions might be ignored. Patches to fix the
+// build with such versions might also be ignored.
+#if (defined(__WXMSW__) || defined(__WXOSX_COCOA__))
+    #if !wxCHECK_VERSION(3, 1, 3)
+        #pragma message("Unsupported wxWidgets Version: " wxVERSION_NUM_DOT_STRING)
+        #error "Unsupported wxWidgets Version"
+    #endif
+#else
+    #if !wxCHECK_VERSION(3, 0, 0)
+        #pragma message("Unsupported wxWidgets Version: " wxVERSION_NUM_DOT_STRING)
+        #error "Unsupported wxWidgets Version"
+    #endif
+#endif
+
 /*  ---------------------------------------------------------------------------------------------------------
     Version<major, minor, revision>::eval
         Integer compile-time constant that represents  a major.minor.revision style version number.
@@ -347,7 +363,13 @@ inline ID GetID() { return GetID<void>(); }
 inline ID ConstructID(wxIntPtr i) { return ID(i); }
 
 // Just included to possibly set _LIBCPP_VERSION
+// The header <ciso646> is deprecated in C++17 and removed in C++20
+// and header <version> should be used instead. // patch 1511 2025/03/23
+#if defined(__cplusplus) && __cplusplus < 201703L
 #include <ciso646>
+#else
+#include <version>
+#endif
 
 #include <memory>
 

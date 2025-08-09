@@ -15,29 +15,27 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxscolourproperty.h 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxscolourproperty.h $
+* $Revision: 12722 $
+* $Id: wxscolourproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxscolourproperty.h $
 */
 
 #ifndef WXSCOLOURPROPERTY_H
 #define WXSCOLOURPROPERTY_H
 
+#include <cbplugin.h>
+
 #include "../../properties/wxsproperties.h"
 #include "../wxscodercontext.h"
 
 #include <wx/dialog.h>
-#if wxCHECK_VERSION(3, 0, 0)
 #include <wx/propgrid/editors.h>
-#else
-#include <wx/propgrid/propdev.h>
-#endif
 #include <wx/propgrid/advprops.h>
 
 #define wxsCOLOUR_DEFAULT   (wxPG_COLOUR_CUSTOM - 1)
 
 /** \brief Class handling colour data for wxSmith */
-class wxsColourData: public wxColourPropertyValue
+class PLUGIN_EXPORT wxsColourData: public wxColourPropertyValue
 {
     public:
 
@@ -62,7 +60,7 @@ class wxsColourData: public wxColourPropertyValue
  *  This property uses wxColourPropertyValue to keep data
  *
  */
-class wxsColourProperty: public wxsProperty
+class PLUGIN_EXPORT wxsColourProperty: public wxsProperty
 {
     public:
 

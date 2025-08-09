@@ -1,7 +1,10 @@
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		-I$(top_srcdir)/src/include \
-		-I$(top_srcdir)/src/sdk/wxscintilla/include \
-		$(WXPROPGRID_INCLUDE)
+		-I$(top_srcdir)/src/sdk/wxscintilla/include
+
+if CODEBLOCKS_NT
+AM_CPPFLAGS += -DEXPORT_LIB
+endif
 
 noinst_LTLIBRARIES = libwxsmith_properties.la
 
@@ -25,7 +28,9 @@ libwxsmith_properties_la_SOURCES = \
 ./wxspropertygridmanager.cpp \
 ./wxscustomeditorproperty.cpp \
 ./wxspropertycontainer.cpp \
-./wxseditenumproperty.cpp
+./wxstwolongproperty.cpp \
+./wxseditenumproperty.cpp 
+
 
 sdkdir=$(includedir)/wxsmith/properties
 
@@ -46,4 +51,5 @@ sdk_HEADERS = \
 ./wxsproperty.h \
 ./wxspropertygridmanager.h \
 ./wxscustomeditorproperty.h \
+./wxstwolongproperty.h \
 ./wxseditenumproperty.h

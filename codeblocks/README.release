@@ -8,9 +8,9 @@ Preparations for a release:
     ...and remove the comment.
 
 3.) Feel free to adopt or add a new logo in e.g.:
-    [C::B]\src\src\resources\images\splash_17xx.png
+    [C::B]\src\src\resources\images\splash_20xx.png
 
-4.) With respect to changes in the logo, adopt:
+4.) With respect to changes (if any) in the logo, adopt:
     [C::B]\src\src\splashscreen.cpp
     if needed.
     Especially have an eye on the positions of text overlays in:
@@ -27,26 +27,29 @@ Preparations for a release:
     [C::B]\debian\get-orig-source-from-svn
     [C::B]\src\build_tools\Info.plist
     [C::B]\src\src\resources\resources.rc
-    [C::B]\src\plugins\contrib\wxSmith\wxs.doxy
-    [C::B]\src\sdk.doxy
-    [C::B]\src\plugins\codecompletion\codecompletion.doxy
+    [C::B]src\plugins\codecompletion\codecompletion.doxy
+    [C::B]src\plugins\contrib\wxSmith\wxs.doxy
+    [C::B]src\sdk.doxy
 
-5.1.) Make sure the SVN_REVISION entry in revision.m4 includes only the versio number
+5.1.) Make sure the SVN_REVISION entry in revision.m4 includes only the version number
     and no svn revisions (contrary to what the name implies). This is required for
-    proper work of make dist
+    proper work of make dist.
 
 5.2.) Add a release entry in the debian change log, so the generated packages could
     have the proper version numbers.
 
-5.3.) Remove .svn.%{_svnrev} from the verison variables in the .spec.in files.
+5.3.) Remove .svn.%{_svnrev} from the version variables in the .spec.in files.
 
-6.) Create nightlies based on that branch and fix bugs in that branch
+6.) Probably update year in footer of:
+    [C::B]\src\src\resources\start_here\start_here.html
+
+7.) Create nightlies based on that branch and fix bugs in that branch
     (No new features!)
     Make sure to merge from trunk or into trunk, if needed.
 
-7.) After release, probably merge back relevant final changes from the
+8.) After release, probably merge back relevant final changes from the
     branch into trunk excluding those related to release #defines and
     alike. (But including logos etc. if not yet done.)
 
-6.) After release, rename the branch to the date C::B was actually released:
-    branches/release-20.xx -> branches/release-20.03
+9.) After release, rename the branch to the date C::B was actually released, e.g.:
+    branches/release-20.xx -> branches/release-24.12

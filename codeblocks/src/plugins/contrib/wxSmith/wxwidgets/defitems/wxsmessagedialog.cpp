@@ -81,6 +81,7 @@ void wxsMessageDialog::OnBuildCreatingCode()
             AddHeader(_T("<wx/msgdlg.h>"), GetInfo().ClassName, 0);
             Codef(_T("%C(%W, %t, %t, %T, %P);\n"), m_sMessage.wx_str(), m_sCaption.wx_str());
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             break;
 
         case wxsUnknownLanguage: // fall-through
@@ -91,11 +92,11 @@ void wxsMessageDialog::OnBuildCreatingCode()
 
 /*! \brief Enumerate the dialogue's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsMessageDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsMessageDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsMessageDialog, m_sCaption, _("Caption"), _T("caption"), _T(""), true);
     WXS_SHORT_STRING(wxsMessageDialog, m_sMessage, _("Message"), _T("message"), wxMessageBoxCaptionStr, true);

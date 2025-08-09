@@ -10,11 +10,11 @@
 #ifndef CB_PRECOMP
     #include <wx/string.h>
     #include <wx/event.h>
-
-    #include <cbthreadpool.h>
 #endif
 #include <map>
 #include <set>
+
+#include <cbthreadpool.h>
 
 #include "jumptracker.h"
 #include "parserf.h"
@@ -41,7 +41,7 @@ class NativeParserF : public wxEvtHandler
         void RemoveFromParser(cbProject* project);
         void AddFileToParser(const wxString& projectFilename, const wxString& filename);
         void RemoveFileFromParser(const wxString& filename);
-        void ReparseFile(const wxString& projectFilename, const wxString& filename);
+        bool ReparseFile(const wxString& projectFilename, const wxString& filename);
         void ReparseProject(cbProject* project);
         void ParseProject(cbProject* project);
         void ForceReparseWorkspace();
@@ -74,10 +74,21 @@ class NativeParserF : public wxEvtHandler
         wxArrayString* GetWSFileProjFilenames();
         wxArrayString* GetADirFiles();
         ArrayOfFortranSourceForm* GetADirFileForms();
+        std::map<wxString,wxString>* GetAdditionalIncludeFiles();
+        wxString FindIncludeFile(const wxString& checkDir,  const wxString& filename);
         void GetCurrentBuffer(wxString& buffer, wxString& filename, wxString& projFilename);
+        void SetInterpretCPP(bool interpretCPP, bool cppShadow, const wxColour& cppShadowColour, int cppShadowOpacity);
+        bool DoInterpretCPP();
         void ReparseCurrentEditor();
         wxArrayString GetProjectSearchDirs(cbProject* project);
         void SetProjectSearchDirs(cbProject* project, wxArrayString& searchDirs);
+        void SetProjectIncludeDirs(cbProject* project, wxArrayString& includeDirs);
+        void MakeAIncludeFileList();
+        wxArrayString GetProjectIncludeDirs(cbProject* project);
+        void DelProjectIncludeDirs(cbProject* project);
+        const std::vector<wxString>* GetProjectCPPMacros(const wxString& projFilename);
+        std::vector<wxString>* GetProjectCPPMacrosCopy(const wxString& projFilename);
+        void SetProjectCPPMacros(cbProject* project, const wxString& strMacros);
         bool HasFortranFiles(cbProject* project);
         void DelProjectSearchDirs(cbProject* project);
         void ForceReparseProjectSearchDirs();
@@ -89,8 +100,10 @@ class NativeParserF : public wxEvtHandler
 
         void OnEditorActivated(EditorBase* editor);
         void OnEditorClose(EditorBase* editor);
+        void MarkDisabledLines(cbEditor* editor);
         void OnProjectActivated(cbProject* project);
         void UpdateWorkspaceFilesDependency();
+        void UpdateWSFilesDependency();
         void ClearWSDependency();
         void RemoveProjectFilesDependency(cbProject* project);
 
@@ -101,7 +114,7 @@ class NativeParserF : public wxEvtHandler
         void MakeWSFileList();
         void MakeADirFileList();
 
-        void OnUpdateWorkspaceBrowser(wxCommandEvent& event);
+        void OnWSParserThreadFinished(wxCommandEvent& event);
         void OnUpdateADirTokens(wxCommandEvent& event);
         void OnUpdateCurrentFileTokens(wxCommandEvent& event);
 
@@ -133,6 +146,14 @@ class NativeParserF : public wxEvtHandler
 
         std::map<wxString,wxArrayString> m_ASearchDirs;
         std::map<wxString,wxArrayString> m_ADirFNameToProjMap;
+
+        std::map<wxString,wxArrayString> m_AIncludeDirs; ///< dirs with additional include files for each project
+        std::map<wxString,wxString> m_AIncludeFiles;     ///< additional include files
+        bool m_InterpretCPP;
+        bool m_CppShadow;
+        wxColour m_CppShadowColour;
+        int m_CppShadowOpacity;
+        std::map<wxString,std::vector<wxString>> m_CPPMacros;     ///< project_name->macros
 
         DECLARE_EVENT_TABLE();
 };

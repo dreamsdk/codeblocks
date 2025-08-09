@@ -15,15 +15,16 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11517 $
-* $Id: wxssimplefonteditordlg.cpp 11517 2018-12-11 14:52:48Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssimplefonteditordlg.cpp $
+* $Revision: 13547 $
+* $Id: wxssimplefonteditordlg.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssimplefonteditordlg.cpp $
 */
 
 #include "wxssimplefonteditordlg.h"
 #include "wxsfonteditordlg.h"
 
 #include <wx/fontdlg.h>
+#include "globals.h"
 
 //(*InternalHeaders(wxsSimpleFontEditorDlg)
 #include <wx/intl.h>
@@ -31,15 +32,15 @@
 //*)
 
 //(*IdInit(wxsSimpleFontEditorDlg)
-const long wxsSimpleFontEditorDlg::ID_STATICTEXT1 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_STATICLINE2 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_BUTTON1 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_BUTTON3 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_STATICLINE1 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_BUTTON2 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_TEXTCTRL1 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_STATICTEXT2 = wxNewId();
-const long wxsSimpleFontEditorDlg::ID_STATICTEXT3 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_STATICTEXT1 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_STATICLINE2 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_BUTTON1 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_BUTTON3 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_STATICLINE1 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_BUTTON2 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_STATICTEXT2 = wxNewId();
+const wxWindowID wxsSimpleFontEditorDlg::ID_STATICTEXT3 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(wxsSimpleFontEditorDlg,wxScrollingDialog)
@@ -52,11 +53,11 @@ wxsSimpleFontEditorDlg::wxsSimpleFontEditorDlg(wxWindow* parent,wxsFontData& Dat
     m_Data(Data)
 {
     //(*Initialize(wxsSimpleFontEditorDlg)
-    wxBoxSizer* BoxSizer4;
-    wxStaticBoxSizer* StaticBoxSizer2;
     wxBoxSizer* BoxSizer1;
-    wxFlexGridSizer* FlexGridSizer1;
     wxBoxSizer* BoxSizer3;
+    wxBoxSizer* BoxSizer4;
+    wxFlexGridSizer* FlexGridSizer1;
+    wxStaticBoxSizer* StaticBoxSizer2;
     wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
     Create(parent, id, _("Font settings"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("id"));
@@ -84,7 +85,7 @@ wxsSimpleFontEditorDlg::wxsSimpleFontEditorDlg(wxWindow* parent,wxsFontData& Dat
     BoxSizer4->Add(StaticBoxSizer1, 1, wxEXPAND, 5);
     FlexGridSizer1->Add(BoxSizer4, 1, wxEXPAND, 4);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Test area"));
-    TestArea = new wxTextCtrl(this, ID_TEXTCTRL1, _("This is sample text"), wxDefaultPosition, wxSize(275,71), wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL1"));
+    TestArea = new wxTextCtrl(this, ID_TEXTCTRL1, _("This is sample text"), wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE, wxDefaultValidator, _T("ID_TEXTCTRL1"));
     StaticBoxSizer2->Add(TestArea, 1, wxEXPAND, 4);
     FlexGridSizer1->Add(StaticBoxSizer2, 1, wxEXPAND, 5);
     BoxSizer3 = new wxBoxSizer(wxHORIZONTAL);
@@ -101,7 +102,6 @@ wxsSimpleFontEditorDlg::wxsSimpleFontEditorDlg(wxWindow* parent,wxsFontData& Dat
     BoxSizer1->Add(StdDialogButtonSizer1, 0, wxEXPAND, 5);
     FlexGridSizer1->Add(BoxSizer1, 0, wxTOP|wxALIGN_CENTER_VERTICAL, 5);
     SetSizer(FlexGridSizer1);
-    FlexGridSizer1->Fit(this);
     FlexGridSizer1->SetSizeHints(this);
     Center();
 
@@ -149,10 +149,20 @@ void wxsSimpleFontEditorDlg::UpdateFontDescription()
             Description << _("Weight: ");
             switch ( m_WorkingCopy.Weight )
             {
-                case wxFONTWEIGHT_BOLD:  Description << _("Bold\n"); break;
-                case wxFONTWEIGHT_LIGHT: Description << _("Light\n"); break;
-                case wxFONTWEIGHT_NORMAL: // fall-through
-                default:                 Description << _("Normal\n");
+                case wxFONTWEIGHT_LIGHT:      Description << _("Light\n");      break;
+                case wxFONTWEIGHT_BOLD:       Description << _("Bold\n");       break;
+#if wxCHECK_VERSION(3, 1, 2)
+                case wxFONTWEIGHT_THIN:       Description << _("Thin\n");       break;
+                case wxFONTWEIGHT_EXTRALIGHT: Description << _("ExtraLight\n"); break;
+                case wxFONTWEIGHT_MEDIUM:     Description << _("Medium\n");     break;
+                case wxFONTWEIGHT_SEMIBOLD:   Description << _("SemiBold\n");   break;
+                case wxFONTWEIGHT_EXTRABOLD:  Description << _("ExtraBold\n");  break;
+                case wxFONTWEIGHT_HEAVY:      Description << _("Heavy\n");      break;
+                case wxFONTWEIGHT_EXTRAHEAVY: Description << _("ExtraHeavy\n"); break;
+                case wxFONTWEIGHT_INVALID:    // fall-through
+#endif
+                case wxFONTWEIGHT_NORMAL:     // fall-through
+                default:                      Description << _("Normal\n");
             }
         }
 
@@ -163,6 +173,7 @@ void wxsSimpleFontEditorDlg::UpdateFontDescription()
             {
                 case wxFONTSTYLE_ITALIC: Description << _("Italic\n"); break;
                 case wxFONTSTYLE_SLANT:  Description << _("Slant\n"); break;
+                case wxFONTSTYLE_MAX:    // fall-through
                 case wxFONTSTYLE_NORMAL: // fall-through
                 default:                 Description << _("Normal\n");
             }
@@ -195,15 +206,9 @@ void wxsSimpleFontEditorDlg::OnButton1Click(cb_unused wxCommandEvent& event)
     if ( !Font.Ok() ) return;
 
     m_WorkingCopy.Size = Font.GetPointSize();
-#if wxCHECK_VERSION(3, 0, 0)
     m_WorkingCopy.Style = Font.GetStyle();
     m_WorkingCopy.Weight = Font.GetWeight();
     m_WorkingCopy.Family = Font.GetFamily();
-#else
-    m_WorkingCopy.Style = static_cast<wxFontStyle>(Font.GetStyle());
-    m_WorkingCopy.Weight = static_cast<wxFontWeight>(Font.GetWeight());
-    m_WorkingCopy.Family = static_cast<wxFontFamily>(Font.GetFamily());
-#endif
     m_WorkingCopy.Underlined = Font.GetUnderlined();
     m_WorkingCopy.Faces.Clear();
     m_WorkingCopy.Faces.Add(Font.GetFaceName());
@@ -223,6 +228,7 @@ void wxsSimpleFontEditorDlg::OnButton1Click(cb_unused wxCommandEvent& event)
 void wxsSimpleFontEditorDlg::OnButton2Click(cb_unused wxCommandEvent& event)
 {
     wxsFontEditorDlg Dlg(this,m_WorkingCopy);
+    PlaceWindow(&Dlg);
     Dlg.ShowModal();
     UpdateFontDescription();
 }

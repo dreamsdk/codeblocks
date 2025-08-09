@@ -1,9 +1,12 @@
 #include "autoinsert.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
     #include <configmanager.h>
 #endif
 #include <algorithm>
+
+#include <cbstyledtextctrl.h>
 
 #include "fortranfileext.h"
 
@@ -12,63 +15,106 @@ extern FortranFileExt g_FortranFileExt;
 AutoInsert::AutoInsert()
 {
     // ctor
-    m_NameMap[_T("if")] = _T("if (...) then");
-    m_NameMap[_T("do")] = _T("do ...");
-    m_NameMap[_T("subroutine")] = _T("subroutine");
-    m_NameMap[_T("function")] = _T("function");
-    m_NameMap[_T("interface")] = _T("interface");
-    m_NameMap[_T("associate")] = _T("associate");
-    m_NameMap[_T("block")] = _T("block");
-    m_NameMap[_T("critical")] = _T("critical");
-    m_NameMap[_T("module")] = _T("module");
-    m_NameMap[_T("program")] = _T("program");
-    m_NameMap[_T("select")] = _T("select ...");
-    m_NameMap[_T("type")] = _T("type");
-    m_NameMap[_T("where")] = _T("where (...)");
-    m_NameMap[_T("enum")] = _T("enum");
-    m_NameMap[_T("forall")] = _T("forall (...)");
-    m_NameMap[_T("submodule")] = _T("submodule");
-    m_NameMap[_T("team")] = _T("change team (...)");
+    m_NameMap["if"] = "if (...) then";
+    m_NameMap["do"] = "do ...";
+    m_NameMap["subroutine"] = "subroutine";
+    m_NameMap["function"] = "function";
+    m_NameMap["interface"] = "interface";
+    m_NameMap["associate"] = "associate";
+    m_NameMap["block"] = "block";
+    m_NameMap["critical"] = "critical";
+    m_NameMap["module"] = "module";
+    m_NameMap["program"] = "program";
+    m_NameMap["select"] = "select ...";
+    m_NameMap["type"] = "type";
+    m_NameMap["where"] = "where (...)";
+    m_NameMap["enum"] = "enum";
+    m_NameMap["forall"] = "forall (...)";
+    m_NameMap["submodule"] = "submodule";
+    m_NameMap["team"] = "change team (...)";
 
+#if wxCHECK_VERSION(3, 1, 6)
+    int opt = wxRE_EXTENDED | wxRE_ICASE | wxRE_NOSUB;
+    m_RegMap["if"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*):(\\s*))?(if)(\\s*)(\\(.*\\))(\\s*)then\\b.*", opt);
+    m_RegMap["endif"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(if)\\b", opt);
+    m_RegMap["do"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(do)(\\b)", opt);
+    m_RegMap["enddo"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(do)\\b", opt);
+    m_RegMap["subroutine"] = new wxRegEx("(.*)subroutine(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)", opt);
+    m_RegMap["endsubroutine"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(subroutine)\\b", opt);
+    m_RegMap["function"] = new wxRegEx("(.*)function(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)", opt);
+    m_RegMap["endfunction"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(function)\\b", opt);
+    m_RegMap["interface"] = new wxRegEx("^[\\s\\t]*(abstract(\\s*))?interface(\\b)", opt);
+    m_RegMap["endinterface"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(interface)\\b", opt);
+    m_RegMap["associate"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(associate)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endassociate"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(associate)\\b", opt);
+    m_RegMap["block"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(block)\\b", opt);
+    m_RegMap["endblock"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(block)\\b", opt);
+    m_RegMap["critical"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(critical)\\b", opt);
+    m_RegMap["endcritical"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(critical)\\b", opt);
+    m_RegMap["module"] = new wxRegEx("^[\\s\\t]*(module)(\\s+)((?!procedure[\\s:]+)[a-z0-9_]+)\\b", opt);
+    m_RegMap["endmodule"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(module)\\b", opt);
+    m_RegMap["program"] = new wxRegEx("^[\\s\\t]*program\\b", opt);
+    m_RegMap["endprogram"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(program)\\b", opt);
+    m_RegMap["select"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(select)(\\s*)(case|type)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endselect"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(select)\\b", opt);
+    m_RegMap["type"] = new wxRegEx("^([\\s\\t]*)(type)(\\s*)((\\s*,\\s*([a-z0-9_]+))*\\s*::)?(\\s*)([a-z0-9_]+)\\b", opt);
+    m_RegMap["endtype"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(type)\\b", opt);
+    m_RegMap["where"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(where)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$", opt);
+    m_RegMap["endwhere"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(where)\\b", opt);
+    m_RegMap["enum"] = new wxRegEx("^[\\s\\t]*enum\\b", opt);
+    m_RegMap["endenum"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(enum)\\b", opt);
+    m_RegMap["forall"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(forall)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$", opt);
+    m_RegMap["endforall"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(forall)\\b", opt);
+    m_RegMap["submodule"] = new wxRegEx("^[\\s\\t]*(submodule)(\\s*)(\\([a-z0-9_]+\\))(\\s*)([a-z0-9_]+)", opt);
+    m_RegMap["endsubmodule"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(submodule)\\b", opt);
+    m_RegMap["team"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change)(\\s*)(team)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endteam"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(team)\\b", opt);
+
+    m_RegMap["end"] = new wxRegEx("^[\\s\\t]*[0-9]*[\\s\\t]*\\b(end)\\b(([\\s\\t]*)!(.*))?([\\s\\t]*)$", opt);
+    m_RegMap["endunit"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(subroutine|function|program)\\b", opt);
+    m_RegMap["contains"] = new wxRegEx("^[\\s\\t]*(contains)([\\s\\t]*)$", opt);
+
+#else // wxCHECK_VERSION
     int opt = wxRE_ADVANCED | wxRE_ICASE | wxRE_NOSUB;
-    m_RegMap[_T("if")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*):(\\s*))?(if)(\\s*)(\\(.*\\))(\\s*)then\\y.*"), opt);
-    m_RegMap[_T("endif")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(if)\\y"), opt);
-    m_RegMap[_T("do")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(do)(\\y)"), opt);
-    m_RegMap[_T("enddo")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(do)\\y"), opt);
-    m_RegMap[_T("subroutine")] = new wxRegEx(_T("(.*)subroutine(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)"), opt);
-    m_RegMap[_T("endsubroutine")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(subroutine)\\y"), opt);
-    m_RegMap[_T("function")] = new wxRegEx(_T("(.*)function(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)"), opt);
-    m_RegMap[_T("endfunction")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(function)\\y"), opt);
-    m_RegMap[_T("interface")] = new wxRegEx(_T("^[\\s\\t]*(abstract(\\s*))?interface(\\y)"), opt);
-    m_RegMap[_T("endinterface")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(interface)\\y"), opt);
-    m_RegMap[_T("associate")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(associate)(\\s*)(\\(.*\\))"), opt);
-    m_RegMap[_T("endassociate")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(associate)\\y"), opt);
-    m_RegMap[_T("block")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(block)\\y"), opt);
-    m_RegMap[_T("endblock")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(block)\\y"), opt);
-    m_RegMap[_T("critical")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(critical)\\y"), opt);
-    m_RegMap[_T("endcritical")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(critical)\\y"), opt);
-    m_RegMap[_T("module")] = new wxRegEx(_T("^[\\s\\t]*(module)(\\s+)((?!procedure[\\s:]+)[a-z0-9_]+)\\y"), opt);
-    m_RegMap[_T("endmodule")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(module)\\y"), opt);
-    m_RegMap[_T("program")] = new wxRegEx(_T("^[\\s\\t]*program\\y"), opt);
-    m_RegMap[_T("endprogram")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(program)\\y"), opt);
-    m_RegMap[_T("select")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(select)(\\s*)(case|type)(\\s*)(\\(.*\\))"), opt);
-    m_RegMap[_T("endselect")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(select)\\y"), opt);
-    m_RegMap[_T("type")] = new wxRegEx(_T("^([\\s\\t]*)(type)(\\s*)((\\s*,\\s*([a-z0-9_]+))*\\s*::)?(\\s*)([a-z0-9_]+)\\y"), opt);
-    m_RegMap[_T("endtype")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(type)\\y"), opt);
-    m_RegMap[_T("where")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(where)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$"), opt);
-    m_RegMap[_T("endwhere")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(where)\\y"), opt);
-    m_RegMap[_T("enum")] = new wxRegEx(_T("^[\\s\\t]*enum\\y"), opt);
-    m_RegMap[_T("endenum")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(enum)\\y"), opt);
-    m_RegMap[_T("forall")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(forall)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$"), opt);
-    m_RegMap[_T("endforall")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(forall)\\y"), opt);
-    m_RegMap[_T("submodule")] = new wxRegEx(_T("^[\\s\\t]*(submodule)(\\s*)(\\([a-z0-9_]+\\))(\\s*)([a-z0-9_]+)"), opt);
-    m_RegMap[_T("endsubmodule")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(submodule)\\y"), opt);
-    m_RegMap[_T("team")] = new wxRegEx(_T("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change)(\\s*)(team)(\\s*)(\\(.*\\))"), opt);
-    m_RegMap[_T("endteam")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(team)\\y"), opt);
+    m_RegMap["if"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*):(\\s*))?(if)(\\s*)(\\(.*\\))(\\s*)then\\y.*", opt);
+    m_RegMap["endif"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(if)\\y", opt);
+    m_RegMap["do"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(do)(\\y)", opt);
+    m_RegMap["enddo"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(do)\\y", opt);
+    m_RegMap["subroutine"] = new wxRegEx("(.*)subroutine(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)", opt);
+    m_RegMap["endsubroutine"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(subroutine)\\y", opt);
+    m_RegMap["function"] = new wxRegEx("(.*)function(\\s+)([a-z0-9_]+)(\\s*)(\\(.*[\\)&]+)", opt);
+    m_RegMap["endfunction"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(function)\\y", opt);
+    m_RegMap["interface"] = new wxRegEx("^[\\s\\t]*(abstract(\\s*))?interface(\\y)", opt);
+    m_RegMap["endinterface"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(interface)\\y", opt);
+    m_RegMap["associate"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(associate)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endassociate"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(associate)\\y", opt);
+    m_RegMap["block"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(block)\\y", opt);
+    m_RegMap["endblock"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(block)\\y", opt);
+    m_RegMap["critical"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(critical)\\y", opt);
+    m_RegMap["endcritical"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(critical)\\y", opt);
+    m_RegMap["module"] = new wxRegEx("^[\\s\\t]*(module)(\\s+)((?!procedure[\\s:]+)[a-z0-9_]+)\\y", opt);
+    m_RegMap["endmodule"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(module)\\y", opt);
+    m_RegMap["program"] = new wxRegEx("^[\\s\\t]*program\\y", opt);
+    m_RegMap["endprogram"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(program)\\y", opt);
+    m_RegMap["select"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(select)(\\s*)(case|type)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endselect"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(select)\\y", opt);
+    m_RegMap["type"] = new wxRegEx("^([\\s\\t]*)(type)(\\s*)((\\s*,\\s*([a-z0-9_]+))*\\s*::)?(\\s*)([a-z0-9_]+)\\y", opt);
+    m_RegMap["endtype"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(type)\\y", opt);
+    m_RegMap["where"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(where)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$", opt);
+    m_RegMap["endwhere"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(where)\\y", opt);
+    m_RegMap["enum"] = new wxRegEx("^[\\s\\t]*enum\\y", opt);
+    m_RegMap["endenum"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(enum)\\y", opt);
+    m_RegMap["forall"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(forall)(\\s*)(\\(.*\\))(\\s*)(!(.*))?$", opt);
+    m_RegMap["endforall"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(forall)\\y", opt);
+    m_RegMap["submodule"] = new wxRegEx("^[\\s\\t]*(submodule)(\\s*)(\\([a-z0-9_]+\\))(\\s*)([a-z0-9_]+)", opt);
+    m_RegMap["endsubmodule"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(submodule)\\y", opt);
+    m_RegMap["team"] = new wxRegEx("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(change)(\\s*)(team)(\\s*)(\\(.*\\))", opt);
+    m_RegMap["endteam"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(team)\\y", opt);
 
-    m_RegMap[_T("end")] = new wxRegEx(_T("^[\\s\\t]*[0-9]*[\\s\\t]*\\y(end)\\y(([\\s\\t]*)!(.*))?([\\s\\t]*)$"), opt);
-    m_RegMap[_T("endunit")] = new wxRegEx(_T("^[\\s\\t]*(end)(\\s*)(subroutine|function|program)\\y"), opt);
-    m_RegMap[_T("contains")] = new wxRegEx(_T("^[\\s\\t]*(contains)([\\s\\t]*)$"), opt);
+    m_RegMap["end"] = new wxRegEx("^[\\s\\t]*[0-9]*[\\s\\t]*\\y(end)\\y(([\\s\\t]*)!(.*))?([\\s\\t]*)$", opt);
+    m_RegMap["endunit"] = new wxRegEx("^[\\s\\t]*(end)(\\s*)(subroutine|function|program)\\y", opt);
+    m_RegMap["contains"] = new wxRegEx("^[\\s\\t]*(contains)([\\s\\t]*)$", opt);
+#endif // wxCHECK_VERSION
 
     m_RulesWereChanged = false;
     ReadAIOptions();
@@ -86,7 +132,7 @@ AutoInsert::~AutoInsert()
 void AutoInsert::EditRule(const wxString& statementName, int aiType, bool doAddName, bool alignToStatement)
 {
     wxString statm = FindKey(statementName);
-    if (!statm.IsEmpty() && m_NameMap.count(statm) > 0)
+    if (!statm.empty() && m_NameMap.count(statm) > 0)
     {
         if (m_AITMap[statm] != GetAIT(aiType))
         {
@@ -136,144 +182,144 @@ bool AutoInsert::GetItemChoices(const wxString& statementName, wxArrayString& ai
     if (key.IsEmpty())
         return false;
 
-    alignStrArr.Add(_T("to statement"));
-    alignStrArr.Add(_T("to name"));
+    alignStrArr.Add("to statement");
+    alignStrArr.Add("to name");
 
-    if (key == _T("if"))
+    if (key == "if")
     {
-        aiTypeStrArr.Add(_T("end if"));
-        aiTypeStrArr.Add(_T("endif"));
-        aiTypeStrArr.Add(_T("EndIf"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end if");
+        aiTypeStrArr.Add("endif");
+        aiTypeStrArr.Add("EndIf");
+        aiTypeStrArr.Add("--none--");
     }
-    else if(key == _T("do"))
+    else if(key == "do")
     {
-        aiTypeStrArr.Add(_T("end do"));
-        aiTypeStrArr.Add(_T("enddo"));
-        aiTypeStrArr.Add(_T("EndDo"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end do");
+        aiTypeStrArr.Add("enddo");
+        aiTypeStrArr.Add("EndDo");
+        aiTypeStrArr.Add("--none--");
     }
-    else if(key == _T("subroutine"))
+    else if(key == "subroutine")
     {
-        aiTypeStrArr.Add(_T("end subroutine"));
-        aiTypeStrArr.Add(_T("endsubroutine"));
-        aiTypeStrArr.Add(_T("EndSubroutine"));
-        aiTypeStrArr.Add(_T("--none--"));
-
-        alignStrArr.Empty();
-    }
-    else if(key == _T("function"))
-    {
-        aiTypeStrArr.Add(_T("end function"));
-        aiTypeStrArr.Add(_T("endfunction"));
-        aiTypeStrArr.Add(_T("EndFunction"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end subroutine");
+        aiTypeStrArr.Add("endsubroutine");
+        aiTypeStrArr.Add("EndSubroutine");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("interface"))
+    else if(key == "function")
     {
-        aiTypeStrArr.Add(_T("end interface"));
-        aiTypeStrArr.Add(_T("endinterface"));
-        aiTypeStrArr.Add(_T("EndInterface"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end function");
+        aiTypeStrArr.Add("endfunction");
+        aiTypeStrArr.Add("EndFunction");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("associate"))
+    else if(key == "interface")
     {
-        aiTypeStrArr.Add(_T("end associate"));
-        aiTypeStrArr.Add(_T("endassociate"));
-        aiTypeStrArr.Add(_T("EndAssociate"));
-        aiTypeStrArr.Add(_T("--none--"));
-    }
-    else if(key == _T("block"))
-    {
-        aiTypeStrArr.Add(_T("end block"));
-        aiTypeStrArr.Add(_T("endblock"));
-        aiTypeStrArr.Add(_T("EndBlock"));
-        aiTypeStrArr.Add(_T("--none--"));
-    }
-    else if(key == _T("critical"))
-    {
-        aiTypeStrArr.Add(_T("end critical"));
-        aiTypeStrArr.Add(_T("endcritical"));
-        aiTypeStrArr.Add(_T("EndCritical"));
-        aiTypeStrArr.Add(_T("--none--"));
-    }
-    else if(key == _T("module"))
-    {
-        aiTypeStrArr.Add(_T("end module"));
-        aiTypeStrArr.Add(_T("endmodule"));
-        aiTypeStrArr.Add(_T("EndModule"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end interface");
+        aiTypeStrArr.Add("endinterface");
+        aiTypeStrArr.Add("EndInterface");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("program"))
+    else if(key == "associate")
     {
-        aiTypeStrArr.Add(_T("end program"));
-        aiTypeStrArr.Add(_T("endprogram"));
-        aiTypeStrArr.Add(_T("EndProgram"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end associate");
+        aiTypeStrArr.Add("endassociate");
+        aiTypeStrArr.Add("EndAssociate");
+        aiTypeStrArr.Add("--none--");
+    }
+    else if(key == "block")
+    {
+        aiTypeStrArr.Add("end block");
+        aiTypeStrArr.Add("endblock");
+        aiTypeStrArr.Add("EndBlock");
+        aiTypeStrArr.Add("--none--");
+    }
+    else if(key == "critical")
+    {
+        aiTypeStrArr.Add("end critical");
+        aiTypeStrArr.Add("endcritical");
+        aiTypeStrArr.Add("EndCritical");
+        aiTypeStrArr.Add("--none--");
+    }
+    else if(key == "module")
+    {
+        aiTypeStrArr.Add("end module");
+        aiTypeStrArr.Add("endmodule");
+        aiTypeStrArr.Add("EndModule");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("select"))
+    else if(key == "program")
     {
-        aiTypeStrArr.Add(_T("end select"));
-        aiTypeStrArr.Add(_T("endselect"));
-        aiTypeStrArr.Add(_T("EndSelect"));
-        aiTypeStrArr.Add(_T("--none--"));
-    }
-    else if(key == _T("type"))
-    {
-        aiTypeStrArr.Add(_T("end type"));
-        aiTypeStrArr.Add(_T("endtype"));
-        aiTypeStrArr.Add(_T("EndType"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end program");
+        aiTypeStrArr.Add("endprogram");
+        aiTypeStrArr.Add("EndProgram");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("where"))
+    else if(key == "select")
     {
-        aiTypeStrArr.Add(_T("end where"));
-        aiTypeStrArr.Add(_T("endwhere"));
-        aiTypeStrArr.Add(_T("EndWhere"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end select");
+        aiTypeStrArr.Add("endselect");
+        aiTypeStrArr.Add("EndSelect");
+        aiTypeStrArr.Add("--none--");
     }
-    else if(key == _T("enum"))
+    else if(key == "type")
     {
-        aiTypeStrArr.Add(_T("end enum"));
-        aiTypeStrArr.Add(_T("endenum"));
-        aiTypeStrArr.Add(_T("EndEnum"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end type");
+        aiTypeStrArr.Add("endtype");
+        aiTypeStrArr.Add("EndType");
+        aiTypeStrArr.Add("--none--");
+
+        alignStrArr.Empty();
+    }
+    else if(key == "where")
+    {
+        aiTypeStrArr.Add("end where");
+        aiTypeStrArr.Add("endwhere");
+        aiTypeStrArr.Add("EndWhere");
+        aiTypeStrArr.Add("--none--");
+    }
+    else if(key == "enum")
+    {
+        aiTypeStrArr.Add("end enum");
+        aiTypeStrArr.Add("endenum");
+        aiTypeStrArr.Add("EndEnum");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
         addNameEnabled = false;
     }
-    else if(key == _T("forall"))
+    else if(key == "forall")
     {
-        aiTypeStrArr.Add(_T("end forall"));
-        aiTypeStrArr.Add(_T("endforall"));
-        aiTypeStrArr.Add(_T("EndForall"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end forall");
+        aiTypeStrArr.Add("endforall");
+        aiTypeStrArr.Add("EndForall");
+        aiTypeStrArr.Add("--none--");
     }
-    else if(key == _T("submodule"))
+    else if(key == "submodule")
     {
-        aiTypeStrArr.Add(_T("end submodule"));
-        aiTypeStrArr.Add(_T("endsubmodule"));
-        aiTypeStrArr.Add(_T("EndSubmodule"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end submodule");
+        aiTypeStrArr.Add("endsubmodule");
+        aiTypeStrArr.Add("EndSubmodule");
+        aiTypeStrArr.Add("--none--");
 
         alignStrArr.Empty();
     }
-    else if(key == _T("team"))
+    else if(key == "team")
     {
-        aiTypeStrArr.Add(_T("end team"));
-        aiTypeStrArr.Add(_T("endteam"));
-        aiTypeStrArr.Add(_T("EndTeam"));
-        aiTypeStrArr.Add(_T("--none--"));
+        aiTypeStrArr.Add("end team");
+        aiTypeStrArr.Add("endteam");
+        aiTypeStrArr.Add("EndTeam");
+        aiTypeStrArr.Add("--none--");
     }
     return true;
 }
@@ -343,13 +389,13 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
     int keyStartPos;
     int keyIndent;
     if (!GetIndentAndPos(stc, lineStr, firstName, firstNameIndent, keyStartPos, keyIndent)
-        && !(lineStr.Length() >= 4 && lineStr.Mid(lineStr.Length()-4).Lower().IsSameAs(_T("then"))))
+        && !(lineStr.length() >= 4 && lineStr.Mid(lineStr.length()-4).Lower().IsSameAs("then")))
         return;
 
     wxString statementLineStr = lineStr.Mid(keyStartPos);
     wxString word = GetWord(statementLineStr,0);
     wxString wordLw = word.Lower();
-    if (wordLw.IsSameAs(_T("end")))
+    if (wordLw.IsSameAs("end"))
         return;
 
     std::map<wxString,wxString>::const_iterator it;
@@ -365,10 +411,10 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
     }
 
     wxString statementLineStrLw = statementLineStr.Lower();
-    if (key.IsEmpty() ||
-        key.IsSameAs(_T("type"))) // situation: "type(tname) function myfunc(..."
+    if (key.empty() ||
+        key.IsSameAs("type")) // situation: "type(tname) function myfunc(..."
     {
-        wxString funw = _T("function");
+        wxString funw = "function";
         int wstart = statementLineStrLw.Find(funw);
         if (wstart != wxNOT_FOUND)
         {
@@ -382,17 +428,17 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
         }
     }
 
-    if ( key.IsSameAs(_T("module")) || // take care for "module subroutine Name()"
-         (key.IsEmpty() &&
-          (wordLw.IsSameAs(_T("pure")) || wordLw.IsSameAs(_T("impure"))
-           || wordLw.IsSameAs(_T("elemental"))
-           || wordLw.IsSameAs(_T("recursive")) || wordLw.IsSameAs(_T("non_recursive")))) )
+    if ( key.IsSameAs("module") || // take care for "module subroutine Name()"
+         (key.empty() &&
+          (wordLw.IsSameAs("pure") || wordLw.IsSameAs("impure")
+           || wordLw.IsSameAs("elemental")
+           || wordLw.IsSameAs("recursive") || wordLw.IsSameAs("non_recursive"))) )
     {
-        wxString reststr = statementLineStrLw.Mid(wordLw.Length()+1).Trim(false);
+        wxString reststr = statementLineStrLw.Mid(wordLw.length()+1).Trim(false);
         wxString secword = GetWord(reststr,0);
-        if (secword.IsSameAs(_T("procedure")))
+        if (secword.IsSameAs("procedure"))
             return;
-        else if (secword.IsSameAs(_T("subroutine")) || secword.IsSameAs(_T("function")))
+        else if (secword.IsSameAs("subroutine") || secword.IsSameAs("function"))
         {
             key = secword;
             int wstart = statementLineStrLw.Find(secword);
@@ -401,12 +447,12 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
         }
     }
 
-    if (key.IsEmpty() || key.IsSameAs(_T("if")))
+    if (key.empty() || key.IsSameAs("if"))
     {
-        wxString thw = _T("then");
+        wxString thw = "then";
         if (statementLineStrLw.EndsWith(thw))
         {
-            wxString thword = GetWord(statementLineStrLw,statementLineStrLw.Length()-4);
+            wxString thword = GetWord(statementLineStrLw,statementLineStrLw.length()-4);
             if (thword.IsSameAs(thw))
             {
                 GetFortranLine(stc, lineStr);
@@ -414,55 +460,55 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
                     return;
                 word = GetWord(lineStr, keyStartPos);
                 wordLw = word.Lower();
-                if (wordLw.IsSameAs(_T("if")))
-                    key = _T("if");
+                if (wordLw.IsSameAs("if"))
+                    key = "if";
             }
         }
         else
             key = wxEmptyString;
     }
 
-    if (key.IsEmpty() && wordLw.IsSameAs(_T("change")))
+    if (key.empty() && wordLw.IsSameAs("change"))
     {
         wxString secword = GetWord(statementLineStrLw,7);
-        if (secword.IsSameAs(_T("team")))
-            key = _T("team");
+        if (secword.IsSameAs("team"))
+            key = "team";
     }
 
     if (key.IsEmpty())
         return;
 
     wxString lineRest = lineStr.Mid(keyStartPos+key.Len()).Trim(false);
-    if (lineRest.IsEmpty() && !key.IsSameAs(_T("interface")) && !key.IsSameAs(_T("block")) && !key.IsSameAs(_T("critical"))
-        && !key.IsSameAs(_T("do")) && !key.IsSameAs(_T("program")))
+    if (lineRest.empty() && !key.IsSameAs("interface") && !key.IsSameAs("block") && !key.IsSameAs("critical")
+        && !key.IsSameAs("do") && !key.IsSameAs("program"))
         return; // unfinished statements or something else
 
-    if (key.IsSameAs(_T("team")))
+    if (key.IsSameAs("team"))
     {
         lineRest = lineStr.Mid(keyStartPos+6).Trim(false).Mid(4).Trim(false);
     }
 
-    if (key.IsSameAs(_T("where")) || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("team")))
+    if (key.IsSameAs("where") || key.IsSameAs("forall") || key.IsSameAs("team"))
     {
-        if (!lineRest.StartsWith(_T("(")))
+        if (!lineRest.StartsWith("("))
             return; // something is wrong with syntax
         else
         {
             int cl = FindEndBracket(lineRest,0);
             if (cl == wxNOT_FOUND)
                 return; // we don't consider case when "where ( bla bla"
-            else if (cl+1 < int(lineRest.Length()))
+            else if (cl+1 < int(lineRest.length()))
                 return; // there are some symbols after "where (bla bla)". It is not "where" construct
         }
     }
-    else if (key.IsSameAs(_T("type")))
+    else if (key.IsSameAs("type"))
     {
-        if (lineRest.StartsWith(_T("(")))
+        if (lineRest.StartsWith("("))
             return; // here is declaration
-        if (GetWord(lineRest,0).Lower().IsSameAs(_T("is")))
+        if (GetWord(lineRest,0).Lower().IsSameAs("is"))
             return; // "type is ..." statement
     }
-    else if (key.IsEmpty() || m_AITMap[key] == aitNone)
+    else if (key.empty() || m_AITMap[key] == aitNone)
         return;
 
     if (!DoEndStatementIsRequired(stc, key))
@@ -472,74 +518,74 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
     if (m_AITMap[key] == aitSeparate)
     {
         if (islower(word.GetChar(0)))
-            addStr << _T("end ") << key;
+            addStr << "end " << key;
         else if (islower(word.GetChar(1)))
-            addStr << _T("End ") << key.Mid(0,1).Upper() << key.Mid(1);
+            addStr << "End " << key.Mid(0,1).Upper() << key.Mid(1);
         else
-            addStr << _T("END ") << key.Upper();
+            addStr << "END " << key.Upper();
     }
     else if (m_AITMap[key] == aitTogether)
     {
         if (islower(word.GetChar(0)))
-            addStr << _T("end") << key;
+            addStr << "end" << key;
         else if (islower(word.GetChar(1)))
-            addStr << _T("End") << key;
+            addStr << "End" << key;
         else
-            addStr << _T("END") << key.Upper();
+            addStr << "END" << key.Upper();
     }
     else if (m_AITMap[key] == aitTogetherCap)
     {
         if (islower(word.GetChar(0)))
-            addStr << _T("end") << key;
+            addStr << "end" << key;
         else if (islower(word.GetChar(1)))
-            addStr << _T("End") << key.Mid(0,1).Upper() << key.Mid(1);
+            addStr << "End" << key.Mid(0,1).Upper() << key.Mid(1);
         else
-            addStr << _T("END") << key.Upper();
+            addStr << "END" << key.Upper();
     }
 
     if (m_DoAddNameMap[key])
     {
-        if (   key.IsSameAs(_T("subroutine")) || key.IsSameAs(_T("function"))
-            || key.IsSameAs(_T("program")) || key.IsSameAs(_T("module"))
-            || key.IsSameAs(_T("submodule")) || key.IsSameAs(_T("interface")))
+        if (   key.IsSameAs("subroutine") || key.IsSameAs("function")
+            || key.IsSameAs("program") || key.IsSameAs("module")
+            || key.IsSameAs("submodule") || key.IsSameAs("interface"))
         {
             wxString name = GetWord(lineRest,0);
-            if (name.Length() > 0 && (isalnum(name.GetChar(0)) || (name.GetChar(0) == '_')))
-                addStr << _T(" ") << name;
+            if (name.length() > 0 && (isalnum(name.GetChar(0)) || (name.GetChar(0) == '_')))
+                addStr << " " << name;
         }
-        else if (key.IsSameAs(_T("type")))
+        else if (key.IsSameAs("type"))
         {
-            if (lineRest.StartsWith(_T(",")))
+            if (lineRest.StartsWith(","))
             {
-                int idx = lineRest.Find(_T("::"));
+                int idx = lineRest.Find("::");
                 if (idx != wxNOT_FOUND)
                     lineRest = lineRest.Mid(idx).Trim(false);
                 else
                     return; // something is wrong
             }
             wxString name = GetWord(lineRest,0);
-            if (name.Length() > 0 && (isalnum(name.GetChar(0)) || (name.GetChar(0) == '_')))
-                addStr << _T(" ") << name;
+            if (name.length() > 0 && (isalnum(name.GetChar(0)) || (name.GetChar(0) == '_')))
+                addStr << " " << name;
         }
-        else if (!firstName.IsEmpty() &&
-            (  key.IsSameAs(_T("do")) || key.IsSameAs(_T("if"))
-            || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block"))
-            || key.IsSameAs(_T("critical")) || key.IsSameAs(_T("select"))
-            || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where"))
-            || key.IsSameAs(_T("team")) )
+        else if (!firstName.empty() &&
+            (  key.IsSameAs("do") || key.IsSameAs("if")
+            || key.IsSameAs("associate") || key.IsSameAs("block")
+            || key.IsSameAs("critical") || key.IsSameAs("select")
+            || key.IsSameAs("forall") || key.IsSameAs("where")
+            || key.IsSameAs("team") )
                  )
         {
-            addStr << _T(" ") << firstName;
+            addStr << " " << firstName;
         }
     }
 
     int nspace = 0;
-    if (!m_AlignTSMap[key] && !firstName.IsEmpty() &&
-        (  key.IsSameAs(_T("do")) || key.IsSameAs(_T("if"))
-        || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block"))
-        || key.IsSameAs(_T("critical")) || key.IsSameAs(_T("select"))
-        || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("where"))
-        || key.IsSameAs(_T("team")) )
+    if (!m_AlignTSMap[key] && !firstName.empty() &&
+        (  key.IsSameAs("do") || key.IsSameAs("if")
+        || key.IsSameAs("associate") || key.IsSameAs("block")
+        || key.IsSameAs("critical") || key.IsSameAs("select")
+        || key.IsSameAs("forall") || key.IsSameAs("where")
+        || key.IsSameAs("team") )
         )
     {
         nspace = firstNameIndent;
@@ -550,7 +596,7 @@ void AutoInsert::MakeAutoInsert(cbEditor* ed)
     // Insert
     wxString spacStr;
     spacStr.Append(' ',nspace);
-    addStr.Prepend(_T("\n")+spacStr);
+    addStr.Prepend("\n"+spacStr);
 
     stc->InsertText(stc->GetCurrentPos(),addStr);
 }
@@ -580,7 +626,7 @@ wxString AutoInsert::GetWord(const wxString& line, size_t posStart)
     }
 
     found = false;
-    for (size_t i=posStart; i<line.Length(); i++)
+    for (size_t i=posStart; i<line.length(); i++)
     {
         if (!isalnum(line.GetChar(i)) && (line.GetChar(i) != '_'))
         {
@@ -598,7 +644,7 @@ wxString AutoInsert::GetWord(const wxString& line, size_t posStart)
 int AutoInsert::FindEndBracket(const wxString str, size_t istart) const
 {
     int level = 0;
-    for (size_t i=istart; i<str.Length(); i++)
+    for (size_t i=istart; i<str.length(); i++)
     {
         if (str.GetChar(i) == '(')
             level+=1;
@@ -617,7 +663,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
     if (m_RegMap.count(key) < 1)
         return false;
     wxRegEx* reCur = m_RegMap[key];
-    wxRegEx* reEndCur1 = m_RegMap[_T("end") + key];
+    wxRegEx* reEndCur1 = m_RegMap["end" + key];
     wxRegEx* reEndCur2 = NULL;
 
     wxRegEx* reFinish1 = NULL;
@@ -627,41 +673,41 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
     wxRegEx* reFinBack3 = NULL;
     bool isSubprog = false;
     bool noLevels = false;
-    if (key.IsSameAs(_T("if")) || key.IsSameAs(_T("do"))
-        || key.IsSameAs(_T("associate")) || key.IsSameAs(_T("block")) || key.IsSameAs(_T("critical"))
-        || key.IsSameAs(_T("select")) || key.IsSameAs(_T("where"))
-        || key.IsSameAs(_T("forall")) || key.IsSameAs(_T("change")))
+    if (key.IsSameAs("if") || key.IsSameAs("do")
+        || key.IsSameAs("associate") || key.IsSameAs("block") || key.IsSameAs("critical")
+        || key.IsSameAs("select") || key.IsSameAs("where")
+        || key.IsSameAs("forall") || key.IsSameAs("change"))
     {
         // limit search until the end of unit
-        reFinish1 = m_RegMap[_T("end")];
-        reFinish2 = m_RegMap[_T("endunit")];
-        reFinBack1 = m_RegMap[_T("function")];
-        reFinBack2 = m_RegMap[_T("subroutine")];
-        reFinBack3 = m_RegMap[_T("program")];
+        reFinish1 = m_RegMap["end"];
+        reFinish2 = m_RegMap["endunit"];
+        reFinBack1 = m_RegMap["function"];
+        reFinBack2 = m_RegMap["subroutine"];
+        reFinBack3 = m_RegMap["program"];
     }
-    else if (key.IsSameAs(_T("function")) || key.IsSameAs(_T("subroutine")))
+    else if (key.IsSameAs("function") || key.IsSameAs("subroutine"))
     {
-        reEndCur2 = m_RegMap[_T("end")];
-        reFinish1 = m_RegMap[_T("endmodule")];
-        reFinish2 = m_RegMap[_T("endsubmodule")];
+        reEndCur2 = m_RegMap["end"];
+        reFinish1 = m_RegMap["endmodule"];
+        reFinish2 = m_RegMap["endsubmodule"];
         isSubprog = true;
     }
-    else if (key.IsSameAs(_T("module")) || key.IsSameAs(_T("submodule")) || key.IsSameAs(_T("program")))
+    else if (key.IsSameAs("module") || key.IsSameAs("submodule") || key.IsSameAs("program"))
     {
-        reEndCur2 = m_RegMap[_T("end")];
-        reFinish1 = m_RegMap[_T("module")];
-        reFinish2 = m_RegMap[_T("submodule")];
+        reEndCur2 = m_RegMap["end"];
+        reFinish1 = m_RegMap["module"];
+        reFinish2 = m_RegMap["submodule"];
         isSubprog = true;
     }
-    else if (key.IsSameAs(_T("type")) || key.IsSameAs(_T("enum")))
+    else if (key.IsSameAs("type") || key.IsSameAs("enum"))
     {
         noLevels = true;
-        reFinish1 = m_RegMap[_T("end")];
-        reFinish2 = m_RegMap[_T("endunit")];
+        reFinish1 = m_RegMap["end"];
+        reFinish2 = m_RegMap["endunit"];
     }
 
     bool isIf = false;
-    if (key.IsSameAs(_T("if")))
+    if (key.IsSameAs("if"))
         isIf = true;
 
     int line = stc->LineFromPosition(stc->GetCurrentPos()) + 1;
@@ -678,9 +724,9 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
             if (   (reFinish1 && reFinish1->Matches(str))
                 || (reFinish2 && reFinish2->Matches(str)))
                 break;
-            else if (m_RegMap[_T("function")]->Matches(str) || m_RegMap[_T("subroutine")]->Matches(str)
-                        || m_RegMap[_T("module")]->Matches(str) || m_RegMap[_T("submodule")]->Matches(str)
-                        || m_RegMap[_T("program")]->Matches(str) || m_RegMap[_T("endinterface")]->Matches(str))
+            else if (m_RegMap["function"]->Matches(str) || m_RegMap["subroutine"]->Matches(str)
+                        || m_RegMap["module"]->Matches(str) || m_RegMap["submodule"]->Matches(str)
+                        || m_RegMap["program"]->Matches(str) || m_RegMap["endinterface"]->Matches(str))
                 break;
             else if (reEndCur1->Matches(str) || (reEndCur2 && reEndCur2->Matches(str)))
             {
@@ -705,19 +751,19 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
             if (   (reFinish1 && reFinish1->Matches(str))
                 || (reFinish2 && reFinish2->Matches(str)))
                 break;
-            else if (m_RegMap[_T("function")]->Matches(str) || m_RegMap[_T("subroutine")]->Matches(str)
-                        || m_RegMap[_T("module")]->Matches(str) || m_RegMap[_T("submodule")]->Matches(str)
-                        || m_RegMap[_T("program")]->Matches(str))
+            else if (m_RegMap["function"]->Matches(str) || m_RegMap["subroutine"]->Matches(str)
+                        || m_RegMap["module"]->Matches(str) || m_RegMap["submodule"]->Matches(str)
+                        || m_RegMap["program"]->Matches(str))
                 break;
-            else if (   m_RegMap[_T("type")]->Matches(str) || m_RegMap[_T("enum")]->Matches(str)
-                     || m_RegMap[_T("interface")]->Matches(str))
+            else if (   m_RegMap["type"]->Matches(str) || m_RegMap["enum"]->Matches(str)
+                     || m_RegMap["interface"]->Matches(str))
                 break;
             else if (reEndCur1->Matches(str))
                 return false;
-            else if (   m_RegMap[_T("if")]->Matches(str) || m_RegMap[_T("do")]->Matches(str)
-                     || m_RegMap[_T("associate")]->Matches(str) || m_RegMap[_T("block")]->Matches(str)
-                     || m_RegMap[_T("critical")]->Matches(str) || m_RegMap[_T("select")]->Matches(str)
-                     || m_RegMap[_T("where")]->Matches(str) || m_RegMap[_T("forall")]->Matches(str))
+            else if (   m_RegMap["if"]->Matches(str) || m_RegMap["do"]->Matches(str)
+                     || m_RegMap["associate"]->Matches(str) || m_RegMap["block"]->Matches(str)
+                     || m_RegMap["critical"]->Matches(str) || m_RegMap["select"]->Matches(str)
+                     || m_RegMap["where"]->Matches(str) || m_RegMap["forall"]->Matches(str))
             {
                 break;
             }
@@ -725,23 +771,23 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
         }
         return true;
     }
-    else if (key.IsSameAs(_T("interface")))
+    else if (key.IsSameAs("interface"))
     {
-        wxRegEx* reFin1 = m_RegMap[_T("contains")];
-        wxRegEx* reFin2 = m_RegMap[_T("do")];
-        wxRegEx* reFin3 = m_RegMap[_T("if")];
-        wxRegEx* reFin4 = m_RegMap[_T("interface")];
-        //wxRegEx* reFin5 = m_RegMap[_T("module")];
-        wxRegEx* reFin6 = m_RegMap[_T("submodule")];
-        wxRegEx* reFin7 = m_RegMap[_T("program")];
-        wxRegEx* reFin8 = m_RegMap[_T("block")];
-        wxRegEx* reFin9 = m_RegMap[_T("critical")];
-        wxRegEx* reFin10 = m_RegMap[_T("associate")];
-        wxRegEx* reFin11 = m_RegMap[_T("block")];
-        wxRegEx* reFin12 = m_RegMap[_T("select")];
-        wxRegEx* reFin13 = m_RegMap[_T("where")];
-        wxRegEx* reFin14 = m_RegMap[_T("forall")];
-        wxRegEx* reFin15 = m_RegMap[_T("team")];
+        wxRegEx* reFin1 = m_RegMap["contains"];
+        wxRegEx* reFin2 = m_RegMap["do"];
+        wxRegEx* reFin3 = m_RegMap["if"];
+        wxRegEx* reFin4 = m_RegMap["interface"];
+        //wxRegEx* reFin5 = m_RegMap["module"];
+        wxRegEx* reFin6 = m_RegMap["submodule"];
+        wxRegEx* reFin7 = m_RegMap["program"];
+        wxRegEx* reFin8 = m_RegMap["block"];
+        wxRegEx* reFin9 = m_RegMap["critical"];
+        wxRegEx* reFin10 = m_RegMap["associate"];
+        wxRegEx* reFin11 = m_RegMap["block"];
+        wxRegEx* reFin12 = m_RegMap["select"];
+        wxRegEx* reFin13 = m_RegMap["where"];
+        wxRegEx* reFin14 = m_RegMap["forall"];
+        wxRegEx* reFin15 = m_RegMap["team"];
 
         while (line < lcount)
         {
@@ -771,7 +817,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
             if (str.Len() >= 4)
             {
                 wxString eth = str.Mid(str.Len()-4,4).Lower();
-                if (eth.IsSameAs(_T("then")))
+                if (eth.IsSameAs("then"))
                     GetFortranLine(stc,str,line);
             }
         }
@@ -806,7 +852,7 @@ bool AutoInsert::DoEndStatementIsRequired(cbStyledTextCtrl* stc, const wxString&
             if (str.Len() >= 4)
             {
                 wxString eth = str.Mid(str.Len()-4,4).Lower();
-                if (eth.IsSameAs(_T("then")))
+                if (eth.IsSameAs("then"))
                     GetFortranLine(stc,str,line);
             }
         }
@@ -847,14 +893,14 @@ bool AutoInsert::GetIndentAndPos(cbStyledTextCtrl* stc, const wxString& lineStr,
     firstNameIndent = 0;
     keyStartPos = 0;
     keyIndent = 0;
-    size_t lineStrLen = lineStr.Length();
+    size_t lineStrLen = lineStr.length();
 
     for (size_t i=0; i<lineStrLen; i++)
     {
         wxChar ch = lineStr.GetChar(i);
         if (!wasCh)
         {
-            if (ch == _T('\n'))
+            if (ch == '\n')
                 firstNameIndent = 0;
             else if (ch == '\t')
                 firstNameIndent += stc->GetTabWidth();
@@ -862,7 +908,7 @@ bool AutoInsert::GetIndentAndPos(cbStyledTextCtrl* stc, const wxString& lineStr,
                 firstNameIndent += 1;
         }
 
-        if (ch == _T('\n'))
+        if (ch == '\n')
             curIndent = 0;
         else
             curIndent += 1;
@@ -917,7 +963,7 @@ bool AutoInsert::GetIndentAndPos(cbStyledTextCtrl* stc, const wxString& lineStr,
         for (size_t i=nfPos+1; i<lineStrLen; i++)
         {
             wxChar ch = lineStr.GetChar(i);
-            if ( (ch == _T('\n')) || ( (stc->GetEOLMode() == wxSCI_EOL_CR) && (ch == _T('\r')) ) )
+            if ( (ch == '\n') || ( (stc->GetEOLMode() == wxSCI_EOL_CR) && (ch == '\r') ) )
                 keyIndent = 0;
             else if (ch == '\t')
                 keyIndent += stc->GetTabWidth();
@@ -986,9 +1032,9 @@ void AutoInsert::GetFortranLine(cbStyledTextCtrl* stc, wxString& lineStr, int li
     {
         wxString lineStrBefore;
         GetLine(stc, lineStrBefore, i);
-        if (lineStrBefore.EndsWith(_T("&")))
+        if (lineStrBefore.EndsWith("&"))
         {
-            lineStr.Prepend(lineStrBefore.Mid(0, lineStrBefore.Length()-1).Append(_T(" \n")));
+            lineStr.Prepend(lineStrBefore.Mid(0, lineStrBefore.length()-1).Append(" \n"));
         }
         else
             break;
@@ -997,15 +1043,15 @@ void AutoInsert::GetFortranLine(cbStyledTextCtrl* stc, wxString& lineStr, int li
 
 void AutoInsert::ReadAIOptions()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
     std::map<wxString,wxString>::const_iterator it;
 
     for (it = m_NameMap.begin(); it != m_NameMap.end(); ++it)
     {
         wxString key = it->first;
-        wxString strType = _T("/ainsert_type_") + key;
-        wxString strAlign = _T("/ainsert_align_") + key;
-        wxString strName = _T("/ainsert_name_") + key;
+        wxString strType = "/ainsert_type_" + key;
+        wxString strAlign = "/ainsert_align_" + key;
+        wxString strName = "/ainsert_name_" + key;
 
         int aiTInt = cfg->ReadInt(strType, 0);
         m_AITMap[key] = GetAIT(aiTInt);
@@ -1019,15 +1065,15 @@ void AutoInsert::WriteAIOptions()
     if (!m_RulesWereChanged)
         return;
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
     std::map<wxString,AutoInsertType>::const_iterator it;
 
     for (it = m_AITMap.begin(); it != m_AITMap.end(); ++it)
     {
         wxString key = it->first;
-        wxString strType = _T("/ainsert_type_") + key;
-        wxString strAlign = _T("/ainsert_align_") + key;
-        wxString strName = _T("/ainsert_name_") + key;
+        wxString strType = "/ainsert_type_" + key;
+        wxString strAlign = "/ainsert_align_" + key;
+        wxString strName = "/ainsert_name_" + key;
 
         int aiTInt = GetAITInt(m_AITMap[key]);
         cfg->Write(strType, aiTInt);

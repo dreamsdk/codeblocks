@@ -28,6 +28,13 @@ typedef std::map<wxString,wxArrayString> TypeMap;
 typedef std::map<wxString,wxString> StrMap;
 typedef std::set<wxString> StrSet;
 
+typedef struct {
+	TokenF* procToCall;
+	wxString m_Name;
+	bool m_Pass;
+	wxString m_PassArg;
+} TypeTBP;
+typedef std::vector<TypeTBP> TypeTBPList;
 
 class Bindto: public wxDialog
 {
@@ -76,41 +83,41 @@ class Bindto: public wxDialog
 	protected:
 
 		//(*Identifiers(Bindto)
-		static const long ID_BTOACTIVEPROJECT;
-		static const long ID_BTOCURRENTFILE;
-		static const long ID_TEXTCTRL1;
-		static const long ID_STATICTEXT5;
-		static const long ID_CHECKBOX9;
-		static const long ID_CHECKBOX3;
-		static const long ID_TEXTCTRL6;
-		static const long ID_STATICTEXT1;
-		static const long ID_TEXTCTRL7;
-		static const long ID_BUTTON1;
-		static const long ID_PANEL2;
-		static const long ID_LV_TYPES;
-		static const long ID_BUTTON_ADD;
-		static const long ID_BUTTON_COPY;
-		static const long ID_BUTTON_EDIT;
-		static const long ID_BUTTON_REMOVE;
-		static const long ID_BUTTON_DEFAULTS;
-		static const long ID_PANEL1;
-		static const long ID_CHECKBOX4;
-		static const long ID_TEXTCTRL4;
-		static const long ID_CHECKBOX5;
-		static const long ID_TEXTCTRL5;
-		static const long ID_PANEL3;
-		static const long ID_CHECKBOX1;
-		static const long ID_TEXTCTRL2;
-		static const long ID_CHECKBOX2;
-		static const long ID_TEXTCTRL3;
-		static const long ID_PANEL4;
-		static const long ID_CHECKBOX6;
-		static const long ID_TEXTCTRL8;
-		static const long ID_CHECKBOX7;
-		static const long ID_CHECKBOX8;
-		static const long ID_PANEL6;
-		static const long ID_PANEL5;
-		static const long ID_NOTEBOOK1;
+		static const wxWindowID ID_BTOACTIVEPROJECT;
+		static const wxWindowID ID_BTOCURRENTFILE;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_STATICTEXT5;
+		static const wxWindowID ID_CHECKBOX9;
+		static const wxWindowID ID_CHECKBOX3;
+		static const wxWindowID ID_TEXTCTRL6;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_TEXTCTRL7;
+		static const wxWindowID ID_BUTTON1;
+		static const wxWindowID ID_PANEL2;
+		static const wxWindowID ID_LV_TYPES;
+		static const wxWindowID ID_BUTTON_ADD;
+		static const wxWindowID ID_BUTTON_COPY;
+		static const wxWindowID ID_BUTTON_EDIT;
+		static const wxWindowID ID_BUTTON_REMOVE;
+		static const wxWindowID ID_BUTTON_DEFAULTS;
+		static const wxWindowID ID_PANEL1;
+		static const wxWindowID ID_CHECKBOX4;
+		static const wxWindowID ID_TEXTCTRL4;
+		static const wxWindowID ID_CHECKBOX5;
+		static const wxWindowID ID_TEXTCTRL5;
+		static const wxWindowID ID_PANEL3;
+		static const wxWindowID ID_CHECKBOX1;
+		static const wxWindowID ID_TEXTCTRL2;
+		static const wxWindowID ID_CHECKBOX2;
+		static const wxWindowID ID_TEXTCTRL3;
+		static const wxWindowID ID_PANEL4;
+		static const wxWindowID ID_CHECKBOX6;
+		static const wxWindowID ID_TEXTCTRL8;
+		static const wxWindowID ID_CHECKBOX7;
+		static const wxWindowID ID_CHECKBOX8;
+		static const wxWindowID ID_PANEL6;
+		static const wxWindowID ID_PANEL5;
+		static const wxWindowID ID_NOTEBOOK1;
 		//*)
 
 	private:
@@ -238,12 +245,14 @@ class Bindto: public wxDialog
         bool m_PyFirstArgAsSelf;
         bool m_HasPyClassConstructor;
         StrMap m_C2NumpyTypes;
+        StrMap m_C2CnpTypes;
 
         StrSet m_PyIncludeGlob;
         wxString m_TxtCythonFirstGlob;
         wxString m_TxtCythonGlob;
 
         void FillC2NumpyTypesMap();
+        void FillC2CnpTypesMap();
         void FillTypeList();
         void LoadInitialValues();
         void FillTypeMapDefault();
@@ -256,7 +265,9 @@ class Bindto: public wxDialog
         wxString CreateBindFilename(const wxString& filename, bool header);
         wxString CheckOverwriteFilename(wxFileName &fname);
         void BindProcedure(wxString& txtBind, wxString& txtHeaders, wxString& txtCythonFirst, wxString& txtCythonSecond,
-                           TokenF* token, const wxString& moduleName, bool isGlobal, wxString callName=wxEmptyString);
+                           TokenF* token, const wxString& moduleName, bool isGlobal, wxString callName=wxEmptyString,
+                           const TypeTBP* tbToken=NULL);
+        void FillTypeBoundProcList(TokenF* modToken, TokenF* typeToken, TypeTBPList& typeTBPList);
         TypeBind GetBindType(TokenF* token, int& nDimVarAdd);
         TypeBind GetBindType(const wxString& declar, int& nDimVarAdd);
         wxString GetToken(const wxString& txt, int iPos);

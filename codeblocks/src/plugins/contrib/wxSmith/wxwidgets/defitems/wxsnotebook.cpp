@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10680 $
-* $Id: wxsnotebook.cpp 10680 2016-01-22 10:43:35Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsnotebook.cpp $
+* $Revision: 13547 $
+* $Id: wxsnotebook.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsnotebook.cpp $
 */
 
 #include "wxsnotebook.h"
@@ -33,10 +33,10 @@
 using namespace wxsFlags;
 
 //(*Headers(wxsNotebookParentQP)
-#include <wx/sizer.h>
-#include <wx/textctrl.h>
 #include <wx/checkbox.h>
 #include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/textctrl.h>
 //*)
 
 //(*InternalHeaders(wxsNotebookParentQP)
@@ -64,7 +64,7 @@ namespace
 
         protected:
 
-            virtual void OnEnumProperties(cb_unused long Flags)
+            virtual void OnEnumProperties(cb_unused long _Flags)
             {
                 WXS_SHORT_STRING(wxsNotebookExtra,m_Label,_("Page name"),_T("label"),_T(""),false);
                 WXS_BOOL(wxsNotebookExtra,m_Selected,_("Page selected"),_T("selected"),false);
@@ -81,9 +81,9 @@ namespace
                 m_Extra(Extra)
             {
                 //(*Initialize(wxsNotebookParentQP)
-                wxStaticBoxSizer* StaticBoxSizer2;
-                wxStaticBoxSizer* StaticBoxSizer1;
                 wxFlexGridSizer* FlexGridSizer1;
+                wxStaticBoxSizer* StaticBoxSizer1;
+                wxStaticBoxSizer* StaticBoxSizer2;
 
                 Create(parent, id, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("id"));
                 FlexGridSizer1 = new wxFlexGridSizer(0, 1, 0, 0);
@@ -97,7 +97,6 @@ namespace
                 StaticBoxSizer2->Add(Selected, 1, wxEXPAND, 5);
                 FlexGridSizer1->Add(StaticBoxSizer2, 1, wxEXPAND, 5);
                 SetSizer(FlexGridSizer1);
-                FlexGridSizer1->Fit(this);
                 FlexGridSizer1->SetSizeHints(this);
 
                 Connect(ID_TEXTCTRL1,wxEVT_COMMAND_TEXT_ENTER,wxCommandEventHandler(wxsNotebookParentQP::OnLabelText));
@@ -137,8 +136,8 @@ namespace
             }
 
             //(*Identifiers(wxsNotebookParentQP)
-            static const long ID_TEXTCTRL1;
-            static const long ID_CHECKBOX1;
+            static const wxWindowID ID_TEXTCTRL1;
+            static const wxWindowID ID_CHECKBOX1;
             //*)
 
             //(*Handlers(wxsNotebookParentQP)
@@ -158,8 +157,8 @@ namespace
     };
 
     //(*IdInit(wxsNotebookParentQP)
-    const long wxsNotebookParentQP::ID_TEXTCTRL1 = wxNewId();
-    const long wxsNotebookParentQP::ID_CHECKBOX1 = wxNewId();
+    const wxWindowID wxsNotebookParentQP::ID_TEXTCTRL1 = wxNewId();
+    const wxWindowID wxsNotebookParentQP::ID_CHECKBOX1 = wxNewId();
     //*)
 
     BEGIN_EVENT_TABLE(wxsNotebookParentQP,wxPanel)
@@ -207,7 +206,7 @@ wxsNotebook::wxsNotebook(wxsItemResData* Data):
 {
 }
 
-void wxsNotebook::OnEnumContainerProperties(cb_unused long Flags)
+void wxsNotebook::OnEnumContainerProperties(cb_unused long _Flags)
 {
 }
 
@@ -244,12 +243,12 @@ void wxsNotebook::OnAddChildQPP(wxsItem* Child,wxsAdvQPP* QPP)
     }
 }
 
-wxObject* wxsNotebook::OnBuildPreview(wxWindow* Parent,long PreviewFlags)
+wxObject* wxsNotebook::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     UpdateCurrentSelection();
     wxNotebook* Notebook = new wxNotebook(Parent,-1,Pos(Parent),Size(Parent),Style());
 
-    if ( !GetChildCount() && !(PreviewFlags&pfExact) )
+    if ( !GetChildCount() && !(_Flags&pfExact) )
     {
         // Adding additional empty notebook to prevent from having zero-sized notebook
         Notebook->AddPage(
@@ -257,7 +256,7 @@ wxObject* wxsNotebook::OnBuildPreview(wxWindow* Parent,long PreviewFlags)
             _("No pages"));
     }
 
-    AddChildrenPreview(Notebook,PreviewFlags);
+    AddChildrenPreview(Notebook,_Flags);
 
     for ( int i=0; i<GetChildCount(); i++ )
     {
@@ -268,7 +267,7 @@ wxObject* wxsNotebook::OnBuildPreview(wxWindow* Parent,long PreviewFlags)
         if ( !ChildPreview ) continue;
 
         bool Selected = (Child == m_CurrentSelection);
-        if ( PreviewFlags & pfExact ) Selected = NBExtra->m_Selected;
+        if ( _Flags & pfExact ) Selected = NBExtra->m_Selected;
 
         Notebook->AddPage(ChildPreview,NBExtra->m_Label,Selected);
     }
@@ -336,7 +335,7 @@ bool wxsNotebook::OnEnsureChildPreviewVisible(wxsItem* Child)
 
 void wxsNotebook::UpdateCurrentSelection()
 {
-    wxsItem* NewCurrentSelection = 0;
+    wxsItem* NewCurrentSelection = nullptr;
     for ( int i=0; i<GetChildCount(); i++ )
     {
         if ( m_CurrentSelection == GetChild(i) ) return;

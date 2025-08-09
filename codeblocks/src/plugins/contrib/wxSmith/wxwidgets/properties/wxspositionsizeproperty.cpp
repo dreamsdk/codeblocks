@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10682 $
-* $Id: wxspositionsizeproperty.cpp 10682 2016-01-22 10:46:00Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxspositionsizeproperty.cpp $
+* $Revision: 12197 $
+* $Id: wxspositionsizeproperty.cpp 12197 2020-08-11 08:14:14Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxspositionsizeproperty.cpp $
 */
 
 #include "wxspositionsizeproperty.h"
@@ -107,10 +107,10 @@ wxsPositionSizeProperty::wxsPositionSizeProperty(
 
 void wxsPositionSizeProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
-    wxPGId DefId = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxBoolProperty(GetPGName(),wxPG_LABEL,DEFVALUE));
-    wxPGId XId = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxIntProperty(PGXName,wxPG_LABEL,XVALUE));
-    wxPGId YId = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxIntProperty(PGYName,wxPG_LABEL,YVALUE));
-    wxPGId DUId = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxBoolProperty(PGDUName,wxPG_LABEL,DUVALUE));
+    wxPGId DefId = Grid->AppendIn(Parent,new wxBoolProperty(GetPGName(),wxPG_LABEL,DEFVALUE));
+    wxPGId XId = Grid->AppendIn(Parent,new wxIntProperty(PGXName,wxPG_LABEL,XVALUE));
+    wxPGId YId = Grid->AppendIn(Parent,new wxIntProperty(PGYName,wxPG_LABEL,YVALUE));
+    wxPGId DUId = Grid->AppendIn(Parent,new wxBoolProperty(PGDUName,wxPG_LABEL,DUVALUE));
 
     Grid->SetPropertyAttribute(DefId,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
     Grid->SetPropertyAttribute(DUId,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11194 $
- * $Id: ccoptionsdlg.cpp 11194 2017-10-10 05:23:33Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/ccoptionsdlg.cpp $
+ * $Revision: 13627 $
+ * $Id: ccoptionsdlg.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/ccoptionsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -12,7 +12,6 @@
 #ifndef CB_PRECOMP
     #include <wx/button.h>
     #include <wx/checkbox.h>
-    #include <wx/colordlg.h>
     #include <wx/combobox.h>
     #include <wx/intl.h>
     #include <wx/listbox.h>
@@ -30,6 +29,8 @@
     #include <logmanager.h>
     #include <manager.h>
 #endif
+
+#include <wx/clrpicker.h>
 
 #include <editpairdlg.h>
 
@@ -79,17 +80,13 @@ static const wxString g_SampleClasses =
 
 BEGIN_EVENT_TABLE(CCOptionsDlg, wxPanel)
     EVT_UPDATE_UI(-1,                       CCOptionsDlg::OnUpdateUI)
-    EVT_BUTTON(XRCID("btnColour"),          CCOptionsDlg::OnChooseColour)
     EVT_COMMAND_SCROLL(XRCID("sldCCDelay"), CCOptionsDlg::OnCCDelayScroll)
-    EVT_BUTTON(XRCID("btnDocBgColor"),      CCOptionsDlg::OnChooseColour)
-    EVT_BUTTON(XRCID("btnDocTextColor"),    CCOptionsDlg::OnChooseColour)
-    EVT_BUTTON(XRCID("btnDocLinkColor"),    CCOptionsDlg::OnChooseColour)
 END_EVENT_TABLE()
 
-CCOptionsDlg::CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* cc, DocumentationHelper* dh) :
-    m_NativeParser(np),
+CCOptionsDlg::CCOptionsDlg(wxWindow* parent, ParseManager* pm, CodeCompletion* cc, DocumentationHelper* dh) :
+    m_ParseManager(pm),
     m_CodeCompletion(cc),
-    m_Parser(np->GetParser()),
+    m_Parser(pm->GetParser()),
     m_Documentation(dh)
 {
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("code_completion"));
@@ -121,7 +118,7 @@ CCOptionsDlg::CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* c
     XRCCTRL(*this, "chkKL_9",               wxCheckBox)->SetValue(cfg->ReadBool(_T("/lexer_keywords_set9"),  false));
 
     // Page "C / C++ parser"
-    // NOTE (Morten#1#): Keep this in sync with files in the XRC file (settings.xrc) and nativeparser.cpp
+    // NOTE (Morten#1#): Keep this in sync with files in the XRC file (settings.xrc) and parsemanager.cpp
     XRCCTRL(*this, "spnThreadsNum",            wxSpinCtrl)->SetValue(cfg->ReadInt(_T("/max_threads"), 1));
     XRCCTRL(*this, "spnThreadsNum",            wxSpinCtrl)->Enable(false);
     XRCCTRL(*this, "spnParsersNum",            wxSpinCtrl)->SetValue(cfg->ReadInt(_T("/max_parsers"), 5));
@@ -133,18 +130,9 @@ CCOptionsDlg::CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* c
     XRCCTRL(*this, "txtCCFileExtSource",       wxTextCtrl)->SetValue(cfg->Read(_T("/source_ext"),    _T("c,cpp,cxx,cc,c++")));
 
     // Page "Symbol browser"
-#if wxCHECK_VERSION(3, 0, 0)
-    // Do not disable the whole page, since there are some toolbar related options
-    // we only need to disable the wxTreeCtrl related options.
-    XRCCTRL(*this, "chkNoSB",        wxCheckBox)->Disable();
-    XRCCTRL(*this, "chkInheritance", wxCheckBox)->Disable();
-    XRCCTRL(*this, "chkExpandNS",    wxCheckBox)->Disable();
-    XRCCTRL(*this, "chkFloatCB",     wxCheckBox)->Disable();
-    XRCCTRL(*this, "chkTreeMembers", wxCheckBox)->Disable();
-#else
     XRCCTRL(*this, "chkNoSB",        wxCheckBox)->SetValue(!cfg->ReadBool(_T("/use_symbols_browser"), true));
-#endif // wxCHECK_VERSION
     XRCCTRL(*this, "chkFloatCB",     wxCheckBox)->SetValue(cfg->ReadBool(_T("/as_floating_window"), false));
+    XRCCTRL(*this, "chkCCDebugLogging",        wxCheckBox)->SetValue(cfg->ReadBool(_T("/CCDebugLogging"),   false));
 
     // The toolbar section
     wxCheckBox *scopeFilter = XRCCTRL(*this, "chkScopeFilter", wxCheckBox);
@@ -169,8 +157,8 @@ CCOptionsDlg::CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* c
     XRCCTRL(*this, "chkComplexMacros",      wxCheckBox)->SetValue(m_Parser.Options().parseComplexMacros);
     XRCCTRL(*this, "chkPlatformCheck",      wxCheckBox)->SetValue(m_Parser.Options().platformCheck);
 
-    XRCCTRL(*this, "rdoOneParserPerWorkspace", wxRadioButton)->SetValue( m_NativeParser->IsParserPerWorkspace());
-    XRCCTRL(*this, "rdoOneParserPerProject",   wxRadioButton)->SetValue(!m_NativeParser->IsParserPerWorkspace());
+    XRCCTRL(*this, "rdoOneParserPerWorkspace", wxRadioButton)->SetValue( m_ParseManager->IsParserPerWorkspace());
+    XRCCTRL(*this, "rdoOneParserPerProject",   wxRadioButton)->SetValue(!m_ParseManager->IsParserPerWorkspace());
 
     // Page "Symbol browser"
     XRCCTRL(*this, "chkInheritance",        wxCheckBox)->SetValue(m_Parser.ClassBrowserOptions().showInheritance);
@@ -181,9 +169,9 @@ CCOptionsDlg::CCOptionsDlg(wxWindow* parent, NativeParser* np, CodeCompletion* c
     XRCCTRL(*this, "chkDocumentation",      wxCheckBox)->SetValue(m_Documentation->IsEnabled());
 
     ColourManager *colours = Manager::Get()->GetColourManager();
-    XRCCTRL(*this, "btnDocBgColor",         wxButton)->SetBackgroundColour(colours->GetColour(wxT("cc_docs_back")));
-    XRCCTRL(*this, "btnDocTextColor",       wxButton)->SetBackgroundColour(colours->GetColour(wxT("cc_docs_fore")));
-    XRCCTRL(*this, "btnDocLinkColor",       wxButton)->SetBackgroundColour(colours->GetColour(wxT("cc_docs_link")));
+    XRCCTRL(*this, "cpDocBgColor",          wxColourPickerCtrl)->SetColour(colours->GetColour(wxT("cc_docs_back")));
+    XRCCTRL(*this, "cpDocTextColor",        wxColourPickerCtrl)->SetColour(colours->GetColour(wxT("cc_docs_fore")));
+    XRCCTRL(*this, "cpDocLinkColor",        wxColourPickerCtrl)->SetColour(colours->GetColour(wxT("cc_docs_link")));
 
 //    m_Parser.ParseBuffer(g_SampleClasses, true);
 //    m_Parser.BuildTree(*XRCCTRL(*this, "treeClasses", wxTreeCtrl));
@@ -195,6 +183,12 @@ CCOptionsDlg::~CCOptionsDlg()
 
 void CCOptionsDlg::OnApply()
 {
+    cbProject* pProject = Manager::Get()->GetProjectManager()->GetActiveProject();
+     // Remember the project that changed the .conf data //(ph 2025/02/04)
+    m_ParseManager->SetOptsChangedByProject(pProject);
+    // Renember the Parser that changed the .conf data //(ph 2025/02/04)
+    m_ParseManager->SetOptsChangedByParser(&(m_ParseManager->GetParser())); //(ph 2025/02/07)
+
     ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("code_completion"));
 
     // -----------------------------------------------------------------------
@@ -237,15 +231,14 @@ void CCOptionsDlg::OnApply()
     cfg->Write(_T("/header_ext"),        XRCCTRL(*this, "txtCCFileExtHeader", wxTextCtrl)->GetValue());
     cfg->Write(_T("/empty_ext"),  (bool) XRCCTRL(*this, "chkCCFileExtEmpty",  wxCheckBox)->GetValue());
     cfg->Write(_T("/source_ext"),        XRCCTRL(*this, "txtCCFileExtSource", wxTextCtrl)->GetValue());
+    cfg->Write(_T("/CCDebugLogging"),    XRCCTRL(*this, "chkCCDebugLogging",  wxCheckBox)->GetValue());
 
-#if !wxCHECK_VERSION(3, 0, 0)
     // Page "Symbol browser"
     cfg->Write(_T("/use_symbols_browser"),      (bool)!XRCCTRL(*this, "chkNoSB",        wxCheckBox)->GetValue());
     cfg->Write(_T("/browser_show_inheritance"), (bool) XRCCTRL(*this, "chkInheritance", wxCheckBox)->GetValue());
     cfg->Write(_T("/browser_expand_ns"),        (bool) XRCCTRL(*this, "chkExpandNS",    wxCheckBox)->GetValue());
     cfg->Write(_T("/as_floating_window"),       (bool) XRCCTRL(*this, "chkFloatCB",     wxCheckBox)->GetValue());
     cfg->Write(_T("/browser_tree_members"),     (bool) XRCCTRL(*this, "chkTreeMembers", wxCheckBox)->GetValue());
-#endif // wxCHECK_VERSION
 
     // The toolbar section
     cfg->Write(_T("/scope_filter"), (bool) XRCCTRL(*this, "chkScopeFilter", wxCheckBox)->GetValue());
@@ -254,9 +247,9 @@ void CCOptionsDlg::OnApply()
 
     // Page "Documentation"
     cfg->Write(_T("/use_documentation_helper"), (bool) XRCCTRL(*this, "chkDocumentation", wxCheckBox)->GetValue());
-    cfg->Write(_T("/documentation_helper_background_color"), (wxColour) XRCCTRL(*this, "btnDocBgColor",   wxButton)->GetBackgroundColour());
-    cfg->Write(_T("/documentation_helper_text_color"),       (wxColour) XRCCTRL(*this, "btnDocTextColor", wxButton)->GetBackgroundColour());
-    cfg->Write(_T("/documentation_helper_link_color"),       (wxColour) XRCCTRL(*this, "btnDocLinkColor", wxButton)->GetBackgroundColour());
+    cfg->Write(_T("/documentation_helper_background_color"), (wxColour) XRCCTRL(*this, "cpDocBgColor",   wxColourPickerCtrl)->GetColour());
+    cfg->Write(_T("/documentation_helper_text_color"),       (wxColour) XRCCTRL(*this, "cpDocTextColor", wxColourPickerCtrl)->GetColour());
+    cfg->Write(_T("/documentation_helper_link_color"),       (wxColour) XRCCTRL(*this, "cpDocLinkColor", wxColourPickerCtrl)->GetColour());
     // -----------------------------------------------------------------------
     // Handle all options that are being be read by m_Parser.ReadOptions():
     // -----------------------------------------------------------------------
@@ -288,33 +281,18 @@ void CCOptionsDlg::OnApply()
     m_Documentation->SetEnabled(               XRCCTRL(*this, "chkDocumentation",  wxCheckBox)->GetValue() );
 
     ColourManager *colours = Manager::Get()->GetColourManager();
-    wxColor colour = XRCCTRL(*this, "btnDocBgColor",   wxButton)->GetBackgroundColour();
+    wxColor colour = XRCCTRL(*this, "cpDocBgColor", wxColourPickerCtrl)->GetColour();
     colours->SetColour(wxT("cc_docs_back"), colour);
-    colour = XRCCTRL(*this, "btnDocTextColor",   wxButton)->GetBackgroundColour();
+    colour = XRCCTRL(*this, "cpDocTextColor", wxColourPickerCtrl)->GetColour();
     colours->SetColour(wxT("cc_docs_text"), colour);
-    colour = XRCCTRL(*this, "btnDocLinkColor",   wxButton)->GetBackgroundColour();
+    colour = XRCCTRL(*this, "cpDocLinkColor", wxColourPickerCtrl)->GetColour();
     colours->SetColour(wxT("cc_docs_link"), colour);
 
     // Now write the parser options and re-read them again to make sure they are up-to-date
     m_Parser.WriteOptions();
-    m_NativeParser->RereadParserOptions();
+    m_ParseManager->RereadParserOptions();
     m_Documentation->WriteOptions(cfg);
     m_CodeCompletion->RereadOptions();
-}
-
-void CCOptionsDlg::OnChooseColour(wxCommandEvent& event)
-{
-    wxColourData data;
-    wxWindow* sender = FindWindowById(event.GetId());
-    data.SetColour(sender->GetBackgroundColour());
-
-    wxColourDialog dlg(this, &data);
-    PlaceWindow(&dlg);
-    if (dlg.ShowModal() == wxID_OK)
-    {
-        wxColour colour = dlg.GetColourData().GetColour();
-        sender->SetBackgroundColour(colour);
-    }
 }
 
 void CCOptionsDlg::OnCCDelayScroll(cb_unused wxScrollEvent& event)
@@ -371,15 +349,14 @@ void CCOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
     XRCCTRL(*this, "txtCCFileExtHeader",      wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "chkCCFileExtEmpty",       wxCheckBox)->Enable(en);
     XRCCTRL(*this, "txtCCFileExtSource",      wxTextCtrl)->Enable(en);
+    XRCCTRL(*this, "chkCCDebugLogging",       wxCheckBox)->Enable(en);
 
     // Page "Symbol browser"
-#if !wxCHECK_VERSION(3, 0, 0)
     en = !XRCCTRL(*this, "chkNoSB",           wxCheckBox)->GetValue();
     XRCCTRL(*this, "chkInheritance",          wxCheckBox)->Enable(en);
     XRCCTRL(*this, "chkExpandNS",             wxCheckBox)->Enable(en);
     XRCCTRL(*this, "chkFloatCB",              wxCheckBox)->Enable(en);
     XRCCTRL(*this, "chkTreeMembers",          wxCheckBox)->Enable(en);
-#endif // !wxCHECK_VERSION
 
     // Toolbar section
     wxCheckBox *scopeFilter = XRCCTRL(*this, "chkScopeFilter", wxCheckBox);
@@ -387,9 +364,9 @@ void CCOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
 
     // Page "Documentation"
     en = XRCCTRL(*this, "chkDocumentation",   wxCheckBox)->GetValue();
-    XRCCTRL(*this, "btnDocBgColor",           wxButton)->Enable(en);
-    XRCCTRL(*this, "btnDocTextColor",         wxButton)->Enable(en);
-    XRCCTRL(*this, "btnDocLinkColor",         wxButton)->Enable(en);
+    XRCCTRL(*this, "cpDocBgColor",            wxColourPickerCtrl)->Enable(en);
+    XRCCTRL(*this, "cpDocTextColor",          wxColourPickerCtrl)->Enable(en);
+    XRCCTRL(*this, "cpDocLinkColor",          wxColourPickerCtrl)->Enable(en);
 }
 
 void CCOptionsDlg::UpdateCCDelayLabel()

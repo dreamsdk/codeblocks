@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10874 $
- * $Id: projectlayoutloader.cpp 10874 2016-07-16 20:00:28Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectlayoutloader.cpp $
+ * $Revision: 12999 $
+ * $Id: projectlayoutloader.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/projectlayoutloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -82,11 +82,11 @@ bool ProjectLayoutLoader::Open(const wxString& filename)
 
         if (major >= PROJECT_LAYOUT_FILE_VERSION_MAJOR && minor > PROJECT_LAYOUT_FILE_VERSION_MINOR)
         {
-            pMsg->DebugLog(F(_T("Project layout file version is > %d.%d. Trying to load..."), PROJECT_LAYOUT_FILE_VERSION_MAJOR, PROJECT_LAYOUT_FILE_VERSION_MINOR));
+            pMsg->DebugLog(wxString::Format("Project layout file version is > %d.%d. Trying to load...", PROJECT_LAYOUT_FILE_VERSION_MAJOR, PROJECT_LAYOUT_FILE_VERSION_MINOR));
             AnnoyingDialog dlg(_("Project layout file format is newer/unknown"),
-                                F(_("This project layout file was saved with a newer version of Code::Blocks.\n"
+                                wxString::Format(_("This project layout file was saved with a newer version of Code::Blocks.\n"
                                 "Will try to load, but you might see unexpected results.\n"
-                                "In this case close the project, delete %s and reopen the project."),filename.wx_str()),
+                                "In this case close the project, delete %s and reopen the project."),filename),
                                 wxART_WARNING,
                                 AnnoyingDialog::OK);
             dlg.ShowModal();
@@ -101,7 +101,7 @@ bool ProjectLayoutLoader::Open(const wxString& filename)
             {
                 msg << _("0.0 (unversioned) to 1.0:\n");
                 msg << _("  * save editor-pane layout and order.\n");
-                msg << _("\n");
+                msg << _T("\n");
             }
 
             if (!msg.IsEmpty())

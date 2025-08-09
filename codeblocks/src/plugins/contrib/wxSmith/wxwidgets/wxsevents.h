@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10874 $
-* $Id: wxsevents.h 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsevents.h $
+* $Revision: 12447 $
+* $Id: wxsevents.h 12447 2021-05-16 22:52:16Z bluehazzard $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsevents.h $
 */
 
 #ifndef WXSEVENTS_H
@@ -51,6 +51,8 @@ struct wxsEventDesc
     wxString NewFuncNameBase;   ///< \brief Base for new function name, it will be created as "On" + VarName + NewFuncName
 };
 
+#define QUOTE(str) #str
+
 /** \brief Beginning definition of events array (source file) */
 #define WXS_EV_BEGIN(name)                                          \
     static wxsEventDesc name[] = {
@@ -58,6 +60,10 @@ struct wxsEventDesc
 /** \brief Adding new event into list (entry without id, will be connected to widget using wxsEvtHandler::Connect function) */
 #define WXS_EV(entry,type,arg,funcbase)                             \
     { wxsEventDesc::NoId, _T(#entry), _T(#type), _T(#arg), _T(#funcbase) } ,
+
+/** \brief Adding new event into list (entry with id, standard one) */
+#define WXS_EVI_STD_TYPE(entry,arg,funcbase)                            \
+    { wxsEventDesc::Id, _T(#entry), _T(QUOTE(wx##entry)), _T(#arg), _T(#funcbase) } ,
 
 /** \brief Adding new event into list (entry with id, standard one) */
 #define WXS_EVI(entry,type,arg,funcbase)                            \

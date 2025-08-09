@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsmultichoicedialog.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmultichoicedialog.h $
+* $Revision: 13547 $
+* $Id: wxsmultichoicedialog.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmultichoicedialog.h $
 */
 
 #ifndef WXSMULTICHOICEDIALOG_H
@@ -35,7 +35,7 @@ class wxsMultiChoiceDialog: public wxsTool
     private:
 
         virtual void OnBuildCreatingCode();
-        virtual void OnEnumToolProperties(long Flags);
+        virtual void OnEnumToolProperties(long _Flags);
 
         wxString m_Message;
         wxString m_Caption;

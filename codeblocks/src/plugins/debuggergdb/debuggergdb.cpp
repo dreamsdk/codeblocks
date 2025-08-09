@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11877 $
- * $Id: debuggergdb.cpp 11877 2019-10-16 07:24:24Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggergdb.cpp $
+ * $Revision: 13627 $
+ * $Id: debuggergdb.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/debuggergdb.cpp $
  */
 
 #include <sdk.h>
@@ -95,8 +95,6 @@ enum DebugCommandConst
     CMD_RUNNINGTHREADS
 };
 
-const wxString g_EscapeChar = wxChar(26);
-
 namespace
 {
 long idMenuInfoFrame = wxNewId();
@@ -117,6 +115,7 @@ long idGDBProcess = wxNewId();
 long idTimerPollDebugger = wxNewId();
 
 long idMenuWatchDereference = wxNewId();
+long idMenuWatchSymbol = wxNewId();
 
 // this auto-registers the plugin
 PluginRegistrant<DebuggerGDB> reg(_T("Debugger"));
@@ -130,6 +129,7 @@ BEGIN_EVENT_TABLE(DebuggerGDB, cbDebuggerPlugin)
     EVT_MENU(idMenuInfoSignals, DebuggerGDB::OnInfoSignals)
 
     EVT_MENU(idMenuWatchDereference, DebuggerGDB::OnMenuWatchDereference)
+    EVT_MENU(idMenuWatchSymbol, DebuggerGDB::OnMenuWatchSymbol)
 
     EVT_PIPEDPROCESS_STDOUT(idGDBProcess, DebuggerGDB::OnGDBOutput)
     EVT_PIPEDPROCESS_STDERR(idGDBProcess, DebuggerGDB::OnGDBError)
@@ -158,15 +158,15 @@ BEGIN_EVENT_TABLE(DebuggerGDB, cbDebuggerPlugin)
 END_EVENT_TABLE()
 
 DebuggerGDB::DebuggerGDB() :
-    cbDebuggerPlugin(wxT("GDB/CDB debugger"), wxT("gdb_debugger")),
+    cbDebuggerPlugin(_("GDB/CDB debugger"), wxT("gdb_debugger")),
     m_State(this),
-    m_pProcess(0L),
+    m_pProcess(nullptr),
     m_LastExitCode(0),
     m_Pid(0),
     m_PidToAttach(0),
     m_NoDebugInfo(false),
     m_StoppedOnSignal(false),
-    m_pProject(0),
+    m_pProject(nullptr),
     m_bIsConsole(false),
     m_stopDebuggerConsoleClosed(false),
     m_nConsolePid(0),
@@ -254,9 +254,9 @@ bool DebuggerGDB::SupportsFeature(cbDebuggerFeature::Flags flag)
         case cbDebuggerFeature::Disassembly:
         case cbDebuggerFeature::Watches:
         case cbDebuggerFeature::ValueTooltips:
-            return true;
         case cbDebuggerFeature::ExamineMemory:
         case cbDebuggerFeature::Threads:
+            return true;
         case cbDebuggerFeature::RunToCursor:
         case cbDebuggerFeature::SetNextStatement:
         default:
@@ -425,12 +425,6 @@ RemoteDebuggingMap DebuggerGDB::ParseRemoteDebuggingMap(cbProject &project)
                         rd.additionalShellCmdsAfter = cbC2U(rdOpt->Attribute("additional_shell_cmds_after"));
                     if (rdOpt->Attribute("additional_shell_cmds_before"))
                         rd.additionalShellCmdsBefore = cbC2U(rdOpt->Attribute("additional_shell_cmds_before"));
-					// DreamSDK::Start
-					if (rdOpt->Attribute("loader_arguments"))
-                        rd.loaderArguments = cbC2U(rdOpt->Attribute("loader_arguments"));
-                    if (rdOpt->Attribute("loader_waiting_time"))
-                        rd.loaderWaitingTime = atol(rdOpt->Attribute("loader_waiting_time"));
-					// DreamSDK::End
 
                     map.insert(map.end(), std::make_pair(bt, rd));
                 }
@@ -501,11 +495,6 @@ void DebuggerGDB::SetRemoteDebuggingMap(cbProject &project, const RemoteDebuggin
                 tgtnode->SetAttribute("additional_shell_cmds_after", cbU2C(rd.additionalShellCmdsAfter));
             if (!rd.additionalShellCmdsBefore.IsEmpty())
                 tgtnode->SetAttribute("additional_shell_cmds_before", cbU2C(rd.additionalShellCmdsBefore));
-			// DreamSDK::Start
-			if (!rd.loaderArguments.IsEmpty())
-				tgtnode->SetAttribute("loader_arguments", cbU2C(rd.loaderArguments));			
-            tgtnode->SetAttribute("loader_waiting_time", (int)rd.loaderWaitingTime);
-			// DreamSDK::End
         }
     }
 }
@@ -524,7 +513,7 @@ void DebuggerGDB::DoWatches()
     {
         if (m_localsWatch == nullptr)
         {
-            m_localsWatch = cb::shared_ptr<GDBWatch>(new GDBWatch(wxT("Locals")));
+            m_localsWatch = cb::shared_ptr<GDBWatch>(new GDBWatch(_("Locals")));
             m_localsWatch->Expand(true);
             m_localsWatch->MarkAsChanged(false);
             cbWatchesDlg *watchesDialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
@@ -536,7 +525,7 @@ void DebuggerGDB::DoWatches()
     {
         if (m_funcArgsWatch == nullptr)
         {
-            m_funcArgsWatch = cb::shared_ptr<GDBWatch>(new GDBWatch(wxT("Function arguments")));
+            m_funcArgsWatch = cb::shared_ptr<GDBWatch>(new GDBWatch(_("Function arguments")));
             m_funcArgsWatch->Expand(true);
             m_funcArgsWatch->MarkAsChanged(false);
             cbWatchesDlg *watchesDialog = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
@@ -556,100 +545,27 @@ static wxString GetShellString()
     // GDB expects the SHELL variable's value to be a path to the shell's executable, so we need to
     // remove all parameters and do some trimming.
     shell.Trim(false);
-    wxString::size_type pos = shell.find(wxT(' '));
+    wxString::size_type pos = shell.find(' ');
     if (pos != wxString::npos)
         shell.erase(pos);
     shell.Trim();
     return shell;
 }
 
-// DreamSDK::Start
-
-int DebuggerGDB::ValidateLoaderWaitingTime(int waitingTime)
-{
-    int result = GetActiveConfigEx().GetLoaderWaitingTime();
-
-    if (waitingTime != LOADER_WAITING_TIME_DISABLED &&
-        waitingTime >= LOADER_WAITING_TIME_MIN &&
-        waitingTime <= LOADER_WAITING_TIME_MAX)
-    {
-        result = waitingTime;
-    }
-
-    return result;
-}
-
-bool DebuggerGDB::LaunchLoader(const wxString& debuggee, const wxString& projectLoaderArguments, int projectWaitingTime)
-{
-    bool loaderStartedSuccessfully = false;
-
-    wxString loaderPath = GetActiveConfigEx().GetLoaderExecutable();
-    wxString loaderArgs = GetActiveConfigEx().GetLoaderArguments(debuggee); // Read from default DebuggerGDB panel
-    if (!projectLoaderArguments.empty()) {
-        loaderArgs = ParseLoaderArguments(projectLoaderArguments, debuggee);
-    }
-
-    wxString cmd = loaderPath;
-    if (!loaderArgs.empty())
-    {
-        cmd += _(" ") + loaderArgs;
-    }
-
-    // start the loader process
-    Log(_("Starting loader: ") + cmd);
-
-    long pid = wxExecute(cmd, wxEXEC_ASYNC | wxEXEC_NOHIDE);
-
-    loaderStartedSuccessfully = (pid);
-    if (loaderStartedSuccessfully)
-    {
-        DebugLog(wxString::Format( _("Loader Process ID: %d"), pid ) );
-
-        int waitingTime = ValidateLoaderWaitingTime(projectWaitingTime);
-
-        Log(wxString::Format(_("Loader started successfully. Waiting %d second(s) before starting the debugger..."), waitingTime));
-        for(int i = 0; i < waitingTime; i++)
-        {
-            DebugLog(wxString::Format( _("%d second(s) elapsed..."), (i + 1) ) );
-            wxMilliSleep(1000);
-            Manager::Yield();
-        }
-        DebugLog(wxString::Format( _("Ready to start the debugger!") ) );
-    }
-    else
-    {
-        Log(_("Failed to start the loader..."), Logger::error);
-    }
-
-    return loaderStartedSuccessfully;
-}
-
-// DreamSDK::End
-
 int DebuggerGDB::LaunchProcessWithShell(const wxString &cmd, wxProcess *process,
                                         const wxString &cwd)
 {
     wxString shell = GetShellString();
-#if wxCHECK_VERSION(3, 0, 0)
     wxExecuteEnv execEnv;
     execEnv.cwd = cwd;
     // Read the current environment variables and then make changes to them.
     wxGetEnvMap(&execEnv.env);
     if (!shell.empty())
     {
-        Log(wxString::Format(wxT("Setting SHELL to '%s'"), shell.wx_str()));
+        Log(wxString::Format(_("Setting SHELL to '%s'"), shell));
         execEnv.env["SHELL"] = shell;
     }
     return wxExecute(cmd, wxEXEC_ASYNC, process, &execEnv);
-#else
-    if (!shell.empty())
-    {
-        Log(wxString::Format(wxT("Setting SHELL to '%s'"), shell.wx_str()));
-        wxSetEnv(wxT("SHELL"), shell);
-    }
-    (void)cwd;
-    return wxExecute(cmd, wxEXEC_ASYNC, process);
-#endif // !wxCHECK_VERSION(3, 0, 0)
 }
 
 int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
@@ -681,12 +597,12 @@ int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
         DebugLog(wxString::Format( _("Executing: %s"), psCmd.wx_str()) );
         int result = wxExecute(psCmd, psOutput, psErrors, wxEXEC_SYNC);
 
-        mypidStr << wxT(" ");
+        mypidStr << ' ';
 
         for (int i = 0; i < psOutput.GetCount(); ++i)
         { //  PPID   PID COMMAND
            wxString psLine = psOutput.Item(i);
-           if (psLine.StartsWith(mypidStr) && psLine.Contains(wxT("gdb")))
+           if (psLine.StartsWith(mypidStr) && psLine.Contains("gdb"))
            {
                wxString pidStr = psLine.Mid(mypidStr.Length());
                pidStr = pidStr.BeforeFirst(' ');
@@ -706,28 +622,28 @@ int DebuggerGDB::LaunchProcess(const wxString& cmd, const wxString& cwd)
     if (!m_Pid)
     {
         delete m_pProcess;
-        m_pProcess = 0;
+        m_pProcess = nullptr;
         Log(_("failed"), Logger::error);
         return -1;
     }
     else if (!m_pProcess->GetOutputStream())
     {
         delete m_pProcess;
-        m_pProcess = 0;
+        m_pProcess = nullptr;
         Log(_("failed (to get debugger's stdin)"), Logger::error);
         return -2;
     }
     else if (!m_pProcess->GetInputStream())
     {
         delete m_pProcess;
-        m_pProcess = 0;
+        m_pProcess = nullptr;
         Log(_("failed (to get debugger's stdout)"), Logger::error);
         return -2;
     }
     else if (!m_pProcess->GetErrorStream())
     {
         delete m_pProcess;
-        m_pProcess = 0;
+        m_pProcess = nullptr;
         Log(_("failed (to get debugger's stderr)"), Logger::error);
         return -2;
     }
@@ -752,7 +668,7 @@ bool DebuggerGDB::Debug(bool breakOnEntry)
     if (m_pProcess || WaitingCompilerToFinish())
         return false;
 
-    m_pProject = 0;
+    m_pProject = nullptr;
     m_NoDebugInfo = false;
 
     // can only debug projects or attach to processes
@@ -786,51 +702,6 @@ bool DebuggerGDB::Debug(bool breakOnEntry)
     return true;
 }
 
-// DreamSDK::Start
-
-bool DebuggerGDB::IsDebugTarget(ProjectBuildTarget *target)
-{
-    bool result = false;
-
-//    Manager::Get()->GetLogManager()->Log(_("Entering IsDebugTarget..."), m_PageIndex);
-
-    wxArrayString targetOpts = target->GetCompilerOptions();
-
-    size_t i = 0;
-    while (!result && i < targetOpts.GetCount())
-    {
-        wxString opt = targetOpts[i].Upper();
-        result = (opt.Find(_("-DDEBUG")) != wxNOT_FOUND) || (opt.Find(_("-G")) != wxNOT_FOUND);
-        i++;
-    }
-
-//    wxString resultStr = result ? _("YES") : _("NO");
-//    Manager::Get()->GetLogManager()->Log(_("Exiting IsDebugTarget: ") + resultStr, m_PageIndex);
-
-    return result;
-}
-
-ProjectBuildTarget* DebuggerGDB::GetCurrentTarget()
-{
-    ProjectBuildTarget* target = NULL;
-    if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
-    {
-        int tgtIdx = m_pProject->SelectTarget();
-        if (tgtIdx == -1)
-        {
-            return NULL;
-        }
-        target = m_pProject->GetBuildTarget(tgtIdx);
-        m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
-    }
-    else
-        target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
-
-    return target;
-}
-
-// DreamSDK::End
-
 int DebuggerGDB::DoDebug(bool breakOnEntry)
 {
     // set this to true before every error exit point in this function
@@ -841,21 +712,25 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     ProjectManager* prjMan = Manager::Get()->GetProjectManager();
 
     // select the build target to debug
-    ProjectBuildTarget* target = 0;
-    Compiler* actualCompiler = 0;
+    ProjectBuildTarget* target = nullptr;
+    Compiler* actualCompiler = nullptr;
     if ( (m_PidToAttach == 0) && m_pProject)
     {
         Log(_("Selecting target: "));
-		
-		// DreamSDK::Start (Altered)
-        target = GetCurrentTarget();
-        if (!target)
+        if (!m_pProject->BuildTargetValid(m_ActiveBuildTarget, false))
         {
-            Log(_("canceled"));
-            m_Canceled = true;
-            return 3;
+            int tgtIdx = m_pProject->SelectTarget();
+            if (tgtIdx == -1)
+            {
+                Log(_("canceled"));
+                m_Canceled = true;
+                return 3;
+            }
+            target = m_pProject->GetBuildTarget(tgtIdx);
+            m_ActiveBuildTarget = (target ? target->GetTitle() : wxString(wxEmptyString));
         }
-		// DreamSDK::End (Altered)
+        else
+            target = m_pProject->GetBuildTarget(m_ActiveBuildTarget);
 
         // make sure it's not a commands-only target
         if (target && target->GetTargetType() == ttCommandsOnly)
@@ -865,37 +740,6 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(_("aborted"));
             return 3;
         }
-		
-		// DreamSDK::Start
-		// make sure it's a native and loaded target...
-        if (target && target->GetTargetType() == ttNative && !GetActiveConfigEx().GetLoaderExecutable().empty())
-        {
-            if (!IsDebugTarget(target))
-            {
-                // We are trying to debug a Release target: impossible
-
-                cbMessageBox(_("The selected target is a Release target.\n"
-                    "Please select the Debug target if you want to launch a debugging session on this project."), _("Warning"), wxICON_WARNING);
-                Log(_("aborted"));
-                m_Canceled = true;
-                return 3;
-            }
-            else
-            {
-                // We are trying to debug a Debug target: OK
-
-                AnnoyingDialog dlg(_("About debugging through a loader"),
-                   F(_("The loader will now run the Debug target remotely and wait %d second(s) before starting the debugger.\n"
-                       "This delay is essential in order to wait the upload and the execution on the remote system.\n"
-                       "You may adapt this delay in Project > Properties... > Debugger > Debug > Waiting time."),
-                     GetActiveConfigEx().GetLoaderWaitingTime()),
-                   wxART_INFORMATION,
-                   AnnoyingDialog::dStyle::OK);
-                dlg.ShowModal();
-            }
-        }
-		// DreamSDK::End
-		
         if (target) Log(target->GetTitle());
 
         // find the target's compiler (to see which debugger to use)
@@ -940,7 +784,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     // start debugger driver based on target compiler, or default compiler if no target
     if (!m_State.StartDriver(target))
     {
-        cbMessageBox(_T("Could not decide which debugger to use!"), _T("Error"), wxICON_ERROR);
+        cbMessageBox(_("Could not decide which debugger to use!"), _("Error"), wxICON_ERROR);
         m_Canceled = true;
         return -1;
     }
@@ -952,7 +796,7 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     int nRet = evt.GetInt();
     if (nRet < 0)
     {
-        cbMessageBox(_T("A plugin interrupted the debug process."));
+        cbMessageBox(_("A plugin interrupted the debug process."));
         Log(_("Aborted by plugin"));
         m_Canceled = true;
         return -1;
@@ -960,11 +804,9 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
     // Continue
 
     // create gdb launch command
-    wxString cmd;
 
     // prepare the driver
     wxString cmdline;
-	wxString debuggee; // DreamSDK
     if (m_PidToAttach == 0)
     {
         m_State.GetDriver()->ClearDirectories();
@@ -998,8 +840,8 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             AddSourceDir(m_pProject->GetCommonTopLevelPath());
         }
 
-        // set the file to debug (depends on the target type)		
-        wxString path;
+        // set the file to debug (depends on the target type)
+        wxString debuggee, path;
         if ( !GetDebuggee(debuggee, path, target) )
         {
             m_Canceled = true;
@@ -1068,28 +910,13 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             Log(wxString(_("Set variable: ")) + CB_LIBRARY_ENVVAR wxT("=") + newLibPath);
         }
     }
-	
-	// DreamSDK::Start
-	// start the loader if necessary
-    if (GetActiveConfigEx().IsLoaderNecessary()) {
-        if (!LaunchLoader(debuggee, rd.loaderArguments, rd.loaderWaitingTime)) {
-            Log(_("An issue occurred when starting the loader..."), Logger::error);
-            Log(_("Starting the debugger anyway..."));
-        }
-    }
-	// DreamSDK::End
 
     #ifdef __WXMSW__
     if (!m_State.GetDriver()->UseDebugBreakProcess())
     {
-        // DreamSDK::Start (Altered)
-		DebugLog(_("UseDebugBreakProcess is enabled!"));
-        if (!AllocConsole())
-        {
-            DebugLog(wxString::Format(_("AllocConsole failed: %d"), GetLastError()));
-        }
-        SetConsoleTitleA("Code::Blocks Debug Console - DO NOT CLOSE!");
-		// DreamSDK::End (Altered)
+        AllocConsole();
+        // c_str() is needed when wxUSE_STL = 1
+        SetConsoleTitle(_("Codeblocks debug console - DO NOT CLOSE!").c_str());
         SetConsoleCtrlHandler(HandlerRoutine, TRUE);
         m_bIsConsole = true;
 
@@ -1098,15 +925,13 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
             ShowWindow(windowHandle, SW_HIDE);
     }
     #endif
-	
-    // prepare the debugger
+
+    // start the gdb process
     wxString wdir = m_State.GetDriver()->GetDebuggersWorkingDirectory();
     if (wdir.empty())
         wdir = m_pProject ? m_pProject->GetBasePath() : _T(".");
-    DebugLog(_T("Command-line: ") + cmdline);
-    DebugLog(_T("Working dir : ") + wdir);
-	
-	// start the gdb process
+    DebugLog(_("Command-line: ") + cmdline);
+    DebugLog(_("Working dir : ") + wdir);
     int ret = LaunchProcess(cmdline, wdir);
 
     if (!rd.skipLDpath)
@@ -1121,7 +946,6 @@ int DebuggerGDB::DoDebug(bool breakOnEntry)
         return ret;
     }
 
-    wxString out;
     // start polling gdb's output
     m_TimerPollDebugger.Start(20);
 
@@ -1182,43 +1006,9 @@ void DebuggerGDB::AddSourceDir(const wxString& dir)
     wxString filename = dir;
     Manager::Get()->GetMacrosManager()->ReplaceEnvVars(filename); // apply env vars
     Log(_("Adding source dir: ") + filename);
-    
-	// DreamSDK::Start (Altered)
-	// Convert paths to 8.3 format
-    wxString filename83 = filename;
-    ConvertToGDBDirectory(filename83, _T(""), false);
-    m_State.GetDriver()->AddDirectory(filename83);
-
-    // Handle paths with spaces
-    // GDB supports spaces in directories so we must do that
-    // If not, the "break" cmd with spaces in filenames will NOT work...
-    if (filename.Contains(wxT(" ")))
-    {
-        ConvertToGDBFriendly(filename);
-        m_State.GetDriver()->AddDirectory(filename);
-    }
-	// DreamSDK::End (Altered)
+    ConvertToGDBDirectory(filename, _T(""), false);
+    m_State.GetDriver()->AddDirectory(filename);
 }
-
-// DreamSDK::Start
-// static
-wxString DebuggerGDB::ParseLoaderArguments(const wxString& loaderArguments, const wxString& debuggee)
-{
-    wxString result = loaderArguments;
-
-    if (!result.empty())
-    {
-        // This is dirty!
-        result.Replace(wxT("${DEBUGGEE}"), debuggee);
-        result.Replace(wxT("$(DEBUGGEE)"), debuggee);
-
-        // Normal procedure
-        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(result);
-    }
-
-    return result;
-}
-// DreamSDK::End
 
 // static
 void DebuggerGDB::StripQuotes(wxString& str)
@@ -1865,12 +1655,11 @@ void DebuggerGDB::DoBreak(bool temporary)
     if (m_pProcess && m_Pid && !IsStopped())
     {
         long childPid = m_State.GetDriver()->GetChildPID();
-		DebugLog(wxString::Format(_("childPid: %d"), childPid)); // DreamSDK
         long pid = childPid;
     #ifndef __WXMSW__
         if (pid > 0 && !wxProcess::Exists(pid))
         {
-            DebugLog(wxString::Format(_("Child process (pid:%ld) doesn't exists"), pid), Logger::warning);
+            DebugLog(wxString::Format(_("Child process (pid:%ld) doesn't exist"), pid), Logger::warning);
             pid = 0;
         }
         if (pid <= 0)
@@ -1881,10 +1670,10 @@ void DebuggerGDB::DoBreak(bool temporary)
         else
         {
             if (!wxProcess::Exists(pid))
-                DebugLog(wxString::Format(_("GDB process (pid:%ld) doesn't exists"), pid), Logger::error);
+                DebugLog(wxString::Format(_("GDB process (pid:%ld) doesn't exist"), pid), Logger::error);
 
-            Log(F(_("Trying to interrupt process with pid: %ld; child pid: %ld gdb pid: %ld"),
-                  pid, childPid, static_cast<long>(m_Pid)));
+            Log(wxString::Format(_("Trying to interrupt process with pid: %ld; child pid: %ld gdb pid: %ld"),
+                                 pid, childPid, static_cast<long>(m_Pid)));
             wxKillError error;
             if (wxKill(pid, wxSIGINT, &error) != 0)
                 DebugLog(wxString::Format(_("Can't kill process (%ld) %d"), pid, (int)(error)));
@@ -1907,7 +1696,7 @@ void DebuggerGDB::DoBreak(bool temporary)
                     if (static_cast<int>(lppe.th32ParentProcessID) == m_Pid) // Have my Child...
                     {
                         pid = lppe.th32ProcessID;
-                        DebugLog(F(_("Found child: %ld"),  pid));
+                        DebugLog(wxString::Format(_("Found child: %ld"),  pid));
                     }
                     lppe.dwSize = sizeof(PROCESSENTRY32);
                     ok = Process32NextFunc(snap, &lppe);
@@ -1924,8 +1713,8 @@ void DebuggerGDB::DoBreak(bool temporary)
                 Log(_("DebugBreakProcess is not supported, you need Windows XP or newer..."), Logger::error);
             else if (pid > 0)
             {
-                Log(F(_("Trying to interrupt process with pid: %ld; child pid: %ld gdb pid: %ld"),
-                      pid, childPid, static_cast<long>(m_Pid)));
+                Log(wxString::Format(_("Trying to interrupt process with pid: %ld; child pid: %ld gdb pid: %ld"),
+                                     pid, childPid, static_cast<long>(m_Pid)));
                 HANDLE proc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)pid);
                 if (proc)
                 {
@@ -1933,7 +1722,7 @@ void DebuggerGDB::DoBreak(bool temporary)
                     CloseHandle(proc);
                 }
                 else
-                    Log(wxT("Interrupting debugger failed :("), Logger::error);
+                    Log(_("Interrupting debugger failed :("), Logger::error);
             }
         }
         else
@@ -1943,7 +1732,7 @@ void DebuggerGDB::DoBreak(bool temporary)
                 Log(_("Trying to interrupt the process by sending CTRL-C event to the console!"));
                 if (GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0) == 0)
                 {
-                    Log(wxT("Interrupting debugger failed :("), Logger::error);
+                    Log(_("Interrupting debugger failed :("), Logger::error);
                     return;
                 }
             }
@@ -2032,13 +1821,13 @@ void DebuggerGDB::SetupToolsMenu(wxMenu &menu)
     wxMenu *menuPrint = new wxMenu;
     menuPrint->AppendRadioItem(idMenuInfoPrintElementsUnlimited, _("Unlimited"),
                                _("The full arrays are printed (could lead to lock-ups if uninitialised data is printed)"));
-    menuPrint->AppendRadioItem(idMenuInfoPrintElements20, _("20"));
-    menuPrint->AppendRadioItem(idMenuInfoPrintElements50, _("50"));
-    menuPrint->AppendRadioItem(idMenuInfoPrintElements100, _("100"));
+    menuPrint->AppendRadioItem(idMenuInfoPrintElements20, "20");
+    menuPrint->AppendRadioItem(idMenuInfoPrintElements50, "50");
+    menuPrint->AppendRadioItem(idMenuInfoPrintElements100, "100");
     menuPrint->AppendRadioItem(idMenuInfoPrintElements200, _("200 (default)"));
     menu.AppendSubMenu(menuPrint, _("Print Elements"), _("Set limit on string chars or array elements to print"));
     menu.AppendCheckItem(idMenuInfoCatchThrow, _("Catch throw"),
-                         _("If enabled the debugger will break when an exception is thronw"));
+                         _("If enabled the debugger will break when an exception is thrown"));
 }
 
 void DebuggerGDB::OnUpdateTools(wxUpdateUIEvent &event)
@@ -2139,7 +1928,7 @@ void DebuggerGDB::OnGDBTerminated(wxCommandEvent& event)
     m_TimerPollDebugger.Stop();
     m_LastExitCode = event.GetInt();
     //the process deletes itself
-//    m_pProcess = 0L;
+//    m_pProcess = nullptr;
 
     ClearActiveMarkFromAllEditors();
     m_State.StopDriver();
@@ -2250,8 +2039,7 @@ void DebuggerGDB::OnIdle(wxIdleEvent& event)
 {
     if (m_pProcess && ((PipedProcess*)m_pProcess)->HasInput())
         event.RequestMore();
-    else
-        event.Skip();
+    event.Skip();
 }
 
 void DebuggerGDB::OnTimer(cb_unused wxTimerEvent& event)
@@ -2360,8 +2148,7 @@ cb::shared_ptr<cbWatch> DebuggerGDB::AddWatch(const wxString& symbol, bool updat
     return watch;
 }
 
-cb::shared_ptr<cbWatch> DebuggerGDB::AddMemoryRange(uint64_t address, uint64_t size,
-                                                    const wxString &symbol, bool update)
+cb::shared_ptr<cbWatch> DebuggerGDB::AddMemoryRange(uint64_t address, uint64_t size, const wxString &symbol, bool update)
 {
     cb::shared_ptr<GDBMemoryRangeWatch> watch(new GDBMemoryRangeWatch(address, size, symbol));
     m_memoryRanges.push_back(watch);
@@ -2437,6 +2224,7 @@ void DebuggerGDB::ShowWatchProperties(cb::shared_ptr<cbWatch> watch)
 
     cb::shared_ptr<GDBWatch> real_watch = cb::static_pointer_cast<GDBWatch>(watch);
     EditWatchDlg dlg(real_watch, nullptr);
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
         DoWatches();
 }
@@ -2454,11 +2242,20 @@ bool DebuggerGDB::SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString &v
     const WatchType type = itType->second;
     if (type == WatchType::MemoryRange)
     {
-        cb::shared_ptr<GDBMemoryRangeWatch> temp_watch = std::static_pointer_cast<GDBMemoryRangeWatch>(watch);
-        uint64_t addr = temp_watch->GetAddress();
-
         DebuggerDriver* driver = m_State.GetDriver();
-        driver->SetMemoryRangeValue(addr, value);
+        cb::shared_ptr<GDBMemoryRangeWatch> temp_watch = std::static_pointer_cast<GDBMemoryRangeWatch>(watch);
+
+        uint64_t addr = temp_watch->GetAddress();
+        if (addr == 0)
+        {
+            driver->SetMemoryRangeValue(addr, value);
+        }
+        else
+        {
+            wxString symbol;
+            temp_watch->GetSymbol(symbol);
+            driver->SetMemoryRangeValue(symbol, value);
+        }
     }
     else
     {
@@ -2472,7 +2269,7 @@ bool DebuggerGDB::SetWatchValue(cb::shared_ptr<cbWatch> watch, const wxString &v
                 temp_watch->GetSymbol(symbol);
                 temp_watch = temp_watch->GetParent();
 
-                if (symbol.find(wxT('*')) != wxString::npos || symbol.find(wxT('&')) != wxString::npos)
+                if (symbol.find('*') != wxString::npos || symbol.find('&') != wxString::npos)
                     symbol = wxT('(') + symbol + wxT(')');
 
                 if (full_symbol.empty())
@@ -2610,6 +2407,24 @@ void DebuggerGDB::MarkAllWatchesAsUnchanged()
         (*it)->MarkAsChangedRecursive(false);
 }
 
+namespace
+{
+wxString createSymbolFromWatch(const cbWatch &watch)
+{
+    wxString symbol;
+    watch.GetSymbol(symbol);
+
+    cb::shared_ptr<const cbWatch> parentWatch = watch.GetParent();
+    if(parentWatch)
+    {
+        wxString parent = createSymbolFromWatch(*parentWatch);
+        if(!parent.IsEmpty())
+            return parent + "." + symbol;
+    }
+    return symbol;
+}
+}   // anonymous namespace
+
 void DebuggerGDB::OnWatchesContextMenu(wxMenu &menu, const cbWatch &watch, wxObject *property, int &disabledMenus)
 {
     wxString type, symbol;
@@ -2631,6 +2446,10 @@ void DebuggerGDB::OnWatchesContextMenu(wxMenu &menu, const cbWatch &watch, wxObj
         disabledMenus |= WatchesDisabledMenuItems::Delete;
         disabledMenus |= WatchesDisabledMenuItems::AddDataBreak;
         disabledMenus |= WatchesDisabledMenuItems::ExamineMemory;
+
+        menu.InsertSeparator(0);
+        menu.Insert(0, idMenuWatchSymbol, _("Watch ") + symbol);
+        m_watchToAddSymbol = createSymbolFromWatch(watch);
     }
 }
 
@@ -2643,6 +2462,16 @@ void DebuggerGDB::OnMenuWatchDereference(cb_unused wxCommandEvent& event)
     watches->RenameWatch(m_watchToDereferenceProperty, wxT("*") + m_watchToDereferenceSymbol);
     m_watchToDereferenceProperty = NULL;
     m_watchToDereferenceSymbol = wxEmptyString;
+}
+
+void DebuggerGDB::OnMenuWatchSymbol(cb_unused wxCommandEvent& event)
+{
+    cbWatchesDlg *watches = Manager::Get()->GetDebuggerManager()->GetWatchesDialog();
+    if (!watches)
+        return;
+
+    watches->AddWatch(AddWatch(m_watchToAddSymbol, true));
+    m_watchToAddSymbol = wxEmptyString;
 }
 
 void DebuggerGDB::AttachToProcess(const wxString& pid)

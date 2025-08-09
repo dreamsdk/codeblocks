@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11922 $
- * $Id: ccmanager.cpp 11922 2019-11-16 19:30:27Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/ccmanager.cpp $
+ * $Revision: 13497 $
+ * $Id: ccmanager.cpp 13497 2024-04-05 17:29:47Z pecanh $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/ccmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -33,6 +33,7 @@
 #include "cbcolourmanager.h"
 #include "cbstyledtextctrl.h"
 #include "editor_hooks.h"
+#include "debuggermanager.h"
 
 namespace CCManagerHelper
 {
@@ -41,6 +42,7 @@ namespace CCManagerHelper
     {
         if (ptA > len - delta)
             ptA += delta;
+
         if (ptB > len - delta)
             ptB += delta;
     }
@@ -50,7 +52,7 @@ namespace CCManagerHelper
     // multi-byte characters. If beyond end of line, return line end position.
     inline int FindColumn(int line, int column, wxScintilla* stc)
     {
-        int lnEnd = stc->GetLineEndPosition(line);
+        const int lnEnd = stc->GetLineEndPosition(line);
         for (int pos = stc->PositionFromLine(line); pos < lnEnd; ++pos)
         {
             if (stc->GetColumn(pos) == column)
@@ -70,7 +72,7 @@ namespace CCManagerHelper
     // used in m_CallTipChoiceDict and m_CallTipFuzzyChoiceDict
     static int CallTipToInt(const wxString& firstTip, int numPages)
     {
-        int val = 33 * firstTip.Length() ^ numPages;
+        int val = 33 * firstTip.length() ^ numPages;
         for (wxString::const_iterator itr = firstTip.begin();
              itr != firstTip.end(); ++itr)
         {
@@ -101,10 +103,8 @@ namespace CCManagerHelper
         // base the default font size on the size of the default system font but
         // also ensure that we have a font of reasonable size, otherwise small HTML
         // fonts are unreadable
-        int size = wxNORMAL_FONT->GetPointSize();
-        if ( size < 9 )
-            size = 9;
-        return size;
+        const int size = wxNORMAL_FONT->GetPointSize();
+        return (size < 9) ? 9 : size;
     }
 }
 
@@ -152,7 +152,7 @@ class UnfocusablePopupWindow :
 #if wxUSE_POPUPWIN
     public wxPopupWindow
 #else
-     public wxFrame
+    public wxFrame
 #endif // wxUSE_POPUPWIN
 {
 public:
@@ -203,6 +203,7 @@ bool UnfocusablePopupWindow::Destroy()
 #endif
     if ( !wxPendingDelete.Member(this) )
         wxPendingDelete.Append(this);
+
     return true;
 }
 
@@ -217,8 +218,7 @@ void UnfocusablePopupWindow::ActivateParent()
 {
     // Although we're a frame, we always want the parent to be active, so
     // raise it whenever we get shown, focused, etc.
-    wxTopLevelWindow *frame = wxDynamicCast(
-        wxGetTopLevelParent(GetParent()), wxTopLevelWindow);
+    wxTopLevelWindow *frame = wxDynamicCast(wxGetTopLevelParent(GetParent()), wxTopLevelWindow);
     if (frame)
         frame->Raise();
 }
@@ -229,17 +229,17 @@ void UnfocusablePopupWindow::DoSetSize(int x, int y,
 {
     // convert coords to screen coords since we're a top-level window
     if (x != wxDefaultCoord)
-        GetParent()->ClientToScreen(&x, NULL);
+        GetParent()->ClientToScreen(&x, nullptr);
 
     if (y != wxDefaultCoord)
-        GetParent()->ClientToScreen(NULL, &y);
+        GetParent()->ClientToScreen(nullptr, &y);
 
     BaseClass::DoSetSize(x, y, width, height, sizeFlags);
 }
 
 bool UnfocusablePopupWindow::Show(bool show)
 {
-    bool rv = BaseClass::Show(show);
+    const bool rv = BaseClass::Show(show);
     if (rv && show)
         ActivateParent();
 #ifdef __WXMAC__
@@ -272,10 +272,10 @@ CCManager::CCManager() :
     m_pLastEditor(nullptr),
     m_pLastCCPlugin(nullptr)
 {
-    const wxString ctChars = wxT(",;\n()"); // default set
-    m_CallTipChars[nullptr] = std::set<wxChar>(ctChars.begin(), ctChars.end());
-    const wxString alChars = wxT(".:<>\"#/"); // default set
-    m_AutoLaunchChars[nullptr] = std::set<wxChar>(alChars.begin(), alChars.end());
+    const wxString ctChars(",;\n()"); // default set
+    m_CallTipChars[nullptr] = std::set <wxChar> (ctChars.begin(), ctChars.end());
+    const wxString alChars(".:<>\"#/"); // default set
+    m_AutoLaunchChars[nullptr] = std::set <wxChar> (alChars.begin(), alChars.end());
 
     m_LastACLaunchState.init(wxSCI_INVALID_POSITION, wxSCI_INVALID_POSITION, 0);
 
@@ -283,25 +283,25 @@ CCManager::CCManager() :
     m_pPopup = new UnfocusablePopupWindow(Manager::Get()->GetAppFrame());
     m_pHtml = new wxHtmlWindow(m_pPopup, wxID_ANY, wxDefaultPosition,
                                wxDefaultSize, wxHW_SCROLLBAR_AUTO | wxBORDER_SIMPLE);
-    int sizes[7] = {};
+    int sizes[7];
     CCManagerHelper::BuildFontSizes(sizes, CCManagerHelper::GetDefaultHTMLFontSize());
-    m_pHtml->SetFonts(wxEmptyString, wxEmptyString, &sizes[0]);
+    m_pHtml->SetFonts(wxEmptyString, wxEmptyString, sizes);
     m_pHtml->Connect(wxEVT_COMMAND_HTML_LINK_CLICKED,
                      wxHtmlLinkEventHandler(CCManager::OnHtmlLink), nullptr, this);
 
     // register colours
     ColourManager* cmgr = Manager::Get()->GetColourManager();
-    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip background"), wxT("cc_tips_back"),      *wxWHITE);
-    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip foreground"), wxT("cc_tips_fore"),      wxColour(wxT("DIM GREY")));
-    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip highlight"),  wxT("cc_tips_highlight"), wxColour(wxT("BLUE")));
+    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip background"), "cc_tips_back",      *wxWHITE);
+    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip foreground"), "cc_tips_fore",      wxColour("DIM GREY"));
+    cmgr->RegisterColour(_("Code completion"), _("Tooltip/Calltip highlight"),  "cc_tips_highlight", wxColour("BLUE"));
 
     // connect menus
     wxFrame* mainFrame = Manager::Get()->GetAppFrame();
     wxMenuBar* menuBar = mainFrame->GetMenuBar();
     if (menuBar)
     {
-        int idx = menuBar->FindMenu(_("&Edit"));
-        wxMenu* edMenu = menuBar->GetMenu(idx < 0 ? 0 : idx);
+        const int idx = menuBar->FindMenu(_("&Edit"));
+        wxMenu* edMenu = menuBar->GetMenu((idx == wxNOT_FOUND) ? 0 : idx);
         const wxMenuItemList& itemsList = edMenu->GetMenuItems();
         size_t insertPos = itemsList.GetCount();
         for (size_t i = 0; i < insertPos; ++i)
@@ -317,6 +317,7 @@ CCManager::CCManager() :
         edMenu->Insert(insertPos + 1, idCallTipNext,     _("Next call tip"));
         edMenu->Insert(insertPos + 2, idCallTipPrevious, _("Previous call tip"));
     }
+
     mainFrame->Connect(idShowTooltip,     wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CCManager::OnMenuSelect), nullptr, this);
     mainFrame->Connect(idCallTipNext,     wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CCManager::OnMenuSelect), nullptr, this);
     mainFrame->Connect(idCallTipPrevious, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(CCManager::OnMenuSelect), nullptr, this);
@@ -341,8 +342,7 @@ CCManager::CCManager() :
 // class destructor
 CCManager::~CCManager()
 {
-    m_pHtml->Disconnect(wxEVT_COMMAND_HTML_LINK_CLICKED,
-                        wxHtmlLinkEventHandler(CCManager::OnHtmlLink), nullptr, this);
+    m_pHtml->Disconnect(wxEVT_COMMAND_HTML_LINK_CLICKED, wxHtmlLinkEventHandler(CCManager::OnHtmlLink), nullptr, this);
     m_pHtml->Destroy();
     m_pPopup->Destroy();
     wxFrame* mainFrame = Manager::Get()->GetAppFrame();
@@ -362,6 +362,7 @@ cbCodeCompletionPlugin* CCManager::GetProviderFor(cbEditor* ed)
 {
     if (!ed)
         ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
+
     if (ed == m_pLastEditor)
         return m_pLastCCPlugin; // use cached
 
@@ -380,6 +381,7 @@ cbCodeCompletionPlugin* CCManager::GetProviderFor(cbEditor* ed)
         else if (status == cbCodeCompletionPlugin::ccpsUniversal)
             m_pLastCCPlugin = static_cast<cbCodeCompletionPlugin*>(pa[i]);
     }
+
     return m_pLastCCPlugin;
 }
 
@@ -443,11 +445,12 @@ void CCManager::AdvanceTip(Direction direction)
 
 bool CCManager::ProcessArrow(int key)
 {
-    bool wasProcessed = false;
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (!ed)
-        return wasProcessed;
+        return false;
+
     cbStyledTextCtrl* stc = ed->GetControl();
+    bool wasProcessed = false;
     if (stc->CallTipActive() && m_CallTipActive != wxSCI_INVALID_POSITION && m_CallTips.size() > 1)
     {
         if (key == WXK_DOWN)
@@ -455,11 +458,12 @@ bool CCManager::ProcessArrow(int key)
         else if (key == WXK_UP)
             AdvanceTip(Previous);
         else
-            return wasProcessed;
+            return false;
 
         DoUpdateCallTip(ed);
         wasProcessed = true;
     }
+
     return wasProcessed;
 }
 
@@ -499,32 +503,38 @@ struct TokenSorter
 void CCManager::OnCompleteCode(CodeBlocksEvent& event)
 {
     event.Skip();
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(wxT("ccmanager"));
-    if (!cfg->ReadBool(wxT("/code_completion"), true))
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("ccmanager");
+    if (!cfg->ReadBool("/code_completion", true))
         return;
 
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (!ed)
         return;
+
     cbCodeCompletionPlugin* ccPlugin = GetProviderFor(ed);
     if (!ccPlugin)
         return;
 
     cbStyledTextCtrl* stc = ed->GetControl();
     int tknEnd = stc->GetCurrentPos();
+    int tknStart = stc->WordStartPosition(tknEnd, true);
+    wxString trigger = stc->GetTextRange(tknStart, tknEnd);
     if (tknEnd == m_LastACLaunchState.caretStart && stc->GetZoom() == m_LastACLaunchState.editorZoom && !m_AutocompTokens.empty())
     {
         DoBufferedCC(stc);
-        return;
+        // If the completion trigger is the same as last, the cached completions have already been shown
+        // else they've just been cached, but not yet shown.
+        if (m_LastACLaunchState.trigger.Length() and (m_LastACLaunchState.trigger == trigger))
+            return;
     }
-    int tknStart = stc->WordStartPosition(tknEnd, true);
+    // Record the new completion trigger
+    m_LastACLaunchState.trigger = stc->GetTextRange(tknStart,tknEnd);
 
-    m_AutocompTokens = ccPlugin->GetAutocompList(event.GetInt() == FROM_TIMER,
-                                                 ed, tknStart, tknEnd);
+    m_AutocompTokens = ccPlugin->GetAutocompList(event.GetInt() == FROM_TIMER, ed, tknStart, tknEnd);
     if (m_AutocompTokens.empty())
         return;
 
-    if (m_AutocompTokens.size() == 1 && cfg->ReadBool(wxT("/auto_select_single"), false))
+    if (m_AutocompTokens.size() == 1 && cfg->ReadBool("/auto_select_single", false))
     {
         // Using stc->AutoCompSetChooseSingle() does not send wxEVT_SCI_AUTOCOMP_SELECTION,
         // so manually emulate the behaviour.
@@ -545,13 +555,14 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
     }
 
     bool isPureAlphabetical = true;
-    bool isCaseSensitive = cfg->ReadBool(wxT("/case_sensitive"), false);
+    bool isCaseSensitive = cfg->ReadBool("/case_sensitive", false);
     TokenSorter sortFunctor(isPureAlphabetical, isCaseSensitive);
     std::sort(m_AutocompTokens.begin(), m_AutocompTokens.end(), sortFunctor);
     if (isPureAlphabetical)
         stc->AutoCompSetOrder(wxSCI_ORDER_PRESORTED);
     else
         stc->AutoCompSetOrder(wxSCI_ORDER_CUSTOM);
+
     wxString items;
     // experimentally, the average length per token seems to be 23 for the main CC plugin
     items.Alloc(m_AutocompTokens.size() * 20); // TODO: measure performance
@@ -559,9 +570,9 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
     {
         items += m_AutocompTokens[i].displayName;
         if (m_AutocompTokens[i].category == -1)
-            items += wxT("\r");
+            items += '\r';
         else
-            items += F(wxT("\n%d\r"), m_AutocompTokens[i].category);
+            items += wxString::Format("\n%d\r", m_AutocompTokens[i].category);
     }
     items.RemoveLast();
 
@@ -570,8 +581,8 @@ void CCManager::OnCompleteCode(CodeBlocksEvent& event)
 
     stc->AutoCompSetIgnoreCase(!isCaseSensitive);
     stc->AutoCompSetMaxHeight(14);
-    stc->AutoCompSetTypeSeparator(wxT('\n'));
-    stc->AutoCompSetSeparator(wxT('\r'));
+    stc->AutoCompSetTypeSeparator('\n');
+    stc->AutoCompSetSeparator('\r');
     stc->AutoCompShow(tknEnd - tknStart, items);
     m_OwnsAutocomp = true;
     if (isPureAlphabetical)
@@ -603,8 +614,10 @@ void CCManager::OnDeactivateApp(CodeBlocksEvent& event)
             wxCommandEvent pendingCancel(cbEVT_DEFERRED_CALLTIP_CANCEL);
             AddPendingEvent(pendingCancel);
         }
+
         m_CallTipActive = wxSCI_INVALID_POSITION;
     }
+
     event.Skip();
 }
 
@@ -618,17 +631,19 @@ void CCManager::OnDeactivateEd(CodeBlocksEvent& event)
         cbStyledTextCtrl* stc = ed->GetControl();
         if (stc->CallTipActive())
             stc->CallTipCancel();
+
         m_CallTipActive = wxSCI_INVALID_POSITION;
     }
+
     event.Skip();
 }
 
 static void setupColours(cbEditor *editor, ColourManager *manager)
 {
     cbStyledTextCtrl* stc = editor->GetControl();
-    stc->CallTipSetBackground(manager->GetColour(wxT("cc_tips_back")));
-    stc->CallTipSetForeground(manager->GetColour(wxT("cc_tips_fore")));
-    stc->CallTipSetForegroundHighlight(manager->GetColour(wxT("cc_tips_highlight")));
+    stc->CallTipSetBackground(manager->GetColour("cc_tips_back"));
+    stc->CallTipSetForeground(manager->GetColour("cc_tips_fore"));
+    stc->CallTipSetForegroundHighlight(manager->GetColour("cc_tips_highlight"));
 }
 
 // cbEVT_EDITOR_OPEN
@@ -650,7 +665,7 @@ void CCManager::UpdateEnvSettings()
     EditorManager *editors = Manager::Get()->GetEditorManager();
     ColourManager* cmgr = Manager::Get()->GetColourManager();
 
-    int count = editors->GetEditorsCount();
+    const int count = editors->GetEditorsCount();
     for (int ii = 0; ii < count; ++ii)
     {
         cbEditor *editor = editors->GetBuiltinEditor(editors->GetEditor(ii));
@@ -666,6 +681,19 @@ void CCManager::OnEditorClose(CodeBlocksEvent& event)
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinEditor(event.GetEditor());
     if (ed == m_pLastEditor)
         m_pLastEditor = nullptr;
+
+    #if defined(__WXMSW__)
+    // If the closing editor holds a popup wxEVT_MOUSEWHEEL connect, disconnect it.
+    // DoHidePopup() above may have disconnected m_LastEditor but not the closing editor.
+    // This happens when a non-active editor is closed while m_pLastEditor == the active editor.
+    // This may not happen anymore, but it's happened in the past and CB hung. 2022/09/17
+    if (ed and ed->GetControl() and m_EdAutocompMouseTraps.count(ed) )
+    {
+        ed->GetControl()->Disconnect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CCManager::OnPopupScroll), nullptr, this);
+        m_EdAutocompMouseTraps.erase(ed);
+    }
+    #endif
+
     if (ed && ed->GetControl())
     {
         // TODO: is this ever called?
@@ -679,15 +707,16 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
 {
     event.Skip();
 
-    int tooltipMode = Manager::Get()->GetConfigManager(wxT("ccmanager"))->ReadInt(wxT("/tooltip_mode"), 1);
+    const int tooltipMode = Manager::Get()->GetConfigManager("ccmanager")->ReadInt("/tooltip_mode", 1);
     if (tooltipMode == tmDisable) // disabled
         return;
 
     // if the event comes from user menu click, then its String field isn't empty
     // @see CCManager::OnMenuSelect() for details
-    bool fromMouseDwell = event.GetString().IsEmpty();
+    const bool fromMouseDwell = event.GetString().empty();
     if (wxGetKeyState(WXK_CONTROL) && fromMouseDwell)
         return;
+
     if (tooltipMode == tmKeyboundOnly && fromMouseDwell) // keybound only
         return;
 
@@ -698,11 +727,12 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
 
     cbStyledTextCtrl* stc = ed->GetControl();
     cbCodeCompletionPlugin* ccPlugin = GetProviderFor(ed);
-    int pos = stc->PositionFromPointClose(event.GetX(), event.GetY());
+    const int pos = stc->PositionFromPointClose(event.GetX(), event.GetY());
     if (!ccPlugin || pos < 0 || pos >= stc->GetLength())
     {
         if (stc->CallTipActive() && event.GetExtraLong() == 0 && m_CallTipActive == wxSCI_INVALID_POSITION)
             static_cast<wxScintilla*>(stc)->CallTipCancel();
+
         return;
     }
 
@@ -713,7 +743,16 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
     std::set<wxString> uniqueTips;
     for (size_t i = 0; i < tokens.size(); ++i)
         uniqueTips.insert(tokens[i].displayName);
+
     wxStringVec tips(uniqueTips.begin(), uniqueTips.end());
+
+    // If user specified "~NoSort~" as first token entry, reset tips as the user specified them.
+    if (tokens.size() and (tokens[0].displayName == "~NoSort~"))
+    {
+        tips.clear();
+        for (size_t i = 1; i < tokens.size(); ++i)
+            tips.push_back( tokens[i].displayName);
+    }
 
     const int style = event.GetInt();
     if (!tips.empty())
@@ -722,15 +761,16 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
         const int tknEnd   = stc->WordEndPosition(pos,   true);
         if (tknEnd - tknStart > 2)
         {
-            for (size_t i = 0; i < tips[0].Length(); ++i)
+            for (size_t i = 0; i < tips[0].length(); ++i)
             {
-                size_t hlLoc = tips[0].find(stc->GetTextRange(tknStart, tknEnd), i);
+                const size_t hlLoc = tips[0].find(stc->GetTextRange(tknStart, tknEnd), i);
                 if (hlLoc == wxString::npos)
                     break;
+
                 hlStart = hlLoc;
                 hlEnd = hlStart + tknEnd - tknStart;
-                if (   (hlStart > 0 && (tips[0][hlStart - 1] == wxT('_') || wxIsalpha(tips[0][hlStart - 1])))
-                    || (hlEnd < static_cast<int>(tips[0].Length()) - 1 && (tips[0][hlEnd] == wxT('_') || wxIsalpha(tips[0][hlEnd]))) )
+                if (   (hlStart > 0 && (tips[0][hlStart - 1] == '_' || wxIsalpha(tips[0][hlStart - 1])))
+                    || (hlEnd < static_cast<int>(tips[0].length()) - 1 && (tips[0][hlEnd] == '_' || wxIsalpha(tips[0][hlEnd]))) )
                 {
                     i = hlEnd;
                     hlStart = hlEnd = wxSCI_INVALID_POSITION;
@@ -747,11 +787,12 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
                   || stc->IsPreprocessor(style) ) )
     {
         const int line = stc->LineFromPosition(pos);
-        if (pos + 4 > stc->PositionFromLine(line) + (int)ed->GetLineIndentString(line).Length())
+        if (pos + 4 > stc->PositionFromLine(line) + (int)ed->GetLineIndentString(line).length())
         {
             const CallTipVec& cTips = ccPlugin->GetCallTips(pos, style, ed, argsPos);
             for (size_t i = 0; i < cTips.size(); ++i)
                 tips.push_back(cTips[i].tip);
+
             if (!tips.empty())
             {
                 hlStart = cTips[0].hlStart;
@@ -759,6 +800,7 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
             }
         }
     }
+
     if (tips.empty())
     {
         if (stc->CallTipActive() && event.GetExtraLong() == 0 && m_CallTipActive == wxSCI_INVALID_POSITION)
@@ -769,6 +811,7 @@ void CCManager::OnEditorTooltip(CodeBlocksEvent& event)
         DoShowTips(tips, stc, pos, argsPos, hlStart, hlEnd);
         event.SetExtraLong(1);
     }
+
     m_CallTipActive = wxSCI_INVALID_POSITION;
 }
 
@@ -785,7 +828,7 @@ void CCManager::OnEditorHook(cbEditor* ed, wxScintillaEvent& event)
         // Are there any characters which could trigger the call tip?
         if (ctChars->second.find(ch) != ctChars->second.end())
         {
-            int tooltipMode = Manager::Get()->GetConfigManager(wxT("ccmanager"))->ReadInt(wxT("/tooltip_mode"), 1);
+            const int tooltipMode = Manager::Get()->GetConfigManager("ccmanager")->ReadInt("/tooltip_mode", 1);
             if (   tooltipMode != 3 // keybound only
                 || m_CallTipActive != wxSCI_INVALID_POSITION )
             {
@@ -805,7 +848,7 @@ void CCManager::OnEditorHook(cbEditor* ed, wxScintillaEvent& event)
             // auto suggest list can be triggered either:
             // 1, some number of chars are entered
             // 2, an interested char belong to alChars is entered
-            int autolaunchCt = Manager::Get()->GetConfigManager(wxT("ccmanager"))->ReadInt(wxT("/auto_launch_count"), 3);
+            const int autolaunchCt = Manager::Get()->GetConfigManager("ccmanager")->ReadInt("/auto_launch_count", 3);
             if (   (pos - wordStartPos >= autolaunchCt && !stc->AutoCompActive())
                 || pos - wordStartPos == autolaunchCt + 4 )
             {
@@ -884,6 +927,7 @@ void CCManager::OnEditorHook(cbEditor* ed, wxScintillaEvent& event)
             {
                 ccPlugin->DoAutocomplete(event.GetText(), ed);
             }
+
             CallSmartIndentCCDone(ed);
         }
     }
@@ -908,6 +952,7 @@ void CCManager::OnEditorHook(cbEditor* ed, wxScintillaEvent& event)
                 break;
         }
     }
+
     event.Skip();
 }
 
@@ -926,7 +971,7 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
 {
     event.Skip();
 
-    int tooltipMode = Manager::Get()->GetConfigManager(wxT("ccmanager"))->ReadInt(wxT("/tooltip_mode"), 1);
+    const int tooltipMode = Manager::Get()->GetConfigManager("ccmanager")->ReadInt("/tooltip_mode", 1);
     // 0 - disable
     // 1 - enable
     // 2 - force single page
@@ -946,7 +991,7 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
     if (!stc)
         return;
 
-    int pos = stc->GetCurrentPos();
+    const int pos = stc->GetCurrentPos();
     int argsPos = wxSCI_INVALID_POSITION;
     // save the current tip shown text for later recalling
     wxString curTip;
@@ -962,6 +1007,7 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
         int lnStart = stc->PositionFromLine(stc->LineFromPosition(pos));
         while (wxIsspace(stc->GetCharAt(lnStart)))
             ++lnStart; // do not show too far left on multi-line call tips
+
         if (   m_CallTips.size() > 1
             && tooltipMode == tmForceSinglePage ) // force single page
         {
@@ -973,14 +1019,17 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
             {
                 if (hlStart == hlEnd && itr->hlStart != itr->hlEnd)
                 {
-                    hlStart = tip.Length() + itr->hlStart;
-                    hlEnd   = tip.Length() + itr->hlEnd;
+                    hlStart = tip.length() + itr->hlStart;
+                    hlEnd   = tip.length() + itr->hlEnd;
                 }
-                tip += itr->tip + wxT('\n');
+
+                tip += itr->tip + '\n';
             }
+
             m_CallTips.clear();
             m_CallTips.push_back(cbCodeCompletionPlugin::CCCallTip(tip.RemoveLast(), hlStart, hlEnd));
         }
+
         m_CurCallTip = m_CallTips.begin();
         if (m_CallTips.size() > 1)
         {
@@ -1017,6 +1066,7 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
                 }
             }
         }
+
         m_CallTipActive = argsPos;
         DoUpdateCallTip(ed);
     }
@@ -1027,6 +1077,7 @@ void CCManager::OnShowCallTip(CodeBlocksEvent& event)
             static_cast<wxScintilla*>(stc)->CallTipCancel();
             m_CallTipActive = wxSCI_INVALID_POSITION;
         }
+
         // Make m_CurCallTip to be valid iterator, pointing to the end.
         m_CurCallTip = m_CallTips.end();
     }
@@ -1039,6 +1090,7 @@ void CCManager::OnAutocompleteSelect(wxListEvent& event)
     wxObject* evtObj = event.GetEventObject();
     if (!evtObj)
         return;
+
 #ifdef __WXMSW__
     m_pAutocompPopup = static_cast<wxListView*>(evtObj);
 #endif // __WXMSW__
@@ -1050,12 +1102,12 @@ void CCManager::OnAutocompleteSelect(wxListEvent& event)
     m_DocPos = m_pPopup->GetParent()->ScreenToClient(evtWin->GetScreenPosition());
     m_DocPos.x += evtWin->GetSize().x;
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
-    wxRect edRect = ed->GetRect();
+    wxRect edRect(ed->GetRect());
     if (!m_pPopup->IsShown())
     {
         cbStyledTextCtrl* stc = ed->GetControl();
-        int acMaxHeight = stc->AutoCompGetMaxHeight() + 1;
-        int textHeight = stc->TextHeight(stc->GetCurrentLine());
+        const int acMaxHeight = stc->AutoCompGetMaxHeight() + 1;
+        const int textHeight = stc->TextHeight(stc->GetCurrentLine());
         m_DocSize.x = edRect.width * 5 / 12;
         m_DocSize.y = acMaxHeight * textHeight;
         evtWin->Connect(wxEVT_SHOW, wxShowEventHandler(CCManager::OnAutocompleteHide), nullptr, this);
@@ -1070,6 +1122,7 @@ void CCManager::OnAutocompleteSelect(wxListEvent& event)
             m_WindowBound = std::min(corner.x - 2, m_WindowBound);
         }
     }
+
     if ((m_DocPos.x + m_DocSize.x) > m_WindowBound)
         m_DocPos.x -= evtWin->GetSize().x + m_DocSize.x; // show to the left instead
     else
@@ -1084,6 +1137,7 @@ void CCManager::OnAutocompleteHide(wxShowEvent& event)
     wxObject* evtObj = event.GetEventObject();
     if (evtObj)
         static_cast<wxWindow*>(evtObj)->Disconnect(wxEVT_SHOW, wxShowEventHandler(CCManager::OnAutocompleteHide), nullptr, this);
+
     if (m_CallTipActive != wxSCI_INVALID_POSITION && !m_AutoLaunchTimer.IsRunning())
         m_CallTipTimer.Start(CALLTIP_REFRESH_DELAY, wxTIMER_ONE_SHOT);
 }
@@ -1110,11 +1164,35 @@ void CCManager::OnDeferredCallTipCancel(wxCommandEvent& WXUNUSED(event))
 #ifdef __WXMSW__
 void CCManager::OnPopupScroll(wxMouseEvent& event)
 {
-    const wxPoint& pos = m_pLastEditor->GetControl()->ClientToScreen(event.GetPosition());
-    if (m_pPopup->GetScreenRect().Contains(pos))
-        m_pHtml->GetEventHandler()->ProcessEvent(event);
-    else if (m_pAutocompPopup && m_pAutocompPopup->GetScreenRect().Contains(pos))
+    if (!m_pLastEditor)
+    {
+        event.Skip();
+        return;
+    }
+
+    cbStyledTextCtrl* editor = m_pLastEditor->GetControl();
+    if (!editor)
+    {
+        event.Skip();
+        return;
+    }
+    if (not editor->AutoCompActive())
+    {
+        event.Skip();
+        return;
+    }
+
+    const wxPoint& pos = editor->ClientToScreen(event.GetPosition());
+    // Scroll when the current mouse position is within a shown popup window
+    if (m_pPopup && m_pPopup->IsShown() && m_pPopup->GetScreenRect().Contains(pos))
+    {
+        if (m_pHtml)
+            m_pHtml->GetEventHandler()->ProcessEvent(event);
+    }
+    else if (m_pAutocompPopup && m_pAutocompPopup->IsShown() && m_pAutocompPopup->GetScreenRect().Contains(pos))
+    {
         m_pAutocompPopup->ScrollList(0, event.GetWheelRotation() / -4); // TODO: magic number... can we hook to the actual event?
+    }
     else
         event.Skip();
 }
@@ -1130,7 +1208,7 @@ void CCManager::OnHtmlLink(wxHtmlLinkEvent& event)
     const wxString& html = ccPlugin->OnDocumentationLink(event, dismissPopup);
     if (dismissPopup)
         DoHidePopup();
-    else if (!html.IsEmpty())
+    else if (!html.empty())
         m_pHtml->SetPage(html);
     // plugins are responsible to skip this event (if they choose to)
 }
@@ -1152,6 +1230,7 @@ void CCManager::OnTimer(wxTimerEvent& event)
             evt.SetInt(FROM_TIMER);
             Manager::Get()->ProcessEvent(evt);
         }
+
         m_AutocompPosition = wxSCI_INVALID_POSITION;
     }
     else if (event.GetId() == idAutocompSelectTimer) // m_AutocompSelectTimer
@@ -1176,6 +1255,7 @@ void CCManager::OnMenuSelect(wxCommandEvent& event)
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (!ed)
         return;
+
     if (event.GetId() == idShowTooltip)
     {
         // compare this with cbStyledTextCtrl::EmulateDwellStart()
@@ -1187,14 +1267,17 @@ void CCManager::OnMenuSelect(wxCommandEvent& event)
         evt.SetInt(stc->GetStyleAt(stc->GetCurrentPos()));
         evt.SetEditor(ed);
         evt.SetExtraLong(0);
-        evt.SetString(wxT("evt from menu"));
+        evt.SetString("evt from menu");
         Manager::Get()->ProcessEvent(evt);
         return;
     }
+
     if (m_CallTips.empty() || m_CallTipActive == wxSCI_INVALID_POSITION)
         return;
+
     if (!ed->GetControl()->CallTipActive())
         return;
+
     if (event.GetId() == idCallTipNext)
     {
         AdvanceTip(Next);
@@ -1211,6 +1294,7 @@ void CCManager::DoBufferedCC(cbStyledTextCtrl* stc)
 {
     if (stc->AutoCompActive())
         return; // already active, no need to rebuild
+
     // fill list of suggestions
     wxString items;
     items.Alloc(m_AutocompTokens.size() * 20);
@@ -1218,13 +1302,15 @@ void CCManager::DoBufferedCC(cbStyledTextCtrl* stc)
     {
         items += m_AutocompTokens[i].displayName;
         if (m_AutocompTokens[i].category == -1)
-            items += wxT("\r");
+            items += '\r';
         else
-            items += F(wxT("\n%d\r"), m_AutocompTokens[i].category);
+            items += wxString::Format("\n%d\r", m_AutocompTokens[i].category);
     }
+
     items.RemoveLast();
     if (!stc->CallTipActive())
         m_CallTipActive = wxSCI_INVALID_POSITION;
+
     // display
     stc->AutoCompShow(m_LastACLaunchState.caretStart - m_LastACLaunchState.tokenStart, items);
     m_OwnsAutocomp = true;
@@ -1246,33 +1332,68 @@ void CCManager::DoBufferedCC(cbStyledTextCtrl* stc)
 
 void CCManager::DoHidePopup()
 {
+#ifdef __WXMSW__
+    if (m_pLastEditor && m_pLastEditor->GetControl() and (not m_pLastEditor->GetControl()->AutoCompActive()))
+    {
+        // Does this editor have a wxEVT_MOUSEWHEEL event connection? If so, disconnect it.
+        if (m_EdAutocompMouseTraps.count(m_pLastEditor))
+        {
+            m_pLastEditor->GetControl()->Disconnect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CCManager::OnPopupScroll), nullptr, this);
+            // Remove this editor from the map indicating there is no longer a connection.
+            m_EdAutocompMouseTraps.erase(m_pLastEditor);
+        }
+    }
+#endif // __WXMSW__
     if (!m_pPopup->IsShown())
         return;
+
     m_pPopup->Hide();
-#ifdef __WXMSW__
-    if (m_pLastEditor && m_pLastEditor->GetControl())
-        m_pLastEditor->GetControl()->Disconnect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CCManager::OnPopupScroll), nullptr, this);
-#endif // __WXMSW__
 }
 
 void CCManager::DoShowDocumentation(cbEditor* ed)
 {
-    if (!Manager::Get()->GetConfigManager(wxT("ccmanager"))->ReadBool(wxT("/documentation_popup"), true))
+#ifdef __WXMSW__
+    if (ed->GetControl() and ed->GetControl()->AutoCompActive())
+    {
+        if (not m_EdAutocompMouseTraps.count(ed))
+        {
+            ed->GetControl()->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CCManager::OnPopupScroll), nullptr, this);
+            // Enter this editor into the map indicating that a connection exists.
+            m_EdAutocompMouseTraps.insert(ed);
+        }
+    }
+#endif // __WXMSW__
+
+
+    if (!Manager::Get()->GetConfigManager("ccmanager")->ReadBool("/documentation_popup", true))
         return;
 
     cbCodeCompletionPlugin* ccPlugin = GetProviderFor(ed);
     if (!ccPlugin)
         return;
-    if (   m_LastAutocompIndex == wxNOT_FOUND
-        || m_LastAutocompIndex >= (int)m_AutocompTokens.size() )
-    {
+
+    if (m_LastAutocompIndex == wxNOT_FOUND || m_LastAutocompIndex >= (int)m_AutocompTokens.size())
         return;
-    }
+
+    // If the AutoCompPopup is not shown, don't show the html documentation popup either (ticket 1168)
+    cbStyledTextCtrl* stc = ed->GetControl();
+    if ((not stc) or (not stc->AutoCompActive()) )
+        return;
+
     const wxString& html = ccPlugin->GetDocumentation(m_AutocompTokens[m_LastAutocompIndex]);
-    if (html.IsEmpty())
+    if (html.empty())
     {
         DoHidePopup();
         return;
+    }
+
+    cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
+    if (plugin)
+    {
+        if (plugin->IsRunning() && plugin->ShowValueTooltip(0))
+        {
+            return; // Do not Show doc popup when the debigger is running
+        }
     }
 
     m_pPopup->Freeze();
@@ -1284,9 +1405,6 @@ void CCManager::DoShowDocumentation(cbEditor* ed)
     if (!m_pPopup->IsShown())
     {
         m_pPopup->Show();
-#ifdef __WXMSW__
-        ed->GetControl()->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(CCManager::OnPopupScroll), nullptr, this);
-#endif // __WXMSW__
     }
 }
 
@@ -1296,28 +1414,30 @@ void CCManager::DoUpdateCallTip(cbEditor* ed)
     int hlStart = m_CurCallTip->hlStart;
     int hlEnd   = m_CurCallTip->hlEnd;
     size_t sRange = 0;
-    size_t eRange = m_CurCallTip->tip.find(wxT('\n'));
+    size_t eRange = m_CurCallTip->tip.find('\n');
     while (eRange != wxString::npos)
     {
         tips.push_back(m_CurCallTip->tip.Mid(sRange, eRange - sRange));
         CCManagerHelper::RipplePts(hlStart, hlEnd, eRange, -1);
         sRange = eRange + 1;
-        eRange = m_CurCallTip->tip.find(wxT('\n'), sRange);
+        eRange = m_CurCallTip->tip.find('\n', sRange);
     }
-    if (sRange < m_CurCallTip->tip.Length())
+
+    if (sRange < m_CurCallTip->tip.length())
         tips.push_back(m_CurCallTip->tip.Mid(sRange));
+
     // for multiple tips (such as tips for some overload functions)
     // some more text were added to the single tip, such as the up/down arrows, the x/y indicator.
     int offset = 0;
     cbStyledTextCtrl* stc = ed->GetControl();
     if (m_CallTips.size() > 1)
     {
-        tips.front().Prepend(wxT("\001\002")); // up/down arrows
+        tips.front().Prepend("\001\002"); // up/down arrows
         offset += 2;
 
         // display (curTipNumber/totalTipCount)
         wxString tip;
-        tip << wxT("(") << (m_CurCallTip - m_CallTips.begin() + 1) << wxT("/") << m_CallTips.size() << wxT(")");
+        tip << '(' << (m_CurCallTip - m_CallTips.begin() + 1) << '/' << m_CallTips.size() << ')';
 
         tips.push_back(tip);
         // store for better first choice later
@@ -1329,10 +1449,12 @@ void CCManager::DoUpdateCallTip(cbEditor* ed)
         const wxString& prefix = stc->GetTextRange(stc->WordStartPosition(prefixEndPos, true), prefixEndPos);
         m_CallTipFuzzyChoiceDict[CCManagerHelper::CallTipToInt(prefix, m_CallTips.size())] = m_CurCallTip - m_CallTips.begin();
     }
-    int pos = stc->GetCurrentPos();
+
+    const int pos = stc->GetCurrentPos();
     int lnStart = stc->PositionFromLine(stc->LineFromPosition(pos));
     while (wxIsspace(stc->GetCharAt(lnStart)))
         ++lnStart;
+
 #ifdef __WXMSW__
     m_LastTipPos = wxSCI_INVALID_POSITION; // Windows hack to fix display update
 #endif // __WXMSW__
@@ -1341,38 +1463,38 @@ void CCManager::DoUpdateCallTip(cbEditor* ed)
 
 void CCManager::DoShowTips(const wxStringVec& tips, cbStyledTextCtrl* stc, int pos, int argsPos, int hlStart, int hlEnd)
 {
-    int maxLines = std::max(stc->LinesOnScreen() / 4, 5);
-    int marginWidth = stc->GetMarginWidth(wxSCI_MARGIN_SYMBOL) + stc->GetMarginWidth(wxSCI_MARGIN_NUMBER);
-    int maxWidth = (stc->GetSize().x - marginWidth) / stc->TextWidth(wxSCI_STYLE_LINENUMBER, wxT("W")) - 1;
+    const int maxLines = std::max(stc->LinesOnScreen() / 4, 5);
+    const int marginWidth = stc->GetMarginWidth(wxSCI_MARGIN_SYMBOL) + stc->GetMarginWidth(wxSCI_MARGIN_NUMBER);
+    int maxWidth = (stc->GetSize().x - marginWidth) / stc->TextWidth(wxSCI_STYLE_LINENUMBER, 'W') - 1;
     maxWidth = std::min(std::max(60, maxWidth), 135);
     wxString tip;
     int lineCount = 0;
-    wxString lineBreak = wxT('\n');
-    if (!tips.front().IsEmpty() && tips.front()[0] <= wxT('\002'))
+    wxString lineBreak('\n');
+    if (!tips.front().empty() && tips.front()[0] <= '\002')
     {
         // indent line break as needed, if tip prefixed with up/down arrows
-        lineBreak += wxT(' ');
-        if (tips.front().Length() > 1 && tips.front()[1] <= wxT('\002'))
-            lineBreak += wxT("  ");
+        lineBreak += ' ';
+        if (tips.front().length() > 1 && tips.front()[1] <= '\002')
+            lineBreak += "  ";
     }
 
     for (size_t i = 0; i < tips.size() && lineCount < maxLines; ++i)
     {
-        if (tips[i].Length() > (size_t)maxWidth + 6) // line is too long, try breaking it
+        if (tips[i].length() > (size_t)maxWidth + 6) // line is too long, try breaking it
         {
             wxString tipLn = tips[i];
-            while (!tipLn.IsEmpty())
+            while (!tipLn.empty())
             {
                 wxString segment = tipLn.Mid(0, maxWidth);
-                int index = segment.Find(wxT(' '), true); // break on a space
+                int index = segment.Find(' ', true); // break on a space
                 if (index < 20) // no reasonable break?
                 {
                     segment = tipLn.Mid(0, maxWidth * 6 / 5); // increase search width a bit
-                    index = segment.Find(wxT(' '), true);
+                    index = segment.Find(' ', true);
                 }
                 for (int commaIdx = index - 1; commaIdx > maxWidth / 2; --commaIdx) // check back for a comma
                 {
-                    if (segment[commaIdx] == wxT(',') && segment[commaIdx + 1] == wxT(' '))
+                    if (segment[commaIdx] == ',' && segment[commaIdx + 1] == ' ')
                     {
                         index = commaIdx + 1; // prefer splitting on a comma, if that does not set us back too far
                         break;
@@ -1381,13 +1503,13 @@ void CCManager::DoShowTips(const wxStringVec& tips, cbStyledTextCtrl* stc, int p
                 if (index < 20 || segment == tipLn) // end of string, or cannot split
                 {
                     tip += tipLn + lineBreak;
-                    CCManagerHelper::RipplePts(hlStart, hlEnd, tip.Length(), lineBreak.Length());
+                    CCManagerHelper::RipplePts(hlStart, hlEnd, tip.length(), lineBreak.length());
                     tipLn.Clear();
                 }
                 else // continue splitting
                 {
-                    tip += segment.Mid(0, index) + lineBreak + wxT(' ');
-                    CCManagerHelper::RipplePts(hlStart, hlEnd, tip.Length(), lineBreak.Length() + 1);
+                    tip += segment.Mid(0, index) + lineBreak + ' ';
+                    CCManagerHelper::RipplePts(hlStart, hlEnd, tip.length(), lineBreak.length() + 1);
                     // already starts with a space, so all subsequent lines are prefixed by two spaces
                     tipLn = tipLn.Mid(index);
                 }
@@ -1397,27 +1519,31 @@ void CCManager::DoShowTips(const wxStringVec& tips, cbStyledTextCtrl* stc, int p
         else // just add the line
         {
             tip += tips[i] + lineBreak;
-            CCManagerHelper::RipplePts(hlStart, hlEnd, tip.Length(), lineBreak.Length());
+            CCManagerHelper::RipplePts(hlStart, hlEnd, tip.length(), lineBreak.length());
             ++lineCount;
         }
     }
+
     tip.Trim(); // trailing linefeed
 
     // try to show the tip at the start of the token/arguments, or at the margin if we are scrolled right
     // an offset of 2 helps deal with the width of the folding bar (TODO: does an actual calculation exist?)
-    int line = stc->LineFromPosition(pos);
+    const int line = stc->LineFromPosition(pos);
     if (argsPos == wxSCI_INVALID_POSITION)
         argsPos = stc->WordStartPosition(pos, true);
     else
         argsPos = std::min(CCManagerHelper::FindColumn(line, stc->GetColumn(argsPos), stc), stc->WordStartPosition(pos, true));
-    int offset = stc->PointFromPosition(stc->PositionFromLine(line)).x > marginWidth ? 0 : 2;
+
+    const int offset = stc->PointFromPosition(stc->PositionFromLine(line)).x > marginWidth ? 0 : 2;
     pos = std::max(argsPos, stc->PositionFromPoint(wxPoint(marginWidth, stc->PointFromPosition(pos).y)) + offset);
     pos = std::min(pos, stc->GetLineEndPosition(line)); // do not go to next line
     if (stc->CallTipActive() && m_LastTipPos != pos)
         stc->CallTipCancel(); // force tip popup to invalidate (sometimes fails to otherwise do so on Windows)
+
     stc->CallTipShow(pos, tip);
     if (hlStart >= 0 && hlEnd > hlStart)
         stc->CallTipSetHighlight(hlStart, hlEnd);
+
     m_LastTipPos = pos;
 }
 
@@ -1428,3 +1554,11 @@ void CCManager::CallSmartIndentCCDone(cbEditor* ed)
     // post event in the host's event queue
     Manager::Get()->ProcessEvent(event);
 }
+
+// ----------------------------------------------------------------------------
+bool CCManager::DoShowDiagnostics( cbEditor* ed, int line)
+// ----------------------------------------------------------------------------
+{
+	return GetProviderFor(ed)->DoShowDiagnostics(ed, line);
+}
+

@@ -26,7 +26,8 @@
 					<Add option="-D_WIN64" />
 					<Add option="-DWXUSINGDLL" />
 					<Add option="-DcbDEBUG" />
-					<Add option="-DNOPCH" />
+					<Add option="-Winvalid-pch" />
+					<Add option="-DCB_PRECOMP" />
 					<Add option="-DwxUSE_UNICODE" />
 					<Add directory="../../../include" />
 					<Add directory="../../../include/tinyxml" />
@@ -58,9 +59,8 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
+			<Add option="-std=gnu++11" />
 		</Compiler>
 		<Unit filename="AutoVersioning.cpp" />
 		<Unit filename="AutoVersioning.h" />
@@ -75,6 +75,8 @@
 		<Unit filename="avVersionEditorDlg.h" />
 		<Unit filename="manifest.xml" />
 		<Extensions>
+			<code_completion />
+			<envvars />
 			<wxsmith version="1">
 				<gui name="wxWidgets" src="avVersionEditorDlg.cpp" main="avVersionEditorDlg" init_handlers="necessary" language="CPP" />
 				<resources>
@@ -82,6 +84,7 @@
 					<wxScrollingDialog wxs="wxsmith/avChangesDlg.wxs" src="avChangesDlg.cpp" hdr="avChangesDlg.h" fwddecl="0" i18n="1" name="avChangesDlg" language="CPP" />
 				</resources>
 			</wxsmith>
+			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

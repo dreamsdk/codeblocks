@@ -90,6 +90,10 @@ if BUILD_RNDGEN
 MAYBE_RNDGEN=rndgen appdata
 endif
 
+if BUILD_CLANGD_CLIENT
+MAYBE_CLANGD_CLIENT=clangd_client appdata
+endif
+
 if BUILD_EXPORTER
 MAYBE_EXPORTER=source_exporter appdata
 endif
@@ -191,6 +195,7 @@ SUBDIRS = $(MAYBE_AUTOVERSIONING) \
 		$(MAYBE_REGEX) \
 		$(MAYBE_REOPENEDITOR) \
 		$(MAYBE_RNDGEN) \
+		$(MAYBE_CLANGD_CLIENT) \
 		$(MAYBE_THREADSEARCH) \
 		$(MAYBE_TOOLSPLUS) \
 		$(MAYBE_VALGRIND) \
@@ -234,6 +239,7 @@ DIST_SUBDIRS = appdata \
 		regex_testbed \
 		ReopenEditor \
 		rndgen \
+		clangd_client \
 		ThreadSearch \
 		ToolsPlus \
 		Valgrind \
@@ -261,6 +267,7 @@ EXTRA_DIST += $(srcdir)/FortranProject/*.h \
 		$(srcdir)/FortranProject/images/48x48/*.png \
 		$(srcdir)/FortranProject/images/56x56/*.png \
 		$(srcdir)/FortranProject/images/64x64/*.png \
+		$(srcdir)/FortranProject/images/svg/*.svg \
 		$(srcdir)/FortranProject/images/fortranproject/16x16/*.png \
 		$(srcdir)/FortranProject/images/fortranproject/20x20/*.png \
 		$(srcdir)/FortranProject/images/fortranproject/24x24/*.png \
@@ -270,6 +277,7 @@ EXTRA_DIST += $(srcdir)/FortranProject/*.h \
 		$(srcdir)/FortranProject/images/fortranproject/48x48/*.png \
 		$(srcdir)/FortranProject/images/fortranproject/56x56/*.png \
 		$(srcdir)/FortranProject/images/fortranproject/64x64/*.png \
+		$(srcdir)/FortranProject/images/fortranproject/svg/*.svg \
 		$(srcdir)/FortranProject/images/fortranproject/*.f90 \
 		$(srcdir)/FortranProject/images/fortranproject/*.py \
 		$(srcdir)/FortranProject/images/fortranproject/*.dem \

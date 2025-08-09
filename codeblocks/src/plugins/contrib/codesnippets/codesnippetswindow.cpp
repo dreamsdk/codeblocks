@@ -17,7 +17,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: codesnippetswindow.cpp 11352 2018-03-27 22:00:55Z fuscated $
+// RCS-ID: $Id: codesnippetswindow.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
 
 #ifdef WX_PRECOMP //
     #include "wx_pch.h"
@@ -38,10 +38,6 @@
 
 // wxWidget headers not include in wx_pch.h
     #include <wx/clipbrd.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif //__BORLANDC__
 
 //-#if defined(BUILDING_PLUGIN)
     #include "sdk.h"
@@ -332,7 +328,7 @@ void CodeSnippetsWindow::InitDlg()
 // ----------------------------------------------------------------------------
 {
     // Color which we're going to use as mask
-    wxColor maskColor(255, 0, 255);
+    // wxColor maskColor(255, 0, 255);
 
     wxBoxSizer* parentSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -591,7 +587,7 @@ void CodeSnippetsWindow::OnItemMenu(wxTreeEvent& event)
                 snippetsTreeMenu->Append(idMnuAddSnippet, _("Add Snippet"));
                 snippetsTreeMenu->Append(idMnuAddSubCategory, _("Add SubCategory"));
                 snippetsTreeMenu->AppendSeparator();
-                snippetsTreeMenu->Append(idMnuCopy,  _("Copy  Category"));
+                snippetsTreeMenu->Append(idMnuCopy,  _("Copy Category"));
                 snippetsTreeMenu->Append(idMnuPaste, _("Paste Tree Items"));
                 snippetsTreeMenu->Enable(idMnuPaste, pTiXmlDoc);
                 snippetsTreeMenu->Append(idMnuRename, _("Rename"));
@@ -612,7 +608,7 @@ void CodeSnippetsWindow::OnItemMenu(wxTreeEvent& event)
                 else // it's a text snippet
                 {   snippetsTreeMenu->Append(idMnuEditSnippet, _("Edit Text"));
                     if ( IsUrlSnippet() )
-                        snippetsTreeMenu->Append(idMnuOpenFileLink,_("Open Url"));
+                        snippetsTreeMenu->Append(idMnuOpenFileLink,_("Open URL"));
                 }
 
                 //-#if defined(BUILDING_PLUGIN)
@@ -913,6 +909,7 @@ void CodeSnippetsWindow::OnMnuLoadSnippetsFromFile(wxCommandEvent& event)
     //-wxFileDialog dlg(this, _("Load snippets from file"), wxEmptyString, wxEmptyString, _("XML files (*.xml)|*.xml|All files (*.*)|*.*"), wxOPEN|wxFILE_MUST_EXIST);
     wxFileDialog dlg(this, _("Load snippets from file"), wxEmptyString, wxEmptyString,
         _("XML files (*.xml)|*.xml|All files (*.*)|*.*"), wxFD_OPEN);
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
         LOGIT(wxT("LoadingFile:%s"),dlg.GetPath().c_str());
@@ -935,6 +932,7 @@ void CodeSnippetsWindow::OnMnuSaveSnippetsAs(wxCommandEvent& /*event*/)
 // ----------------------------------------------------------------------------
 {
     wxFileDialog dlg(this, _("Save snippets to file"), wxEmptyString, _T("codesnippets.xml"), _("XML files (*.xml)|*.xml|All files (*.*)|*.*"), wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() == wxID_OK)
     {
         GetSnippetsTreeCtrl()->SaveItemsToFile(dlg.GetPath());

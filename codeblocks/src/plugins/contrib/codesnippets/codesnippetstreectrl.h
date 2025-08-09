@@ -17,7 +17,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: codesnippetstreectrl.h 11345 2018-03-23 00:40:30Z pecanh $
+// RCS-ID: $Id: codesnippetstreectrl.h 13627 2025-03-02 18:17:10Z mortenmacfly $
 
 #ifndef CODESNIPPETSTREECTRL_H
 #define CODESNIPPETSTREECTRL_H
@@ -70,7 +70,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
         void        EditSnippetAsFileLink();
         void        SaveSnippetAsFileLink();
         void        EditSnippetAsText();
-        void        EditSnippetWithMIME();
+        void        EditSnippetWithMimeOrCB();
 
         void OnEditorSave(CodeBlocksEvent& event);
         void OnEditorClose(CodeBlocksEvent& event);
@@ -107,7 +107,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
             }
 
         long GetSnippetID( wxTreeItemId itemId )
-            {   wxString itemData = wxEmptyString;
+            {
                 if (not itemId.IsOk()) return 0;
                 SnippetTreeItemData* pItem = (SnippetTreeItemData*)(GetItemData(itemId));
                 return pItem->GetID();
@@ -174,7 +174,7 @@ class CodeSnippetsTreeCtrl : public wxTreeCtrl
         bool     IsFileLinkSnippet (wxTreeItemId treeItemId  );
         wxString GetFileLinkExt (wxTreeItemId treeItemId  );
 
-        bool IsTreeBusy(){return (m_pPropertiesDialog != 0);}
+        bool IsTreeBusy(){return (m_pPropertiesDialog != nullptr);}
 
         void            SetSnippetImage(wxTreeItemId itemId);
         wxTreeItemId    GetAssociatedItemID(){return m_MnuAssociatedItemID;}

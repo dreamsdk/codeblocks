@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: xaxis.cpp 10024 2014-11-06 09:23:26Z jenslody $
+// RCS-ID:      $Id: xaxis.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -23,10 +23,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>

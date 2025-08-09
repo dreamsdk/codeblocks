@@ -12,6 +12,7 @@
 #include <sdk.h> // Code::Blocks SDK
 #ifndef CB_PRECOMP
     #include <wx/checkbox.h>
+    #include <wx/notebook.h>
     #include <wx/radiobox.h>
     #include <wx/sizer.h>
     #include <wx/statbox.h>
@@ -19,6 +20,9 @@
     #include "configmanager.h"
 #endif
 
+#include <wx/clrpicker.h>
+#include <wx/gbsizer.h>
+#include "cbcolourmanager.h"
 #include "ThreadSearch.h"
 #include "SearchInPanel.h"
 #include "DirectoryParamsPanel.h"
@@ -32,73 +36,168 @@
 
 // end wxGlade
 
-
-ThreadSearchConfPanel::ThreadSearchConfPanel(ThreadSearch& threadSearchPlugin, wxWindow* parent,wxWindowID id)
-                      :m_ThreadSearchPlugin(threadSearchPlugin)
+/// Override the colour picker to implement a resetable control. This is possible with right click.
+/// Unfortunately the colour picker doesn't send right down or context menu events to its parent, so
+/// we have to derive from it.
+struct ResetableColourPicker : wxColourPickerCtrl
 {
-    Create(parent,id,wxDefaultPosition,wxDefaultSize,wxTAB_TRAVERSAL);
+    ResetableColourPicker(ThreadSearchConfPanel *panel, wxWindow *parent, ControlIDs::IDs id,
+                          const wxColour &colour) :
+        wxColourPickerCtrl(parent, controlIDs.Get(id), colour),
+        m_panel(panel)
+    {
+        SetToolTip(_("Right click would reset the colour to its default value"));
+    }
+private:
+    void OnContext(wxContextMenuEvent &event)
+    {
+        // Relay the event to the panel. It seems the id in the event is for some internal control,
+        // so we just change it.
+        wxContextMenuEvent e(event);
+        e.SetId(GetId());
+        m_panel->OnColourPickerContext(e);
+    }
+
+private:
+    ThreadSearchConfPanel *m_panel;
+
+    DECLARE_EVENT_TABLE()
+};
+
+BEGIN_EVENT_TABLE(ResetableColourPicker, wxColourPickerCtrl)
+    EVT_CONTEXT_MENU(ResetableColourPicker::OnContext)
+END_EVENT_TABLE()
+
+ThreadSearchConfPanel::ThreadSearchConfPanel(ThreadSearch& threadSearchPlugin,
+                                             cbConfigurationPanelColoursInterface *coloursInterface,
+                                             wxWindow* parent) :
+    m_ThreadSearchPlugin(threadSearchPlugin),
+    m_ColoursInterface(coloursInterface)
+{
+    Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
 
     // begin wxGlade: ThreadSearchConfPanel::ThreadSearchConfPanel
-    SizerThreadSearchOptions_staticbox = new wxStaticBox(this, -1, _("Thread search options"));
-    SizerThreadSearchLayoutGlobal_staticbox = new wxStaticBox(this, -1, _("Show/Hide"));
-    SizerListControlOptions_staticbox = new wxStaticBox(this, -1, _("List control options"));
-    SizerThreadSearchLayout_staticbox = new wxStaticBox(this, -1, _("Layout"));
-    SizerSearchIn_staticbox = new wxStaticBox(this, -1, _("Search in files:"));
-    m_pPnlSearchIn = new SearchInPanel(this, wxID_ANY);
-    m_pPnlDirParams = new DirectoryParamsPanel(&threadSearchPlugin.GetFindData(), this, wxID_ANY);
-    m_pChkWholeWord = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkWholeWord), _("Whole word"));
-    m_pChkStartWord = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkStartWord), _("Start word"));
-    m_pChkMatchCase = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkMatchCase), _("Match case"));
-    m_pChkRegExp = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkRegularExpression), _("Regular expression"));
-    m_pChkThreadSearchEnable = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkThreadSearchEnable),
+    m_Notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+    m_PageGeneral = new wxPanel(m_Notebook, wxID_ANY);
+    m_PageLayout = new wxPanel(m_Notebook, wxID_ANY);
+
+    SizerSearchIn_staticbox = new wxStaticBox(m_PageGeneral, -1, _("Search in files:"));
+    SizerThreadSearchOptions_staticbox = new wxStaticBox(m_PageGeneral, -1, _("Thread search options"));
+
+    m_pPnlSearchIn = new SearchInPanel(m_PageGeneral, wxID_ANY);
+    m_pPnlDirParams = new DirectoryParamsPanel(&threadSearchPlugin.GetFindData(), m_PageGeneral, wxID_ANY);
+    m_pChkWholeWord = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkWholeWord), _("Whole word"));
+    m_pChkStartWord = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkStartWord), _("Start word"));
+    m_pChkMatchCase = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkMatchCase), _("Match case"));
+    m_pChkMatchInComments = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkMatchInComments), _("Match in C++ style comments"));
+    m_pChkRegExp = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkRegularExpression), _("Regular expression"));
+    m_pChkThreadSearchEnable = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkThreadSearchEnable),
                                                                    _("Enable 'Find occurrences' contextual menu item"));
-    m_pChkUseDefaultOptionsForThreadSearch = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkUseDefaultOptionsOnThreadSearch),
+    m_pChkUseDefaultOptionsForThreadSearch = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkUseDefaultOptionsOnThreadSearch),
                                                             _("Use default options when running 'Find occurrences' "));
-    m_pChkShowMissingFilesError = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkShowMissingFilesError),
+    m_pChkShowMissingFilesError = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkShowMissingFilesError),
                                                  _("Show error message if file is missing"));
-    m_pChkShowCantOpenFileError = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkShowCantOpenFileError),
+    m_pChkShowCantOpenFileError = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkShowCantOpenFileError),
                                                  _("Show error message if file cannot be opened"));
-    m_pChkDeletePreviousResults = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkChkDeletePreviousResults),
+    m_pChkDeletePreviousResults = new wxCheckBox(m_PageGeneral, controlIDs.Get(ControlIDs::idChkChkDeletePreviousResults),
                                                  _("Delete previous results at search begin"));
-    m_pChkShowThreadSearchToolBar = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkViewThreadSearchToolBar),
+
+    SizerThreadSearchLayoutGlobal_staticbox = new wxStaticBox(m_PageLayout, -1, _("Show/Hide"));
+    SizerListControlOptions_staticbox = new wxStaticBox(m_PageLayout, -1, _("List control options"));
+
+    m_pChkShowThreadSearchToolBar = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkViewThreadSearchToolBar),
                                                    _("Show ThreadSearch toolbar"));
-    m_pChkShowThreadSearchWidgets = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkShowThreadSearchWidgets),
+    m_pChkShowThreadSearchWidgets = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkShowThreadSearchWidgets),
                                                    _("Show search widgets in ThreadSearch Messages panel"));
-    m_pChkShowCodePreview = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkShowCodePreview),
+    m_pChkShowCodePreview = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkShowCodePreview),
                                            _("Show code preview editor"));
-    m_pChkDisplayLogHeaders = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkDisplayLogHeaders),
+    m_pChkDisplayLogHeaders = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkDisplayLogHeaders),
                                              _("Display header in log window"));
-    m_pChkDrawLogLines = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkDrawLogLines),
+    m_pChkDrawLogLines = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkDrawLogLines),
                                         _("Draw lines between log columns"));
-    m_pChkAutosizeLogColumns = new wxCheckBox(this, controlIDs.Get(ControlIDs::idChkAutosizeLogColumns),
+    m_pChkAutosizeLogColumns = new wxCheckBox(m_PageLayout, controlIDs.Get(ControlIDs::idChkAutosizeLogColumns),
                                         _("Automatically resize log columns"));
+    const wxString m_pRadSortBy_choices[] = {
+        _("File path"),
+        _("File name")
+    };
+    m_pRadSortBy = new wxRadioBox(m_PageGeneral, wxID_ANY, _("Sort results by"), wxDefaultPosition, wxDefaultSize, 2, m_pRadSortBy_choices, 1, wxRA_SPECIFY_ROWS);
 
     const wxString m_pRadPanelManagement_choices[] = {
         _("Messages notebook"),
         _("Layout")
     };
-    m_pRadPanelManagement = new wxRadioBox(this, wxID_ANY, _("ThreadSearch panel management by"), wxDefaultPosition, wxDefaultSize, 2, m_pRadPanelManagement_choices, 1, wxRA_SPECIFY_ROWS);
+    m_pRadPanelManagement = new wxRadioBox(m_PageLayout, wxID_ANY, _("ThreadSearch panel management by"), wxDefaultPosition, wxDefaultSize, 2, m_pRadPanelManagement_choices, 1, wxRA_SPECIFY_ROWS);
     const wxString m_pRadLoggerType_choices[] = {
         _("List"),
-        _("Tree")
+        _("Tree"),
+        _("List STC")
     };
-    m_pRadLoggerType = new wxRadioBox(this, wxID_ANY, _("Logger type"), wxDefaultPosition, wxDefaultSize, 2, m_pRadLoggerType_choices, 1, wxRA_SPECIFY_ROWS);
+    m_pRadLoggerType = new wxRadioBox(m_PageLayout, wxID_ANY, _("Logger type"), wxDefaultPosition, wxDefaultSize, 3, m_pRadLoggerType_choices, 1, wxRA_SPECIFY_ROWS);
     const wxString m_pRadSplitterWndMode_choices[] = {
         _("Horizontal"),
         _("Vertical")
     };
-    m_pRadSplitterWndMode = new wxRadioBox(this, wxID_ANY, _("Splitter window mode"), wxDefaultPosition, wxDefaultSize, 2, m_pRadSplitterWndMode_choices, 1, wxRA_SPECIFY_ROWS);
-    const wxString m_pRadSortBy_choices[] = {
-        _("File path"),
-        _("File name")
-    };
-    m_pRadSortBy = new wxRadioBox(this, wxID_ANY, _("Sort results by"), wxDefaultPosition, wxDefaultSize, 2, m_pRadSortBy_choices, 1, wxRA_SPECIFY_ROWS);
+    m_pRadSplitterWndMode = new wxRadioBox(m_PageLayout, wxID_ANY, _("Splitter window mode"), wxDefaultPosition, wxDefaultSize, 2, m_pRadSplitterWndMode_choices, 1, wxRA_SPECIFY_ROWS);
+
+    {
+
+        STCColours_staticbox = new wxStaticBox(m_PageLayout, -1, _("STC Logger colours"));
+
+        int labelIdx = 0;
+        m_STCColoursLabels[labelIdx++] = new wxStaticText(m_PageLayout, wxID_ANY, _("Text (fg/bg)"));
+        m_STCColoursLabels[labelIdx++] = new wxStaticText(m_PageLayout, wxID_ANY, _("File (fg/bg)"));
+        m_STCColoursLabels[labelIdx++] = new wxStaticText(m_PageLayout, wxID_ANY, _("LineNo (fg/bg)"));
+        m_STCColoursLabels[labelIdx++] = new wxStaticText(m_PageLayout, wxID_ANY, _("Match (fg/bg)"));
+        m_STCColoursLabels[labelIdx++] = new wxStaticText(m_PageLayout, wxID_ANY,_("Selected line background"));
+
+        int pickerIdx = 0;
+        if (!m_ColoursInterface)
+        {
+            ColourManager *colours = Manager::Get()->GetColourManager();
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker0, colours->GetColour(wxT("thread_search_text_fore")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker1, colours->GetColour(wxT("thread_search_text_back")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker2, colours->GetColour(wxT("thread_search_file_fore")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker3, colours->GetColour(wxT("thread_search_file_back")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker4, colours->GetColour(wxT("thread_search_lineno_fore")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker5, colours->GetColour(wxT("thread_search_lineno_back")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker6, colours->GetColour(wxT("thread_search_match_fore")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker7, colours->GetColour(wxT("thread_search_match_back")));
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker8, colours->GetColour(wxT("thread_search_selected_line_back")));
+            m_STCColourPickers[pickerIdx] = nullptr;
+        }
+        else
+        {
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker0, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker1, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker2, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker3, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker4, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker5, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker6, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker7, *wxBLACK);
+            m_STCColourPickers[pickerIdx++] = new ResetableColourPicker(this, m_PageLayout, ControlIDs::idConfPanelColorPicker8, *wxBLACK);
+            m_STCColourPickers[pickerIdx] = nullptr;
+
+            for (int jj = 0; jj < pickerIdx; ++jj)
+            {
+                const ControlIDs::IDs id = ControlIDs::IDs(ControlIDs::idConfPanelColorPicker0 + jj);
+                Connect(controlIDs.Get(id), wxEVT_COLOURPICKER_CHANGED,
+                        wxObjectEventFunction(&ThreadSearchConfPanel::OnColourPickerChanged));
+            }
+        }
+    }
 
     set_properties();
     do_layout();
     // end wxGlade
 }
 
+void ThreadSearchConfPanel::SetSearchAndMaskHistory(const wxArrayString &dirHistory,
+                                                    const wxArrayString &maskHistory)
+{
+    m_pPnlDirParams->SetSearchHistory(dirHistory, maskHistory);
+}
 
 BEGIN_EVENT_TABLE(ThreadSearchConfPanel, wxPanel)
     // begin wxGlade: ThreadSearchConfPanel::event_table
@@ -115,13 +214,11 @@ BEGIN_EVENT_TABLE(ThreadSearchConfPanel, wxPanel)
     // end wxGlade
 END_EVENT_TABLE();
 
-
 void ThreadSearchConfPanel::OnThreadSearchEnable(wxCommandEvent &event)
 {
     m_pChkUseDefaultOptionsForThreadSearch->Enable(event.IsChecked());
     event.Skip();
 }
-
 
 void ThreadSearchConfPanel::OnChkShowThreadSearchToolBarClick(wxCommandEvent &event)
 {
@@ -136,13 +233,11 @@ void ThreadSearchConfPanel::OnChkShowThreadSearchToolBarClick(wxCommandEvent &ev
     event.Skip();
 }
 
-
 void ThreadSearchConfPanel::OnChkCodePreview(wxCommandEvent &event)
 {
     m_pRadSplitterWndMode->Enable(event.IsChecked());
     event.Skip();
 }
-
 
 void ThreadSearchConfPanel::OnChkShowThreadSearchWidgetsClick(wxCommandEvent &event)
 {
@@ -157,13 +252,11 @@ void ThreadSearchConfPanel::OnChkShowThreadSearchWidgetsClick(wxCommandEvent &ev
     event.Skip();
 }
 
-
 void ThreadSearchConfPanel::OnChkShowMissingFilesErrorClick(wxCommandEvent &event)
 {
     Manager::Get()->GetConfigManager(_T("ThreadSearch"))->Write(wxT("/ShowFileMissingError"),event.IsChecked());
     event.Skip();
 }
-
 
 void ThreadSearchConfPanel::OnChkShowCantOpenFileErrorClick(wxCommandEvent &event)
 {
@@ -171,18 +264,19 @@ void ThreadSearchConfPanel::OnChkShowCantOpenFileErrorClick(wxCommandEvent &even
     event.Skip();
 }
 
-
 // wxGlade: add ThreadSearchConfPanel event handlers
-
-
 void ThreadSearchConfPanel::set_properties()
 {
     // begin wxGlade: ThreadSearchConfPanel::set_properties
+    m_Notebook->AddPage(m_PageGeneral, _("General"), true);
+    m_Notebook->AddPage(m_PageLayout, _("Layout"), false);
+
     m_pChkWholeWord->SetToolTip(_("Search text matches only whole words"));
     m_pChkWholeWord->SetValue(1);
     m_pChkStartWord->SetToolTip(_("Matches only word starting with search expression"));
     m_pChkMatchCase->SetToolTip(_("Case sensitive search."));
     m_pChkMatchCase->SetValue(1);
+    m_pChkMatchInComments->SetToolTip(_("Also search in C++ style comments ('//')."));
     m_pChkRegExp->SetToolTip(_("Search expression is a regular expression"));
     m_pChkThreadSearchEnable->SetValue(1);
     m_pChkUseDefaultOptionsForThreadSearch->SetValue(1);
@@ -208,6 +302,7 @@ void ThreadSearchConfPanel::set_properties()
     m_pChkWholeWord->SetValue(findData.GetMatchWord());
     m_pChkStartWord->SetValue(findData.GetStartWord());
     m_pChkMatchCase->SetValue(findData.GetMatchCase());
+    m_pChkMatchInComments->SetValue(findData.GetMatchInComments());
     m_pChkRegExp->SetValue(findData.GetRegEx());
     m_pChkThreadSearchEnable->SetValue(m_ThreadSearchPlugin.GetCtxMenuIntegration());
     m_pChkUseDefaultOptionsForThreadSearch->SetValue(m_ThreadSearchPlugin.GetUseDefValsForThreadSearch());
@@ -237,22 +332,7 @@ void ThreadSearchConfPanel::set_properties()
     }
     m_pRadPanelManagement->SetSelection(radIndex);
 
-    radIndex = 0;
-    switch (m_ThreadSearchPlugin.GetLoggerType())
-    {
-        case ThreadSearchLoggerBase::TypeTree:
-        {
-            radIndex = 1;
-            break;
-        }
-        case ThreadSearchLoggerBase::TypeList : // fall through
-        default:
-        {
-            radIndex = 0;
-            break;
-        }
-    }
-    m_pRadLoggerType->SetSelection(radIndex);
+    m_pRadLoggerType->SetSelection(m_ThreadSearchPlugin.GetLoggerType());
 
     radIndex = 0;
     switch (m_ThreadSearchPlugin.GetSplitterMode())
@@ -301,55 +381,97 @@ void ThreadSearchConfPanel::set_properties()
     m_pPnlSearchIn->SetSearchInDirectory(findData.MustSearchInDirectory());
 }
 
-
 void ThreadSearchConfPanel::do_layout()
 {
     // begin wxGlade: ThreadSearchConfPanel::do_layout
     wxBoxSizer* SizerTop = new wxBoxSizer(wxVERTICAL);
-    wxStaticBoxSizer* SizerThreadSearchLayout = new wxStaticBoxSizer(SizerThreadSearchLayout_staticbox, wxVERTICAL);
-    wxFlexGridSizer* SizerThreadSearchGridLayout = new wxFlexGridSizer(4, 2, 0, 0);
-    wxStaticBoxSizer* SizerListControlOptions = new wxStaticBoxSizer(SizerListControlOptions_staticbox, wxVERTICAL);
-    wxStaticBoxSizer* SizerThreadSearchLayoutGlobal = new wxStaticBoxSizer(SizerThreadSearchLayoutGlobal_staticbox, wxVERTICAL);
-    wxStaticBoxSizer* SizerThreadSearchOptions = new wxStaticBoxSizer(SizerThreadSearchOptions_staticbox, wxVERTICAL);
-    wxStaticBoxSizer* SizerSearchIn = new wxStaticBoxSizer(SizerSearchIn_staticbox, wxVERTICAL);
-    SizerSearchIn->Add(m_pPnlSearchIn, 0, wxALL|wxEXPAND, 2);
-    SizerSearchIn->Add(m_pPnlDirParams, 0, wxALL|wxEXPAND, 2);
-    SizerTop->Add(SizerSearchIn, 0, wxALL|wxEXPAND, 4);
-    wxBoxSizer* SizerOptions = new wxBoxSizer(wxHORIZONTAL);
-    SizerOptions->Add(m_pChkWholeWord, 0, wxLEFT | wxRIGHT, 4);
-    SizerOptions->Add(m_pChkStartWord, 0, wxLEFT | wxRIGHT, 4);
-    SizerOptions->Add(m_pChkMatchCase, 0, wxLEFT | wxRIGHT, 4);
-    SizerOptions->Add(m_pChkRegExp, 0, wxLEFT | wxRIGHT, 4);
-    SizerSearchIn->Add(SizerOptions, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchOptions->Add(m_pChkThreadSearchEnable, 0, wxALL, 4);
-    SizerThreadSearchOptions->Add(m_pChkUseDefaultOptionsForThreadSearch, 0, wxALL, 4);
-    wxStaticText* m_pStaDefaultOptions = new wxStaticText(this, wxID_ANY, _("       ('Whole word' = true, 'Start word' = false, 'Match case' = true, 'Regular expression' = false)"));
-    SizerThreadSearchOptions->Add(m_pStaDefaultOptions, 0, 0, 0);
-    SizerThreadSearchOptions->Add(m_pChkShowMissingFilesError, 0, wxALL, 4);
-    SizerThreadSearchOptions->Add(m_pChkShowCantOpenFileError, 0, wxALL, 4);
-    SizerThreadSearchOptions->Add(m_pChkDeletePreviousResults, 0, wxALL, 4);
-    SizerTop->Add(SizerThreadSearchOptions, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchLayoutGlobal->Add(m_pChkShowThreadSearchToolBar, 0, wxALL, 4);
-    SizerThreadSearchLayoutGlobal->Add(m_pChkShowThreadSearchWidgets, 0, wxALL, 4);
-    SizerThreadSearchLayoutGlobal->Add(m_pChkShowCodePreview, 0, wxALL, 4);
-    SizerThreadSearchGridLayout->Add(SizerThreadSearchLayoutGlobal, 1, wxALL|wxEXPAND, 4);
-    SizerListControlOptions->Add(m_pChkDisplayLogHeaders, 0, wxALL, 4);
-    SizerListControlOptions->Add(m_pChkDrawLogLines, 0, wxALL, 4);
-    SizerListControlOptions->Add(m_pChkAutosizeLogColumns, 0, wxALL, 4);
-    SizerThreadSearchGridLayout->Add(SizerListControlOptions, 1, wxALL|wxEXPAND, 4);
-    SizerThreadSearchGridLayout->Add(m_pRadPanelManagement, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchGridLayout->Add(m_pRadLoggerType, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchGridLayout->Add(m_pRadSplitterWndMode, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchGridLayout->Add(m_pRadSortBy, 0, wxALL|wxEXPAND, 4);
-    SizerThreadSearchGridLayout->AddGrowableCol(0);
-    SizerThreadSearchGridLayout->AddGrowableCol(1);
-    SizerThreadSearchLayout->Add(SizerThreadSearchGridLayout, 1, wxALL|wxEXPAND, 0);
-    SizerTop->Add(SizerThreadSearchLayout, 0, wxALL|wxEXPAND, 4);
+    SizerTop->Add(m_Notebook, 1, wxEXPAND | wxALL, 4);
+
+    {
+        // Sizers for page general
+        wxBoxSizer* SizerTop = new wxBoxSizer(wxVERTICAL);
+
+        wxStaticBoxSizer* SizerSearchIn = new wxStaticBoxSizer(SizerSearchIn_staticbox, wxVERTICAL);
+        wxBoxSizer* SizerOptions = new wxBoxSizer(wxHORIZONTAL);
+        SizerSearchIn->Add(m_pPnlSearchIn, 0, wxALL|wxEXPAND, 2);
+        SizerSearchIn->Add(m_pPnlDirParams, 0, wxALL|wxEXPAND, 2);
+        SizerOptions->Add(m_pChkWholeWord, 0, wxLEFT | wxRIGHT, 4);
+        SizerOptions->Add(m_pChkStartWord, 0, wxLEFT | wxRIGHT, 4);
+        SizerOptions->Add(m_pChkMatchCase, 0, wxLEFT | wxRIGHT, 4);
+        SizerOptions->Add(m_pChkMatchInComments, 0, wxLEFT | wxRIGHT, 4);
+        SizerOptions->Add(m_pChkRegExp, 0, wxLEFT | wxRIGHT, 4);
+        SizerSearchIn->Add(SizerOptions, 0, wxALL|wxEXPAND, 4);
+        SizerTop->Add(SizerSearchIn, 0, wxALL|wxEXPAND, 4);
+
+        wxStaticBoxSizer* SizerThreadSearchOptions = new wxStaticBoxSizer(SizerThreadSearchOptions_staticbox, wxVERTICAL);
+        SizerThreadSearchOptions->Add(m_pChkThreadSearchEnable, 0, wxALL, 4);
+        SizerThreadSearchOptions->Add(m_pChkUseDefaultOptionsForThreadSearch, 0, wxALL, 4);
+        wxStaticText* m_pStaDefaultOptions = new wxStaticText(m_PageGeneral, wxID_ANY, _("       ('Whole word' = true, 'Start word' = false, 'Match case' = true, 'Match Comments' = true, 'Regular expression' = false)"));
+        SizerThreadSearchOptions->Add(m_pStaDefaultOptions, 0, 0, 0);
+        SizerThreadSearchOptions->Add(m_pChkShowMissingFilesError, 0, wxALL, 4);
+        SizerThreadSearchOptions->Add(m_pChkShowCantOpenFileError, 0, wxALL, 4);
+        SizerThreadSearchOptions->Add(m_pChkDeletePreviousResults, 0, wxALL, 4);
+        SizerTop->Add(SizerThreadSearchOptions, 0, wxALL|wxEXPAND, 4);
+
+        SizerTop->Add(m_pRadSortBy, 0, wxALL|wxEXPAND, 4);
+
+        m_PageGeneral->SetSizer(SizerTop);
+    }
+
+    {
+        // Sizers for page layout
+        wxBoxSizer* SizerTop = new wxBoxSizer(wxVERTICAL);
+        wxGridBagSizer *SizerThreadSearchGridLayout = new wxGridBagSizer;
+        SizerThreadSearchGridLayout->SetCols(2);
+        SizerThreadSearchGridLayout->AddGrowableCol(0);
+        SizerThreadSearchGridLayout->AddGrowableCol(1);
+
+        wxStaticBoxSizer* SizerListControlOptions = new wxStaticBoxSizer(SizerListControlOptions_staticbox, wxVERTICAL);
+        wxStaticBoxSizer* SizerThreadSearchLayoutGlobal = new wxStaticBoxSizer(SizerThreadSearchLayoutGlobal_staticbox, wxVERTICAL);
+        SizerThreadSearchLayoutGlobal->Add(m_pChkShowThreadSearchToolBar, 0, wxALL, 4);
+        SizerThreadSearchLayoutGlobal->Add(m_pChkShowThreadSearchWidgets, 0, wxALL, 4);
+        SizerThreadSearchLayoutGlobal->Add(m_pChkShowCodePreview, 0, wxALL, 4);
+        SizerListControlOptions->Add(m_pChkDisplayLogHeaders, 0, wxALL, 4);
+        SizerListControlOptions->Add(m_pChkDrawLogLines, 0, wxALL, 4);
+        SizerListControlOptions->Add(m_pChkAutosizeLogColumns, 0, wxALL, 4);
+
+        SizerThreadSearchGridLayout->Add(SizerThreadSearchLayoutGlobal, wxGBPosition(0, 0),
+                                         wxDefaultSpan, wxALL|wxEXPAND, 4);
+        SizerThreadSearchGridLayout->Add(SizerListControlOptions, wxGBPosition(0, 1), wxDefaultSpan,
+                                         wxALL|wxEXPAND, 4);
+        SizerThreadSearchGridLayout->Add(m_pRadPanelManagement, wxGBPosition(1, 0), wxDefaultSpan,
+                                         wxALL|wxEXPAND, 4);
+        SizerThreadSearchGridLayout->Add(m_pRadLoggerType, wxGBPosition(2, 0), wxDefaultSpan,
+                                         wxALL|wxEXPAND, 4);
+        SizerThreadSearchGridLayout->Add(m_pRadSplitterWndMode, wxGBPosition(3, 0), wxDefaultSpan,
+                                         wxALL|wxEXPAND, 4);
+
+        wxStaticBoxSizer* SizerThreadSearchLayoutSTCColours = new wxStaticBoxSizer(STCColours_staticbox, wxVERTICAL);
+        wxFlexGridSizer* SizerThreadSearchLayoutSTCColoursGrid = new wxFlexGridSizer(5, 3, 0, 0);
+        SizerThreadSearchLayoutSTCColours->Add(SizerThreadSearchLayoutSTCColoursGrid, 1, wxEXPAND | wxALL, 4);
+        for (int ii = 0; ii < STCColoursCount; ii ++)
+        {
+            SizerThreadSearchLayoutSTCColoursGrid->Add(m_STCColoursLabels[ii], 1,
+                                                       wxEXPAND |wxLEFT | wxTOP | wxALIGN_LEFT| wxALIGN_CENTRE_VERTICAL,
+                                                       4);
+            if (m_STCColourPickers[ii * 2] != nullptr)
+                SizerThreadSearchLayoutSTCColoursGrid->Add(m_STCColourPickers[ii * 2], 1, wxEXPAND | wxLEFT | wxTOP, 4);
+            if (m_STCColourPickers[ii * 2 + 1] != nullptr)
+                SizerThreadSearchLayoutSTCColoursGrid->Add(m_STCColourPickers[ii * 2 + 1], 1, wxEXPAND | wxLEFT | wxTOP, 4);
+        }
+
+        SizerThreadSearchGridLayout->Add(SizerThreadSearchLayoutSTCColours, wxGBPosition(1, 1),
+                                         wxGBSpan(3, 1), wxEXPAND | wxALL, 4);
+
+        SizerTop->Add(SizerThreadSearchGridLayout, 1, wxALL|wxEXPAND, 4);
+
+        m_PageLayout->SetSizer(SizerTop);
+    }
+
     SetSizer(SizerTop);
     SizerTop->Fit(this);
     // end wxGlade
 }
-
 
 void ThreadSearchConfPanel::OnApply()
 {
@@ -364,6 +486,7 @@ void ThreadSearchConfPanel::OnApply()
     findData.SetMatchWord      (m_pChkWholeWord->IsChecked());
     findData.SetStartWord      (m_pChkStartWord->IsChecked());
     findData.SetMatchCase      (m_pChkMatchCase->IsChecked());
+    findData.SetMatchInComments(m_pChkMatchInComments->IsChecked());
     findData.SetRegEx          (m_pChkRegExp->IsChecked());
 
     findData.UpdateSearchScope(ScopeOpenFiles,      m_pPnlSearchIn->GetSearchInOpenFiles());
@@ -401,23 +524,15 @@ void ThreadSearchConfPanel::OnApply()
     }
     m_ThreadSearchPlugin.SetManagerType(mgrType);
 
-    radIndex = m_pRadLoggerType->GetSelection();
-    ThreadSearchLoggerBase::eLoggerTypes lgrType;
-    switch (radIndex)
+    const int radioLoggerType = m_pRadLoggerType->GetSelection();
+    if (radioLoggerType >= 0 && radioLoggerType < ThreadSearchLoggerBase::TypeLast)
     {
-        case 1 :
-        {
-            lgrType = ThreadSearchLoggerBase::TypeTree;
-            break;
-        }
-        default:
-        // case 0 :
-        {
-            lgrType = ThreadSearchLoggerBase::TypeList;
-            break;
-        }
+        m_ThreadSearchPlugin.SetLoggerType(ThreadSearchLoggerBase::eLoggerTypes(radioLoggerType));
     }
-    m_ThreadSearchPlugin.SetLoggerType(lgrType);
+    else
+    {
+        m_ThreadSearchPlugin.SetLoggerType(ThreadSearchLoggerBase::TypeList);
+    }
 
     radIndex = m_pRadSortBy->GetSelection();
     InsertIndexManager::eFileSorting sortingType;
@@ -455,6 +570,22 @@ void ThreadSearchConfPanel::OnApply()
     }
     m_ThreadSearchPlugin.SetSplitterMode(splitterMode);
 
+    if (!m_ColoursInterface)
+    {
+        ColourManager *colours = Manager::Get()->GetColourManager();
+        int ii = 0;
+        colours->SetColour(wxT("thread_search_text_fore"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_text_back"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_file_fore"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_file_back"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_lineno_fore"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_lineno_back"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_match_fore"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_match_back"), m_STCColourPickers[ii++]->GetColour());
+        colours->SetColour(wxT("thread_search_selected_line_back"),
+                           m_STCColourPickers[ii++]->GetColour());
+    }
+
     // Updates toolbar visibility
     m_ThreadSearchPlugin.ShowToolBar(m_pChkShowThreadSearchToolBar->IsChecked());
 
@@ -462,4 +593,81 @@ void ThreadSearchConfPanel::OnApply()
     m_ThreadSearchPlugin.Notify();
 }
 
+void ThreadSearchConfPanel::OnPageChanging()
+{
+    if (m_ColoursInterface == nullptr)
+        return;
 
+    int ii = 0;
+    cbConfigurationPanelColoursInterface *colours = m_ColoursInterface;
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_text_fore")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_text_back")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_file_fore")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_file_back")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_lineno_fore")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_lineno_back")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_match_fore")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_match_back")));
+    m_STCColourPickers[ii++]->SetColour(colours->GetValue(wxT("thread_search_selected_line_back")));
+}
+
+static wxString findColourIDFromControlID(long controlID)
+{
+    if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker0))
+        return "thread_search_text_fore";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker1))
+        return "thread_search_text_back";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker2))
+        return "thread_search_file_fore";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker3))
+        return "thread_search_file_back";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker4))
+        return "thread_search_lineno_fore";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker5))
+        return "thread_search_lineno_back";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker6))
+        return "thread_search_match_fore";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker7))
+        return "thread_search_match_back";
+    else if (controlID == controlIDs.Get(ControlIDs::idConfPanelColorPicker8))
+        return "thread_search_selected_line_back";
+    else
+        return wxString();
+}
+
+void ThreadSearchConfPanel::OnColourPickerChanged(wxColourPickerEvent &event)
+{
+    if (!m_ColoursInterface)
+        return;
+
+    const long id = event.GetId();
+    const wxString colourID = findColourIDFromControlID(id);
+    if (!colourID.empty())
+    {
+        m_ColoursInterface->SetValue(colourID, event.GetColour());
+    }
+}
+
+void ThreadSearchConfPanel::OnColourPickerContext(wxContextMenuEvent &event)
+{
+    const long id = event.GetId();
+    const wxString colourID = findColourIDFromControlID(id);
+    if (!colourID.empty())
+    {
+        wxColour defaultColour;
+        if (m_ColoursInterface)
+        {
+            m_ColoursInterface->ResetDefault(colourID);
+            defaultColour = m_ColoursInterface->GetValue(colourID);
+        }
+        else
+        {
+            ColourManager *colours = Manager::Get()->GetColourManager();
+            defaultColour = colours->GetDefaultColour(colourID);
+        }
+
+        wxWindow *control = FindWindow(id);
+        if (control)
+            static_cast<wxColourPickerCtrl*>(control)->SetColour(defaultColour);
+    }
+}

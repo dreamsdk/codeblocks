@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 9041 $
-* $Id: wxsbitmapbutton.cpp 9041 2013-05-04 04:20:43Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsbitmapbutton.cpp $
+* $Revision: 13547 $
+* $Id: wxsbitmapbutton.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsbitmapbutton.cpp $
 */
 
 #include <wx/bmpbuttn.h>
@@ -95,7 +95,7 @@ void wxsBitmapButton::OnBuildCreatingCode()
 }
 
 
-wxObject* wxsBitmapButton::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsBitmapButton::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxBitmapButton* Preview = new wxBitmapButton(Parent,GetId(),BitmapLabel.GetPreview(wxDefaultSize),Pos(Parent),Size(Parent),Style());
 
@@ -118,11 +118,11 @@ wxObject* wxsBitmapButton::OnBuildPreview(wxWindow* Parent,long Flags)
     {
         Preview->SetDefault();
     }
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
 
-void wxsBitmapButton::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsBitmapButton::OnEnumWidgetProperties(cb_unused long _Flags)
 {
     WXS_BITMAP(wxsBitmapButton,BitmapLabel,_("Bitmap"),_T("bitmap"),_T("wxART_OTHER"))
     WXS_BITMAP(wxsBitmapButton,BitmapDisabled,_("Disabled bmp."),_T("disabled"),_T("wxART_OTHER"))

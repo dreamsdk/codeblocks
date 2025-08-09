@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10299 $
-* $Id: processingdlg.h 10299 2015-05-15 12:41:59Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/processingdlg.h $
+* $Revision: 13570 $
+* $Id: processingdlg.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/processingdlg.h $
 */
 
 #ifndef PROCESSINGDLG_H
@@ -35,10 +35,10 @@
 
 //(*Headers(ProcessingDlg)
 #include "scrollingdialog.h"
-class wxStaticBoxSizer;
+class wxButton;
 class wxFlexGridSizer;
 class wxGauge;
-class wxButton;
+class wxStaticBoxSizer;
 class wxStaticText;
 //*)
 
@@ -58,9 +58,9 @@ class ProcessingDlg: public wxScrollingDialog
 		virtual ~ProcessingDlg();
 
 		//(*Identifiers(ProcessingDlg)
-		static const long ID_STATICTEXT1;
-		static const long ID_GAUGE1;
-		static const long ID_BUTTON1;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_GAUGE1;
+		static const wxWindowID ID_BUTTON1;
 		//*)
 
 		bool ReadDirs(const wxArrayString& Dirs);
@@ -78,11 +78,11 @@ class ProcessingDlg: public wxScrollingDialog
 		//*)
 
 		//(*Declarations(ProcessingDlg)
-		wxFlexGridSizer* FlexGridSizer1;
-		wxStaticText* Status;
 		wxButton* StopBtn;
+		wxFlexGridSizer* FlexGridSizer1;
 		wxGauge* Gauge1;
 		wxStaticBoxSizer* StaticBoxSizer1;
+		wxStaticText* Status;
 		//*)
 
 	private:

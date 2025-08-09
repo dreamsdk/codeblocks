@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: ExpressionExecutor.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/ExpressionExecutor.cpp $
+* $Revision: 13003 $
+* $Id: ExpressionExecutor.cpp 13003 2022-11-08 08:50:45Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/ExpressionExecutor.cpp $
 */
 
 #include "ExpressionExecutor.h"
@@ -75,7 +75,7 @@ namespace Expression
 
     wxString Executor::ErrorDesc()
     {
-        wxString pos = wxString::Format( _T(" (at %d)"), m_OperationPos-1 );
+        wxString pos = wxString::Format(_(" (at %d)"), m_OperationPos-1);
         switch ( m_Status )
         {
             case executedSuccessfully: return _("Executed successfully") + pos;

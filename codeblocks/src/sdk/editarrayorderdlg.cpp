@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11846 $
- * $Id: editarrayorderdlg.cpp 11846 2019-09-08 22:37:55Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editarrayorderdlg.cpp $
+ * $Revision: 12381 $
+ * $Id: editarrayorderdlg.cpp 12381 2021-05-09 12:47:32Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editarrayorderdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -39,6 +39,12 @@ EditArrayOrderDlg::EditArrayOrderDlg(wxWindow* parent, const wxArrayString& arra
 // class destructor
 EditArrayOrderDlg::~EditArrayOrderDlg()
 {
+}
+
+void EditArrayOrderDlg::SetArray(const wxArrayString& array)
+{
+    m_Array = array;
+    DoFillList();
 }
 
 void EditArrayOrderDlg::DoFillList()

@@ -113,22 +113,38 @@ void wxsListView::OnBuildCreatingCode()
 /*! \brief    Build the control preview.
  *
  * \param parent wxWindow*    The parent window.
- * \param flags long                The control flags.
+ * \param _Flags long                The control flags.
  * \return wxObject*                 The constructed control.
  *
  */
-wxObject* wxsListView::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsListView::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
-    wxListView* Preview = new wxListView(Parent,GetId(),Pos(Parent),Size(Parent),Style());
-    return SetupWindow(Preview,Flags);
+    // wxListView constructor expects exactly one active mode bit, it will assert otherwise
+    // While changing the mode in wxSmith this rule is violated every time
+
+    // Isolate mode bits
+    long Mode = Style() & wxLC_MASK_TYPE;
+    // Take just the first active bit (looking from wxLC_LIST to wxLC_SMALL_ICON)
+    // If there is none use wxLC_LIST
+    if (!Mode || (Mode & wxLC_LIST))
+        Mode = wxLC_LIST;
+    else if (Mode & wxLC_REPORT)
+        Mode = wxLC_REPORT;
+    else if (Mode & wxLC_ICON)
+        Mode = wxLC_ICON;
+    else
+        Mode = wxLC_SMALL_ICON;
+
+    wxListView* Preview = new wxListView(Parent,GetId(),Pos(Parent),Size(Parent), (Style() & ~wxLC_MASK_TYPE) | Mode);
+    return SetupWindow(Preview,_Flags);
 }
 
 /*! \brief Enumerate the control's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsListView::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsListView::OnEnumWidgetProperties(cb_unused long _Flags)
 {
 }

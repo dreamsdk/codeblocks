@@ -27,24 +27,24 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-mthreads" />
 			<Add option="-fexceptions" />
 			<Add option="-DBUILDING_PLUGIN" />
-			<Add option="-DNOPCH" />
+			<Add option="-Winvalid-pch" />
+			<Add option="-DCB_PRECOMP" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-D_WIN64" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
+			<Add option="-std=gnu++11" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.INCLUDE)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 		</Compiler>
 		<ResourceCompiler>
 			<Add directory="$(#WX31_64.include)" />
@@ -53,8 +53,8 @@
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add library="codeblocks" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 			<Add directory="../../../devel31_64" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
 		</Linker>
 		<ExtraCommands>
 			<Add after="zip -j9 ../../../devel31_64/share/codeblocks/Cccc.zip resources/manifest.xml" />
@@ -62,6 +62,10 @@
 		</ExtraCommands>
 		<Unit filename="Cccc.cpp" />
 		<Unit filename="Cccc.h" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

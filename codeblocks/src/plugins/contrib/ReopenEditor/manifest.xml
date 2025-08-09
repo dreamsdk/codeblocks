@@ -5,16 +5,16 @@
  *
  * Copyright: 2010, 2011 Jens Lody
  *
- * $Revision: 7600 $
- * $Id: manifest.xml 7600 2011-11-20 10:44:50Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ReopenEditor/manifest.xml $
+ * $Revision: 13024 $
+ * $Id: manifest.xml 13024 2022-11-13 13:58:22Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/ReopenEditor/manifest.xml $
  -->
 <CodeBlocks_plugin_manifest_file>
   <SdkVersion major="1"
               minor="11"
               release="12" />
   <Plugin name="ReopenEditor">
-    <Value title="ReopenEditor" />
+    <Value title="Reopen editor" />
     <Value version="0.5" />
     <Value description="Reopens a closed editor via hotkey, menu-item or from a list." />
     <Value author="Jens Lody" />

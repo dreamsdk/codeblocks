@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11901 $
- * $Id: appglobals.cpp 11901 2019-11-04 19:35:26Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/appglobals.cpp $
+ * $Revision: 13293 $
+ * $Id: appglobals.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/appglobals.cpp $
  */
 
 #include <sdk.h>
@@ -36,7 +36,7 @@ namespace appglobals
                                                             static_cast<int>(PLUGIN_SDK_VERSION_MINOR),
                                                             static_cast<int>(PLUGIN_SDK_VERSION_RELEASE));
 
-    const wxString AppUrl                = _T("http://www.codeblocks.org");
+    const wxString AppUrl                = _T("https://www.codeblocks.org");
     const wxString AppContactEmail       = _T("info@codeblocks.org");
 
 #if defined(__WXMSW__)
@@ -64,8 +64,8 @@ namespace appglobals
 #endif
 
     const wxString AppBuildTimestamp     = (  wxString(wxT(__DATE__)) + wxT(", ")
-                                            + wxT(__TIME__) + wxT(" - wx")
-                                            + wxString(wxT(wxVERSION_NUM_DOT_STRING))
+                                            + wxT(__TIME__) + wxT(" - ")
+                                            + wxVERSION_STRING
 #if defined(__clang__)
                                             + wxString::Format(wxT(" - clang %d.%d.%d"),
                                                                __clang_major__, __clang_minor__, __clang_patchlevel__)

@@ -10,10 +10,6 @@
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
 #endif
@@ -603,8 +599,8 @@ void wxLEDPanel::OnScrollTimer(wxTimerEvent& event)
     else
     {
         m_aniFrameNr++;
-        if(m_aniFrameNr >= m_ani.GetFrameCount())
-            m_aniFrameNr=0;
+        if (m_aniFrameNr >= (int)m_ani.GetFrameCount())
+            m_aniFrameNr = 0;
 
         m_content_mo.Init(m_ani.GetFrame(m_aniFrameNr));
         m_field.Clear();

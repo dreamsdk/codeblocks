@@ -11,9 +11,16 @@
 //
 /////////////////////////////////////////////////////////////////////////////
 
+#ifndef BMPCHECKBOX_H
+#define BMPCHECKBOX_H
 
-#ifndef KwxNewWidget_H
-#define KwxNewWidget_H
+#ifdef __WXMSW__
+    #ifndef DLLEXPORT
+	      #define DLLEXPORT __declspec (dllexport)
+    #endif
+#else
+    #define DLLEXPORT
+#endif
 
 ////////////////// Custom events /////////////////////////
 
@@ -30,7 +37,7 @@ const wxEventType kwxEVT_BITBUTTON_CLICK	= kwxEVT_BITBUTTON_FIRST + 1;
 //////////////////////////////////////////////////////////
 
 
-class kwxBmpCheckBox : public wxControl
+class DLLEXPORT kwxBmpCheckBox : public wxControl
 {
 
 public:
@@ -51,7 +58,7 @@ public:
 	virtual ~kwxBmpCheckBox();
 
     void	SetLabel(wxString str); // Change button label.
-	void	SetBorder(bool bord , int style) { m_bBord = bord ; m_nStyle = style ; } ;
+	void	SetBorder(bool bord, wxPenStyle style) { m_bBord = bord ; m_nStyle = style ; } ;
 	bool	GetState() { return m_bPress ; } ;
 	void	SetState(bool newstate) ;
 
@@ -72,7 +79,7 @@ private:
 	int m_oldstato ;
 	bool m_bPress;
 	bool m_bBord;
-	int m_nStyle ;
+	wxPenStyle m_nStyle ;
 
 	wxString mLabelStr ;
     wxBitmap* mOffBitmap ;
@@ -83,4 +90,4 @@ private:
 
 };
 
-#endif // KwxNewWidget_H
+#endif

@@ -12,7 +12,7 @@
 #include <sdk_events.h>
 
 #include "coderefactoring.h"
-#include "nativeparser.h"
+#include "parsemanager.h"
 #include "systemheadersthread.h"
 #include "doxygen_parser.h"
 
@@ -52,7 +52,7 @@ public:
     {
         FunctionScope() {}
 
-        /** a namespace token can be convert to a FunctionScope type */
+        /** a namespace token can be converted to a FunctionScope type */
         FunctionScope(const NameSpace& ns):
             StartLine(ns.StartLine), EndLine(ns.EndLine), Scope(ns.Name) {}
 
@@ -82,34 +82,34 @@ public:
     /** Constructor */
     CodeCompletion();
     /** Destructor */
-    virtual ~CodeCompletion();
+    ~CodeCompletion() override;
 
     // the function below were virtual functions from the base class
-    virtual void OnAttach();
-    virtual void OnRelease(bool appShutDown);
-    virtual int GetConfigurationGroup() const { return cgEditor; }
+    void OnAttach() override;
+    void OnRelease(bool appShutDown) override;
+    int GetConfigurationGroup() const override { return cgEditor; }
 
     /** CC's config dialog */
-    virtual cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent);
+    cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent) override;
     /** CC's config dialog which show in the project options panel */
-    virtual cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* parent, cbProject* project);
+    cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* parent, cbProject* project) override;
     /** build menus in the main frame */
-    virtual void BuildMenu(wxMenuBar* menuBar);
+    void BuildMenu(wxMenuBar* menuBar) override;
     /** build context popup menu */
-    virtual void BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data = 0);
+    void BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileTreeData* data = 0) override;
     /** build CC Toolbar */
-    virtual bool BuildToolBar(wxToolBar* toolBar);
+    bool BuildToolBar(wxToolBar* toolBar) override;
     /** toolbar priority value */
-    virtual int GetToolBarPriority() { return 10; }
+    int GetToolBarPriority() override { return 10; }
 
     // override virtual functions in cbCodeCompletionPlugin class
-    virtual CCProviderStatus GetProviderStatusFor(cbEditor* ed);
-    virtual std::vector<CCToken> GetAutocompList(bool isAuto, cbEditor* ed, int& tknStart, int& tknEnd);
-    virtual std::vector<CCCallTip> GetCallTips(int pos, int style, cbEditor* ed, int& argsPos);
-    virtual wxString GetDocumentation(const CCToken& token);
-    virtual std::vector<CCToken> GetTokenAt(int pos, cbEditor* ed, bool& allowCallTip);
-    virtual wxString OnDocumentationLink(wxHtmlLinkEvent& event, bool& dismissPopup);
-    virtual void DoAutocomplete(const CCToken& token, cbEditor* ed);
+    CCProviderStatus GetProviderStatusFor(cbEditor* ed) override;
+    std::vector<CCToken> GetAutocompList(bool isAuto, cbEditor* ed, int& tknStart, int& tknEnd) override;
+    std::vector<CCCallTip> GetCallTips(int pos, int style, cbEditor* ed, int& argsPos) override;
+    wxString GetDocumentation(const CCToken& token) override;
+    std::vector<CCToken> GetTokenAt(int pos, cbEditor* ed, bool& allowCallTip) override;
+    wxString OnDocumentationLink(wxHtmlLinkEvent& event, bool& dismissPopup) override;
+    void DoAutocomplete(const CCToken& token, cbEditor* ed) override;
 
     /** Get the include paths setting (usually set by user for each C::B project).
      * If it finds some system level include search dirs which haven't been scanned, it will start a
@@ -344,7 +344,7 @@ private:
     wxMenu*                 m_ProjectMenu;
 
     /** this member will actually manage all the Parser instances */
-    NativeParser            m_NativeParser;
+    ParseManager            m_ParseManager;
 
     /** code re-factoring tool */
     CodeRefactoring         m_CodeRefactoring;
@@ -495,7 +495,7 @@ private:
      * ReparsingMap contains such two elements
      * (a.cbp, (a1,cpp))
      * (b.cbp, (b2.cpp, b3.cpp))
-     * there two elements will be passed to m_NativeParser, and m_NativeParser will distribute
+     * there two elements will be passed to m_ParseManager, and m_ParseManager will distribute
      * to each Parser objects
      */
     typedef std::map<cbProject*, wxArrayString> ReparsingMap;
@@ -506,7 +506,7 @@ private:
     /** Provider of documentation for the popup window */
     DocumentationHelper     m_DocHelper;
 
-    // requires access to: m_NativeParser.GetParser().GetTokenTree()
+    // requires access to: m_ParseManager.GetParser().GetTokenTree()
     friend wxString DocumentationHelper::OnDocumentationLink(wxHtmlLinkEvent&, bool&);
 
 private:
@@ -525,7 +525,7 @@ private:
         };
 
         ImageId() : id(Last), size(-1) {}
-        ImageId(Id id, int size) : id(id), size(size) {}
+        ImageId(Id _id, int _size) : id(_id), size(_size) {}
 
         bool operator==(const ImageId &o) const
         {
@@ -554,3 +554,8 @@ private:
 };
 
 #endif // CODECOMPLETION_H
+
+//Version
+//1.0.5 24/01/29 2024/01/29 Enable/Disable CC DebugLogging via chkbox in C/C++ Parser(adv) tab
+//1.0.3 24/01/25 Fixed and stress tested crashes caused by invalid pointers in CodeBrowser.
+

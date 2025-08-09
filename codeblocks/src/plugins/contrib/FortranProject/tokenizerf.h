@@ -48,7 +48,7 @@ class Tokenizerf
 		unsigned int GetLineCount(){ return m_LineStartIdx.size(); }
 		bool IsOK(){ return m_IsOK; }
 		bool SkipToOneOfChars(const char* chars, bool toLineEnd = false);
-		wxArrayString GetTokensToEOL(wxArrayString* arrStrLines = 0);
+		void GetTokensToEOL(wxArrayString& arrStr, wxArrayString* arrStrLines = 0);
 		wxArrayString PeekTokensToEOL();
 		wxString GetCurrentLine();
 		wxString GetLineFortran();
@@ -59,6 +59,8 @@ class Tokenizerf
 		void SetFilename(const wxString& filename);
         void UngetToken();
 		bool SkipToEOL();
+		FortranSourceForm GetSourceForm() { return m_SourceForm; }
+		bool MoveToNextChar();
 	protected:
 		void BaseInit();
 		wxString DoGetToken();
@@ -68,7 +70,6 @@ class Tokenizerf
 		bool SkipBlock(const wxChar& ch, int maxLines = 0);
 		bool SkipUnwanted(); // skips comments, assignments, preprocessor etc.
 		bool IsEOF(){ return m_TokenIndex >= m_BufferLen; }
-		bool MoveToNextChar();
 		void AdjustLineNumber();
 		wxChar CurrentChar();
 		wxChar NextChar();

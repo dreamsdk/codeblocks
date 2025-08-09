@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11884 $
- * $Id: projectbuildtarget.cpp 11884 2019-10-26 09:11:35Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectbuildtarget.cpp $
+ * $Revision: 12605 $
+ * $Id: projectbuildtarget.cpp 12605 2021-12-22 08:53:19Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/projectbuildtarget.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -173,7 +173,7 @@ ProjectFile* ProjectBuildTarget::GetFile(int index)
     }
 
     if (index < 0 || static_cast<size_t>(index) >= m_FileArray.GetCount())
-        return NULL;
+        return nullptr;
 
     return m_FileArray.Item(index);
 }

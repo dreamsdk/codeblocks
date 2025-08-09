@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11840 $
-* $Id: wxslistbox.cpp 11840 2019-09-08 18:12:30Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbox.cpp $
+* $Revision: 13547 $
+* $Id: wxslistbox.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxslistbox.cpp $
 */
 
 #include "wxslistbox.h"
@@ -91,7 +91,7 @@ void wxsListBox::OnBuildCreatingCode()
 }
 
 
-wxObject* wxsListBox::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsListBox::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxListBox* Preview = new wxListBox(Parent,GetId(),Pos(Parent),Size(Parent),0,0, Style());
     for ( size_t i = 0; i <  ArrayChoices.GetCount(); ++i )
@@ -103,11 +103,11 @@ wxObject* wxsListBox::OnBuildPreview(wxWindow* Parent,long Flags)
         }
     }
 
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsListBox::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsListBox::OnEnumWidgetProperties(cb_unused long _Flags)
 {
-      WXS_ARRAYSTRING(wxsListBox,ArrayChoices,_("Choices"),_T("content"),_T("item"))
-      WXS_LONG(wxsListBox,DefaultSelection,_("Default"),_T("default"),0)
+      WXS_ARRAYSTRING(wxsListBox,ArrayChoices, _("Choices"), "content", "item")
+      WXS_LONG(wxsListBox,DefaultSelection, _("Default"), "default", 0)
 }

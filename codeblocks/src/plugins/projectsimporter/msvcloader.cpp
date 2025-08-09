@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8680 $
- * $Id: msvcloader.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvcloader.cpp $
+ * $Revision: 13627 $
+ * $Id: msvcloader.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/projectsimporter/msvcloader.cpp $
  */
 
 #include "sdk.h"
@@ -116,7 +116,6 @@ bool MSVCLoader::ReadConfigurations()
     if (!file.Ok())
         return false; // error opening file???
 
-    wxArrayString comps;
     wxTextInputStream input(file);
 
     int currentLine = 0;
@@ -211,7 +210,7 @@ bool MSVCLoader::ReadConfigurations()
             {
                 m_Configurations.Add(tmp);
                 m_ConfigurationsLineIndex.Add(currentLine);
-                Manager::Get()->GetLogManager()->DebugLog(F(_T("Detected configuration '%s' at line %d"), tmp.wx_str(), currentLine));
+                Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Detected configuration '%s' at line %d", tmp, currentLine));
             }
         }
     }

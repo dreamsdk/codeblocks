@@ -8,15 +8,11 @@
 
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
 //(*Headers(ScriptConsole)
 #include <wx/bmpbuttn.h>
 #include <wx/combobox.h>
-#include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 //*)
@@ -29,15 +25,16 @@ class ScriptConsole: public wxPanel
 		virtual ~ScriptConsole();
 
         void Log(const wxString& msg);
+        void LogError(const wxString& msg);
 
 		//(*Identifiers(ScriptConsole)
-		static const long ID_TEXTCTRL1;
-		static const long ID_STATICTEXT1;
-		static const long ID_COMBOBOX1;
-		static const long ID_BITMAPBUTTON1;
-		static const long ID_BITMAPBUTTON2;
-		static const long ID_BITMAPBUTTON3;
-		static const long ID_PANEL1;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_COMBOBOX1;
+		static const wxWindowID ID_BITMAPBUTTON1;
+		static const wxWindowID ID_BITMAPBUTTON2;
+		static const wxWindowID ID_BITMAPBUTTON3;
+		static const wxWindowID ID_PANEL1;
 		//*)
 
 	protected:
@@ -48,13 +45,13 @@ class ScriptConsole: public wxPanel
 		//*)
 
 		//(*Declarations(ScriptConsole)
-		wxPanel* Panel1;
+		wxBitmapButton* btnClear;
+		wxBitmapButton* btnExecute;
 		wxBitmapButton* btnLoad;
 		wxComboBox* txtCommand;
-		wxBitmapButton* btnExecute;
-		wxBitmapButton* btnClear;
-		wxTextCtrl* txtConsole;
+		wxPanel* Panel1;
 		wxStaticText* lblCommand;
+		wxTextCtrl* txtConsole;
 		//*)
 
 	private:

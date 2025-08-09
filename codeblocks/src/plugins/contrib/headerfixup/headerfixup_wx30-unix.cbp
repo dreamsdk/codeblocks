@@ -26,12 +26,6 @@
 					<Add directory="../../../include" />
 					<Add directory="../../../include/tinyxml" />
 					<Add directory="../../../sdk/wxscintilla/include" />
-					<Add directory="../../../include/mozilla_chardet" />
-					<Add directory="../../../include/mozilla_chardet/mfbt" />
-					<Add directory="../../../include/mozilla_chardet/nsprpub/pr/include" />
-					<Add directory="../../../include/mozilla_chardet/xpcom" />
-					<Add directory="../../../include/mozilla_chardet/xpcom/base" />
-					<Add directory="../../../include/mozilla_chardet/xpcom/glue" />
 				</Compiler>
 				<Linker>
 					<Add option="`$(WX_CONFIG) --libs`" />
@@ -54,7 +48,6 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 		</Compiler>
@@ -78,8 +71,6 @@
 		<Unit filename="wxsmith/execution.wxs" />
 		<Unit filename="wxsmith/protocol.wxs" />
 		<Extensions>
-			<code_completion />
-			<envvars />
 			<wxsmith version="1">
 				<resources>
 					<wxPanel wxs="wxsmith/configuration.wxs" src="configuration.cpp" hdr="configuration.h" fwddecl="0" i18n="1" name="Configuration" language="CPP" />
@@ -87,8 +78,6 @@
 					<wxScrollingDialog wxs="wxsmith/protocol.wxs" src="protocol.cpp" hdr="protocol.h" fwddecl="0" i18n="1" name="Protocol" language="CPP" />
 				</resources>
 			</wxsmith>
-			<SVNInside Login="" Password="" ConnectStatus="1" NeedsPassword="0" />
-			<debugger />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

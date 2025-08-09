@@ -15,22 +15,22 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10684 $
-* $Id: wxwidgetsguiappadoptingdlg.h 10684 2016-01-22 10:49:37Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsguiappadoptingdlg.h $
+* $Revision: 13547 $
+* $Id: wxwidgetsguiappadoptingdlg.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxwidgetsguiappadoptingdlg.h $
 */
 
 #ifndef WXWIDGETSGUIAPPADOPTINGDLG_H
 #define WXWIDGETSGUIAPPADOPTINGDLG_H
 
 //(*Headers(wxWidgetsGUIAppAdoptingDlg)
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/listbox.h>
-#include <wx/statline.h>
-#include <wx/button.h>
 #include "scrollingdialog.h"
+#include <wx/button.h>
 #include <wx/gauge.h>
+#include <wx/listbox.h>
+#include <wx/sizer.h>
+#include <wx/statline.h>
+#include <wx/stattext.h>
 //*)
 
 #include <wx/timer.h>
@@ -53,17 +53,17 @@ class wxWidgetsGUIAppAdoptingDlg: public wxScrollingDialog
         virtual ~wxWidgetsGUIAppAdoptingDlg();
 
         //(*Identifiers(wxWidgetsGUIAppAdoptingDlg)
-        static const long ID_LISTBOX1;
-        static const long ID_GAUGE1;
-        static const long ID_STATICTEXT1;
-        static const long ID_STATICTEXT2;
-        static const long ID_BUTTON5;
-        static const long ID_BUTTON2;
-        static const long ID_BUTTON3;
-        static const long ID_STATICLINE2;
-        static const long ID_BUTTON4;
-        static const long ID_STATICLINE1;
-        static const long ID_BUTTON6;
+        static const wxWindowID ID_LISTBOX1;
+        static const wxWindowID ID_GAUGE1;
+        static const wxWindowID ID_STATICTEXT1;
+        static const wxWindowID ID_STATICTEXT2;
+        static const wxWindowID ID_BUTTON5;
+        static const wxWindowID ID_BUTTON2;
+        static const wxWindowID ID_BUTTON3;
+        static const wxWindowID ID_STATICLINE2;
+        static const wxWindowID ID_BUTTON4;
+        static const wxWindowID ID_STATICLINE1;
+        static const wxWindowID ID_BUTTON6;
         //*)
 
         wxString m_RelativeFileName;
@@ -81,18 +81,18 @@ class wxWidgetsGUIAppAdoptingDlg: public wxScrollingDialog
         //*)
 
         //(*Declarations(wxWidgetsGUIAppAdoptingDlg)
-        wxButton* Button4;
-        wxButton* CreateBtn;
         wxBoxSizer* BoxSizer2;
-        wxStaticLine* StaticLine2;
+        wxButton* Button4;
         wxButton* Button6;
+        wxButton* CreateBtn;
         wxButton* SelectBtn;
-        wxStaticLine* StaticLine1;
         wxButton* UseFileBtn;
         wxGauge* Progress;
+        wxListBox* FoundFiles;
+        wxStaticLine* StaticLine1;
+        wxStaticLine* StaticLine2;
         wxStaticText* ScanningFile;
         wxStaticText* ScanningTxt;
-        wxListBox* FoundFiles;
         //*)
 
     private:

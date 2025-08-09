@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10907 $
- * $Id: configmanager-revision.cpp 10907 2016-09-25 16:09:48Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/configmanager-revision.cpp $
+ * $Revision: 12708 $
+ * $Id: configmanager-revision.cpp 12708 2022-02-08 08:42:14Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/configmanager-revision.cpp $
  */
 
 /* ------------------------------------------------------------------------------------------------------------------
@@ -23,9 +23,9 @@
 
 wxString ConfigManager::GetRevisionString()
 {
-    static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
+    static_assert(wxMinimumVersion<3,0,0>::eval, "wxWidgets 3.0.0 or higher is required");
 
-    return autorevision::svnRevision + wxT("-DreamSDK"); // DreamSDK
+    return autorevision::svnRevision;
 }
 
 unsigned int ConfigManager::GetRevisionNumber()

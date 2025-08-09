@@ -1,12 +1,14 @@
 
 #include "fortranfileext.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <wx/tokenzr.h>
     #include <configmanager.h>
     #include <editormanager.h>
     #include <logmanager.h>
 #endif
+
+#include <wx/tokenzr.h>
 
 FortranFileExt::FortranFileExt()
 {
@@ -27,7 +29,7 @@ bool FortranFileExt::IsFileFortran(const wxString& filename, FortranSourceForm& 
     }
 
     bool isf;
-    wxString ext = filename.AfterLast(_T('.')).Lower();
+    wxString ext = filename.AfterLast('.').Lower();
 
     if (m_FortranExtFree.count(ext))
     {
@@ -53,8 +55,8 @@ void FortranFileExt::RereadFileExtensions()
     else
         colSet = new EditorColourSet();
 
-    RereadFileExtensionsLang(colSet, _T("fortran77"), m_FortranExtFixed);
-    RereadFileExtensionsLang(colSet, _T("fortran"), m_FortranExtFree);
+    RereadFileExtensionsLang(colSet, "fortran77", m_FortranExtFixed);
+    RereadFileExtensionsLang(colSet, "fortran", m_FortranExtFree);
 }
 
 void FortranFileExt::RereadFileExtensionsLang(EditorColourSet* colSet, wxString langName, StringSet& extSet)
@@ -66,12 +68,12 @@ void FortranFileExt::RereadFileExtensionsLang(EditorColourSet* colSet, wxString 
     wxString exts;
     for (size_t i=0; i < fileMasks.GetCount(); i++)
     {
-        exts << _T(" ") + fileMasks[i];
+        exts << " " + fileMasks[i];
     }
 
     //Manager::Get()->GetLogManager()->DebugLog(_T("FortranProject ")+langName+_T("=")+exts);
 
-    wxStringTokenizer tkz(exts, _T(" ;,*.\t\r\n"), wxTOKEN_STRTOK);
+    wxStringTokenizer tkz(exts, " ;,*.\t\r\n", wxTOKEN_STRTOK);
     while ( tkz.HasMoreTokens() )
     {
         wxString token = tkz.GetNextToken();

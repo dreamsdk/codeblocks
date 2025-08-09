@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxstool.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxstool.cpp $
+* $Revision: 13547 $
+* $Id: wxstool.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxstool.cpp $
 */
 
 #include "wxstool.h"
@@ -65,9 +65,9 @@ bool wxsTool::OnCanAddToResource(wxsItemResData* Data,bool ShowMessage)
     return false;
 }
 
-void wxsTool::OnEnumItemProperties(long Flags)
+void wxsTool::OnEnumItemProperties(long _Flags)
 {
-    OnEnumToolProperties(Flags);
+    OnEnumToolProperties(_Flags);
 }
 
 void wxsTool::OnAddItemQPP(wxsAdvQPP* QPP)

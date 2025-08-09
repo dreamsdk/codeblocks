@@ -3,7 +3,7 @@
 // Purpose:     Find/Replace, Goto dialogs
 // Maintainer:  Otto Wyss
 // Created:     2003-01-20
-// RCS-ID:      $Id$
+// RCS-ID:      $Id: finddialogs.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Copyright:   (c) 2005 wyoGuide
 // Licence:     wxWindows
 //////////////////////////////////////////////////////////////////////////////
@@ -30,7 +30,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-// RCS-ID: $Id$
+// RCS-ID: $Id: finddialogs.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 
 
 //----------------------------------------------------------------------------
@@ -39,10 +39,6 @@
 
 // For compilers that support precompilation, includes <wx/wx.h>.
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 // for all others, include the necessary headers (this file is usually all you
 // need because it includes almost all 'standard' wxWidgets headers)

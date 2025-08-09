@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsdimensionproperty.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsdimensionproperty.cpp $
+* $Revision: 12197 $
+* $Id: wxsdimensionproperty.cpp 12197 2020-08-11 08:14:14Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsdimensionproperty.cpp $
 */
 
 #include "wxsdimensionproperty.h"
@@ -78,8 +78,8 @@ wxsDimensionProperty::wxsDimensionProperty(
 void wxsDimensionProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
     wxPGId DUId;
-    PGRegister(Object,Grid,Grid->AppendIn(Parent,NEW_IN_WXPG14X wxIntProperty(GetPGName(),wxPG_LABEL,VALUE)),DIM_VALUE);
-    PGRegister(Object,Grid,DUId = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxBoolProperty(PGDUName,wxPG_LABEL,UNITS)),DIM_UNITS);
+    PGRegister(Object,Grid,Grid->AppendIn(Parent,new wxIntProperty(GetPGName(),wxPG_LABEL,VALUE)),DIM_VALUE);
+    PGRegister(Object,Grid,DUId = Grid->AppendIn(Parent,new wxBoolProperty(PGDUName,wxPG_LABEL,UNITS)),DIM_UNITS);
     Grid->SetPropertyAttribute(DUId,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
 }
 

@@ -118,9 +118,7 @@ wxString BoolToString(bool val)
  */
 void DoxyBlocks::WriteConfigFiles(cbProject *prj, wxString sPrjName, wxString /*sPrjPath*/, wxString /*sDoxygenDir*/, wxFileName fnDoxyfile, wxFileName fnDoxygenLog)
 {
-    wxArrayString sOutput;
-    wxArrayString sErrors;
-    MacrosManager    *pMacMngr = Manager::Get()->GetMacrosManager();
+    MacrosManager *pMacMngr = Manager::Get()->GetMacrosManager();
 
      // If there is no config file, create one. If it exists, check prefs.
     bool bWrite = true;
@@ -539,12 +537,12 @@ int DoxyBlocks::GenerateDocuments(cbProject *prj)
     wxFileName fnOutput(sDoxygenDir, wxT(""));
     wxFileName fnDoxyfile(sDoxygenDir + wxFileName::GetPathSeparator() + sCfgBaseFile);
     wxFileName fnDoxygenLog(sDoxygenDir + wxFileName::GetPathSeparator() + sLogFile);
-    fnOutput.Normalize();
-    fnDoxyfile.Normalize();
-    fnDoxygenLog.Normalize();
+    fnOutput.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
+    fnDoxyfile.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
+    fnDoxygenLog.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
 
     if (!fnOutput.Mkdir(0777, wxPATH_MKDIR_FULL)){
-        const wxString sMsg = _("Failed. ") + fnOutput.GetFullPath() + _(" was not created.");
+        const wxString sMsg(wxString::Format(_("Failed. %s was not created."), fnOutput.GetFullPath()));
         AppendToLog(sMsg, LOG_WARNING);
         wxSetWorkingDirectory(sOldPath);
         return -1;
@@ -554,7 +552,7 @@ int DoxyBlocks::GenerateDocuments(cbProject *prj)
     WriteConfigFiles(prj, sPrjName, sPrjPath, sDoxygenDir, fnDoxyfile, fnDoxygenLog);
 
     if(!wxFile::Exists(fnDoxyfile.GetFullPath())){
-        const wxString sMsg = _("Failed. ") + fnDoxyfile.GetFullPath() + _(" was not created.");
+        const wxString sMsg(wxString::Format(_("Failed. %s was not created."), fnDoxyfile.GetFullPath()));
         AppendToLog(sMsg, LOG_WARNING);
         wxSetWorkingDirectory(sOldPath);
         return -1;
@@ -611,7 +609,7 @@ int DoxyBlocks::GenerateDocuments(cbProject *prj)
         }
 
         // tell the user where to find the docs
-        const wxString sMsg = wxT("Success.\nYour documents are in: ");
+        const wxString sMsg = _("Success.\nYour documents are in: ");
         AppendToLog(sMsg + fnDoxyfile.GetPathWithSep());
     }
     else{

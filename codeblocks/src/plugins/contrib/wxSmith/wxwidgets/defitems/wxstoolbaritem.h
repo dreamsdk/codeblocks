@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10679 $
-* $Id: wxstoolbaritem.h 10679 2016-01-22 10:42:53Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbaritem.h $
+* $Revision: 13547 $
+* $Id: wxstoolbaritem.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbaritem.h $
 */
 
 #ifndef WXSTOOLBARITEM_H
@@ -30,12 +30,23 @@ class wxsToolBarItem : public wxsTool
 {
     public:
 
-        wxsToolBarItem(wxsItemResData* Data,bool IsSeparator);
+        // Order must match that of the m_Type wxChoice in wxsToolBarEditor
+        enum ToolType : int32_t
+        {
+            Normal,
+            Radio,
+            Check,
+            Separator,
+            Stretchable,
+            Control
+        };
+
+        wxsToolBarItem(wxsItemResData* Data, ToolType Tool);
 
     private:
 
         virtual void OnBuildCreatingCode();
-        virtual void OnEnumToolProperties(long Flags);
+        virtual void OnEnumToolProperties(long _Flags);
         virtual bool OnIsPointer() { return true; }
         virtual bool OnCanAddToResource(cb_unused wxsItemResData* Data,cb_unused bool ShowMessage) { return false; }
         virtual bool OnXmlWrite(TiXmlElement* Element,bool IsXRC,bool IsExtra);
@@ -44,15 +55,7 @@ class wxsToolBarItem : public wxsTool
         virtual void OnBuildDeclarationsCode();
         virtual wxString OnGetTreeLabel(int& Image);
 
-        enum Type
-        {
-            Separator,
-            Normal,
-            Radio,
-            Check
-        };
-
-        Type          m_Type;
+        ToolType      m_Type;
         wxString      m_Variable;
         wxString      m_Label;
         wxsBitmapData m_Bitmap;

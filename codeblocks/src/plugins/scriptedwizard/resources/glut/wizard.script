@@ -12,15 +12,13 @@ GlutPath <- _T("");
 
 function BeginWizard()
 {
-    local intro_msg = _T("Welcome to the new GLUT project wizard!\n\n" +
-                         "This wizard will guide you to create a new project\n" +
-                         "using the GLUT OpenGL extensions.\n\n" +
-                         "When you 're ready to proceed, please click \"Next\"...");
+    local intro_msg = _("Welcome to the new GLUT project wizard!\n\n") +
+                      _("This wizard will guide you to create a new project\nusing the GLUT OpenGL extensions.\n\n") +
+                      _("When you're ready to proceed, please click \"Next\"...");
 
-    local glutpath_descr = _T("Please select the location of GLUT on your computer.\n" +
-                              "This is the top-level folder where GLUT was installed (unpacked).\n" +
-                              "To help you, this folder must contain the subfolders\n" +
-                              "\"include\" and \"lib\".");
+    local glutpath_descr = _("Please select the location of GLUT on your computer.\n") +
+                           _("This is the top-level folder where GLUT was installed (unpacked).\n") +
+                           _("To help you, this folder must contain the subfolders\n\"include\" and \"lib\".");
 
     Wizard.AddInfoPage(_T("GlutIntro"), intro_msg);
     Wizard.AddProjectPathPage();
@@ -29,7 +27,7 @@ function BeginWizard()
         GlutPathDefault="/System/Library/Frameworks/GLUT.framework";
     }
     else
-        Wizard.AddGenericSelectPathPage(_T("GlutPath"), glutpath_descr, _T("Please select GLUT's location:"), GlutPathDefault);
+        Wizard.AddGenericSelectPathPage(_T("GlutPath"), glutpath_descr, _("Please select GLUT's location:"), GlutPathDefault);
     Wizard.AddCompilerPage(_T(""), _T("*"), true, true);
 }
 
@@ -51,7 +49,7 @@ function OnLeave_GlutPath(fwd)
         local dir_nomacro_inc = GetCompilerIncludeDir(dir, GlutPathDefault, GlutPathDefaultInc);
         if (dir_nomacro_inc.IsEmpty())
             return false;
-        if (!VerifyFile(dir_nomacro_inc + wxFILE_SEP_PATH + _T("GL"), _T("glut.h"), _T("GLUT's include"))) return false;
+        if (!VerifyFile(dir_nomacro_inc + wxFILE_SEP_PATH + _T("GL"), _T("glut.h"), _("GLUT's include"))) return false;
 
         // verify library dependencies
         local dir_nomacro_lib = GetCompilerLibDir(dir, GlutPathDefault, GlutPathDefaultLib);
@@ -60,13 +58,22 @@ function OnLeave_GlutPath(fwd)
 
         if (PLATFORM == PLATFORM_MSW)
         {
-            if (!VerifyLibFile(dir_nomacro_lib, _T("glut32"), _T("GLUT's"))) return false;
+            if (!VerifyLibFile(dir_nomacro_lib, _T("freeglut"), _("GLUT's"))) return false;
         }
         else
         {
-            if (!VerifyLibFile(dir_nomacro_lib, _T("glut"), _T("GLUT's"))) return false;
+            if (!SilentVerifyLibFile(dir_nomacro_lib, _T("glut")))
+            {
+                if (VerifyLibFile(dir_nomacro_lib + _T("/x86_64-linux-gnu/"), _T("glut"), _T("GLUT's")))
+                {
+                    dir_nomacro_lib  = dir_nomacro_lib  + _T("/x86_64-linux-gnu/");
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
-
 
         GlutPath = dir; // Remember the original selection.
 
@@ -110,7 +117,7 @@ function SetupProject(project)
     // add link libraries
     if (PLATFORM == PLATFORM_MSW)
     {
-        project.AddLinkLib(_T("glut32"));
+        project.AddLinkLib(_T("freeglut"));
         project.AddLinkLib(_T("opengl32"));
         project.AddLinkLib(_T("glu32"));
         project.AddLinkLib(_T("winmm"));

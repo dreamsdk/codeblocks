@@ -262,12 +262,12 @@ wxPdfFontExtended::GetWidthsAsString(bool subset, wxPdfSortedArrayInt* usedGlyph
 }
 
 double
-wxPdfFontExtended::GetStringWidth(const wxString& s, bool withKerning)
+wxPdfFontExtended::GetStringWidth(const wxString& s, bool withKerning, double charSpacing)
 {
   double width = 0;
   if (m_fontData != NULL)
   {
-    width = m_fontData->GetStringWidth(s, m_encoding, withKerning);
+    width = m_fontData->GetStringWidth(s, m_encoding, withKerning, charSpacing);
   }
   return width;
 }
@@ -336,6 +336,28 @@ wxPdfFontExtended::WriteUnicodeMap(wxOutputStream* mapData, wxPdfSortedArrayInt*
   if (m_fontData != NULL)
   {
     maplen = m_fontData->WriteUnicodeMap(mapData, m_encoding, usedGlyphs, subsetGlyphs);
+  }
+  return maplen;
+}
+
+size_t
+wxPdfFontExtended::WriteCIDToGIDMap(wxOutputStream* mapData, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs)
+{
+  size_t maplen = 0;
+  if (m_fontData != NULL)
+  {
+    maplen = m_fontData->WriteCIDToGIDMap(mapData, m_encoding, usedGlyphs, subsetGlyphs);
+  }
+  return maplen;
+}
+
+size_t
+wxPdfFontExtended::WriteCIDSet(wxOutputStream* setData, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs)
+{
+  size_t maplen = 0;
+  if (m_fontData != NULL)
+  {
+    maplen = m_fontData->WriteCIDSet(setData, m_encoding, usedGlyphs, subsetGlyphs);
   }
   return maplen;
 }

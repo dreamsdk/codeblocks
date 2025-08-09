@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8543 $
- * $Id: debuggerstate.cpp 8543 2012-11-10 22:36:18Z thomasdenk $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggerstate.cpp $
+ * $Revision: 12999 $
+ * $Id: debuggerstate.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/debuggerstate.cpp $
  */
 
 #include <sdk.h>
@@ -112,7 +112,7 @@ cb::shared_ptr<DebuggerBreakpoint> DebuggerState::AddBreakpoint(const wxString& 
         RemoveBreakpoint(idx);
 
     // create new bp
-//    Manager::Get()->GetLogManager()->DebugLog(F(_T("DebuggerState::AddBreakpoint() : bp: file=%s, bpfile=%s"), file.c_str(), bpfile.c_str()));
+//    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("DebuggerState::AddBreakpoint() : bp: file=%s, bpfile=%s", file, bpfile));
     cb::shared_ptr<DebuggerBreakpoint> bp(new DebuggerBreakpoint);
     bp->type = DebuggerBreakpoint::bptCode;
     bp->filename = bpfile;

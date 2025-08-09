@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10024 $
- * $Id: threadsdlg.cpp 10024 2014-11-06 09:23:26Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/threadsdlg.cpp $
+ * $Revision: 12643 $
+ * $Id: threadsdlg.cpp 12643 2022-01-12 19:40:38Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/threadsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -126,21 +126,18 @@ void ThreadsDlg::OnSwitchThread(cb_unused wxCommandEvent& event)
     // find selected item index
     int index = m_list->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
 
-    wxString thread;
     wxListItem info;
-    info.m_itemId = index;
-    info.m_col = 1;
-    info.m_mask = wxLIST_MASK_TEXT;
-    if (m_list->GetItem(info))
-        thread = info.m_text;
-    else
+    info.SetId(index);
+    info.SetColumn(1);
+    info.SetMask(wxLIST_MASK_TEXT);
+    if (!m_list->GetItem(info))
         return;
 
     unsigned long thread_num;
-    if (thread.ToULong(&thread_num, 10))
+    if (info.GetText().ToULong(&thread_num, 10))
     {
         cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-        if(plugin)
+        if (plugin)
             plugin->SwitchToThread(thread_num);
     }
 }

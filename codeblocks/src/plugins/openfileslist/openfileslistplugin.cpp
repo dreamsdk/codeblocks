@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11761 $
- * $Id: openfileslistplugin.cpp 11761 2019-06-29 13:52:56Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/openfileslist/openfileslistplugin.cpp $
+ * $Revision: 13098 $
+ * $Id: openfileslistplugin.cpp 13098 2022-12-07 08:45:01Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/openfileslist/openfileslistplugin.cpp $
  */
 
 #include "sdk.h"
@@ -35,7 +35,7 @@
 namespace
 {
     // this auto-registers the plugin
-    PluginRegistrant<OpenFilesListPlugin> reg(_T("OpenFilesList"));
+    PluginRegistrant<OpenFilesListPlugin> reg("OpenFilesList");
 
     const int idOpenFilesTree = wxNewId();
     const int idViewOpenFilesTree = wxNewId();
@@ -71,9 +71,10 @@ OpenFilesListPlugin::~OpenFilesListPlugin()
 
 void OpenFilesListPlugin::OnAttach()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("open_files_list"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("open_files_list");
     if (cfg)
-        m_PreserveOpenEditors = cfg->ReadBool(_T("preserve_open_editors"), false);
+        m_PreserveOpenEditors = cfg->ReadBool("preserve_open_editors", false);
+
     m_ProjectLoading = false;
     m_pActiveProject = nullptr;
     m_ViewMenu = 0;
@@ -85,46 +86,42 @@ void OpenFilesListPlugin::OnAttach()
                             wxTR_HAS_BUTTONS | wxNO_BORDER | wxTR_HIDE_ROOT);
 
     // load bitmaps
-    {
-        const double scaleFactor = cbGetContentScaleFactor(*m_pTree);
-        const double actualScaleFactor = cbGetActualContentScaleFactor(*m_pTree);
-        const int targetHeight = floor(16 * actualScaleFactor);
-        const int size = cbFindMinSize16to64(targetHeight);
+    const double scaleFactor = cbGetContentScaleFactor(*m_pTree);
+    const int targetHeight = wxRound(16 * scaleFactor);
+    const int size = cbFindMinSize16to64(targetHeight);
 
-        int imageListSize;
-        m_pImages = cbMakeScaledImageList(size, scaleFactor, imageListSize);
+    int imageListSize;
+    m_pImages = cbMakeScaledImageList(size, scaleFactor, imageListSize);
 
-        const wxString prefix = ConfigManager::GetDataFolder() + _T("/images/");
-        const wxString treePrefix = ConfigManager::GetDataFolder()
-                                  + wxString::Format(_T("/resources.zip#zip:images/tree/%dx%d/"),
-                                                     size, size);
+    wxString prefix(ConfigManager::GetDataFolder() + "/resources.zip#zip:images/tree/");
+#if wxCHECK_VERSION(3, 1, 6)
+    prefix << "svg/";
+    wxBitmap bmp1 = cbLoadBitmapBundleFromSVG(prefix + "folder_open.svg", wxSize(16, 16)).GetBitmap(wxSize(imageListSize, imageListSize));
+    wxBitmap bmp2 = cbLoadBitmapBundleFromSVG(prefix + "file.svg", wxSize(16, 16)).GetBitmap(wxSize(imageListSize, imageListSize));
+    wxBitmap bmp3 = cbLoadBitmapBundleFromSVG(prefix + "file-modified.svg", wxSize(16, 16)).GetBitmap(wxSize(imageListSize, imageListSize));
+    wxBitmap bmp4 = cbLoadBitmapBundleFromSVG(prefix + "file-readonly.svg", wxSize(16, 16)).GetBitmap(wxSize(imageListSize, imageListSize));
+#else
+    prefix << wxString::Format("%dx%d/", imageListSize, imageListSize);
+    wxBitmap bmp1 = cbLoadBitmap(prefix + "folder_open.png");
+    wxBitmap bmp2 = cbLoadBitmap(prefix + "file.png");
+    wxBitmap bmp3 = cbLoadBitmap(prefix + "file-modified.png");
+    wxBitmap bmp4 = cbLoadBitmap(prefix + "file-readonly.png");
+#endif
 
-        wxBitmap bmp;
-        bmp = cbLoadBitmapScaled(treePrefix + _T("folder_open.png"), wxBITMAP_TYPE_PNG,
-                                 scaleFactor);
-        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
-
-        bmp = cbLoadBitmapScaled(treePrefix + _T("file.png"), wxBITMAP_TYPE_PNG, scaleFactor);
-        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
-
-        bmp = cbLoadBitmapScaled(treePrefix + _T("file-modified.png"), wxBITMAP_TYPE_PNG,
-                                 scaleFactor);
-        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
-
-        bmp = cbLoadBitmapScaled(treePrefix + _T("file-readonly.png"), wxBITMAP_TYPE_PNG,
-                                 scaleFactor);
-        cbAddBitmapToImageList(*m_pImages, bmp, size, imageListSize, scaleFactor);
-    }
+    cbAddBitmapToImageList(*m_pImages, bmp1, imageListSize, imageListSize, scaleFactor);
+    cbAddBitmapToImageList(*m_pImages, bmp2, imageListSize, imageListSize, scaleFactor);
+    cbAddBitmapToImageList(*m_pImages, bmp3, imageListSize, imageListSize, scaleFactor);
+    cbAddBitmapToImageList(*m_pImages, bmp4, imageListSize, imageListSize, scaleFactor);
 
     m_pTree->SetImageList(m_pImages.get());
-    m_pTree->AddRoot(_T("Opened Files"), 0, 0);
+    m_pTree->AddRoot(_("Opened Files"), 0, 0);
 
     // first build of the tree
     RebuildOpenFilesTree();
 
     // add the tree to the docking system
     CodeBlocksDockEvent evt(cbEVT_ADD_DOCK_WINDOW);
-    evt.name = _T("OpenFilesPane");
+    evt.name = "OpenFilesPane";
     evt.title = _("Open files list");
     evt.pWindow = m_pTree;
     evt.minimumSize.Set(50, 50);
@@ -153,9 +150,9 @@ void OpenFilesListPlugin::OnAttach()
 void OpenFilesListPlugin::OnRelease(cb_unused bool appShutDown)
 {
     // Write config
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("open_files_list"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("open_files_list");
     if (cfg)
-        cfg->Write(_T("preserve_open_editors"), m_PreserveOpenEditors);
+        cfg->Write("preserve_open_editors", m_PreserveOpenEditors);
 
     // remove registered event sinks
     Manager::Get()->RemoveAllEventSinksFor(this);
@@ -191,7 +188,7 @@ void OpenFilesListPlugin::BuildMenu(wxMenuBar* menuBar)
             {
                 m_ViewMenu->InsertCheckItem(i, idViewOpenFilesTree, _("&Open files list"), _("Toggle displaying the open files list"));
                 m_ViewPreserveChk = m_ViewMenu->InsertCheckItem(i + 2, idViewPreserveOpenEditors, _("&Preserve open editors"), _("Preserve open editors per target/project.\n"
-                                                                                                                                 "Only available the when the workspace is empty."));
+                                                                                                                                 "Only available when the workspace is empty."));
                 m_ViewPreserveChk->Check(m_PreserveOpenEditors);
                 m_ViewMenu->InsertSeparator(i + 3);
                 return;
@@ -200,8 +197,8 @@ void OpenFilesListPlugin::BuildMenu(wxMenuBar* menuBar)
         // not found, just append
         m_ViewMenu->AppendCheckItem(idViewOpenFilesTree, _("&Open files list"), _("Toggle displaying the open files list"));
         m_ViewMenu->AppendSeparator();
-        m_ViewPreserveChk = m_ViewMenu->AppendCheckItem(idViewPreserveOpenEditors, _("&Preserve open editors"), _("Preserve open editors per target/project\n"
-                                                                                                                  "Only available the when workspace is empty."));
+        m_ViewPreserveChk = m_ViewMenu->AppendCheckItem(idViewPreserveOpenEditors, _("&Preserve open editors"), _("Preserve open editors per target/project.\n"
+                                                                                                                  "Only available when the workspace is empty."));
         m_ViewPreserveChk->Check(m_PreserveOpenEditors);
         m_ViewMenu->AppendSeparator();
     }
@@ -326,7 +323,7 @@ void OpenFilesListPlugin::OnTreeItemRightClick(wxTreeEvent& event)
     if (ed)
     {
         wxPoint pt = m_pTree->ClientToScreen(event.GetPoint());
-        ed->DisplayContextMenu(pt,mtOpenFilesList);
+        ed->DisplayContextMenu(pt, mtOpenFilesList, nullptr);
     }
 }
 
@@ -359,25 +356,25 @@ void OpenFilesListPlugin::OnUpdateUI(wxUpdateUIEvent& event)
 
 void OpenFilesListPlugin::OnEditorActivated(CodeBlocksEvent& event)
 {
-//  Manager::Get()->GetLogManager()->Log(_T("OnEditorActivated: ") + event.GetEditor()->GetFilename());
+//  Manager::Get()->GetLogManager()->Log("OnEditorActivated: " + event.GetEditor()->GetFilename());
     RefreshOpenFilesTree(event.GetEditor());
 }
 
 void OpenFilesListPlugin::OnEditorClosed(CodeBlocksEvent& event)
 {
-//  Manager::Get()->GetLogManager()->Log(_T("OnEditorClosed: ") + event.GetEditor()->GetFilename());
+//  Manager::Get()->GetLogManager()->Log("OnEditorClosed: " + event.GetEditor()->GetFilename());
     RefreshOpenFilesTree(event.GetEditor(), true);
 }
 
 void OpenFilesListPlugin::OnEditorDeactivated(CodeBlocksEvent& event)
 {
-//  Manager::Get()->GetLogManager()->Log(_T("OnEditorDeactivated: ") + event.GetEditor()->GetFilename());
+//  Manager::Get()->GetLogManager()->Log("OnEditorDeactivated: " + event.GetEditor()->GetFilename());
     RefreshOpenFilesTree(event.GetEditor());
 }
 
 void OpenFilesListPlugin::OnEditorModified(CodeBlocksEvent& event)
 {
-//  Manager::Get()->GetLogManager()->Log(_T("OnEditorModified: ") + event.GetEditor()->GetFilename());
+//  Manager::Get()->GetLogManager()->Log("OnEditorModified: " + event.GetEditor()->GetFilename());
     RefreshOpenFilesTree(event.GetEditor());
 }
 
@@ -396,7 +393,7 @@ void OpenFilesListPlugin::OnEditorOpened(CodeBlocksEvent& event)
 
 void OpenFilesListPlugin::OnEditorSaved(CodeBlocksEvent& event)
 {
-//  Manager::Get()->GetLogManager()->Log(_T("OnEditorSaved: ") + event.GetEditor()->GetFilename());
+//  Manager::Get()->GetLogManager()->Log("OnEditorSaved: " + event.GetEditor()->GetFilename());
     RefreshOpenFilesTree(event.GetEditor());
 }
 
@@ -406,7 +403,7 @@ void OpenFilesListPlugin::OnProjectOpened(CodeBlocksEvent& event)
     cbProject* prj = event.GetProject();
     ProjectFilesMap pfm;
     wxFileName fname(prj->GetFilename());
-    fname.SetExt(_T("layout"));
+    fname.SetExt("layout");
     TiXmlDocument doc;
     if (TinyXML::LoadDocument(fname.GetFullPath(), &doc))
     {
@@ -524,7 +521,7 @@ void OpenFilesListPlugin::OnProjectClosed(CodeBlocksEvent& event)
     {
         ProjectFilesMap& pfm = m_WorkspaceFilesMap[prj];
         wxFileName fname(prj->GetFilename());
-        fname.SetExt(_T("layout"));
+        fname.SetExt("layout");
         TiXmlDocument doc;
         doc.SetCondenseWhiteSpace(false);
         if (TinyXML::LoadDocument(fname.GetFullPath(), &doc))

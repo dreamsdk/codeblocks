@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10874 $
- * $Id: msvc7loader.cpp 10874 2016-07-16 20:00:28Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvc7loader.cpp $
+ * $Revision: 13451 $
+ * $Id: msvc7loader.cpp 13451 2024-02-15 11:55:40Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/projectsimporter/msvc7loader.cpp $
  */
 
 #include "sdk.h"
@@ -83,7 +83,7 @@ bool MSVC7Loader::Open(const wxString& filename)
     m_ConvertSwitches = m_pProject->GetCompilerID().IsSameAs(_T("gcc"));
     m_ProjectName = wxFileName(filename).GetName();
 
-    pMsg->DebugLog(F(_T("Importing MSVC 7.xx project: %s"), filename.wx_str()));
+    pMsg->DebugLog(wxString::Format("Importing MSVC 7.xx project: %s", filename));
 
     TiXmlDocument doc(filename.mb_str());
     if (!doc.LoadFile())
@@ -111,7 +111,7 @@ bool MSVC7Loader::Open(const wxString& filename)
     if ((m_Version!=70) && (m_Version!=71))
     {
         // seems to work with visual 8 too ;)
-        pMsg->DebugLog(F(_T("Project version is '%s'. Although this loader was designed for version 7.xx, will try to import..."), ver.wx_str()));
+        pMsg->DebugLog(wxString::Format("Project version is '%s'. Although this loader was designed for version 7.xx, will try to import...", ver));
     }
 
     m_pProject->ClearAllProperties();
@@ -190,7 +190,7 @@ bool MSVC7Loader::DoSelectConfiguration(TiXmlElement* root)
             confs = confs->NextSiblingElement("Configuration");
         if (!confs)
         {
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("Cannot find configuration nr %d..."), selected_indices[i]));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Cannot find configuration nr %d...", selected_indices[i]));
             success = false;
             break;
         }
@@ -278,7 +278,9 @@ bool MSVC7Loader::DoImport(TiXmlElement* conf)
 
             tmp = ReplaceMSVCMacros(cbC2U(tool->Attribute("OutputFile")));
             tmp = UnixFilename(tmp);
-            if (tmp.Last() == _T('.')) tmp.RemoveLast();
+            if (!tmp.empty() && (tmp.Last() == '.'))
+                tmp.RemoveLast();
+
             if (bt->GetTargetType() == ttStaticLib)
             {
                 // convert the lib name
@@ -680,8 +682,7 @@ void MSVC7Loader::HandleFileConfiguration(TiXmlElement* file, ProjectFile* pf)
                 wxString name = cbC2U(fconf->Attribute("Name"));
                 name.Replace(_T("|"), _T(" "), true); // Replace '|' to ensure proper check
                 pf->RemoveBuildTarget(name);
-                Manager::Get()->GetLogManager()->DebugLog(
-                    F(_("removed %s from %s"), pf->file.GetFullPath().wx_str(), name.wx_str()));
+                Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("removed %s from %s"), pf->file.GetFullPath(), name));
             }
         }
         fconf = fconf->NextSiblingElement("FileConfiguration");

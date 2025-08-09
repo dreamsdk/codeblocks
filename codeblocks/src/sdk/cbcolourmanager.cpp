@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9263 $
- * $Id: cbcolourmanager.cpp 9263 2013-08-17 09:20:28Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbcolourmanager.cpp $
+ * $Revision: 12141 $
+ * $Id: cbcolourmanager.cpp 12141 2020-05-31 15:54:38Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/cbcolourmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -76,6 +76,12 @@ wxColour ColourManager::GetColour(const wxString &id) const
 {
     ColourDefMap::const_iterator it = m_colours.find(id);
     return it != m_colours.end() ? it->second.value : *wxBLACK;
+}
+
+wxColour ColourManager::GetDefaultColour(const wxString &id) const
+{
+    ColourDefMap::const_iterator it = m_colours.find(id);
+    return it != m_colours.end() ? it->second.defaultValue : *wxBLACK;
 }
 
 void ColourManager::SetColour(const wxString &id, const wxColour &colour)

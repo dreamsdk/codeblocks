@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxstoolspace.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxstoolspace.cpp $
+* $Revision: 13381 $
+* $Id: wxstoolspace.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxstoolspace.cpp $
 */
 
 #include <wx/settings.h>
@@ -72,7 +72,7 @@ void wxsToolSpace::BeforePreviewChanged()
 
 void wxsToolSpace::AfterPreviewChanged()
 {
-    Entry* Last = 0;
+    Entry* Last = nullptr;
 
     // Clearing current content
     while ( m_First )
@@ -106,7 +106,7 @@ void wxsToolSpace::AfterPreviewChanged()
 
     if ( Last )
     {
-        Last->m_Next = 0;
+        Last->m_Next = nullptr;
     }
 
     m_Unstable = false;
@@ -238,11 +238,7 @@ void wxsToolSpace::OnMouse(wxMouseEvent& event)
 
 void wxsToolSpace::OnKeyDown(wxKeyEvent& event)
 {
-    #if wxCHECK_VERSION(3, 0, 0)
     GetParent()->GetEventHandler()->ProcessEvent(event);
-    #else
-    GetParent()->ProcessEvent(event);
-    #endif
 }
 
 void wxsToolSpace::RecalculateVirtualSize()
@@ -255,14 +251,14 @@ void wxsToolSpace::RecalculateVirtualSize()
 wxsToolSpace::Entry* wxsToolSpace::FindEntry(int& PosX,int& PosY)
 {
     // TODO: Check if mouse coordinates are yet shifted to virtual area
-    if ( PosY < ExtraBorderSize ) return 0;
-    if ( PosY >= ExtraBorderSize + IconSize ) return 0;
+    if ( PosY < ExtraBorderSize ) return nullptr;
+    if ( PosY >= ExtraBorderSize + IconSize ) return nullptr;
 
     int ToolNumber = PosX / (ExtraBorderSize + IconSize);
     int InToolPos  = PosX % (ExtraBorderSize + IconSize);
 
-    if ( ToolNumber >= m_Count ) return 0;
-    if ( InToolPos < ExtraBorderSize ) return 0;
+    if ( ToolNumber >= m_Count ) return nullptr;
+    if ( InToolPos < ExtraBorderSize ) return nullptr;
 
     PosY -= ExtraBorderSize;
     PosX -= ExtraBorderSize + ToolNumber*(ExtraBorderSize+IconSize);

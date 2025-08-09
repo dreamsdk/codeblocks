@@ -36,10 +36,36 @@ X_PRJ_FILE_PROJ  ICON "src/resources/icons/proj.ico"
 #include <wx/msw/rcdefs.h>
 
 ///////////////////////////////////////////////////////////////////////////////
+// Specify the processor architecture (wxWidgets seems not to do this correctly)
+#if defined(_M_AMD64)
+  #if  defined(WX_CPU_X86)
+    #undef WX_CPU_X86
+  #endif
+  #if !defined(WX_CPU_AMD64)
+    #define WX_CPU_AMD64
+  #endif
+#elif defined(_M_IA64)
+  #if  defined(WX_CPU_X86)
+    #undef WX_CPU_X86
+  #endif
+  #if !defined(WX_CPU_IA64)
+    #define WX_CPU_IA64
+  #endif
+#elif defined(_M_IX86) || defined(_X86_)
+  #if !defined(WX_CPU_X86)
+    #define WX_CPU_X86
+  #endif
+#elif defined (_M_ARM64)
+  #ifndef WX_CPU_ARM64
+    #define WX_CPU_ARM64
+  #endif
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
 // Version information
 VS_VERSION_INFO    VERSIONINFO
-  FILEVERSION      20,03,0,0
-  PRODUCTVERSION   20,03,0,1
+  FILEVERSION      25,03,0,0
+  PRODUCTVERSION   25,03,0,1
   FILEFLAGSMASK    0x3fL // VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
   // Can be a combination of the following OR'ed flags:
@@ -70,19 +96,19 @@ VS_VERSION_INFO    VERSIONINFO
   {
     BLOCK "040904E4" // Lang=US English, CharSet=Windows Multilingual
     {
-      VALUE "Build",            "March 2020\0"
+      VALUE "Build",            "March 2025\0"
       VALUE "Comments",         "Cross-platform IDE built around wxWidgets, designed to be extensible and configurable. Licensed under GPL3.\0"
       VALUE "CompanyName",      "Code::Blocks Team\0"
       VALUE "Developer",        "Code::Blocks Team\0"
       VALUE "FileDescription",  "Code::Blocks IDE\0"
-      VALUE "FileVersion",      "20.03.0.0\0"
+      VALUE "FileVersion",      "25.03.0.0\0"
       VALUE "InternalName",     "Code::Blocks\0"
-      VALUE "LegalCopyright",   "Copyright (C) 2004-2020 Code::Blocks Team\0"
+      VALUE "LegalCopyright",   "Copyright (C) 2004-2025 Code::Blocks Team\0"
       VALUE "LegalTrademarks",  "All rights reserved.\0"
       VALUE "OriginalFilename", "codeblocks.exe\0"
       VALUE "PrivateBuild",     "\0"
       VALUE "ProductName",      "Code::Blocks\0"
-      VALUE "ProductVersion",   "20.03.0.1\0"
+      VALUE "ProductVersion",   "25.03.0.1\0"
       VALUE "SpecialBuild",     "\0"
       VALUE "Support",          "mandrav at codeblocks.org\0"
       VALUE "Users",            "Unlimited.\0"
@@ -104,7 +130,7 @@ VS_VERSION_INFO    VERSIONINFO
     #define wxMANIFEST_ID CREATEPROCESS_MANIFEST_RESOURCE_ID
   #endif
 
-  #if defined(WX_CPU_AMD64)
+  #if defined(WX_CPU_AMD64) || defined(WX_CPU_ARM64)
     #if defined(cbDPI_AWARE_ON)
         wxMANIFEST_ID RT_MANIFEST "amd64_dpi_aware_on.manifest"
         #warning Manifest: amd64_dpi_aware_on.manifest
@@ -116,8 +142,13 @@ VS_VERSION_INFO    VERSIONINFO
     wxMANIFEST_ID RT_MANIFEST "ia64.manifest"
     #warning Manifest: ia64.manifest
   #elif defined(WX_CPU_X86)
-    wxMANIFEST_ID RT_MANIFEST "x86.manifest"
-    #warning Manifest: x86.manifest
+    #if defined(cbDPI_AWARE_ON)
+        wxMANIFEST_ID RT_MANIFEST "x86_dpi_aware_on.manifest"
+        #warning Manifest: x86_dpi_aware_on.manifest
+    #else
+        wxMANIFEST_ID RT_MANIFEST "x86.manifest"
+        #warning Manifest: x86.manifest
+    #endif
   #else
     #error No platform defined! Unable to embed manifest file.
   #endif

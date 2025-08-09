@@ -87,7 +87,7 @@ public:
     /** Makes instance update its graphical widgets.
       * Should be called by ThreadSearch instance after m_ThreadSearchPlugin modification
       */
-    void Update();
+    void Update() override;
 
     /** Loads file in code preview and makes line visible.
       * @param file : file path
@@ -142,6 +142,8 @@ public:
     void ApplySplitterSettings(bool showCodePreview, long splitterMode);
 
     void FocusSearchCombo(const wxString &searchWord);
+    void UpdateSettings();
+    void EditorLinesAddedOrRemoved(cbEditor *editor, int startLine, int linesAdded);
 private:
     // begin wxGlade: ThreadSearchView::methods
     void set_properties();
@@ -161,12 +163,6 @@ private:
       */
     bool StopThread();
 
-    // BEGIN Duplicated from cbeditor.cpp to apply folding options
-    void SetMarkerStyle(int marker, int markerType, wxColor fore, wxColor back);
-    void UnderlineFoldedLines(bool underline);
-    void SetFoldingIndicator(int id);
-    // END Duplicated from cbeditor.cpp to apply folding options
-
     ThreadSearchThread* m_pFindThread;             // Worker thread pointer. Must be allocated on the heap.
     ThreadSearch&       m_ThreadSearchPlugin;      // Thread search plugin reference. 'Subject' in the observer pattern.
     wxString            m_PreviewFilePath;         // File currently previewed path. Used to avoid reloading files.
@@ -182,23 +178,24 @@ protected:
     // begin wxGlade: ThreadSearchView::attributes
     wxStaticBox* m_pSizerSearchDirItems_staticbox;
     wxComboBox* m_pCboSearchExpr;
-    wxBitmapButton* m_pBtnSearch;
-    wxBitmapButton* m_pBtnOptions;
+    wxButton* m_pBtnSearch;
+    wxButton* m_pBtnOptions;
     wxStaticLine* m_pStaticLine1;
     wxStaticText* m_pStaTxtSearchIn;
     SearchInPanel* m_pPnlSearchIn;
     wxStaticLine* m_pStaticLine2;
-    wxBitmapButton* m_pBtnShowDirItems;
+    wxButton* m_pBtnShowDirItems;
     DirectoryParamsPanel* m_pPnlDirParams;
     cbStyledTextCtrl* m_pSearchPreview;
     wxPanel* m_pPnlPreview;
     ThreadSearchLoggerBase* m_pLogger;
-    wxPanel* m_pPnlListLog;
     wxSplitterWindow* m_pSplitter;
     // end wxGlade
     wxStaticBoxSizer* m_pSizerSearchDirItems;
-    wxBoxSizer*       m_pSizerSearchItems;
-    wxToolBar*        m_pToolBar;
+    wxBoxSizer* m_pSizerSearchItems;
+    wxToolBar* m_pToolBar;
+    wxWindow *m_LastFocusedWindow;
+    bool m_hasSearchItems;
 
     DECLARE_EVENT_TABLE()
 

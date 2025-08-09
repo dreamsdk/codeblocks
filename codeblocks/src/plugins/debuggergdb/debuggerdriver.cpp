@@ -4,7 +4,7 @@
  *
  * $Revision: 11830 $
  * $Id: debuggerdriver.cpp 11830 2019-08-28 22:59:36Z pecanh $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggerdriver.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/debuggerdriver.cpp $
  */
 
 #include <sdk.h>

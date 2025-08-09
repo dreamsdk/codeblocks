@@ -61,6 +61,7 @@
     </else>
 
     <Common name="warnings"/>
+    
     <Category name="General Options">
         <Option name="Output an error if same variable is declared without extern in different modules"
                 option="-fno-common"/>
@@ -68,8 +69,6 @@
                 option="-save-temps"/>
     </Category>
 
-    <!-- warnings -->
-    <Common name="warnings"/>
     <Category name="Warnings">
         <Option name="Enable Effective-C++ warnings (thanks Scott Meyers)"
                 option="-Weffc++"/>
@@ -78,7 +77,7 @@
         <Option name="Warn whenever a switch statement has an index of enumerated type and lacks a case for one or more of the named codes of that enumeration"
                 option="-Wswitch-enum"/>
         <if exec="C -dumpversion"
-            regex="^[4-9]\.[0-9]"
+            version_greater_equal="4"
             default="true">
             <Option name="Warn if a user supplied include directory does not exist"
                     option="-Wmissing-include-dirs"/>

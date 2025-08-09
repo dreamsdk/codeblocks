@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10293 $
- * $Id: regexdlg.cpp 10293 2015-05-15 10:58:52Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/regex_testbed/regexdlg.cpp $
+ * $Revision: 13570 $
+ * $Id: regexdlg.cpp 13570 2024-09-14 05:03:57Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/regex_testbed/regexdlg.cpp $
  */
 
 #include <sdk.h>
@@ -18,6 +18,21 @@
     #include <configmanager.h>
 #endif
 
+#include <regex>
+
+namespace
+{
+    const std::regex::flag_type syntax_types[] =
+    {
+        std::regex::ECMAScript,
+        std::regex::basic,
+        std::regex::extended,
+        std::regex::awk,
+        std::regex::grep,
+        std::regex::egrep
+    };
+}
+
 //(*InternalHeaders(RegExDlg)
 #include <wx/xrc/xmlres.h>
 //*)
@@ -26,8 +41,6 @@
 //*)
 
 BEGIN_EVENT_TABLE(RegExDlg,wxScrollingDialog)
-	EVT_INIT_DIALOG(RegExDlg::OnInit)
-	EVT_UPDATE_UI(-1, RegExDlg::OnUpdateUI)
 END_EVENT_TABLE()
 
 RegExDlg::VisibleDialogs RegExDlg::m_visible_dialogs;
@@ -37,17 +50,25 @@ RegExDlg::RegExDlg(wxWindow* parent,wxWindowID /*id*/)
     //(*Initialize(RegExDlg)
     wxXmlResource::Get()->LoadObject(this,parent,_T("RegExDlg"),_T("wxScrollingDialog"));
     m_regex = (wxTextCtrl*)FindWindow(XRCID("ID_REGEX"));
+    StaticText4 = (wxStaticText*)FindWindow(XRCID("ID_STATICTEXT2"));
     m_quoted = (wxTextCtrl*)FindWindow(XRCID("ID_QUOTED"));
-    m_library = (wxChoice*)FindWindow(XRCID("ID_LIBRARY"));
+    m_syntax = (wxChoice*)FindWindow(XRCID("ID_SYNTAX"));
     m_nocase = (wxCheckBox*)FindWindow(XRCID("ID_NOCASE"));
     m_newlines = (wxCheckBox*)FindWindow(XRCID("ID_NEWLINES"));
     m_text = (wxTextCtrl*)FindWindow(XRCID("ID_TEXT"));
     m_output = (wxHtmlWindow*)FindWindow(XRCID("ID_OUT"));
+
+    Connect(XRCID("ID_REGEX"),wxEVT_COMMAND_TEXT_UPDATED,wxCommandEventHandler(RegExDlg::OnValueChanged));
+    Connect(XRCID("ID_QUOTED"),wxEVT_COMMAND_TEXT_UPDATED,wxCommandEventHandler(RegExDlg::OnQuoteChanged));
+    Connect(XRCID("ID_SYNTAX"),wxEVT_COMMAND_CHOICE_SELECTED,wxCommandEventHandler(RegExDlg::OnSyntaxSelect));
+    Connect(XRCID("ID_NOCASE"),wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(RegExDlg::OnOptionChanged));
+    Connect(XRCID("ID_NEWLINES"),wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(RegExDlg::OnOptionChanged));
+    Connect(XRCID("ID_TEXT"),wxEVT_COMMAND_TEXT_UPDATED,wxCommandEventHandler(RegExDlg::OnOptionChanged));
     //*)
 
     assert(m_regex);
     assert(m_quoted);
-    assert(m_library);
+    assert(m_syntax);
     assert(m_nocase);
     assert(m_newlines);
     assert(m_text);
@@ -55,11 +76,17 @@ RegExDlg::RegExDlg(wxWindow* parent,wxWindowID /*id*/)
 
     m_text->MoveAfterInTabOrder(m_quoted);
 
-    m_library->SetSelection(0);
+#if wxCHECK_VERSION(3, 1, 6)
+    m_syntax->Delete(1);  // v3.1.6 made wxRE_ADVANCED a synonym of wxRE_EXTENDED, so delete it
+#endif
+
+    m_syntax->SetSelection(0);
     m_output->SetBorders(0);
-    m_quoted->SetEditable(false);
 
     m_visible_dialogs.insert(this);
+
+    // Force showing "No matches"
+    Reevaluate();
 }
 
 RegExDlg::~RegExDlg()
@@ -79,8 +106,9 @@ void RegExDlg::OnClose(wxCloseEvent& /*event*/)
 
 void RegExDlg::ReleaseAll()
 {
-    for(VisibleDialogs::iterator it = m_visible_dialogs.begin(); it != m_visible_dialogs.end(); ++it)
+    for (VisibleDialogs::iterator it = m_visible_dialogs.begin(); it != m_visible_dialogs.end(); ++it)
         delete *it;
+
     m_visible_dialogs.clear();
 }
 
@@ -92,141 +120,164 @@ namespace
 */
 void cbEscapeHtml(wxString &s)
 {
-    s.Replace(wxT("&"), wxT("&amp;"));
-    s.Replace(wxT("<"), wxT("&lt;"));
-    s.Replace(wxT(">"), wxT("&gt;"));
-    s.Replace(wxT("\""), wxT("&quot;"));
+    s.Replace("&",  "&amp;");
+    s.Replace("<",  "&lt;");
+    s.Replace(">",  "&gt;");
+    s.Replace("\"", "&quot;");
 }
 }
 
-void RegExDlg::OnUpdateUI(wxUpdateUIEvent& /*event*/)
+void RegExDlg::OnValueChanged(cb_unused wxCommandEvent& event)
 {
-    static wxString regex;
-    static wxString text;
-    static bool nocase;
-    static bool newlines;
-    static int library;
+    wxString tmp(m_regex->GetValue());
+    tmp.Replace("\\", "\\\\");
+    tmp.Replace("\"", "\\\"");
+    m_quoted->ChangeValue(tmp);
+    Reevaluate();
+}
 
-//    if (event.GetId() == XRCID("ID_NOCASE") || event.GetId() == XRCID("ID_NEWLINES"))
-//        regex = _T("$^"); // bullshit
-//    all UI elements send events quite often (on linux on every mouse move, if the parent window
-//    has the focus, on windows even without any user action). So we can not use the event Id to force a new
-//    run of GetBuiltinMatches(), because every time the value of m_quoted and m_output gets upadeted a selection of text in m_quoted
-//    will be reset and therefore the user can not copy it's content (linux) and m_output jumps to the top, so that the user
-//    cannot scroll the text (windows and linux).
-//
+void RegExDlg::OnQuoteChanged(cb_unused wxCommandEvent& event)
+{
+    wxString tmp(m_quoted->GetValue());
+    tmp.Replace("\\\\", "\\");
+    tmp.Replace("\\\"", "\"");
+    m_regex->ChangeValue(tmp);
+    Reevaluate();
+}
 
-    if ( regex == m_regex->GetValue() &&
-        text == m_text->GetValue() &&
-        nocase == m_nocase->GetValue() &&
-        newlines == m_newlines->GetValue() &&
-        library == m_library->GetSelection())
-        {
-            return;
-        }
+void RegExDlg::OnSyntaxSelect(wxCommandEvent& event)
+{
+#if wxCHECK_VERSION(3, 1, 6)
+    const int regex_base = 2;
+#else
+    const int regex_base = 3;
+#endif
 
-    regex = m_regex->GetValue();
-    text = m_text->GetValue();
-    nocase = m_nocase->GetValue();
-    newlines = m_newlines->GetValue();
-    library = m_library->GetSelection();
+    m_newlines->Enable(event.GetSelection() < regex_base);
+    Reevaluate();
+}
 
-    wxString tmp(regex);
+void RegExDlg::OnOptionChanged(cb_unused wxCommandEvent& event)
+{
+    Reevaluate();
+}
 
-    tmp.Replace(_T("\\"), _T("\\\\"));
-    tmp.Replace(_T("\""), _T("\\\""));
-    m_quoted->SetValue(tmp);
-
-    wxArrayString as = GetBuiltinMatches(text);
-
+void RegExDlg::Reevaluate()
+{
+    wxArrayString as(GetBuiltinMatches(m_text->GetValue()));
     if (as.IsEmpty())
     {
-        m_output->SetPage(_T("<html><center><b>no matches</b></center></html>"));
+        m_output->SetPage("<html><center><b>"+_("no matches")+"</b></center></html>");
         return;
     }
 
-    wxString s(_T("<html width='100%'><center><b>matches:</b><br><br><font size=-1><table width='100%' border='1' cellspacing='2'>"));
-
-    for(size_t i = 0; i < as.GetCount(); ++i)
+    wxString s("<html width='100%'><center><b>"+_("matches")+":</b><br><br><font size=-1><table width='100%' border='1' cellspacing='2'>");
+    const size_t asCount = as.GetCount();
+    for (size_t i = 0; i < asCount; ++i)
     {
         cbEscapeHtml(as[i]);
-        tmp.Printf(_T("<tr><td width=35><b>%lu</b></td><td>%s</td></tr>"), static_cast<unsigned long>(i), as[i].wx_str());
-        s.append(tmp);
+        s.append(wxString::Format("<tr><td width=35><b>%zu</b></td><td>%s</td></tr>", i, as[i]));
     }
-    s.append(_T("</table></font></html>"));
+
+    s.append("</table></font></html>");
 
     m_output->SetPage(s);
 }
-
-
-void RegExDlg::RunBenchmark(wxCommandEvent& /*event*/)
-{
-}
-
 
 void RegExDlg::EndModal(int retCode)
 {
     wxScrollingDialog::EndModal(retCode);
 }
 
-void RegExDlg::OnInit(wxInitDialogEvent& /*event*/)
-{
-}
-
-void RegExDlg::OnRegExItemActivated(wxListEvent& /*event*/)
-{
-    //
-}
-
-
 wxArrayString RegExDlg::GetBuiltinMatches(const wxString& text)
 {
     wxArrayString ret;
 
-    int flags = m_library->GetSelection();
-
-    if (text.IsEmpty() || flags > 2) // should not be
-        return ret;
-
-    flags |= m_newlines->IsChecked() ? wxRE_NEWLINE : 0;
-    flags |= m_nocase->IsChecked() ? wxRE_ICASE : 0;
-
-    if (m_wxre.Compile(m_regex->GetValue(), flags))
+    if (m_regex->GetValue().empty())
     {
-        m_regex->SetForegroundColour(wxNullColour);
-        m_regex->SetBackgroundColour(wxNullColour);
-        m_regex->GetParent()->Refresh();
-        if (!m_wxre.Matches(text))
-            return ret;
+        ShowError(false);
+        return ret;
     }
-    else
+
+#if wxCHECK_VERSION(3, 1, 6)
+    const int regex_base = 2;
+#else
+    const int regex_base = 3;
+#endif
+
+    const int selection = m_syntax->GetSelection();
+    if (selection >= regex_base)  // use std::regex
+    {
+        std::regex::flag_type flags = syntax_types[selection-regex_base];
+        if (m_nocase->IsChecked())
+            flags |= std::regex::icase;
+
+        try
+        {
+            std::wregex stdre(m_regex->GetValue().ToStdWstring(), flags);
+            ShowError(false);
+            if (!text.empty())
+            {
+                std::wsmatch wsm;
+
+                if (std::regex_match(text.ToStdWstring(), wsm, stdre))
+                    for (std::wsmatch::const_iterator it = wsm.begin(); it != wsm.end(); ++it)
+                        ret.Add(it->str());
+            }
+        }
+        catch (std::regex_error& e)
+        {
+            ShowError(true);
+            return ret;
+        }
+    }
+    else  // use wxRegEx
+    {
+        wxRegEx wxre;
+
+#if wxCHECK_VERSION(3, 1, 6)
+        // wxRE_ADVANCED is a synonym of wxRE_EXTENDED, so it has been deleted from the choice
+        int flags = selection ? wxRE_BASIC : wxRE_EXTENDED;
+#else
+        int flags = selection;
+#endif
+
+        if (m_newlines->IsChecked())
+            flags |= wxRE_NEWLINE;
+
+        if (m_nocase->IsChecked())
+            flags |= wxRE_ICASE;
+
+        if (!wxre.Compile(m_regex->GetValue(), flags))
+        {
+            ShowError(true);
+            return ret;
+        }
+
+        ShowError(false);
+        if (!text.empty() && wxre.Matches(text))
+        {
+            const size_t matchCount = wxre.GetMatchCount();
+            for (size_t i = 0; i < matchCount; ++i)
+                ret.Add(wxre.GetMatch(text, i));
+        }
+    }
+
+    return ret;
+}
+
+void RegExDlg::ShowError(bool Error)
+{
+    if (Error)
     {
         m_regex->SetForegroundColour(*wxWHITE);
         m_regex->SetBackgroundColour(*wxRED);
-        m_regex->GetParent()->Refresh();
-        return ret;
+    }
+    else
+    {
+        m_regex->SetForegroundColour(wxNullColour);
+        m_regex->SetBackgroundColour(wxNullColour);
     }
 
-    for(size_t i = 0; i < m_wxre.GetMatchCount(); ++i)
-        if (!m_wxre.GetMatch(text, i).IsEmpty())
-            ret.Add(m_wxre.GetMatch(text, i));
-
-    return ret;
+    m_regex->GetParent()->Refresh();
 }
-
-wxArrayString RegExDlg::GetPregMatches(const wxString& /*text*/)
-{
-    wxArrayString ret;
-
-//    const char *error;
-//    int erroffset;
-//    int flags = 0;
-//    flags |= m_nocase->IsChecked() ? PCRE_CASELESS : 0;
-//    flags |= m_newlines->IsChecked() ? PCRE_DOTALL : 0;
-//    pcre *reg = pcre_compile(text.mb_str(), flags, &error, &erroffset, 0);
-
-    return ret;
-}
-
-
-

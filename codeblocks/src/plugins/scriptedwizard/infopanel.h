@@ -9,8 +9,8 @@
 
 //(*HeadersPCH(InfoPanel)
 #include <wx/checkbox.h>
-#include <wx/sizer.h>
 #include <wx/panel.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 //*)
 
@@ -24,8 +24,8 @@ class InfoPanel: public wxPanel
 		virtual ~InfoPanel();
 
 		//(*Identifiers(InfoPanel)
-		static const long ID_STATICTEXT1;
-		static const long ID_CHECKBOX1;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_CHECKBOX1;
 		//*)
 
         void SetIntroText(const wxString& intro_msg)
@@ -41,9 +41,9 @@ class InfoPanel: public wxPanel
 		//*)
 
 		//(*Declarations(InfoPanel)
+		wxBoxSizer* BoxSizer1;
 		wxCheckBox* chkSkip;
 		wxStaticText* lblIntro;
-		wxBoxSizer* BoxSizer1;
 		//*)
 
 	private:

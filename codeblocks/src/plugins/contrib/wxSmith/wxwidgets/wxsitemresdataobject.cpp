@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsitemresdataobject.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdataobject.cpp $
+* $Revision: 13381 $
+* $Id: wxsitemresdataobject.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdataobject.cpp $
 */
 
 #include "wxsitemresdataobject.h"
@@ -107,24 +107,24 @@ int wxsItemResDataObject::GetItemCount() const
 
 wxsItem* wxsItemResDataObject::BuildItem(wxsItemResData* Data,int Index) const
 {
-    if ( Index < 0 || Index >= m_ItemCount ) return 0;
+    if ( Index < 0 || Index >= m_ItemCount ) return nullptr;
 
     TiXmlElement* Root = m_XmlElem->FirstChildElement("object");
-    if ( !Root ) return 0;
+    if ( !Root ) return nullptr;
     while ( Index )
     {
         Index--;
         Root = Root->NextSiblingElement("object");
-        if ( !Root ) return 0;
+        if ( !Root ) return nullptr;
     }
     const char* Class = Root->Attribute("class");
-    if ( !Class || !*Class ) return 0;
+    if ( !Class || !*Class ) return nullptr;
 
     wxsItem* Item = wxsItemFactory::Build(cbC2U(Class),Data);
     if ( !Item )
     {
         Item = wxsItemFactory::Build(_T("Custom"),Data);
-        if ( !Item ) return 0;
+        if ( !Item ) return nullptr;
     }
 
     Item->XmlRead(Root,true,true);

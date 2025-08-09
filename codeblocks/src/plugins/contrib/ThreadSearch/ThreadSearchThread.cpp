@@ -46,6 +46,7 @@ ThreadSearchThread::ThreadSearchThread(ThreadSearchView*           pThreadSearch
                                                                   findData.GetMatchCase(),
                                                                   findData.GetStartWord(),
                                                                   findData.GetMatchWord(),
+                                                                  findData.GetMatchInComments(),
                                                                   findData.GetRegEx());
     if (!m_pTextFileSearcher)
     {
@@ -72,14 +73,12 @@ ThreadSearchThread::~ThreadSearchThread()
 }
 
 
-void *ThreadSearchThread::Entry()
+void* ThreadSearchThread::Entry()
 {
     // Tests if we have a working searcher object.
     // Cancel search if it is not the case
-    if ( m_pTextFileSearcher == NULL )
-        return 0;
-
-    size_t i = 0;
+    if (m_pTextFileSearcher == nullptr)
+        return nullptr;
 
     // For now, we look for all paths for the different search scopes
     // and store them in a sorted array to avoid pasing several times
@@ -89,79 +88,110 @@ void *ThreadSearchThread::Entry()
     // array for storing items.
 
     // Search in directory files ?
-    if ( m_FindData.MustSearchInDirectory() == true )
+    if (m_FindData.MustSearchInDirectory() == true)
     {
         int flags = wxDIR_FILES | wxDIR_DIRS | wxDIR_DOTDOT;
         flags    |= m_FindData.GetHiddenSearch() ? wxDIR_HIDDEN : 0;
 
-        const wxString &path = m_FindData.GetSearchPath(true);
-        if (!wxDir::Exists(path))
-        {
-            ThreadSearchEvent event(wxEVT_THREAD_SEARCH_ERROR, -1);
-            event.SetString(_("Cannot open folder ") + path);
+        const wxString &searchPath = m_FindData.GetSearchPath(true);
+        const std::vector<wxString> &paths = GetVectorFromString(searchPath, ";", true);
 
-            // Using wxPostEvent, we avoid multi-threaded memory violation.
-            wxPostEvent(m_pThreadSearchView,event);
-            return 0;
-        }
-        else
+        wxString failedDirectories;
+        int failedCount = 0;
+
+        for (const wxString &path : paths)
         {
-            wxDir Dir(path);
-            Dir.Traverse(*(static_cast<wxDirTraverser*>(this)), wxEmptyString, flags);
+            if (!wxDir::Exists(path))
+            {
+                if (failedCount > 0)
+                    failedDirectories += ", ";
+                failedDirectories += '\'';
+                failedDirectories += path;
+                failedDirectories += '\'';
+                failedCount++;
+            }
+            else
+            {
+                wxDir Dir(path);
+                Dir.Traverse(*(static_cast<wxDirTraverser*>(this)), wxEmptyString, flags);
+            }
         }
 
         // Tests thread stop (cancel search, app shutdown)
-        if ( TestDestroy() == true ) return 0;
+        if (TestDestroy() == true)
+            return nullptr;
+
+        if (failedCount > 0)
+        {
+            ThreadSearchEvent event(wxEVT_THREAD_SEARCH_ERROR, -1);
+
+            wxString msg;
+            if (failedCount == 1)
+                msg = wxString::Format(_("Cannot open folder %s"), failedDirectories.wx_str());
+            else
+            {
+                msg = wxString::Format(_("Cannot open %d folders %s"), failedCount,
+                                       failedDirectories.wx_str());
+            }
+            event.SetString(msg);
+
+            // Using wxPostEvent, we avoid multi-threaded memory violation.
+            wxPostEvent(m_pThreadSearchView, event);
+        }
     }
 
     // Search in workspace files ?
-    if ( m_FindData.MustSearchInWorkspace() == true )
+    if (m_FindData.MustSearchInWorkspace() == true)
     {
         ProjectsArray* pProjectsArray = Manager::Get()->GetProjectManager()->GetProjects();
-        for ( size_t j=0; j < pProjectsArray->GetCount(); ++j )
+        for (size_t j=0; j < pProjectsArray->GetCount(); ++j)
         {
             AddProjectFiles(m_FilePaths, *pProjectsArray->Item(j));
-            if ( TestDestroy() == true ) return 0;
+            if (TestDestroy() == true)
+                return nullptr;
         }
     }
-    else if ( m_FindData.MustSearchInProject() == true )
+    else if (m_FindData.MustSearchInProject() == true)
     {
         // Search in project files ?
         // Necessary only if not already parsed in worspace part
         cbProject* pProject = Manager::Get()->GetProjectManager()->GetActiveProject();
-        if ( pProject != NULL )
+        if (pProject != nullptr)
         {
             AddProjectFiles(m_FilePaths, *pProject);
-            if ( TestDestroy() == true ) return 0;
+            if (TestDestroy() == true)
+                return nullptr;
         }
     }
-    else if ( m_FindData.MustSearchInTarget() == true )
+    else if (m_FindData.MustSearchInTarget() == true)
     {
         // Search in target files ?
         // Necessary only if not already parsed in project part
         cbProject* pProject = Manager::Get()->GetProjectManager()->GetActiveProject();
-        if ( pProject != NULL )
+        if (pProject != nullptr)
         {
             ProjectBuildTarget *pTarget = pProject->GetBuildTarget(pProject->GetActiveBuildTarget());
-            if ( pTarget != 0 )
+            if (pTarget != nullptr)
             {
                 AddTargetFiles(m_FilePaths, *pTarget);
-                if ( TestDestroy() == true ) return 0;
+                if (TestDestroy() == true)
+                    return nullptr;
             }
         }
     }
 
     // Tests thread stop (cancel search, app shutdown)
-    if ( TestDestroy() == true ) return 0;
+    if (TestDestroy() == true)
+        return nullptr;
 
     // Open files
-    if ( m_FindData.MustSearchInOpenFiles() == true )
+    if (m_FindData.MustSearchInOpenFiles() == true)
     {
         EditorManager* pEdManager = Manager::Get()->GetEditorManager();
-        for (i = 0; i < (size_t)pEdManager->GetNotebook()->GetPageCount(); ++i)
+        for (size_t i = 0; i < (size_t)pEdManager->GetNotebook()->GetPageCount(); ++i)
         {
             cbEditor* pEditor = pEdManager->GetBuiltinEditor(i);
-            if ( pEditor != NULL )
+            if (pEditor != nullptr)
             {
                 AddNewItem(m_FilePaths, pEditor->GetFilename(), m_Masks);
             }
@@ -169,7 +199,8 @@ void *ThreadSearchThread::Entry()
     }
 
     // Tests thread stop (cancel search, app shutdown)
-    if ( TestDestroy() == true ) return 0;
+    if (TestDestroy() == true)
+        return nullptr;
 
     // if the list is empty, leave
     if (m_FilePaths.GetCount() == 0)
@@ -181,18 +212,19 @@ void *ThreadSearchThread::Entry()
         event.SetString(_("No files to search.\nCheck options "));
         // Using wxPostEvent, we avoid multi-threaded memory violation.
         wxPostEvent(m_pThreadSearchView,event);
-        return 0;
+        return nullptr;
     }
 
-    for ( i = 0; i < m_FilePaths.GetCount(); ++i )
+    for (size_t i = 0; i < m_FilePaths.GetCount(); ++i)
     {
         FindInFile(m_FilePaths[i]);
 
         // Tests thread stop (cancel search, app shutdown)
-        if ( TestDestroy() == true ) return 0;
+        if (TestDestroy() == true)
+            return nullptr;
     }
 
-    return 0;
+    return nullptr;
 }
 
 
@@ -248,14 +280,16 @@ wxDirTraverseResult ThreadSearchThread::OnFile(const wxString& fileName)
 void ThreadSearchThread::FindInFile(const wxString& path)
 {
     m_LineTextArray.Empty();
+    m_MatchedPositions.clear();
 
-    switch ( m_pTextFileSearcher->FindInFile(path, m_LineTextArray) )
+    switch ( m_pTextFileSearcher->FindInFile(path, m_LineTextArray, m_MatchedPositions) )
     {
         case TextFileSearcher::idStringFound:
         {
             ThreadSearchEvent event(wxEVT_THREAD_SEARCH, -1);
             event.SetString(path);
             event.SetLineTextArray(m_LineTextArray);
+            event.SetMatchedPositions(m_MatchedPositions);
 
             // Using wxPostEvent, we avoid multi-threaded memory violation.
             m_pThreadSearchView->PostThreadSearchEvent(event);

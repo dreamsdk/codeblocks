@@ -1,9 +1,9 @@
 /*
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
- * $Revision: 10336 $
- * $Id: cctest_app.cpp 10336 2015-06-19 01:49:41Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/cctest/cctest_app.cpp $
+ * $Revision: 13476 $
+ * $Id: cctest_app.cpp 13476 2024-02-24 01:52:10Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/cctest/cctest_app.cpp $
  */
 
 /**
@@ -12,22 +12,22 @@
  * CCTestApp():
  * - Creates the CCTestFrame
  *
- * -> CCTestFrame(): contains an instance of NativeParserTest class
+ * -> CCTestFrame(): contains an instance of ParseManagerTest class
  *   -> CCTestFrame::Start():
  *      - Reads all UI values into global vars (includes)
  *      - compiles initial global file queue
  *      - Creates global "Busy" dialog
- *      - Iterates over global file queue and calls NativeParserTest::ParseAndCodeCompletion(file)
+ *      - Iterates over global file queue and calls ParseManagerTest::ParseAndCodeCompletion(file)
  *      - destroys "Busy" dialog
  *
- * -> NativeParserTest(): contains a ParserBase instance, which mimic the NativeParser in C::B.
- *   -> NativeParserTest()::ParseAndCodeCompletion(): parse the file, run tests contains in the file
+ * -> ParseManagerTest(): contains a ParserBase instance, which mimics the ParseManager in C::B.
+ *   -> ParseManagerTest()::ParseAndCodeCompletion(): parse the file, run tests contains in the file
  *      - Determine whether the file should be read from hard disk or wxScintilla control
  *      - parse it by calling ParserBase::ReParse() or ParserBase::ParseBuffer()
  *      - prepares an expression string
- *      - Tests the expression matching algorithms by call NativeParserTest::TestExpression()
+ *      - Tests the expression matching algorithms by call ParseManagerTest::TestExpression()
  *      - Prints results to UI
- *   -> NativeParserTest::Init() the macro replacements are setup
+ *   -> ParseManagerTest::Init() the macro replacements are setup
  *
  * -> ParserBase(): holds tree "TokenTree* m_pTokenTree;" and the include search paths
  *      - ParserCommon::FileType():
@@ -65,9 +65,9 @@
  */
 
 /**
- * In the CCTestFrame class, we have a member of NativeParserTest which is derived from
- * NativeParserBase class.
- * In the NativeParserTest class, we have a member of ParserBase.
+ * In the CCTestFrame class, we have a member of ParseManagerTest which is derived from
+ * ParseManagerBase class.
+ * In the ParseManagerTest class, we have a member of ParserBase.
  *
  * To parse a local file, we need the ParserBase::Reparse() function, which simply create a
  * ParserThread instance, and run ParserThread::Parse().
@@ -99,10 +99,6 @@
  * which contains many include files, to avoid this, you can simply redefine the TRACE macro
  * definition to empty.
  */
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 //(*AppHeaders
 #include <wx/image.h>

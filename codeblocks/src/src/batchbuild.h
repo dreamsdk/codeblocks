@@ -23,12 +23,11 @@ class BatchLogWindow : public wxScrollingDialog
             size.SetHeight(Manager::Get()->GetConfigManager(_T("message_manager"))->ReadInt(_T("/batch_build_log/height"), wxDefaultSize.GetHeight()));
             SetSize(size);
         }
-        void EndModal(int retCode)
+        void EndModal(int retCode) override
         {
             // allowed to close?
             // find compiler plugin
-            bool hasRunning = cbHasRunningCompilers(Manager::Get()->GetPluginManager());
-            if (hasRunning)
+            if (cbHasRunningCompilers(Manager::Get()->GetPluginManager()))
             {
                 if (cbMessageBox(_("The build is in progress. Are you sure you want to abort it?"),
                                 _("Abort build?"),

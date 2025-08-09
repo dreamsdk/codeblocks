@@ -33,7 +33,7 @@
 										</object>
 										<object class="wxTextCtrl" name="txtHelpFlatProfile">
 											<bg>wxSYS_COLOUR_MENU</bg>
-											<style>wxTE_MULTILINE|wxTE_READONLY|wxNO_BORDER|wxHSCROLL</style>
+											<style>wxTE_MULTILINE|wxTE_READONLY|wxBORDER_NONE|wxHSCROLL</style>
 										</object>
 									</object>
 									<flag>wxEXPAND</flag>
@@ -58,7 +58,7 @@
 										</object>
 										<object class="wxTextCtrl" name="txtHelpCallGraph">
 											<bg>wxSYS_COLOUR_MENU</bg>
-											<style>wxTE_MULTILINE|wxTE_READONLY|wxNO_BORDER|wxHSCROLL</style>
+											<style>wxTE_MULTILINE|wxTE_READONLY|wxBORDER_NONE|wxHSCROLL</style>
 										</object>
 									</object>
 									<flag>wxEXPAND</flag>
@@ -76,7 +76,7 @@
 								<object class="sizeritem">
 									<object class="wxTextCtrl" name="txtMisc">
 										<size>600,400</size>
-										<style>wxTE_MULTILINE|wxTE_READONLY|wxNO_BORDER|wxHSCROLL</style>
+										<style>wxTE_MULTILINE|wxTE_READONLY|wxBORDER_NONE|wxHSCROLL</style>
 									</object>
 									<flag>wxEXPAND</flag>
 									<border>5</border>

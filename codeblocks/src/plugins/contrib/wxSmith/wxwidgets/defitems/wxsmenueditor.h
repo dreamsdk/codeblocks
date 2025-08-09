@@ -15,24 +15,25 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10680 $
-* $Id: wxsmenueditor.h 10680 2016-01-22 10:43:35Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenueditor.h $
+* $Revision: 13547 $
+* $Id: wxsmenueditor.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenueditor.h $
 */
 
 #ifndef WXSMENUEDITOR_H
 #define WXSMENUEDITOR_H
 
 //(*Headers(wxsMenuEditor)
-#include <wx/treectrl.h>
+#include <wx/bmpbuttn.h>
+#include <wx/button.h>
+#include <wx/checkbox.h>
+#include <wx/panel.h>
+#include <wx/radiobut.h>
 #include <wx/sizer.h>
+#include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
-#include <wx/checkbox.h>
-#include <wx/statline.h>
-#include <wx/radiobut.h>
-#include <wx/panel.h>
-#include <wx/button.h>
+#include <wx/treectrl.h>
 //*)
 
 #include "wxsmenu.h"
@@ -146,32 +147,32 @@ class wxsMenuEditor: public wxPanel
         bool        m_BlockRead;///< \brief Flag for blocking reading data from dialog to MenuItem
 
         //(*Identifiers(wxsMenuEditor)
-        static const long ID_TREECTRL1;
-        static const long ID_RADIOBUTTON1;
-        static const long ID_RADIOBUTTON4;
-        static const long ID_RADIOBUTTON2;
-        static const long ID_RADIOBUTTON5;
-        static const long ID_RADIOBUTTON3;
-        static const long ID_STATICLINE1;
-        static const long ID_STATICTEXT6;
-        static const long ID_TEXTCTRL4;
-        static const long ID_STATICTEXT1;
-        static const long ID_TEXTCTRL1;
-        static const long ID_STATICTEXT2;
-        static const long ID_TEXTCTRL2;
-        static const long ID_STATICTEXT3;
-        static const long ID_TEXTCTRL3;
-        static const long ID_STATICTEXT4;
-        static const long ID_CHECKBOX1;
-        static const long ID_STATICTEXT5;
-        static const long ID_CHECKBOX2;
-        static const long ID_STATICLINE2;
-        static const long ID_BUTTON1;
-        static const long ID_BUTTON2;
-        static const long ID_BUTTON3;
-        static const long ID_BUTTON4;
-        static const long ID_BUTTON5;
-        static const long ID_BUTTON6;
+        static const wxWindowID ID_TREECTRL1;
+        static const wxWindowID ID_RADIOBUTTON1;
+        static const wxWindowID ID_RADIOBUTTON4;
+        static const wxWindowID ID_RADIOBUTTON2;
+        static const wxWindowID ID_RADIOBUTTON5;
+        static const wxWindowID ID_RADIOBUTTON3;
+        static const wxWindowID ID_STATICLINE1;
+        static const wxWindowID ID_STATICTEXT6;
+        static const wxWindowID ID_TEXTCTRL4;
+        static const wxWindowID ID_STATICTEXT1;
+        static const wxWindowID ID_TEXTCTRL1;
+        static const wxWindowID ID_STATICTEXT2;
+        static const wxWindowID ID_TEXTCTRL2;
+        static const wxWindowID ID_STATICTEXT3;
+        static const wxWindowID ID_TEXTCTRL3;
+        static const wxWindowID ID_STATICTEXT4;
+        static const wxWindowID ID_CHECKBOX1;
+        static const wxWindowID ID_STATICTEXT5;
+        static const wxWindowID ID_CHECKBOX2;
+        static const wxWindowID ID_STATICLINE2;
+        static const wxWindowID ID_BUTTON1;
+        static const wxWindowID ID_BUTTON2;
+        static const wxWindowID ID_BUTTON3;
+        static const wxWindowID ID_BUTTON4;
+        static const wxWindowID ID_BUTTON5;
+        static const wxWindowID ID_BUTTON6;
         //*)
 
         //(*Handlers(wxsMenuEditor)
@@ -187,32 +188,32 @@ class wxsMenuEditor: public wxPanel
         //*)
 
         //(*Declarations(wxsMenuEditor)
-        wxButton* Button4;
-        wxStaticText* StaticText2;
-        wxRadioButton* m_TypeNormal;
-        wxButton* Button1;
-        wxStaticText* StaticText6;
-        wxTreeCtrl* m_Content;
-        wxRadioButton* m_TypeRadio;
-        wxStaticText* StaticText1;
-        wxStaticText* StaticText3;
-        wxCheckBox* m_Checked;
-        wxButton* Button2;
-        wxStaticLine* StaticLine2;
-        wxButton* Button6;
-        wxRadioButton* m_TypeCheck;
-        wxRadioButton* m_TypeSeparator;
+        wxBitmapButton* BitmapButton1;
+        wxBitmapButton* BitmapButton2;
+        wxBitmapButton* BitmapButton3;
+        wxBitmapButton* BitmapButton4;
         wxButton* Button5;
-        wxButton* Button3;
-        wxStaticText* StaticText5;
+        wxButton* Button6;
+        wxCheckBox* m_Checked;
         wxCheckBox* m_Enabled;
-        wxStaticLine* StaticLine1;
         wxRadioButton* m_TypeBreak;
+        wxRadioButton* m_TypeCheck;
+        wxRadioButton* m_TypeNormal;
+        wxRadioButton* m_TypeRadio;
+        wxRadioButton* m_TypeSeparator;
+        wxStaticLine* StaticLine1;
+        wxStaticLine* StaticLine2;
+        wxStaticText* StaticText1;
+        wxStaticText* StaticText2;
+        wxStaticText* StaticText3;
         wxStaticText* StaticText4;
-        wxTextCtrl* m_Label;
+        wxStaticText* StaticText5;
+        wxStaticText* StaticText6;
+        wxTextCtrl* m_Accelerator;
         wxTextCtrl* m_Help;
         wxTextCtrl* m_Id;
-        wxTextCtrl* m_Accelerator;
+        wxTextCtrl* m_Label;
+        wxTreeCtrl* m_Content;
         //*)
 
 };

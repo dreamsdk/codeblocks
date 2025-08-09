@@ -1,0 +1,18 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="c" x1="7.144" x2=".661" y1="293.7" y2="290.9" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2d8fec" offset="0"/>
+      <stop stop-color="#9ed0ff" offset="1"/>
+    </linearGradient>
+    <linearGradient id="d" x1="6.879" x2="3.175" y1="295.8" y2="293.6" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#227ed4" offset="0"/>
+      <stop stop-color="#8dc8ff" offset="1"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 -288.5)">
+    <path d="M.397 291.18v-.133c0-.265.661-.794.926-.794H4.63l1.19 1.19h.927c.132 0 .527.265.527.398l.002 2.38-5.953 1.588H.397Z" fill="url(#c)" stroke="#034d92" stroke-width=".2646px"/>
+    <path d="m1.72 295.8v-6.35h3.087l1.675 1.635v4.715z" fill="#f2f2f9" stroke="#626b73" stroke-width=".2646"/>
+    <path d="m4.635 289.5v1.587h1.627v-0.132l-1.491-1.456z" fill="#d0d0df" stroke="#626b73" stroke-width=".2646px"/>
+    <path d="M2.381 296.074H.926v-.265s2.117-2.38 2.381-2.38h1.72c.265 0 .53.793.794.793h2.444c.07 0 .07.132.07.397 0 .397-1.324 1.455-1.72 1.455H2.38z" fill="url(#d)" stroke="#034d92" stroke-width=".2646px"/>
+  </g>
+</svg>

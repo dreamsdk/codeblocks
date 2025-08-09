@@ -4,7 +4,7 @@
 // Author:      Julian Smart
 // Modified by:
 // Created:     2007-08-19
-// RCS-ID:      $Id: switcherdlg.cpp 11396 2018-05-05 13:52:23Z killerbot $
+// RCS-ID:      $Id: switcherdlg.cpp 12604 2021-12-22 08:48:07Z wh11204 $
 // Copyright:   (c) Julian Smart
 // Licence:     wxWidgets licence
 /////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ void wxSwitcherItem::Init()
     m_breakColumn = false;
     m_rowPos = 0;
     m_colPos = 0;
-    m_window = NULL;
+    m_window = nullptr;
 }
 
 void wxSwitcherItem::Copy(const wxSwitcherItem& item)
@@ -918,8 +918,8 @@ bool wxSwitcherDialog::Create( const wxSwitcherItems& items, wxWindow *parent, w
 
 void wxSwitcherDialog::Init()
 {
-    m_listCtrl = NULL;
-    m_descriptionCtrl = NULL;
+    m_listCtrl = nullptr;
+    m_descriptionCtrl = nullptr;
     m_closing = false;
     m_switcherBorderStyle = 0;
 

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8373 $
-* $Id: wxspropertycontainer.cpp 8373 2012-09-07 22:20:34Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.cpp $
+* $Revision: 13381 $
+* $Id: wxspropertycontainer.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.cpp $
 */
 
 #include "wxspropertycontainer.h"
@@ -32,12 +32,12 @@
 
 long wxsPropertyContainer::Flags = 0;
 bool wxsPropertyContainer::IsRead = false;
-TiXmlElement* wxsPropertyContainer::CurrentElement = 0;
-wxsPropertyStream* wxsPropertyContainer::CurrentStream = 0;
+TiXmlElement* wxsPropertyContainer::CurrentElement = nullptr;
+wxsPropertyStream* wxsPropertyContainer::CurrentStream = nullptr;
 wxMutex wxsPropertyContainer::Mutex;
 
 wxsPropertyContainer::wxsPropertyContainer():
-    CurrentQP(0),
+    CurrentQP(nullptr),
     BlockChangeCallback(false)
 {
 }
@@ -55,8 +55,8 @@ wxsPropertyContainer::~wxsPropertyContainer()
     // Unbinding prom quick properties if there's one
     if ( CurrentQP )
     {
-        CurrentQP->Container = 0;
-        CurrentQP = 0;
+        CurrentQP->Container = nullptr;
+        CurrentQP = nullptr;
     }
 }
 
@@ -181,7 +181,7 @@ wxsQuickPropsPanel* wxsPropertyContainer::BuildQuickPropertiesPanel(wxWindow* Pa
 {
     if ( CurrentQP )
     {
-        CurrentQP->Container = 0;
+        CurrentQP->Container = nullptr;
     }
 
     CurrentQP = OnCreateQuickProperties(Parent);

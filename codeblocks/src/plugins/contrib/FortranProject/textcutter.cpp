@@ -1,4 +1,3 @@
-
 #include "textcutter.h"
 
 TextCutter::TextCutter(const wxString& allText, FortranSourceForm fsForm)

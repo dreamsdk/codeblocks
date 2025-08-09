@@ -13,73 +13,74 @@
     #include <configmanager.h>
     #include <editormanager.h>
     #include <logmanager.h>
-    #include <cbstyledtextctrl.h>
 #endif
 #include <algorithm>
+
+#include <cbstyledtextctrl.h>
 
 ConstrHighlighter::ConstrHighlighter():
     m_MakeHighlight(true),
     m_FullColour(100, 100, 255),
     m_UnfinColour(255, 165, 0),
     m_CurrentPosition(0),
-    m_IndicFound(24),
-    m_IndicNotFound(25),
+    m_IndicHighlight(24),
     m_WasCleared(true)
 {
-    m_KeywordSet.insert(_T("if"));
-    m_KeywordSet.insert(_T("elseif"));
-    m_KeywordSet.insert(_T("then"));
-    m_KeywordSet.insert(_T("else"));
-    m_KeywordSet.insert(_T("endif"));
-    m_KeywordSet.insert(_T("do"));
-    m_KeywordSet.insert(_T("enddo"));
-    m_KeywordSet.insert(_T("while"));
-    m_KeywordSet.insert(_T("concurrent"));
-    m_KeywordSet.insert(_T("subroutine"));
-    m_KeywordSet.insert(_T("endsubroutine"));
-    m_KeywordSet.insert(_T("function"));
-    m_KeywordSet.insert(_T("endfunction"));
-    m_KeywordSet.insert(_T("abstract"));
-    m_KeywordSet.insert(_T("interface"));
-    m_KeywordSet.insert(_T("endinterface"));
-    m_KeywordSet.insert(_T("associate"));
-    m_KeywordSet.insert(_T("endassociate"));
-    m_KeywordSet.insert(_T("block"));
-    m_KeywordSet.insert(_T("endblock"));
-    m_KeywordSet.insert(_T("blockdata"));
-    m_KeywordSet.insert(_T("data"));
-    m_KeywordSet.insert(_T("endblockdata"));
-    m_KeywordSet.insert(_T("critical"));
-    m_KeywordSet.insert(_T("endcritical"));
-    m_KeywordSet.insert(_T("module"));
-    m_KeywordSet.insert(_T("endmodule"));
-    m_KeywordSet.insert(_T("program"));
-    m_KeywordSet.insert(_T("endprogram"));
-    m_KeywordSet.insert(_T("select"));
-    m_KeywordSet.insert(_T("case"));
-    m_KeywordSet.insert(_T("selectcase"));
-    m_KeywordSet.insert(_T("default"));
-    m_KeywordSet.insert(_T("is"));
-    m_KeywordSet.insert(_T("class"));
-    m_KeywordSet.insert(_T("selecttype"));
-    m_KeywordSet.insert(_T("endselect"));
-    m_KeywordSet.insert(_T("type"));
-    m_KeywordSet.insert(_T("endtype"));
-    m_KeywordSet.insert(_T("where"));
-    m_KeywordSet.insert(_T("elsewhere"));
-    m_KeywordSet.insert(_T("endwhere"));
-    m_KeywordSet.insert(_T("enum"));
-    m_KeywordSet.insert(_T("endenum"));
-    m_KeywordSet.insert(_T("forall"));
-    m_KeywordSet.insert(_T("endforall"));
-    m_KeywordSet.insert(_T("submodule"));
-    m_KeywordSet.insert(_T("endsubmodule"));
-    m_KeywordSet.insert(_T("end"));
-    m_KeywordSet.insert(_T("change"));
-    m_KeywordSet.insert(_T("team"));
-    m_KeywordSet.insert(_T("endteam"));
-    m_KeywordSet.insert(_T("procedure"));
-    m_KeywordSet.insert(_T("endprocedure"));
+    m_KeywordSet.insert("if");
+    m_KeywordSet.insert("elseif");
+    m_KeywordSet.insert("then");
+    m_KeywordSet.insert("else");
+    m_KeywordSet.insert("endif");
+    m_KeywordSet.insert("do");
+    m_KeywordSet.insert("enddo");
+    m_KeywordSet.insert("while");
+    m_KeywordSet.insert("concurrent");
+    m_KeywordSet.insert("subroutine");
+    m_KeywordSet.insert("endsubroutine");
+    m_KeywordSet.insert("function");
+    m_KeywordSet.insert("endfunction");
+    m_KeywordSet.insert("abstract");
+    m_KeywordSet.insert("interface");
+    m_KeywordSet.insert("endinterface");
+    m_KeywordSet.insert("associate");
+    m_KeywordSet.insert("endassociate");
+    m_KeywordSet.insert("block");
+    m_KeywordSet.insert("endblock");
+    m_KeywordSet.insert("blockdata");
+    m_KeywordSet.insert("data");
+    m_KeywordSet.insert("endblockdata");
+    m_KeywordSet.insert("critical");
+    m_KeywordSet.insert("endcritical");
+    m_KeywordSet.insert("module");
+    m_KeywordSet.insert("endmodule");
+    m_KeywordSet.insert("program");
+    m_KeywordSet.insert("endprogram");
+    m_KeywordSet.insert("select");
+    m_KeywordSet.insert("case");
+    m_KeywordSet.insert("selectcase");
+    m_KeywordSet.insert("default");
+    m_KeywordSet.insert("rank");
+    m_KeywordSet.insert("is");
+    m_KeywordSet.insert("class");
+    m_KeywordSet.insert("selecttype");
+    m_KeywordSet.insert("endselect");
+    m_KeywordSet.insert("type");
+    m_KeywordSet.insert("endtype");
+    m_KeywordSet.insert("where");
+    m_KeywordSet.insert("elsewhere");
+    m_KeywordSet.insert("endwhere");
+    m_KeywordSet.insert("enum");
+    m_KeywordSet.insert("endenum");
+    m_KeywordSet.insert("forall");
+    m_KeywordSet.insert("endforall");
+    m_KeywordSet.insert("submodule");
+    m_KeywordSet.insert("endsubmodule");
+    m_KeywordSet.insert("end");
+    m_KeywordSet.insert("change");
+    m_KeywordSet.insert("team");
+    m_KeywordSet.insert("endteam");
+    m_KeywordSet.insert("procedure");
+    m_KeywordSet.insert("endprocedure");
 
     MakeFConstructTypeMap();
     FConstruct::MakeFCLReMap();
@@ -95,85 +96,89 @@ ConstrHighlighter::~ConstrHighlighter()
 
 void ConstrHighlighter::ReadOptions()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
-    m_MakeHighlight = cfg->ReadBool(_T("/do_construct_highlighting"), true);
-    m_FullColour = cfg->ReadColour(_T("/chighlighter_full_colour"),wxColour(165, 165, 255));
-    m_UnfinColour = cfg->ReadColour(_T("/chighlighter_unfinished_colour"),wxColour(255, 165, 0));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
+    m_MakeHighlight = cfg->ReadBool("/do_construct_highlighting", true);
+    m_FullColour = cfg->ReadColour("/chighlighter_full_colour",wxColour(165, 165, 255));
+    m_UnfinColour = cfg->ReadColour("/chighlighter_unfinished_colour",wxColour(255, 165, 0));
 }
 
 void ConstrHighlighter::MakeFConstructTypeMap()
 {
-    m_FConstructTypeMap[_T("end")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["end"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("subroutine")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endsubroutine")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["subroutine"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endsubroutine"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("function")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endfunction")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["function"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endfunction"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("program")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endprogram")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["program"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endprogram"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("module")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endmodule")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["module"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endmodule"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("submodule")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endsubmodule")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["submodule"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endsubmodule"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("moduleprocedure")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endprocedure")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["moduleprocedure"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endprocedure"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("blockdata")] = FConstruct::ctProgramGroup;
-    m_FConstructTypeMap[_T("endblockdata")] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["blockdata"] = FConstruct::ctProgramGroup;
+    m_FConstructTypeMap["endblockdata"] = FConstruct::ctProgramGroup;
 
-    m_FConstructTypeMap[_T("interface")] = FConstruct::ctInterface;
-    m_FConstructTypeMap[_T("abstractinterface")] = FConstruct::ctInterface;
-    m_FConstructTypeMap[_T("endinterface")] = FConstruct::ctInterface;
+    m_FConstructTypeMap["interface"] = FConstruct::ctInterface;
+    m_FConstructTypeMap["abstractinterface"] = FConstruct::ctInterface;
+    m_FConstructTypeMap["endinterface"] = FConstruct::ctInterface;
 
-    m_FConstructTypeMap[_T("ifthen")] = FConstruct::ctIf;
-    m_FConstructTypeMap[_T("elseifthen")] = FConstruct::ctIf;
-    m_FConstructTypeMap[_T("else")] = FConstruct::ctIf;
-    m_FConstructTypeMap[_T("endif")] = FConstruct::ctIf;
+    m_FConstructTypeMap["ifthen"] = FConstruct::ctIf;
+    m_FConstructTypeMap["elseifthen"] = FConstruct::ctIf;
+    m_FConstructTypeMap["else"] = FConstruct::ctIf;
+    m_FConstructTypeMap["endif"] = FConstruct::ctIf;
 
-    m_FConstructTypeMap[_T("do")] = FConstruct::ctDo;
-    m_FConstructTypeMap[_T("dowhile")] = FConstruct::ctDo;
-    m_FConstructTypeMap[_T("doconcurrent")] = FConstruct::ctDo;
-    m_FConstructTypeMap[_T("enddo")] = FConstruct::ctDo;
+    m_FConstructTypeMap["do"] = FConstruct::ctDo;
+    m_FConstructTypeMap["dowhile"] = FConstruct::ctDo;
+    m_FConstructTypeMap["doconcurrent"] = FConstruct::ctDo;
+    m_FConstructTypeMap["enddo"] = FConstruct::ctDo;
 
-    m_FConstructTypeMap[_T("associate")] = FConstruct::ctAssiciate;
-    m_FConstructTypeMap[_T("endassociate")] = FConstruct::ctAssiciate;
+    m_FConstructTypeMap["associate"] = FConstruct::ctAssiciate;
+    m_FConstructTypeMap["endassociate"] = FConstruct::ctAssiciate;
 
-    m_FConstructTypeMap[_T("block")] = FConstruct::ctBlock;
-    m_FConstructTypeMap[_T("endblock")] = FConstruct::ctBlock;
+    m_FConstructTypeMap["block"] = FConstruct::ctBlock;
+    m_FConstructTypeMap["endblock"] = FConstruct::ctBlock;
 
-    m_FConstructTypeMap[_T("selectcase")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("case")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("casedefault")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("endselect")] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["selectcase"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["case"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["casedefault"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["endselect"] = FConstruct::ctSelectGroup;
 
-    m_FConstructTypeMap[_T("selecttype")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("typeis")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("classis")] = FConstruct::ctSelectGroup;
-    m_FConstructTypeMap[_T("classdefault")] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["selecttype"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["typeis"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["classis"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["classdefault"] = FConstruct::ctSelectGroup;
 
-    m_FConstructTypeMap[_T("type")] = FConstruct::ctType;
-    m_FConstructTypeMap[_T("endtype")] = FConstruct::ctType;
+    m_FConstructTypeMap["selectrank"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["rank"] = FConstruct::ctSelectGroup;
+    m_FConstructTypeMap["rankdefault"] = FConstruct::ctSelectGroup;
 
-    m_FConstructTypeMap[_T("critical")] = FConstruct::ctCritical;
-    m_FConstructTypeMap[_T("endcritical")] = FConstruct::ctCritical;
+    m_FConstructTypeMap["type"] = FConstruct::ctType;
+    m_FConstructTypeMap["endtype"] = FConstruct::ctType;
 
-    m_FConstructTypeMap[_T("where")] = FConstruct::ctWhere;
-    m_FConstructTypeMap[_T("elsewhere")] = FConstruct::ctWhere;
-    m_FConstructTypeMap[_T("endwhere")] = FConstruct::ctWhere;
+    m_FConstructTypeMap["critical"] = FConstruct::ctCritical;
+    m_FConstructTypeMap["endcritical"] = FConstruct::ctCritical;
 
-    m_FConstructTypeMap[_T("enum")] = FConstruct::ctEnum;
-    m_FConstructTypeMap[_T("endenum")] = FConstruct::ctEnum;
+    m_FConstructTypeMap["where"] = FConstruct::ctWhere;
+    m_FConstructTypeMap["elsewhere"] = FConstruct::ctWhere;
+    m_FConstructTypeMap["endwhere"] = FConstruct::ctWhere;
 
-    m_FConstructTypeMap[_T("forall")] = FConstruct::ctForall;
-    m_FConstructTypeMap[_T("endforall")] = FConstruct::ctForall;
+    m_FConstructTypeMap["enum"] = FConstruct::ctEnum;
+    m_FConstructTypeMap["endenum"] = FConstruct::ctEnum;
 
-    m_FConstructTypeMap[_T("changeteam")] = FConstruct::ctTeam;
-    m_FConstructTypeMap[_T("endteam")] = FConstruct::ctTeam;
+    m_FConstructTypeMap["forall"] = FConstruct::ctForall;
+    m_FConstructTypeMap["endforall"] = FConstruct::ctForall;
+
+    m_FConstructTypeMap["changeteam"] = FConstruct::ctTeam;
+    m_FConstructTypeMap["endteam"] = FConstruct::ctTeam;
 }
 
 void ConstrHighlighter::ClearHighlighting(cbStyledTextCtrl* control, bool forceAction)
@@ -184,9 +189,7 @@ void ConstrHighlighter::ClearHighlighting(cbStyledTextCtrl* control, bool forceA
     if (!m_WasCleared || forceAction)
     {
         const int old_indic = control->GetIndicatorCurrent();
-        control->SetIndicatorCurrent(m_IndicFound);
-        control->IndicatorClearRange(0, control->GetLength());
-        control->SetIndicatorCurrent(m_IndicNotFound);
+        control->SetIndicatorCurrent(m_IndicHighlight);
         control->IndicatorClearRange(0, control->GetLength());
         m_WasCleared = true;
         control->SetIndicatorCurrent(old_indic);
@@ -205,6 +208,7 @@ void ConstrHighlighter::DoWork(cbEditor* editor, FortranSourceForm fsForm)
         return;
     }
 
+    m_TimeMax = 100;
     m_Watch.Start();
 
     int cpos = control->GetCurrentPos();
@@ -216,7 +220,7 @@ void ConstrHighlighter::DoWork(cbEditor* editor, FortranSourceForm fsForm)
     const int old_indic = control->GetIndicatorCurrent();
     if (!m_WasCleared)
     {
-        control->SetIndicatorCurrent(m_IndicFound);
+        control->SetIndicatorCurrent(m_IndicHighlight);
         control->IndicatorClearRange(0, control->GetLength());
         m_WasCleared = true;
         control->SetIndicatorCurrent(old_indic);
@@ -291,7 +295,7 @@ void ConstrHighlighter::DoWork(cbEditor* editor, FortranSourceForm fsForm)
             word3.word = str3;
             word3.posStart = str3Pos;
 
-            if ((str1 + str2 + str3) == _T("end"))
+            if ((str1 + str2 + str3) == "end")
                 flid = FConstruct::fclProgGroup_end;
             else
                 flid = flidAll[i];
@@ -312,14 +316,14 @@ void ConstrHighlighter::DoWork(cbEditor* editor, FortranSourceForm fsForm)
         return;
 
     if (foundFull)
-        control->IndicatorSetForeground(m_IndicFound, m_FullColour);
+        control->IndicatorSetForeground(m_IndicHighlight, m_FullColour);
     else
-        control->IndicatorSetForeground(m_IndicFound, m_UnfinColour);
-    control->IndicatorSetStyle(m_IndicFound, wxSCI_INDIC_ROUNDBOX);
-    control->IndicatorSetAlpha(m_IndicFound, 100);
-    control->IndicatorSetOutlineAlpha(m_IndicFound, 255);
-    control->IndicatorSetUnder(m_IndicFound,true);
-    control->SetIndicatorCurrent(m_IndicFound);
+        control->IndicatorSetForeground(m_IndicHighlight, m_UnfinColour);
+    control->IndicatorSetStyle(m_IndicHighlight, wxSCI_INDIC_ROUNDBOX);
+    control->IndicatorSetAlpha(m_IndicHighlight, 100);
+    control->IndicatorSetOutlineAlpha(m_IndicHighlight, 255);
+    control->IndicatorSetUnder(m_IndicHighlight,true);
+    control->SetIndicatorCurrent(m_IndicHighlight);
 
     m_WasCleared = false;
 
@@ -632,19 +636,20 @@ void ConstrHighlighter::SearchUnConGroup(cbStyledTextCtrl* control, int pStartC,
                 {
                     wxString strFound = str1 + str2 + str3;
                     if ( fcl == FConstruct::fclProgGroup_end ||
-                        (fcl == FConstruct::fclSub_end_sub && strFound.IsSameAs(_T("subroutine"))) ||
-                        (fcl == FConstruct::fclFun_end_fun && strFound.IsSameAs(_T("function"))) ||
-                        (fcl == FConstruct::fclMod_end_module && strFound.IsSameAs(_T("module"))) ||
-                        (fcl == FConstruct::fclSubmod_end_submod && strFound.IsSameAs(_T("submodule"))) ||
-                        (fcl == FConstruct::fclProg_end_prog && strFound.IsSameAs(_T("program"))) ||
-                        (fcl == FConstruct::fclBlockdata_end_blockdata && strFound.IsSameAs(_T("blockdata"))) ||
-                        (fcl == FConstruct::fclProc_end_proc && strFound.IsSameAs(_T("moduleprocedure"))) ||
+                        (fcl == FConstruct::fclSub_end_sub && strFound.IsSameAs("subroutine")) ||
+                        (fcl == FConstruct::fclFun_end_fun && strFound.IsSameAs("function")) ||
+                        (fcl == FConstruct::fclMod_end_module && strFound.IsSameAs("module")) ||
+                        (fcl == FConstruct::fclSubmod_end_submod && strFound.IsSameAs("submodule")) ||
+                        (fcl == FConstruct::fclProg_end_prog && strFound.IsSameAs("program")) ||
+                        (fcl == FConstruct::fclBlockdata_end_blockdata && strFound.IsSameAs("blockdata")) ||
+                        (fcl == FConstruct::fclProc_end_proc && strFound.IsSameAs("moduleprocedure")) ||
 
                          fcl == FConstruct::fclSelect_end ||
-                        (fcl == FConstruct::fclSelectCase_case && strFound.IsSameAs(_T("selectcase"))) ||
-                        (fcl == FConstruct::fclSelectType_type_is && strFound.IsSameAs(_T("selecttype"))) ||
-                        (fcl == FConstruct::fclSelectType_class_is && strFound.IsSameAs(_T("selecttype"))) ||
-                        (fcl == FConstruct::fclSelectType_class_default && strFound.IsSameAs(_T("selecttype"))) )
+                        (fcl == FConstruct::fclSelectCase_case && strFound.IsSameAs("selectcase")) ||
+                        (fcl == FConstruct::fclSelectType_type_is && strFound.IsSameAs("selecttype")) ||
+                        (fcl == FConstruct::fclSelectType_class_is && strFound.IsSameAs("selecttype")) ||
+                        (fcl == FConstruct::fclSelectType_class_default && strFound.IsSameAs("selecttype")) ||
+                        (fcl == FConstruct::fclSelectRank_rank && strFound.IsSameAs("selectrank")) )
                     {
                         PutToKeywordList(str1, str2, str3, str1Pos, str2Pos, str3Pos, myPairs);
                         foundEnd = true;
@@ -689,13 +694,13 @@ void ConstrHighlighter::SearchUnConGroup(cbStyledTextCtrl* control, int pStartC,
                             GetKeyworsFromLine(control, flidFound, lineStartPos, lineEndPos, strE1, strE2, strE3, strE1Pos, strE2Pos, strE3Pos);
 
                             wxString strFound = strE1 + strE2 + strE3;
-                            if ( strFound.IsSameAs(_T("end")) ||
-                                 (fcl == FConstruct::fclSub_sub && strFound.IsSameAs(_T("endsubroutine"))) ||
-                                 (fcl == FConstruct::fclFun_fun && strFound.IsSameAs(_T("endfunction"))) ||
-                                 (fcl == FConstruct::fclMod_module && strFound.IsSameAs(_T("endmodule"))) ||
-                                 (fcl == FConstruct::fclSubmod_submod && strFound.IsSameAs(_T("endsubmodule"))) ||
-                                 (fcl == FConstruct::fclProg_prog && strFound.IsSameAs(_T("endprogram"))) ||
-                                 (fcl == FConstruct::fclProc_mod_proc && strFound.IsSameAs(_T("endprocedure"))) )
+                            if ( strFound.IsSameAs("end") ||
+                                 (fcl == FConstruct::fclSub_sub && strFound.IsSameAs("endsubroutine")) ||
+                                 (fcl == FConstruct::fclFun_fun && strFound.IsSameAs("endfunction")) ||
+                                 (fcl == FConstruct::fclMod_module && strFound.IsSameAs("endmodule")) ||
+                                 (fcl == FConstruct::fclSubmod_submod && strFound.IsSameAs("endsubmodule")) ||
+                                 (fcl == FConstruct::fclProg_prog && strFound.IsSameAs("endprogram")) ||
+                                 (fcl == FConstruct::fclProc_mod_proc && strFound.IsSameAs("endprocedure")) )
                             {
                                 PutToKeywordList(strE1, strE2, strE3, strE1Pos, strE2Pos, strE3Pos, myPairs);
                                 foundEnd = true;
@@ -719,7 +724,7 @@ void ConstrHighlighter::SearchUnConGroup(cbStyledTextCtrl* control, int pStartC,
                     else
                     {
                         wxString strFound = strE1 + strE2 + strE3;
-                        if (strFound.IsSameAs(_T("endselect")))
+                        if (strFound.IsSameAs("endselect"))
                         {
                             PutToKeywordList(strE1, strE2, strE3, strE1Pos, strE2Pos, strE3Pos, myPairs);
                             foundEnd = true;
@@ -802,11 +807,11 @@ int ConstrHighlighter::GetWordsEnd(wxString& str1, int str1Pos, wxString& str2, 
 {
     int wend = -1;
     if (!str3.IsEmpty())
-        wend = str3Pos + str3.Length();
+        wend = str3Pos + str3.length();
     else if (!str2.IsEmpty())
-        wend = str2Pos + str2.Length();
+        wend = str2Pos + str2.length();
     else if (!str1.IsEmpty())
-        wend = str1Pos + str1.Length();
+        wend = str1Pos + str1.length();
     return wend;
 }
 
@@ -952,7 +957,7 @@ int ConstrHighlighter::FindProgGroupEndKeywordPos(cbStyledTextCtrl* control, int
     flidAll.push_back(FConstruct::fclBlockdata_end_blockdata);
     flidAll.push_back(FConstruct::fclProc_end_proc);
 
-    wxString sW = _T("end");
+    wxString sW = "end";
     while (true)
     {
         int pos = FindText(control, pStart, pEnd, sW, wxSCI_FIND_WORDSTART);
@@ -966,49 +971,49 @@ int ConstrHighlighter::FindProgGroupEndKeywordPos(cbStyledTextCtrl* control, int
         {
             nUsed = 1;
         }
-        else if (foundWord.IsSameAs(_T("endsubroutine")))
+        else if (foundWord.IsSameAs("endsubroutine"))
         {
             flid = FConstruct::fclSub_end_sub;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endfunction")))
+        else if (foundWord.IsSameAs("endfunction"))
         {
             flid = FConstruct::fclFun_end_fun;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endprogram")))
+        else if (foundWord.IsSameAs("endprogram"))
         {
             flid = FConstruct::fclProg_end_prog;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endmodule")))
+        else if (foundWord.IsSameAs("endmodule"))
         {
             flid = FConstruct::fclMod_end_module;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endsubmodule")))
+        else if (foundWord.IsSameAs("endsubmodule"))
         {
             flid = FConstruct::fclSubmod_end_submod;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endblock")))
+        else if (foundWord.IsSameAs("endblock"))
         {
             flid = FConstruct::fclBlockdata_end_blockdata;
             nUsed = 2;
         }
-        else if (foundWord.IsSameAs(_T("endblockdata")))
+        else if (foundWord.IsSameAs("endblockdata"))
         {
             flid = FConstruct::fclBlockdata_end_blockdata;
             nUsed = 3;
         }
-        else if (foundWord.IsSameAs(_T("endprocedure")))
+        else if (foundWord.IsSameAs("endprocedure"))
         {
             flid = FConstruct::fclProc_end_proc;
             nUsed = 2;
         }
         else
         {
-            pStart = searchBack? pos : pos+foundWord.Length();
+            pStart = searchBack? pos : pos+foundWord.length();
             continue;
         }
 
@@ -1033,7 +1038,7 @@ int ConstrHighlighter::FindProgGroupEndKeywordPos(cbStyledTextCtrl* control, int
                 return pos;
         }
 
-        pStart = searchBack? pos : pos+foundWord.Length();
+        pStart = searchBack? pos : pos+foundWord.length();
     }
     return wxSCI_INVALID_POSITION;
 }
@@ -1078,6 +1083,7 @@ int ConstrHighlighter::FindGroupKeyword(cbStyledTextCtrl* control, int pStart, i
     {
         flidAll.push_back(FConstruct::fclSelectCase_start);
         flidAll.push_back(FConstruct::fclSelectType_start);
+        flidAll.push_back(FConstruct::fclSelectRank_start);
     }
     else
         return posGK;
@@ -1143,13 +1149,13 @@ int ConstrHighlighter::FindFKeyword(cbStyledTextCtrl* control, int pStart, int p
         wxString foundWord = control->GetTextRange(pos, wordendpos).Lower();
         if (foundWord.IsSameAs(sWord1))
             nUsed = 1;
-        else if (!sWord2.IsEmpty() && foundWord.IsSameAs(sWord1+sWord2))
+        else if (!sWord2.empty() && foundWord.IsSameAs(sWord1+sWord2))
             nUsed = 2;
-        else if (flid == FConstruct::fclBlockdata_end_blockdata && foundWord.IsSameAs(_T("endblockdata")))
+        else if (flid == FConstruct::fclBlockdata_end_blockdata && foundWord.IsSameAs("endblockdata"))
             nUsed = 3;
         else
         {
-            pStart = searchBack? pos : pos+foundWord.Length();
+            pStart = searchBack? pos : pos+foundWord.length();
             continue;
         }
 
@@ -1188,30 +1194,30 @@ int ConstrHighlighter::FindFKeyword(cbStyledTextCtrl* control, int pStart, int p
                 if (flid == FConstruct::fclInterf_interf)
                 {
                     // check "abstract interface"
-                    pos = FindText(control, pos-16, pos-1, _T("abstract"), wxSCI_FIND_WHOLEWORD);
+                    pos = FindText(control, pos-16, pos-1, "abstract", wxSCI_FIND_WHOLEWORD);
                     if (pos != wxSCI_INVALID_POSITION)
                     {
                         str2Pos = str1Pos;
                         str2 = str1;
                         str1Pos = pos;
-                        str1 = _T("abstract");
+                        str1 = "abstract";
                     }
                 }
                 else if (flid == FConstruct::fclDo_do)
                 {
-                    pos = FindText(control, str1Pos+3, str1Pos+10, _T("while"), wxSCI_FIND_WHOLEWORD);
+                    pos = FindText(control, str1Pos+3, str1Pos+10, "while", wxSCI_FIND_WHOLEWORD);
                     if (pos != wxSCI_INVALID_POSITION)
                     {
                         str2Pos = pos;
-                        str2 = _T("while");
+                        str2 = "while";
                     }
                     else
                     {
-                        pos = FindText(control, str1Pos+3, str1Pos+15, _T("concurrent"), wxSCI_FIND_WHOLEWORD);
+                        pos = FindText(control, str1Pos+3, str1Pos+15, "concurrent", wxSCI_FIND_WHOLEWORD);
                         if (pos != wxSCI_INVALID_POSITION)
                         {
                             str2Pos = pos;
-                            str2 = _T("concurrent");
+                            str2 = "concurrent";
                         }
                     }
                 }
@@ -1237,7 +1243,7 @@ int ConstrHighlighter::FindFKeyword(cbStyledTextCtrl* control, int pStart, int p
                 pos = FindText(control, pos+1, lineEndPos, sW, wxSCI_FIND_WORDSTART);
                 wordendpos = control->WordEndPosition(pos, true);
                 foundWord = control->GetTextRange(pos, wordendpos).Lower();
-                if (foundWord.IsSameAs(_T("block")))
+                if (foundWord.IsSameAs("block"))
                 {
                     str2 = foundWord;
                     str2Pos = pos;
@@ -1252,7 +1258,7 @@ int ConstrHighlighter::FindFKeyword(cbStyledTextCtrl* control, int pStart, int p
                         return str1Pos;
                     }
                 }
-                else if (foundWord.IsSameAs(_T("blockdata")))
+                else if (foundWord.IsSameAs("blockdata"))
                 {
                     str2 = foundWord;
                     str2Pos = pos;
@@ -1290,7 +1296,7 @@ int ConstrHighlighter::FindFKeyword(cbStyledTextCtrl* control, int pStart, int p
         }
         else
         {
-            pStart = searchBack? pos : pos+foundWord.Length();
+            pStart = searchBack? pos : pos+foundWord.length();
         }
     }
     return wxSCI_INVALID_POSITION;
@@ -1413,113 +1419,113 @@ void ConstrHighlighter::GetFortranConstruct(const Keyword &word1, const Keyword 
         fcon.SetType(fct);
     else if (fct == FConstruct::ctIf)
     {
-        fcon.AddPart(_T("if"), _T("then"), estr);
-        fcon.AddPart(_T("else"), _T("if"), _T("then"));
-        fcon.AddPart(_T("else"), estr, estr);
-        fcon.AddPart(_T("end"), _T("if"), estr);
+        fcon.AddPart("if", "then", estr);
+        fcon.AddPart("else", "if", "then");
+        fcon.AddPart("else", estr, estr);
+        fcon.AddPart("end", "if", estr);
         fcon.SetType(FConstruct::ctIf);
     }
     else if (fct == FConstruct::ctDo)
     {
-        fcon.AddPart(_T("do"), estr, estr);
-        fcon.AddPart(_T("end"), _T("do"), estr);
+        fcon.AddPart("do", estr, estr);
+        fcon.AddPart("end", "do", estr);
         fcon.SetType(FConstruct::ctDo);
     }
     else if (fct == FConstruct::ctInterface)
     {
-        fcon.AddPart(_T("interface"), estr, estr);
-        fcon.AddPart(_T("end"), _T("interface"), estr);
+        fcon.AddPart("interface", estr, estr);
+        fcon.AddPart("end", "interface", estr);
         fcon.SetType(FConstruct::ctInterface);
     }
     else if (fct == FConstruct::ctFunction)
     {
-        fcon.AddPart(_T("function"), estr, estr);
-        fcon.AddPart(_T("end"), _T("function"), estr);
+        fcon.AddPart("function", estr, estr);
+        fcon.AddPart("end", "function", estr);
         fcon.SetType(FConstruct::ctFunction);
     }
     else if (fct == FConstruct::ctSubroutine)
     {
-        fcon.AddPart(_T("subroutine"), estr, estr);
-        fcon.AddPart(_T("end"), _T("subroutine"), estr);
+        fcon.AddPart("subroutine", estr, estr);
+        fcon.AddPart("end", "subroutine", estr);
         fcon.SetType(FConstruct::ctSubroutine);
     }
     else if (fct == FConstruct::ctProgram)
     {
-        fcon.AddPart(_T("program"), estr, estr);
-        fcon.AddPart(_T("end"), _T("program"), estr);
+        fcon.AddPart("program", estr, estr);
+        fcon.AddPart("end", "program", estr);
         fcon.SetType(FConstruct::ctProgram);
     }
     else if (fct == FConstruct::ctModule)
     {
-        fcon.AddPart(_T("module"), estr, estr);
-        fcon.AddPart(_T("end"), _T("module"), estr);
+        fcon.AddPart("module", estr, estr);
+        fcon.AddPart("end", "module", estr);
         fcon.SetType(FConstruct::ctModule);
     }
     else if (fct == FConstruct::ctSubmodule)
     {
-        fcon.AddPart(_T("submodule"), estr, estr);
-        fcon.AddPart(_T("end"), _T("submodule"), estr);
+        fcon.AddPart("submodule", estr, estr);
+        fcon.AddPart("end", "submodule", estr);
         fcon.SetType(FConstruct::ctSubmodule);
     }
     else if (fct == FConstruct::ctType)
     {
-        fcon.AddPart(_T("type"), estr, estr);
-        fcon.AddPart(_T("end"), _T("type"), estr);
+        fcon.AddPart("type", estr, estr);
+        fcon.AddPart("end", "type", estr);
         fcon.SetType(FConstruct::ctType);
     }
     else if (fct == FConstruct::ctEnum)
     {
-        fcon.AddPart(_T("enum"), estr, estr);
-        fcon.AddPart(_T("end"), _T("enum"), estr);
+        fcon.AddPart("enum", estr, estr);
+        fcon.AddPart("end", "enum", estr);
         fcon.SetType(FConstruct::ctEnum);
     }
     else if (fct == FConstruct::ctCritical)
     {
-        fcon.AddPart(_T("critical"), estr, estr);
-        fcon.AddPart(_T("end"), _T("critical"), estr);
+        fcon.AddPart("critical", estr, estr);
+        fcon.AddPart("end", "critical", estr);
         fcon.SetType(FConstruct::ctCritical);
     }
     else if (fct == FConstruct::ctForall)
     {
-        fcon.AddPart(_T("forall"), estr, estr);
-        fcon.AddPart(_T("end"), _T("forall"), estr);
+        fcon.AddPart("forall", estr, estr);
+        fcon.AddPart("end", "forall", estr);
         fcon.SetType(FConstruct::ctForall);
     }
     else if (fct == FConstruct::ctAssiciate)
     {
-        fcon.AddPart(_T("associate"), estr, estr);
-        fcon.AddPart(_T("end"), _T("associate"), estr);
+        fcon.AddPart("associate", estr, estr);
+        fcon.AddPart("end", "associate", estr);
         fcon.SetType(FConstruct::ctAssiciate);
     }
     else if (fct == FConstruct::ctBlock)
     {
-        fcon.AddPart(_T("block"), estr, estr);
-        fcon.AddPart(_T("end"), _T("block"), estr);
+        fcon.AddPart("block", estr, estr);
+        fcon.AddPart("end", "block", estr);
         fcon.SetType(FConstruct::ctBlock);
     }
     else if (fct == FConstruct::ctTeam)
     {
-        fcon.AddPart(_T("change"), _T("team"), estr);
-        fcon.AddPart(_T("end"), _T("team"), estr);
+        fcon.AddPart("change", "team", estr);
+        fcon.AddPart("end", "team", estr);
         fcon.SetType(FConstruct::ctTeam);
     }
     else if (fct == FConstruct::ctWhere)
     {
-        fcon.AddPart(_T("where"), estr, estr);
-        fcon.AddPart(_T("else"), _T("where"), estr);
-        fcon.AddPart(_T("end"), _T("where"), estr);
+        fcon.AddPart("where", estr, estr);
+        fcon.AddPart("else", "where", estr);
+        fcon.AddPart("end", "where", estr);
         fcon.SetType(FConstruct::ctWhere);
     }
     else if (fct == FConstruct::ctBlockdata)
     {
-        fcon.AddPart(_T("block"), _T("data"), estr);
-        fcon.AddPart(_T("end"), _T("block"), _T("data"));
+        fcon.AddPart("block", "data", estr);
+        fcon.AddPart("end", "block", "data");
         fcon.SetType(FConstruct::ctBlockdata);
     }
     else if (fct == FConstruct::ctProcedure)
     {
-        fcon.AddPart(_T("module"), _T("procedure"), estr);
-        fcon.AddPart(_T("end"), _T("procedure"), estr);
+        fcon.AddPart("module", "procedure", estr);
+        fcon.AddPart("end", "procedure", estr);
         fcon.SetType(FConstruct::ctProcedure);
     }
 }
@@ -1539,236 +1545,251 @@ void ConstrHighlighter::GetSearchDirection(const Keyword &word1, const Keyword &
 
     if (fct == FConstruct::ctProgramGroup)
     {
-        if (str.IsSameAs(_T("end")) || str.IsSameAs(_T("endfunction")) || str.IsSameAs(_T("endsubroutine")) ||
-            str.IsSameAs(_T("endprogram")) || str.IsSameAs(_T("endmodule")) || str.IsSameAs(_T("endsubmodule")) ||
-            str.IsSameAs(_T("endblockdata")) || str.IsSameAs(_T("endprocedure")))
+        if (str.IsSameAs("end") || str.IsSameAs("endfunction") || str.IsSameAs("endsubroutine") ||
+            str.IsSameAs("endprogram") || str.IsSameAs("endmodule") || str.IsSameAs("endsubmodule") ||
+            str.IsSameAs("endblockdata") || str.IsSameAs("endprocedure"))
         {
             sdir = sdirBack;
         }
-        else if (str.IsSameAs(_T("function")) || str.IsSameAs(_T("subroutine")) || str.IsSameAs(_T("program")) ||
-                 str.IsSameAs(_T("module")) || str.IsSameAs(_T("submodule")) || str.IsSameAs(_T("blockdata")) ||
-                 str.IsSameAs(_T("moduleprocedure")))
+        else if (str.IsSameAs("function") || str.IsSameAs("subroutine") || str.IsSameAs("program") ||
+                 str.IsSameAs("module") || str.IsSameAs("submodule") || str.IsSameAs("blockdata") ||
+                 str.IsSameAs("moduleprocedure"))
         {
             sdir = sdirForth;
         }
     }
     else if (fct== FConstruct::ctSelectGroup)
     {
-        if (str.IsSameAs(_T("selectcase")) || str.IsSameAs(_T("selecttype")))
+        if (str.IsSameAs("selectcase") || str.IsSameAs("selecttype") || str.IsSameAs("selectrank"))
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("case"), estr, estr);
-            unFconForth.AddPart(_T("case"), _T("default"), estr);
-            unFconForth.AddPart(_T("type"), _T("is"), estr);
-            unFconForth.AddPart(_T("class"), _T("is"), estr);
-            unFconForth.AddPart(_T("class"), _T("default"), estr);
-            unFconForth.AddPart(_T("end"), _T("select"), estr);
+            unFconForth.AddPart("case", estr, estr);
+            unFconForth.AddPart("case", "default", estr);
+            unFconForth.AddPart("type", "is", estr);
+            unFconForth.AddPart("class", "is", estr);
+            unFconForth.AddPart("class", "default", estr);
+            unFconForth.AddPart("rank", estr, estr);
+            unFconForth.AddPart("rank", "default", estr);
+            unFconForth.AddPart("end", "select", estr);
         }
-        else if (str.IsSameAs(_T("endselect")))
+        else if (str.IsSameAs("endselect"))
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("select"), _T("case"), estr);
-            unFconBack.AddPart(_T("case"), estr, estr);
-            unFconBack.AddPart(_T("case"), _T("default"), estr);
-            unFconBack.AddPart(_T("type"), _T("is"), estr);
-            unFconBack.AddPart(_T("class"), _T("is"), estr);
-            unFconBack.AddPart(_T("class"), _T("default"), estr);
+            unFconBack.AddPart("select", "case", estr);
+            unFconBack.AddPart("case", estr, estr);
+            unFconBack.AddPart("case", "default", estr);
+            unFconBack.AddPart("type", "is", estr);
+            unFconBack.AddPart("class", "is", estr);
+            unFconBack.AddPart("class", "default", estr);
+            unFconBack.AddPart("select", "rank", estr);
+            unFconBack.AddPart("rank", estr, estr);
+            unFconBack.AddPart("rank", "default", estr);
         }
-        else if (str.IsSameAs(_T("case")) || str.IsSameAs(_T("casedefault")))
+        else if (str.IsSameAs("case") || str.IsSameAs("casedefault"))
         {
             sdir = sdirBackForth;
-            unFconForth.AddPart(_T("case"), estr, estr);
-            unFconForth.AddPart(_T("case"), _T("default"), estr);
-            unFconForth.AddPart(_T("end"), _T("select"), estr);
+            unFconForth.AddPart("case", estr, estr);
+            unFconForth.AddPart("case", "default", estr);
+            unFconForth.AddPart("end", "select", estr);
 
-            unFconBack.AddPart(_T("select"), _T("case"), estr);
-            unFconBack.AddPart(_T("case"), estr, estr);
+            unFconBack.AddPart("select", "case", estr);
+            unFconBack.AddPart("case", estr, estr);
         }
-        else if (str.IsSameAs(_T("typeis")) || str.IsSameAs(_T("classis")) || str.IsSameAs(_T("classdefault")))
+        else if (str.IsSameAs("typeis") || str.IsSameAs("classis") || str.IsSameAs("classdefault"))
         {
             sdir = sdirBackForth;
-            unFconForth.AddPart(_T("type"), _T("is"), estr);
-            unFconForth.AddPart(_T("class"), _T("is"), estr);
-            unFconForth.AddPart(_T("class"), _T("default"), estr);
-            unFconForth.AddPart(_T("end"), _T("select"), estr);
+            unFconForth.AddPart("type", "is", estr);
+            unFconForth.AddPart("class", "is", estr);
+            unFconForth.AddPart("class", "default", estr);
+            unFconForth.AddPart("end", "select", estr);
 
-            unFconBack.AddPart(_T("select"), _T("type"), estr);
-            unFconBack.AddPart(_T("type"), _T("is"), estr);
-            unFconBack.AddPart(_T("class"), _T("is"), estr);
-            unFconBack.AddPart(_T("class"), _T("default"), estr);
+            unFconBack.AddPart("select", "type", estr);
+            unFconBack.AddPart("type", "is", estr);
+            unFconBack.AddPart("class", "is", estr);
+            unFconBack.AddPart("class", "default", estr);
+        }
+        else if (str.IsSameAs("rank") || str.IsSameAs("rankdefault"))
+        {
+            sdir = sdirBackForth;
+            unFconForth.AddPart("rank", estr, estr);
+            unFconForth.AddPart("rank", "default", estr);
+            unFconForth.AddPart("end", "select", estr);
+
+            unFconBack.AddPart("select", "rank", estr);
+            unFconBack.AddPart("rank", estr, estr);
         }
     }
     else if (fct == FConstruct::ctIf)
     {
-        if (str == _T("ifthen") || str == _T("elseifthen"))
+        if (str == "ifthen" || str == "elseifthen")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("else"), _T("if"), _T("then"));
-            unFconForth.AddPart(_T("else"), estr, estr);
-            unFconForth.AddPart(_T("end"), _T("if"), estr);
+            unFconForth.AddPart("else", "if", "then");
+            unFconForth.AddPart("else", estr, estr);
+            unFconForth.AddPart("end", "if", estr);
 
-            if (str == _T("elseifthen"))
+            if (str == "elseifthen")
             {
                 sdir = sdirBackForth;
-                unFconBack.AddPart(_T("if"), _T("then"), estr);
-                unFconBack.AddPart(_T("else"), _T("if"), _T("then"));
+                unFconBack.AddPart("if", "then", estr);
+                unFconBack.AddPart("else", "if", "then");
             }
         }
-        else if (str == _T("else"))
+        else if (str == "else")
         {
             sdir = sdirBackForth;
-            unFconForth.AddPart(_T("end"), _T("if"), estr);
+            unFconForth.AddPart("end", "if", estr);
 
-            unFconBack.AddPart(_T("if"), _T("then"), estr);
-            unFconBack.AddPart(_T("else"), _T("if"), _T("then"));
+            unFconBack.AddPart("if", "then", estr);
+            unFconBack.AddPart("else", "if", "then");
         }
-        else if (str == _T("endif"))
+        else if (str == "endif")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("if"), _T("then"), estr);
-            unFconBack.AddPart(_T("else"), _T("if"), _T("then"));
-            unFconBack.AddPart(_T("else"), estr, estr);
+            unFconBack.AddPart("if", "then", estr);
+            unFconBack.AddPart("else", "if", "then");
+            unFconBack.AddPart("else", estr, estr);
         }
     }
     else if (fct == FConstruct::ctDo)
     {
-        if (str.StartsWith(_T("do")))
+        if (str.StartsWith("do"))
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("do"), estr);
+            unFconForth.AddPart("end", "do", estr);
         }
-        else if (str == _T("enddo"))
+        else if (str == "enddo")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("do"), estr, estr);
+            unFconBack.AddPart("do", estr, estr);
         }
     }
     else if (fct == FConstruct::ctInterface)
     {
-        if (str == _T("interface") || str == _T("abstractinterface"))
+        if (str == "interface" || str == "abstractinterface")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("interface"), estr);
+            unFconForth.AddPart("end", "interface", estr);
         }
-        else if (str == _T("endinterface"))
+        else if (str == "endinterface")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("interface"), estr, estr);
+            unFconBack.AddPart("interface", estr, estr);
         }
     }
     else if (fct == FConstruct::ctType)
     {
-        if (str == _T("type"))
+        if (str == "type")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("type"), estr);
+            unFconForth.AddPart("end", "type", estr);
         }
-        else if (str == _T("endtype"))
+        else if (str == "endtype")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("type"), estr, estr);
+            unFconBack.AddPart("type", estr, estr);
         }
     }
     else if (fct == FConstruct::ctEnum)
     {
-        if (str == _T("enum"))
+        if (str == "enum")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("enum"), estr);
+            unFconForth.AddPart("end", "enum", estr);
         }
-        else if (str == _T("endenum"))
+        else if (str == "endenum")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("enum"), estr, estr);
+            unFconBack.AddPart("enum", estr, estr);
         }
     }
     else if (fct == FConstruct::ctCritical)
     {
-        if (str == _T("critical"))
+        if (str == "critical")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("critical"), estr);
+            unFconForth.AddPart("end", "critical", estr);
         }
-        else if (str == _T("endcritical"))
+        else if (str == "endcritical")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("critical"), estr, estr);
+            unFconBack.AddPart("critical", estr, estr);
         }
     }
     else if (fct == FConstruct::ctForall)
     {
-        if (str == _T("forall"))
+        if (str == "forall")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("forall"), estr);
+            unFconForth.AddPart("end", "forall", estr);
         }
-        else if (str == _T("endforall"))
+        else if (str == "endforall")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("forall"), estr, estr);
+            unFconBack.AddPart("forall", estr, estr);
         }
     }
     else if (fct == FConstruct::ctAssiciate)
     {
-        if (str == _T("associate"))
+        if (str == "associate")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("associate"), estr);
+            unFconForth.AddPart("end", "associate", estr);
         }
-        else if (str == _T("endassociate"))
+        else if (str == "endassociate")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("associate"), estr, estr);
+            unFconBack.AddPart("associate", estr, estr);
         }
     }
     else if (fct == FConstruct::ctBlock)
     {
-        if (str == _T("block"))
+        if (str == "block")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("block"), estr);
+            unFconForth.AddPart("end", "block", estr);
         }
-        else if (str == _T("endblock"))
+        else if (str == "endblock")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("block"), estr, estr);
+            unFconBack.AddPart("block", estr, estr);
         }
     }
     else if (fct == FConstruct::ctTeam)
     {
-        if (str == _T("changeteam"))
+        if (str == "changeteam")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("end"), _T("team"), estr);
+            unFconForth.AddPart("end", "team", estr);
         }
-        else if (str == _T("endteam"))
+        else if (str == "endteam")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("change"), _T("team"), estr);
+            unFconBack.AddPart("change", "team", estr);
         }
     }
     else if (fct == FConstruct::ctWhere)
     {
-        if (str == _T("where"))
+        if (str == "where")
         {
             sdir = sdirForth;
-            unFconForth.AddPart(_T("else"), _T("where"), estr);
-            unFconForth.AddPart(_T("end"), _T("where"), estr);
+            unFconForth.AddPart("else", "where", estr);
+            unFconForth.AddPart("end", "where", estr);
         }
-        else if (str == _T("endwhere"))
+        else if (str == "endwhere")
         {
             sdir = sdirBack;
-            unFconBack.AddPart(_T("where"), estr, estr);
-            unFconBack.AddPart(_T("else"), _T("where"), estr);
+            unFconBack.AddPart("where", estr, estr);
+            unFconBack.AddPart("else", "where", estr);
         }
-        else if (str == _T("elsewhere"))
+        else if (str == "elsewhere")
         {
             sdir = sdirBackForth;
-            unFconBack.AddPart(_T("where"), estr, estr);
-            unFconBack.AddPart(_T("else"), _T("where"), estr);
+            unFconBack.AddPart("where", estr, estr);
+            unFconBack.AddPart("else", "where", estr);
 
-            unFconForth.AddPart(_T("else"), _T("where"), estr);
-            unFconForth.AddPart(_T("end"), _T("where"), estr);
+            unFconForth.AddPart("else", "where", estr);
+            unFconForth.AddPart("end", "where", estr);
         }
     }
 }
@@ -1812,7 +1833,7 @@ void ConstrHighlighter::GetFortranLine(cbStyledTextCtrl* control, int pos, wxStr
         }
     }
     fLine = CutBracketsLevel2(fLine);
-    fLine.Replace(_T("\t"), _T(" "));
+    fLine.Replace("\t", " ");
     fLine.Trim();
 }
 
@@ -1868,7 +1889,7 @@ wxString ConstrHighlighter::GetFortranLine2(cbStyledTextCtrl* control, int posC,
             }
             else
             {
-                lineStr = _T("");
+                lineStr = "";
                 break;
             }
         }
@@ -1960,9 +1981,9 @@ wxString ConstrHighlighter::CutBracketsLevel2(const wxString& str)
     for (int i=int(cutStart.size())-1; i>=0; i--)
     {
         if (cutEnd[i] != int(wxString::npos))
-            retStr = retStr.Mid(0,cutStart[i]) + _T(" ") + retStr.Mid(cutEnd[i]+1);
+            retStr = retStr.Mid(0,cutStart[i]) + " " + retStr.Mid(cutEnd[i]+1);
         else
-            retStr = retStr.Mid(0,cutStart[i]) + _T(" ");
+            retStr = retStr.Mid(0,cutStart[i]) + " ";
     }
     return retStr;
 }
@@ -1982,7 +2003,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
 
         if (sdir == sdirBack)
         {
-            wxString word1 = _T("subroutine");
+            wxString word1 = "subroutine";
             wxString word2;
             wxString word3;
             FConstruct::FCLid flid1 = FConstruct::fclSub_sub;
@@ -1993,7 +2014,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp1 + 10;
 
-            word1 = _T("function");
+            word1 = "function";
             word2 = wxEmptyString;
             word3 = wxEmptyString;
             flid1 = FConstruct::fclFun_fun;
@@ -2004,7 +2025,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp2 + 8;
 
-            word1 = _T("program");
+            word1 = "program";
             word2 = wxEmptyString;
             word3 = wxEmptyString;
             flid1 = FConstruct::fclProg_prog;
@@ -2017,8 +2038,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
         }
         else
         {
-            wxString word1 = _T("end");
-            wxString word2 = _T("subroutine");
+            wxString word1 = "end";
+            wxString word2 = "subroutine";
             wxString word3;
             FConstruct::FCLid flid1 = FConstruct::fclSub_end_sub;
             int cp1 = FindFKeyword(control, posStart, pEnd, flid1, word1, word2, word3,
@@ -2028,8 +2049,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp1;
 
-            word1 = _T("end");
-            word2 = _T("function");
+            word1 = "end";
+            word2 = "function";
             word3 = wxEmptyString;
             flid1 = FConstruct::fclFun_fun;
             int cp2 = FindFKeyword(control, posStart, pEnd, flid1, word1, word2, word3,
@@ -2039,8 +2060,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp2;
 
-            word1 = _T("end");
-            word2 = _T("program");
+            word1 = "end";
+            word2 = "program";
             word3 = wxEmptyString;
             flid1 = FConstruct::fclProg_prog;
             int cp3 = FindFKeyword(control, posStart, pEnd, flid1, word1, word2, word3,
@@ -2058,7 +2079,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
 
         if (sdir == sdirBack)
         {
-            wxString word1 = _T("module");
+            wxString word1 = "module";
             wxString word2;
             wxString word3;
             FConstruct::FCLid flid1 = FConstruct::fclMod_module;
@@ -2069,8 +2090,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp1 + 6;
 
-            word1 = _T("end");
-            word2 = _T("module");
+            word1 = "end";
+            word2 = "module";
             word3 = wxEmptyString;
             flid1 = FConstruct::fclMod_end_module;
             int cp2 = FindFKeywordFull(control, posStart, pEnd, flid1, word1, word2, word3,
@@ -2080,7 +2101,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
             else
                 pEnd = cp2 + 3;
 
-            word1 = _T("submodule");
+            word1 = "submodule";
             word2 = wxEmptyString;
             word3 = wxEmptyString;
             flid1 = FConstruct::fclSubmod_submod;
@@ -2093,8 +2114,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
         }
         else
         {
-            wxString word1 = _T("end");
-            wxString word2 = _T("module");
+            wxString word1 = "end";
+            wxString word2 = "module";
             wxString word3;
             FConstruct::FCLid flid1 = FConstruct::fclMod_end_module;
 
@@ -2106,7 +2127,7 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
                 cp1 = GetWordsEnd(str1, str1Pos, str2, str2Pos, str3, str3Pos);
             }
 
-            word1 = _T("module");
+            word1 = "module";
             word2 = wxEmptyString;
             word3 = wxEmptyString;
             flid1 = FConstruct::fclMod_module;
@@ -2115,8 +2136,8 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
                                           str1, str1Pos, str2, str2Pos, str3, str3Pos);
             if (cp2 != wxSCI_INVALID_POSITION)
                 pEnd = cp2;
-            word1 = _T("end");
-            word2 = _T("submodule");
+            word1 = "end";
+            word2 = "submodule";
             word3 = wxEmptyString;
             flid1 = FConstruct::fclSubmod_end_submod;
 
@@ -2136,5 +2157,132 @@ int ConstrHighlighter::FindLimitPos(cbStyledTextCtrl* control, const FConstruct&
     }
     return rpEnd;
 }
+
+int ConstrHighlighter::GetConstructStartPos(cbEditor* editor, FortranSourceForm fsForm)
+{
+    //
+    // Returns start position of a construct, which has end before the current position.
+    // Function is assumed to be called after user pressed 'Enter'.
+    //
+    int constStartPos = -1;
+    cbStyledTextCtrl* control = editor->GetControl();
+
+    m_TimeMax = 50;
+    m_Watch.Start();
+
+    int nline = control->GetCurrentLine() - 1;
+    if (nline < 2) return constStartPos;
+
+    int lineStartPos = control->PositionFromLine(nline);
+    int lineEndPos = control->GetLineEndPosition(nline);
+
+    // Skip spaces
+    int posWStart = -1;
+    for (int i=lineStartPos; i<lineEndPos; i++)
+    {
+        const wxChar cch = control->GetCharAt(i);
+        if (!isspace(cch))
+        {
+            posWStart = i;
+            break;
+        }
+    }
+    if (posWStart == -1) return constStartPos;
+    int style = control->GetStyleAt(posWStart);
+    if (style != wxSCI_F_WORD)
+        return constStartPos;
+    int posWEnd = control->WordEndPosition(posWStart, true);
+    wxString cword = control->GetTextRange(posWStart,posWEnd).Lower();
+    if (!cword.StartsWith("end") && !cword.StartsWith("else"))
+        return constStartPos;
+    else if (m_KeywordSet.count(cword) == 0)
+        return constStartPos;
+
+    Keyword word1;
+    Keyword word2;
+    Keyword word3;
+    FConstruct::FCLid flid;
+    bool foundFull;
+
+    std::vector<FConstruct::FCLid> flidAll;
+    flidAll = FConstruct::WordFCLidMap[cword];
+    if (flidAll.empty())
+        return constStartPos;
+    bool containsK = false;
+    int flineStartPos;
+    int flineEndPos;
+    wxString fLine;
+    GetFortranLine(control, posWStart, fLine, flineStartPos, flineEndPos);
+    for (size_t i=0; i<flidAll.size(); i++)
+    {
+        if (FConstruct::FCLReMap.count(flidAll[i]) == 0)
+            continue;
+
+        bool match = false;
+        if (flidAll[i] == FConstruct::fclBlock_end_block)
+        {
+            if ( FConstruct::FCLReMap[FConstruct::fclBlock_end_block]->Matches(fLine) &&
+                !FConstruct::FCLReMap[FConstruct::fclBlockdata_end_blockdata]->Matches(fLine))
+                    match = true;
+        }
+        else if (FConstruct::FCLReMap[flidAll[i]]->Matches(fLine))
+        {
+            match = true;
+        }
+
+        if (match)
+        {
+            wxString wstr1, wstr2, wstr3;
+            FConstruct::GetWordsFromFCLid(flidAll[i], wstr1, wstr2, wstr3);
+
+            wxString str1, str2, str3;
+            int str1Pos, str2Pos, str3Pos;
+            int pos = FindFKeyword(control, flineStartPos, control->GetLength(), flidAll[i], wstr1, wstr2, wstr3,
+                                   str1, str1Pos, str2, str2Pos, str3, str3Pos);
+            if (m_Watch.Time() > m_TimeMax)
+                return constStartPos;
+            word1.word = str1;
+            word1.posStart = str1Pos;
+            word2.word = str2;
+            word2.posStart = str2Pos;
+            word3.word = str3;
+            word3.posStart = str3Pos;
+
+            if ((str1 + str2 + str3) == "end")
+                flid = FConstruct::fclProgGroup_end;
+            else
+                flid = flidAll[i];
+
+            if (pos == wxSCI_INVALID_POSITION)
+                containsK = false;
+            else
+                containsK = true;
+            break;
+        }
+    }
+    if (!containsK)
+        return constStartPos;
+
+    KeywordList myPairs;
+    FindMyPairs(control, word1, word2, word3, flid, myPairs, foundFull);
+
+    if (!foundFull)
+        return constStartPos;
+
+    // get minimal position
+    int minPos = -1;
+    for (auto myP : myPairs)
+	{
+	    if (minPos == -1)
+            minPos = myP.posStart;
+
+	    minPos = (myP.posStart < minPos) ? myP.posStart : minPos;
+	}
+	if (minPos != -1)
+        constStartPos = minPos;
+
+    return constStartPos;
+}
+
 
 

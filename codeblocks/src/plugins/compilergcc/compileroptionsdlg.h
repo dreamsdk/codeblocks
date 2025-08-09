@@ -28,13 +28,13 @@ class wxUpdateUIEvent;
 class CompilerOptionsDlg : public cbConfigurationPanel
 {
     public:
-        CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, cbProject* project = 0L, ProjectBuildTarget* target = 0L);
-        ~CompilerOptionsDlg();
+        CompilerOptionsDlg(wxWindow* parent, CompilerGCC* compiler, cbProject* project = nullptr, ProjectBuildTarget* target = nullptr);
+        ~CompilerOptionsDlg() override;
 
-        virtual wxString GetTitle() const { return _("Global compiler settings"); }
-        virtual wxString GetBitmapBaseName() const { return _T("compiler"); }
-        virtual void OnApply();
-        virtual void OnCancel(){}
+        wxString GetTitle() const override { return _("Global compiler settings"); }
+        wxString GetBitmapBaseName() const override { return _T("compiler"); }
+        void OnApply() override;
+        void OnCancel() override {}
     private:
         enum CustomVarActionType
         {
@@ -70,6 +70,8 @@ class CompilerOptionsDlg : public cbConfigurationPanel
         wxListBox* GetDirsListBox();
         CompileOptionsBase* GetVarsOwner();
         void ProjectTargetCompilerAdjust(); //!< checks if compiler changed for project/target and takes actions accordingly
+        void SwapItems(wxListBox* listBox, int a, int b);
+        void Reselect(wxListBox* listBox, const wxArrayInt& selected, int offset);
 
         void OnRealApply(); // user clicked the "Apply" button (so not the Ok button !!!)
         void OnTreeSelectionChange(wxTreeEvent& event);
@@ -135,8 +137,6 @@ class CompilerOptionsDlg : public cbConfigurationPanel
 
         bool                         m_BuildingTree;                 //!< flag to ignore tree changing events while building it
         static int                   m_MenuOption;
-		
-		wxString                     m_LoaderArgs;                   //!< loader arguments -- DreamSDK
 
         DECLARE_EVENT_TABLE()
 };

@@ -71,6 +71,9 @@ public:
     /** the Token's ticket in a TokenTree
      * This is actually a copy of Token::m_Ticket, @sa Token::m_Ticket  */
     unsigned long m_Ticket;
+
+    /** pointer to the mirror node in the non-GUI tree */
+    void*         m_MirrorNode;
 };
 
 class CCTreeCtrlExpandedItemData
@@ -105,7 +108,7 @@ protected:
     static int CBLineCompare    (CCTreeCtrlData* lhs, CCTreeCtrlData* rhs);
     static int CBNoCompare      (CCTreeCtrlData* lhs, CCTreeCtrlData* rhs);
 
-    int OnCompareItems(const wxTreeItemId& item1, const wxTreeItemId& item2);
+    int OnCompareItems(const wxTreeItemId& item1, const wxTreeItemId& item2) override;
     int (*Compare)(CCTreeCtrlData* lhs, CCTreeCtrlData* rhs);
 
     DECLARE_DYNAMIC_CLASS(CCTreeCtrl)

@@ -1,0 +1,29 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="a">
+      <stop stop-color="#2161ab" offset="0"/>
+      <stop stop-color="#478cdb" offset="1"/>
+    </linearGradient>
+    <linearGradient id="b" x1="5.689" x2="4.895" y1="293.2" y2="293.2" gradientTransform="matrix(3.75 0 0 1.69 -32.51 -192.7)" gradientUnits="userSpaceOnUse" xlink:href="#a"/>
+  </defs>
+  <g transform="translate(0 -288.5)">
+    <g stroke-width=".7214">
+      <g shape-rendering="crispEdges" stroke="#606972">
+        <path transform="matrix(1.084 0 0 1.002 18.67 -8.58)" d="m-14.17 304.3v-5.815h2.828l1.31 1.342v4.476z" fill="#e6e9ec" stroke-width=".2538"/>
+        <path transform="matrix(1.084 0 0 1.002 18.67 -8.58)" d="m-11.49 298.5v1.325h1.451" fill="none" stroke-width=".2538px"/>
+      </g>
+    </g>
+    <path transform="matrix(.952 0 0 1.322 14.75 -105.9)" d="m-14.82 303.6v-4.992l2.8 1.278v4.403z" fill="#e6e9ec" shape-rendering="crispEdges" stroke="#606972" stroke-width=".2358"/>
+    <g fill="url(#b)" shape-rendering="crispEdges">
+      <path transform="matrix(.8382 0 0 .5915 16.1 116.4)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 115.8)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 115.3)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 114.8)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 114.2)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 113.7)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.8382 0 0 .5915 16.1 113.2)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+      <path transform="matrix(.4572 0 0 .5915 10.71 112.7)" d="m-14.16 302.7h3.472v0.447h-3.472z"/>
+    </g>
+    <path transform="matrix(.2646 0 0 .2646 15.22 285.9)" d="m-47.9 24.11 7.905 13.39 12.03-25.89-12.06 18.36z" fill="#f03100" shape-rendering="crispEdges" stroke="#ff0829" stroke-linecap="round" stroke-linejoin="round" stroke-width="1px"/>
+  </g>
+</svg>

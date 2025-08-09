@@ -18,7 +18,7 @@
 *
 * $Revision: 10749 $
 * $Id: wxSmithContribItems.h 10749 2016-01-31 09:07:41Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmithContribItems/wxSmithContribItems.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmithContribItems/wxSmithContribItems.h $
 */
 
 #ifndef WXSMITHCONTRIBITEMS_H_INCLUDED

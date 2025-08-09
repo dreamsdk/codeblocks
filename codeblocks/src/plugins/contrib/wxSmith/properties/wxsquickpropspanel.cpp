@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsquickpropspanel.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsquickpropspanel.cpp $
+* $Revision: 13381 $
+* $Id: wxsquickpropspanel.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsquickpropspanel.cpp $
 */
 
 #include "wxsquickpropspanel.h"
@@ -47,8 +47,8 @@ wxsQuickPropsPanel::~wxsQuickPropsPanel()
     // Notifying container that quick properties object does no longer exist
     if ( Container )
     {
-        Container->CurrentQP = 0;
-        Container = 0;
+        Container->CurrentQP = nullptr;
+        Container = nullptr;
     }
 }
 

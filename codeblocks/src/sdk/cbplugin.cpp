@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11638 $
- * $Id: cbplugin.cpp 11638 2019-04-20 16:57:54Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbplugin.cpp $
+ * $Revision: 12999 $
+ * $Id: cbplugin.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/cbplugin.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -178,13 +178,13 @@ wxString cbDebuggerPlugin::GetEditorWordAtCaret(const wxPoint* mousePosition)
 {
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (!ed)
-        return wxEmptyString;
+        return wxString();
     cbStyledTextCtrl* stc = ed->GetControl();
     if (!stc)
-        return wxEmptyString;
+        return wxString();
 
     wxString selected_text = stc->GetSelectedText();
-    if (selected_text != wxEmptyString)
+    if (!selected_text.empty())
     {
         selected_text.Trim(true);
         selected_text.Trim(false);
@@ -203,11 +203,11 @@ wxString cbDebuggerPlugin::GetEditorWordAtCaret(const wxPoint* mousePosition)
             int endPos = stc->GetSelectionEnd();
             int mousePos = stc->PositionFromPointClose(mousePosition->x, mousePosition->y);
             if (mousePos == wxSCI_INVALID_POSITION)
-                return wxEmptyString;
+                return wxString();
             else if (startPos <= mousePos && mousePos <= endPos)
                 return selected_text;
             else
-                return wxEmptyString;
+                return wxString();
         }
         else
             return selected_text;
@@ -440,10 +440,10 @@ void cbDebuggerPlugin::OnEditorOpened(CodeBlocksEvent& event)
             GetCurrentPosition(filename, line);
 
             wxFileName edFileName(ed->GetFilename());
-            edFileName.Normalize();
+            edFileName.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
 
             wxFileName dbgFileName(filename);
-            dbgFileName.Normalize();
+            dbgFileName.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
             if (dbgFileName.GetFullPath().IsSameAs(edFileName.GetFullPath()) && line != -1)
             {
                 editor->SetDebugLine(line - 1);
@@ -468,9 +468,9 @@ void cbDebuggerPlugin::OnProjectActivated(CodeBlocksEvent& event)
 
     if (event.GetProject() != GetProject() && GetProject())
     {
-        wxString msg = _("You can't change the active project while you 're actively debugging another.\n"
-                        "Do you want to stop debugging?\n\n"
-                        "Click \"Yes\" to stop debugging now or click \"No\" to re-activate the debuggee.");
+        wxString msg = _("You can't change the active project while you're actively debugging another.\n"
+                         "Do you want to stop debugging?\n\n"
+                         "Click \"Yes\" to stop debugging now or click \"No\" to re-activate the debuggee.");
         if (cbMessageBox(msg, _("Warning"), wxICON_WARNING | wxYES_NO) == wxID_YES)
         {
             Stop();
@@ -578,6 +578,9 @@ void cbDebuggerPlugin::SwitchToDebuggingLayout()
     case cbDebuggerCommonConfig::OnePerDebuggerConfig:
         perspectiveName = GetGUIName() + wxT(":") + config.GetName();
         break;
+    case cbDebuggerCommonConfig::UseCurrent:
+        m_PreviousLayout = wxString();
+        return;
     case cbDebuggerCommonConfig::OnlyOne:
     default:
         perspectiveName = _("Debugging");
@@ -585,7 +588,7 @@ void cbDebuggerPlugin::SwitchToDebuggingLayout()
 
     CodeBlocksLayoutEvent switchEvent(cbEVT_SWITCH_VIEW_LAYOUT, perspectiveName);
 
-    Manager::Get()->GetLogManager()->DebugLog(F(_("Switching layout to \"%s\""), switchEvent.layout.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("Switching layout to \"%s\""), switchEvent.layout));
 
     // query the current layout
     Manager::Get()->ProcessEvent(queryEvent);
@@ -593,17 +596,18 @@ void cbDebuggerPlugin::SwitchToDebuggingLayout()
 
     // switch to debugging layout
     Manager::Get()->ProcessEvent(switchEvent);
-
-    ShowLog(false);
 }
 
 void cbDebuggerPlugin::SwitchToPreviousLayout()
 {
+    if (m_PreviousLayout.empty())
+        return;
+
     CodeBlocksLayoutEvent switchEvent(cbEVT_SWITCH_VIEW_LAYOUT, m_PreviousLayout);
 
     wxString const &name = !switchEvent.layout.IsEmpty() ? switchEvent.layout : wxString(_("Code::Blocks default"));
 
-    Manager::Get()->GetLogManager()->DebugLog(F(_("Switching layout to \"%s\""), name.wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("Switching layout to \"%s\""), name));
 
     // switch to previous layout
     Manager::Get()->ProcessEvent(switchEvent);
@@ -719,8 +723,10 @@ void cbDebuggerPlugin::OnCompilerFinished(cb_unused CodeBlocksEvent& event)
         // only proceed if build succeeded
         if (m_pCompiler && m_pCompiler->GetExitCode() != 0)
         {
-            AnnoyingDialog dlg(_("Debug anyway?"), _("Build failed, do you want to debug the program?"),
-                               wxART_QUESTION, AnnoyingDialog::YES_NO, AnnoyingDialog::rtNO);
+            AnnoyingDialog dlg(_("Debug anyway?"),
+                               _("Build failed, do you want to debug the program?"),
+                               wxART_QUESTION, AnnoyingDialog::YES_NO, AnnoyingDialog::rtNO,
+                               _("&Debug anyway"));
             if (dlg.ShowModal() != AnnoyingDialog::rtYES)
             {
                 ProjectManager *manager = Manager::Get()->GetProjectManager();
@@ -868,8 +874,8 @@ int cbDebuggerPlugin::RunNixConsole(wxString &consoleTty)
         // Try to detect if the terminal command is present or its parameters are valid.
         if (processInfo->FailedToStart() /*&& ii > 0*/)
         {
-            Log(F(wxT("Failed to execute terminal command: '%s' (exit code: %d)"),
-                  cmd.wx_str(), processInfo->status), Logger::error);
+            Log(wxString::Format("Failed to execute terminal command: '%s' (exit code: %d)",
+                                 cmd, processInfo->status), Logger::error);
             break;
         }
 
@@ -886,14 +892,13 @@ int cbDebuggerPlugin::RunNixConsole(wxString &consoleTty)
         // If we detect such case we will return the PID for the sleep command instead of the PID
         // for the terminal.
         if (kill(consolePid, 0) == -1 && errno == ESRCH) {
-            DebugLog(F(wxT("Using sleep command's PID as console PID %d, TTY %s"),
-                       info.sleepPID, info.ttyPath.wx_str()));
+            DebugLog(wxString::Format("Using sleep command's PID as console PID %d, TTY %s", info.sleepPID, info.ttyPath));
             consoleTty = info.ttyPath;
             return info.sleepPID;
         }
         else
         {
-            DebugLog(F(wxT("Using terminal's PID as console PID %d, TTY %s"), info.sleepPID, info.ttyPath.wx_str()));
+            DebugLog(wxString::Format("Using terminal's PID as console PID %d, TTY %s", info.sleepPID, info.ttyPath));
             consoleTty = info.ttyPath;
             return consolePid;
         }

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9263 $
- * $Id: compilerIAR.cpp 9263 2013-08-17 09:20:28Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerIAR.cpp $
+ * $Revision: 13003 $
+ * $Id: compilerIAR.cpp 13003 2022-11-08 08:50:45Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerIAR.cpp $
  */
 
 #include <sdk.h>
@@ -22,7 +22,7 @@
 #endif
 
 CompilerIAR::CompilerIAR(wxString arch)
-    : Compiler(_("IAR ") + arch + _(" Compiler"), _T("iar") + arch)
+    : Compiler(wxString::Format(_("IAR %s Compiler"), arch), "iar" + arch)
 {
     m_Weight = 75;
     m_Arch = arch;

@@ -107,7 +107,7 @@ wxPdfFontDataType0::CreateDefaultEncodingConv()
 }
 
 void
-wxPdfFontDataType0::SetHalfWidthRanges(bool hwRange, wxChar hwFirst, wxChar hwLast)
+wxPdfFontDataType0::SetHalfWidthRanges(bool hwRange, wxUniChar hwFirst, wxUniChar hwLast)
 {
   m_hwRange = hwRange;
   m_hwFirst = hwFirst;
@@ -154,19 +154,11 @@ wxPdfFontDataType0::LoadFontMetrics(wxXmlNode* root)
     {
       m_ordering = wxEmptyString;
       m_supplement = wxEmptyString;
-#if wxCHECK_VERSION(2,9,0)
       value = child->GetAttribute(wxS("ordering"), wxS(""));
-#else
-      value = child->GetPropVal(wxS("ordering"), wxS(""));
-#endif
       if (value.Length() > 0)
       {
         m_ordering = value;
-#if wxCHECK_VERSION(2,9,0)
         value = child->GetAttribute(wxS("supplement"), wxS(""));
-#else
-        value = child->GetPropVal(wxS("supplement"), wxS(""));
-#endif
         if (value.Length() > 0)
         {
           bRegistry = true;
@@ -189,13 +181,8 @@ wxPdfFontDataType0::LoadFontMetrics(wxXmlNode* root)
         long charId, charWidth;
         if (charNode->GetName() == wxS("char"))
         {
-#if wxCHECK_VERSION(2,9,0)
           strId = charNode->GetAttribute(wxS("id"), wxS(""));
           strWidth = charNode->GetAttribute(wxS("width"), wxS(""));
-#else
-          strId = charNode->GetPropVal(wxS("id"), wxS(""));
-          strWidth = charNode->GetPropVal(wxS("width"), wxS(""));
-#endif
           if (strId.Length() > 0 && strId.ToLong(&charId) &&
               strWidth.Length() > 0 && strWidth.ToLong(&charWidth))
           {
@@ -240,16 +227,17 @@ wxPdfFontDataType0::GetWidthsAsString(bool subset, wxPdfSortedArrayInt* usedGlyp
 }
 
 double
-wxPdfFontDataType0::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning) const
+wxPdfFontDataType0::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning, double charSpacing) const
 {
   wxUnusedVar(encoding);
   wxString t = ConvertToValid(s);
   // Get width of a string in the current font
+  int glyphCount = 0;
   double w = 0;
   wxString::const_iterator ch;
   for (ch = t.begin(); ch != t.end(); ++ch)
   {
-    const int c = *ch;
+    const wxUniChar c = *ch;
     if (c >= 0 && c < 128)
     {
       wxPdfGlyphWidthMap::iterator charIter = (*m_cw).find(c);
@@ -275,6 +263,7 @@ wxPdfFontDataType0::GetStringWidth(const wxString& s, const wxPdfEncoding* encod
         w += 1000;
       }
     }
+    ++glyphCount;
   }
   if (withKerning)
   {
@@ -283,6 +272,10 @@ wxPdfFontDataType0::GetStringWidth(const wxString& s, const wxPdfEncoding* encod
     {
       w += (double) kerningWidth;
     }
+  }
+  if (charSpacing > 0)
+  {
+    w += (glyphCount * charSpacing * 1000);
   }
   return w / 1000;
 }

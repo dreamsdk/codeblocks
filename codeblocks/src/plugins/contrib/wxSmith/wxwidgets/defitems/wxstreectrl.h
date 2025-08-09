@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxstreectrl.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstreectrl.h $
+* $Revision: 13547 $
+* $Id: wxstreectrl.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstreectrl.h $
 */
 
 #ifndef WXSTREECTRL_H
@@ -36,15 +36,15 @@ class wxsTreeCtrl: public wxsWidget
     private:
 
         virtual void OnBuildCreatingCode();
-        virtual wxObject* OnBuildPreview(wxWindow* Parent,long Flags);
-        virtual void OnEnumWidgetProperties(long Flags);
+        virtual wxObject* OnBuildPreview(wxWindow* Parent,long _Flags);
+        virtual void OnEnumWidgetProperties(long _Flags);
         void FindAllImageLists(wxArrayString &aNames);
         void UpdateTreeItemList(void);
 
-        wxArrayString    m_arrItems;            //!< Individual items for the tree control.
-        wxString            m_sImageList;    //!< The name of the image list to use for images.
-        wxImageList        m_imageList;        //!< The image list.
-        bool                    m_bExpand;            //!< Start with everything expanded?
+        wxArrayString m_arrItems;   //!< Individual items for the tree control.
+        wxString      m_sImageList; //!< The name of the image list to use for images.
+        wxImageList   m_imageList;  //!< The image list.
+        bool          m_bExpand;    //!< Start with everything expanded?
 
 };
 

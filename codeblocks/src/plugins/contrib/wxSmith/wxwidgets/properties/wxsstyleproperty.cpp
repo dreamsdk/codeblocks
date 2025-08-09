@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11434 $
-* $Id: wxsstyleproperty.cpp 11434 2018-08-07 07:12:59Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsstyleproperty.cpp $
+* $Revision: 12197 $
+* $Id: wxsstyleproperty.cpp 12197 2020-08-11 08:14:14Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsstyleproperty.cpp $
 */
 
 #include "wxsstyleproperty.h"
@@ -68,7 +68,7 @@ void wxsStyleProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManag
 
         if ( StyleConsts.GetCount() )
         {
-            wxPGId ID = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxFlagsProperty(GetPGName(),wxPG_LABEL,StyleConsts,STYLEBITS));
+            wxPGId ID = Grid->AppendIn(Parent,new wxFlagsProperty(GetPGName(),wxPG_LABEL,StyleConsts,STYLEBITS));
             Grid->SetPropertyAttribute(ID,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
             PGRegister(Object,Grid,ID);
         }

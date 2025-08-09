@@ -1,0 +1,10 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)" stroke="#000">
+    <circle transform="matrix(.5034 0 0 .5034 4.181 288.4)" cx="-1" cy="8" r="5.5" fill="#fdfdfd" stroke-linecap="round" stroke-width="1.074"/>
+    <g fill="none">
+      <path transform="matrix(.4298 .0479 -.05091 .4044 10.64 289.6)" d="m-11 13.5 8.5 8" stroke-width="2.4"/>
+      <path transform="matrix(.378 0 0 .2741 9.752 290.3)" d="m-19.5 8h7" stroke-width="1.838"/>
+      <path transform="matrix(0 .378 -.2741 0 5.897 298.5)" d="m-19.5 8h7" shape-rendering="crispEdges" stroke-width="1.838"/>
+    </g>
+  </g>
+</svg>

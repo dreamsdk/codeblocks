@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: barchartpoints.cpp 10749 2016-01-31 09:07:41Z mortenmacfly $
+// RCS-ID:      $Id: barchartpoints.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -23,10 +23,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
@@ -351,7 +347,7 @@ void wxBarChartPoints::Draw(
     if ( ValMax == 0 )
         ValMax = 1;
 
-    hp->SetBrush( wxBrush(GetColor(), wxSOLID) );
+    hp->SetBrush( wxBrush(GetColor(), wxBRUSHSTYLE_SOLID));
     hp->SetPen( *wxTRANSPARENT_PEN );
 
     double x, y;

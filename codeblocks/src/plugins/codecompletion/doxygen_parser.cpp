@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10145 $
- * $Id: doxygen_parser.cpp 10145 2015-03-10 02:54:16Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/doxygen_parser.cpp $
+ * $Revision: 13462 $
+ * $Id: doxygen_parser.cpp 13462 2024-02-20 02:37:21Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/doxygen_parser.cpp $
  */
 
 #include <sdk.h>
@@ -919,7 +919,7 @@ void DocumentationHelper::SaveTokenIdx()
 //events:
 wxString DocumentationHelper::OnDocumentationLink(wxHtmlLinkEvent& event, bool& dismissPopup)
 {
-    TokenTree* tree = m_CC->m_NativeParser.GetParser().GetTokenTree();
+    TokenTree* tree = m_CC->m_ParseManager.GetParser().GetTokenTree();
 
     const wxString& href = event.GetLinkInfo().GetHref();
     wxString args;

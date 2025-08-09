@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11364 $
- * $Id: defaultmimehandler.cpp 11364 2018-04-12 07:02:23Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/defaultmimehandler/defaultmimehandler.cpp $
+ * $Revision: 13535 $
+ * $Id: defaultmimehandler.cpp 13535 2024-07-03 11:38:12Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/defaultmimehandler/defaultmimehandler.cpp $
  */
 
 #include "sdk.h"
@@ -217,18 +217,13 @@ int DefaultMimeHandler::OpenFile(const wxString& filename)
                     mt->useAssoc = true;
                     m_MimeTypes.Add(mt);
                     return DoOpenFile(mt, filename);
-                    break;
                 case 2: // open in editor
-                {
                     mt = new cbMimeType;
                     mt->wildcard = wild;
                     mt->useEditor = true;
                     mt->useAssoc = false;
                     m_MimeTypes.Add(mt);
                     return DoOpenFile(mt, filename);
-                    break;
-                }
-                default: break;
             }
         }
         else if (answer == wxID_CANCEL)
@@ -312,7 +307,7 @@ int DefaultMimeHandler::DoOpenFile(cbMimeType* mt, const wxString& filename)
         else
             external << _T(" \"") << filename << _T("\""); // file args wrapped in quotes (bug #1187231)
 
-        Manager::Get()->GetLogManager()->Log(_T("Launching command: ") + external);
+        Manager::Get()->GetLogManager()->Log(_("Launching command: ") + external);
 
         // launch external program
         int ret = 0;

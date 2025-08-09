@@ -114,13 +114,9 @@ void wxsStateLed::OnEnumWidgetProperties(cb_unused long Flags)
  */
 void wxsStateLed::OnAddExtraProperties(wxsPropertyGridManager *Grid)
 {
-#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(0);
-#else
-    Grid->SetTargetPage(0);
-#endif
-    m_StateCurrentId =  Grid->GetGrid()->Insert(_("Disable Colour"), NEW_IN_WXPG14X wxIntProperty(_("Current State"), wxPG_LABEL, m_State));
-    m_StateCountId =  Grid->GetGrid()->Insert(_("Current State"), NEW_IN_WXPG14X wxIntProperty(_("Number Of States"), wxPG_LABEL, m_numberOfState));
+    m_StateCurrentId =  Grid->GetGrid()->Insert(_("Disable Colour"), new wxIntProperty(_("Current State"), wxPG_LABEL, m_State));
+    m_StateCountId =  Grid->GetGrid()->Insert(_("Current State"), new wxIntProperty(_("Number Of States"), wxPG_LABEL, m_numberOfState));
     for(int i = 0; i < m_numberOfState; i++){
         InsertPropertyForState(Grid, i);
     }
@@ -136,10 +132,8 @@ void wxsStateLed::OnAddExtraProperties(wxsPropertyGridManager *Grid)
  */
 void wxsStateLed::InsertPropertyForState(wxsPropertyGridManager *Grid, int Position)
 {
-    wxString SectorName = wxString::Format(_("State %d Colour"), Position + 1);
-    wxString SectorDataName = wxString::Format(_("state_%d_colour"), Position + 1);
-
-	m_StateColor[Position].id = Grid->GetGrid()->Insert(_("Current State"), NEW_IN_WXPG14X wxSystemColourProperty(SectorName, wxPG_LABEL, m_StateColor[Position].colour));
+    const wxString SectorName(wxString::Format(_("State %d Colour"), Position + 1));
+	m_StateColor[Position].id = Grid->GetGrid()->Insert(_("Current State"), new wxSystemColourProperty(SectorName, wxPG_LABEL, m_StateColor[Position].colour));
 }
 
 /*! \brief One of the control's extra properties changed.
@@ -151,11 +145,7 @@ void wxsStateLed::InsertPropertyForState(wxsPropertyGridManager *Grid, int Posit
  */
 void wxsStateLed::OnExtraPropertyChanged(wxsPropertyGridManager *Grid, wxPGId id)
 {
-#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(0);
-#else
-    Grid->SetTargetPage(0);
-#endif
     if(id == m_StateCountId){
         int NewValue = Grid->GetPropertyValueAsInt(id);
 
@@ -178,11 +168,7 @@ void wxsStateLed::OnExtraPropertyChanged(wxsPropertyGridManager *Grid, wxPGId id
         else if( NewValue < m_numberOfState){
             // We have to remove some entries
             for(int i = NewValue; i < m_numberOfState; i++){
-#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
                 Grid->DeleteProperty(m_StateColor[i].id);
-#else
-                Grid->Delete(m_StateColor[i].id);
-#endif
             }
 
             if( NewValue < m_numberOfState)
@@ -244,7 +230,6 @@ bool wxsStateLed::HandleChangeInState(wxsPropertyGridManager *Grid, wxPGId id, i
 
 	if(m_StateColor[Position].id == id){
 
-#if wxCHECK_VERSION(3, 0, 0)
         wxVariant var = Grid->GetPropertyValue(id);
         wxString sPropType = var.GetType();
 		if(sPropType.IsSameAs(wxT("wxColourPropertyValue"))){
@@ -252,17 +237,6 @@ bool wxsStateLed::HandleChangeInState(wxsPropertyGridManager *Grid, wxPGId id, i
 			pcolval << var;
 			m_StateColor[Position].colour = pcolval.m_colour;
 		}
-#else
-    #if wxCHECK_PROPGRID_VERSION(1, 3, 0)
-		wxString sPropType = Grid->GetPropertyValueType(id);
-		if(sPropType.IsSameAs(wxT("wxColourPropertyValue"))){
-    #else
-		if(Grid->IsPropertyValueType(id, CLASSINFO(wxColourPropertyValue))){
-    #endif
-			wxColourPropertyValue* pcolval = wxDynamicCast(Grid->GetPropertyValueAsWxObjectPtr(id), wxColourPropertyValue);
-			m_StateColor[Position].colour = pcolval->m_colour;
-		}
-#endif
         Changed = true;
     }
 

@@ -17,7 +17,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-// RCS-ID: $Id$
+// RCS-ID: $Id: editsnippetframe.cpp 12304 2021-03-16 23:28:31Z fuscated $
 
 #include "editsnippetframe.h"
 
@@ -497,6 +497,7 @@ void EditSnippetFrame::OnFileOpen (wxCommandEvent &WXUNUSED(event))
     wxString fname;
     wxFileDialog dlg (this, _T("Open file"), _T(""), _T(""), _T("Any file (*)|*"),
                       wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
+    PlaceWindow(&dlg);
     if (dlg.ShowModal() != wxID_OK) return;
     fname = dlg.GetPath ();
     ////FileOpen (fname);

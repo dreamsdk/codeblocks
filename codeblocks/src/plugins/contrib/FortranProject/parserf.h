@@ -34,12 +34,14 @@ class ParserF
     public:
         ParserF(bool withIntrinsicModules=true);
         ~ParserF();
-        bool Parse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm);
-        bool Reparse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm);
-        bool BatchParse(const wxArrayString& projectFilenames, const wxArrayString& filenames, ArrayOfFortranSourceForm& fileForms);
+        bool Parse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm, const std::vector<wxString>* pCppMacros);
+        bool Reparse(const wxString& projectFilename, const wxString& filename, FortranSourceForm fsForm, const std::vector<wxString>* pCppMacros);
+        bool BatchParse(const wxArrayString& projectFilenames, const wxArrayString& filenames, ArrayOfFortranSourceForm& fileForms,
+                        const std::vector<wxString>* pCppMacros);
         bool RemoveFile(const wxString& filename);
         void RemoveBuffer(const wxString& filename);
         TokensArrayF* GetTokens(){return m_pTokens;};
+        void SetAdditionalIncludeFiles(std::map<wxString,wxString>* pAIncludeFiles);
         bool FindTypeBoundProcedures(const TokenFlat& interToken, const wxArrayString& searchArr, TokensArrayFlat& resTokenArr);
         bool FindMatchTokenInSameModule(const TokenFlat& procedureToken, const wxString& search, TokensArrayFlat& result, int tokenKindMask, int noChildrenOf);
         size_t FindMatchTokensDeclared(const wxString& search, TokensArrayFlat& result, int tokenKindMask, bool partialMatch=false, int noChildrenOf=0,
@@ -76,6 +78,7 @@ class ParserF
         bool FindInfoLogForTypeBoundProc(TokensArrayFlat& tokenPair, bool logComAbove, bool logComBelow, bool logDeclar, bool logComVariab, wxString& msg,
                                          wxString* buff=NULL, std::vector<int>* lineStarts=NULL);
         bool FindInfoLogForGenericTBProc(TokensArrayFlat& tokens, bool logComAbove, bool logComBelow, bool logDeclar, bool logComVariab, wxString& msg);
+        void FindMachDefineTokens(const wxString& search, cbEditor* ed, TokensArrayFlat& result);
         bool GetTokenStr(TokenFlat& token, wxString& msg);
         void FindChildrenOfInterface(TokenFlat* token, TokensArrayFlat& result);
         void GetPossitionOfDummyArgument(const wxString& args, const wxString& arg, int& start, int& end);
@@ -105,7 +108,12 @@ class ParserF
         void GetChildren(TokenFlat* token, int tokenKindMask, TokensArrayFlat& result, int levelMax=1);
         void GetChildren(TokenF* pToken, int tokenKindMask, TokensArrayFlat& result, int level, int levelMax);
         void FindImplementedProcInMySubmodules(TokenFlat* tok, const wxString& search, TokensArrayFlat& result);
+        void ChangeAddressWithInclude(TokensArrayFlat& tokArr);
         void BuildCalledByDict(CalledByDict& cByDict);
+        void SetInterpretCPP(bool interpretCPP);
+        std::vector<int>* GetSkippedLines(const wxString& fileName);
+        void SetNewSkippedLines(const wxString& fileName, std::vector<int>& skipLineStart, std::vector<int>& skipLineEnd);
+        void ConnectToNewSkippedLines();
 
     protected:
     private:
@@ -147,12 +155,16 @@ class ParserF
         void FindSubmodulesWhichExtends(const wxString& moduleName, TokensArrayF* result);
         void FindMatchTokensAtInclude(cbEditor* ed, const wxString& findName, bool onlyPublicNames, bool partialMach, TokensArrayFlat& result);
         void GetChildrenAssociateConstruct(TokenF* token, int tokenKindMask, TokensArrayFlat& result);
+        void SetSkippedLines(const wxString& fileName, std::vector<int>& skipLineStart, std::vector<int>& skipLineEnd);
+        void FillSkippedLines(std::map<wxString,std::vector<int>*>& fileLineMap, const wxString& fileName,
+                                 std::vector<int>& skipLineStart, std::vector<int>& skipLineEnd);
 
         TokensArrayF* m_pTokens;
         TokensArrayF* m_pIntrinsicModuleTokens;
         IncludeDB* m_pIncludeDB;
         TokensArrayF* m_pAdditionalDirTokens;
         IncludeDB* m_pIncludeDBADir;
+        bool m_InterpretCPP;
         bool m_Done;
 
         wxString m_Buff;
@@ -184,6 +196,10 @@ class ParserF
         IncludeDB*    m_pIncludeDBADirNew;
         TokensArrayF* m_pBufferTokens;
         TokensArrayF* m_pCurrentBufferTokensNew;
+
+        std::map<wxString,wxString>* m_pAIncludeFiles;     ///< Additional include files.
+        std::map<wxString,std::vector<int>*> m_SkippedLinesMap;  ///< Skipped line indexes in the parsed files.
+        std::map<wxString,std::vector<int>*> m_NewSkippedLinesMap;  ///< New skipped line indexes in the parsed files from separate thread.
 };
 
 #endif // PARSERF_H

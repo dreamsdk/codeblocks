@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsflagsproperty.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsflagsproperty.cpp $
+* $Revision: 13627 $
+* $Id: wxsflagsproperty.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsflagsproperty.cpp $
 */
 
 #include "wxsflagsproperty.h"
@@ -44,7 +44,7 @@ wxsFlagsProperty::wxsFlagsProperty(const wxString& PGName, const wxString& DataN
 void wxsFlagsProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
     wxPGChoices PGC(Names,Values);
-    wxPGId Id = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxFlagsProperty(GetPGName(),wxPG_LABEL,PGC,VALUE));
+    wxPGId Id = Grid->AppendIn(Parent,new wxFlagsProperty(GetPGName(),wxPG_LABEL,PGC,VALUE));
     Grid->SetPropertyAttribute(Id,wxPG_BOOL_USE_CHECKBOX,1L,wxPG_RECURSE);
     PGRegister(Object,Grid,Id);
 }
@@ -63,11 +63,7 @@ bool wxsFlagsProperty::PGWrite(cb_unused wxsPropertyContainer* Object,
 {
     if ( UpdateEntries )
     {
-        #if wxCHECK_VERSION(3, 0, 0)
         wxPGChoices(Id->GetChoices()).Set(Names,Values);
-        #else
-        Grid->GetPropertyChoices(Id).Set(Names,Values);
-        #endif
     }
     Grid->SetPropertyValue(Id,VALUE);
     return true;
@@ -89,7 +85,6 @@ bool wxsFlagsProperty::XmlRead(cb_unused wxsPropertyContainer* Object,
     }
     if ( UseNamesInXml )
     {
-        wxString TextS = cbC2U(Text);
         wxStringTokenizer Tokenizer(cbC2U(Text),_T("| \t\n"), wxTOKEN_STRTOK);
         VALUE = 0;
         while ( Tokenizer.HasMoreTokens() )

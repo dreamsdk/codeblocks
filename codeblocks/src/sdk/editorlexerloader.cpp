@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11482 $
- * $Id: editorlexerloader.cpp 11482 2018-09-29 12:20:40Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editorlexerloader.cpp $
+ * $Revision: 12995 $
+ * $Id: editorlexerloader.cpp 12995 2022-10-28 07:22:31Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editorlexerloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -35,7 +35,7 @@ EditorLexerLoader::~EditorLexerLoader()
 
 void EditorLexerLoader::Load(LoaderBase* loader)
 {
-    Manager::Get()->GetLogManager()->Log(_("Loading ") + wxFileName(loader->FileName()).GetName());
+    Manager::Get()->GetLogManager()->Log(wxString::Format(_("Loading %s"), wxFileName(loader->FileName()).GetName()));
 
     TiXmlDocument doc;
     doc.Parse(loader->GetData());
@@ -229,11 +229,7 @@ void EditorLexerLoader::DoSingleKeywordNode(HighlightLanguage language, TiXmlEle
             wxString value(keywords->Attribute("value"), wxConvUTF8);
             regex.Replace(&value, _T(" "));
 
-            #if wxCHECK_VERSION(3, 0, 0)
             m_pTarget->SetKeywords(language, keyidx, value );
-            #else
-            m_pTarget->SetKeywords(language, keyidx, wxString ( value, wxConvUTF8 ) );
-            #endif
         }
 
         keywords = keywords->NextSiblingElement(nodename.mb_str());

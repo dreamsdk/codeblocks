@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: legendwindow.cpp 9270 2013-08-18 05:22:02Z mortenmacfly $
+// RCS-ID:      $Id: legendwindow.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -20,10 +20,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include <wx/wx.h>

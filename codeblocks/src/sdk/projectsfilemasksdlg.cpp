@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10912 $
- * $Id: projectsfilemasksdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/projectsfilemasksdlg.cpp $
+ * $Revision: 11996 $
+ * $Id: projectsfilemasksdlg.cpp 11996 2020-03-26 21:04:41Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/projectsfilemasksdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -87,7 +87,7 @@ void ProjectsFileMasksDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
 void ProjectsFileMasksDlg::OnAdd(cb_unused wxCommandEvent& event)
 {
     wxString groupName = cbGetTextFromUser(_("Enter the new group name:"),
-                                            _("New group"));
+                                            _("New group"), wxString(), this);
     if (groupName.IsEmpty())
         return;
     m_FileGroupsAndMasksCopy.AddGroup(groupName);
@@ -103,7 +103,7 @@ void ProjectsFileMasksDlg::OnEdit(cb_unused wxCommandEvent& event)
     wxListBox* pList = XRCCTRL(*this, "lstCategories", wxListBox);
     wxString oldName = pList->GetStringSelection();
     wxString groupName = cbGetTextFromUser(_("Rename the group:"),
-                                            _("Edit group"), oldName);
+                                            _("Edit group"), oldName, this);
     if (!groupName.IsEmpty() && groupName != oldName)
     {
         m_FileGroupsAndMasksCopy.RenameGroup(pList->GetSelection(), groupName);

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11770 $
- * $Id: infopane.cpp 11770 2019-07-04 22:15:32Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/infopane.cpp $
+ * $Revision: 13293 $
+ * $Id: infopane.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/infopane.cpp $
  */
 
 #include <sdk.h>
@@ -55,11 +55,14 @@ END_EVENT_TABLE()
 
 InfoPane::InfoPane(wxWindow* parent) : cbAuiNotebook(parent, idNB, wxDefaultPosition, wxDefaultSize, infopane_flags)
 {
+    wxString prefix(ConfigManager::GetDataFolder()+"/resources.zip#zip:/images/infopane/");
+#if wxCHECK_VERSION(3, 1, 6)
+    m_DefaultBitmap = cbLoadBitmapBundleFromSVG(prefix+"svg/edit.svg", wxSize(16, 16));
+#else
     const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
-    const wxString path = ConfigManager::GetDataFolder()
-                          + wxString::Format(_T("/resources.zip#zip:/images/infopane/%dx%d/edit.png"),
-                                             uiSize, uiSize);
-    m_DefaultBitmap = cbLoadBitmapScaled(path, wxBITMAP_TYPE_PNG, cbGetContentScaleFactor(*parent));
+    prefix << wxString::Format("%dx%d/", uiSize, uiSize);
+    m_DefaultBitmap = cbLoadBitmap(prefix+"edit.png", wxBITMAP_TYPE_PNG);
+#endif
 }
 
 InfoPane::~InfoPane()
@@ -153,19 +156,23 @@ void InfoPane::ReorderTabs(CompareFunction cmp_f)
     cbAuiNotebook::Show();
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+int InfoPane::AddPagePrivate(wxWindow* p, const wxString& title, wxBitmapBundle* icon)
+#else
 int InfoPane::AddPagePrivate(wxWindow* p, const wxString& title, wxBitmap* icon)
+#endif
 {
-    const wxBitmap& bmp = icon ? *icon : m_DefaultBitmap;
-
-    AddPage(p, title, false, bmp);
+    AddPage(p, title, false, icon ? *icon : m_DefaultBitmap);
     return GetPageCount() - 1;
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+bool InfoPane::InsertPagePrivate(wxWindow* p, const wxString& title, wxBitmapBundle* icon, int index)
+#else
 bool InfoPane::InsertPagePrivate(wxWindow* p, const wxString& title, wxBitmap* icon, int index)
+#endif
 {
-    const wxBitmap& bmp = icon ? *icon : m_DefaultBitmap;
-
-    return InsertPage(index, p, title, false, bmp);
+    return InsertPage(index, p, title, false, icon ? *icon : m_DefaultBitmap);
 }
 
 void InfoPane::UpdateEffectiveTabOrder()
@@ -220,15 +227,15 @@ int InfoPane::GetCurrentPage(bool &is_logger)
 Logger* InfoPane::GetLogger(int index)
 {
     if (index < 0 || (size_t)index > m_Pages.GetCount())
-        return NULL;
-    return m_Pages.Item(index)->islogger ? m_Pages.Item(index)->logger : NULL;
+        return nullptr;
+    return m_Pages.Item(index)->islogger ? m_Pages.Item(index)->logger : nullptr;
 }
 
 wxWindow* InfoPane::GetWindow(int index)
 {
     if (index < 0 || (size_t)index > m_Pages.GetCount())
-        return NULL;
-    return !m_Pages.Item(index)->islogger ? m_Pages.Item(index)->window : NULL;
+        return nullptr;
+    return !m_Pages.Item(index)->islogger ? m_Pages.Item(index)->window : nullptr;
 }
 
 void InfoPane::Show(size_t i)
@@ -449,7 +456,11 @@ void InfoPane::OnTabPosition(wxCommandEvent& event)
     Manager::Get()->GetConfigManager(_T("app"))->Write(_T("/environment/infopane_tabs_bottom"), (bool)(style & wxAUI_NB_BOTTOM));
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+bool InfoPane::AddLogger(Logger* logger, wxWindow* p, const wxString& title, wxBitmapBundle* icon)
+#else
 bool InfoPane::AddLogger(Logger* logger, wxWindow* p, const wxString& title, wxBitmap* icon)
+#endif
 {
     if (p)
     {
@@ -469,7 +480,11 @@ bool InfoPane::AddLogger(Logger* logger, wxWindow* p, const wxString& title, wxB
     return false;
 }
 
+#if wxCHECK_VERSION(3, 1, 6)
+bool InfoPane::AddNonLogger(wxWindow* p, const wxString& title, wxBitmapBundle* icon)
+#else
 bool InfoPane::AddNonLogger(wxWindow* p, const wxString& title, wxBitmap* icon)
+#endif
 {
     if (p)
     {

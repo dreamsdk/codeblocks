@@ -47,9 +47,10 @@ public:
   * \param s the string for which the width should be calculated
   * \param encoding the character to glyph mapping
   * \param withKerning flag indicating whether kerning should be taken into account
+  * \param charSpacing extra amount of spacing between characters (optional)
   * \return the width of the string
   */
-  virtual double GetStringWidth(const wxString& s, const wxPdfEncoding* encoding = NULL, bool withKerning = false) const;
+  virtual double GetStringWidth(const wxString& s, const wxPdfEncoding* encoding = NULL, bool withKerning = false, double charSpacing = 0) const;
 
   /// Check whether the font oan show all characters of a given string
   /**
@@ -122,6 +123,19 @@ public:
                                  const wxPdfEncoding* encoding = NULL,
                                  wxPdfSortedArrayInt* usedGlyphs = NULL,
                                  wxPdfChar2GlyphMap* subsetGlyphs = NULL);
+
+  /// Write CID set
+  /**
+  * \param setData the output stream
+  * \param encoding the character to glyph mapping
+  * \param usedGlyphs the list of used glyphs
+  * \param subsetGlyphs the mapping of glyphs to subset glyphs
+  * \return the size of the written data
+  */
+  virtual size_t WriteCIDSet(wxOutputStream* setData,
+                             const wxPdfEncoding* encoding = NULL,
+                             wxPdfSortedArrayInt* usedGlyphs = NULL,
+                             wxPdfChar2GlyphMap* subsetGlyphs = NULL);
 
   /// Get the associated encoding converter
   /**

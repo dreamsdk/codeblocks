@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsbaseproperties.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsbaseproperties.h $
+* $Revision: 13547 $
+* $Id: wxsbaseproperties.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsbaseproperties.h $
 */
 
 #ifndef WXSBASEPROPERTIES_H
@@ -60,6 +60,7 @@ class wxsBaseProperties: public wxsPropertyContainer
         wxString        m_ToolTip;         ///< \brief Tooltip
         wxString        m_HelpText;        ///< \brief Help text
         wxString        m_ExtraCode;       ///< \brief User's extra item initialization code
+        bool            m_UseLayout;       ///< \brief Call SetSizeHints or Layout on the the window
 
         // TODO: Convert these to long long
         long m_StyleBits;                  ///< \brief Internal representation of styles as bit field
@@ -83,6 +84,7 @@ class wxsBaseProperties: public wxsPropertyContainer
             m_ToolTip(wxEmptyString),
             m_HelpText(wxEmptyString),
             m_ExtraCode(wxEmptyString),
+            m_UseLayout(true),
             m_StyleBits(0),
             m_ExStyleBits(0),
             m_StyleSet(0)
@@ -91,17 +93,17 @@ class wxsBaseProperties: public wxsPropertyContainer
         /** \brief Function generating QPPChild Panel for most frequently used
          *         properties.
          */
-        void AddQPPChild(wxsAdvQPP* QPP,long Flags);
+        void AddQPPChild(wxsAdvQPP* QPP,long _Flags);
 
         /** \brief Adding some special xml read of data */
         void SpecialXmlRead(TiXmlElement* Elem,bool IsXRC,bool IsExtra);
 
         /** \brief Adding some special xml write of data */
-        void SpecialXmlWrite(TiXmlElement* Elem,bool IsXRC,bool IsExtra,long Flags,const wxString& ClassName);
+        void SpecialXmlWrite(TiXmlElement* Elem,bool IsXRC,bool IsExtra,long _Flags,const wxString& ClassName);
 
     protected:
 
-        virtual void OnEnumProperties(long Flags);
+        virtual void OnEnumProperties(long _Flags);
 };
 
 #endif

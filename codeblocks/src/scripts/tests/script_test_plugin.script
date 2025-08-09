@@ -10,7 +10,9 @@
 
 // Script plugins must extend cbScriptPlugin
 
-Include(_("wx_test.script"));
+Include(_T("sdk_test.script"));
+Include(_T("wx_test.script"));
+Include(_T("xml_test.script"));
 
 class Scripting_TestPlugin extends cbScriptPlugin
 {
@@ -28,7 +30,10 @@ class Scripting_TestPlugin extends cbScriptPlugin
     function GetMenu()
     {
         local entries = ::wxArrayString();
-        entries.Add(_T("Plugins/Test Scripting/Test Scripting"), 1);
+        entries.Add(_T("Plugins/Test Scripting/Test all"), 1);
+        entries.Add(_T("Plugins/Test Scripting/Test wx"), 1);
+        entries.Add(_T("Plugins/Test Scripting/Test sdk"), 1);
+        entries.Add(_T("Plugins/Test Scripting/Test xml"), 1);
         return entries;
     }
 
@@ -41,18 +46,37 @@ class Scripting_TestPlugin extends cbScriptPlugin
     // optional to support ExecutePlugin(pluginNameString)
     function Execute()
     {
-        ::ShowMessage(_T("Start the test"));
-        StartTest();
+        //::ShowMessage(_T("Start the test"));
+        //StartWxTest();
         return 0;
     }
 
     // optional calback for menubar items clicking
     function OnMenuClicked(index)
     {
-        if (index == 0)
+		if (index == 0)
+		{
+			::ShowMessage(_T("Start the wx Test"));
+            StartWxTest();
+			::ShowMessage(_T("Start the sdk Test"));
+            StartSDKTest();
+			::ShowMessage(_T("Start the xml Test"));
+            StartXMLTest();
+		}
+        else if (index == 1)
         {
-            ::ShowMessage(_T("Start the Test"));
-            StartTest();
+            ::ShowMessage(_T("Start the wx Test"));
+            StartWxTest();
+        }
+        else if (index == 2)
+        {
+            ::ShowMessage(_T("Start the sdk Test"));
+            StartSDKTest();
+        }
+		else if (index == 3)
+        {
+            ::ShowMessage(_T("Start the xml Test"));
+            StartXMLTest();
         }
 
     }
@@ -65,14 +89,37 @@ class Scripting_TestPlugin extends cbScriptPlugin
 
     function StartTest()
     {
+        StartSDKTest();
+        StartWxTest();
+    }
+
+    function StartWxTest()
+    {
         local wx = wxTest();
         wx.clear_global_test_results();
         wx.Run();
+    }
+
+    function StartSDKTest()
+    {
+        local sdk = sdkTest();
+        sdk.clear_global_test_results();
+        sdk.Run();
+    }
+	
+	function StartXMLTest()
+    {
+        local xml = XMLTest();
+        xml.clear_global_test_results();
+        xml.Run();
     }
 }
 
 // this call actually registers the script plugin with Code::Blocks
 RegisterPlugin(Scripting_TestPlugin());
 
+print("Plugin instance: " + GetPlugin(_T("Scripting_TestPlugin")) + "\n");
+
 // if you want to call this plugin's Execute() function, use this in a script:
-// ExecutePlugin(_T("Scripting_TestPlugin"));
+ExecutePlugin(_T("Scripting_TestPlugin"));
+

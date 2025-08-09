@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10290 $
-* $Id: dirlistdlg.cpp 10290 2015-05-15 10:58:40Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/dirlistdlg.cpp $
+* $Revision: 13551 $
+* $Id: dirlistdlg.cpp 13551 2024-09-14 04:37:24Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/dirlistdlg.cpp $
 */
 
 #include "dirlistdlg.h"
@@ -31,19 +31,19 @@
 
 
 //(*InternalHeaders(DirListDlg)
-#include <wx/sizer.h>
 #include <wx/button.h>
-#include <wx/string.h>
 #include <wx/intl.h>
+#include <wx/sizer.h>
+#include <wx/string.h>
 #include <wx/textctrl.h>
 //*)
 
 //(*IdInit(DirListDlg)
-const long DirListDlg::ID_TEXTCTRL1 = wxNewId();
-const long DirListDlg::ID_BUTTON1 = wxNewId();
-const long DirListDlg::ID_BUTTON2 = wxNewId();
-const long DirListDlg::ID_BUTTON3 = wxNewId();
-const long DirListDlg::ID_BUTTON4 = wxNewId();
+const wxWindowID DirListDlg::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID DirListDlg::ID_BUTTON1 = wxNewId();
+const wxWindowID DirListDlg::ID_BUTTON2 = wxNewId();
+const wxWindowID DirListDlg::ID_BUTTON3 = wxNewId();
+const wxWindowID DirListDlg::ID_BUTTON4 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(DirListDlg,wxScrollingDialog)
@@ -78,13 +78,13 @@ DirListDlg::DirListDlg(wxWindow* parent,wxWindowID id)
 	BoxSizer2->Add(Button4, 1, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL, 5);
 	FlexGridSizer1->Add(BoxSizer2, 1, wxALIGN_CENTER_VERTICAL, 0);
 	SetSizer(FlexGridSizer1);
-	FlexGridSizer1->Fit(this);
 	FlexGridSizer1->SetSizeHints(this);
+	Center();
 
-	Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&DirListDlg::OnButton1Click);
-	Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&DirListDlg::OnButton2Click);
-	Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&DirListDlg::OnButton3Click);
-	Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&DirListDlg::OnButton4Click);
+	Connect(ID_BUTTON1,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(DirListDlg::OnButton1Click));
+	Connect(ID_BUTTON2,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(DirListDlg::OnButton2Click));
+	Connect(ID_BUTTON3,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(DirListDlg::OnButton3Click));
+	Connect(ID_BUTTON4,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(DirListDlg::OnButton4Click));
 	//*)
 	ConfigManager* mgr = Manager::Get()->GetConfigManager( _T("lib_finder") );
 	wxArrayString DirsLoc = mgr->ReadArrayString(_T("search_dirs"));

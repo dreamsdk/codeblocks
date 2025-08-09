@@ -1,16 +1,8 @@
-if ! HAVE_WX29
-TREELIST_INCLUDE=-I$(srcdir)/../wxContribItems/wxTreeList/include
-TREELIST_LA=../wxContribItems/wxTreeList/libwxtreelist.la
-TREELIST_SRC=./wxtreelist/wxsTreeListCtrl.cpp
-TREELIST_HDR=./wxtreelist/wxsTreeListCtrl.h
-else
 TREELIST_DIST=$(srcdir)/wxtreelist/wxsTreeListCtrl.cpp $(srcdir)/wxtreelist/wxsTreeListCtrl.h
-endif
 
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		-I$(top_srcdir)/src/include \
 		-I$(top_srcdir)/src/sdk/wxscintilla/include \
-		$(WXPROPGRID_INCLUDE) \
 		-I$(top_srcdir)/src/plugins/contrib/wxSmith \
 		-I$(top_srcdir)/src/plugins/contrib/wxSmith/wxwidgets \
 		-I$(top_srcdir)/src/plugins/contrib/wxSmith/wxwidgets/properties \
@@ -46,8 +38,7 @@ libwxsmithcontribitems_la_LIBADD = ../../../sdk/libcodeblocks.la \
 			../wxContribItems/wxthings/libwxcustombutton.la \
 			../wxContribItems/wxled/libwxled.la \
 			../wxContribItems/wxmathplot/libwxmathplot.la \
-			$(WX_LIBS) \
-			$(CB_TINYXML_LIBS)
+			$(WX_LIBS)
 
 EXTRA_DIST = $(srcdir)/wxchart/*.xpm \
 		$(srcdir)/wxchart/*.png \
@@ -69,6 +60,7 @@ EXTRA_DIST = $(srcdir)/wxchart/*.xpm \
 		$(srcdir)/wxSmithPlot/test/resource.rc \
 		$(srcdir)/wxSmithPlot/test/*.cbp \
 		$(srcdir)/wxSmithPlot/test/wxsmith/*.wxs \
+		$(srcdir)/wxdatetimepicker/images/*.xpm \
 		$(srcdir)/*.cbp \
 		manifest.xml
 
@@ -105,7 +97,8 @@ $(TREELIST_SRC) \
 ./wxSmithPlot/wxsMathPlot.cpp \
 ./wxSmithPlot/wxsText.cpp \
 ./wxSmithPlot/wxsVector.cpp \
-./wxSmithContribItems.cpp
+./wxSmithContribItems.cpp \
+./wxdatetimepicker/wxsTimePickerCtrl.cpp
 
 noinst_HEADERS = \
 ./wxflatnotebook/wxsFlatNotebook.h \
@@ -134,4 +127,5 @@ $(TREELIST_HDR) \
 ./wxSmithPlot/wxsMathPlot.h \
 ./wxSmithPlot/wxsText.h \
 ./wxSmithPlot/wxsVector.h \
-./wxSmithContribItems.h
+./wxSmithContribItems.h \
+./wxdatetimepicker/wxsTimePickerCtrl.h

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10648 $
-* $Id: wxsproject.cpp 10648 2016-01-16 15:42:36Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsproject.cpp $
+* $Revision: 13381 $
+* $Id: wxsproject.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsproject.cpp $
 */
 
 #include "wxsproject.h"
@@ -39,7 +39,7 @@ namespace
 
 wxsProject::wxsProject(cbProject* Project):
     m_Project(Project),
-    m_GUI(0),
+    m_GUI(nullptr),
     m_UnknownConfig("unknown_config"),
     m_UnknownResources("unknown_resource"),
     m_WasModifiedDuringLoad(false)
@@ -57,12 +57,12 @@ wxsProject::wxsProject(cbProject* Project):
 wxsProject::~wxsProject()
 {
     delete m_GUI;
-    m_GUI = 0;
+    m_GUI = nullptr;
 
     for ( size_t i=m_Resources.Count(); i-->0; )
     {
         delete m_Resources[i];
-        m_Resources[i] = 0;
+        m_Resources[i] = nullptr;
     }
     m_Resources.Clear();
 
@@ -279,7 +279,7 @@ wxsResource* wxsProject::FindResource(const wxString& Name)
         }
     }
 
-    return 0;
+    return nullptr;
 }
 
 void wxsProject::Configure()
@@ -304,6 +304,7 @@ void wxsProject::Configure()
         }
         cbConfigurationDialog Dlg(0,-1,_("Configuring wxSmith"));
         Dlg.AttachConfigurationPanel(m_GUI->BuildConfigurationPanel(&Dlg));
+        PlaceWindow(&Dlg);
         Dlg.ShowModal();
     }
 }
@@ -317,7 +318,7 @@ cbConfigurationPanel* wxsProject::GetProjectConfigurationPanel(wxWindow* parent)
             return m_GUI->BuildConfigurationPanel(parent);
         }
     }
-    return 0;
+    return nullptr;
 }
 
 wxString wxsProject::GetProjectPath()

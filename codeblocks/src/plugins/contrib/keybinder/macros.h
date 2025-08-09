@@ -7,6 +7,7 @@
 //    the Free Software Foundation; either version 2 of the License, or
 //    (at your option) any later version.
 //
+//
 #ifndef MACROS_H
 #define MACROS_H
 
@@ -17,8 +18,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
-//-#include "wxstringhash.h"
-
 
 // Useful macros
 #define CHECK_PTR_RET(p) \

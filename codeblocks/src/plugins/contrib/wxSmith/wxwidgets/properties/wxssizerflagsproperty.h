@@ -15,13 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10431 $
-* $Id: wxssizerflagsproperty.h 10431 2015-08-29 08:47:48Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssizerflagsproperty.h $
+* $Revision: 12722 $
+* $Id: wxssizerflagsproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxssizerflagsproperty.h $
 */
 
 #ifndef WXSSIZERFLAGSPROPERTY_H
 #define WXSSIZERFLAGSPROPERTY_H
+
+#include <cbplugin.h>
 
 #include "../../properties/wxsproperties.h"
 
@@ -32,7 +34,7 @@
  *
  * \note This property uses standard names for property grid / data.
  */
-class wxsSizerFlagsProperty: public wxsProperty
+class PLUGIN_EXPORT wxsSizerFlagsProperty: public wxsProperty
 {
     public:
 

@@ -1,7 +1,10 @@
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		-I$(top_srcdir)/src/include \
-		-I$(top_srcdir)/src/sdk/wxscintilla/include \
-		$(WXPROPGRID_INCLUDE)
+		-I$(top_srcdir)/src/sdk/wxscintilla/include
+
+if CODEBLOCKS_NT
+AM_CPPFLAGS += -DEXPORT_LIB
+endif
 
 noinst_LTLIBRARIES = libwxsmith_wxwidgets_defitems.la
 
@@ -34,6 +37,7 @@ libwxsmith_wxwidgets_defitems_la_SOURCES = \
 ./wxsspinbutton.cpp \
 ./wxsbutton.cpp \
 ./wxslistbox.cpp \
+./wxseditablelistbox.cpp \
 ./wxsgauge.cpp \
 ./wxsradiobutton.cpp \
 ./wxspanel.cpp \
@@ -102,7 +106,13 @@ libwxsmith_wxwidgets_defitems_la_SOURCES = \
 ./wxsimagelist.cpp \
 ./wxsrichtextstylecomboctrl.cpp \
 ./wxsrichtextstylelistbox.cpp \
-./wxsrichtextstylelistctrl.cpp
+./wxsrichtextstylelistctrl.cpp \
+./wxsspinctrldouble.cpp \
+./wxsdataviewctrl.cpp \
+./wxsdataviewlistctrl.cpp \
+./wxsdataviewtreectrl.cpp
+
+
 
 noinst_HEADERS = \
 ./wxsgauge.h \
@@ -139,6 +149,7 @@ noinst_HEADERS = \
 ./wxsboxsizer.h \
 ./wxsflexgridsizer.h \
 ./wxslistbox.h \
+./wxseditablelistbox.h \
 ./wxshtmlwindow.h \
 ./wxsscrolledwindow.h \
 ./wxsstddialogbuttonsizer.h \
@@ -197,12 +208,10 @@ noinst_HEADERS = \
 ./wxsimagelist.h \
 ./wxsrichtextstylecomboctrl.h \
 ./wxsrichtextstylelistbox.h \
-./wxsrichtextstylelistctrl.h
-
-if HAVE_WX29
-libwxsmith_wxwidgets_defitems_la_SOURCES += ./wxsspinctrldouble.cpp
-noinst_HEADERS += ./wxsspinctrldouble.h
-endif
-
+./wxsrichtextstylelistctrl.h \
+./wxsspinctrldouble.h \
+./wxsdataviewctrl.h \
+./wxsdataviewtreectrl.h \
+./wxsdataviewlistctrl.h
 
 EXTRA_DIST = $(srcdir)/wxsmediactrl.*

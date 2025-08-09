@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: chart.h 7947 2012-04-28 10:01:45Z mortenmacfly $
+// RCS-ID:      $Id: chart.h 13437 2024-01-31 11:51:59Z wh11204 $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -22,15 +22,12 @@
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #ifndef WX_PRECOMP
     #include <wx/dynarray.h>
 #endif
 
 #include "wx/chartpoints.h"
+#include "wx/chartdef.h"
 
 // External Classes
 //-----------------

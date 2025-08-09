@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10635 $
- * $Id: searchtree.cpp 10635 2015-12-29 16:30:36Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/searchtree.cpp $
+ * $Revision: 13627 $
+ * $Id: searchtree.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/searchtree.cpp $
  */
 
 #include <sdk.h>
@@ -443,7 +443,7 @@ wxString SearchTreeNode::I2S(int i)
 
 wxString SearchTreeNode::Serialize(BasicSearchTree* tree,nSearchTreeNode node_id,bool withchildren)
 {
-    wxString result,children,sparent,sdepth,slabelno,slabelstart,slabellen;
+    wxString result, sparent, sdepth, slabelno, slabelstart, slabellen;
     SearchTreeLinkMap::const_iterator link;
     SearchTreeItemsMap::const_iterator item;
     sparent = U2S(m_Parent);
@@ -562,8 +562,7 @@ const wxString BasicSearchTree::GetString(size_t n) const
 
 wxString BasicSearchTree::GetString(const SearchTreePoint &nn,nSearchTreeNode top) const
 {
-    wxString result(_T(""));
-    wxString tmplabel;
+    wxString result;
     if (!nn.n || nn.n==top)
         return result;
     const SearchTreeNode *curnode;

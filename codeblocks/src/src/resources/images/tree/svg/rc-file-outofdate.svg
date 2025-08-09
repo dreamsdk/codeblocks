@@ -1,0 +1,11 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)">
+    <path d="m1.19 296.9v-8.202h3.881l1.94 2.237v5.965z" fill="#f2f2f9" stroke="#9c9cb6" stroke-width=".2646"/>
+    <path d="m4.895 288.7v2.38h2.115" fill="#d0d0df" stroke="#9c9cb6" stroke-width=".2646px"/>
+    <g fill-rule="evenodd" shape-rendering="crispEdges">
+      <path d="m1.323 294.9h5.556v1.852h-5.556z" fill="#d7af00" style="paint-order:stroke markers fill"/>
+      <path d="m2.381 294.9h3.44v1.852h-3.44z" fill="#f0c819" style="paint-order:stroke markers fill"/>
+      <path d="m1.323 293.8h1.852v2.117h1.852v-2.117h1.853l-2.91-2.646z" fill="red"/>
+    </g>
+  </g>
+</svg>

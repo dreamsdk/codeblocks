@@ -2,7 +2,7 @@
 %define req_wxgtk           2.8.0
 %define _redhat             %(if [ -f /etc/redhat-release ]; then echo 1; else echo 0; fi)
 %define _mandrake           %(if [ -f /etc/mandrake-release ]; then echo 1; else echo 0; fi)
-%define _version            20.03
+%define _version            25.03
 %define _rel                1
 %define _release            %{_rel}
 %define jobs                %(if [ -e /usr/bin/getconf ]; then echo $(( `/usr/bin/getconf _NPROCESSORS_ONLN` + 1 )); else echo 1; fi)
@@ -136,7 +136,7 @@ Summary:                    Code::Blocks contrib plugins
 Group:                      Development/Tools
 Requires:                   %{name}%{?_isa} = %{version}
 Requires:                   %{name}-contrib-libs%{?_isa} = %{version}
-BuildRequires:              gamin-devel, bzip2-devel, zlib-devel, fontconfig-devel
+BuildRequires:              bzip2-devel, zlib-devel, fontconfig-devel
 %if 0%{?nassi_shneiderman}
 BuildRequires:              boost-devel
 %endif
@@ -176,6 +176,7 @@ plugins. These are:
  * Regular expression testbed
  * Reopen last closed editor(s) via menu or hotkey
  * Rndgen
+ * Clangd client
  * Smartindent plugin (cpp, HDL, Fortran, Lua, Pascal, Python, XML)
  * Spellchecker plugin
  * Symbol table plugin
@@ -286,12 +287,13 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{plugindir}/libcompiler.so
 %{plugindir}/libdebugger.so
 %{plugindir}/libdefaultmimehandler.so
+%{plugindir}/libDisplayEvents.so
 %{plugindir}/liboccurrenceshighlighting.so
 %{plugindir}/libopenfileslist.so
 %{plugindir}/libprojectsimporter.so
 %{plugindir}/libscriptedwizard.so
 %{plugindir}/libtodo.so
-%{_datadir}/appdata/codeblocks.appdata.xml
+%{_datadir}/metainfo/codeblocks.appdata.xml
 %{_datadir}/applications/codeblocks.desktop
 %{_datadir}/icons/hicolor/48x48/mimetypes/*
 %{_datadir}/mime/packages/codeblocks.xml
@@ -314,6 +316,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{pkgdatadir}/compiler.zip
 %{pkgdatadir}/debugger.zip
 %{pkgdatadir}/defaultmimehandler.zip
+%{pkgdatadir}/DisplayEvents.zip
 %{pkgdatadir}/manager_resources.zip
 %{pkgdatadir}/occurrenceshighlighting.zip
 %{pkgdatadir}/openfileslist.zip
@@ -371,6 +374,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{plugindir}/libMouseSap.so
 %{plugindir}/libReopenEditor.so
 %{plugindir}/librndgen.so
+%{plugindir}/libclangd_client.so
 %{plugindir}/libwxsmith.so
 %{plugindir}/libwxsmithcontribitems.so
 %{plugindir}/libwxSmithAui.so
@@ -410,6 +414,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{pkgdatadir}/ProjectOptionsManipulator.zip
 %{pkgdatadir}/RegExTestbed.zip
 %{pkgdatadir}/rndgen.zip
+%{pkgdatadir}/clangd_client.zip
 %{pkgdatadir}/ReopenEditor.zip
 %{pkgdatadir}/SymTab.zip
 %{pkgdatadir}/ThreadSearch.zip
@@ -426,7 +431,7 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %endif
 %{_mandir}/man1/*snippets*
 %doc README COPYING AUTHORS BUGS COMPILERS TODO NEWS ChangeLog
-%{_datadir}/appdata/codeblocks-contrib.metainfo.xml
+%{_datadir}/metainfo/codeblocks-contrib.metainfo.xml
 
 %files contrib-libs
 %defattr(-,root,root)
@@ -451,6 +456,8 @@ wxSmith-plugins and to use the wxContribItems in own programs.
 %{_includedir}/wxsmith/*
 
 %changelog
+* Sun Mar 02 2025 Morten MacFly <mortenmacfly@codeblocks.org>
+- Changes for release 25.03.
 * Thu Feb 20 2020 Teodor Petrov <tpetrov@codeblocks.org>
 - Changes for release 20.03.
 * Tue Dec 23 2014 jens <jens@codeblocks.org>

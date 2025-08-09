@@ -26,6 +26,7 @@ class wxEvtHandler;
     #define CC_PROCESS_LOG_EVENT_TO_PARENT 1
 #endif
 
+extern bool           g_DebugSmartSense;  //!< Debug only variable, used to print semantic match related log message
 extern bool           g_EnableDebugTrace; //!< Toggles tracing into file.
 extern const wxString g_DebugTraceFile;   //!< Trace file name (if above is enabled).
 extern long           g_idCCAddToken;
@@ -158,14 +159,14 @@ private:
 
     #define CC_LOCKER_TRACK_TT_MTX_LOCK(M)      \
         do {                                    \
-            auto result = M.Lock();             \
-            cbAssert(result==wxMUTEX_NO_ERROR); \
+            auto locker_result = M.Lock();             \
+            cbAssert(locker_result==wxMUTEX_NO_ERROR); \
         } while (false);
 
     #define CC_LOCKER_TRACK_TT_MTX_UNLOCK(M)    \
         do {                                    \
-            auto result = M.Unlock();           \
-            cbAssert(result==wxMUTEX_NO_ERROR); \
+            auto locker_result = M.Unlock();           \
+            cbAssert(locker_result==wxMUTEX_NO_ERROR); \
         } while (false);
 
     #define CC_LOCKER_TRACK_CBBT_MTX_LOCK    CC_LOCKER_TRACK_TT_MTX_LOCK

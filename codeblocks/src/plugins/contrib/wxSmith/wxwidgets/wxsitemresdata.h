@@ -15,13 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11384 $
-* $Id: wxsitemresdata.h 11384 2018-04-29 15:37:23Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.h $
+* $Revision: 12722 $
+* $Id: wxsitemresdata.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdata.h $
 */
 
 #ifndef WXSITEMRESDATA_H
 #define WXSITEMRESDATA_H
+
+#include <cbplugin.h>
 
 #include "wxsitem.h"
 #include "wxsparent.h"
@@ -35,7 +37,7 @@ class wxsTool;
 class wxsItemEditor;
 
 /** \brief Class holding data for item resources and operating on it */
-class wxsItemResData
+class PLUGIN_EXPORT wxsItemResData
 {
     public:
 
@@ -346,6 +348,7 @@ class wxsItemResData
         wxString DeclarationsCode(wxsCoderContext* Ctx);
         wxString IdentifiersCode(wxsCoderContext* Ctx);
         wxString InitializeCode(wxsCoderContext* Ctx);
+        wxString DestroyCode(wxsCoderContext* Ctx);
         wxString IdInitCode(wxsCoderContext* Ctx);
         wxString HeadersCode(wxsCoderContext* Ctx);
         wxString HeadersNoPCHCode(wxsCoderContext* Ctx);

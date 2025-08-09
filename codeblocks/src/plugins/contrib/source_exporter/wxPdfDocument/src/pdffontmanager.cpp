@@ -661,7 +661,7 @@ wxPdfFontManagerBase::RegisterFont(const wxFont& font, const wxString& aliasName
   int width = -1;
   wxString fontDesc = font.GetNativeFontInfoUserDesc();
   wxString faceName = font.GetFaceName();
-  wxCharBuffer faceNameBuffer = faceName.ToUTF8();
+  const wxScopedCharBuffer faceNameBuffer = faceName.ToUTF8();
   const char* fontFamily = faceNameBuffer;
 
   // Check font slant
@@ -777,17 +777,8 @@ wxPdfFontManagerBase::RegisterFont(const wxFont& font, const wxString& aliasName
 #elif wxPDFMACOSX_HAS_ATSU_TEXT
   wxString fontFileName = wxEmptyString;
 
-#if wxCHECK_VERSION(2,9,0)
-  // wxWidgets 2.9.x or higher
 #if wxOSX_USE_ATSU_TEXT
   wxUint32 atsuFontID = font.MacGetATSUFontID();
-#endif
-#else // wxWidgets 2.8.x
-#ifdef __WXMAC_CLASSIC__
-  wxUint32 atsuFontID = font.GetMacATSUFontID();
-#else
-  wxUint32 atsuFontID = font.MacGetATSUFontID();
-#endif
 #endif
 
   FSSpec fileSpecification;
@@ -1321,7 +1312,7 @@ wxPdfFontManagerBase::InitializeCoreFonts()
                wxString::Format(_("Registering encodings for core fonts failed.")));
   }
   int j;
-  for (j = 0; gs_coreFontTable[j].name != wxEmptyString; ++j)
+  for (j = 0; gs_coreFontTable[j].name[0] != 0; ++j)
   {
     const wxPdfCoreFontDesc& coreFontDesc = gs_coreFontTable[j];
     wxString family(coreFontDesc.family);
@@ -1348,13 +1339,13 @@ wxPdfFontManagerBase::InitializeCoreFonts()
 void
 wxPdfFontManagerBase::InitializeCjkFonts()
 {
-  const wxChar* fontStyles[4] = { wxS(""), wxS(",Bold"), wxS(",Italic"), wxS(",BoldItalic") };
+  const wxStringCharType* fontStyles[4] = { wxS(""), wxS(",Bold"), wxS(",Italic"), wxS(",BoldItalic") };
   wxString fontName;
   wxString fontAlias;
   wxPdfFontDataType0* cjkFontData;
   bool ok;
   int j, k;
-  for (j = 0; gs_cjkFontTable[j].name != wxEmptyString; ++j)
+  for (j = 0; gs_cjkFontTable[j].name[0] != 0; ++j)
   {
     const wxPdfCjkFontDesc& cjkFontDesc = gs_cjkFontTable[j];
     wxPdfEncodingCheckerMap::const_iterator ecIter = m_encodingCheckerMap->find(cjkFontDesc.encoding);
@@ -1482,11 +1473,7 @@ wxPdfFontManagerBase::LoadFontFromXML(const wxString& fontFileName)
       {
         wxString fontType;
         wxXmlNode* root = fontMetrics.GetRoot();
-#if wxCHECK_VERSION(2,9,0)
         if (root->GetAttribute(wxS("type"), &fontType))
-#else
-        if (root->GetPropVal(wxS("type"), &fontType))
-#endif
         {
           if (fontType.IsSameAs(wxS("TrueType")))
           {

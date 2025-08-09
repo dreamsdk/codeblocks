@@ -160,9 +160,10 @@ public:
   /**
   * \param s string for which the width should be calculated
   * \param withKerning flag whether kerning should be taken into account
+  * \param charSpacing extra amount of spacing between characters (optional)
   * \return the width of the string
   */
-  double GetStringWidth(const wxString& s, bool withKerning = false);
+  double GetStringWidth(const wxString& s, bool withKerning = false, double charSpacing = 0);
 
   /// Get kerning width array
   /**
@@ -207,6 +208,20 @@ public:
   * \return the size of the written data
   */
   size_t WriteUnicodeMap(wxOutputStream* mapData);
+
+  /// Write CID to GID mapping
+  /**
+  * \param mapData the output stream
+  * \return the size of the written data
+  */
+  size_t WriteCIDToGIDMap(wxOutputStream* mapData);
+
+  /// Write CID set
+  /**
+  * \param setData the output stream
+  * \return the size of the written data
+  */
+  size_t WriteCIDSet(wxOutputStream* setData);
 
 #if wxUSE_UNICODE
   /// Get the associated encoding converter

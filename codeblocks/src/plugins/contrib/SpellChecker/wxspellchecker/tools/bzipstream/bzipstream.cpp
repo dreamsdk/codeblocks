@@ -4,7 +4,7 @@
 // Author:      Ryan Norton
 // Modified by:
 // Created:     10/11/03
-// RCS-ID:      $Id$
+// RCS-ID:      $Id: bzipstream.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
 // Copyright:   (c) Guilhem Lavaux
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -24,11 +24,6 @@
 // need because it includes almost all "standard" wxWindows headers
 #ifndef WX_PRECOMP
     #include "wx/wx.h"
-#endif
-
-
-#ifdef __BORLANDC__
-  #pragma hdrstop
 #endif
 
 #if wxUSE_STREAMS

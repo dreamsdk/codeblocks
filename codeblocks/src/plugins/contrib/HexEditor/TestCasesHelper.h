@@ -17,7 +17,7 @@
 *
 * $Revision: 8350 $
 * $Id: TestCasesHelper.h 8350 2012-09-04 08:05:13Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/TestCasesHelper.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/TestCasesHelper.h $
 */
 
 #ifndef TESTCASESHELPER_H

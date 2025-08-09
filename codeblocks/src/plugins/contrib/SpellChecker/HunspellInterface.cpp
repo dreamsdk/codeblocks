@@ -16,7 +16,6 @@
 * along with SpellChecker. If not, see <http://www.gnu.org/licenses/>.
 *
 */
-#include "hunspell.hxx"
 #include "HunspellInterface.h"
 
 #include <wx/filename.h>
@@ -24,14 +23,14 @@
 #include <wx/textfile.h>
 #include <wx/config.h>
 
-HunspellInterface::HunspellInterface(wxSpellCheckUserInterface* pDlg /* = NULL */)
+HunspellInterface::HunspellInterface(wxSpellCheckUserInterface* pDlg /* = nullptr */)
 {
     m_pSpellUserInterface = pDlg;
 
-    if (m_pSpellUserInterface != NULL)
+    if (m_pSpellUserInterface != nullptr)
         m_pSpellUserInterface->SetSpellCheckEngine(this);
 
-    m_pHunspell = NULL;
+    m_pHunhandle = nullptr;
     m_bPersonalDictionaryModified = false;
 }
 
@@ -44,9 +43,11 @@ HunspellInterface::~HunspellInterface()
     }
 
     UninitializeSpellCheckEngine();
-
+    if (m_pHunhandle)
+        Hunspell_destroy(m_pHunhandle);
+    m_pHunhandle = nullptr;
     delete m_pSpellUserInterface;
-    m_pSpellUserInterface = NULL;
+    m_pSpellUserInterface = nullptr;
 }
 
 int HunspellInterface::InitializeSpellCheckEngine()
@@ -66,17 +67,18 @@ int HunspellInterface::InitializeSpellCheckEngine()
 #endif
         wxCharBuffer affixFileCharBuffer      = ConvertToUnicode(lpPrefix + strAffixFile);
         wxCharBuffer dictionaryFileCharBuffer = ConvertToUnicode(lpPrefix + strDictionaryFile);
-        m_pHunspell = new Hunspell(affixFileCharBuffer, dictionaryFileCharBuffer);
+        if (m_pHunhandle)
+            Hunspell_destroy(m_pHunhandle);
+        m_pHunhandle = Hunspell_create(affixFileCharBuffer, dictionaryFileCharBuffer);
     }
 
-    m_bEngineInitialized = (m_pHunspell != NULL);
+    m_bEngineInitialized = (m_pHunhandle != nullptr);
 
     return m_bEngineInitialized;
 }
 
 int HunspellInterface::UninitializeSpellCheckEngine()
 {
-    wxDELETE(m_pHunspell);
     m_bEngineInitialized = false;
     return true;
 }
@@ -127,7 +129,7 @@ int HunspellInterface::SetOption(SpellCheckEngineOption& Option)
 
 wxString HunspellInterface::CheckSpelling(wxString strText)
 {
-    if (m_pHunspell == NULL)
+    if (m_pHunhandle == nullptr)
         return wxEmptyString;
 
     int nDiff = 0;
@@ -189,14 +191,14 @@ wxArrayString HunspellInterface::GetSuggestions(const wxString& strMisspelledWor
     wxArrayString wxReturnArray;
     wxReturnArray.Empty();
 
-    if (m_pHunspell)
+    if (m_pHunhandle)
     {
-        char **wlst;
+        char **wlst = nullptr;
 
         wxCharBuffer misspelledWordCharBuffer = ConvertToUnicode(strMisspelledWord);
-        if ( misspelledWordCharBuffer.data() != NULL)
+        if ( misspelledWordCharBuffer.data() != nullptr)
         {
-            int ns = m_pHunspell->suggest(&wlst, misspelledWordCharBuffer);
+            int ns = Hunspell_suggest(m_pHunhandle, &wlst, misspelledWordCharBuffer);
             for (int i=0; i < ns; i++)
             {
                 wxReturnArray.Add(ConvertFromUnicode(wlst[i]));
@@ -211,14 +213,14 @@ wxArrayString HunspellInterface::GetSuggestions(const wxString& strMisspelledWor
 
 bool HunspellInterface::IsWordInDictionary(const wxString& strWord)
 {
-    if (m_pHunspell == NULL)
+    if (m_pHunhandle == nullptr)
         return false;
 
     wxCharBuffer wordCharBuffer = ConvertToUnicode(strWord);
-    if ( wordCharBuffer.data() == NULL )
+    if ( wordCharBuffer.data() == nullptr )
         return false;
 
-    bool spelledOK = (m_pHunspell->spell(wordCharBuffer) == 1);
+    bool spelledOK = (Hunspell_spell(m_pHunhandle, wordCharBuffer) != 0);
     bool isInDict  = m_PersonalDictionary.IsWordInDictionary(strWord);
 
     return (spelledOK || isInDict);
@@ -249,7 +251,7 @@ wxArrayString HunspellInterface::GetWordListAsArray()
 
 void HunspellInterface::PopulateDictionaryMap(StringToStringMap* pLookupMap, const wxString& strDictionaryPath)
 {
-    if (pLookupMap == NULL)
+    if (pLookupMap == nullptr)
         pLookupMap = &m_DictionaryLookupMap;
 
     pLookupMap->clear();
@@ -427,11 +429,16 @@ void HunspellInterface::OpenPersonalDictionary(const wxString& strPersonalDictio
 
 wxString HunspellInterface::GetCharacterEncoding()
 {
-    if (m_pHunspell == NULL)
-        return wxEmptyString;
+    wxString character_encoding = wxEmptyString;
 
-    wxString encoding(wxConvUTF8.cMB2WC(m_pHunspell->get_dic_encoding()), *wxConvCurrent);
-    return encoding;
+    if (m_pHunhandle != nullptr)
+    {
+        char * pEncoding = Hunspell_get_dic_encoding(m_pHunhandle);
+        if (pEncoding && (strlen(pEncoding) > 0))
+            character_encoding = wxString::FromUTF8(pEncoding);
+    }
+
+    return character_encoding;
 }
 
 ///////////// Options /////////////////

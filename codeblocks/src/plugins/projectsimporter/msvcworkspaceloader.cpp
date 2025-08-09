@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8680 $
- * $Id: msvcworkspaceloader.cpp 8680 2012-12-16 14:58:35Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvcworkspaceloader.cpp $
+ * $Revision: 13270 $
+ * $Id: msvcworkspaceloader.cpp 13270 2023-05-10 15:52:02Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/projectsimporter/msvcworkspaceloader.cpp $
  */
 
 #include "sdk.h"
@@ -32,6 +32,7 @@
 
 #include "msvcworkspaceloader.h"
 #include "importers_globals.h"
+#include "filefilters.h"
 
 MSVCWorkspaceLoader::MSVCWorkspaceLoader()
 {
@@ -116,10 +117,10 @@ bool MSVCWorkspaceLoader::Open(const wxString& filename, wxString& Title)
                               100, 0, wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_CAN_ABORT);
 
     int count = 0;
-    cbProject* project = 0;
-    cbProject* firstproject = 0;
+    cbProject* project = nullptr;
+    cbProject* firstproject = nullptr;
     wxFileName wfname = filename;
-    wfname.Normalize();
+    wfname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT);
     Manager::Get()->GetLogManager()->DebugLog(_T("Workspace dir: ") + wfname.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR));
 
     while (!file.Eof())
@@ -180,32 +181,42 @@ bool MSVCWorkspaceLoader::Open(const wxString& filename, wxString& Title)
             }
 
             wxFileName fname(UnixFilename(prjFile));
-            fname.Normalize(wxPATH_NORM_ALL, wfname.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR), wxPATH_NATIVE);
+            fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT,
+                            wfname.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR), wxPATH_NATIVE);
             if (!fname.FileExists())
             {
-                Manager::Get()->GetLogManager()->DebugLog(F(_T("Project '%s' from '%s' not found."), prjTitle.wx_str(), fname.GetFullPath().wx_str()));
+                Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Project '%s' from '%s' not found.", prjTitle, fname.GetFullPath()));
                 continue;
             }
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("Found project '%s' in '%s'"), prjTitle.wx_str(), fname.GetFullPath().wx_str()));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Found project '%s' in '%s'", prjTitle, fname.GetFullPath()));
 
             int percentage = ((int)file.TellI())*100 / (int)(file.GetLength());
             // While updating the progrerss dialog check for cancellation - probably interrupt.
             if (!progress.Update(percentage, _("Importing project: ") + prjTitle))
                 break;
 
+            ++count;
+
+            // project will always be NULL, because the Project Manager use the MIME plugin method "OpenFile"
+            // this method returns only an int.
             project = Manager::Get()->GetProjectManager()->LoadProject(fname.GetFullPath(), false);
+            if (!project)
+            {
+                // try to find the opened project
+                wxFileName sCodeBlockProject(fname);
+                sCodeBlockProject = fname.GetFullPath();
+                sCodeBlockProject.SetExt(FileFilters::CODEBLOCKS_EXT);
+
+                project = Manager::Get()->GetProjectManager()->IsOpen(sCodeBlockProject.GetFullPath());
+            }
+
             if (!firstproject)
                 firstproject = project;
 
-            if (!project)
-                Manager::Get()->GetLogManager()->Log(F(_("Warning: Unable to load project '%s' from '%s'"), prjTitle.wx_str(), fname.GetFullPath().wx_str()));
-            else
-            {
-                Manager::Get()->GetLogManager()->Log(F(_("Registering project '%s' from '%s'"), prjTitle.wx_str(), fname.GetFullPath().wx_str()));
+            if (project)
                 registerProject(project->GetTitle(), project);
-                ++count;
-            }
         }
+
         /*
          * example wanted line:
          * Project_Dep_Name VstSDK

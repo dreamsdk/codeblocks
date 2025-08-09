@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11845 $
- * $Id: projectoptionsdlg.cpp 11845 2019-09-08 22:37:48Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/projectoptionsdlg.cpp $
+ * $Revision: 13627 $
+ * $Id: projectoptionsdlg.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/projectoptionsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -38,8 +38,6 @@
 
 #include <wx/radiobox.h>
 
-#include "scripting/sqplus/sqplus.h"
-
 #include "annoyingdialog.h"
 #include "configurationpanel.h"
 #include "editarrayorderdlg.h"
@@ -51,6 +49,8 @@
 #include "projectdepsdlg.h"
 #include "projectloader.h"
 #include "projectoptionsdlg.h" // class's header file
+#include "scripting/bindings/sc_utils.h"
+#include "scripting/bindings/sc_typeinfo_all.h"
 #include "virtualbuildtargetsdlg.h"
 
 
@@ -101,7 +101,7 @@ ProjectOptionsDlg::ProjectOptionsDlg(wxWindow* parent, cbProject* project)
     m_Current_Sel(-1),
     m_pCompiler(nullptr)
 {
-    wxXmlResource::Get()->LoadObject(this, parent, _T("dlgProjectOptions"),_T("wxScrollingDialog"));
+    wxXmlResource::Get()->LoadObject(this, parent, "dlgProjectOptions", "wxScrollingDialog");
     XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
 
     wxCheckListBox* list = XRCCTRL(*this, "lstFiles", wxCheckListBox);
@@ -115,7 +115,7 @@ ProjectOptionsDlg::ProjectOptionsDlg(wxWindow* parent, cbProject* project)
 
     // general
     XRCCTRL(*this, "txtProjectName", wxTextCtrl)->SetValue(m_Project->GetTitle());
-    XRCCTRL(*this, "txtProjectFilename", wxStaticText)->SetLabel(m_Project->GetFilename());
+    XRCCTRL(*this, "txtProjectFilename", wxTextCtrl)->SetValue(m_Project->GetFilename());
     XRCCTRL(*this, "txtPlatformProj", wxTextCtrl)->SetValue(GetStringFromPlatforms(m_Project->GetPlatforms()));
     XRCCTRL(*this, "txtProjectMakefile", wxTextCtrl)->SetValue(m_Project->GetMakefile());
     XRCCTRL(*this, "chkCustomMakefile", wxCheckBox)->SetValue(m_Project->IsMakefileCustom());
@@ -226,9 +226,13 @@ void ProjectOptionsDlg::FillBuildTargets()
     // add build targets to list
     wxListBox* lstTargets = XRCCTRL(*this, "lstBuildTarget", wxListBox);
     lstTargets->Clear();
-    for (int i = 0; i < m_Project->GetBuildTargetsCount(); ++i)
-        lstTargets->Append(m_Project->GetBuildTarget(i)->GetTitle());
-    lstTargets->SetSelection(0);
+    const int count = m_Project->GetBuildTargetsCount();
+    if (count > 0)
+    {
+        for (int i = 0; i < count; ++i)
+            lstTargets->Append(m_Project->GetBuildTarget(i)->GetTitle());
+        lstTargets->SetSelection(0);
+    }
 }
 
 void ProjectOptionsDlg::DoTargetChange(bool saveOld)
@@ -238,7 +242,7 @@ void ProjectOptionsDlg::DoTargetChange(bool saveOld)
 
     wxListBox* lstTargets = XRCCTRL(*this, "lstBuildTarget", wxListBox);
 
-    if (lstTargets->GetSelection() == -1)
+    if (lstTargets->GetSelection() == -1 && lstTargets->GetCount() > 0)
         lstTargets->SetSelection(0);
     ProjectBuildTarget* target = m_Project->GetBuildTarget(lstTargets->GetSelection());
     if (!target || m_Current_Sel == lstTargets->GetSelection())
@@ -318,15 +322,15 @@ void ProjectOptionsDlg::DoTargetChange(bool saveOld)
 
             case ttCommandsOnly: // fall-through
             default: // for commands-only targets
-                txt->SetValue(_T(""));
+                txt->SetValue("");
                 txt->Enable(false);
-                txtI->SetValue(_T(""));
+                txtI->SetValue("");
                 txtI->Enable(false);
-                txtD->SetValue(_T(""));
+                txtD->SetValue("");
                 txtD->Enable(false);
-                txtW->SetValue(_T(""));
+                txtW->SetValue("");
                 txtW->Enable(false);
-                txtO->SetValue(_T(""));
+                txtO->SetValue("");
                 txtO->Enable(false);
                 browse->Enable(false);
                 browseI->Enable(false);
@@ -366,7 +370,6 @@ void ProjectOptionsDlg::DoBeforeTargetChange(bool force)
     {
         // selected another build target
         // save changes to the previously selected target
-        wxArrayString array;
         ProjectBuildTarget* target = m_Project->GetBuildTarget(m_Current_Sel);
         if (!target)
             return;
@@ -474,8 +477,8 @@ void ProjectOptionsDlg::OnProjectTypeChanged(cb_unused wxCommandEvent& event)
     wxString extI = fname.GetExt();
     wxString extD = fname.GetExt();
     wxString libext = compiler ? compiler->GetSwitches().libExtension : _T("");
-    wxString libextI = compiler ? compiler->GetSwitches().libExtension : _T(""); // TODO: add specialized compiler option for this
-    wxString libextD = _T("def");                                                // TODO: add specialized compiler option for this
+    // wxString libextI = compiler ? compiler->GetSwitches().libExtension : _T(""); // TODO: add specialized compiler option for this
+    // wxString libextD = "def";                                                    // TODO: add specialized compiler option for this
     wxString libpre = compiler ? compiler->GetSwitches().libPrefix : _T("");
     wxString libpreI = compiler ? compiler->GetSwitches().libPrefix : _T("");    // TODO: add specialized compiler option for this
     wxString libpreD = compiler ? compiler->GetSwitches().libPrefix : _T("");    // TODO: add specialized compiler option for this
@@ -492,16 +495,16 @@ void ProjectOptionsDlg::OnProjectTypeChanged(cb_unused wxCommandEvent& event)
                 fname.SetName(name);
             }
             txt->SetValue(fname.GetFullPath());
-            txtI->SetValue(_T(""));
-            txtD->SetValue(_T(""));
+            txtI->SetValue("");
+            txtD->SetValue("");
             break;
         case ttDynamicLib:
             if (ext != FileFilters::DYNAMICLIB_EXT)
                 fname.SetExt(FileFilters::DYNAMICLIB_EXT);
             if (extI != FileFilters::STATICLIB_EXT)
                 fnameI.SetExt(FileFilters::STATICLIB_EXT);
-            if (extD != _T("def"))
-                fnameD.SetExt(_T("def"));
+            if (extD != "def")
+                fnameD.SetExt("def");
             if (!libpre.IsEmpty() && name.StartsWith(libpre))
             {
                 name.Remove(0, libpre.Length());
@@ -530,8 +533,8 @@ void ProjectOptionsDlg::OnProjectTypeChanged(cb_unused wxCommandEvent& event)
                 fname.SetName(name);
             }
             txt->SetValue(fname.GetFullPath());
-            txtI->SetValue(_T(""));
-            txtD->SetValue(_T(""));
+            txtI->SetValue("");
+            txtD->SetValue("");
             break;
         case ttNative:
             if (ext != FileFilters::NATIVE_EXT)
@@ -542,16 +545,16 @@ void ProjectOptionsDlg::OnProjectTypeChanged(cb_unused wxCommandEvent& event)
                 fname.SetName(name);
             }
             txt->SetValue(fname.GetFullPath());
-            txtI->SetValue(_T(""));
-            txtD->SetValue(_T(""));
+            txtI->SetValue("");
+            txtD->SetValue("");
             break;
         case ttCommandsOnly: // fall-through
         default:
-            txt->SetValue(_T(""));
-            txtI->SetValue(_T(""));
-            txtD->SetValue(_T(""));
-            txtW->SetValue(_T(""));
-            txtO->SetValue(_T(""));
+            txt->SetValue("");
+            txtI->SetValue("");
+            txtD->SetValue("");
+            txtW->SetValue("");
+            txtO->SetValue("");
             txt->Enable(false);
             txtI->Enable(false);
             txtD->Enable(false);
@@ -753,6 +756,7 @@ void ProjectOptionsDlg::OnRemoveBuildTargetClick(cb_unused wxCommandEvent& event
 void ProjectOptionsDlg::OnVirtualTargets(cb_unused wxCommandEvent& event)
 {
     VirtualBuildTargetsDlg dlg(this, -1, m_Project);
+    PlaceWindow(&dlg);
     dlg.ShowModal();
 }
 
@@ -800,7 +804,7 @@ void ProjectOptionsDlg::OnBrowseDirClick(wxCommandEvent& event)
         return;
 
     wxFileName fname(targettext->GetValue() + wxFileName::GetPathSeparator());
-    fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_Project->GetBasePath());
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_Project->GetBasePath());
 
     wxString path = ChooseDirectory(this,
                                     _("Select directory"),
@@ -819,7 +823,7 @@ void ProjectOptionsDlg::OnBrowseOutputFilenameClick(cb_unused wxCommandEvent& ev
 {
     wxFileName fname;
     fname.Assign(XRCCTRL(*this, "txtOutputFilename", wxTextCtrl)->GetValue());
-    fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_Project->GetBasePath());
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_Project->GetBasePath());
     wxFileDialog dlg(this,
                      _("Select output filename"),
                      fname.GetPath(),
@@ -839,7 +843,7 @@ void ProjectOptionsDlg::OnBrowseImportLibraryFilenameClick(cb_unused wxCommandEv
 {
     wxFileName fname;
     fname.Assign(XRCCTRL(*this, "txtImportLibraryFilename", wxTextCtrl)->GetValue());
-    fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_Project->GetBasePath());
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_Project->GetBasePath());
     wxFileDialog dlg(this,
                      _("Select import library filename"),
                      fname.GetPath(),
@@ -859,7 +863,7 @@ void ProjectOptionsDlg::OnBrowseDefinitionFileFilenameClick(cb_unused wxCommandE
 {
     wxFileName fname;
     fname.Assign(XRCCTRL(*this, "txtDefinitionFileFilename", wxTextCtrl)->GetValue());
-    fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_Project->GetBasePath());
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_Project->GetBasePath());
     wxFileDialog dlg(this,
                      _("Select definition file filename"),
                      fname.GetPath(),
@@ -913,7 +917,7 @@ void ProjectOptionsDlg::OnFileToggleMarkClick(cb_unused wxCommandEvent& event)
 void ProjectOptionsDlg::OnFileMarkOnClick(cb_unused wxCommandEvent& event)
 {
     wxString wildcard = cbGetTextFromUser(_("Select wildcard (file mask) to toggle on:"),
-                                          _("Select files"), _T("*.*"), this);
+                                          _("Select files"), "*.*", this);
     if (wildcard.IsEmpty()) return; // user pressed Cancel
 
     wxListBox* lstTargets = XRCCTRL(*this, "lstBuildTarget", wxListBox);
@@ -937,7 +941,7 @@ void ProjectOptionsDlg::OnFileMarkOnClick(cb_unused wxCommandEvent& event)
 void ProjectOptionsDlg::OnFileMarkOffClick(cb_unused wxCommandEvent& event)
 {
     wxString wildcard = cbGetTextFromUser(_("Select wildcard (file mask) to toggle off:"),
-                                          _("Select files"), _T("*.*"), this);
+                                          _("Select files"), "*.*", this);
     if (wildcard.IsEmpty()) return; // user pressed Cancel
 
     wxListBox* lstTargets = XRCCTRL(*this, "lstBuildTarget", wxListBox);
@@ -963,26 +967,46 @@ void ProjectOptionsDlg::OnScriptsOverviewSelChanged(cb_unused wxTreeEvent& event
     FillScripts();
 }
 
-bool ProjectOptionsDlg::IsScriptValid(ProjectBuildTarget* target, const wxString& script)
+bool ProjectOptionsDlg::IsScriptValid(ProjectBuildTarget* target, const wxString& script,
+                                      wxString &errorMsg)
 {
-    static const wxString clearout_buildscripts = _T("SetBuildOptions <- null;");
-    try
+    wxString scriptNoMacro = script;
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(scriptNoMacro, target);
+    if (!wxFileName(scriptNoMacro).IsAbsolute())
+        scriptNoMacro = m_Project->GetBasePath() + wxFILE_SEP_PATH + scriptNoMacro;
+
+    ScriptingManager *scriptMgr = Manager::Get()->GetScriptingManager();
+
+    // clear previous script's context
+    if (!scriptMgr->LoadBuffer("SetBuildOptions <- null;"))
     {
-        wxString script_nomacro = script;
-        Manager::Get()->GetMacrosManager()->ReplaceMacros(script_nomacro, target);
-        script_nomacro = wxFileName(script_nomacro).IsAbsolute() ? script_nomacro : m_Project->GetBasePath() + wxFILE_SEP_PATH + script_nomacro;
-        Manager::Get()->GetScriptingManager()->LoadBuffer(clearout_buildscripts); // clear previous script's context
-        Manager::Get()->GetScriptingManager()->LoadScript(script_nomacro);
-        SqPlus::SquirrelFunction<void> setopts("SetBuildOptions");
-
-        if (setopts.func.IsNull())
-            return false;
-
-        return true;
+        errorMsg = _("Setting 'SetBuildOptions' to null failed!");
+        return false;
     }
-    catch (SquirrelError& e)
+
+    if (!scriptMgr->LoadScript(scriptNoMacro))
     {
-        Manager::Get()->GetScriptingManager()->DisplayErrors(&e);
+        errorMsg = scriptMgr->GetErrorString();
+        return false;
+    }
+
+    HSQUIRRELVM vm = scriptMgr->GetVM();
+
+    ScriptBindings::PreserveTop preserveTop(vm);
+
+    if (!ScriptBindings::GetRootTableField(vm, _SC("SetBuildOptions")))
+    {
+        errorMsg = _("Cannot find function/closure 'SetBuildOptions'!");
+        return false;
+    }
+
+    const SQObjectType type = sq_gettype(vm, -1);
+    sq_poptop(vm); // Pop the closure
+    if (type == OT_CLOSURE || type == OT_NATIVECLOSURE)
+        return true;
+    else
+    {
+        errorMsg = _("'SetBuildOptions' is not a function/closure!");
         return false;
     }
 }
@@ -1006,7 +1030,7 @@ bool ProjectOptionsDlg::ValidateTargetName(const wxString& name)
         return false;
     }
 
-    const wxString forbidden = _T(";,!@#$%^&*\"':`~=?\\><");
+    const wxString forbidden(";,!@#$%^&*\"':`~=?\\><");
     if (name.find_first_of(forbidden, 0) != wxString::npos)
     {
         cbMessageBox(_("The name contains at least one invalid character:\n\n") + forbidden,
@@ -1023,11 +1047,13 @@ bool ProjectOptionsDlg::DoCheckScripts(CompileTargetBase* base)
     for (size_t i = 0; i < scripts.GetCount(); ++i)
     {
         ProjectBuildTarget* bt = dynamic_cast<ProjectBuildTarget*>(base);
-        if (!IsScriptValid(bt, scripts[i]))
+        wxString errorMsg;
+        if (!IsScriptValid(bt, scripts[i], errorMsg))
         {
             wxString msg;
-            msg << _("Invalid build script: ") + scripts[i] << _T('\n');
-            msg << _("First seen in: ") + base->GetTitle() << _T('\n');
+            msg << _("Invalid build script: ") + scripts[i] << '\n';
+            msg << _("First seen in: ") + base->GetTitle() << '\n';
+            msg << _("Error") << ":\n  " << errorMsg;
             cbMessageBox(msg, _("Error"), wxICON_ERROR, this);
             return false;
         }
@@ -1060,7 +1086,7 @@ void ProjectOptionsDlg::OnAddScript(cb_unused wxCommandEvent& event)
         fname.Assign(ctrl->GetStringSelection());
     else if (ctrl->GetCount())
         fname.Assign(ctrl->GetString(ctrl->GetCount() - 1));
-    fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_Project->GetBasePath());
+    fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_Project->GetBasePath());
 
     EditPathDlg dlg(this,
                     fname.GetFullName(),
@@ -1120,7 +1146,7 @@ void ProjectOptionsDlg::OnPlatform(wxCommandEvent& event)
         txtP = XRCCTRL(*this, "txtPlatform",     wxTextCtrl);
     else
         txtP = XRCCTRL(*this, "txtPlatformProj", wxTextCtrl);
-    bool isAll = txtP->GetValue().Contains(_("All"));
+    bool isAll = txtP->GetValue().Contains("All");
 
     wxArrayString arr = GetArrayFromString(GetStringFromPlatforms(spAll, true));
     MultiSelectDlg dlg(this, arr, isAll, _("Select supported platforms:"), _("Build target platforms"));
@@ -1136,7 +1162,7 @@ void ProjectOptionsDlg::OnPlatform(wxCommandEvent& event)
     {
         wxArrayString ret = dlg.GetSelectedStrings();
         if (ret.GetCount() == 3)
-            txtP->SetValue(_("All"));
+            txtP->SetValue("All");
         else
         {
             wxString platform = GetStringFromArray(ret);
@@ -1219,7 +1245,6 @@ void ProjectOptionsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
     bool customMake = XRCCTRL(*this, "chkCustomMakefile", wxCheckBox)->GetValue();
     XRCCTRL(*this, "rbPCHStrategy",       wxRadioBox)->Enable(!customMake);
     XRCCTRL(*this, "txtObjectDir",        wxTextCtrl)->Enable(!customMake && en);
-    XRCCTRL(*this, "txtObjectDir",        wxTextCtrl)->Enable(!customMake && en);
     XRCCTRL(*this, "btnBrowseObjectDir",  wxButton)->Enable(!customMake && en);
     XRCCTRL(*this, "btnToggleCheckmarks", wxButton)->Enable(!customMake && en);
     XRCCTRL(*this, "btnCheckmarksOn",     wxButton)->Enable(!customMake && en);
@@ -1274,8 +1299,6 @@ void ProjectOptionsDlg::OnCreateDefFileClick(cb_unused wxCommandEvent& event)
     wxButton*   browseI = XRCCTRL(*this, "btnBrowseImportLibraryFilename", wxButton);
     wxButton*   browseD = XRCCTRL(*this, "btnBrowseDefinitionFileFilename", wxButton);
 
-    wxString platforms = GetStringFromPlatforms(target->GetPlatforms());
-
     const TargetType targetType = (TargetType)projectTypes->GetSelection();
 
     txtI->Enable(chkSL->IsChecked() && targetType == ttDynamicLib);
@@ -1302,8 +1325,6 @@ void ProjectOptionsDlg::OnCreateImportFileClick(cb_unused wxCommandEvent& event)
     wxTextCtrl* txtD    = XRCCTRL(*this, "txtDefinitionFileFilename", wxTextCtrl);
     wxButton*   browseI = XRCCTRL(*this, "btnBrowseImportLibraryFilename", wxButton);
     wxButton*   browseD = XRCCTRL(*this, "btnBrowseDefinitionFileFilename", wxButton);
-
-    wxString platforms = GetStringFromPlatforms(target->GetPlatforms());
 
     const TargetType targetType = (TargetType)projectTypes->GetSelection();
 

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsmenuitem.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenuitem.cpp $
+* $Revision: 13547 $
+* $Id: wxsmenuitem.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenuitem.cpp $
 */
 
 #include "wxsmenuitem.h"
@@ -176,7 +176,7 @@ void wxsMenuItem::OnBuildCreatingCode()
     }
 }
 
-void wxsMenuItem::OnEnumToolProperties(cb_unused long Flags)
+void wxsMenuItem::OnEnumToolProperties(cb_unused long _Flags)
 {
 
     switch ( m_Type )
@@ -186,23 +186,26 @@ void wxsMenuItem::OnEnumToolProperties(cb_unused long Flags)
             {
                 // When there are children (wxMenuItem maps to wxMenu class),
                 // only these properties are enabled
-                WXS_SHORT_STRING(wxsMenuItem,m_Label,_("Label"),_T("label"),_T(""),true);
-                WXS_SHORT_STRING(wxsMenuItem,m_Help,_T("Help text"),_T("help"),_T(""),false);
-                WXS_BOOL(wxsMenuItem,m_Enabled,_T("Enabled"),_T("enabled"),true);
+                WXS_SHORT_STRING(wxsMenuItem, m_Label, _("Label"), _T("label"), _T(""), true);
+                WXS_SHORT_STRING(wxsMenuItem, m_Help, _("Help text"), _T("help"), _T(""), false);
+                WXS_BOOL(wxsMenuItem, m_Enabled, _("Enabled"), _T("enabled"), true);
                 break;
             }
             // When there are no children, we threat this item as wxMenuItem
 
         case Radio:
         case Check:
-            WXS_SHORT_STRING(wxsMenuItem,m_Label,_("Label"),_T("label"),_T(""),true);
-            WXS_SHORT_STRING(wxsMenuItem,m_Accelerator,_("Accelerator"),_T("accel"),_T(""),false);
-            WXS_SHORT_STRING(wxsMenuItem,m_Help,_T("Help text"),_T("help"),_T(""),false);
-            WXS_BOOL(wxsMenuItem,m_Enabled,_T("Enabled"),_T("enabled"),true);
-            if ( m_Type == Check ) { WXS_BOOL(wxsMenuItem,m_Checked,_T("Checked"),_T("checked"),false); }
-            if ( m_Type == Normal )
+            WXS_SHORT_STRING(wxsMenuItem, m_Label, _("Label"), _T("label"), _T(""), true);
+            WXS_SHORT_STRING(wxsMenuItem, m_Accelerator, _("Accelerator"), _T("accel"), _T(""), false);
+            WXS_SHORT_STRING(wxsMenuItem, m_Help, _("Help text"), _T("help"), _T(""), false);
+            WXS_BOOL(wxsMenuItem, m_Enabled, _("Enabled"), _T("enabled"), true);
+            if ( m_Type == Check )
             {
-                WXS_BITMAP(wxsMenuItem,m_Bitmap,_("Bitmap"),_T("bitmap"),_T("wxART_OTHER"))
+                WXS_BOOL(wxsMenuItem, m_Checked, _("Checked"), _T("checked"), false);
+            }
+            else if ( m_Type == Normal )
+            {
+                WXS_BITMAP(wxsMenuItem, m_Bitmap, _("Bitmap"), _T("bitmap"), _T("wxART_OTHER"))
             }
             break;
 
@@ -390,8 +393,8 @@ void wxsMenuItem::OnBuildXRCFetchingCode()
 {
     // Menu items can not be found through FindWindow stuff, we need to
     // fetch them using wxMenuBar::FindItem.
-    long Flags = GetPropertiesFlags();
-    if ( (Flags&flVariable) && (Flags&flId) )
+    long PropsFlags = GetPropertiesFlags();
+    if ( (PropsFlags&flVariable) && (PropsFlags&flId) )
     {
         AddXRCFetchingCode(
             GetVarName() + _T(" = GetMenuBar() ? ")

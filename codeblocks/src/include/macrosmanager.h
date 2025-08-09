@@ -33,6 +33,7 @@ public:
     void RecalcVars(const cbProject* project, EditorBase* editor, const ProjectBuildTarget* target);
     void ClearProjectKeys();
     void Reset();
+    const MacrosMap& GetMacros() const { return m_Macros; }
 protected:
     const ProjectBuildTarget* m_LastTarget;
     const cbProject*    m_LastProject;
@@ -71,12 +72,13 @@ protected:
     wxRegEx             m_RE_To83Path;
     wxRegEx             m_RE_RemoveQuotes;
     UserVariableManager *m_UserVarMan;
-
+    bool m_Valid;
 private:
     MacrosManager();
     ~MacrosManager() override;
     wxString EvalCondition(const wxString& cond, const wxString& true_clause, const wxString& false_clause, const ProjectBuildTarget* target);
     int MatchBrace(const wxString& buffer, int index);
+    bool CompileRegexes();
 };
 
 #endif // MACROSMANAGER_H

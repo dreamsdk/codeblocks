@@ -1,9 +1,8 @@
 
 #include "formatindent.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <wx/tokenzr.h>
-
     #include <projectmanager.h>
     #include <cbproject.h>
     #include <editormanager.h>
@@ -11,6 +10,10 @@
     #include "cbeditor.h"
 #endif
 #include <vector>
+
+#include <wx/tokenzr.h>
+
+#include <cbstyledtextctrl.h>
 
 #include "formatindentdlg.h"
 #include "fortranfileext.h"
@@ -30,6 +33,7 @@ FormatIndent::~FormatIndent()
 void FormatIndent::Format()
 {
     FormatIndentDlg fidlg(Manager::Get()->GetAppWindow());
+    PlaceWindow(&fidlg);
     if (fidlg.ShowModal() == wxID_OK)
     {
         FormatIndentDlg::FormatIndentScope scope;
@@ -69,7 +73,7 @@ void FormatIndent::FormatProject()
         wxString mstr;
         if (nonFFiles.size() == 1)
         {
-            mstr = _("File \"") + nonFFiles[0] + _("\" was not recognized as a free-form Fortran file.");
+            mstr = wxString::Format(_("File \"%s\" was not recognized as a free-form Fortran file."), nonFFiles[0]);
             mstr << _(" The indent formating was not applied for it.");
         }
         else
@@ -79,15 +83,14 @@ void FormatIndent::FormatProject()
             size_t imax=5;
             while (i < nonFFiles.size() && i < imax)
             {
-                mstr << _("\n\"") << nonFFiles[i] << _T("\"");
+                mstr << "\n\"" << nonFFiles[i] << "\"";
                 i++;
             }
             if (nonFFiles.size() > imax)
-                mstr << _T("...\n");
+                mstr << "...\n";
             else
-                mstr << _T("\n");
-            mstr << wxString::Format(_T("(%d "), int(nonFFiles.size())) << _("files) ");
-            mstr << _("were not recognized as the free-form Fortran files.");
+                mstr << "\n";
+            mstr << wxString::Format(_("(%zu files) were not recognized as the free-form Fortran files."), nonFFiles.size());
             mstr << _(" The indent formating was not applied for them.");
             cbMessageBox(mstr, _("Info"), wxICON_INFORMATION);
         }
@@ -104,8 +107,8 @@ void FormatIndent::FormatActiveFile()
     cbStyledTextCtrl* control = ed->GetControl();
     if( wxSCI_LEX_FORTRAN != control->GetLexer() )
 	{
-        if( cbMessageBox( wxT("Are you sure \n") + ed->GetFilename() +
-            wxT("\nis a Fortran Free Format Source File?\nContinue to Format the Indent?"), _("Error Message"),
+        if( cbMessageBox( "Are you sure \n" + ed->GetFilename() +
+            "\nis a Fortran Free Format Source File?\nContinue to Format the Indent?", _("Error Message"),
             wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT ) != wxID_YES )
             return;
 	}
@@ -214,8 +217,8 @@ void FormatIndent::FormatSelection()
 
 void FormatIndent::ReadConfig()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
-    if (cfg->ReadBool(_T("/indent_same_as_editor"), true))
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
+    if (cfg->ReadBool("/indent_same_as_editor", true))
     {
         cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
         if (!ed)
@@ -224,24 +227,24 @@ void FormatIndent::ReadConfig()
         if (!control)
             return;
         if (control->GetUseTabs())
-            m_IndentStr = _T("\t");
+            m_IndentStr = "\t";
         else
         {
             int tabWidth = control->GetTabWidth();
-            m_IndentStr = wxString(_T(' '), tabWidth);
+            m_IndentStr = wxString(' ', tabWidth);
         }
     }
     else
     {
-        if (cfg->ReadBool(_T("/indent_use_tabs"), false))
-            m_IndentStr = _T("\t");
+        if (cfg->ReadBool("/indent_use_tabs", false))
+            m_IndentStr = "\t";
         else
         {
-            int tabWidth = cfg->ReadInt(_T("/indent_tab_width"), 4);
-            m_IndentStr = wxString(_T(' '), tabWidth);
+            int tabWidth = cfg->ReadInt("/indent_tab_width", 4);
+            m_IndentStr = wxString(' ', tabWidth);
         }
     }
-    m_TrimFromRight = cfg->ReadBool(_T("/indent_trim_right"), true);
+    m_TrimFromRight = cfg->ReadBool("/indent_trim_right", true);
 
     m_IndentEstimator.ReadConfig();
 }
@@ -249,9 +252,9 @@ void FormatIndent::ReadConfig()
 void FormatIndent::FormatText(const wxString& textIn, int indentStart, const wxString& eolChars, wxString& formattedText)
 {
     wxString str = textIn;
-    str.Replace(_T("\r\n"), _T("\n"));
-    str.Replace(_T("\r"), _T("\n"));
-    wxStringTokenizer tokenizer(str, _T("\n"), wxTOKEN_RET_EMPTY_ALL);
+    str.Replace("\r\n", "\n");
+    str.Replace("\r", "\n");
+    wxStringTokenizer tokenizer(str, "\n", wxTOKEN_RET_EMPTY_ALL);
     std::vector<wxString> textLines;
     while (tokenizer.HasMoreTokens())
         textLines.push_back(tokenizer.GetNextToken());
@@ -303,7 +306,7 @@ void FormatIndent::FormatText(const wxString& textIn, int indentStart, const wxS
 
             if(tempLine.Len() > 0)
             {
-                if(wxT('&') == tempLine[0])
+                if('&' == tempLine[0])
                     tempLine = tempLine.Mid(1);
             }
             tmpMultiLines += tempLine;
@@ -320,7 +323,7 @@ void FormatIndent::FormatText(const wxString& textIn, int indentStart, const wxS
 
             if(tempLine.Len() > 0)
             {
-                if(wxT('&') == tempLine[0])
+                if('&' == tempLine[0])
                     tempLine = tempLine.Mid(1);
             }
 
@@ -398,15 +401,15 @@ wxString FormatIndent::GetEOLChars(cbStyledTextCtrl* control)
     switch (control->GetEOLMode())
     {
         case wxSCI_EOL_CRLF:
-            eolChars = _T("\r\n");
+            eolChars = "\r\n";
             break;
 
         case wxSCI_EOL_CR:
-            eolChars = _T("\r");
+            eolChars = "\r";
             break;
 
         case wxSCI_EOL_LF:
-            eolChars = _T("\n");
+            eolChars = "\n";
             break;
     }
     return eolChars;

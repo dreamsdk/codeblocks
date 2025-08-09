@@ -73,7 +73,6 @@ wxsFindReplaceDialog::wxsFindReplaceDialog(wxsItemResData *Data):
 void wxsFindReplaceDialog::OnBuildCreatingCode()
 {
     wxString sfindReplaceData;
-    wxString sNote(_("// NOTE: In order for events to connect properly you must set the ID of this wxFindReplaceDialog to -1 in wxSmith."));
     switch(GetLanguage())
     {
         case wxsCPP:
@@ -82,10 +81,10 @@ void wxsFindReplaceDialog::OnBuildCreatingCode()
             sfindReplaceData = GetCoderContext()->GetUniqueName(_T("findReplaceData"));
             AddDeclaration(wxString::Format(wxT("wxFindReplaceData %s;"), sfindReplaceData.wx_str()));
 
-            Codef(_T("\t%s\n"), sNote.wx_str());
             Codef(_T("%C(%W, &%s, %t, %T);\n"), sfindReplaceData.wx_str(), m_sCaption.wx_str());
 
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             break;
 
         case wxsUnknownLanguage: // fall-through
@@ -96,11 +95,12 @@ void wxsFindReplaceDialog::OnBuildCreatingCode()
 
 /*! \brief Enumerate the dialogue's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsFindReplaceDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsFindReplaceDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsFindReplaceDialog, m_sCaption, _("Caption"), _T("caption"), wxEmptyString, false);
 }
+

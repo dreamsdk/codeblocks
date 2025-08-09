@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11442 $
-* $Id: wxsitem.h 11442 2018-08-07 07:14:29Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.h $
+* $Revision: 13547 $
+* $Id: wxsitem.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitem.h $
 */
 
 #ifndef WXSITEM_H
@@ -37,6 +37,7 @@
 #include <stdarg.h>
 
 #include <prep.h>
+#include <cbplugin.h>
 
 class wxsItemResData;
 class wxsParent;
@@ -69,7 +70,7 @@ class wxWindow;
  * \note Parent of item is automatically set up when adding item to wxsParentClass
  *       using wxsParent::AddChild
  */
-class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
+class PLUGIN_EXPORT wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
 {
     public:
 
@@ -187,7 +188,7 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          * \note This function registers properties of parent item and should
          *       be called somewhere in overridden MyEnumProperties.
          */
-        void EnumItemProperties(long Flags);
+        void EnumItemProperties(long _Flags);
 
         /** \brief Function building preview for this item
          *
@@ -227,13 +228,13 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          *  \return Pointer to wxsParent class or 0 if class hasn't been
          *          derived from it
          */
-        virtual wxsParent* ConvertToParent() { return 0; }
+        virtual wxsParent* ConvertToParent() { return nullptr; }
 
         /** \brief Function converting this item to wxsTool class
          *  \return Pointer to wxsTool class or 0 if class hasn't been
          *          derived from it
          */
-        virtual wxsTool* ConvertToTool() { return 0; }
+        virtual wxsTool* ConvertToTool() { return nullptr; }
 
         /** \brief Function returning pointer to wxsBaseProperties class if item uses it. */
         virtual wxsBaseProperties* GetBaseProps() { return &m_BaseProperties; }
@@ -349,7 +350,7 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
         virtual long OnGetPropertiesFlags();
 
         /** \brief Enumerating item properties */
-        virtual void OnEnumItemProperties(long Flags) = 0;
+        virtual void OnEnumItemProperties(long _Flags) = 0;
 
         /** \brief Function filling up quick properties panel for current item
          *
@@ -383,7 +384,7 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          * \return Newly created object
          * \note This function is called from BuildPreview() function
          */
-        virtual wxObject* OnBuildPreview(wxWindow* Parent,long PreviewFlags) = 0;
+        virtual wxObject* OnBuildPreview(wxWindow* Parent,long _Flags) = 0;
 
         /** \brief Function which should load this item and child items
          *         from xrc / wxs structure
@@ -536,10 +537,10 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          *  - Extra style
          *
          * \param Preview window for which properties must be applied
-         * \param Flags Flags passed to OnBuildPreview
+         * \param _Flags Flags passed to OnBuildPreview
          * \return window after setting up properties (value of Preview is returned)
          */
-        wxWindow* SetupWindow(wxWindow* Window,long Flags);
+        wxWindow* SetupWindow(wxWindow* Window,long _Flags);
 
     private:
 
@@ -551,7 +552,7 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
          * that, it may add it's own additional properties. Child properties
          * are enumerated using MyEnumProperties function.
          */
-        virtual void OnEnumProperties(long Flags);
+        virtual void OnEnumProperties(long _Flags);
 
         /** \brief Building Quick properties panel.
          *
@@ -575,20 +576,20 @@ class wxsItem: public wxsPropertyContainer, public wxsCodeGenerator
         void UpdateTreeLabel();
 
         /** \brief Updating code generation flags before building code */
-        virtual void OnUpdateFlags(long& Flags);
+        virtual void OnUpdateFlags(long& _Flags);
 
-        const wxsItemInfo* m_Info;              ///< \brief Pointer to item's info structure
-        wxsEvents m_Events;                     ///< \brief Object managing events
-        wxsParent* m_Parent;                    ///< \brief Parent class of this one
-        wxsItemResData* m_ResourceData;         ///< \brief Data management object containing this item
-        wxsBaseProperties m_BaseProperties;     ///< \brief Pointer to base properties if item uses it
-        long m_PropertiesFlags;                 ///< \brief Properties flags
-        wxObject* m_LastPreview;                ///< \brief Current preview object
-        bool m_IsSelected;                      ///< \brief Set to true if item is selected inside editor
-        bool m_IsExpanded;                      ///< \brief Set to true if corresponding node in resource tree is expanded,
-                                                ///         this value may not always be correct, it's used when recreating
-                                                ///         resource tree after change
-        wxsResourceItemId m_LastTreeId;         ///< \brief Last Tree item id generated from BuildItemTree
+        const wxsItemInfo* m_Info;            ///< \brief Pointer to item's info structure
+        wxsEvents          m_Events;          ///< \brief Object managing events
+        wxsParent*         m_Parent;          ///< \brief Parent class of this one
+        wxsItemResData*    m_ResourceData;    ///< \brief Data management object containing this item
+        wxsBaseProperties  m_BaseProperties;  ///< \brief Pointer to base properties if item uses it
+        long               m_PropertiesFlags; ///< \brief Properties flags
+        wxObject*          m_LastPreview;     ///< \brief Current preview object
+        bool               m_IsSelected;      ///< \brief Set to true if item is selected inside editor
+        bool               m_IsExpanded;      ///< \brief Set to true if corresponding node in resource tree is expanded,
+                                              ///         this value may not always be correct, it's used when recreating
+                                              ///         resource tree after change
+        wxsResourceItemId  m_LastTreeId;      ///< \brief Last Tree item id generated from BuildItemTree
 
         friend class wxsParent;
 };

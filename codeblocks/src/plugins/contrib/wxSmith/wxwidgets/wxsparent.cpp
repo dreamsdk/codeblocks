@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11384 $
-* $Id: wxsparent.cpp 11384 2018-04-29 15:37:23Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.cpp $
+* $Revision: 13547 $
+* $Id: wxsparent.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.cpp $
 */
 
 #include "wxsparent.h"
@@ -49,8 +49,8 @@ wxsParent::~wxsParent()
 
 wxsItem* wxsParent::GetChild(int Index)
 {
-    if ( Index < 0 ) return 0;
-    if ( Index >= GetChildCount() ) return 0;
+    if ( Index < 0 ) return nullptr;
+    if ( Index >= GetChildCount() ) return nullptr;
     return Children[Index];
 }
 
@@ -176,20 +176,20 @@ void wxsParent::RestoreExtraData(int Index,TiXmlElement* Element)
     Extra[Index]->XmlRead(Element);
 }
 
-void wxsParent::OnEnumChildProperties(wxsItem* Child,long Flags)
+void wxsParent::OnEnumChildProperties(wxsItem* Child,long _Flags)
 {
     // Enumerating properties of child item
-    Child->EnumItemProperties(Flags);
+    Child->EnumItemProperties(_Flags);
 
     // Adding properties from extra data container when there's extra data
     // associated. It will be disabled in xml operations since
     // it's done on parent's level
-    if ( !(Flags&flXml) )
+    if ( !(_Flags&flXml) )
     {
         int Index = GetChildIndex(Child);
         if ( (Index >= 0) && (Index < (int)Extra.Count()) && Extra[Index] )
         {
-            SubContainer(Extra[Index],Flags);
+            SubContainer(Extra[Index],_Flags);
         }
     }
 }
@@ -202,8 +202,8 @@ void wxsParent::OnAddChildQPP(wxsItem* Child,wxsAdvQPP* QPP)
 
 wxsPropertyContainer* wxsParent::GetChildExtra(int Index)
 {
-    if ( Index < 0 ) return 0;
-    if ( Index >= GetChildCount() ) return 0;
+    if ( Index < 0 ) return nullptr;
+    if ( Index >= GetChildCount() ) return nullptr;
     return Extra[Index];
 }
 

@@ -1,0 +1,21 @@
+<svg width="32" height="32" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="linearGradient872">
+      <stop stop-color="#0e7eee" offset="0"/>
+      <stop stop-color="#0e7eee" stop-opacity="0" offset="1"/>
+    </linearGradient>
+    <linearGradient id="d" x1="31.47" x2="31.47" y1="24.82" y2="26.77" gradientTransform="matrix(.1839 0 0 .2648 .05687 .2993)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0663c3" offset="0"/>
+      <stop stop-color="#0e7eee" offset="1"/>
+    </linearGradient>
+    <linearGradient id="linearGradient862" x1="1.431" x2="1.349" y1="6.491" y2="1.166" gradientUnits="userSpaceOnUse" xlink:href="#linearGradient872"/>
+    <linearGradient id="linearGradient864" x1="4.367" x2="4.327" y1="6.47" y2="2.492" gradientUnits="userSpaceOnUse" xlink:href="#linearGradient872"/>
+    <linearGradient id="linearGradient874" x1="6.925" x2="6.987" y1="6.392" y2="2.547" gradientUnits="userSpaceOnUse" xlink:href="#linearGradient872"/>
+  </defs>
+  <path d="m0.2357 6.696 8.021-5.031e-4 0.009344 0.8753-8.02 0.01105z" fill="url(#d)" stroke="#000" stroke-width=".1103"/>
+  <g stroke="#2063b4" stroke-width=".1588">
+    <path d="m2.664 1.193v5.116h-0.9295v-0.3212q-0.2343 0.4061-0.6264 0.4061-0.8658 0-0.8658-1.927 0-1.982 0.9167-1.982 0.3616 0 0.5755 0.4614v-1.676q0.4202 0 0.9295-0.07752zm-1.204 1.835q-0.2343 0-0.2343 0.6238l-0.01783 0.79 0.01019 0.7198q0 0.6903 0.2648 0.6903 0.2572 0 0.2572-0.6792l0.01273-0.9081-0.02037-0.6202q-0.04074-0.6165-0.2725-0.6165z" fill="url(#linearGradient862)" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal"/>
+    <path d="m4.327 2.492q1.273 0 1.273 1.949 0 1.949-1.273 1.949-1.276 0-1.276-1.949 0-1.949 1.276-1.949zm-0.00255 0.3285q-0.3081 0-0.3081 1.621 0 1.621 0.3081 1.621 0.3107 0 0.3107-1.621 0-1.621-0.3107-1.621z" fill="url(#linearGradient864)" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal"/>
+    <path d="m8.111 2.588-0.7563 1.488 0.8684 2.233h-1.064l-0.4813-1.218-0.6188 1.218h-0.3565l0.8225-1.617-0.8149-2.104h1.07l0.4202 1.082 0.5551-1.082z" fill="url(#linearGradient874)" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:normal;font-variant-numeric:normal"/>
+  </g>
+</svg>

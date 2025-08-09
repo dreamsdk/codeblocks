@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11822 $
-* $Id: HexEditor.cpp 11822 2019-08-01 22:04:41Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/HexEditor.cpp $
+* $Revision: 12233 $
+* $Id: HexEditor.cpp 12233 2020-11-02 00:18:32Z d_anselmi $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/HexEditor.cpp $
 */
 
 #include <sdk.h>
@@ -98,7 +98,7 @@ void HexEditor::BuildModuleMenu(const ModuleType type, wxMenu* menu, const FileT
             }
             break;
 
-        case mtUnknown: //Assuming file explorer -- fileexplorer fills the filetreedata with ftdkFile or ftdkFolder as "kind", the file/folder selected is the "FullPath" of the entry
+        case mtFileExplorer: //filetreedata filled with ftdkFile or ftdkFolder as "kind", the file/folder selected is the "FullPath" of the entry
             if(data && data->GetKind()==FileTreeData::ftdkFile)  //right clicked on folder in file explorer
             {
                 wxFileName f(data->GetFolder());

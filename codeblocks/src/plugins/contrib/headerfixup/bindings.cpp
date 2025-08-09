@@ -4,7 +4,7 @@
  *
  * $Revision: 8560 $
  * $Id: bindings.cpp 8560 2012-11-14 22:13:44Z killerbot $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/bindings.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/bindings.cpp $
  */
 
 #include "bindings.h"

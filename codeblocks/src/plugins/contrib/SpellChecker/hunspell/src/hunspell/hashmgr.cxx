@@ -249,15 +249,15 @@ int HashMgr::add_word(const std::string& in_word,
 
   // store the description string or its pointer
   if (desc) {
-    hp->var += H_OPT;
+    hp->var |= H_OPT;
     if (aliasm) {
-      hp->var += H_OPT_ALIASM;
+      hp->var |= H_OPT_ALIASM;
       store_pointer(hpw + word->size() + 1, get_aliasm(atoi(desc->c_str())));
     } else {
       strcpy(hpw + word->size() + 1, desc->c_str());
     }
     if (strstr(HENTRY_DATA(hp), MORPH_PHON)) {
-      hp->var += H_OPT_PHON;
+      hp->var |= H_OPT_PHON;
       // store ph: fields (pronounciation, misspellings, old orthography etc.)
       // of a morphological description in reptable to use in REP replacements.
       if (reptable.capacity() < (unsigned int)(tablesize/MORPH_PHON_RATIO))
@@ -782,7 +782,7 @@ int HashMgr::decode_flags(unsigned short** result, const std::string& flags, Fil
       *result = (unsigned short*)malloc(len * sizeof(unsigned short));
       if (!*result)
         return -1;
-      memcpy(*result, &w[0], len * sizeof(short));
+      memcpy(*result, w.data(), len * sizeof(short));
       break;
     }
     default: {  // Ispell's one-character flags (erfg -> e r f g)
@@ -853,7 +853,7 @@ bool HashMgr::decode_flags(std::vector<unsigned short>& result, const std::strin
       size_t len = w.size();
       size_t origsize = result.size();
       result.resize(origsize + len);
-      memcpy(&result[origsize], &w[0], len * sizeof(short));
+      memcpy(result.data() + origsize, w.data(), len * sizeof(short));
       break;
     }
     default: {  // Ispell's one-character flags (erfg -> e r f g)
@@ -884,7 +884,7 @@ unsigned short HashMgr::decode_flag(const char* f) const {
       std::vector<w_char> w;
       u8_u16(w, f);
       if (!w.empty())
-          memcpy(&s, &w[0], 1 * sizeof(short));
+          memcpy(&s, w.data(), 1 * sizeof(short));
       break;
     }
     default:

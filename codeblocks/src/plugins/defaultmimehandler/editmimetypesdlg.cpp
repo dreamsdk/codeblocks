@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10665 $
- * $Id: editmimetypesdlg.cpp 10665 2016-01-17 13:58:48Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/defaultmimehandler/editmimetypesdlg.cpp $
+ * $Revision: 11996 $
+ * $Id: editmimetypesdlg.cpp 11996 2020-03-26 21:04:41Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/defaultmimehandler/editmimetypesdlg.cpp $
  */
 
 #include "sdk.h"
@@ -124,7 +124,8 @@ void EditMimeTypesDlg::OnActionChanged(cb_unused wxCommandEvent& event)
 
 void EditMimeTypesDlg::OnNew(cb_unused wxCommandEvent& event)
 {
-    wxString wild = cbGetTextFromUser(_("Enter the new wildcard to add:"));
+    wxString wild = cbGetTextFromUser(_("Enter the new wildcard to add:"), _("Mime type"),
+                                      wxString(), this);
     if (wild.IsEmpty())
         return;
 

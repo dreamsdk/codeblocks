@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10322 $
- * $Id: menuitemsmanager.cpp 10322 2015-06-05 07:57:16Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/menuitemsmanager.cpp $
+ * $Revision: 12605 $
+ * $Id: menuitemsmanager.cpp 12605 2021-12-22 08:53:19Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/menuitemsmanager.cpp $
  */
 
 #ifndef CB_PRECOMP
@@ -43,7 +43,7 @@ MenuItemsManager::~MenuItemsManager()
   * @param id The menu item ID (use wxID_SEPARATOR for adding a separator)
   * @param caption The caption for the new menu item
   * @param helptext The help text for the new menu item
-  * @return The new menu item or NULL for failure.
+  * @return The new menu item or nullptr for failure.
   */
 wxMenuItem* MenuItemsManager::Add(wxMenu* parent, int id, const wxString& caption, const wxString& helptext)
 {
@@ -62,7 +62,7 @@ wxMenuItem* MenuItemsManager::Add(wxMenu* parent, int id, const wxString& captio
   * @param id The menu item ID (use wxID_SEPARATOR for adding a separator)
   * @param caption The caption for the new menu item
   * @param helptext The help text for the new menu item
-  * @return The new menu item or NULL for failure.
+  * @return The new menu item or nullptr for failure.
   */
 wxMenuItem* MenuItemsManager::Insert(wxMenu* parent, int index, int id, const wxString& caption, const wxString& helptext)
 {
@@ -100,7 +100,7 @@ void MenuItemsManager::Clear()
   *                 starts with a dash (-) (e.g. "-MyItem") then a menu
   *                 separator is prepended before the actual menu item.
   * @param id The menu item ID (use wxID_SEPARATOR for adding a separator)
-  * @return The id of the newly created menu or the id of the old, same menu entry or NULL for failure.
+  * @return The id of the newly created menu or the id of the old, same menu entry or nullptr for failure.
   */
 int MenuItemsManager::CreateFromString(const wxString& menuPath, int id)
 {

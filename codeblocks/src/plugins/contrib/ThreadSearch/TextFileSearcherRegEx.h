@@ -22,11 +22,7 @@ class TextFileSearcherRegEx : public TextFileSearcher
 public:
     /** Constructor. */
     TextFileSearcherRegEx(const wxString& searchText, bool matchCase, bool matchWordBegin,
-                          bool matchWord);
-
-
-    /** Destructor. */
-    virtual ~TextFileSearcherRegEx() {};
+                          bool matchWord, bool matchInComments);
 
     /** Return true if Line matches search text.
       * This method is inherited from TextFileSearcher and is used to implement
@@ -35,15 +31,16 @@ public:
       * @param Line : the text line to match.
       * @return true if line matches search text.
       */
-    virtual bool MatchLine(wxString line);
+    bool MatchLine(std::vector<int> *outMatchedPositions, const wxString &line) override;
 
     /** Return true if object is OK.
       * @return true if object is Ok, ie usable.
       */
-    virtual bool IsOk(wxString* pErrorMessage = NULL);
+    bool IsOk(wxString* pErrorMessage = nullptr) override;
 
 protected:
     wxRegEx m_RegEx;
+    int m_IndexToMatch;
 };
 
 #endif // TEXT_FILE_SEARCHER_REG_EX_H

@@ -24,8 +24,8 @@ class DLLIMPORT cbStyledTextCtrl : public wxScintilla
         cbStyledTextCtrl(wxWindow* pParent, int id, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0);
         ~cbStyledTextCtrl() override;
 
-        /** Don't use this. It throws an exception if you do. */
-        void operator=(const cbStyledTextCtrl& /*rhs*/);
+        cbStyledTextCtrl(const cbStyledTextCtrl&) = delete;
+        cbStyledTextCtrl& operator=(const cbStyledTextCtrl&) = delete;
 
         wxDateTime GetLastFocusTime() const {return m_lastFocusTime;}
         wxString GetLastSelectedText() const {return m_lastSelectedText;}
@@ -84,6 +84,7 @@ class DLLIMPORT cbStyledTextCtrl : public wxScintilla
         void OnKeyDown(wxKeyEvent& event);
         void OnKeyUp(wxKeyEvent& event);
         void OnMouseLeftUp(wxMouseEvent& event);
+        void OnKillAutoCompPopups(); //CallAfter
 
         bool AllowTabSmartJump();
         void HighlightRightBrace();

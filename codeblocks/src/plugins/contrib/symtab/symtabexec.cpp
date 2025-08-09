@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10024 $
- * $Id: symtabexec.cpp 10024 2014-11-06 09:23:26Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/symtab/symtabexec.cpp $
+ * $Revision: 13103 $
+ * $Id: symtabexec.cpp 13103 2022-12-09 14:16:20Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/symtab/symtabexec.cpp $
  */
 
 #include "sdk.h"
@@ -159,7 +159,7 @@ void SymTabExecDlg::OnWriteToFile(wxCommandEvent& WXUNUSED(event))
 
   wxString     es = wxEmptyString;
   wxFileDialog fd(parent, _("Save NM output to file"), es, es, _T("*.*"), wxFD_SAVE);
-
+  PlaceWindow(&fd);
   if (fd.ShowModal() == wxID_OK)
   {
     wxFFile file(fd.GetPath().c_str(), _T("w"));
@@ -361,9 +361,7 @@ int SymTabExecDlg::ExecuteMulti(struct_config &config, wxString cmd)
     }// for
     if (!something_found)
     {
-      wxString msg;
-      msg << _("The search for \"") << the_symbol
-          << _("\" produced no results.");
+      const wxString msg(wxString::Format(_("The search for \"%s\" produced no results."), the_symbol));
       cbMessageBox(msg, _("Info"), wxICON_INFORMATION | wxOK,
                    (wxWindow*)Manager::Get()->GetAppWindow());
     }
@@ -386,8 +384,7 @@ int SymTabExecDlg::ExecuteSingle(struct_config &config, wxString cmd)
   if (retval == 0)
   {
     wxString msg;
-    msg << _("The search in:\n") << the_library
-        << _("\nfor \"") << the_symbol << _("\" produced no results.");
+    msg << wxString::Format(_("The search in:\n%s\nfor \"%s\" produced no results."), the_library, the_symbol);
     cbMessageBox(msg, _("Info"), wxICON_INFORMATION | wxOK,
                  (wxWindow*)Manager::Get()->GetAppWindow());
   }
@@ -505,9 +502,9 @@ int SymTabExecDlg::ParseOutputSuccess(wxString lib, wxString filter)
     return 0;
   }
 
-	Manager::Get()->GetLogManager()->DebugLog(F(_T("SymTab: Parsing %lu items..."), static_cast<unsigned long>(count)));
+	Manager::Get()->GetLogManager()->DebugLog(wxString::Format("SymTab: Parsing %zu items...", count));
 
-  wxProgressDialog* progress = 0L;
+  wxProgressDialog* progress = nullptr;
   if (count>2000) // avoid flickering for small libs
   {
     wxString p_msg;
@@ -566,7 +563,7 @@ int SymTabExecDlg::ParseOutputSuccess(wxString lib, wxString filter)
           }
 
           // now associate a user-data with this entry
-          m_ListCtrl->SetItemData(item, (intptr_t)new customListEntry(n, the_value, the_type, the_name));
+          m_ListCtrl->SetItemPtrData(item, (wxUIntPtr)new customListEntry(n, the_value, the_type, the_name));
 
           ++entries;
         }

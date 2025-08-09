@@ -6,7 +6,6 @@
 #ifndef WIZ_H
 #define WIZ_H
 
-
 #include <cbplugin.h> // the base class we 're inheriting
 #include <settings.h> // needed to use the Code::Blocks SDK
 #include <cbexception.h>
@@ -39,22 +38,19 @@ class Wiz : public cbWizardPlugin
 {
 	public:
 		Wiz();
-		~Wiz();
+		~Wiz() override;
 
-        Wiz& operator=(cb_unused const Wiz& rhs)  // prevent assignment operator
-        {
-        	cbThrow(_T("Can't assign an Wiz* !!!"));
-        	return *this;
-		}
+        Wiz(const Wiz&) = delete;
+        Wiz& operator=(const Wiz&) = delete;
 
-		int GetCount() const;
-        TemplateOutputType GetOutputType(int index) const;
-		wxString GetTitle(int index) const;
-		wxString GetDescription(int index) const;
-		wxString GetCategory(int index) const;
-		const wxBitmap& GetBitmap(int index) const;
-        wxString GetScriptFilename(int index) const;
-		CompileTargetBase* Launch(int index, wxString* pFilename = 0);
+		int GetCount() const override;
+        TemplateOutputType GetOutputType(int index) const override;
+		wxString GetTitle(int index) const override;
+		wxString GetDescription(int index) const override;
+		wxString GetCategory(int index) const override;
+		const wxBitmap& GetBitmap(int index) const override;
+        wxString GetScriptFilename(int index) const override;
+		CompileTargetBase* Launch(int index, wxString* pFilename = 0) override;
 
 		CompileTargetBase* RunProjectWizard(wxString* pFilename); // called by Launch() for otProject wizards
 		CompileTargetBase* RunTargetWizard(wxString* pFilename); // called by Launch() for otTarget wizards (always returns NULL)
@@ -78,8 +74,10 @@ class Wiz : public cbWizardPlugin
         bool IsCheckboxChecked(const wxString& name);
 
         void FillComboboxWithCompilers(const wxString& name);
-        void FillContainerWithSelectCompilers( const wxString& name, const wxString& validCompilerIDs );
-        void AppendContainerWithSelectCompilers( const wxString& name, const wxString& validCompilerIDs );
+        void FillContainerWithSelectCompilers(const wxString& name,
+                                              const wxString& validCompilerIDs);
+        void AppendContainerWithSelectCompilers(const wxString& name,
+                                                const wxString& validCompilerIDs);
         wxString GetCompilerFromCombobox(const wxString& name);
         void FillContainerWithCompilers(const wxString& name, const wxString& compilerID,
                                         const wxString& validCompilerIDs);
@@ -143,27 +141,29 @@ class Wiz : public cbWizardPlugin
 
         // compiler defaults
         void SetCompilerDefault(const wxString& defCompilerID);
-        void SetDebugTargetDefaults(bool wantDebug,
-                                        const wxString& debugName,
-                                        const wxString& debugOut,
-                                        const wxString& debugObjOut);
-        void SetReleaseTargetDefaults(bool wantRelease,
-                                        const wxString& releaseName,
-                                        const wxString& releaseOut,
-                                        const wxString& releaseObjOut);
+        void SetDebugTargetDefaults(bool wantDebug,const wxString& debugName,
+                                    const wxString& debugOut, const wxString& debugObjOut);
+        void SetReleaseTargetDefaults(bool wantRelease, const wxString& releaseName,
+                                      const wxString& releaseOut, const wxString& releaseObjOut);
 
-        int       FillContainerWithChoices( const wxString& name, const wxString& choices );
-        int       AppendContainerWithChoices( const wxString& name, const wxString& choices );
-        wxString  GetWizardScriptFolder(void);
+        int FillContainerWithChoices(const wxString& name, const wxString& choices);
+        int AppendContainerWithChoices(const wxString& name, const wxString& choices);
+        wxString GetWizardScriptFolder(void);
 
         // pre-defined pages
         void AddInfoPage(const wxString& pageId, const wxString& intro_msg);
         void AddFilePathPage(bool showHeaderGuard);
         void AddProjectPathPage();
-        void AddCompilerPage(const wxString& compilerID, const wxString& validCompilerIDs, bool allowCompilerChange = true, bool allowConfigChange = true);
-        void AddBuildTargetPage(const wxString& targetName, bool isDebug, bool showCompiler = false, const wxString& compilerID = wxEmptyString, const wxString& validCompilerIDs = _T("*"), bool allowCompilerChange = true);
-        void AddGenericSingleChoiceListPage(const wxString& pageName, const wxString& descr, const wxString& choices, int defChoice);
-        void AddGenericSelectPathPage(const wxString& pageId, const wxString& descr, const wxString& label, const wxString& defValue);
+        void AddCompilerPage(const wxString& compilerID, const wxString& validCompilerIDs,
+                             bool allowCompilerChange = true, bool allowConfigChange = true);
+        void AddBuildTargetPage(const wxString& targetName, bool isDebug, bool showCompiler = false,
+                                const wxString& compilerID = wxEmptyString,
+                                const wxString& validCompilerIDs = _T("*"),
+                                bool allowCompilerChange = true);
+        void AddGenericSingleChoiceListPage(const wxString& pageName, const wxString& descr,
+                                            const wxString& choices, int defChoice);
+        void AddGenericSelectPathPage(const wxString& pageId, const wxString& descr,
+                                      const wxString& label, const wxString& defValue);
         // XRC pages
         void AddPage(const wxString& panelName);
 
@@ -171,7 +171,8 @@ class Wiz : public cbWizardPlugin
         void RegisterWizard();
         wxString FindTemplateFile(const wxString& filename);
 	protected:
-        void OnAttach();
+        void OnAttach() override;
+        void OnRelease(bool appShutDown) override;
         void Clear();
         void CopyFiles(cbProject* theproject, const wxString&  prjdir, const wxString& srcdir);
         wxString GenerateFile(const wxString& basePath, const wxString& filename, const wxString& contents);
@@ -197,8 +198,6 @@ class Wiz : public cbWizardPlugin
         wxString m_ReleaseOutputDir;
         wxString m_ReleaseObjOutputDir;
         wxString m_WizardScriptFolder;
-	private:
-        Wiz(cb_unused const Wiz& rhs); // prevent copy construction
 };
 
 #endif // WIZ_H

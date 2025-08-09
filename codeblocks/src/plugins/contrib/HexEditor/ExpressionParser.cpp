@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8565 $
-* $Id: ExpressionParser.cpp 8565 2012-11-14 22:49:50Z killerbot $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/ExpressionParser.cpp $
+* $Revision: 13126 $
+* $Id: ExpressionParser.cpp 13126 2022-12-18 10:35:32Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/ExpressionParser.cpp $
 */
 
 #include "ExpressionParser.h"
@@ -76,7 +76,7 @@ namespace Expression
         "    pow(a, b)\n"
         "    ln(a), log(a,b)\n"
         "\n"
-        "Exapmle:\n"
+        "Example:\n"
         "    word[ 4 * dword[ @ ] + 128 ]\n"
         "  This code will read dword value at current cursor\n"
         "  position, multiply it by 4 and add 128 to it,\n"

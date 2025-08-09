@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxscalendarctrl.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscalendarctrl.cpp $
+* $Revision: 13547 $
+* $Id: wxscalendarctrl.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscalendarctrl.cpp $
 */
 
 #include "wxscalendarctrl.h"
@@ -81,12 +81,12 @@ void wxsCalendarCtrl::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsCalendarCtrl::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsCalendarCtrl::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxCalendarCtrl* Preview = new wxCalendarCtrl(Parent,GetId(),wxDefaultDateTime,Pos(Parent),Size(Parent),Style());
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsCalendarCtrl::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsCalendarCtrl::OnEnumWidgetProperties(cb_unused long _Flags)
 {
 }

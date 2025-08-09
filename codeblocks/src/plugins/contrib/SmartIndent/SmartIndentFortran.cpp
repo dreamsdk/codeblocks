@@ -121,16 +121,17 @@ void SmartIndentFortran::DoBraceCompletion(cbStyledTextCtrl* control, const wxCh
         return;
 
     // Variable "ch" is a character which was just typed. Current position is after ch.
-    int pos = control->GetCurrentPos();
-    int style = control->GetStyleAt(pos);
+    const int pos = control->GetCurrentPos();
+    const int style = control->GetStyleAt(pos);
 
     // Don't do anything if we are in a comment or in a preprocessor line.
     if (control->IsComment(style) || control->IsPreprocessor(style))
         return;
-    if (ch == _T('\'') || ch == _T('"'))
+
+    if ((ch == '\'') || (ch == '"'))
     {
         // Take care about ' and ".
-        if ((control->GetCharAt(pos) == ch) && (control->GetCharAt(pos - 2) != _T('\\')))
+        if ((control->GetCharAt(pos) == ch) && (control->GetCharAt(pos - 2) != '\\'))
         {
             control->DeleteBack();
             control->GotoPos(pos);
@@ -139,31 +140,43 @@ void SmartIndentFortran::DoBraceCompletion(cbStyledTextCtrl* control, const wxCh
         {
             const wxChar left = control->GetCharAt(pos - 2);
             const wxChar right = control->GetCharAt(pos);
-            if (control->IsCharacter(style) || control->IsString(style) || left == _T('\\'))
+            if (control->IsCharacter(style) || control->IsString(style) || (left == '\\'))
                 return;
-            else if ((left > _T(' '))  && (left != _T('(')) && (left != _T('=')))
+            else if ((left > ' ')  && (left != '(') && (left != '='))
                 return;
-            else if ((right > _T(' ')) && (right != _T(')')) )
+            else if ((right > ' ') && (right != ')'))
                 return;
+
             control->AddText(ch);
             control->GotoPos(pos);
         }
         return;
     }
+
     if (control->IsCharacter(style) || control->IsString(style))
         return;
-    const wxString leftBrace(_T("([{"));
-    const wxString rightBrace(_T(")]}"));
+
+    const wxString leftBrace("([{");
+    const wxString rightBrace(")]}");
+
+    if ((ch == ' ') && Manager::Get()->GetConfigManager("editor")->ReadBool("/spaces_around_braces", false))
+    {
+        const wxChar left = control->GetCharAt(pos - 2);
+        const wxChar right = control->GetCharAt(pos);
+        const int index = leftBrace.Find(left);
+        if (index != wxNOT_FOUND && right == rightBrace.GetChar(index))
+        {
+            control->AddText(' ');
+            control->GotoPos(pos);
+            return;
+        }
+    }
+
     int index = leftBrace.Find(ch);
-    const wxString unWant(_T(");\n\r\t\b "));
+    const wxString unWant(");\n\r\t\b ");
     const wxChar nextChar = control->GetCharAt(pos);
-#if wxCHECK_VERSION(3, 0, 0)
     if ((index != wxNOT_FOUND)
         && ((unWant.Find(wxUniChar(nextChar)) != wxNOT_FOUND) || (pos == control->GetLength())))
-#else
-    if ((index != wxNOT_FOUND)
-        && ((unWant.Find(nextChar) != wxNOT_FOUND) || (pos == control->GetLength())))
-#endif
     {
         // add closing brace
         control->AddText(rightBrace.GetChar(index));

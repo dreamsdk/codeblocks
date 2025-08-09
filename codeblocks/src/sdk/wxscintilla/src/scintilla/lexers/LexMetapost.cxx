@@ -179,7 +179,10 @@ static void ColouriseMETAPOSTDoc(
 	}
 
 	WordList &keywords  = *keywordlists[0] ;
-	WordList &keywords2 = *keywordlists[extraInterface-1] ;
+/* C::B begin */
+	WordList emptyList;
+	WordList &keywords2 = extraInterface ? *keywordlists[extraInterface-1] : emptyList;
+/* C::B end */
 
 	StyleContext sc(startPos, length, SCE_METAPOST_TEXT, styler) ;
 

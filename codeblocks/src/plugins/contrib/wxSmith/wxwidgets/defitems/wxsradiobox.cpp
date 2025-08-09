@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsradiobox.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsradiobox.cpp $
+* $Revision: 13547 $
+* $Id: wxsradiobox.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsradiobox.cpp $
 */
 
 #include <wx/defs.h> // to have wxUSE_RADIOBOX defined in the radiobox.h header
@@ -102,21 +102,20 @@ void wxsRadioBox::OnBuildCreatingCode()
 }
 
 
-wxObject* wxsRadioBox::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsRadioBox::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxRadioBox* Preview = new wxRadioBox(Parent,GetId(),Label,Pos(Parent),Size(Parent),ArrayChoices, Dimension, Style());
     if ( DefaultSelection >= 0 && DefaultSelection < (int)ArrayChoices.GetCount() )
     {
         Preview->SetSelection(DefaultSelection);
     }
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsRadioBox::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsRadioBox::OnEnumWidgetProperties(cb_unused long _Flags)
 {
-    WXS_SHORT_STRING(wxsRadioBox,Label,_("Label"),_T("label"),_T(""),true)
-    WXS_ARRAYSTRING(wxsRadioBox,ArrayChoices,_("Choices"),_T("content"),_T("item"))
-    WXS_LONG(wxsRadioBox,DefaultSelection,_("Default"),_T("default"),0)
-    WXS_LONG(wxsRadioBox,Dimension,_("Dimension"),_T("dimension"),1)
-
+    WXS_SHORT_STRING(wxsRadioBox,Label, _("Label"), "label", "",true)
+    WXS_ARRAYSTRING(wxsRadioBox,ArrayChoices, _("Choices"), "content", "item")
+    WXS_LONG(wxsRadioBox,DefaultSelection, _("Default"), "default", 0)
+    WXS_LONG(wxsRadioBox,Dimension, _("Dimension"), "dimension", 1)
 }

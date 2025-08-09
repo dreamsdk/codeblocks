@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7593 $
- * $Id: RegExTestbed.cpp 7593 2011-11-13 19:04:12Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/regex_testbed/RegExTestbed.cpp $
+ * $Revision: 12509 $
+ * $Id: RegExTestbed.cpp 12509 2021-08-15 11:51:05Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/regex_testbed/RegExTestbed.cpp $
  */
 
 #include <sdk.h> // Code::Blocks SDK
@@ -65,7 +65,7 @@ int RegExTestbed::Execute()
 {
     try
     {
-        RegExDlg *dlg = new RegExDlg(0, -1);
+        RegExDlg *dlg = new RegExDlg(Manager::Get()->GetAppWindow(), -1);
         PlaceWindow(dlg);
         dlg->Show();
     }

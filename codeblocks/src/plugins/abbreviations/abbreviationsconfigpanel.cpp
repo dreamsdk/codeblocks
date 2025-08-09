@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11350 $
- * $Id: abbreviationsconfigpanel.cpp 11350 2018-03-27 22:00:39Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/abbreviations/abbreviationsconfigpanel.cpp $
+ * $Revision: 12944 $
+ * $Id: abbreviationsconfigpanel.cpp 12944 2022-10-05 06:02:53Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/abbreviations/abbreviationsconfigpanel.cpp $
  */
 
 #include <sdk.h>
@@ -30,7 +30,7 @@ AbbreviationsConfigPanel::AbbreviationsConfigPanel(wxWindow* parent, Abbreviatio
     m_AutoCompTextControl(nullptr),
     m_Plugin(plugin)
 {
-    wxXmlResource::Get()->LoadObject(this, parent, _T("AbbreviationsConfigPanel"), _T("wxPanel"));
+    wxXmlResource::Get()->LoadObject(this, parent, "AbbreviationsConfigPanel", "wxPanel");
 
     m_LanguageCmb = XRCCTRL(*this, "cmbAutoCompLanguage", wxComboBox);
     FillLangugages();
@@ -78,11 +78,11 @@ void AbbreviationsConfigPanel::InitCompText()
     m_AutoCompTextControl->SetViewWhiteSpace(1);
     m_AutoCompTextControl->SetMinSize(wxSize(50, 50));
 
-    wxColor ccolor = Manager::Get()->GetColourManager()->GetColour(wxT("editor_caret"));
+    wxColor ccolor = Manager::Get()->GetColourManager()->GetColour("editor_caret");
     m_AutoCompTextControl->SetCaretForeground( ccolor );
 
     ApplyColours();
-    wxXmlResource::Get()->AttachUnknownControl(_T("txtAutoCompCode"), m_AutoCompTextControl);
+    wxXmlResource::Get()->AttachUnknownControl("txtAutoCompCode", m_AutoCompTextControl);
 }
 
 void AbbreviationsConfigPanel::ApplyColours()
@@ -90,7 +90,7 @@ void AbbreviationsConfigPanel::ApplyColours()
     EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
     if (colour_set)
     {
-        wxString FontString = Manager::Get()->GetConfigManager(_T("editor"))->Read(_T("/font"), wxEmptyString);
+        wxString FontString = Manager::Get()->GetConfigManager("editor")->Read("/font", wxEmptyString);
         wxFont tmpFont(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
         if (!FontString.IsEmpty())
@@ -102,7 +102,7 @@ void AbbreviationsConfigPanel::ApplyColours()
         if (m_AutoCompTextControl)
         {
             m_AutoCompTextControl->StyleSetFont(wxSCI_STYLE_DEFAULT, tmpFont);
-            colour_set->Apply(colour_set->GetHighlightLanguage(_T("C/C++")), m_AutoCompTextControl,
+            colour_set->Apply(colour_set->GetHighlightLanguage("C/C++"), m_AutoCompTextControl,
                               false, true);
         }
     }
@@ -114,15 +114,16 @@ void AbbreviationsConfigPanel::AutoCompUpdate(const wxString& key, const wxStrin
     {
         AutoCompleteMap* compMap = m_Plugin->m_AutoCompLanguageMap[lang];
         wxString code = m_AutoCompTextControl->GetText();
-        code.Replace(wxT("\r\n"), wxT("\n"));
-        code.Replace(wxT("\r"),   wxT("\n"));
+        code.Replace("\r\n", "\n");
+        code.Replace("\r",   "\n");
         (*compMap)[key] = code;
     }
 }
 
 void AbbreviationsConfigPanel::OnAutoCompAdd(cb_unused wxCommandEvent& event)
 {
-    wxString key = cbGetTextFromUser(_("Please enter the new keyword"), _("Add keyword"));
+    wxString key = cbGetTextFromUser(_("Please enter the new keyword"), _("Add keyword"),
+                                     wxString(), this);
     if (!key.IsEmpty())
     {
         AutoCompleteMap::iterator it = m_pCurrentAutoCompMap->find(key);
@@ -204,7 +205,7 @@ wxString AbbreviationsConfigPanel::GetTitle() const
 
 wxString AbbreviationsConfigPanel::GetBitmapBaseName() const
 {
-  return _T("abbrev");
+  return "abbrev";
 }
 
 void AbbreviationsConfigPanel::FillLangugages()
@@ -273,7 +274,7 @@ int AbbreviationsConfigPanel::LanguageAdd()
     for (unsigned int i = 0; i < langs.GetCount(); ++i)
     {
         if (m_Plugin->m_AutoCompLanguageMap.find(langs[i]) == m_Plugin->m_AutoCompLanguageMap.end() &&
-            !langs[i].IsSameAs(_T("Fortran77")))
+            !langs[i].IsSameAs("Fortran77"))
             newLangs.Add(langs[i]);
     }
     newLangs.Sort();
@@ -306,14 +307,14 @@ void AbbreviationsConfigPanel::OnLanguageCopy(cb_unused wxCommandEvent& event)
 void AbbreviationsConfigPanel::OnLanguageDelete(cb_unused wxCommandEvent& event)
 {
     wxString lang = m_LanguageCmb->GetValue();
-    if (lang.IsSameAs(defaultLanguageStr) || lang.IsSameAs(_T("Fortran")))
+    if (lang.IsSameAs(defaultLanguageStr) || lang.IsSameAs("Fortran"))
     {
-        cbMessageBox(_("Abbreviations for ") + lang + _(" language can't be deleted!"), _("Error"),
+        cbMessageBox(wxString::Format(_("Abbreviations for %s language can't be deleted!"), lang), _("Error"),
                      wxICON_ERROR | wxOK, this);
         return;
     }
 
-    if (cbMessageBox(_("Are you sure you want to delete abbreviations for ") + lang + _(" language?"), _("Confirmation"),
+    if (cbMessageBox(wxString::Format(_("Are you sure you want to delete abbreviations for %s language?"), lang), _("Confirmation"),
                      wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) == wxID_NO)
         return;
 

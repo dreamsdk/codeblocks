@@ -17,7 +17,7 @@
 *
 * $Revision: 10874 $
 * $Id: wxsitemresdataobject.h 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdataobject.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemresdataobject.h $
 */
 
 #ifndef WXSITEMRESDATAOBJECT_H

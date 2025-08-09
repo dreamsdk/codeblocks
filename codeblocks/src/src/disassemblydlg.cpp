@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11350 $
- * $Id: disassemblydlg.cpp 11350 2018-03-27 22:00:39Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/disassemblydlg.cpp $
+ * $Revision: 13003 $
+ * $Id: disassemblydlg.cpp 13003 2022-11-08 08:50:45Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/disassemblydlg.cpp $
  */
 
 #include "sdk.h"
@@ -244,8 +244,8 @@ void DisassemblyDlg::OnSave(cb_unused wxCommandEvent& event)
     cbProject* prj = Manager::Get()->GetProjectManager()->GetActiveProject();
     if (prj)
     {
-        output << _("Project title : ") << prj->GetTitle() << _T('\n');
-        output << _("Project path  : ") << prj->GetBasePath() << _T('\n') << _T('\n');
+        output << _("Project title: ") << prj->GetTitle() << _T('\n');
+        output << _("Project path : ") << prj->GetBasePath() << _T('\n') << _T('\n');
     }
 
     output << _("Frame function: ") << m_FrameFunction << _T('\n');

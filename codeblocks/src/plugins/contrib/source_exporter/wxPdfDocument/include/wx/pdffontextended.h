@@ -182,9 +182,10 @@ public:
   /**
   * \param s the string for which the width should be calculated
   * \param withKerning flag indicating whether kerning should be taken into account
+  * \param charSpacing extra amount of spacing between characters (optional)
   * \return the width of the string
   */
-  double GetStringWidth(const wxString& s, bool withKerning = false);
+  double GetStringWidth(const wxString& s, bool withKerning = false, double charSpacing = 0);
 
   /// Get kerning width array
   /**
@@ -250,6 +251,24 @@ public:
   * \return the size of the written data
   */
   size_t WriteUnicodeMap(wxOutputStream* mapData, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs);
+
+  /// Write CID to GID mapping
+  /**
+  * \param mapData the output stream
+  * \param usedGlyphs the list of used glyphs
+  * \param subsetGlyphs the mapping of glyphs to subset glyphs
+  * \return the size of the written data
+  */
+  size_t WriteCIDToGIDMap(wxOutputStream* mapData, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs);
+
+  /// Write CID set
+  /**
+  * \param setData the output stream
+  * \param usedGlyphs the list of used glyphs
+  * \param subsetGlyphs the mapping of glyphs to subset glyphs
+  * \return the size of the written data
+  */
+  size_t WriteCIDSet(wxOutputStream* setData, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs);
 
   /// Get the font description
   const wxPdfFontDescription& GetDescription() const;

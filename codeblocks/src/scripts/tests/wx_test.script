@@ -1,10 +1,11 @@
 
-::Include(_("test_base.script"));
+::Require(_T("test_base.script"));
 
 class wxTest extends script_test_base
 {
     function Run()
     {
+        clear_global_test_results()
         test_test();
         test_wxstring();
         test_wxstring_unicode();
@@ -38,45 +39,130 @@ class wxTest extends script_test_base
         else
             made_failed("constructor(SQchar)","see previous result");
 
+        test_string("empty ctor", wxString(), "");
+        test_string("string ctor", wxString("from string"), "from string");
+        test_string("wxString ctor", wxString(wxString("from wxString")), "from wxString");
+
+        // Some of these fail because squirrel optimizes this and never calls our _cmp metamethod.
+        test_true("cmp", _T("Hallo")==string);
+        test_true("cmp not", _T("Hallo11")!=string);
+        test_true("cmp string", _T("Hallo")=="Hallo");
+        test_true("cmp string2", "Hallo"==_T("Hallo"));
+        test_false("cmp string not", _T("Hallo11")=="halllo");
+        test_false("cmp string not2", "Hallo11"==_T("halllo"));
+        test_equal("Compare", _T("Hallo").Compare(string), 0);
+        test_equal("Compare lt", _T("ABC").Compare(_T("WXY")), -1);
+        test_equal("Compare gt", _T("WXY").Compare(_T("ABC")), 1);
+        test_equal("Compare lt string", _T("ABC").Compare("WXY"), -1);
+        test_equal("Compare gt string", _T("WXY").Compare("ABC"), 1);
+
+        test_string("_add", _T("first-") + _T("second"), "first-second");
+        test_string("_add wxString+string", _T("first-") + "second", "first-second");
+        test_string("_add string+wxString", "first-" + _T("second"), "first-second");
+        test_string("_add wxString+int", _T("first-") + 10, "first-10");
+        test_string("_add wxString+float", _T("first-") + 2.0, "first-2.000000");
+        // I don't know how to write this test yet.
+        //test_string("_add wxString+userptr", _T("first-") + <something>, "first-2.0");
+
+        test_string("_cloned", clone string, "Hallo");
 
         test_false("IsEmpty",string.IsEmpty());
+        test_true("IsEmpty", wxString().IsEmpty());
         test_equal("Length",string.Length(),5);
         test_equal("length",string.length(),5);
         test_equal("len",string.len(),5);
         test_equal("size",string.size(),5);
+
+        // Lower case functions
+        string = _T("Hallo");
         test_string("Lower",string.Lower(),"hallo");
+        test_string("Lower after",string,"Hallo");
         string.LowerCase();
         test_string("LowerCase",string,"hallo");
+
+        string = _T("HallO");
         test_string("MakeLower",string.MakeLower(),"hallo");
+        test_string("MakeLower",string,"hallo");
+
+        // Upper case functions
+        string = _T("Hallo");
         test_string("Upper",string.Upper(),"HALLO");
+        test_string("Upper after",string,"Hallo");
         string.UpperCase();
         test_string("UpperCase",string,"HALLO");
+
+        string = _T("Hallo");
         test_string("MakeUpper",string.MakeUpper(),"HALLO");
+        test_string("MakeUpper",string,"HALLO");
+
+        // Test if the return value of MakeUpper/MakeLower is a proper reference to this.
+        // Test if the return value of Lower/Upper is a copy and not reference to this.
+        string = _T("Hallo");
+        test_string("MakeLower Chaining", string.MakeLower().Upper(),"HALLO");
+        test_string("MakeLower Chaining 2", string, "hallo");
+        string = _T("Hallo");
+        test_string("MakeLower Chaining 3", string.MakeLower().MakeUpper(),"HALLO");
+        test_string("MakeLower Chaining 4", string, "HALLO");
+        string = _T("Hallo");
+        test_string("MakeUpper Chaining", string.MakeUpper().Lower(),"hallo");
+        test_string("MakeUpper Chaining 2", string, "HALLO");
+        string = _T("Hallo");
+        test_string("MakeUpper Chaining", string.MakeUpper().MakeLower(),"hallo");
+        test_string("MakeUpper Chaining 2", string, "hallo");
+
         string = _T("Hallo");
         test_string("Mid",string.Mid(2,2),"ll");
         test_string("Remove",string.Remove(2,string.len()-2),"Ha");
         string = _T("Hallo");
         test_string("RemoveLast",string.RemoveLast(2),"Hal");
         string = _T("Hallo");
-        test_equal("Replace ret",string.Replace(_("ll"),_("xx")),1);
+        test_equal("Replace ret",string.Replace(_T("ll"),_T("xx")),1);
         test_string("Replace value",string,"Haxxo");
         string = _T("Hallo");
         test_string("AfterFirst",string.AfterFirst(_T("l")),"lo");
+        test_string("AfterFirst str",string.AfterFirst("l"),"lo");
         string = _T("Hallo");
         //test_string("AfterFirst const",string.AfterFirst('l'),"lo");
         //string = _T("Hallo");
         test_string("AfterLast",string.AfterLast(_T("l")),"o");
+        test_string("AfterLast str",string.AfterLast("l"),"o");
         string = _T("Hallo");
         //test_string("AfterLast const",string.AfterLast('l'),"o");
         //string = _T("Hallo");
         test_string("BeforeFirst",string.BeforeFirst(_T("l")),"Ha");
+        test_string("BeforeFirst str",string.BeforeFirst("l"),"Ha");
         string = _T("Hallo");
         test_string("BeforeLast",string.BeforeLast(_T("l")),"Hal");
+        test_string("BeforeLast str",string.BeforeLast("l"),"Hal");
         string = _T("Hallo");
         test_string("Right",string.Right(2),"lo");
         string = _T("Hallo");
+        test_string("Left",string.Left(2),"Ha");
+        string = _T("Hallo");
         test_true("Matches",string.Matches(_T("Ha*o")));
-        string = _T("long_string_to_test_replace");
+        test_equal("Find",string.Find(_T("llo")), 2);
+        test_equal("Find not",string.Find(_T("ll0")), -1);
+        string.AddChar('D');
+        test_string("AddChar 'D'",string, "HalloD");
+        test_equal("GetChar 0",string.GetChar(0), 'H');
+
+        // Test assignments
+        {
+            local firstStr = _T("Hallo");
+            local secondStr = firstStr;
+            firstStr = _T("This is new!");
+            test_string("Assignment 0", firstStr, "This is new!");
+            test_string("Assignment 1", secondStr, "Hallo");
+        }
+        {
+            local firstStr = _T("Hallo");
+            local secondStr = firstStr;
+            firstStr.Set(_T("This is new!"));
+            test_string("Set 0", firstStr, "This is new!");
+            test_string("Set 1", secondStr, "This is new!");
+        }
+
+        //string = _T("long_string_to_test_replace");
         //test_string("insert",string.insert(4,_T("_new")),"long_new_string_to_test_replace" );
         //test_string("replace(start, len,string)",string.replace(5,3,_T("old")),"long_old_string_to_test_replace");
         //test_string("replace(start, len,string,start2,len2)",string.replace(5,3,_T("old_new_string"),4,3),"long_new_string_to_test_replace");
@@ -106,6 +192,9 @@ class wxTest extends script_test_base
         if (!hasException)
             failed("ConcatNull");
 
+        test_equal("wxString_ToLong good", wxString_ToLong(_T("102")), 102);
+        test_equal("wxString_ToLong bad", wxString_ToLong(_T("test")), -1);
+
         print_test_result();
         ::print("======= Test wx String END ======= \n");
     }
@@ -115,7 +204,8 @@ class wxTest extends script_test_base
         clear_test_result();
         ::print("======= Test wx String unicode BEGINN ======= \n");
         ::print("test string: !5Aa ЉЩщӃ ウインカリ\n");
-        made_failed("This implementation doesn't support UNICODE","not implemented, as you can see on the wrong test string (it has to show Cyrillic  and ?Japanese? symbols")
+        made_failed("This implementation doesn't support UNICODE",
+                    "not implemented, as you can see on the wrong test string (it has to show Cyrillic  and ?Japanese? symbols");
 
 
  //       local string = _T("!5Aa ЉЩщӃ ウインカリ");
@@ -161,7 +251,7 @@ class wxTest extends script_test_base
  //       string = _T("!5Aa ЉЩщӃ ウインカリ");
  //       test_string("RemoveLast",string.RemoveLast(2),"!5Aa ЉЩщӃ ウイン");
  //       string = _T("!5Aa ЉЩщӃ ウインカリ");
- //       test_equal("Replace ret",string.Replace(_("Љ"),_("ウ")),1);
+ //       test_equal("Replace ret",string.Replace(_T("Љ"),_T("ウ")),1);
  //       test_string("Replace value",string,"!5Aa ウЩщӃ ウインカリ");
  //       string = _T("!5Aa ЉЩщӃ ウインカリ");
  //       test_string("AfterFirst",string.AfterFirst("ウ"),"インカリ");
@@ -181,11 +271,16 @@ class wxTest extends script_test_base
         clear_test_result();
         local color = wxColour();
         color.Set(52,53,54,255);
-        test_string("Set",color,"[r=52, g=53, b=54]");
-        test_string("tostring",color,"[r=52, g=53, b=54]");
+        test_string("Set",color,"[r=52, g=53, b=54, a=255]");
+        test_string("tostring",color,"[r=52, g=53, b=54, a=255]");
+        test_string("_cloned", clone color,"[r=52, g=53, b=54, a=255]");
+        test_string("wxColour(3 ints)", wxColour(12, 75, 255),"[r=12, g=75, b=255, a=255]");
+        test_string("wxColour(4 ints)", wxColour(12, 75, 255, 73),"[r=12, g=75, b=255, a=73]");
         test_equal("Red",color.Red(),52);
         test_equal("Green",color.Green(),53);
         test_equal("Blue",color.Blue(),54);
+        test_equal("Alpha",color.Alpha(),255);
+        test_equal("Alpha 2", wxColour(12, 74, 255, 93).Alpha(), 93);
         test_true("IsOK",color.IsOk());
 
         print_test_result();
@@ -207,10 +302,9 @@ class wxTest extends script_test_base
         }
         made_passed("constructor");
 
-
         array.Add(_T("String1"),1);
         array.Add(_T("String2"),2);
-        test_equal("Add",array.Add(_T("String3"),1),3);
+        test_equal("Add wxString",array.Add(_T("String3"),1),3);
         test_equal("GetCount",array.GetCount(),4);
         test_equal("Index(\"String1\")", array.Index(_T("String1")),0);
         test_equal("Index(\"String10\")", array.Index(_T("String10")),-1);
@@ -220,14 +314,37 @@ class wxTest extends script_test_base
         test_equal("Index(\"string2\",false,true)", array.Index(_T("string2"),false,true),2);
         test_string("Item", array.Item(2),_T("String2"));
 
+        {
+            local cloned = clone array;
+            local match = array.GetCount() == cloned.GetCount();
+
+            for (local i = 0; match && i < array.GetCount(); ++i)
+            {
+                local item = cloned.Item(i);
+                if (array.Item(i) != item)
+                    match = false;
+            }
+            test_true("_cloned", match);
+        }
+
         // Test if modifying the result of Item doesn't change the value in the array.
         local itemValue = array.Item(2);
-        itemValue = _T("String2 modified");
-        test_string("Item after modify", array.Item(2),_T("String2"));
+        itemValue.Set(_T("String2 modified"));
+        local newValue = array.Item(2);
+        print("itemValue='" + itemValue + "'; newValue='" + newValue + "'\n");
+        test_string("Item after modify", newValue, "String2 modified");
 
         // Test SetItem.
-        array.SetItem(2, _T("String2 modified"));
-        test_string("SetItem", array.Item(2),_T("String2 modified"));
+        array.SetItem(2, _T("String2 SetItem"));
+        test_string("SetItem", array.Item(2), "String2 SetItem");
+
+        // Test if SetItem modifies old item references.
+        {
+            local valueBefore = array.Item(2);
+            array.SetItem(2, _T("String2 modified2"));
+            test_string("SetItem", array.Item(2), "String2 modified2");
+            test_string("SetItem old ref", valueBefore, "String2 modified2");
+        }
 
         array.Clear();
         test_equal("Clear",array.GetCount(),0);
@@ -253,30 +370,37 @@ class wxTest extends script_test_base
 
         local path;
         if(::PLATFORM == ::PLATFORM_MSW )
-        {
-            path = _T("\\share\\codeblocks\\");
-        }
+            path = _T("share\\codeblocks\\");
         else if(::PLATFORM == ::PLATFORM_GTK)
-        {
             path = _T("share/codeblocks/");
-        }
         else
         {
             made_failed("Assign","Your operating system is not supported in this test script. Please add a test case. Thank you.");
             return;
         }
+
         ::print("Use path: " + path + "\n");
         filename.Assign(path,::wxPATH_NATIVE);
         test_string("tostring",filename,path);
+        test_string("_cloned", clone filename,path);
         test_string("Assign",filename,path);
         test_equal("GetDirCount",filename.GetDirCount(),2);
-        test_equal("GetDirs",filename.GetDirs().GetCount(),2);
+        local dirs = filename.GetDirs();
+        test_equal("GetDirs",dirs.GetCount(),2);
+        test_equal("GetDirs[0]",dirs.Item(0), _T("share"));
+        test_equal("GetDirs[1]",dirs.Item(1), _T("codeblocks"));
 
         filename.Clear();
         test_string("Clear",filename,"");
-        filename.AssignCwd(_T(" "));
+        filename.AssignDir(path,::wxPATH_NATIVE);
+        test_string("AssignDir", filename, path);
+        filename.AssignCwd(wxString());//_T(" "));
         ::print("Test: AssignCwd = " + filename + " \n");
         made_passed("AssignCwd ????");
+
+        print("Test: GetCwd = " + wxFileName.GetCwd(wxString()) + "\n");
+        made_passed("GetCwd ????");
+
         filename.Clear();
         filename.AssignHomeDir();
         ::print("Test: AssignHomeDir = " + filename +" \n");
@@ -296,17 +420,95 @@ class wxTest extends script_test_base
         ::print("Test: GetVolume = " + filename.GetVolume() + " \n");
         made_passed("GetVolume ????");
         test_true("HasExt",filename.HasExt());
+        filename.ClearExt();
+        test_false("HasExt not (after ClearExt)",filename.HasExt());
         test_true("HasName",filename.HasName());
-        if(::PLATFORM != ::PLATFORM_MSW)
-            test_false("HasVolume",filename.HasVolume());
-        else
-            test_true("HasVolume",filename.HasVolume());
+
+        test_false("HasVolume",filename.HasVolume());
+        if(::PLATFORM == ::PLATFORM_MSW)
+        {
+            local absFilename = clone filename;
+            absFilename.MakeAbsolute(wxFileName.GetCwd(wxString()), ::wxPATH_NATIVE)
+            test_true("HasVolume (abs)",absFilename.HasVolume());
+        }
 
         test_false("IsAbsolute",filename.IsAbsolute(::wxPATH_NATIVE));
         test_true("IsOk",filename.IsOk());
         test_true("IsRelative",filename.IsRelative(::wxPATH_NATIVE));
         test_false("IsDir",filename.IsDir());
 
+        filename.Assign(path + _T("tips.txt"), ::wxPATH_NATIVE);
+        test_string("GetFullName",filename.GetFullName(),"tips.txt");
+        test_string("GetFullPath",filename.GetFullPath(::wxPATH_NATIVE), path + "tips.txt");
+
+        filename.Assign(path, ::wxPATH_NATIVE);
+        test_true("InsertDir", filename.InsertDir(0, _T("newdir")))
+        test_string("InsertDir value", filename.GetFullPath(::wxPATH_NATIVE),
+                    "newdir" + ::wxFILE_SEP_PATH + path);
+        filename.Assign(path, ::wxPATH_NATIVE);
+        test_true("PrependDir", filename.InsertDir(0, _T("newdir")))
+        test_string("PrependDir value", filename.GetFullPath(::wxPATH_NATIVE),
+                    "newdir" + ::wxFILE_SEP_PATH + path);
+        filename.RemoveDir(0);
+        test_string("RemoveDir", filename.GetFullPath(::wxPATH_NATIVE), path);
+        test_true("AppendDir", filename.AppendDir(_T("newdir")));
+        test_string("AppendDir value", filename.GetFullPath(::wxPATH_NATIVE),
+                    path + _T("newdir") + ::wxFILE_SEP_PATH);
+
+        local homeDirName = wxFileName();
+        homeDirName.AssignHomeDir();
+        local homeDirPath = homeDirName.GetFullPath(::wxPATH_NATIVE)
+        {
+            local filePath = path + _T("tips.txt");
+            filename.Assign(filePath, ::wxPATH_NATIVE);
+            test_true("MakeAbsolute", filename.MakeAbsolute(homeDirPath, ::wxPATH_NATIVE));
+            test_string("MakeAbsolute value", filename.GetFullPath(::wxPATH_NATIVE),
+                        homeDirPath + filePath);
+            test_true("MakeRelativeTo", filename.MakeRelativeTo(homeDirPath, ::wxPATH_NATIVE));
+            test_string("MakeRelativeTo value", filename.GetFullPath(::wxPATH_NATIVE), filePath);
+        }
+        {
+            // Test if Normalize would remove the ".." and "dir".
+            local filePath = path + _T("dir") + ::wxFILE_SEP_PATH + _T("..") + ::wxFILE_SEP_PATH
+                           + _T("tips.txt");
+            local normFilePath = path + _T("tips.txt");
+            test_true("Normalize", filename.Normalize(::wxPATH_NORM_ALL, homeDirPath, ::wxPATH_NATIVE));
+            test_string("Normalize value", filename.GetFullPath(::wxPATH_NATIVE),
+                        homeDirPath + normFilePath);
+        }
+        {
+            filename.Assign(path, ::wxPATH_NATIVE);
+            local filename2 = wxFileName();
+            filename2.Assign(path, ::wxPATH_NATIVE);
+            test_true("SameAs equal", filename.SameAs(filename2, ::wxPATH_NATIVE));
+            filename.AppendDir(_T("test"));
+            test_false("SameAs not equal", filename.SameAs(filename2, ::wxPATH_NATIVE));
+        }
+        {
+            filename.Assign(path + _T("tips.txt"), ::wxPATH_NATIVE);
+            filename.SetExt(_T("testExt"));
+            test_string("SetExt", filename.GetExt(), "testExt");
+            filename.SetEmptyExt();
+            test_string("SetEmptyExt", filename.GetExt(),"");
+            test_true("SetEmptyExt has", filename.HasExt());
+        }
+        {
+            filename.Assign(path + _T("tips.txt"), ::wxPATH_NATIVE);
+            filename.SetFullName(_T("newFile.my"));
+            test_string("SetFullName", filename.GetFullPath(::wxPATH_NATIVE),
+                        path + _T("newFile.my"));
+
+            filename.SetName(_T("afterName"));
+            test_string("SetName", filename.GetFullPath(::wxPATH_NATIVE), path + _T("afterName.my"));
+        }
+        {
+            filename.Assign(::wxFILE_SEP_PATH + path, ::wxPATH_NATIVE);
+            local expectedPath = filename.GetFullPath(::wxPATH_NATIVE);
+            filename.SetVolume(_T("d"));
+            if (::PLATFORM == ::PLATFORM_MSW)
+                expectedPath = _T("d:") + expectedPath;
+            test_string("SetVolume", filename.GetFullPath(::wxPATH_NATIVE), expectedPath);
+        }
         print_test_result();
         ::print("======= Test wxFileName END  ======= \n");
     }
@@ -325,12 +527,14 @@ class wxTest extends script_test_base
         point2.y = 10;
         point3.x = 10;
         point3.y = 5;
-        made_failed("compare doesn't seem to work","error: \"comparsion between 'instance' and 'instance'\" ")
-        //test_false("compare",point1 > point2);
-        //test_true("compare",point1 > point3);
-        //test_true("Cmp",point1._cmp(point2));
-        //test_false("Cmp",point1._cmp(point3));
+        test_false("compare gt",point1 > point2);
+        test_true("compare gt",point1 > point3);
+        test_false("compare lt",point1 < point2);
+        test_true("compare lt",point3 < point2);
+        test_true("Cmp",point1 == point2);
+        test_false("Cmp not",point1 == point3);
         test_string("_tostring",point1,"[10,10]");
+        test_string("_cloned", clone point1,"[10,10]");
 
         print_test_result();
         ::print("======= Test wxPoint END  ======= \n");
@@ -349,6 +553,7 @@ class wxTest extends script_test_base
         point3.Set(10,5);
 
         test_string("_tostring",point1,"[10,10]");
+        test_string("_cloned", clone point1,"[10,10]");
         //test_true("Cmp",point1.Cmp(point2));
         //test_false("Cmp",point1.Cmp(point3));
         test_equal("GetWidth",point3.GetWidth(),10);
@@ -358,7 +563,6 @@ class wxTest extends script_test_base
         test_equal("SetWidth",point3.GetWidth(),23);
         test_equal("SetHeight",point3.GetHeight(),66);
 
-
         print_test_result();
         ::print("======= Test wxSize END  ======= \n");
     }
@@ -367,4 +571,4 @@ class wxTest extends script_test_base
     {
 
     }
-};
+}

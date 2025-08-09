@@ -27,31 +27,22 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wextra" />
 			<Add option="-Wall" />
+			<Add option="-fPIC" />
 			<Add option="`$(WX_CONFIG) --cflags`" />
-			<Add option="`pkg-config --cflags gamin`" />
 			<Add option="-Winvalid-pch" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
-			<Add option="-fPIC" />
+			<Add option="-std=c++11" />
 			<Add option="-DcbDEBUG" />
 			<Add option="-DCB_PRECOMP" />
 			<Add option="-D__FAM__" />
-			<Add option="-std=c++11" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
-			<Add directory="../../../include/mozilla_chardet" />
-			<Add directory="../../../include/mozilla_chardet/mfbt" />
-			<Add directory="../../../include/mozilla_chardet/nsprpub/pr/include" />
-			<Add directory="../../../include/mozilla_chardet/xpcom" />
-			<Add directory="../../../include/mozilla_chardet/xpcom/base" />
-			<Add directory="../../../include/mozilla_chardet/xpcom/glue" />
 		</Compiler>
 		<Linker>
 			<Add option="`$(WX_CONFIG) --libs std,aui`" />
-			<Add option="`pkg-config --libs gamin`" />
 			<Add option="-Wl,--no-undefined" />
 			<Add library="codeblocks" />
 			<Add directory="../../../devel30" />
@@ -72,15 +63,9 @@
 		<Unit filename="FileManager.h" />
 		<Unit filename="Resources/CommitBrowser.xrc" />
 		<Unit filename="Resources/fileexplorersettings.xrc" />
-		<Unit filename="directorymonitor.cpp" />
-		<Unit filename="directorymonitor.h" />
 		<Unit filename="manifest.xml" />
 		<Unit filename="se_globals.cpp" />
 		<Unit filename="se_globals.h" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

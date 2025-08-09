@@ -24,15 +24,11 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-// RCS-ID: $Id$
+// RCS-ID: $Id: codesnippetsapp.cpp 13441 2024-02-01 07:44:57Z wh11204 $
 
 #ifdef WX_PRECOMP //
 #include "wx_pch.h"
 #endif
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif //__BORLANDC__
 
 #include <wx/stdpaths.h>
 #include <wx/process.h>
@@ -168,10 +164,6 @@ int CodeSnippetsApp::OnExit()
 #ifdef WX_PRECOMP
 #include "wx_pch.h"
 #endif
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif //__BORLANDC__
 
 
 // ----------------------------------------------------------------------------
@@ -1224,7 +1216,11 @@ bool CodeSnippetsAppFrame::LoadConfig()
 
     if(platform::windows)
     {
+#ifdef CB_AUTOCONF
+        data = GetAppPath() + _T("/..");
+#else
         data.assign(GetAppPath());
+#endif
     }
     else if(platform::macosx)
     {

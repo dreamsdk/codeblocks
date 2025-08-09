@@ -709,11 +709,12 @@ wxPdfFontData::GetWidthsAsString(bool subset, wxPdfSortedArrayInt* usedGlyphs, w
 }
 
 double
-wxPdfFontData::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning) const
+wxPdfFontData::GetStringWidth(const wxString& s, const wxPdfEncoding* encoding, bool withKerning, double charSpacing) const
 {
   wxUnusedVar(s);
   wxUnusedVar(encoding);
   wxUnusedVar(withKerning);
+  wxUnusedVar(charSpacing);
   return 0;
 }
 
@@ -738,6 +739,28 @@ wxPdfFontData::WriteUnicodeMap(wxOutputStream* mapData,
                                const wxPdfEncoding* encoding, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs)
 {
   wxUnusedVar(mapData);
+  wxUnusedVar(encoding);
+  wxUnusedVar(usedGlyphs);
+  wxUnusedVar(subsetGlyphs);
+  return 0;
+}
+
+size_t
+wxPdfFontData::WriteCIDToGIDMap(wxOutputStream* mapData,
+                                const wxPdfEncoding* encoding, wxPdfSortedArrayInt* usedGlyphs, wxPdfChar2GlyphMap* subsetGlyphs)
+{
+  wxUnusedVar(mapData);
+  wxUnusedVar(encoding);
+  wxUnusedVar(usedGlyphs);
+  wxUnusedVar(subsetGlyphs);
+  return 0;
+}
+
+size_t
+wxPdfFontData::WriteCIDSet(wxOutputStream* setData,
+                           const wxPdfEncoding* encoding, wxPdfSortedArrayInt* usedGlyphs,  wxPdfChar2GlyphMap* subsetGlyphs)
+{
+  wxUnusedVar(setData);
   wxUnusedVar(encoding);
   wxUnusedVar(usedGlyphs);
   wxUnusedVar(subsetGlyphs);
@@ -777,7 +800,7 @@ wxPdfFontData::CanShow(const wxString& s, const wxPdfEncoding* encoding) const
 }
 
 wxString
-wxPdfFontData::ConvertToValid(const wxString& s, wxChar replace) const
+wxPdfFontData::ConvertToValid(const wxString& s, wxUniChar replace) const
 {
   wxString t;
   if (m_encodingChecker != NULL)

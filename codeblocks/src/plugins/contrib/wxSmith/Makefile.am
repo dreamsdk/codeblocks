@@ -3,20 +3,15 @@ SUBDIRS = properties wxwidgets . plugin
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		$(CB_SQUIRREL_CFLAGS) \
 		-I$(top_srcdir)/src/include \
-		-I$(top_srcdir)/src/sdk/wxscintilla/include \
-		$(WXPROPGRID_INCLUDE) \
-		-I$(top_srcdir)/src/include/scripting/sqplus \
-		-I$(top_srcdir)/src/include/scripting/bindings \
-		-I$(top_srcdir)/src/include/mozilla_chardet \
-		-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
-		-I$(top_srcdir)/src/include/mozilla_chardet/nsprpub/pr/include \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
+		-I$(top_srcdir)/src/sdk/wxscintilla/include
+
+if CODEBLOCKS_NT
+AM_CPPFLAGS += -DEXPORT_LIB
+endif
 
 lib_LTLIBRARIES = libwxsmithlib.la
 
-libwxsmithlib_la_LDFLAGS = -version-info 0:1:0 -shared
+libwxsmithlib_la_LDFLAGS = -version-info 0:1:0 -shared -no-undefined
 
 libwxsmithlib_la_LIBADD = ../../../sdk/libcodeblocks.la \
 				properties/libwxsmith_properties.la \

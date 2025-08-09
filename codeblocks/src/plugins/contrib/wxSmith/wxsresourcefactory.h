@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8574 $
-* $Id: wxsresourcefactory.h 8574 2012-11-18 15:59:14Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsresourcefactory.h $
+* $Revision: 13381 $
+* $Id: wxsresourcefactory.h 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsresourcefactory.h $
 */
 
 #ifndef WXSRESOURCEFACTORY_H
@@ -95,7 +95,7 @@ class wxsResourceFactory
         virtual bool OnCanHandleExternal(cb_unused const wxString& FileName) { return false; }
 
         /** \brief Building external resource object */
-        virtual wxsResource* OnBuildExternal(cb_unused const wxString& FileName) { return 0; }
+        virtual wxsResource* OnBuildExternal(cb_unused const wxString& FileName) { return nullptr; }
 
         /** \brief Function creating new resource object
          *
@@ -117,7 +117,7 @@ class wxsResourceFactory
             int m_Number;
             wxString m_GUI;
             int m_MenuId;
-            ResourceInfo(): m_Factory(0), m_Number(0), m_MenuId(-1) {}
+            ResourceInfo(): m_Factory(nullptr), m_Number(0), m_MenuId(-1) {}
         };
 
         WX_DECLARE_STRING_HASH_MAP(ResourceInfo,HashT);

@@ -15,19 +15,21 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxsdimensionproperty.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsdimensionproperty.h $
+* $Revision: 12722 $
+* $Id: wxsdimensionproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsdimensionproperty.h $
 */
 
 #ifndef WXSDIMENSIONPROPERTY_H
 #define WXSDIMENSIONPROPERTY_H
 
+#include <cbplugin.h>
+
 #include "../../properties/wxsproperties.h"
 #include "../../wxscodinglang.h"
 #include "../wxscodercontext.h"
 
-struct wxsDimensionData
+struct PLUGIN_EXPORT wxsDimensionData
 {
     long Value;
     bool DialogUnits;
@@ -74,7 +76,7 @@ struct wxsDimensionData
 };
 
 /** \brief Dimension property (long integer value which may be in pixel or dialog units) */
-class wxsDimensionProperty: public wxsProperty
+class PLUGIN_EXPORT wxsDimensionProperty: public wxsProperty
 {
     public:
 

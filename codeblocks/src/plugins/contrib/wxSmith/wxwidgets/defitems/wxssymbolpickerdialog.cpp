@@ -43,7 +43,6 @@ namespace
         WXS_ST(wxRESIZE_BORDER)
         WXS_ST(wxCLOSE_BOX)
         WXS_ST(wxDIALOG_NO_PARENT)
-        WXS_ST(wxTAB_TRAVERSAL)
         WXS_ST(wxMAXIMIZE_BOX)
         WXS_ST(wxMINIMIZE_BOX)
         WXS_ST(wxFRAME_SHAPED)
@@ -70,6 +69,7 @@ void wxsSymbolPickerDialog::OnBuildCreatingCode()
             AddHeader(_T("<wx/richtext/richtextsymboldlg.h>"),GetInfo().ClassName, 0);
             Codef(_T("%C( %t, %t, %t, %W, %I, %t, %P, %S, %T);\n"), _T(""), _T(""), _T(""), _T("Title") );
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             break;
 
         case wxsUnknownLanguage: // fall-through
@@ -80,6 +80,6 @@ void wxsSymbolPickerDialog::OnBuildCreatingCode()
 
 //------------------------------------------------------------------------------
 
-void wxsSymbolPickerDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsSymbolPickerDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
 }

@@ -1,4 +1,3 @@
-
 #include "moduletokenf.h"
 
 ModuleTokenF::ModuleTokenF():

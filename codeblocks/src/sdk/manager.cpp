@@ -2,17 +2,18 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11797 $
- * $Id: manager.cpp 11797 2019-07-21 16:56:22Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/manager.cpp $
+ * $Revision: 13003 $
+ * $Id: manager.cpp 13003 2022-11-08 08:50:45Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/manager.cpp $
  */
 
 #include "sdk_precomp.h"
 
 #ifndef CB_PRECOMP
-    #include <wx/xrc/xmlres.h>
     #include <wx/fs_zip.h>
+    #include <wx/log.h>
     #include <wx/menu.h>
+    #include <wx/xrc/xmlres.h>
 
     #include "manager.h" // class's header file
     #include "sdk_events.h"
@@ -33,10 +34,9 @@
     #include "xtra_res.h" // our new ToolBarAddOn handler
 #endif
 
-#include <wx/app.h>    // wxTheApp
+#include <wx/app.h> // wxTheApp
 #include <wx/toolbar.h>
 #include <wx/fs_mem.h>
-
 
 #ifdef PPRCESS_EVENT_PERFORMANCE_MEASURE
     // this preprocessor directive can be defined in cbfunctor.h to enable performance measure
@@ -49,7 +49,6 @@
 #include "debuggermanager.h"
 
 static Manager* s_ManagerInstance = nullptr;
-
 
 #ifdef PPRCESS_EVENT_PERFORMANCE_MEASURE
 static wxString GetCodeblocksEventName(wxEventType type)
@@ -275,11 +274,11 @@ bool Manager::ProcessEvent(CodeBlocksEvent& event)
                 const char *p = (*it)->GetTypeName();
                 int   status;
                 char *realname;
-                realname = abi::__cxa_demangle(p, 0, 0, &status);
+                realname = abi::__cxa_demangle(p, nullptr, nullptr, &status);
                 wxString msg;
 
-                // if the demangled C++ function name success, then realname is not NULL
-                if (realname != 0)
+                // if the demangled C++ function name success, then realname is not nullptr
+                if (realname != nullptr)
                 {
                     msg = wxString::FromUTF8(realname);
                     free(realname);
@@ -289,7 +288,7 @@ bool Manager::ProcessEvent(CodeBlocksEvent& event)
 
                 wxEventType type=event.GetEventType();
                 msg << GetCodeblocksEventName(type);
-                Manager::Get()->GetLogManager()->DebugLog(F(_("%s take %ld ms"), msg.wx_str(), sw.Time()));
+                Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("%s took %ld ms"), msg, sw.Time()));
             }
 #endif // PPRCESS_EVENT_PERFORMANCE_MEASURE
         }
@@ -521,7 +520,8 @@ bool Manager::LoadResource(const wxString& file)
 
     if (wxFile::Access(resourceFile, wxFile::read) == false)
     {
-        Get()->GetLogManager()->LogError(_("Manager failed to access XRC resource '") + resourceFile + _("'."));
+        Get()->GetLogManager()->LogError(wxString::Format(_("Manager failed to access XRC resource '%s'. Load from file '%s'"),
+                                                          resourceFile, file));
         return false;
     }
 
@@ -547,15 +547,20 @@ bool Manager::LoadResource(const wxString& file)
         {
             wxMemoryFSHandler::AddFile(file, buf, len);
         }
-        if ( !wxXmlResource::Get()->Load(memoryFile) )
-            Get()->GetLogManager()->LogError(_("Manager failed to load XRC resource '") + resourceFile + _("'."));
+        wxLogNull ln; // avoid warnings about missing xrc files o wx31+ with verbose messages enabled
+        if (!wxXmlResource::Get()->Load(memoryFile))
+        {
+            Get()->GetLogManager()->LogError(wxString::Format(_("Manager failed to load XRC resource '%s'."),
+                                                              resourceFile.wx_str()));
+        }
         delete[] buf;
         return true;
     }
     catch (...)
     {
         delete[] buf;
-        Get()->GetLogManager()->LogError(_("Manager hardly failed to load XRC resource '") + resourceFile + _("'."));
+        Get()->GetLogManager()->LogError(wxString::Format(_("Manager hardly failed to load XRC resource '%s'."),
+                                                          resourceFile.wx_str()));
         return false;
     }
 }
@@ -660,9 +665,9 @@ void Manager::RemoveAllEventSinksFor(void* owner)
     }
 }
 
-bool            Manager::m_AppShuttingDown = false;
-bool            Manager::m_AppStartedUp    = false;
-bool            Manager::m_BlockYields     = false;
-bool            Manager::m_IsBatch         = false;
-wxCmdLineParser Manager::m_CmdLineParser;
-wxToolBarAddOnXmlHandler* Manager::m_ToolbarHandler = nullptr;
+bool                      Manager::m_AppShuttingDown = false;
+bool                      Manager::m_AppStartedUp    = false;
+bool                      Manager::m_BlockYields     = false;
+bool                      Manager::m_IsBatch         = false;
+wxCmdLineParser           Manager::m_CmdLineParser;
+wxToolBarAddOnXmlHandler* Manager::m_ToolbarHandler  = nullptr;

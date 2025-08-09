@@ -160,8 +160,8 @@ void CscopePlugin::BuildModuleMenu(const ModuleType type, wxMenu* menu, const Fi
 
     PluginManager *pluginManager = Manager::Get()->GetPluginManager();
     int idximp = pluginManager->GetFindMenuItemFirst() + pluginManager->GetFindMenuItemCount();
-    menu->Insert(idximp++, idOnFindFunctionsCalledByThisFuncion, _("Find functions called by '") + word + _T("'"));
-    menu->Insert(idximp++, idOnFindFunctionsCallingThisFunction, _("Find functions calling '") + word + _T("'"));
+    menu->Insert(idximp++, idOnFindFunctionsCalledByThisFuncion, wxString::Format(_("Find functions called by '%s'"), word));
+    menu->Insert(idximp++, idOnFindFunctionsCallingThisFunction, wxString::Format(_("Find functions calling '%s'"), word));
     pluginManager->RegisterFindMenuItems(false, 2);
 }
 
@@ -239,31 +239,31 @@ void CscopePlugin::DoCscopeCommand(const wxString &cmd, const wxString &endMsg)
     //set environment variables for cscope
 	wxSetEnv(_T("TMPDIR"), _T("."));
 
-    m_view->GetWindow()->SetMessage(_T("Executing cscope..."), 10);
+    m_view->GetWindow()->SetMessage(_("Executing cscope..."), 10);
 
 	m_pProcess = new CscopeProcess(this);
     if ( !wxExecute(cmd, wxEXEC_ASYNC|wxEXEC_MAKE_GROUP_LEADER, m_pProcess) )
     {
         delete m_pProcess;
         m_pProcess = NULL;
-        wxString errorMessage = _T("Error while calling cscope executable occurred! You maybe have to fix the executable in Settings->Environment->CScope.");
+        wxString errorMessage = _("Error while calling cscope executable occurred! You maybe have to fix the executable in Settings->Environment->CScope.");
         m_view->GetWindow()->SetMessage(errorMessage, 0);
-        Manager::Get()->GetLogManager()->LogError(_T("CScope: ") + errorMessage);
-        Manager::Get()->GetLogManager()->LogError(_T("CScope: Failed CScope command:") + cmd);
+        Manager::Get()->GetLogManager()->LogError(_("CScope: ") + errorMessage);
+        Manager::Get()->GetLogManager()->LogError(_("CScope: Failed CScope command:") + cmd);
     }
 
     //set environment variables back
-    Manager::Get()->GetLogManager()->Log(_T("cscope process started"));
+    Manager::Get()->GetLogManager()->Log(_("CScope process started"));
     wxSetWorkingDirectory(curDir);
 }
 void CscopePlugin::OnCscopeReturned(wxProcessEvent & /*event*/)
 {
-    Manager::Get()->GetLogManager()->Log(_T("cscope returned"));
+    Manager::Get()->GetLogManager()->Log(_("CScope returned"));
     if ( !m_pProcess )
         return;
 
-    m_view->GetWindow()->SetMessage(_T("Parsing results..."), 50);
-    Manager::Get()->GetLogManager()->Log(_T("Parsing results..."));
+    m_view->GetWindow()->SetMessage(_("Parsing results..."), 50);
+    Manager::Get()->GetLogManager()->Log(_("Parsing results..."));
 
     while (m_pProcess->ReadProcessOutput())
         ;
@@ -272,7 +272,7 @@ void CscopePlugin::OnCscopeReturned(wxProcessEvent & /*event*/)
     m_thrd->Create();
     m_thrd->Run();
 
-    Manager::Get()->GetLogManager()->Log(_T("parser Thread started"));
+    Manager::Get()->GetLogManager()->Log(_("Parser thread started"));
 }
 void CscopePlugin::OnParserThreadEnded(wxCommandEvent &event)
 {
@@ -305,34 +305,35 @@ wxString CscopePlugin::GetWordAtCaret()
 }
 void CscopePlugin::OnFind(wxCommandEvent &event)
 {
-    wxString WordAtCaret = GetWordAtCaret();
-    if (WordAtCaret.IsEmpty()) return;
+    const wxString WordAtCaret(GetWordAtCaret());
+    if (WordAtCaret.empty())
+        return;
 
-    wxString list_file, outputfilename;
-    if ( !CreateListFile(list_file) ) return;
+    wxString list_file;
+    if (!CreateListFile(list_file))
+        return;
 
-    wxString cmd( GetCscopeBinaryName() + _T(" ") + //_T(" -f ")  + reffilename +
-                  _T(" -L") );
-    wxString endMsg(_T("Results for: "));
+    wxString cmd(GetCscopeBinaryName() + _T(" ") /* + _T(" -f ") + reffilename */ + _T(" -L"));
+    wxString endMsg(_("Results for: "));
     if ( event.GetId() == idOnFindFunctionsCallingThisFunction)
     {
         cmd += _T(" -3 ");
-        endMsg += _T("find functions calling '") + WordAtCaret + _T("'");
+        endMsg += wxString::Format(_("find functions calling '%s'"), WordAtCaret);
     }
     else //if( event.GetId() == idOnFindFunctionsCalledByThisFuncion)
     {
         cmd += _T(" -2 ");
-        endMsg += _T("find functions called by '") + WordAtCaret + _T("'");
+        endMsg += wxString::Format(_("find functions called by '%s'"), WordAtCaret);
     }
 //    else if ( event.GetId() == idOnFindGlobalDefinition )
 //    {
 //        cmd += _T(" -1 ");
-//        endMsg += _T("find '") + WordAtCaret + _T("' global definition");
+//        endMsg += wxString::Format(_("find '%s' global definition"), WordAtCaret);
 //    }
 //    else //idOnFindSymbol
 //    {
 //        cmd += _T(" -0 ");
-//        endMsg += _T("find C symbol '") + WordAtCaret + _T("'");
+//        endMsg += wxString::Format(_("find C symbol '%s'"), WordAtCaret);
 //    }
 
     cmd += WordAtCaret + _T(" -i \"") + list_file + _T("\"");
@@ -346,7 +347,7 @@ wxString CscopePlugin::GetCscopeBinaryName()
        return cfg->Read(_T("cscope_app"), _T("cscope"));
     }
 
-    Manager::Get()->GetLogManager()->LogError(_T("cscope: Could not load config manager for cscope! Could not lookup for executable name."));
+    Manager::Get()->GetLogManager()->LogError(_("CScope: Could not load config manager for cscope! Could not lookup for executable name."));
 	return _T("cscope");
 }
 void CscopePlugin::OnCscopeUI(wxUpdateUIEvent &event)

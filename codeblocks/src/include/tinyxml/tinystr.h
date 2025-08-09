@@ -44,6 +44,17 @@ distribution.
 	#define TIXML_EXPLICIT
 #endif
 
+#ifdef _WIN32
+#ifndef DLLIMPORT
+    #if defined(EXPORT_LIB)
+        #define DLLIMPORT __declspec (dllexport)
+    #else
+        #define DLLIMPORT
+    #endif // EXPORT_LIB
+#endif // DLLIMPORT
+#else
+    #define DLLIMPORT
+#endif // _WIN32
 
 /*
    TiXmlString is an emulation of a subset of the std::string template.
@@ -52,7 +63,7 @@ distribution.
    The buffer allocation is made by a simplistic power of 2 like mechanism : if we increase
    a string and there's no more room, we allocate a buffer twice as big as we need.
 */
-class TiXmlString
+class DLLIMPORT TiXmlString
 {
   public :
 	// The size type used

@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: chartwindow.h 9270 2013-08-18 05:22:02Z mortenmacfly $
+// RCS-ID:      $Id: chartwindow.h 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -17,10 +17,6 @@
 //----------------------------------------------------------------------------
 #if defined(__GNUG__) && !defined(NO_GCC_PRAGMA)
 #pragma interface "chartwindow.h"
-#endif
-
-#ifdef __BORLANDC__
-#pragma hdrstop
 #endif
 
 #ifndef WX_PRECOMP

@@ -34,7 +34,7 @@ class NativeParserF;
 class ProjectDependencies
 {
     public:
-        ProjectDependencies(cbProject* project);
+        ProjectDependencies();
         virtual ~ProjectDependencies();
         void Clear();
         void MakeProjectFilesDependencies(ProjectFilesArray& prFilesArr, ParserF& parser);
@@ -53,7 +53,6 @@ class ProjectDependencies
         unsigned short int GetFileWeightByIndex(size_t idx);
         void MakeFileChildren(IntSet* children, size_t fileIndex);
 
-        cbProject* m_Project;
         ProjectFilesArray m_prFilesArr;
     	StringSetPVector m_pUseModules;
         StringSetPVector m_pDeclaredModules;
@@ -68,6 +67,7 @@ class ProjectDependencies
         int m_Deep;
         bool m_WasInfiniteLoop;
         bool m_BreakChain;
+        bool m_FilesAreUniqueInWorkspace;
         wxArrayInt m_FileWeights;
         BoolVector m_MadeChildrenSet;
 

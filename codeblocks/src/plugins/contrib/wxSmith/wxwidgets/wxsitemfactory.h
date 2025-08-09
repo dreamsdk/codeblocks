@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsitemfactory.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemfactory.h $
+* $Revision: 12722 $
+* $Id: wxsitemfactory.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemfactory.h $
 */
 
 #ifndef WXSITEMFACTORY_H
@@ -32,6 +32,7 @@
 #include <wx/imaglist.h>
 
 #include <configmanager.h>
+#include <cbplugin.h>
 
 #if defined(__WXMSW__) && defined(LoadImage)
     // Fix Windows winuser.h Header define of LoadImage.
@@ -52,7 +53,7 @@ class wxsItemResData;
  * Adding new supported item to factory is done by deriving other class from
  * this one and writing it's
  */
-class wxsItemFactory
+class PLUGIN_EXPORT wxsItemFactory
 {
     public:
 

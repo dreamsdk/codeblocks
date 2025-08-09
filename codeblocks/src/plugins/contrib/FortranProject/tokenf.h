@@ -107,6 +107,12 @@ class TokenF
 		bool m_Pass;
 		bool m_IsAbstract; // is abstract procedure or procedure pointer, or type
 
+		//For included with #include
+		bool m_WasIncluded; // was included with #include directive?
+		wxString m_IncludeFilename;
+		unsigned int m_IncludeLineStart;
+		unsigned int m_IncludeLineEnd;
+
 		TokenF* m_pParent;
 		TokensArrayF m_Children;
 

@@ -35,6 +35,7 @@ wxPdfTemplate::wxPdfTemplate(int templateId)
   m_images     = new wxPdfImageHashMap();
   m_templates  = new wxPdfTemplatesMap();
   m_extGStates = new wxPdfExtGStateMap();
+  m_patterns   = new wxPdfPatternMap();
 
   m_parser    = NULL;
   m_resources = NULL;
@@ -47,6 +48,7 @@ wxPdfTemplate::~wxPdfTemplate()
   delete m_images;
   delete m_templates;
   delete m_extGStates;
+  delete m_patterns;
 
   if (m_resources != NULL)
   {
@@ -137,6 +139,32 @@ wxPdfDocument::EndTemplate()
 }
 
 void
+wxPdfDocument::UseTemplate(int templateId)
+{
+  if (m_page <= 0)
+  {
+    wxLogError(wxString(wxS("wxPdfDocument::UseTemplate: ")) +
+      wxString(_("You have to add a page first!")));
+    return;
+  }
+
+  wxPdfTemplate* tpl;
+  wxPdfTemplatesMap::iterator templateIter = (*m_templates).find(templateId);
+  if (templateIter != (*m_templates).end())
+  {
+    tpl = templateIter->second;
+  }
+  else
+  {
+    wxLogWarning(wxString(wxS("wxPdfDocument::UseTemplate: ")) +
+      wxString::Format(_("Template %d does not exist!"), templateId));
+    return;
+  }
+
+  UseTemplate(templateId, tpl->GetX(), tpl->GetY());
+}
+
+void
 wxPdfDocument::UseTemplate(int templateId, double x, double y, double w, double h)
 {
   if (m_page <= 0)
@@ -164,8 +192,6 @@ wxPdfDocument::UseTemplate(int templateId, double x, double y, double w, double 
     (*(m_currentTemplate->m_templates))[templateId] = tpl;
   }
 
-  if (x < 0) x = tpl->GetX();
-  if (y < 0) y = tpl->GetY();
   GetTemplateSize(templateId, w, h);
 
   double xScale = w / tpl->GetWidth();

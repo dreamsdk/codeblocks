@@ -2,27 +2,26 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9011 $
- * $Id: compilerOW.cpp 9011 2013-04-29 19:32:22Z alpha0010 $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compilerOW.cpp $
+ * $Revision: 13175 $
+ * $Id: compilerOW.cpp 13175 2023-01-30 11:57:39Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compilerOW.cpp $
  */
 
 #include <sdk.h>
-#include "compilerOW.h"
-#include <wx/intl.h>
-#include <wx/regex.h>
-#include <wx/config.h>
-#include <wx/utils.h>
-
 #include <logmanager.h>
 #include <manager.h>
+
+#include "compilerOW.h"
 #include "compilerOWgenerator.h"
 
-#include <wx/utils.h>
+#include <wx/config.h>
 #include <wx/filefn.h>
+#include <wx/intl.h>
+#include <wx/regex.h>
+#include <wx/utils.h>
 
 CompilerOW::CompilerOW()
-    : Compiler(wxT("OpenWatcom (W32) Compiler"), _T("ow"))
+    : Compiler(_("OpenWatcom (W32) Compiler"), "ow")
 {
     m_Weight = 28;
     Reset();

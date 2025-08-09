@@ -17,7 +17,7 @@
 
 struct ControlIDs
 {
-    enum IDs
+    enum IDs : long
     {
 
         idBtnDirSelectClick = 0,
@@ -28,13 +28,20 @@ struct ControlIDs
         idOptionWholeWord,
         idOptionStartWord,
         idOptionMatchCase,
+        idOptionMatchInComments,
         idOptionRegEx,
+        idOptionResetAll,
         idMenuViewThreadSearch,
         idMenuViewFocusThreadSearch,
         idMenuSearchThreadSearch,
         idMenuCtxThreadSearch,
         idMenuCtxDeleteItem,
         idMenuCtxDeleteAllItems,
+        idMenuCtxCopy,
+        idMenuCtxCopySelection,
+        idMenuCtxCollapseFile,
+        idMenuCtxCollapseSearch,
+        idMenuCtxCollapseAll,
         idCboSearchExpr,
         idChkSearchDirRecurse,
         idChkSearchDirHidden,
@@ -46,6 +53,7 @@ struct ControlIDs
         idChkWholeWord,
         idChkStartWord,
         idChkMatchCase,
+        idChkMatchInComments,
         idChkRegularExpression,
         idChkUseDefaultOptionsOnThreadSearch,
         idChkDisplayLogHeaders,
@@ -62,6 +70,23 @@ struct ControlIDs
         idChkShowMissingFilesError,
         idChkShowCantOpenFileError,
         idChkChkDeletePreviousResults,
+        idConfPanelColorPicker0,
+        idConfPanelColorPicker1,
+        idConfPanelColorPicker2,
+        idConfPanelColorPicker3,
+        idConfPanelColorPicker4,
+        idConfPanelColorPicker5,
+        idConfPanelColorPicker6,
+        idConfPanelColorPicker7,
+        idConfPanelColorPicker8,
+        idDirDialogCombo,
+        idDirDialogList,
+        idDirDialogDirButton,
+        idDirDialogAddButton,
+        idDirDialogEditButton,
+        idDirDialogDeleteButton,
+        idDirDialogDeleteAllButton,
+        idDirDialogCheckSelectedButton,
 
         lastValue
     };

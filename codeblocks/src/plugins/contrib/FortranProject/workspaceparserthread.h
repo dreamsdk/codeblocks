@@ -5,13 +5,13 @@
 #ifndef CB_PRECOMP
     #include <wx/thread.h>
     #include <wx/event.h>
-
-    #include <cbthreadpool.h>
 #endif
 
+#include <cbthreadpool.h>
 
 extern wxMutex s_WorkspaceParserMutex;
 extern wxMutex s_NewTokensMutex;
+extern wxMutex s_NewSkippedLinesMutex;
 
 class NativeParserF;
 

@@ -65,7 +65,7 @@ void EditorConfig::OnEditorActivated(CodeBlocksEvent& event)
 void EditorConfig::BuildMenu(wxMenuBar* menuBar)
 {
     // Add a menu under "Plugins"
-    int pluginMenuPos = menuBar->FindMenu(_T("Plugins"));
+    int pluginMenuPos = menuBar->FindMenu(_("P&lugins"));
     if (pluginMenuPos == wxNOT_FOUND)
         return;
 
@@ -74,7 +74,7 @@ void EditorConfig::BuildMenu(wxMenuBar* menuBar)
         return;
 
     long idReload = wxNewId();
-    pluginMenu->Prepend(idReload, _T("Reload &EditorConfig"), _T("Reload EditorConfig"));
+    pluginMenu->Prepend(idReload, _("Reload &EditorConfig"), _("Reload EditorConfig"));
     Connect(idReload, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(EditorConfig::OnReloadEditorConfig));
 }
 
@@ -142,10 +142,20 @@ void EditorConfig::SetProjectSettings(cbProject &project, const EditorSettings &
 void EditorConfig::OnReloadEditorConfig(wxCommandEvent& /*event*/)
 {
     // Reload EditorConfig
-    if ( ApplyEditorSettings(Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor()) )
-        wxMessageDialog(NULL, _T("Editor configuration successfully re-loaded."), wxT("EditorConfig"), wxOK).ShowModal();
+    if (ApplyEditorSettings(Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor()))
+    {
+        wxMessageDialog dlg(nullptr, _("Editor configuration successfully re-loaded."),
+                            _("Editor Config"), wxOK);
+        PlaceWindow(&dlg);
+        dlg.ShowModal();
+    }
     else
-        wxMessageDialog(NULL, _("Error re-loading editor configuration."),        wxT("EditorConfig"), wxOK).ShowModal();
+    {
+        wxMessageDialog dlg(nullptr, _("Error re-loading editor configuration."),
+                            _("Editor Config"), wxOK);
+        PlaceWindow(&dlg);
+        dlg.ShowModal();
+    }
 }
 
 bool EditorConfig::ApplyEditorSettings(EditorBase* eb)

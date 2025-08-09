@@ -6,13 +6,10 @@
 #ifndef TODOLISTVIEW_H
 #define TODOLISTVIEW_H
 
-#include <wx/dynarray.h> // WX_DECLARE_OBJARRAY
 #include <wx/string.h>
 
-#include <vector>
-#include <map>
-
 #include "loggers.h"
+#include "todo_parser.h"
 
 class cbEditor;
 class wxArrayString;
@@ -22,25 +19,7 @@ class wxComboBox;
 class wxButton;
 class wxPanel;
 class wxStaticText;
-
-// an item is one record in the file, such as a fixme, it can have several properties, such as
-// the type (todo, note, fixme..), the user (who wrote the item) and the date, all its properties
-// are wrappered in the ToDoItem struct
-struct ToDoItem
-{
-    wxString type;
-    wxString text;
-    wxString user;
-    wxString filename;
-    wxString lineStr;
-    wxString priorityStr;
-    wxString date;
-    int line;
-    int priority;
-};
-// each source file can have several ToDoItems, so we use a Map structure to record all the items
-typedef std::map<wxString,std::vector<ToDoItem> > TodoItemsMap;
-WX_DECLARE_OBJARRAY(ToDoItem, ToDoItems);
+class wxCheckBox;
 
 // when user click the "Types" button on the Todo list control panel, it will show a dialog, the
 // dialog can let user to filter which types will be shown in the Todo list.
@@ -55,7 +34,8 @@ class CheckListDialog : public wxDialog
                          long            style = 0 );
         ~CheckListDialog();
 
-        virtual void OkOnButtonClick( wxCommandEvent& event );
+        virtual void OnAllClick( wxCommandEvent& event );
+        virtual void OnListCheck( wxCommandEvent& event );
 
         void AddItem(const wxArrayString& items) { m_checkList->InsertItems(items, 0); }
         void Clear()                             { m_checkList->Clear();               }
@@ -67,6 +47,7 @@ class CheckListDialog : public wxDialog
     protected:
         wxCheckListBox* m_checkList;
         wxButton*       m_okBtn;
+        wxCheckBox*     m_checkAll;
 
     private:
 };
@@ -76,9 +57,10 @@ class ToDoListView : public wxEvtHandler, public ListCtrlLogger
 {
     public:
         ToDoListView(const wxArrayString& titles, const wxArrayInt& widths, const wxArrayString& types);
-        ~ToDoListView();
-        virtual wxWindow* CreateControl(wxWindow* parent);
+        ~ToDoListView() override;
+        wxWindow* CreateControl(wxWindow* parent) override;
         void DestroyControls(bool control);
+        void SetAllowedTypes(const wxArrayString& allowedTypes);
 
         // parse all the sources
         void Parse();
@@ -137,6 +119,8 @@ class ToDoListView : public wxEvtHandler, public ListCtrlLogger
         // user filter, we can show only the specified todo items belongs to a single user
         wxComboBox*          m_pUser;
         wxStaticText*        m_pTotal;
+
+        wxArrayString        m_allowedTypes; /**< Allowed types for the current parser run. This variable has to be updated before running the parser function */
 
         // type string array: such as  todo, readme, note, fixme, and so on
         const wxArrayString& m_Types;

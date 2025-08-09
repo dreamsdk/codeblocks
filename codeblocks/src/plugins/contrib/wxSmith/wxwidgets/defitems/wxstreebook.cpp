@@ -73,7 +73,7 @@ namespace
 
         protected:
 
-            virtual void OnEnumProperties(cb_unused long Flags)
+            virtual void OnEnumProperties(cb_unused long _Flags)
             {
                 WXS_SHORT_STRING(wxsTreebookExtra, m_Label, _("Page name"), _T("label"), _T(""), false);
                 WXS_BOOL(wxsTreebookExtra, m_Selected, _("Page selected"), _T("selected"), false);
@@ -94,12 +94,12 @@ namespace
                 FlexGridSizer1 = new wxFlexGridSizer(0, 1, 0, 0);
                 StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, this, _("Label"));
                 Label = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
-                StaticBoxSizer1->Add(Label, 0, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+                StaticBoxSizer1->Add(Label, 0, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5);
                 FlexGridSizer1->Add(StaticBoxSizer1, 1, wxLEFT|wxRIGHT|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
                 StaticBoxSizer2 = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Selection"));
                 Selected = new wxCheckBox(this, ID_CHECKBOX1, _("Selected"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
                 Selected->SetValue(false);
-                StaticBoxSizer2->Add(Selected, 1, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+                StaticBoxSizer2->Add(Selected, 1, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5);
                 FlexGridSizer1->Add(StaticBoxSizer2, 1, wxLEFT|wxRIGHT|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
                 SetSizer(FlexGridSizer1);
                 FlexGridSizer1->SetSizeHints(this);
@@ -218,7 +218,7 @@ wxsTreebook::wxsTreebook(wxsItemResData *Data):
 {
 }
 
-void wxsTreebook::OnEnumContainerProperties(cb_unused long Flags)
+void wxsTreebook::OnEnumContainerProperties(cb_unused long _Flags)
 {
 }
 
@@ -255,18 +255,18 @@ void wxsTreebook::OnAddChildQPP(wxsItem *Child, wxsAdvQPP *QPP)
     }
 }
 
-wxObject *wxsTreebook::OnBuildPreview(wxWindow *Parent, long PreviewFlags)
+wxObject *wxsTreebook::OnBuildPreview(wxWindow *Parent, long _Flags)
 {
     UpdateCurrentSelection();
     wxTreebook *Treebook = new wxTreebook(Parent, -1, Pos(Parent), Size(Parent), Style());
 
-    if (!GetChildCount() && !(PreviewFlags & pfExact))
+    if (!GetChildCount() && !(_Flags & pfExact))
     {
         // Adding additional empty Treebook to prevent from having zero-sized Treebook
         Treebook->AddPage(new wxPanel(Treebook, -1, wxDefaultPosition, wxSize(50, 50)), _("No pages"));
     }
 
-    AddChildrenPreview(Treebook, PreviewFlags);
+    AddChildrenPreview(Treebook, _Flags);
 
     for ( int i=0; i<GetChildCount(); i++ )
     {
@@ -277,7 +277,7 @@ wxObject *wxsTreebook::OnBuildPreview(wxWindow *Parent, long PreviewFlags)
         if ( !ChildPreview ) continue;
 
         bool Selected = (Child == m_CurrentSelection);
-        if ( PreviewFlags & pfExact ) Selected = TBExtra->m_Selected;
+        if ( _Flags & pfExact ) Selected = TBExtra->m_Selected;
 
         Treebook->AddPage(ChildPreview,TBExtra->m_Label,Selected);
     }
@@ -348,7 +348,7 @@ bool wxsTreebook::OnEnsureChildPreviewVisible(wxsItem *Child)
 
 void wxsTreebook::UpdateCurrentSelection()
 {
-    wxsItem *NewCurrentSelection = 0;
+    wxsItem *NewCurrentSelection = nullptr;
     for (int i = 0; i < GetChildCount(); i++)
     {
         if (m_CurrentSelection == GetChild(i)) return;

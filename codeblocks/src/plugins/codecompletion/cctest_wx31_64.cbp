@@ -28,13 +28,13 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
-			<Add option="-m64" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
 			<Add option="-mthreads" />
+			<Add option="-std=gnu++11" />
+			<Add option="-m64" />
 			<Add option="-fno-keep-inline-dllexport" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
@@ -42,19 +42,17 @@
 			<Add option="-DcbDEBUG" />
 			<Add option="-DwxUSE_UNICODE" />
 			<Add option="-D_WIN64" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../include" />
 			<Add directory="../../include/tinyxml" />
 			<Add directory="../../sdk/wxscintilla/include" />
 		</Compiler>
 		<ResourceCompiler>
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 		</ResourceCompiler>
 		<Linker>
-			<Add option="-m64" />
 			<Add option="-Wl,--enable-auto-import" />
 			<Add option="-Wl,--no-undefined" />
 			<Add option="-mthreads" />
@@ -66,16 +64,16 @@
 		<Unit filename="cctest/cctest_app.cpp" />
 		<Unit filename="cctest/cctest_frame.cpp" />
 		<Unit filename="cctest/cctest_frame.h" />
-		<Unit filename="cctest/nativeparser_test.cpp" />
-		<Unit filename="cctest/nativeparser_test.h" />
+		<Unit filename="cctest/parsemanager_test.cpp" />
+		<Unit filename="cctest/parsemanager_test.h" />
 		<Unit filename="cctest/resource.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
 		<Unit filename="cctest/test.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="nativeparser_base.cpp" />
-		<Unit filename="nativeparser_base.h" />
+		<Unit filename="parsemanager_base.cpp" />
+		<Unit filename="parsemanager_base.h" />
 		<Unit filename="parser/ccdebuginfo.cpp" />
 		<Unit filename="parser/ccdebuginfo.h" />
 		<Unit filename="parser/cclogger.cpp" />

@@ -4,7 +4,7 @@
  *
  * $Revision: 11435 $
  * $Id: compiler_defs.cpp 11435 2018-08-07 07:13:14Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/compilergcc/compiler_defs.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/compilergcc/compiler_defs.cpp $
  */
 
 #include <sdk.h>

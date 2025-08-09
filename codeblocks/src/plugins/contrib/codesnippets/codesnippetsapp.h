@@ -24,16 +24,12 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-// RCS-ID: $Id$
+// RCS-ID: $Id: codesnippetsapp.h 13182 2023-02-01 03:15:11Z ollydbg $
 
 #ifndef CODESNIPPETSAPP_H
 #define CODESNIPPETSAPP_H
 
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
     #include <wx/wx.h>

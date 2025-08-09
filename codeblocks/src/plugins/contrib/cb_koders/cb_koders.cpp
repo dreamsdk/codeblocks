@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11313 $
- * $Id: cb_koders.cpp 11313 2018-03-10 11:00:49Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/cb_koders/cb_koders.cpp $
+ * $Revision: 12655 $
+ * $Id: cb_koders.cpp 12655 2022-01-15 20:46:32Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/cb_koders/cb_koders.cpp $
  */
 
 #include "sdk.h" // Code::Blocks SDK
@@ -83,11 +83,11 @@ int CB_Koders::Execute()
       wxString query;
       if ( language.IsEmpty() )
       {
-        query.Printf(_("http://code.openhub.net/search?s=%s"), search.c_str());
+        query.Printf("http://code.openhub.net/search?s=%s", search.c_str());
       }
       else
       {
-        query.Printf(_("http://code.openhub.net/search?s=%s&fl=%s"),
+        query.Printf("http://code.openhub.net/search?s=%s&fl=%s",
                      search.c_str(), language.c_str());
       }
 

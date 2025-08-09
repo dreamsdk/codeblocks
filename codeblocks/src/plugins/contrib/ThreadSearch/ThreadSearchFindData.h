@@ -12,8 +12,8 @@
 #ifndef THREAD_SEARCH_FIND_DATA_H
 #define THREAD_SEARCH_FIND_DATA_H
 
-
 #include <wx/string.h>
+#include <wx/arrstr.h>
 
 // Possible search scopes.
 enum eSearchScope
@@ -47,9 +47,15 @@ public:
     void SetMatchWord      (bool matchWord)             {m_MatchWord       = matchWord;}
     void SetStartWord      (bool startWord)             {m_StartWord       = startWord;}
     void SetMatchCase      (bool matchCase)             {m_MatchCase       = matchCase;}
+    void SetMatchInComments(bool matchInComments)       {m_MatchInComments = matchInComments;}
+
     void SetRegEx          (bool regEx)                 {m_RegEx           = regEx;}
     void SetScope          (int scope)                  {m_Scope           = scope;}
     void SetSearchPath     (const wxString& searchPath) {m_SearchPath      = searchPath;}
+    void SetSearchPathFullList(const wxArrayString &searchPaths)
+    {
+        m_SearchPathFullList = searchPaths;
+    }
     void SetSearchMask     (const wxString& searchMask) {m_SearchMask      = searchMask;}
     void SetRecursiveSearch(bool recursiveSearch)       {m_RecursiveSearch = recursiveSearch;}
     void SetHiddenSearch   (bool hiddenSearch)          {m_HiddenSearch    = hiddenSearch;}
@@ -58,6 +64,7 @@ public:
     bool     GetMatchWord()       const {return m_MatchWord;}
     bool     GetStartWord()       const {return m_StartWord;}
     bool     GetMatchCase()       const {return m_MatchCase;}
+    bool     GetMatchInComments() const {return m_MatchInComments;}
     bool     GetRegEx()           const {return m_RegEx;}
     int      GetScope()           const {return m_Scope;}
     wxString GetSearchMask()      const {return m_SearchMask;}
@@ -65,6 +72,7 @@ public:
     bool     GetHiddenSearch()    const {return m_HiddenSearch;}
 
     wxString GetSearchPath(bool bExpanded = false) const;
+    wxArrayString GetSearchPathFullList() const { return m_SearchPathFullList; }
 
     bool IsOptionEnabled() const;
 
@@ -73,9 +81,11 @@ private:
     bool     m_MatchWord;
     bool     m_StartWord;
     bool     m_MatchCase;
+    bool     m_MatchInComments;
     bool     m_RegEx;
     int      m_Scope;
     wxString m_SearchPath;
+    wxArrayString m_SearchPathFullList;
     wxString m_SearchMask;
     bool     m_RecursiveSearch;
     bool     m_HiddenSearch;

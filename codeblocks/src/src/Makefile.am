@@ -3,15 +3,7 @@ SUBDIRS = resources
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 			$(CB_SQUIRREL_CFLAGS) \
 			-I$(top_srcdir)/src/sdk/wxscintilla/include \
-			$(WXPROPGRID_INCLUDE) \
-			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/src/include/scripting/sqplus \
- 			-I$(top_srcdir)/src/include/mozilla_chardet \
- 			-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
- 			-I$(top_srcdir)/src/include/mozilla_chardet/nsprpub/pr/include \
- 			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom \
- 			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
- 			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
+			-I$(top_srcdir)/src/include
 
 if GTK_NOTEBOOK
 GTK_NOTEBOOK_FLAGS = -DUSE_GTK_NOTEBOOK
@@ -34,7 +26,8 @@ install-exec-hook:
 
 codeblocks_LDADD =  ../sdk/libcodeblocks.la \
 			$(WX_LIBS) \
-			$(WX_GTK_LIBS)
+			$(WX_GTK_LIBS) \
+			$(CB_SQUIRREL_LIBS)
 
 codeblocks_SOURCES = app.cpp \
 			appglobals.cpp \
@@ -53,14 +46,15 @@ codeblocks_SOURCES = app.cpp \
 			dlgaboutplugin.cpp \
 			editkeywordsdlg.cpp \
 			editorconfigurationdlg.cpp \
+			editprojectglobsdlg.cpp \
 			environmentsettingsdlg.cpp \
 			examinememorydlg.cpp \
 			find_replace.cpp \
 			goto_file.cpp \
 			infopane.cpp \
 			main.cpp \
+			manageglobsdlg.cpp \
 			notebookstyles.cpp \
-			prefix.cpp \
 			printdlg.cpp \
 			projectmanagerui.cpp \
 			projectdepsdlg.cpp \
@@ -72,8 +66,17 @@ codeblocks_SOURCES = app.cpp \
 			startherepage.cpp \
 			switcherdlg.cpp \
 			threadsdlg.cpp \
+			uservardlgs.cpp \
 			virtualbuildtargetsdlg.cpp \
 			watchesdlg.cpp
+
+if CODEBLOCKS_NT
+codeblocks_LDADD += resources.$(OBJEXT) -lexchndl -lcomctl32
+codeblocks_DEPENDENCIES = resources.$(OBJEXT)
+codeblocks_SOURCES += associations.cpp
+resources.$(OBJEXT): resources/resources.rc resources/amd64_dpi_aware_on.manifest
+	$(WINDRES) $(WX_CPPFLAGS) -DcbDPI_AWARE_ON --include-dir $(top_srcdir)/src $< $@
+endif
 
 noinst_HEADERS = app.h \
 			appglobals.h \
@@ -93,14 +96,15 @@ noinst_HEADERS = app.h \
 			dlgaboutplugin.h \
 			editkeywordsdlg.h \
 			editorconfigurationdlg.h \
+			editprojectglobsdlg.h \
 			environmentsettingsdlg.h \
 			examinememorydlg.h \
 			find_replace.h \
 			goto_file.h \
 			infopane.h \
 			main.h \
+			manageglobsdlg.h \
 			notebookstyles.h \
-			prefix.h \
 			printdlg.h \
 			projectmanagerui.h \
 			projectdepsdlg.h \
@@ -112,6 +116,7 @@ noinst_HEADERS = app.h \
 			startherepage.h \
 			switcherdlg.h \
 			threadsdlg.h \
+			uservardlgs.h \
 			virtualbuildtargetsdlg.h \
 			watchesdlg.h
 

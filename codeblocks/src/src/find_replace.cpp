@@ -22,6 +22,7 @@
 #include "encodingdetector.h"
 #include "findreplacedlg.h"
 #include "searchresultslog.h"
+#include "main.h"
 
 struct cbFindReplaceData
 {
@@ -58,6 +59,8 @@ struct cbFindReplaceData
 
     void ConvertEOLs(int newmode);
     bool IsMultiLine();
+
+    bool hasToOpenAfterFind;
 
     cbFindReplaceData()
     {
@@ -126,12 +129,14 @@ void FindReplace::CreateSearchLog()
     widths.Add(48);
     widths.Add(640);
 
+    wxString prefix(ConfigManager::GetDataFolder()+"/resources.zip#zip:/images/");
+#if wxCHECK_VERSION(3, 1, 6)
+    wxBitmapBundle* bmp = new wxBitmapBundle(cbLoadBitmapBundleFromSVG(prefix+"svg/filefind.svg", wxSize(16, 16)));
+#else
     const int uiSize = Manager::Get()->GetImageSize(Manager::UIComponent::InfoPaneNotebooks);
-    const int uiScaleFactor = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::InfoPaneNotebooks);
-    const wxString imgFile = ConfigManager::GetDataFolder()
-                          + wxString::Format(_T("/resources.zip#zip:/images/%dx%d/filefind.png"),
-                                             uiSize, uiSize);
-    wxBitmap * bmp = new wxBitmap(cbLoadBitmapScaled(imgFile, wxBITMAP_TYPE_PNG, uiScaleFactor));
+    prefix << wxString::Format("%dx%d/", uiSize, uiSize);
+    wxBitmap* bmp = new wxBitmap(cbLoadBitmap(prefix+"filefind.png", wxBITMAP_TYPE_PNG));
+#endif
 
     m_pSearchLog = new cbSearchResultsLog(titles, widths);
     CodeBlocksLogEvent evt(cbEVT_ADD_LOG_WINDOW, m_pSearchLog, _("Search results"), bmp);
@@ -211,14 +216,6 @@ int FindReplace::ShowFindDialog(bool replace, bool explicitly_find_in_files)
         return -2;
     }
 
-    // Don't look for empty strings:
-    if (dlg->GetFindString().empty())
-    {
-        dlg->Destroy();
-        cbMessageBox(_("Can't look for an empty search criterion!"), _("Error"), wxOK | wxICON_EXCLAMATION, Manager::Get()->GetAppWindow());
-        return -2;
-    }
-
     if (!m_LastFindReplaceData)
         m_LastFindReplaceData = new cbFindReplaceData;
 
@@ -230,6 +227,7 @@ int FindReplace::ShowFindDialog(bool replace, bool explicitly_find_in_files)
     m_LastFindReplaceData->multiLine = dlg->GetMultiLine();
     m_LastFindReplaceData->fixEOLs = dlg->GetFixEOLs();
     m_LastFindReplaceData->startFile = dlg->GetStartFile();
+    m_LastFindReplaceData->hasToOpenAfterFind = dlg->GetHasToOpenFirstResult();
 
     m_LastFindReplaceData->findInFiles = dlg->IsFindInFiles();
     if (!m_LastFindReplaceData->findInFiles)
@@ -266,16 +264,6 @@ int FindReplace::ShowFindDialog(bool replace, bool explicitly_find_in_files)
         m_LastFindReplaceData->SearchInSelectionEnd = control->GetSelectionEnd();
     }
     dlg->Destroy();
-
-    if ( m_LastFindReplaceData->regEx )
-    {
-        // Match nasty regexes
-        if ( m_LastFindReplaceData->findText.IsSameAs('^') || m_LastFindReplaceData->findText.IsSameAs('$') )
-        {
-            cbMessageBox(_T("Bad regex entered!\nPlease correct regex and try again!"), _T("Error!"), wxICON_ERROR);
-            return 0;
-        }
-    }
 
     int ReturnValue = 0;
     if (!replace)
@@ -423,7 +411,7 @@ int FindReplace::Replace(cbStyledTextCtrl* control, cbFindReplaceData* data)
     }
 
     bool advRegex = false;
-    bool advRegexNewLinePolicy =! data->IsMultiLine();
+    bool advRegexNewLinePolicy = !data->IsMultiLine();
     int replacecount = 0;
     int foundcount   = 0;
     int flags        = 0;
@@ -761,22 +749,31 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
         }
     }
     else if (data->scope == 3) // replace in custom search path and mask
-     {
-        // fill the search list with the files found under the search path
-        int flags = wxDIR_FILES |
-                    (data->recursiveSearch ? wxDIR_DIRS : 0) |
-                    (data->hiddenSearch ? wxDIR_HIDDEN : 0);
-        wxArrayString masks = GetArrayFromString(data->searchMask);
-        if (!masks.GetCount())
-            masks.Add(_T("*"));
-        unsigned int count = masks.GetCount();
+    {
         wxLogNull ln; // no logging
-        for (unsigned int i = 0; i < count; ++i)
+
+        // Calling wxDir::GetAllFiles() with an empty or invalid path has no sense
+        // and generates assertions on Linux (see ticket #951)
+        if (!data->searchPath.empty() && wxDir::Exists(data->searchPath))
         {
-            // wxDir::GetAllFiles() does *not* clear the array, so it suits us just fine ;)
-            wxDir::GetAllFiles(data->searchPath, &filesList, masks[i], flags);
+            // fill the search list with the files found under the search path
+            const int flags = wxDIR_FILES |
+                              (data->recursiveSearch ? wxDIR_DIRS : 0) |
+                              (data->hiddenSearch ? wxDIR_HIDDEN : 0);
+
+            wxArrayString masks = GetArrayFromString(data->searchMask);
+            if (!masks.GetCount())
+                masks.Add("*");
+
+            const size_t maskCount = masks.GetCount();
+            for (size_t i = 0; i < maskCount; ++i)
+            {
+                // wxDir::GetAllFiles() does *not* clear the array, so it suits us just fine ;)
+                wxDir::GetAllFiles(data->searchPath, &filesList, masks[i], flags);
+            }
         }
     }
+
     // if the list is empty, leave
     int filesCount = filesList.GetCount();
     if (filesCount == 0)
@@ -786,7 +783,7 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
     }
 
     bool advRegex=false;
-    bool advRegexNewLinePolicy =! data->IsMultiLine();
+    bool advRegexNewLinePolicy = !data->IsMultiLine();
     int flags = 0;
     if (data->matchWord)
         flags |= wxSCI_FIND_WHOLEWORD;
@@ -837,8 +834,8 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
     int read_only_files_skipped = 0;
     for (int i = 0; i<filesCount && !stop; ++i)
     {
-        cbEditor*         ed      = NULL;
-        cbStyledTextCtrl* control = NULL;
+        cbEditor*         ed      = nullptr;
+        cbStyledTextCtrl* control = nullptr;
         bool fileWasNotOpen = false;
 
         if (progress)
@@ -863,7 +860,7 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
             if (ed) control = ed->GetControl();
         }
 
-        //If it's still NULL, open a new editor
+        //If it's still nullptr, open a new editor
         if (!control)
         {
             wxFile file(filesList[i]);
@@ -892,7 +889,7 @@ int FindReplace::ReplaceInFiles(cbFindReplaceData* data)
             ed = editorMgr->Open(filesList[i]);
             if (ed) control = ed->GetControl();
         }
-        //Still NULL?
+        //Still nullptr?
         if (!control || !ed)
             continue;
 
@@ -1124,7 +1121,7 @@ int FindReplace::Find(cbStyledTextCtrl* control, cbFindReplaceData* data)
         return -1;
 
     bool advRegex = false;
-    bool advRegexNewLinePolicy =! data->IsMultiLine();
+    bool advRegexNewLinePolicy = !data->IsMultiLine();
     int flags = 0;
     data->ConvertEOLs(control->GetEOLMode());
     CalculateFindReplaceStartEnd(control, data);
@@ -1519,37 +1516,48 @@ int FindReplace::FindInFiles(cbFindReplaceData* data)
     delete control; // done with it
     delete progress; // done here too
 
+    // We have to check different view options:
+    //    auto_hide -> auto show/hide the log panel -> if this option is not set we are not allowed to show the log panel
+    //    auto_show_search -> sub option to explicitly disable the search window
+    bool automaticallyShowPanel = Manager::Get()->GetConfigManager(_T("message_manager"))->ReadBool(_T("/auto_hide"), false);
+    if (automaticallyShowPanel)
+        automaticallyShowPanel = Manager::Get()->GetConfigManager(_T("message_manager"))->ReadBool(_T("/auto_show_search"), true);
+
+    const bool isLogPaneVisible = ((MainFrame*) Manager::Get()->GetAppFrame())->IsLogPaneVisible();
+
+    if (automaticallyShowPanel)
+    {
+        CodeBlocksLogEvent evtShow(cbEVT_SHOW_LOG_MANAGER);
+        Manager::Get()->ProcessEvent(evtShow);
+    }
+
     if (count > 0)
     {
         m_pSearchLog->SetBasePath(data->searchPath);
-        if (Manager::Get()->GetConfigManager(_T("message_manager"))->ReadBool(_T("/auto_show_search"), true))
-        {
-            CodeBlocksLogEvent evtSwitch(cbEVT_SWITCH_TO_LOG_WINDOW, m_pSearchLog);
-            CodeBlocksLogEvent evtShow(cbEVT_SHOW_LOG_MANAGER);
+        if (data->hasToOpenAfterFind)
+            m_pSearchLog->FocusEntry(oldcount);
 
-            Manager::Get()->ProcessEvent(evtSwitch);
-            Manager::Get()->ProcessEvent(evtShow);
+        if (!isLogPaneVisible && !m_pSearchLog->IsVisible() && !automaticallyShowPanel)
+        {
+            // If the log window is not visible and we are not allowed to open the log panel we inform the user with a message box
+            wxString msg;
+            msg.Printf(_("Found %d instances of \"%s\".\nTo show results open Log View."), count, data->findText.c_str());
+            cbMessageBox(msg, _("Results"), wxICON_INFORMATION);
         }
-        m_pSearchLog->FocusEntry(oldcount);
     }
     else
     {
-        wxString msg;
-        if ( data->delOldSearches )
-        {
-            msg.Printf(_("Not found: %s"), data->findText.c_str());
+        const wxString msg = wxString::Format(_("\"%s\" not found in %zu files"), data->findText, filesList.GetCount());
+        LogSearch(_T(""), -1, msg );
+        m_pSearchLog->FocusEntry(oldcount);
+
+        if (!isLogPaneVisible && !m_pSearchLog->IsVisible() && !automaticallyShowPanel)   // Only use a message box if the log panel is not visible and we are not allowed to open it
             cbMessageBox(msg, _("Result"), wxICON_INFORMATION);
-            cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
-            if (ed)
-                ed->GetControl()->SetSCIFocus(true);
-        }
-        else
-        {
-            msg.Printf(_("not found in %lu files"), static_cast<unsigned long>(filesList.GetCount()));
-            LogSearch(_T(""), -1, msg );
-            m_pSearchLog->FocusEntry(oldcount);
-        }
     }
+
+    // Automatically focus the search log window
+    CodeBlocksLogEvent evtSwitch(cbEVT_SWITCH_TO_LOG_WINDOW, m_pSearchLog);
+    Manager::Get()->ProcessEvent(evtSwitch);
 
     return count;
 }

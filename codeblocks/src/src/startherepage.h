@@ -10,7 +10,7 @@
     #include <editorbase.h>
 #endif
 
-extern const wxString g_StartHereTitle;
+wxString GetStartHereTitle();
 
 class wxHtmlWindow;
 class wxHtmlLinkInfo;
@@ -23,10 +23,10 @@ class StartHerePage : public EditorBase
     public:
         StartHerePage(wxEvtHandler* owner, const RecentItemsList &projects,
                       const RecentItemsList &files, wxWindow* parent);
-        virtual ~StartHerePage();
+        ~StartHerePage() override;
 
         bool LinkClicked(const wxHtmlLinkInfo& link);
-        virtual bool VisibleToTree() const { return false; }
+        bool VisibleToTree() const override { return false; }
         void Reload();
     private:
         void RegisterColours();

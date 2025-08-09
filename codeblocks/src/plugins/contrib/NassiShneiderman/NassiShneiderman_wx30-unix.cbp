@@ -17,12 +17,12 @@
 				<Option run_host_application_in_terminal="0" />
 				<Option projectCompilerOptionsRelation="2" />
 				<Compiler>
+					<Add option="-fPIC" />
 					<Add option="$(#CB_RELEASE_TYPE)" />
 					<Add option="`$(WX_CONFIG) --cflags`" />
 					<Add option="-fmessage-length=0" />
 					<Add option="-fexceptions" />
 					<Add option="-Winvalid-pch" />
-					<Add option="-fPIC" />
 					<Add option="-DcbDEBUG" />
 					<Add option="-DCB_PRECOMP" />
 					<Add option="-DWX_PRECOMP" />
@@ -43,6 +43,7 @@
 					<Add after="zip -Rq9 ../../../devel30/share/codeblocks/NassiShneiderman.zip images/16x16/*.png images/20x20/*.png images/24x24/*.png" />
 					<Add after="zip -Rq9 ../../../devel30/share/codeblocks/NassiShneiderman.zip images/28x28/*.png images/32x32/*.png images/40x40/*.png" />
 					<Add after="zip -Rq9 ../../../devel30/share/codeblocks/NassiShneiderman.zip images/48x48/*.png images/56x56/*.png images/64x64/*.png" />
+					<Add after="zip -Rq9 ../../../devel30/share/codeblocks/NassiShneiderman.zip images/svg/*.svg" />
 					<Mode after="always" />
 				</ExtraCommands>
 			</Target>
@@ -54,7 +55,6 @@
 			<Add alias="All" targets="default;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-std=c++11" />
 		</Compiler>
@@ -111,10 +111,6 @@
 		<Unit filename="nassi_shneiderman_toolbar.xrc" />
 		<Unit filename="parseactions.cpp" />
 		<Unit filename="parseactions.h" />
-		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
-		</Extensions>
+		<Extensions />
 	</Project>
 </CodeBlocks_project_file>

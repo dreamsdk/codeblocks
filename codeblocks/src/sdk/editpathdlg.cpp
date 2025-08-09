@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11365 $
- * $Id: editpathdlg.cpp 11365 2018-04-12 07:02:34Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editpathdlg.cpp $
+ * $Revision: 11963 $
+ * $Id: editpathdlg.cpp 11963 2020-02-19 09:57:04Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editpathdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -23,6 +23,7 @@
 #endif
 
 #include "editpathdlg.h"
+#include <wx/display.h>
 #include <wx/filedlg.h>
 #include <wx/msgdlg.h>
 
@@ -48,7 +49,8 @@ EditPathDlg::EditPathDlg(wxWindow* parent,
     wxXmlResource::Get()->LoadObject(this, parent, _T("dlgEditPath"),_T("wxScrollingDialog"));
     XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
 
-    XRCCTRL(*this, "txtPath", wxTextCtrl)->SetValue(path);
+    wxTextCtrl *txtPath = XRCCTRL(*this, "txtPath", wxTextCtrl);
+
     XRCCTRL(*this, "dlgEditPath", wxScrollingDialog)->SetTitle(title);
 
     if (!wantDir) {
@@ -63,11 +65,18 @@ EditPathDlg::EditPathDlg(wxWindow* parent,
     m_Filter = filter;
     m_AskMakeRelative = true;
     m_ShowCreateDirButton = false;
-    XRCCTRL(*this, "txtPath", wxTextCtrl)->SetFocus();
 
-    // Limit vertical resizing.
-    SetMinSize(wxSize(400, GetMinHeight()));
+    // Limit vertical resizing, because we don't want to have empty space at the bottom of the
+    // dialog. We also want to limit the min width, so the text control could accommodate common
+    // paths.
+    int expectedTextWidth;
+    txtPath->GetTextExtent(wxString(wxT('W'), 60), &expectedTextWidth, nullptr);
+    SetMinSize(wxSize(expectedTextWidth, GetMinHeight()));
     SetMaxSize(wxSize(-1, GetMinHeight()));
+    Fit();
+
+    txtPath->SetValue(path);
+    txtPath->SetFocus();
 }
 
 EditPathDlg::~EditPathDlg()

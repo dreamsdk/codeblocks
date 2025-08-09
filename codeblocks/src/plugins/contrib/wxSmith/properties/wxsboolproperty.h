@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxsboolproperty.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsboolproperty.h $
+* $Revision: 12722 $
+* $Id: wxsboolproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsboolproperty.h $
 */
 
 #ifndef WXSBOOLPROPERTY_H
@@ -25,8 +25,10 @@
 
 #include "wxsproperty.h"
 
+#include <cbplugin.h>
+
 /** \brief Base boolean property */
-class wxsBoolProperty: public wxsProperty
+class PLUGIN_EXPORT wxsBoolProperty: public wxsProperty
 {
     public:
 
@@ -80,6 +82,33 @@ class wxsBoolProperty: public wxsProperty
  */
 #define WXS_BOOL_P(ClassName,VarName,PGName,DataName,Default,Priority) \
     { static wxsBoolProperty _Property(PGName,DataName,wxsOFFSET(ClassName,VarName),Default,Priority); \
+      Property(_Property); }
+
+/** \brief Macro automatically declaring boolean property with help string (tooltip)
+ *  \param ClassName name of class holding this property
+ *  \param VarName name of variable inside class
+ *  \param PGName name used in property grid
+ *  \param DataName name used in Xml / Data Streams
+ *  \param Default value applied on read errors / validation failures
+ *  \param HelpString string to show in the tooltip
+ */
+#define WXS_BOOL_T(ClassName,VarName,PGName,DataName,Default,HelpString) \
+    { static wxsBoolProperty _Property(PGName,DataName,wxsOFFSET(ClassName,VarName),Default); \
+      _Property.SetHelpString(HelpString); \
+      Property(_Property); }
+
+/** \brief Macro automatically declaring boolean property with custom priority and help string (tooltip)
+ *  \param ClassName name of class holding this property
+ *  \param VarName name of variable inside class
+ *  \param PGName name used in property grid
+ *  \param DataName name used in Xml / Data Streams
+ *  \param Default value applied on read errors / validation failures
+ *  \param Priority priority of this property
+ *  \param HelpString string to show in the tooltip
+ */
+#define WXS_BOOL_PT(ClassName,VarName,PGName,DataName,Default,Priority,HelpString) \
+    { static wxsBoolProperty _Property(PGName,DataName,wxsOFFSET(ClassName,VarName),Default,Priority); \
+      _Property.SetHelpString(HelpString); \
       Property(_Property); }
 
 /** \} */

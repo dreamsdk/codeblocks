@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11783 $
-* $Id: wxsproperty.h 11783 2019-07-08 19:39:27Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsproperty.h $
+* $Revision: 12722 $
+* $Id: wxsproperty.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsproperty.h $
 */
 
 #ifndef WXSPROPERTY_H
@@ -36,16 +36,12 @@
 
 #include <tinyxml.h>
 #include <prep.h>
+#include <cbplugin.h>
 
 #include "wxspropertystream.h"
 
 class wxsPropertyContainer;
 
-#if wxCHECK_VERSION(3, 0, 0)
-#define wxCHECK_PROPGRID_VERSION(major,minor,release) (0)
-#endif
-
-#if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
 #define wxPGVariant                     wxVariant
 #define wxPGId                          wxPGProperty*
 #define wxParentProperty                wxStringProperty
@@ -54,10 +50,6 @@ class wxsPropertyContainer;
 #define wxPG_VALUETYPE(T)               wxT(#T)
 #define wxPGVariantToWxObjectPtr(A,B)   wxDynamicCast(A.GetWxObjectPtr(),B)
 #define wxPG_PROP_UNSPECIFIED           wxPG_EX_AUTO_UNSPECIFIED_VALUES
-#define NEW_IN_WXPG14X                  new
-#else
-#define NEW_IN_WXPG14X
-#endif
 
 
 /** \brief Class representing one property
@@ -82,7 +74,7 @@ class wxsPropertyContainer;
  * of data (good example is wxsStyleProperty, where styles are not stored like
  * they are in wxWidgets)
  */
-class wxsProperty
+class PLUGIN_EXPORT wxsProperty
 {
     public:
 
@@ -195,6 +187,7 @@ class wxsProperty
          */
         virtual const wxString GetTypeName() = 0;
 
+        void SetHelpString(const wxString &helpStr) { m_HelpString = helpStr; }
     protected:
 
         /** \brief Registering property grid identifier
@@ -289,6 +282,9 @@ class wxsProperty
 
         wxString m_PGName;   ///< \brief Name used inside property grid
         wxString m_DataName; ///< \brief Name of data element (xml element)
+    protected:
+        wxString m_HelpString;
+    private:
         int      m_Priority; ///< \brief Priority of this property
 };
 

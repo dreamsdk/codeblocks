@@ -6,7 +6,7 @@
  *
  * $Revision: 11790 $
  * $Id: IncrementalSearch.h 11790 2019-07-14 15:03:15Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.h $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/IncrementalSearch/IncrementalSearch.h $
  */
 
 #ifndef INCREMENTAL_SEARCH_H_INCLUDED

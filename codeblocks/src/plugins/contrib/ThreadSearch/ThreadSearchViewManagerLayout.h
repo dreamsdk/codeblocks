@@ -19,43 +19,17 @@ class ThreadSearchView;
 class ThreadSearchViewManagerLayout : public ThreadSearchViewManagerBase
 {
 public:
-    /** Constructor. */
     ThreadSearchViewManagerLayout(ThreadSearchView* pThreadSearchView)
         : ThreadSearchViewManagerBase(pThreadSearchView)
     {}
+    ~ThreadSearchViewManagerLayout() override;
 
-    /** Destructor. */
-    virtual ~ThreadSearchViewManagerLayout();
-
-    eManagerTypes GetManagerType() {return TypeLayout;}
-
-    /** By default, view is not managed by the manager.
-      * This method adds view to manager if managed.
-      * No parameters because only m_pThreadSearchView is managed
-      * and given in constructor.
-      */
-    virtual void AddViewToManager();
-
-    /** By default, view is not managed by the manager.
-      * This method removes view from manager if not already managed.
-      * No parameters because only m_pThreadSearchView is managed
-      * and given in constructor.
-      * m_pThreadSearchView is not modified.
-      */
-    virtual void RemoveViewFromManager();
-
-    /** Return true if success. Fails if view is not managed.
-      * @param show : true => show, false => hide
-      * @return true if success.
-      */
-    virtual bool ShowView(bool show = true);
-
-    /** Return true if view is visible.
-      * @return true if view is visible.
-      */
-    bool IsViewShown();
-
-    virtual void Raise();
+    eManagerTypes GetManagerType() override { return TypeLayout; }
+    void AddViewToManager() override;
+    void RemoveViewFromManager() override;
+    bool ShowView(uint32_t flags) override;
+    bool IsViewShown() override;
+    void Raise() override;
 };
 
 #endif // THREAD_SEARCH_VIEW_MANAGER_LAYOUT_H

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10854 $
- * $Id: associations.cpp 10854 2016-05-18 22:20:45Z d_anselmi $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/associations.cpp $
+ * $Revision: 13627 $
+ * $Id: associations.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/associations.cpp $
  */
 
 #include <sdk.h>
@@ -19,62 +19,67 @@
 #include <filefilters.h>
 #include <wx/checklst.h>
 
+ #ifdef __WXMSW__
+    #include <wx/msw/registry.h>
+    #include <shlobj.h> // for SHChangeNotify()
+#endif
+
 const Associations::Assoc knownTypes[] =
 {
 /*
-    { Extension (wxString), Description (wxString), IconIndex (int) }
+    { Extension (wxString), Description (wxString), IconIndex (int), IsCore (bbol) }
       Note: "index" is the index of the icon resource in "resources.rc"
             Keep all indices in sync with icon indices in "resources.rc"!
 */
-    { FileFilters::CODEBLOCKS_EXT,      _T("project file"),                  1 },
-    { FileFilters::WORKSPACE_EXT,       _T("workspace file"),               11 },
+    { FileFilters::CODEBLOCKS_EXT,      _("Project file"),                  1, true },
+    { FileFilters::WORKSPACE_EXT,       _("Workspace file"),               11, true },
 
-    { FileFilters::C_EXT,               _T("C source file"),                 3 },
+    { FileFilters::C_EXT,               _("C source file"),                 3, true },
 
-    { FileFilters::CC_EXT,              _T("C++ source file"),               4 },
-    { FileFilters::CPP_EXT,             _T("C++ source file"),               4 },
-    { FileFilters::CXX_EXT,             _T("C++ source file"),               4 },
-    { FileFilters::INL_EXT,             _T("C++ source file"),               4 },
+    { FileFilters::CC_EXT,              _("C++ source file"),               4, true },
+    { FileFilters::CPP_EXT,             _("C++ source file"),               4, true },
+    { FileFilters::CXX_EXT,             _("C++ source file"),               4, true },
+    { FileFilters::INL_EXT,             _("C++ source file"),               4, true },
 
-    { FileFilters::TPP_EXT,             _T("C++ template source file"),      4 },
-    { FileFilters::TCC_EXT,             _T("C++ template source file"),      4 },
+    { FileFilters::TPP_EXT,             _("C++ template source file"),      4, true },
+    { FileFilters::TCC_EXT,             _("C++ template source file"),      4, true },
 
-    { FileFilters::H_EXT,               _T("Header file"),                   5 },
-    { FileFilters::HH_EXT,              _T("Header file"),                   5 },
-    { FileFilters::HPP_EXT,             _T("Header file"),                   5 },
-    { FileFilters::HXX_EXT,             _T("Header file"),                   5 },
+    { FileFilters::H_EXT,               _("Header file"),                   5, true },
+    { FileFilters::HH_EXT,              _("Header file"),                   5, true },
+    { FileFilters::HPP_EXT,             _("Header file"),                   5, true },
+    { FileFilters::HXX_EXT,             _("Header file"),                   5, true },
 
-    { FileFilters::JAVA_EXT,            _T("Java source file"),              6 },
-    { _T("cg"),                         _T("cg source file"),                7 },
-    { FileFilters::D_EXT,               _T("D source file"),                 8 },
-    { FileFilters::RESOURCE_EXT,        _T("resource file"),                10 },
-    { FileFilters::XRCRESOURCE_EXT,     _T("XRC resource file"),            10 },
+    { FileFilters::JAVA_EXT,            _("Java source file"),              6, false },
+    { "cg",                             _("cg source file"),                7, false },
+    { FileFilters::D_EXT,               _("D source file"),                 8, false },
+    { FileFilters::RESOURCE_EXT,        _("Resource file"),                10, false },
+    { FileFilters::XRCRESOURCE_EXT,     _("XRC resource file"),            10, false },
 
-    { FileFilters::ASM_EXT,             _T("ASM source file"),               2 },
-    { FileFilters::S_EXT,               _T("ASM source file"),               2 },
-    { FileFilters::SS_EXT,              _T("ASM source file"),               2 },
-    { FileFilters::S62_EXT,             _T("ASM source file"),               2 },
+    { FileFilters::ASM_EXT,             _("ASM source file"),               2, false },
+    { FileFilters::S_EXT,               _("ASM source file"),               2, false },
+    { FileFilters::SS_EXT,              _("ASM source file"),               2, false },
+    { FileFilters::S62_EXT,             _("ASM source file"),               2, false },
 
-    { FileFilters::F_EXT,               _T("Fortran source file"),           9 },
-    { FileFilters::F77_EXT,             _T("Fortran source file"),           9 },
-    { FileFilters::F90_EXT,             _T("Fortran source file"),           9 },
-    { FileFilters::F95_EXT,             _T("Fortran source file"),           9 },
+    { FileFilters::F_EXT,               _("Fortran source file"),           9, false },
+    { FileFilters::F77_EXT,             _("Fortran source file"),           9, false },
+    { FileFilters::F90_EXT,             _("Fortran source file"),           9, false },
+    { FileFilters::F95_EXT,             _("Fortran source file"),           9, false },
 
-    { FileFilters::DEVCPP_EXT,          _T("Dev-CPP project file"),         21 },
-    { FileFilters::MSVC6_EXT,           _T("MS Visual C++ project file"),   22 },
-    { FileFilters::MSVC6_WORKSPACE_EXT, _T("MS Visual C++ workspace file"), 23 }
-    //{ _T("proj"),                       _T("XCODE Project file"),           24 }
+    { FileFilters::DEVCPP_EXT,          _("Dev-CPP project file"),         21, false },
+    { FileFilters::MSVC6_EXT,           _("MS Visual C++ project file"),   22, false },
+    { FileFilters::MSVC6_WORKSPACE_EXT, _("MS Visual C++ workspace file"), 23, false }
+    //{ "proj",                           _("XCODE Project file"),           24, false }
 };
 
 inline void DoSetAssociation(const wxString& executable, int index)
 {
     Associations::DoSetAssociation(knownTypes[index].ext, knownTypes[index].descr, executable, knownTypes[index].index);
-};
+}
 
 inline bool DoCheckAssociation(const wxString& executable, int index)
 {
     return Associations::DoCheckAssociation(knownTypes[index].ext, knownTypes[index].descr, executable, knownTypes[index].index);
-};
+}
 
 unsigned int Associations::CountAssocs()
 {
@@ -84,7 +89,7 @@ unsigned int Associations::CountAssocs()
 void Associations::SetBatchBuildOnly()
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
     ::DoSetAssociation(name, 0);
     ::DoSetAssociation(name, 1);
@@ -100,10 +105,12 @@ void Associations::UpdateChanges()
 void Associations::SetCore()
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
-    for (int i = 0; i <= 12; ++i)        // beware, the number 12 is hardcoded ;)
-        ::DoSetAssociation(name, i);
+    const unsigned int assocCount = CountAssocs();
+    for (unsigned int i = 0; i < assocCount; ++i)
+        if (knownTypes[i].core)
+            ::DoSetAssociation(name, i);
 
     UpdateChanges();
 }
@@ -111,9 +118,10 @@ void Associations::SetCore()
 void Associations::SetAll()
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
-    for (unsigned int i = 0; i < CountAssocs(); ++i)
+    const unsigned int assocCount = CountAssocs();
+    for (unsigned int i = 0; i < assocCount; ++i)
         ::DoSetAssociation(name, i);
 
     UpdateChanges();
@@ -122,9 +130,10 @@ void Associations::SetAll()
 void Associations::ClearAll()
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
-    for (unsigned int i = 0; i < CountAssocs(); ++i)
+    const unsigned int assocCount = CountAssocs();
+    for (unsigned int i = 0; i < assocCount; ++i)
         DoClearAssociation(knownTypes[i].ext);
 
     UpdateChanges();
@@ -133,183 +142,145 @@ void Associations::ClearAll()
 bool Associations::Check()
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
     bool result = true;
 
-    for (int i = 0; i <= 12; ++i)        // beware, the number 12 is hardcoded ;)
-        result &= ::DoCheckAssociation(name, i);
+    const unsigned int assocCount = CountAssocs();
+    for (unsigned int i = 0; i < assocCount; ++i)
+        if (knownTypes[i].core)
+            result &= ::DoCheckAssociation(name, i);
 
-    return  result;
+    return result;
 }
 
 void Associations::DoSetAssociation(const wxString& ext, const wxString& descr, const wxString& exe, int icoNum)
 {
-    wxString BaseKeyName(_T("HKEY_CURRENT_USER\\Software\\Classes\\"));
+    wxString BaseKeyName("HKEY_CURRENT_USER\\Software\\Classes\\");
     if (platform::WindowsVersion() == platform::winver_Windows9598ME)
-        BaseKeyName = _T("HKEY_CLASSES_ROOT\\");
+        BaseKeyName = "HKEY_CLASSES_ROOT\\";
 
-    wxString node(_T("CodeBlocks.") + ext);
+    const wxString node("CodeBlocks." + ext);
 
     wxRegKey key; // defaults to HKCR
-    key.SetName(BaseKeyName + _T(".") + ext);
+    key.SetName(BaseKeyName + '.' + ext);
     key.Create();
-    key = _T("CodeBlocks.") + ext;
+    key = "CodeBlocks." + ext;
 
     key.SetName(BaseKeyName + node);
     key.Create();
-    key = descr;
+    key = wxGetTranslation(descr);
 
-    key.SetName(BaseKeyName + node + _T("\\DefaultIcon"));
+    key.SetName(BaseKeyName + node + "\\DefaultIcon");
     key.Create();
-    key = exe + wxString::Format(_T(",%d"), icoNum);
+    key = exe + wxString::Format(",%d", icoNum);
 
-    key.SetName(BaseKeyName + node + _T("\\shell\\open\\command"));
+    key.SetName(BaseKeyName + node + "\\shell\\open\\command");
     key.Create();
-    key = _T("\"") + exe + _T("\" \"%1\"");
+    key = '"' + exe + "\" \"%1\"";
 
-    key.SetName(BaseKeyName + node + _T("\\shell\\open\\ddeexec"));
-    key.Create();
-    key = _T("[Open(\"%1\")]");
-
-    key.SetName(BaseKeyName + node + _T("\\shell\\open\\ddeexec\\application"));
-    key.Create();
-    key = DDE_SERVICE;
-
-    key.SetName(BaseKeyName + node + _T("\\shell\\open\\ddeexec\\ifexec"));
-    key.Create();
-    key = _T("[IfExec_Open(\"%1\")]");;
-
-    key.SetName(BaseKeyName + node + _T("\\shell\\open\\ddeexec\\topic"));
-    key.Create();
-    key = DDE_TOPIC;
+    // Delete old ddeexec keys, because they interfere with C::B's own DDE usage
+    key.SetName(BaseKeyName + node + "\\shell\\open\\ddeexec");
+    if (key.Exists())
+        key.DeleteSelf();
 
     if (ext.IsSameAs(FileFilters::CODEBLOCKS_EXT) || ext.IsSameAs(FileFilters::WORKSPACE_EXT))
     {
-        wxString batchbuildargs = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/batch_build_args"), appglobals::DefaultBatchBuildArgs);
-        key.SetName(BaseKeyName + node + _T("\\shell\\Build\\command"));
+        const wxString batchbuildargs(Manager::Get()->GetConfigManager("app")->Read("/batch_build_args", appglobals::DefaultBatchBuildArgs));
+        key.SetName(BaseKeyName + node + "\\shell\\Build\\command");
         key.Create();
-        key = _T("\"") + exe + _T("\" ") + batchbuildargs + _T(" --build \"%1\"");
+        key = '"' + exe + "\" " + batchbuildargs + " --build \"%1\"";
 
-        key.SetName(BaseKeyName + node + _T("\\shell\\Rebuild (clean)\\command"));
+        key.SetName(BaseKeyName + node + "\\shell\\Rebuild (clean)\\command");
         key.Create();
-        key = _T("\"") + exe + _T("\" ") + batchbuildargs + _T(" --rebuild \"%1\"");
+        key = '"' + exe + "\" " + batchbuildargs + " --rebuild \"%1\"";
     }
 }
 
 void Associations::DoClearAssociation(const wxString& ext)
 {
-    wxString BaseKeyName(_T("HKEY_CURRENT_USER\\Software\\Classes\\"));
+    wxString BaseKeyName("HKEY_CURRENT_USER\\Software\\Classes\\");
     if (platform::WindowsVersion() == platform::winver_Windows9598ME)
-        BaseKeyName = _T("HKEY_CLASSES_ROOT\\");
+        BaseKeyName = "HKEY_CLASSES_ROOT\\";
 
     wxRegKey key; // defaults to HKCR
-    key.SetName(BaseKeyName + _T(".") + ext);
+    key.SetName(BaseKeyName + '.' + ext);
     if (key.Exists())
     {
         wxString s;
-        #if wxCHECK_VERSION(3, 0, 0)
-        if (key.QueryValue(wxEmptyString, s) && s.StartsWith(_T("CodeBlocks")))
-        #else
-        if (key.QueryValue(NULL, s) && s.StartsWith(_T("CodeBlocks")))
-        #endif
+        if (key.QueryValue(wxEmptyString, s) && s.StartsWith("CodeBlocks"))
             key.DeleteSelf();
     }
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext);
+    key.SetName(BaseKeyName + "CodeBlocks." + ext);
     if (key.Exists())
         key.DeleteSelf();
 }
 
 bool Associations::DoCheckAssociation(const wxString& ext, cb_unused const wxString& descr, const wxString& exe, int icoNum)
 {
-    wxString BaseKeyName(_T("HKEY_CURRENT_USER\\Software\\Classes\\"));
-
+    wxString BaseKeyName("HKEY_CURRENT_USER\\Software\\Classes\\");
     if (platform::WindowsVersion() == platform::winver_Windows9598ME)
-        BaseKeyName = _T("HKEY_CLASSES_ROOT\\");
+        BaseKeyName = "HKEY_CLASSES_ROOT\\";
 
     wxRegKey key; // defaults to HKCR
-    key.SetName(BaseKeyName + _T(".") + ext);
+    key.SetName(BaseKeyName + '.' + ext);
     if (!key.Exists())
         return false;
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext);
+    key.SetName(BaseKeyName + "CodeBlocks." + ext);
     if (!key.Exists())
         return false;
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\DefaultIcon"));
+    key.SetName(BaseKeyName + "CodeBlocks." + ext + "\\DefaultIcon");
     if (!key.Exists())
         return false;
+
     wxString strVal;
     if (!key.QueryValue(wxEmptyString, strVal))
         return false;
-    if (strVal != wxString::Format(_T("%s,%d"), exe.c_str(), icoNum))
+
+    if (strVal != wxString::Format("%s,%d", exe, icoNum))
         return false;
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\open\\command"));
+    key.SetName(BaseKeyName + "CodeBlocks." + ext + "\\shell\\open\\command");
     if (!key.Open())
-        return false;
-    if (!key.QueryValue(wxEmptyString, strVal))
-        return false;
-    if (strVal != wxString::Format(_T("\"%s\" \"%%1\""), exe.c_str()))
         return false;
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\open\\ddeexec"));
-    if (!key.Open())
-        return false;
     if (!key.QueryValue(wxEmptyString, strVal))
-        return false;
-    if (strVal != _T("[Open(\"%1\")]"))
         return false;
 
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\open\\ddeexec\\application"));
-    if (!key.Open())
-        return false;
-    if (!key.QueryValue(wxEmptyString, strVal))
-        return false;
-    if (strVal != DDE_SERVICE)
-        return false;
-
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\open\\ddeexec\\ifexec"));
-    if (!key.Open())
-        return false;
-    if (!key.QueryValue(wxEmptyString, strVal))
-        return false;
-    if (strVal != _T("[IfExec_Open(\"%1\")]"))
-        return false;
-
-    key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\open\\ddeexec\\topic"));
-    if (!key.Open())
-        return false;
-    if (!key.QueryValue(wxEmptyString, strVal))
-        return false;
-    if (strVal != DDE_TOPIC)
+    if (strVal != wxString::Format("\"%s\" \"%%1\"", exe))
         return false;
 
     if (ext.IsSameAs(FileFilters::CODEBLOCKS_EXT) || ext.IsSameAs(FileFilters::WORKSPACE_EXT))
     {
-        wxString batchbuildargs = Manager::Get()->GetConfigManager(_T("app"))->Read(_T("/batch_build_args"), appglobals::DefaultBatchBuildArgs);
-        key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\Build\\command"));
+        const wxString batchbuildargs(Manager::Get()->GetConfigManager("app")->Read("/batch_build_args", appglobals::DefaultBatchBuildArgs));
+        key.SetName(BaseKeyName + "CodeBlocks." + ext + "\\shell\\Build\\command");
         if (!key.Open())
-            return false;
-        if (!key.QueryValue(wxEmptyString, strVal))
-            return false;
-        if (strVal != _T("\"") + exe + _T("\" ") + batchbuildargs + _T(" --build \"%1\""))
             return false;
 
-        key.SetName(BaseKeyName + _T("CodeBlocks.") + ext + _T("\\shell\\Rebuild (clean)\\command"));
-        if (!key.Open())
-            return false;
         if (!key.QueryValue(wxEmptyString, strVal))
             return false;
-        if (strVal != _T("\"") + exe + _T("\" ") + batchbuildargs + _T(" --rebuild \"%1\""))
+
+        if (strVal != '"' + exe + "\" " + batchbuildargs + " --build \"%1\"")
+            return false;
+
+        key.SetName(BaseKeyName + "CodeBlocks." + ext + "\\shell\\Rebuild (clean)\\command");
+        if (!key.Open())
+            return false;
+
+        if (!key.QueryValue(wxEmptyString, strVal))
+            return false;
+
+        if (strVal != '"' + exe + "\" " + batchbuildargs + " --rebuild \"%1\"")
             return false;
     }
 
     return true;
 }
 
-
+//////////////////////////////////////////
 
 BEGIN_EVENT_TABLE(ManageAssocsDialog, wxScrollingDialog)
     EVT_BUTTON(XRCID("wxID_OK"), ManageAssocsDialog::OnApply)
@@ -317,23 +288,20 @@ BEGIN_EVENT_TABLE(ManageAssocsDialog, wxScrollingDialog)
     EVT_BUTTON(XRCID("clearAll"), ManageAssocsDialog::OnClearAll)
 END_EVENT_TABLE()
 
-
-
 ManageAssocsDialog::ManageAssocsDialog(wxWindow* parent)
 {
-    wxXmlResource::Get()->LoadObject(this, parent, _T("dlgManageAssocs"),_T("wxScrollingDialog"));
+    wxXmlResource::Get()->LoadObject(this, parent, "dlgManageAssocs", "wxScrollingDialog");
 
     list = XRCCTRL(*this, "checkList", wxCheckListBox);
     assert(list);
 
-    wxString d(_T("."));
-
     wxChar exe[MAX_PATH] = {0};
-    GetModuleFileName(0L, exe, MAX_PATH);
+    GetModuleFileName(NULL, exe, MAX_PATH);
 
-    for (unsigned int i = 0; i < Associations::CountAssocs(); ++i)
+    const unsigned int assocCount = Associations::CountAssocs();
+    for (unsigned int i = 0; i < assocCount; ++i)
     {
-        list->Append(d + knownTypes[i].ext + _T("  (") + knownTypes[i].descr + _T(")"));
+        list->Append('.' + knownTypes[i].ext + "  (" + wxGetTranslation(knownTypes[i].descr) + ')');
         list->Check(i, Associations::DoCheckAssociation(knownTypes[i].ext, knownTypes[i].descr, exe, knownTypes[i].index));
     }
 
@@ -343,7 +311,7 @@ ManageAssocsDialog::ManageAssocsDialog(wxWindow* parent)
 void ManageAssocsDialog::OnApply(cb_unused wxCommandEvent& event)
 {
     wxChar name[MAX_PATH] = {0};
-    GetModuleFileName(0L, name, MAX_PATH);
+    GetModuleFileName(NULL, name, MAX_PATH);
 
     for (size_t i = 0; i < list->GetCount(); ++i)
     {
@@ -369,6 +337,8 @@ void ManageAssocsDialog::OnClearAll(cb_unused wxCommandEvent& event)
     EndModal(0);
 }
 
+//////////////////////////////////////////
+
 BEGIN_EVENT_TABLE(AskAssocDialog, wxScrollingDialog)
     EVT_BUTTON(XRCID("wxID_OK"), AskAssocDialog::OnOK)
     EVT_BUTTON(wxID_CANCEL, AskAssocDialog::OnESC)
@@ -377,7 +347,7 @@ END_EVENT_TABLE()
 
 AskAssocDialog::AskAssocDialog(wxWindow* parent)
 {
-    wxXmlResource::Get()->LoadObject(this, parent, _T("askAssoc"),_T("wxScrollingDialog"));
+    wxXmlResource::Get()->LoadObject(this, parent, "askAssoc", "wxScrollingDialog");
     SetEscapeId(wxID_NONE);
 }
 

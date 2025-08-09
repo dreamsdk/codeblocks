@@ -5,9 +5,9 @@
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
 				<object class="wxStaticText" name="ID_STATICTEXT1">
-					<label>Additional search paths for the code completion:</label>
+					<label>Additional files or directories to be parsed:</label>
 				</object>
-				<flag>wxALL|wxEXPAND</flag>
+				<flag>wxALL</flag>
 				<border>8</border>
 			</object>
 			<object class="sizeritem">
@@ -19,21 +19,28 @@
 			<object class="sizeritem">
 				<object class="wxBoxSizer">
 					<object class="sizeritem">
-						<object class="wxButton" name="btnAdd">
-							<label>&amp;Add</label>
+						<object class="wxButton" name="btnAddDir">
+							<label>Add directory</label>
 						</object>
 						<flag>wxALIGN_LEFT</flag>
 					</object>
 					<object class="sizeritem">
+						<object class="wxButton" name="btnAddFile">
+							<label>Add file</label>
+						</object>
+						<flag>wxLEFT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+						<border>8</border>
+					</object>
+					<object class="sizeritem">
 						<object class="wxButton" name="btnEdit">
-							<label>&amp;Edit</label>
+							<label>Edit</label>
 						</object>
 						<flag>wxLEFT</flag>
 						<border>8</border>
 					</object>
 					<object class="sizeritem">
 						<object class="wxButton" name="btnDelete">
-							<label>&amp;Delete</label>
+							<label>Delete</label>
 						</object>
 						<flag>wxLEFT</flag>
 						<border>8</border>
@@ -41,6 +48,66 @@
 				</object>
 				<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL</flag>
 				<border>8</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxStaticText" name="ID_STATICTEXT2">
+					<label>Additional directories to be searched for include files during the parsing:</label>
+				</object>
+				<flag>wxALL|wxALIGN_LEFT</flag>
+				<border>8</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxListBox" name="lstPathsInclude">
+					<default>-1</default>
+				</object>
+				<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxEXPAND</flag>
+				<border>8</border>
+				<option>1</option>
+			</object>
+			<object class="sizeritem">
+				<object class="wxBoxSizer">
+					<object class="sizeritem">
+						<object class="wxButton" name="btnAddInclude">
+							<label>Add directory</label>
+						</object>
+						<flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxButton" name="btnEditInclude">
+							<label>Edit</label>
+						</object>
+						<flag>wxLEFT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxButton" name="btnDeleteInclude">
+							<label>Delete</label>
+						</object>
+						<flag>wxLEFT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+						<border>8</border>
+						<option>1</option>
+					</object>
+				</object>
+				<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL</flag>
+				<border>8</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxStaticText" name="ID_STATICTEXT3">
+					<label>Preprocessor macros to be used by the parser (macro1; macro2; ...):</label>
+				</object>
+				<flag>wxALL|wxALIGN_LEFT</flag>
+				<border>8</border>
+			</object>
+			<object class="sizeritem">
+				<object class="wxTextCtrl" name="txtCPPMacros">
+					<value>Text</value>
+					<style>wxTE_MULTILINE</style>
+				</object>
+				<flag>wxBOTTOM|wxLEFT|wxRIGHT|wxEXPAND</flag>
+				<border>8</border>
+				<option>1</option>
 			</object>
 		</object>
 	</object>

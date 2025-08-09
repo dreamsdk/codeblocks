@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxscolourdialog.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscolourdialog.cpp $
+* $Revision: 13547 $
+* $Id: wxscolourdialog.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxscolourdialog.cpp $
 */
 
 #include "wxscolourdialog.h"
@@ -71,6 +71,7 @@ void wxsColourDialog::OnBuildCreatingCode()
                 Codef(_T("%C(%W);\n"));
             }
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             return;
         }
 
@@ -82,7 +83,7 @@ void wxsColourDialog::OnBuildCreatingCode()
     }
 }
 
-void wxsColourDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsColourDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_BOOL(wxsColourDialog,m_ChooseFull,_("Full dialog"),_T("choosefull"),true);
     WXS_COLOUR(wxsColourDialog,m_Colour,_("Colour"),_T("colour"));

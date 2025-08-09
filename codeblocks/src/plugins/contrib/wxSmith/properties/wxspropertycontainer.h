@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxspropertycontainer.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.h $
+* $Revision: 13547 $
+* $Id: wxspropertycontainer.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxspropertycontainer.h $
 */
 
 #ifndef WXSPROPERTYCONTAINER_H
@@ -27,6 +27,7 @@
 #include "wxsquickpropspanel.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 class wxsPropertyGridManager;
 
@@ -35,7 +36,7 @@ class wxsPropertyGridManager;
  * This class is responsible for operating on properties.
  * It also creates property window.
  */
-class wxsPropertyContainer
+class PLUGIN_EXPORT wxsPropertyContainer
 {
     public:
 
@@ -134,10 +135,10 @@ class wxsPropertyContainer
          *
          * Example of registering function:
          *  \code
-         *  void SomeClass::OnEnumProperties(long Flags)
+         *  void SomeClass::OnEnumProperties(long _Flags)
          *  {
          *      static wxsLongProperty Prop1(_("Long value"),_T("value"),wxsOFFSET(SomeClass,VariableName));
-         *      if ( Flags & flXrc )
+         *      if ( _Flags & flXrc )
          *      {
          *          Property(Prop1);
          *      }
@@ -146,7 +147,7 @@ class wxsPropertyContainer
          *  }
          *  \endcode
          */
-        virtual void OnEnumProperties(long Flags) = 0;
+        virtual void OnEnumProperties(long _Flags) = 0;
 
         /** \brief Function registering property
          *
@@ -188,7 +189,7 @@ class wxsPropertyContainer
         }
 
         /** \brief Function building quick properties window */
-        virtual wxsQuickPropsPanel* OnCreateQuickProperties(cb_unused wxWindow* Parent) { return 0; }
+        virtual wxsQuickPropsPanel* OnCreateQuickProperties(cb_unused wxWindow* Parent) { return nullptr; }
 
         /** \brief Function notifying that one of properties has changed
          *

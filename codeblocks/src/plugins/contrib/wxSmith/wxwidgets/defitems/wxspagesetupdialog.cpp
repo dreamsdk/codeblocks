@@ -171,6 +171,7 @@ void wxsPageSetupDialog::OnBuildCreatingCode()
 
             Codef(_T("%C(%W, %s);\n"), sDataName.wx_str());
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("delete %s;\n"), GetVarName().wx_str()));
             return;
         }
 
@@ -184,11 +185,11 @@ void wxsPageSetupDialog::OnBuildCreatingCode()
 
 /*! \brief Enumerate the control's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     /*! \brief Paper IDs.
      */
@@ -236,8 +237,14 @@ void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long Flags)
         wxPAPER_FANFOLD_STD_GERMAN,
         wxPAPER_FANFOLD_LGL_GERMAN
     };
+
     /*! \brief Paper ID names.
      */
+
+#pragma push_macro("_")
+#undef _
+#define _(x)   L##x
+
     static const wxChar* PaperIDNames[]  = {
         _("Use specific dimensions"),
         _("Letter, 8 1/2 by 11 inches"),
@@ -281,12 +288,14 @@ void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long Flags)
         _("US Std Fanfold, 14 7/8 by 11 inches"),
         _("German Std Fanfold, 8 1/2 by 12 inches"),
         _("German Legal Fanfold, 8 1/2 by 13 inches"),
-        NULL
+        nullptr
     };
 
+#pragma pop_macro("_")
 
     // These functions are Windows only.
-    if((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0){
+    if ((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0)
+    {
         WXS_BOOL(wxsPageSetupDialog, m_bDefaultInfo, _("Default Info"), _T("default_info"), false)
         WXS_BOOL(wxsPageSetupDialog, m_bEnableHelp, _("Enable Help"), _T("enable_help"), false)
         WXS_BOOL(wxsPageSetupDialog, m_bEnableMargins, _("Enable Margins"), _T("enable_margins"), true)
@@ -296,7 +305,8 @@ void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long Flags)
     WXS_LONG(wxsPageSetupDialog, m_iMarginRight,  _("Margin Right (mm)"), _T("margin_right"), -1)
     WXS_LONG(wxsPageSetupDialog, m_iMarginBottom,  _("Margin Bottom (mm)"), _T("margin_bottom"), -1)
     // These functions are Windows only.
-    if((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0){
+    if ((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0)
+    {
         WXS_BOOL(wxsPageSetupDialog, m_bDefaultMinMargins, _("Default Min. Margins"), _T("default_min_margins"), false)
         WXS_LONG(wxsPageSetupDialog, m_iMarginMinLeft,  _("Min. Margin Left (mm)"), _T("min_margin_left"), -1)
         WXS_LONG(wxsPageSetupDialog, m_iMarginMinTop,  _("Min. Margin Top (mm)"), _T("min_margin_top"), -1)
@@ -304,7 +314,8 @@ void wxsPageSetupDialog::OnEnumToolProperties(cb_unused long Flags)
         WXS_LONG(wxsPageSetupDialog, m_iMarginMinBottom,  _("Min. Margin Bottom (mm)"), _T("min_margin_bottom"), -1)
     }
     // These functions are Windows only.
-    if((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0){
+    if ((wxPlatformInfo::Get().GetOperatingSystemId() & wxOS_WINDOWS) > 0)
+    {
         WXS_BOOL(wxsPageSetupDialog, m_bEnableOrientation, _("Enable Orientation"), _T("enable_orientation"), true)
         WXS_BOOL(wxsPageSetupDialog, m_bEnablePaper, _("Enable Paper"), _T("enable_paper"), true)
     }

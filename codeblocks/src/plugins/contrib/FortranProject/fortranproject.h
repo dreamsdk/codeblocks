@@ -85,7 +85,9 @@ class FortranProject : public cbCodeCompletionPlugin
         void OnProjectClosed(CodeBlocksEvent& event);
         void OnProjectSaved(CodeBlocksEvent& event);
         void OnProjectFileAdded(CodeBlocksEvent& event);
+        void OnProjectEndAddFiles(CodeBlocksEvent& event);
         void OnProjectFileRemoved(CodeBlocksEvent& event);
+        void OnProjectEndRemoveFiles(CodeBlocksEvent& event);
         void OnCompilerStarted(CodeBlocksEvent& event);
         void OnCleanProjectStarted(CodeBlocksEvent& event);
         void OnCleanWorkspaceStarted(CodeBlocksEvent& event);
@@ -123,6 +125,7 @@ class FortranProject : public cbCodeCompletionPlugin
         void OnShowCalledByTree(wxCommandEvent& event);
         void LoadFortranKeywordImages();
         wxBitmap GetFortranKeywordImage(int height);
+        void PrepareImageList(cbStyledTextCtrl* control);
 
         bool m_InitDone;
 
@@ -147,7 +150,8 @@ class FortranProject : public cbCodeCompletionPlugin
         int                                m_ActiveCalltipsNest;
         int                                m_ActiveCalltipsPosition;
         int                                m_CurrentLine;
-        bool                               m_LexerKeywordsToInclude[9];
+        bool                               m_LexerKeywordsToInclude[4];
+        bool                               m_ReplaceAlwaysCC;
         bool                               m_UseSmartCC;
         size_t                             m_MaxMatch;
 
@@ -162,6 +166,7 @@ class FortranProject : public cbCodeCompletionPlugin
 
         DocsShowOptions                    m_DocsShowOption;
 
+        bool                               m_AutoCorrectIndentEnabled;
         bool                               m_AutoInsertEnabled;
         AutoInsert                         m_AutoInsert;
 
@@ -178,6 +183,7 @@ class FortranProject : public cbCodeCompletionPlugin
 
         TokensArrayFlatClass               m_TokensCCList;
         std::map<int,wxBitmap>             m_FKImages;
+        FPImageList*                       m_pImageList;
 
         DECLARE_EVENT_TABLE()
 };

@@ -17,7 +17,7 @@
 *
 * $Revision: 8251 $
 * $Id: wxsiteminfo.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsiteminfo.h $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsiteminfo.h $
 */
 
 #ifndef WXSITEMINFO_H

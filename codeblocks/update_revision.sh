@@ -4,9 +4,9 @@
 # This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
 # http://www.gnu.org/licenses/gpl-3.0.html
 #
-# $Revision: 11967 $
-# $Id: update_revision.sh 11967 2020-02-19 22:53:19Z fuscated $
-# $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/update_revision.sh $
+# $Revision: 13628 $
+# $Id: update_revision.sh 13628 2025-03-02 18:35:53Z mortenmacfly $
+# $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/update_revision.sh $
 #
 
 
@@ -47,7 +47,7 @@ echo "Found revision: '${REV}' '${LCD}'"
 
 if [ "x$REV" != "x$OLD_REV" -o ! -r $REV_FILE ]; then
 	echo "m4_define([SVN_REV], $REV)" > $REV_FILE
-	echo "m4_define([SVN_REVISION], 20.03svn$REV)" >> $REV_FILE
+	echo "m4_define([SVN_REVISION], 25.03svn$REV)" >> $REV_FILE
 	echo "m4_define([SVN_DATE], $LCD)" >> $REV_FILE
 
 	# Also change the revision number in debian/changelog for package versioning
@@ -56,12 +56,12 @@ if [ "x$REV" != "x$OLD_REV" -o ! -r $REV_FILE ]; then
 		if [ -x "$DCH" ]; then
 			AKT_REV=`sed -e 's/.*svn\([0-9]*\).*/\1/' -e 'q' < debian/changelog`
 			if [ $REV -gt $AKT_REV ]; then
-				dch -v 20.03svn$REV "New svn revision"
+				dch -v 25.03 "New release"
 			fi
 		fi
 	else
 		mv debian/changelog debian/changelog.tmp
-		sed "1 s/(20.03svn[^-)]*/(20.03svn$REV/" < debian/changelog.tmp > debian/changelog
+		sed "1 s/(25.03svn[^-)]*/(25.03svn$REV/" < debian/changelog.tmp > debian/changelog
 		rm debian/changelog.tmp
 	fi
 fi

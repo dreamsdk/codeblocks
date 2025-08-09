@@ -18,6 +18,7 @@
 
 #include <wx/event.h>
 #include <wx/arrstr.h>
+#include <vector>
 
 class ThreadSearchEvent : public wxCommandEvent
 {
@@ -29,20 +30,34 @@ public:
     ThreadSearchEvent(const ThreadSearchEvent& event);
 
     /** Destructor. */
-    ~ThreadSearchEvent();
+    ~ThreadSearchEvent() override;
 
-    virtual wxEvent *Clone() const {return new ThreadSearchEvent(*this);}
+    wxEvent *Clone() const override { return new ThreadSearchEvent(*this); }
 
     DECLARE_DYNAMIC_CLASS(ThreadSearchEvent);
 
-    wxArrayString GetLineTextArray() const {return m_LineTextArray;};   // Contains a series of string containing
-                                                                        // line index (starting from 1), matching line
-    void SetLineTextArray(const wxArrayString& ArrayString) {m_LineTextArray = ArrayString;};
+    // Contains a series of string containing line index (starting from 1), matching line
+    const wxArrayString& GetLineTextArray() const { return m_LineTextArray; }
+    void SetLineTextArray(const wxArrayString& ArrayString) { m_LineTextArray = ArrayString; }
+
+    void SetMatchedPositions(std::vector<int> &matchedPositions)
+    {
+        m_MatchedPositions.swap(matchedPositions);
+    }
+    const std::vector<int>& GetMatchedPositions() const {
+        return m_MatchedPositions;
+    }
 
     size_t GetNumberOfMatches() const { return m_LineTextArray.GetCount() / 2; }
 
 private:
     wxArrayString m_LineTextArray;
+    /// Stores info for the positions of the matches.
+    /// The format of the matches for a single line is as follows:
+    /// ||count of matches|start match 0|length match0|...|start match N|length match N||
+    /// The vector would contain a single such record for every matching line.
+    /// Storing a count of 0 for a matching line is a valid behaviour for a searcher.
+    std::vector<int> m_MatchedPositions;
 };
 
 typedef void (wxEvtHandler::*ThreadSearchEventFunction)(ThreadSearchEvent&);

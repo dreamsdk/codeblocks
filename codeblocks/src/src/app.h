@@ -8,10 +8,6 @@
 
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
 #if !defined(WX_PRECOMP)
     #include <wx/wx.h>
     #include <wx/intl.h>
@@ -107,17 +103,16 @@ class cbSplashScreen;
 class CodeBlocksApp : public wxApp
 {
     public:
-        virtual bool OnInit();
-        virtual int OnExit();
-        virtual int OnRun();
-        wxString GetAppPath() const;
-        int ParseCmdLine(MainFrame* handlerFrame, const wxString& CmdLine = wxEmptyString);
-        #if wxCHECK_VERSION(3,0,0)
+        bool OnInit() override;
+        int OnExit() override;
+        int OnRun() override;
+        int ParseCmdLine(MainFrame* handlerFrame, const wxString& CmdLine = wxString(),
+                         const wxString &CWD = wxString());
+
         void OnCloseBatchBuildWindow(wxCloseEvent& evt);
-        #endif // wxCHECK_VERSION
         void OnAppActivate(wxActivateEvent& event);
-        bool OnCmdLineParsed(wxCmdLineParser& parser);
-        void OnFatalException();
+        bool OnCmdLineParsed(wxCmdLineParser& parser) override;
+        void OnFatalException() override;
         void LoadDelayedFiles(MainFrame* frame); // command line or DDE (if available) files
         void SetAutoFile(wxString& file); // method to set m_AutoFile
         void AttachDebugger();
@@ -142,6 +137,7 @@ class CodeBlocksApp : public wxApp
         wxLocale m_locale; // locale we'll be using
         wxArrayString m_DelayedFilesToOpen;
     private:
+        wxString GetAppPath() const;
         void SetupPersonality(const wxString& personality);
         void SetupImageSizes(wxToolBarAddOnXmlHandler *toolbarAddonHandler);
 
@@ -178,6 +174,7 @@ class CodeBlocksApp : public wxApp
         bool m_Assocs; // associations check enabled
 #endif
         int m_BatchExitCode;
+        wxString m_crashReportName;
 
         DECLARE_EVENT_TABLE()
 };

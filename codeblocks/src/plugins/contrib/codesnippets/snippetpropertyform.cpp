@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: snippetpropertyform.cpp 11346 2018-03-24 21:29:44Z pecanh $
+// RCS-ID: $Id: snippetpropertyform.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -31,10 +31,6 @@
 #else
 #endif
 #include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif //__BORLANDC__
 
 //#include "wxscintilla/include/wx/wxscintilla.h" //svn5785
 #include <wx/wxscintilla.h>                       //svn5785

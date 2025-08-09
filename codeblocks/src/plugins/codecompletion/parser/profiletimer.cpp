@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7749 $
- * $Id: profiletimer.cpp 7749 2012-02-01 09:42:05Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/profiletimer.cpp $
+ * $Revision: 13103 $
+ * $Id: profiletimer.cpp 13103 2022-12-09 14:16:20Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/profiletimer.cpp $
  */
 
 #include "profiletimer.h"
@@ -52,12 +52,12 @@ ProfileTimerHelper::~ProfileTimerHelper()
     {
         const long totalTime = it->first->m_StopWatch.Time();
         wxString log;
-        log.Printf(_T("\"%s\" used time is %ld minute(s), %ld.%03ld seconds; call times is %lu."),
-                   it->second.wx_str(),
+        log.Printf(wxString::Format("\"%s\" used time is %ld minute(s), %ld.%03ld seconds; call times is %zu.",
+                   it->second,
                    (totalTime / 60000),
                    (totalTime / 1000) % 60,
                    (totalTime % 1000),
-                   static_cast<unsigned long>(it->first->m_CallTimes));
+                   it->first->m_CallTimes));
 #ifndef CC_PARSER_TEST
         Manager::Get()->GetLogManager()->DebugLog(log);
 #endif

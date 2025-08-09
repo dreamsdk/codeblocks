@@ -13,10 +13,6 @@
 	#pragma interface "dragscroll.h"
 #endif
 
-#ifdef __BORLANDC__
-	#pragma hdrstop
-#endif
-
 #include <wx/arrstr.h>
 #include <wx/dynarray.h>
 #include <wx/event.h> // wxEvtHandler
@@ -31,7 +27,7 @@
 // ---------------------------------------------------------------------------
 
 //----------------------------------------
-#define VERSION "1.3.29 2019/03/30"
+#define VERSION "1.3.32 23/10/23"
 //----------------------------------------
 
 //-#undef LOGGING
@@ -473,6 +469,15 @@ private:
 //          will annoyingly set the editor caret at the right-click position.
 //  Version 1.3.29 2019/03/30
 //          Option to reverse mouse wheel zoom direction
+//  1.3.30  2021/06/25
+//          Make it easier for external processes to use DragScroll support
+//          Convert event ids to XRCIDs for external use.
+//          Add Connect() for wxEVT_COMMAND_MENU_SELECTED for DragScroll events
+// 1.3.31   2022/11/12
+//          For focus-follows-mouse, give focus to windows with mouse movement and no clicks
+//          Allows log windows to re-click/scroll just by moving mouse.
+// 1.3.32   2023/10/23
+//          Comments and debug Logging text updates, no functional changes
 // ----------------------------------------------------------------------------
 //  ToDo
 // ----------------------------------------------------------------------------

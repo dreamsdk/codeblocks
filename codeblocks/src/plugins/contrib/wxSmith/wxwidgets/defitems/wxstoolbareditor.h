@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10680 $
-* $Id: wxstoolbareditor.h 10680 2016-01-22 10:43:35Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbareditor.h $
+* $Revision: 13547 $
+* $Id: wxstoolbareditor.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbareditor.h $
 */
 
 #ifndef WXSTOOLBAREDITOR_H
@@ -25,18 +25,19 @@
 
 #include <wx/wxprec.h>
 
+#include "wxstoolbaritem.h"
 #include "wxstoolbar.h"
 
 //(*Headers(wxsToolBarEditor)
-#include <wx/sizer.h>
-#include <wx/stattext.h>
-#include <wx/textctrl.h>
-#include <wx/listbox.h>
-#include <wx/statline.h>
-#include <wx/radiobut.h>
-#include <wx/panel.h>
 #include <wx/bmpbuttn.h>
 #include <wx/button.h>
+#include <wx/choice.h>
+#include <wx/listbox.h>
+#include <wx/panel.h>
+#include <wx/sizer.h>
+#include <wx/statline.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
 //*)
 
 class wxsToolBarEditor: public wxPanel
@@ -51,23 +52,20 @@ class wxsToolBarEditor: public wxPanel
     private:
 
         //(*Identifiers(wxsToolBarEditor)
-        static const long ID_LISTBOX1;
-        static const long ID_RADIOBUTTON1;
-        static const long ID_RADIOBUTTON2;
-        static const long ID_RADIOBUTTON3;
-        static const long ID_RADIOBUTTON4;
-        static const long ID_STATICLINE1;
-        static const long ID_TEXTCTRL4;
-        static const long ID_TEXTCTRL1;
-        static const long ID_BITMAPBUTTON1;
-        static const long ID_BITMAPBUTTON2;
-        static const long ID_TEXTCTRL2;
-        static const long ID_TEXTCTRL3;
-        static const long ID_STATICLINE2;
-        static const long ID_BUTTON3;
-        static const long ID_BUTTON4;
-        static const long ID_BUTTON1;
-        static const long ID_BUTTON2;
+        static const wxWindowID ID_LISTBOX1;
+        static const wxWindowID ID_STATICTEXT1;
+        static const wxWindowID ID_CHOICE1;
+        static const wxWindowID ID_TEXTCTRL4;
+        static const wxWindowID ID_TEXTCTRL1;
+        static const wxWindowID ID_BITMAPBUTTON1;
+        static const wxWindowID ID_BITMAPBUTTON2;
+        static const wxWindowID ID_TEXTCTRL2;
+        static const wxWindowID ID_TEXTCTRL3;
+        static const wxWindowID ID_STATICLINE2;
+        static const wxWindowID ID_BUTTON3;
+        static const wxWindowID ID_BUTTON4;
+        static const wxWindowID ID_BUTTON1;
+        static const wxWindowID ID_BUTTON2;
         //*)
 
         //(*Handlers(wxsToolBarEditor)
@@ -84,34 +82,22 @@ class wxsToolBarEditor: public wxPanel
 
         //(*Declarations(wxsToolBarEditor)
         wxBitmapButton* m_Bitmap2;
-        wxTextCtrl* m_HelpText;
-        wxRadioButton* m_TypeNormal;
-        wxRadioButton* m_TypeRadio;
         wxBitmapButton* m_Bitmap;
-        wxStaticLine* StaticLine2;
-        wxRadioButton* m_TypeCheck;
-        wxRadioButton* m_TypeSeparator;
-        wxStaticLine* StaticLine1;
-        wxTextCtrl* m_ToolTip;
+        wxChoice* m_Type;
         wxListBox* m_Content;
-        wxTextCtrl* m_Label;
+        wxStaticLine* StaticLine2;
+        wxStaticText* StaticText7;
+        wxTextCtrl* m_HelpText;
         wxTextCtrl* m_Id;
+        wxTextCtrl* m_Label;
+        wxTextCtrl* m_ToolTip;
         //*)
-
-        enum ItemType
-        {
-            Normal,
-            Check,
-            Radio,
-            Separator,
-            Control
-        };
 
         class ToolBarItem: public wxClientData
         {
             public:
 
-                ToolBarItem(): m_OriginalPos(-1), m_Type(Normal) {}
+                ToolBarItem(): m_OriginalPos(-1), m_Type(wxsToolBarItem::Normal) {}
 
                 ToolBarItem(const ToolBarItem& CopyFrom):
                     m_OriginalPos(CopyFrom.m_OriginalPos),
@@ -127,7 +113,7 @@ class wxsToolBarEditor: public wxPanel
                     m_Handler2(CopyFrom.m_Handler2) {}
 
                 int m_OriginalPos;
-                ItemType m_Type;
+                wxsToolBarItem::ToolType m_Type;
                 wxString m_Id;
                 wxString m_Variable;
                 wxString m_Label;

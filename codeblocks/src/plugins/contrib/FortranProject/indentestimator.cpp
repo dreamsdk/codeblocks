@@ -3,9 +3,10 @@
 
 #include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <wx/tokenzr.h>
     #include <configmanager.h>
 #endif
+
+#include <wx/tokenzr.h>
 
 FormatIndentCodeTree::FormatIndentCodeTree()
 {
@@ -136,58 +137,68 @@ void IndentEstimator::DelFormatIndentRegEx()
 
 void IndentEstimator::CreateFormatIndentRegEx()
 {
-	int options = wxRE_DEFAULT | wxRE_ADVANCED | wxRE_ICASE ;
+#if wxCHECK_VERSION(3, 1, 6)
+	int options = wxRE_EXTENDED | wxRE_ICASE ;
+#else
+	int options = wxRE_ADVANCED | wxRE_ICASE ;
+#endif // wxCHECK_VERSION
 
 	DelFormatIndentRegEx();
 
-	m_RegEx[wxT("regexMultiLines")] = new wxRegEx( wxT("(&)((\r\n)|(\r)|(\n))?$"), options );
-	m_RegEx[wxT("regexEndProgram")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)((program)|((block)(\\s*)(data))|(subroutine)|(function))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexProgram")] = new wxRegEx( wxT("^(\\s*)((program)|((block)(\\s*)(data)))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndModule")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(module)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexModule")] = new wxRegEx( wxT("^(\\s*)(module)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexInterface")] = new wxRegEx( wxT("^(\\s*)((abstract)(\\s+))?(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndInterface")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexContains")] = new wxRegEx( wxT("^(\\s*)(contains)((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexSubroutine")] = new wxRegEx( wxT("^(\\s*)(((pure)|(impure)|(elemental)|(recursive)|(non_recursive)|(module))(\\s+))*((\\s+))?(subroutine)(\\s+)([a-zA-Z0-9_]+)((\\s*)(\\()(\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)(\\))(\\s*))?"), options );
-	m_RegEx[wxT("regexFunction")] = new wxRegEx( wxT("^(((.*)(\\s+))|(\\s*)){1}(function)(\\s+)([a-zA-Z0-9_]+)(\\s*)\\((\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)\\)"), options );
-	m_RegEx[wxT("regexType")] = new wxRegEx( wxT("^(\\s*)((type)(\\s*)(\\()(\\s*)([a-zA-Z0-9_]+)(\\s*)(\\)))(\\s*)"), options );
-	m_RegEx[wxT("regexTypeDefine")] = new wxRegEx( wxT("^(\\s*)((type)\\M((\\s*),(\\s*)((public)|(private)|(protected)))?((\\s*),(\\s*)((abstract)|((extends)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\))))?((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-z0-9_]+)(\\s*)\\)))?((\\s*)(::)?(\\s*)([a-zA-Z0-9_]+)))(\\s*)"), options );
-	m_RegEx[wxT("regexEndType")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(type)((\\s+)([a-zA-Z0-9_]+))?(\\s*)"), options );
-	m_RegEx[wxT("regexEndDo")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)((do)|(forall))((\\s+)([a-zA-Z0-9_]+))?(\\s*)"), options );
-	m_RegEx[wxT("regexDo")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?(do)((\\s+)([a-zA-Z0-9_])(.+))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexForall")] = new wxRegEx( wxT("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?((forall)|((do)(\\s+)(while)))(\\s*)(\\([^\\)]+\\))(\\s*)$"), options );
-	m_RegEx[wxT("regexEndSelect")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(select)((\\s+)([a-zA-Z0-9_]+))?(\\s*)"), options );
-	m_RegEx[wxT("regexSelectCase")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((select)(\\s*)(case))(\\s*)(\\()(.+)(\\))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexSelectType")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((select)(\\s*)(type))(\\s*)(\\()(.+)(\\))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexCase")] = new wxRegEx( wxT("^(\\s*)((((case)|(((type)|(class))(\\s+)(is)))(\\s*)(\\()(.+)(\\))((\\s+)([a-zA-Z0-9_]+))?)|(((case)|(class))(\\s+)(default)((\\s+)([a-zA-Z0-9_]+))?))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexIfThen")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((if)(\\s*)(\\()(.+)(\\))(\\s*)(then))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexElse")] = new wxRegEx( wxT("^(\\s*)(else)(\\s*)(((\\s+)([a-zA-Z0-9_]+))|((if)(\\s*)(\\()(.+)(\\))(\\s*)(then)((\\s+)([a-zA-Z0-9_]+))?))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndIf")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(if)((\\s+)([a-zA-Z0-9_]+))?(\\s*)"), options );
-	m_RegEx[wxT("regexWhere")] = new wxRegEx( wxT("^([\\s\\t]*)([0-9]*)([\\s\\t]*)(([a-z0-9_]+)(\\s*)(:)(\\s*))?(where)(\\s*)(\\([^\\)]+\\))(\\s*)$"), options );
-	m_RegEx[wxT("regexElseWhere")] = new wxRegEx( wxT("^(\\s*)(else)(\\s*)(where)(((\\s+)([a-zA-Z0-9_]+))|((\\s*)\\((.+)\\)((\\s+)([a-zA-Z0-9_]+))?))?((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndWhere")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(where)((\\s+)([a-zA-Z0-9_]+))?(\\s*)"), options );
-	m_RegEx[wxT("regexEndOnly")] = new wxRegEx( wxT("^(\\s*)(end)((\\s*)!(.*))?(\\s*)$"), options );
+    wxString startLabel = "^([\\s\\t]*)(([0-9]+)([\\s\\t]+)|(([a-z0-9_]+)([\\s\\t]*)(:)))?([\\s\\t]*)";
 
-	m_RegEx[wxT("regexAssociate")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?(associate)(\\s*)\\((.+)\\)((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndAssociate")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(associate)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
+	m_RegEx["regexMultiLines"] = new wxRegEx( "(&)((\r\n)|(\r)|(\n))?$", options );
+	m_RegEx["regexEndProgram"] = new wxRegEx( "^(\\s*)(end)(\\s*)((program)|((block)(\\s*)(data))|(subroutine)|(function))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexProgram"] = new wxRegEx( "^(\\s*)((program)|((block)(\\s*)(data)))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndModule"] = new wxRegEx( "^(\\s*)(end)(\\s*)(module)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexModule"] = new wxRegEx( "^(\\s*)(module)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexInterface"] = new wxRegEx( "^(\\s*)((abstract)(\\s+))?(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndInterface"] = new wxRegEx( "^(\\s*)(end)(\\s*)(interface)((\\s+)(([a-zA-Z0-9_]+)|((assignment)(\\s*)\\((\\s*)(a+)(\\s*)\\))|((operator)(\\s*)\\((.+)\\))|((write|read)(\\s*)\\((.+)\\))))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexContains"] = new wxRegEx( "^(\\s*)(contains)((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexSubroutine"] = new wxRegEx( "^(\\s*)(((pure)|(impure)|(elemental)|(recursive)|(non_recursive)|(module))(\\s+))*((\\s+))?(subroutine)(\\s+)([a-zA-Z0-9_]+)((\\s*)(\\()(\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)(\\))(\\s*))?", options );
+	m_RegEx["regexFunction"] = new wxRegEx( "^(((.*)(\\s+))|(\\s*)){1}(function)(\\s+)([a-zA-Z0-9_]+)(\\s*)\\((\\s*)(([a-zA-Z0-9_]+)((\\s*)(,)(\\s*)([a-zA-Z0-9_]+))*)?(\\s*)\\)", options );
+	m_RegEx["regexType"] = new wxRegEx( "^(\\s*)((type)(\\s*)(\\()(\\s*)([a-zA-Z0-9_]+)(\\s*)(\\)))(\\s*)", options );
+#if wxCHECK_VERSION(3, 1, 6)
+	m_RegEx["regexTypeDefine"] = new wxRegEx( "^(\\s*)((type)\\b((\\s*),(\\s*)((public)|(private)|(protected)))?((\\s*),(\\s*)((abstract)|((extends)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\))))?((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-z0-9_]+)(\\s*)\\)))?((\\s*)(::)?(\\s*)([a-zA-Z0-9_]+)))(\\s*)", options );
+#else
+	m_RegEx["regexTypeDefine"] = new wxRegEx( "^(\\s*)((type)\\M((\\s*),(\\s*)((public)|(private)|(protected)))?((\\s*),(\\s*)((abstract)|((extends)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\))))?((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-z0-9_]+)(\\s*)\\)))?((\\s*)(::)?(\\s*)([a-zA-Z0-9_]+)))(\\s*)", options );
+#endif
+	m_RegEx["regexEndType"] = new wxRegEx( "^(\\s*)(end)(\\s*)(type)((\\s+)([a-zA-Z0-9_]+))?(\\s*)", options );
+	m_RegEx["regexEndDo"] = new wxRegEx( "^(\\s*)(end)(\\s*)((do)|(forall))((\\s+)([a-zA-Z0-9_]+))?(\\s*)", options );
+	m_RegEx["regexDo"] = new wxRegEx( startLabel + "(do)((\\s+)([a-zA-Z0-9_])(.+))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexForall"] = new wxRegEx( startLabel + "((forall)|((do)(\\s+)(while)))(\\s*)(\\([^\\)]+\\))(\\s*)$", options );
+	m_RegEx["regexEndSelect"] = new wxRegEx( "^(\\s*)(end)(\\s*)(select)((\\s+)([a-zA-Z0-9_]+))?(\\s*)", options );
+	m_RegEx["regexSelectCase"] = new wxRegEx( startLabel + "((select)(\\s*)(case))(\\s*)(\\()(.+)(\\))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexSelectType"] = new wxRegEx( startLabel + "((select)(\\s*)(type))(\\s*)(\\()(.+)(\\))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexCase"] = new wxRegEx( "^(\\s*)((((case)|(((type)|(class))(\\s+)(is)))(\\s*)(\\()(.+)(\\))((\\s+)([a-zA-Z0-9_]+))?)|(((case)|(class))(\\s+)(default)((\\s+)([a-zA-Z0-9_]+))?))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexIfThen"] = new wxRegEx( startLabel + "((if)(\\s*)(\\()(.+)(\\))(\\s*)(then))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexElse"] = new wxRegEx( "^(\\s*)(else)(\\s*)(((\\s+)([a-zA-Z0-9_]+))|((if)(\\s*)(\\()(.+)(\\))(\\s*)(then)((\\s+)([a-zA-Z0-9_]+))?))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndIf"] = new wxRegEx( "^(\\s*)(end)(\\s*)(if)((\\s+)([a-zA-Z0-9_]+))?(\\s*)", options );
+	m_RegEx["regexWhere"] = new wxRegEx( startLabel + "(where)(\\s*)(\\([^\\)]+\\))(\\s*)$", options );
+	m_RegEx["regexElseWhere"] = new wxRegEx( "^(\\s*)(else)(\\s*)(where)(((\\s+)([a-zA-Z0-9_]+))|((\\s*)\\((.+)\\)((\\s+)([a-zA-Z0-9_]+))?))?((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndWhere"] = new wxRegEx( "^(\\s*)(end)(\\s*)(where)((\\s+)([a-zA-Z0-9_]+))?(\\s*)", options );
+	m_RegEx["regexEndOnly"] = new wxRegEx( "^(\\s*)(end)((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexCritical")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((block)|(critical))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndCritical")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)((block)|(critical))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
+	m_RegEx["regexAssociate"] = new wxRegEx( startLabel + "(associate)(\\s*)\\((.+)\\)((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndAssociate"] = new wxRegEx( "^(\\s*)(end)(\\s*)(associate)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexSubmodule")] = new wxRegEx( wxT("^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((submodule)(\\s*)\\((.+)\\)(\\s*)([a-zA-Z0-9_]+))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndSubmodule")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(submodule)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
+	m_RegEx["regexCritical"] = new wxRegEx( startLabel + "((block)|(critical))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndCritical"] = new wxRegEx( "^(\\s*)(end)(\\s*)((block)|(critical))((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexModuleProcedure")] = new wxRegEx( wxT("^(\\s*)(module(\\s*)procedure)(\\s*)([a-zA-Z0-9_]+)((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndProcedure")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(procedure)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$"), options );
+	m_RegEx["regexSubmodule"] = new wxRegEx( "^(\\s*)(([a-zA-Z0-9_]+)(\\s*)(:)(\\s*))?((submodule)(\\s*)\\((.+)\\)(\\s*)([a-zA-Z0-9_]+))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndSubmodule"] = new wxRegEx( "^(\\s*)(end)(\\s*)(submodule)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexEnum")] = new wxRegEx( wxT("^(\\s*)(enum)((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\)))((\\s*)!(.*))?(\\s*)$"), options );
-	m_RegEx[wxT("regexEndEnum")] = new wxRegEx( wxT("^(\\s*)(end)(\\s*)(enum)((\\s*)!(.*))?(\\s*)$"), options );
+	m_RegEx["regexModuleProcedure"] = new wxRegEx( "^(\\s*)(module(\\s*)procedure)(\\s*)([a-zA-Z0-9_]+)((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndProcedure"] = new wxRegEx( "^(\\s*)(end)(\\s*)(procedure)((\\s+)([a-zA-Z0-9_]+))?((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexComment")] = new wxRegEx( wxT("(!(.*))((\r\n)|(\r)|(\n))?$"), options | wxRE_NEWLINE );
+	m_RegEx["regexEnum"] = new wxRegEx( "^(\\s*)(enum)((\\s*),(\\s*)((bind)(\\s*)\\((\\s*)([a-zA-Z0-9_]+)(\\s*)\\)))((\\s*)!(.*))?(\\s*)$", options );
+	m_RegEx["regexEndEnum"] = new wxRegEx( "^(\\s*)(end)(\\s*)(enum)((\\s*)!(.*))?(\\s*)$", options );
 
-	m_RegEx[wxT("regexBlankLine")] = new wxRegEx( wxT("([ \t]+)((\r\n)|(\r)|(\n))"), options | wxRE_NEWLINE );
+	m_RegEx["regexComment"] = new wxRegEx( "(!(.*))((\r\n)|(\r)|(\n))?$", options | wxRE_NEWLINE );
 
-	m_RegEx[wxT("regexPreprocessorC")] = new wxRegEx( wxT("^#(define|undef|ifdef|ifndef|if|elif|else|endif|include|error|warning|line)"), options );
+	m_RegEx["regexBlankLine"] = new wxRegEx( "([ \t]+)((\r\n)|(\r)|(\n))", options | wxRE_NEWLINE );
+
+	m_RegEx["regexPreprocessorC"] = new wxRegEx( "^#(define|undef|ifdef|ifndef|if|elif|else|endif|include|error|warning|line)", options );
 
 }
 
@@ -240,7 +251,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
     src.Trim(true); // trim from right
 
     // Program, Interface, Bblock Data, Subroutine, Function
-    if ( m_RegEx[wxT("regexEndProgram")]->Matches( src ) )
+    if ( m_RegEx["regexEndProgram"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndProgramBlockSubFun;
         if (m_IndentProgFunSub)
@@ -249,19 +260,19 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentCur = 0;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexEndInterface")]->Matches( src ) )
+    else if ( m_RegEx["regexEndInterface"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndInterface;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-	else if ( m_RegEx[wxT("regexInterface")]->Matches( src ) )
+	else if ( m_RegEx["regexInterface"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcInterface;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexSubroutine")]->Matches( src ) )
+    else if ( m_RegEx["regexSubroutine"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcSubroutine;
         deltaIndentCur = 0;
@@ -270,7 +281,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexFunction")]->Matches( src ) )
+    else if ( m_RegEx["regexFunction"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcFunction;
         deltaIndentCur = 0;
@@ -279,7 +290,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexProgram")]->Matches( src ) )
+    else if ( m_RegEx["regexProgram"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcProgramBlock;
         deltaIndentCur = 0;
@@ -289,7 +300,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentNext = 0;
         return ;
     }
-    else if ( m_RegEx[wxT("regexEndModule")]->Matches( src ) )
+    else if ( m_RegEx["regexEndModule"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndModule;
         if (m_IndentModule)
@@ -298,7 +309,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentCur = 0;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexModule")]->Matches( src ) )
+    else if ( m_RegEx["regexModule"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcModule;
         deltaIndentCur = 0;
@@ -307,7 +318,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexContains")]->Matches( src ) )
+    else if ( m_RegEx["regexContains"]->Matches( src ) )
     {
         FormatIndentCodeTree::CodeTreeKind pk = m_CodeTree.GetParentKind();
 
@@ -341,7 +352,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentNext = 1;
         }
     }
-    else if ( m_RegEx[wxT("regexEndDo")]->Matches( src ) )
+    else if ( m_RegEx["regexEndDo"]->Matches( src ) )
     {
         // do while # end do
         // forall() # end forall
@@ -350,26 +361,26 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexDo")]->Matches( src ) )
+    else if ( m_RegEx["regexDo"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcDoForall;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexForall")]->Matches( src ) )
+    else if ( m_RegEx["regexForall"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcDoForall;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndSelect")]->Matches( src ) )
+    else if ( m_RegEx["regexEndSelect"]->Matches( src ) )
     {
         // select case # case | case dafault # end select
         iKind = FormatIndentCodeTree::ctcEndSeclectCase;
         deltaIndentCur = -2;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexSelectCase")]->Matches( src ) )
+    else if ( m_RegEx["regexSelectCase"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcSeclectCase;
         deltaIndentCur = 0;
@@ -378,7 +389,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexSelectType")]->Matches( src ) )
+    else if ( m_RegEx["regexSelectType"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcSeclectType;
         deltaIndentCur = 0;
@@ -387,85 +398,85 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexCase")]->Matches( src ) )
+    else if ( m_RegEx["regexCase"]->Matches( src ) )
     {
         deltaIndentCur = -1;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexIfThen")]->Matches( src ) )
+    else if ( m_RegEx["regexIfThen"]->Matches( src ) )
     {
         // if ## if then # else # end if
         iKind = FormatIndentCodeTree::ctcIfThen;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexElse")]->Matches( src ) )
+    else if ( m_RegEx["regexElse"]->Matches( src ) )
     {
         deltaIndentCur = -1;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndIf")]->Matches( src ) )
+    else if ( m_RegEx["regexEndIf"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndIf;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexWhere")]->Matches( src ) )
+    else if ( m_RegEx["regexWhere"]->Matches( src ) )
     {
         // where elsewhere
         iKind = FormatIndentCodeTree::ctcWhere;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexElseWhere")]->Matches( src ) )
+    else if ( m_RegEx["regexElseWhere"]->Matches( src ) )
     {
         deltaIndentCur = -1;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndWhere")]->Matches( src ) )
+    else if ( m_RegEx["regexEndWhere"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndWhere;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexEndType")]->Matches( src ) )
+    else if ( m_RegEx["regexEndType"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndTypeDefine;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-    else if ( ( false == m_RegEx[wxT("regexType")]->Matches( src ) ) &&
-            ( m_RegEx[wxT("regexTypeDefine")]->Matches( src ) ) )
+    else if ( ( false == m_RegEx["regexType"]->Matches( src ) ) &&
+            ( m_RegEx["regexTypeDefine"]->Matches( src ) ) )
     {
         iKind = FormatIndentCodeTree::ctcTypeDefine;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndAssociate")]->Matches( src ) )
+    else if ( m_RegEx["regexEndAssociate"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndAssociate;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-	else if ( m_RegEx[wxT("regexAssociate")]->Matches( src ) )
+	else if ( m_RegEx["regexAssociate"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcAssociate;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndCritical")]->Matches( src ) )
+    else if ( m_RegEx["regexEndCritical"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndCritical;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-	else if ( m_RegEx[wxT("regexCritical")]->Matches( src ) )
+	else if ( m_RegEx["regexCritical"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcCritical;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-	else if ( m_RegEx[wxT("regexSubmodule")]->Matches( src ) )
+	else if ( m_RegEx["regexSubmodule"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcSubmodule;
         deltaIndentCur = 0;
@@ -474,7 +485,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 0;
     }
-	else if ( m_RegEx[wxT("regexEndSubmodule")]->Matches( src ) )
+	else if ( m_RegEx["regexEndSubmodule"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndSubmodule;
         if (m_IndentModule)
@@ -483,25 +494,25 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentCur = 0;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexEndEnum")]->Matches( src ) )
+    else if ( m_RegEx["regexEndEnum"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndEnum;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-	else if ( m_RegEx[wxT("regexEnum")]->Matches( src ) )
+	else if ( m_RegEx["regexEnum"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEnum;
         deltaIndentCur = 0;
         deltaIndentNext = 1;
     }
-    else if ( m_RegEx[wxT("regexEndOnly")]->Matches( src ) )
+    else if ( m_RegEx["regexEndOnly"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEnd;
         deltaIndentCur = -1;
         deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexModuleProcedure")]->Matches( src ) &&
+    else if ( m_RegEx["regexModuleProcedure"]->Matches( src ) &&
               m_CodeTree.GetParentKind() == FormatIndentCodeTree::ctcSubmodule )
     {
         iKind = FormatIndentCodeTree::ctcModuleProcedure;
@@ -511,7 +522,7 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
         else
             deltaIndentNext = 0;
     }
-    else if ( m_RegEx[wxT("regexEndProcedure")]->Matches( src ) )
+    else if ( m_RegEx["regexEndProcedure"]->Matches( src ) )
     {
         iKind = FormatIndentCodeTree::ctcEndProcedure;
         if (m_IndentProgFunSub)
@@ -520,9 +531,6 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
             deltaIndentCur = 0;
         deltaIndentNext = 0;
     }
-
-
-
 }
 
 // Special code to compare strings which doesn't care
@@ -530,17 +538,17 @@ void IndentEstimator::CalcFortranIndentLine( const wxString & srcLine, int & del
 bool IndentEstimator::BuffersDiffer( const wxString &a, const wxString &b )
 {
     wxString acopy = a;
-    acopy.Replace(_T("\r\n"), _T("\n"));
-    acopy.Replace(_T("\r"), _T("\n"));
-    wxStringTokenizer aTokenizer(acopy, _T("\n"), wxTOKEN_RET_EMPTY_ALL);
+    acopy.Replace("\r\n", "\n");
+    acopy.Replace("\r", "\n");
+    wxStringTokenizer aTokenizer(acopy, "\n", wxTOKEN_RET_EMPTY_ALL);
     std::vector<wxString> aLines;
     while (aTokenizer.HasMoreTokens())
         aLines.push_back(aTokenizer.GetNextToken());
 
     wxString bcopy = b;
-    bcopy.Replace(_T("\r\n"), _T("\n"));
-    bcopy.Replace(_T("\r"), _T("\n"));
-    wxStringTokenizer bTokenizer(bcopy, _T("\n"), wxTOKEN_RET_EMPTY_ALL);
+    bcopy.Replace("\r\n", "\n");
+    bcopy.Replace("\r", "\n");
+    wxStringTokenizer bTokenizer(bcopy, "\n", wxTOKEN_RET_EMPTY_ALL);
     std::vector<wxString> bLines;
     while (bTokenizer.HasMoreTokens())
         bLines.push_back(bTokenizer.GetNextToken());
@@ -563,29 +571,29 @@ bool IndentEstimator::BuffersDiffer( const wxString &a, const wxString &b )
 
 bool IndentEstimator::GetIsHasLineContinuation( const wxString & srcLine )
 {
-    wxASSERT( m_RegEx[wxT("regexMultiLines")] );
-    return m_RegEx[wxT("regexMultiLines")]->Matches( srcLine );
+    wxASSERT( m_RegEx["regexMultiLines"] );
+    return m_RegEx["regexMultiLines"]->Matches( srcLine );
 }
 
 
 void IndentEstimator::DelLineContinuation( wxString & srcLine )
 {
-    wxASSERT( m_RegEx[wxT("regexMultiLines")] );
-    m_RegEx[wxT("regexMultiLines")]->ReplaceAll( &srcLine, wxT("") );
+    wxASSERT( m_RegEx["regexMultiLines"] );
+    m_RegEx["regexMultiLines"]->ReplaceAll( &srcLine, "" );
 }
 
 
 void IndentEstimator::DelComment( wxString & srcLine )
 {
-    wxASSERT( m_RegEx[wxT("regexComment")] );
-    m_RegEx[wxT("regexComment")]->ReplaceAll( &srcLine, wxT("") );
+    wxASSERT( m_RegEx["regexComment"] );
+    m_RegEx["regexComment"]->ReplaceAll( &srcLine, "" );
 }
 
 bool IndentEstimator::GetIsHasPreprocessor(const wxString & srcLine)
 {
     bool bRet = false;
-    wxASSERT( m_RegEx[wxT("regexPreprocessorC")] );
-    bRet = m_RegEx[wxT("regexPreprocessorC")]->Matches( srcLine );
+    wxASSERT( m_RegEx["regexPreprocessorC"] );
+    bRet = m_RegEx["regexPreprocessorC"]->Matches( srcLine );
 
     return bRet;
 }
@@ -595,7 +603,7 @@ void IndentEstimator::PrepareLine(const wxString& srcIn, wxArrayString& srcLines
     wxString src = srcIn;
     CutStringAndComment(src);
 
-    wxStringTokenizer tokenizer(src, _T(";"), wxTOKEN_STRTOK);
+    wxStringTokenizer tokenizer(src, ";", wxTOKEN_STRTOK);
     while (tokenizer.HasMoreTokens())
     {
         wxString token = tokenizer.GetNextToken();
@@ -628,7 +636,7 @@ void IndentEstimator::CutStringAndComment(wxString& src)
             wxString str2 = src.Mid(i1+1);
             int i2 = str2.Find(curChar);
             if (i2 != wxNOT_FOUND)
-                src = src.Mid(0,i1) + _T("$_$") + str2.Mid(i2+1);
+                src = src.Mid(0,i1) + "$_$" + str2.Mid(i2+1);
             else
                 src = src.Mid(0,i1);
         }
@@ -636,7 +644,7 @@ void IndentEstimator::CutStringAndComment(wxString& src)
             break;
     }
 
-    src.Replace(_T("$_$"), _T("\" \""));
+    src.Replace("$_$", "\" \"");
     src = src.BeforeFirst('!').Trim();
     if (src.IsEmpty())
         return;
@@ -666,18 +674,18 @@ void IndentEstimator::CutStringAndComment(wxString& src)
 
 void IndentEstimator::ReadConfig()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
 
-    m_IndentProgFunSub = cfg->ReadBool(_T("/indent_prog_fun_sub_after"), true);
-    m_IndentModule = cfg->ReadBool(_T("/indent_module_after"), true);
-    m_IndentContainsModule = cfg->ReadBool(_T("/indent_contains_module"), true);
-    m_IndentContainsModuleAfter = cfg->ReadBool(_T("/indent_contains_module_after"), true);
-    m_IndentContainsProcedure = cfg->ReadBool(_T("/indent_contains_procedure"), true);
-    m_IndentContainsProcedureAfter = cfg->ReadBool(_T("/indent_contains_procedure_after"), true);
-    m_IndentContainsTypedef = cfg->ReadBool(_T("/indent_contains_typedef"), true);
-    m_IndentContainsTypedefAfter = cfg->ReadBool(_T("/indent_contains_typedef_after"), true);
-    m_IndentSelectCaseAfter = cfg->ReadBool(_T("/indent_selectcase_after"), true);
-    m_IndentSelectTypeAfter = cfg->ReadBool(_T("/indent_selecttype_after"), true);
+    m_IndentProgFunSub = cfg->ReadBool("/indent_prog_fun_sub_after", true);
+    m_IndentModule = cfg->ReadBool("/indent_module_after", true);
+    m_IndentContainsModule = cfg->ReadBool("/indent_contains_module", true);
+    m_IndentContainsModuleAfter = cfg->ReadBool("/indent_contains_module_after", true);
+    m_IndentContainsProcedure = cfg->ReadBool("/indent_contains_procedure", true);
+    m_IndentContainsProcedureAfter = cfg->ReadBool("/indent_contains_procedure_after", true);
+    m_IndentContainsTypedef = cfg->ReadBool("/indent_contains_typedef", true);
+    m_IndentContainsTypedefAfter = cfg->ReadBool("/indent_contains_typedef_after", true);
+    m_IndentSelectCaseAfter = cfg->ReadBool("/indent_selectcase_after", true);
+    m_IndentSelectTypeAfter = cfg->ReadBool("/indent_selecttype_after", true);
 }
 
 

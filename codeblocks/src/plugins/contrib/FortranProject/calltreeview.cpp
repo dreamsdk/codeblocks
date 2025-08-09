@@ -15,6 +15,8 @@
 #endif
 #include <cmath>
 
+#include <cbstyledtextctrl.h>
+
 #include "fortranproject.h"
 #include "lineaddress.h"
 
@@ -29,6 +31,7 @@ CallTreeToken::CallTreeToken(TokenFlat* tf, CallTreeToken* parent)
     m_TokenAccess = tf->m_TokenAccess;
 
     m_pParent     = parent;
+    wereChildrenConnnected = false;
 }
 
 CallTreeToken::CallTreeToken(TokenF* tf, CallTreeToken* parent)
@@ -42,6 +45,7 @@ CallTreeToken::CallTreeToken(TokenF* tf, CallTreeToken* parent)
     m_TokenAccess = tf->m_TokenAccess;
 
     m_pParent     = parent;
+    wereChildrenConnnected = false;
 }
 
 CTVData::CTVData(TokenF* token)
@@ -80,12 +84,12 @@ END_EVENT_TABLE()
 
 CallTreeView::CallTreeView(wxWindow* parentWindow, FortranProject* forproj)
 {
-    wxXmlResource::Get()->LoadPanel(this, parentWindow, _T("pnlCallTreeView"));
+    wxXmlResource::Get()->LoadPanel(this, parentWindow, "pnlCallTreeView");
     m_pTree = XRCCTRL(*this, "treeCallTreeView", wxTreeCtrl);
 
     int targetHeight = floor(16 * cbGetActualContentScaleFactor(*parentWindow));
     m_pImgList = new FPImageList(targetHeight);
-    m_pTree->SetImageList(m_pImgList->GetImageList());
+    m_pTree->SetImageList(m_pImgList->GetWxImageList());
 
     m_pFortranProject = forproj;
     m_IsCallTree = true;
@@ -102,7 +106,7 @@ void CallTreeView::ShowCallTree(TokensArrayF* tokArr)
     RereadOptions();
     m_IsCallTree = true;
     m_pTree->DeleteAllItems();
-    wxTreeItemId root = m_pTree->AddRoot(_("Call Tree"));
+    wxTreeItemId root = m_pTree->AddRoot(_("Call tree"));
 
     ShowCallTreeChildren(tokArr, root, 0);
 }
@@ -112,7 +116,7 @@ void CallTreeView::ShowCalledByTree(TokensArrayF* tokArr)
     RereadOptions();
     m_IsCallTree = false;
     m_pTree->DeleteAllItems();
-    wxTreeItemId root = m_pTree->AddRoot(_("Called-By Tree"));
+    wxTreeItemId root = m_pTree->AddRoot(_("Called-By tree"));
 
     ShowCallTreeChildren(tokArr, root, 0);
 }
@@ -152,6 +156,7 @@ void CallTreeView::ShowCallTreeChildren(TokensArrayF* tokArr, wxTreeItemId& pare
         if (callLevel == 1)
             m_pTree->Expand(addedId);
     }
+    callLevel -= 1;
 }
 
 wxTreeItemId CallTreeView::InsertTreeItem(wxTreeItemId& parent, const wxString& displayName, int imageIdx, wxTreeItemData* tidata)
@@ -288,8 +293,8 @@ void CallTreeView::OnChangeSort(wxCommandEvent& event)
     else if (event.GetId() == idMenuSortAlphabetically)
         m_SortAlphabetically = event.IsChecked();
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
-    cfg->Write(_T("/calltree_sort_alphabetically"), m_SortAlphabetically);
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
+    cfg->Write("/calltree_sort_alphabetically", m_SortAlphabetically);
 
     UpdateView();
 }
@@ -328,8 +333,8 @@ void CallTreeView::OnGoToCall(wxCommandEvent& event)
 
 void CallTreeView::RereadOptions()
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
-    m_SortAlphabetically = cfg->ReadBool(_("/calltree_sort_alphabetically"), true);
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
+    m_SortAlphabetically = cfg->ReadBool("/calltree_sort_alphabetically", true);
 }
 
 void CallTreeView::UpdateView()

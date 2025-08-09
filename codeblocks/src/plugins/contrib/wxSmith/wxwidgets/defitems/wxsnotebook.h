@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8148 $
-* $Id: wxsnotebook.h 8148 2012-07-19 19:50:28Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsnotebook.h $
+* $Revision: 13547 $
+* $Id: wxsnotebook.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsnotebook.h $
 */
 
 #ifndef WXSNOTEBOOK_H
@@ -34,12 +34,12 @@ class wxsNotebook : public wxsContainer
 
     private:
 
-        virtual void OnEnumContainerProperties(long Flags);
+        virtual void OnEnumContainerProperties(long _Flags);
         virtual bool OnCanAddChild(wxsItem* Item,bool ShowMessage);
         virtual wxsPropertyContainer* OnBuildExtra();
         virtual wxString OnXmlGetExtraObjectClass();
         virtual void OnAddChildQPP(wxsItem* Child,wxsAdvQPP* QPP);
-        virtual wxObject* OnBuildPreview(wxWindow* Parent,long PreviewFlags);
+        virtual wxObject* OnBuildPreview(wxWindow* Parent,long _Flags);
         virtual void OnBuildCreatingCode();
         virtual bool OnMouseClick(wxWindow* Preview,int PosX,int PosY);
         virtual bool OnIsChildPreviewVisible(wxsItem* Child);

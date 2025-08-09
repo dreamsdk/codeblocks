@@ -270,7 +270,7 @@ bool CheckRequirements(wxString& ExeTarget, wxString &WorkDir, wxString& Command
     {
         if (Target->GetHostApplication().IsEmpty())
         {
-            wxString msg = _("You must select a host application to \"run\" a library wuth Valgrind");
+            wxString msg = _("You must select a host application to \"run\" a library with Valgrind");
             cbMessageBox(msg, _("Error"), wxICON_ERROR | wxOK, Manager::Get()->GetAppWindow());
             Manager::Get()->GetLogManager()->DebugLog(msg);
             return false;
@@ -534,6 +534,7 @@ void Valgrind::OnMemCheckOpenLog(wxCommandEvent& /*event*/)
     wxFileDialog Dialog(Manager::Get()->GetAppFrame(), _("Choose XML log file"),
                         wxEmptyString, wxEmptyString,
                         wxT("*.xml"), wxFD_OPEN);
+    PlaceWindow(&Dialog);
     if (Dialog.ShowModal() == wxID_OK)
     {
         TiXmlDocument Doc;

@@ -3,7 +3,7 @@
 // Purpose:     XRC resource for wxFlatNotebook
 // Author:      Armel Asselin
 // Created:     2006/10/30
-// RCS-ID:      $Id: xh_fnb.cpp 7947 2012-04-28 10:01:45Z mortenmacfly $
+// RCS-ID:      $Id: xh_fnb.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Copyright:   (c) 2006 Armel Asselin (copied from Vaclav Slavik xh_notbk)
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
@@ -14,10 +14,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include "wx/wxprec.h"
-
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
 
 #if wxUSE_XRC
 

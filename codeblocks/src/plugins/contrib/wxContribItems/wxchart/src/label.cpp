@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: label.cpp 10024 2014-11-06 09:23:26Z jenslody $
+// RCS-ID:      $Id: label.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -20,10 +20,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -70,8 +66,8 @@ void wxLabel::Draw(
 	//-----------------------------------------------------------------------
 	wxFont font( 8, wxFONTFAMILY_ROMAN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL );
     hp->SetFont( font );
-    hp->SetBrush( wxBrush(c, wxSOLID) );
-    hp->SetPen( wxPen(LBL_LINE_COL, 1, wxSOLID) );
+    hp->SetBrush( wxBrush(c, wxBRUSHSTYLE_SOLID));
+    hp->SetPen( wxPen(LBL_LINE_COL, 1, wxPENSTYLE_SOLID));
 
 	//-----------------------------------------------------------------------
 	// Get the size of the label for the specify font

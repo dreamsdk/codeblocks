@@ -62,9 +62,9 @@ SpellCheckSettingsPanel::SpellCheckSettingsPanel(wxWindow* parent, SpellCheckerC
     Button3 = (wxButton*)FindWindow(XRCID("ID_BUTTON_BITMAPS"));
     HyperlinkCtrl1 = (wxHyperlinkCtrl*)FindWindow(XRCID("ID_HYPERLINKCTRL1"));
 
-    Connect(XRCID("ID_BUTTON_DICTIONARIES"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SpellCheckSettingsPanel::OnChooseDirectory);
-    Connect(XRCID("ID_BUTTON_THESAURI"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SpellCheckSettingsPanel::OnChooseDirectory);
-    Connect(XRCID("ID_BUTTON_BITMAPS"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&SpellCheckSettingsPanel::OnChooseDirectory);
+    Connect(XRCID("ID_BUTTON_DICTIONARIES"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(SpellCheckSettingsPanel::OnChooseDirectory));
+    Connect(XRCID("ID_BUTTON_THESAURI"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(SpellCheckSettingsPanel::OnChooseDirectory));
+    Connect(XRCID("ID_BUTTON_BITMAPS"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(SpellCheckSettingsPanel::OnChooseDirectory));
     //*)
 
     Connect(XRCID("ID_TEXTCTRL1"), wxEVT_COMMAND_TEXT_UPDATED, (wxObjectEventFunction)&SpellCheckSettingsPanel::OnChangeDictPathText);
@@ -75,13 +75,13 @@ SpellCheckSettingsPanel::SpellCheckSettingsPanel(wxWindow* parent, SpellCheckerC
 
     InitDictionaryChoice();
 
-    m_TextDictPath->SetToolTip(_T("Path to dictionary (.aff and .dic) files"));
-    m_TextThPath->SetToolTip(_T("Path to thesaurus (th_*.dat and th_*.idx) files"));
-    m_TextBitmapPath->SetToolTip(_T("Path to dictionary-switcher bitmaps (.png)"));
+    m_TextDictPath->SetToolTip(_("Path to dictionary (.aff and .dic) files"));
+    m_TextThPath->SetToolTip(_("Path to thesaurus (th_*.dat and th_*.idx) files"));
+    m_TextBitmapPath->SetToolTip(_("Path to dictionary-switcher bitmaps (.png)"));
 
-    Button1->SetToolTip(_T("Select path to dictionary (.aff and .dic) files"));
-    Button2->SetToolTip(_T("Select path to thesaurus (th_*.dat and th_*.idx) files"));
-    Button3->SetToolTip(_T("Select path to dictionary-switcher bitmaps (.png)"));
+    Button1->SetToolTip(_("Select path to dictionary (.aff and .dic) files"));
+    Button2->SetToolTip(_("Select path to thesaurus (th_*.dat and th_*.idx) files"));
+    Button3->SetToolTip(_("Select path to dictionary-switcher bitmaps (.png)"));
 
 
 #ifndef wxUSE_STATUSBAR
@@ -174,25 +174,26 @@ void SpellCheckSettingsPanel::OnCancel()
 
 void SpellCheckSettingsPanel::OnChooseDirectory(wxCommandEvent& event)
 {
-    wxString message = _T("Choose the directory containing ");
+    wxString message;
     wxTextCtrl *textctrl;
 
     if ( event.GetId() == XRCID("ID_BUTTON_DICTIONARIES") )
     {
-        message += _T("the dictionaries");
+        message = _("Choose the directory containing the dictionaries");
         textctrl = m_TextDictPath;
         //defaultDir = m_TextDictPath->GetValue();
     }
     else if ( event.GetId() == XRCID("ID_BUTTON_THESAURI") )
     {
-        message += _T("the thesaurus files");
+        message = _("Choose the directory containing the thesaurus files");
         textctrl = m_TextThPath;
     }
     else //XRCID("ID_BUTTON_BITMAPS")
     {
-        message += _T("the bitmaps");
+        message = _("Choose the directory containing the bitmaps");
         textctrl = m_TextBitmapPath;
     }
+
     wxString path = textctrl->GetValue();
     Manager::Get()->GetMacrosManager()->ReplaceEnvVars(path);
     wxDirDialog dlg(this, message, path, wxDD_DIR_MUST_EXIST);

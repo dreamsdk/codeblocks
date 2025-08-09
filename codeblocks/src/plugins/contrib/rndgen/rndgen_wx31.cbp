@@ -4,13 +4,13 @@
 	<Project>
 		<Option title="rndgen wx3.1.x" />
 		<Option pch_mode="2" />
-		<Option compiler="gnu_gcc_compiler_32-bit" />
+		<Option compiler="gcc" />
 		<Build>
 			<Target title="default">
 				<Option output="../../../devel31/share/codeblocks/plugins/rndgen" prefix_auto="1" extension_auto="1" />
 				<Option object_output="../../../.objs31/plugins/contrib/rndgen" />
 				<Option type="3" />
-				<Option compiler="gnu_gcc_compiler_32-bit" />
+				<Option compiler="gcc" />
 				<Option host_application="../../../devel31/codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
 				<Compiler>
@@ -54,7 +54,6 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-std=gnu++11" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-image-base" />
@@ -62,6 +61,10 @@
 		<Unit filename="manifest.xml" />
 		<Unit filename="rndgen.cpp" />
 		<Unit filename="rndgen.h" />
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<debugger />
+			<envvars />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10874 $
-* $Id: wxsversionconverter.cpp 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsversionconverter.cpp $
+* $Revision: 13381 $
+* $Id: wxsversionconverter.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsversionconverter.cpp $
 */
 
 #include "wxsversionconverter.h"
@@ -58,7 +58,7 @@ TiXmlElement* wxsVersionConverter::ConvertFromOldConfig(TiXmlElement* ConfigNode
     if ( cbMessageBox(_("This project uses old wxSmith configuration format\n"
                         "Would you like me to convert to new one?\n"),
                       _("wxSmith: Converting from old format"),
-                      wxYES_NO) != wxID_YES ) return 0;
+                      wxYES_NO) != wxID_YES ) return nullptr;
 
     TiXmlElement* NewConfig = Doc->InsertEndChild(TiXmlElement("wxSmith"))->ToElement();
     TiXmlElement* Resources = NewConfig->InsertEndChild(TiXmlElement("resources"))->ToElement();
@@ -97,7 +97,7 @@ TiXmlElement* wxsVersionConverter::ConvertFromOldConfig(TiXmlElement* ConfigNode
 
                 if ( Wxs && Class && Src && Hdr && Mode )
                 {
-                    if ( cbC2U(Mode) == _T("Source") ) Xrc = 0;
+                    if ( cbC2U(Mode) == _T("Source") ) Xrc = nullptr;
                     TiXmlElement* Res = Resources->InsertEndChild(TiXmlElement(
                         NodeName == _T("dialog") ? "wxDialog" :
                         NodeName == _T("frame")  ? "wxFrame" :
@@ -110,7 +110,7 @@ TiXmlElement* wxsVersionConverter::ConvertFromOldConfig(TiXmlElement* ConfigNode
                     Res->SetAttribute("name",Class);
                     Res->SetAttribute("language","CPP");
 
-                    ConvertOldWxsFile(Project->GetProjectPath()+_T("wxsmith/")+cbC2U(Wxs),Xrc!=0);
+                    ConvertOldWxsFile(Project->GetProjectPath()+_T("wxsmith/")+cbC2U(Wxs), Xrc != nullptr);
                     AdoptOldSourceFile(Project->GetProjectPath()+cbC2U(Src),cbC2U(Class));
                 }
             }
@@ -151,7 +151,7 @@ void wxsVersionConverter::GatherExtraFromOldResourceReq(TiXmlElement* Object,TiX
     {
         if ( Object->Attribute("class") && (Root || Object->Attribute("name")) )
         {
-            TiXmlElement* ThisExtra = 0;
+            TiXmlElement* ThisExtra = nullptr;
 
             // Checking if we got variable name
             if ( Object->Attribute("variable") && Object->Attribute("member") )
@@ -470,5 +470,5 @@ bool wxsVersionConverter::LineContainDirectivesOnly(const wxString& Code,int& Be
 TiXmlElement* wxsVersionConverter::Convert(cb_unused TiXmlElement* ConfigNode,cb_unused TiXmlDocument* Doc,cb_unused wxsProject* Project) const
 {
     // Currently there's only one version of wxSmith, no need to convert
-    return 0;
+    return nullptr;
 }

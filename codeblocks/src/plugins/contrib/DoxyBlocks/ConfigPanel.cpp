@@ -39,63 +39,63 @@
 
 
 //(*IdInit(ConfigPanel)
-const long ConfigPanel::ID_RADIOBOX_BLOCKCOMMENTS = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_BLOCKCOMMENT = wxNewId();
-const long ConfigPanel::ID_RADIOBOX_LINECOMMENTS = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_LINECOMMENT = wxNewId();
-const long ConfigPanel::ID_PANEL2 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PROJECTNUMBER = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_USEAUTOVERSION = wxNewId();
-const long ConfigPanel::ID_TEXTCTRLOUTPUT_DIRECTORY = wxNewId();
-const long ConfigPanel::ID_STATICTEXT5 = wxNewId();
-const long ConfigPanel::ID_CHOICE_OUTPUT_LANGUAGE = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_EXTRACT_ALL = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_EXTRACTPRIVATE = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_EXTRACTSTATIC = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_WARNINGS = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_WARN_IF_DOC_ERROR = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_WARN_IF_UNDOCUMENTED = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_WARN_NO_PARAMDOC = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_ALPHABETICAL_INDEX = wxNewId();
-const long ConfigPanel::ID_PANEL3 = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_HTML = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_HTMLHELP = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_CHI = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_BINARY_TOC = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_LATEX = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_RTF = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_MAN = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_XML = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_AUTOGEN_DEF = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_GENERATE_PERLMOD = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_ENABLE_PREPROCESSING = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_CLASS_DIAGRAMS = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_HAVE_DOT = wxNewId();
-const long ConfigPanel::ID_PANEL4 = wxNewId();
-const long ConfigPanel::ID_STATICTEXT2 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PATHDOXYGEN = wxNewId();
-const long ConfigPanel::ID_BUTTON_BROWSEDOXYGEN = wxNewId();
-const long ConfigPanel::ID_STATICTEXT4 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PATHDOXYWIZARD = wxNewId();
-const long ConfigPanel::ID_BUTTON_BROWSEDOXYWIZARD = wxNewId();
-const long ConfigPanel::ID_STATICTEXT3 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PATHHHC = wxNewId();
-const long ConfigPanel::ID_BUTTON_BROWSEHHC = wxNewId();
-const long ConfigPanel::ID_STATICTEXT6 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PATHDOT = wxNewId();
-const long ConfigPanel::ID_BUTTON_BROWSEDOT = wxNewId();
-const long ConfigPanel::ID_STATICTEXT7 = wxNewId();
-const long ConfigPanel::ID_TEXTCTRL_PATHCHMVIEWER = wxNewId();
-const long ConfigPanel::ID_BUTTON_BROWSECHMVIEWER = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_OVERWRITEDOXYFILE = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_PROMPTB4OVERWRITING = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_USEATINTAGS = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_LOADTEMPLATE = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_USEINTERNALVIEWER = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_RUNHTML = wxNewId();
-const long ConfigPanel::ID_CHECKBOX_RUNCHM = wxNewId();
-const long ConfigPanel::ID_PANEL1 = wxNewId();
-const long ConfigPanel::ID_NOTEBOOK_PREFS = wxNewId();
+const wxWindowID ConfigPanel::ID_RADIOBOX_BLOCKCOMMENTS = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_BLOCKCOMMENT = wxNewId();
+const wxWindowID ConfigPanel::ID_RADIOBOX_LINECOMMENTS = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_LINECOMMENT = wxNewId();
+const wxWindowID ConfigPanel::ID_PANEL2 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PROJECTNUMBER = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_USEAUTOVERSION = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRLOUTPUT_DIRECTORY = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT5 = wxNewId();
+const wxWindowID ConfigPanel::ID_CHOICE_OUTPUT_LANGUAGE = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_EXTRACT_ALL = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_EXTRACTPRIVATE = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_EXTRACTSTATIC = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_WARNINGS = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_WARN_IF_DOC_ERROR = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_WARN_IF_UNDOCUMENTED = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_WARN_NO_PARAMDOC = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_ALPHABETICAL_INDEX = wxNewId();
+const wxWindowID ConfigPanel::ID_PANEL3 = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_HTML = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_HTMLHELP = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_CHI = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_BINARY_TOC = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_LATEX = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_RTF = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_MAN = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_XML = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_AUTOGEN_DEF = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_GENERATE_PERLMOD = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_ENABLE_PREPROCESSING = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_CLASS_DIAGRAMS = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_HAVE_DOT = wxNewId();
+const wxWindowID ConfigPanel::ID_PANEL4 = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT2 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PATHDOXYGEN = wxNewId();
+const wxWindowID ConfigPanel::ID_BUTTON_BROWSEDOXYGEN = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT4 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PATHDOXYWIZARD = wxNewId();
+const wxWindowID ConfigPanel::ID_BUTTON_BROWSEDOXYWIZARD = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT3 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PATHHHC = wxNewId();
+const wxWindowID ConfigPanel::ID_BUTTON_BROWSEHHC = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT6 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PATHDOT = wxNewId();
+const wxWindowID ConfigPanel::ID_BUTTON_BROWSEDOT = wxNewId();
+const wxWindowID ConfigPanel::ID_STATICTEXT7 = wxNewId();
+const wxWindowID ConfigPanel::ID_TEXTCTRL_PATHCHMVIEWER = wxNewId();
+const wxWindowID ConfigPanel::ID_BUTTON_BROWSECHMVIEWER = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_OVERWRITEDOXYFILE = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_PROMPTB4OVERWRITING = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_USEATINTAGS = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_LOADTEMPLATE = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_USEINTERNALVIEWER = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_RUNHTML = wxNewId();
+const wxWindowID ConfigPanel::ID_CHECKBOX_RUNCHM = wxNewId();
+const wxWindowID ConfigPanel::ID_PANEL1 = wxNewId();
+const wxWindowID ConfigPanel::ID_NOTEBOOK_PREFS = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(ConfigPanel,wxPanel)
@@ -108,10 +108,6 @@ END_EVENT_TABLE()
 ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/,const wxPoint& /*pos*/,const wxSize& /*size*/) :
     m_pOwnerClass(pOwner)
 {
-    // ********************************************************************************************
-    // I don't use XRC for this plug-in because cbStyledTextCtrl isn't handled properly.
-    // This method still requires some adjustments. See below.
-    // ********************************************************************************************
     //(*Initialize(ConfigPanel)
     wxBoxSizer* BoxSizer10;
     wxBoxSizer* BoxSizer11;
@@ -169,48 +165,38 @@ ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/
     BoxSizer2 = new wxBoxSizer(wxHORIZONTAL);
     wxString __wxRadioBoxChoices_1[6] =
     {
-    	_("C/JavaDoc"),
-    	_("C++ Exclamation"),
-    	_("C++ Slash"),
-    	_("Qt"),
-    	_("Visible C Style"),
-    	_("Visible C++ Style")
+      _("C/JavaDoc"),
+      _("C++ Exclamation"),
+      _("C++ Slash"),
+      _("Qt"),
+      _("Visible C Style"),
+      _("Visible C++ Style")
     };
     RadioBoxBlockComments = new wxRadioBox(Panel2, ID_RADIOBOX_BLOCKCOMMENTS, _("Block Comment Style"), wxDefaultPosition, wxDefaultSize, 6, __wxRadioBoxChoices_1, 1, wxRA_SPECIFY_COLS, wxDefaultValidator, _T("ID_RADIOBOX_BLOCKCOMMENTS"));
     RadioBoxBlockComments->SetToolTip(_("Select your preferred block comment style."));
     BoxSizer2->Add(RadioBoxBlockComments, 1, wxALL|wxEXPAND, 5);
     StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Block Comment Sample"));
-    TextCtrlBlockComment = new cbStyledTextCtrl(Panel2, ID_TEXTCTRL_BLOCKCOMMENT, wxDefaultPosition, wxSize(150,150));
-    TextCtrlBlockComment->SetToolTip(_("Sample code using the selected block comment style."));
-    // wxSmith doesn't handle cbStyledTextCtrl initialisation properly. Replace the line above with the commented one below.
-    // You will need to do this every time wxSmith rewrites this entry.
-    // TextCtrlBlockComment = new cbStyledTextCtrl(Panel2, ID_TEXTCTRL_BLOCKCOMMENT, wxDefaultPosition, wxSize(150,150));
+    TextCtrlBlockComment = new cbStyledTextCtrl(Panel2,ID_TEXTCTRL_BLOCKCOMMENT,wxDefaultPosition,wxDefaultSize);
     StaticBoxSizer1->Add(TextCtrlBlockComment, 1, wxALL|wxEXPAND, 5);
     BoxSizer2->Add(StaticBoxSizer1, 3, wxALL|wxEXPAND, 5);
     BoxSizer6->Add(BoxSizer2, 1, wxALL|wxEXPAND, 5);
     BoxSizer10 = new wxBoxSizer(wxHORIZONTAL);
     wxString __wxRadioBoxChoices_2[4] =
     {
-    	_("C/JavaDoc"),
-    	_("C++ Exclamation"),
-    	_("C++ Slash"),
-    	_("Qt")
+      _("C/JavaDoc"),
+      _("C++ Exclamation"),
+      _("C++ Slash"),
+      _("Qt")
     };
     RadioBoxLineComments = new wxRadioBox(Panel2, ID_RADIOBOX_LINECOMMENTS, _("Line Comment Style"), wxDefaultPosition, wxDefaultSize, 4, __wxRadioBoxChoices_2, 1, wxRA_SPECIFY_COLS, wxDefaultValidator, _T("ID_RADIOBOX_LINECOMMENTS"));
     RadioBoxLineComments->SetToolTip(_("Select your preferred line comment style."));
     BoxSizer10->Add(RadioBoxLineComments, 1, wxALL|wxEXPAND, 5);
     StaticBoxSizer3 = new wxStaticBoxSizer(wxVERTICAL, Panel2, _("Line Comment Sample"));
-    TextCtrlLineComment = new cbStyledTextCtrl(Panel2, ID_TEXTCTRL_LINECOMMENT, wxDefaultPosition, wxSize(150,150));
-    TextCtrlLineComment->SetToolTip(_("Sample code using the selected line comment style."));
-    // wxSmith doesn't handle cbStyledTextCtrl initialisation properly. Replace the line above with the commented one below.
-    // You will need to do this every time wxSmith rewrites this entry.
-    // TextCtrlLineComment = new cbStyledTextCtrl(Panel2, ID_TEXTCTRL_LINECOMMENT, wxDefaultPosition, wxSize(150,150));
+    TextCtrlLineComment = new cbStyledTextCtrl(Panel2,ID_TEXTCTRL_LINECOMMENT,wxDefaultPosition,wxDefaultSize);
     StaticBoxSizer3->Add(TextCtrlLineComment, 1, wxALL|wxEXPAND, 5);
     BoxSizer10->Add(StaticBoxSizer3, 3, wxALL|wxEXPAND, 5);
     BoxSizer6->Add(BoxSizer10, 1, wxALL|wxEXPAND, 5);
     Panel2->SetSizer(BoxSizer6);
-    BoxSizer6->Fit(Panel2);
-    BoxSizer6->SetSizeHints(Panel2);
     Panel3 = new wxPanel(NotebookPrefs, ID_PANEL3, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL3"));
     BoxSizer4 = new wxBoxSizer(wxVERTICAL);
     StaticBoxSizer2 = new wxStaticBoxSizer(wxVERTICAL, Panel3, _("Project"));
@@ -270,7 +256,7 @@ ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/
     ChoiceOutputLanguage->Append(_("Russian"));
     ChoiceOutputLanguage->Append(_("Serbian"));
     ChoiceOutputLanguage->Append(_("Serbian-Cyrilic"));
-    ChoiceOutputLanguage->Append(_("Slovak,"));
+    ChoiceOutputLanguage->Append(_("Slovak"));
     ChoiceOutputLanguage->Append(_("Slovene"));
     ChoiceOutputLanguage->Append(_("Spanish"));
     ChoiceOutputLanguage->Append(_("Swedish"));
@@ -321,8 +307,6 @@ ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/
     StaticBoxSizer6->Add(CheckBoxAlphabeticalIndex, 1, wxALL|wxALIGN_LEFT, 5);
     BoxSizer4->Add(StaticBoxSizer6, 0, wxALL|wxEXPAND, 5);
     Panel3->SetSizer(BoxSizer4);
-    BoxSizer4->Fit(Panel3);
-    BoxSizer4->SetSizeHints(Panel3);
     Panel4 = new wxPanel(NotebookPrefs, ID_PANEL4, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL4"));
     BoxSizer16 = new wxBoxSizer(wxVERTICAL);
     StaticBoxSizer7 = new wxStaticBoxSizer(wxVERTICAL, Panel4, _("Output"));
@@ -392,8 +376,6 @@ ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/
     StaticBoxSizer9->Add(CheckBoxHaveDot, 1, wxALL, 5);
     BoxSizer16->Add(StaticBoxSizer9, 0, wxEXPAND, 5);
     Panel4->SetSizer(BoxSizer16);
-    BoxSizer16->Fit(Panel4);
-    BoxSizer16->SetSizeHints(Panel4);
     Panel1 = new wxPanel(NotebookPrefs, ID_PANEL1, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL1"));
     BoxSizer7 = new wxBoxSizer(wxVERTICAL);
     StaticBoxSizer4 = new wxStaticBoxSizer(wxVERTICAL, Panel1, _("Paths"));
@@ -485,31 +467,27 @@ ConfigPanel::ConfigPanel(wxWindow* parent, DoxyBlocks *pOwner, wxWindowID /*id*/
     StaticBoxSizer12->Add(CheckBoxRunCHM, 1, wxALL, 5);
     BoxSizer7->Add(StaticBoxSizer12, 0, wxEXPAND, 5);
     Panel1->SetSizer(BoxSizer7);
-    BoxSizer7->Fit(Panel1);
-    BoxSizer7->SetSizeHints(Panel1);
     NotebookPrefs->AddPage(Panel2, _("Comment Style"), false);
     NotebookPrefs->AddPage(Panel3, _("Doxyfile Defaults"), false);
     NotebookPrefs->AddPage(Panel4, _("Doxyfile Defaults 2"), false);
     NotebookPrefs->AddPage(Panel1, _("General"), false);
     BoxSizer1->Add(NotebookPrefs, 1, wxALL|wxEXPAND, 5);
     SetSizer(BoxSizer1);
-    BoxSizer1->Fit(this);
     BoxSizer1->SetSizeHints(this);
 
-    Connect(ID_RADIOBOX_BLOCKCOMMENTS,wxEVT_COMMAND_RADIOBOX_SELECTED,(wxObjectEventFunction)&ConfigPanel::OnRadioBoxBlockCommentsSelect);
-    Connect(ID_RADIOBOX_LINECOMMENTS,wxEVT_COMMAND_RADIOBOX_SELECTED,(wxObjectEventFunction)&ConfigPanel::OnRadioBoxLineCommentsSelect);
-    Connect(ID_CHECKBOX_USEAUTOVERSION,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnCheckBoxUseAutoversionClick);
-    Connect(ID_CHECKBOX_WARNINGS,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnCheckBoxWarningsClick);
-    Connect(ID_CHECKBOX_GENERATE_HTML,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnCheckBoxGenerateHTMLClick);
-    Connect(ID_BUTTON_BROWSEDOXYGEN,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnButtonBrowseDoxygenClick);
-    Connect(ID_BUTTON_BROWSEDOXYWIZARD,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnButtonBrowseDoxywizardClick);
-    Connect(ID_BUTTON_BROWSEHHC,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnButtonBrowseHHCClick);
-    Connect(ID_BUTTON_BROWSEDOT,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnButtonBrowseDotClick);
-    Connect(ID_BUTTON_BROWSECHMVIEWER,wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnButtonBrowseCHMViewerClick);
-    Connect(ID_CHECKBOX_OVERWRITEDOXYFILE,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnCheckBoxOverwriteDoxyfileClick);
-    Connect(ID_CHECKBOX_USEATINTAGS,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&ConfigPanel::OnCheckBoxUseAtInTagsClick);
+    Connect(ID_RADIOBOX_BLOCKCOMMENTS,wxEVT_COMMAND_RADIOBOX_SELECTED,wxCommandEventHandler(ConfigPanel::OnRadioBoxBlockCommentsSelect));
+    Connect(ID_RADIOBOX_LINECOMMENTS,wxEVT_COMMAND_RADIOBOX_SELECTED,wxCommandEventHandler(ConfigPanel::OnRadioBoxLineCommentsSelect));
+    Connect(ID_CHECKBOX_USEAUTOVERSION,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(ConfigPanel::OnCheckBoxUseAutoversionClick));
+    Connect(ID_CHECKBOX_WARNINGS,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(ConfigPanel::OnCheckBoxWarningsClick));
+    Connect(ID_CHECKBOX_GENERATE_HTML,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(ConfigPanel::OnCheckBoxGenerateHTMLClick));
+    Connect(ID_BUTTON_BROWSEDOXYGEN,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ConfigPanel::OnButtonBrowseDoxygenClick));
+    Connect(ID_BUTTON_BROWSEDOXYWIZARD,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ConfigPanel::OnButtonBrowseDoxywizardClick));
+    Connect(ID_BUTTON_BROWSEHHC,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ConfigPanel::OnButtonBrowseHHCClick));
+    Connect(ID_BUTTON_BROWSEDOT,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ConfigPanel::OnButtonBrowseDotClick));
+    Connect(ID_BUTTON_BROWSECHMVIEWER,wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(ConfigPanel::OnButtonBrowseCHMViewerClick));
+    Connect(ID_CHECKBOX_OVERWRITEDOXYFILE,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(ConfigPanel::OnCheckBoxOverwriteDoxyfileClick));
+    Connect(ID_CHECKBOX_USEATINTAGS,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(ConfigPanel::OnCheckBoxUseAtInTagsClick));
     //*)
-
 }
 
 /*! \brief Destructor
@@ -581,6 +559,9 @@ void ConfigPanel::Init()
  */
 void ConfigPanel::InitSTC(cbStyledTextCtrl *stc)
 {
+    if (!stc)
+        return;
+
     stc->SetLexer(wxSCI_LEX_CPP);
     stc->SetMarginType(0, wxSCI_MARGIN_NUMBER);
     stc->SetMarginWidth(0, 32);
@@ -590,22 +571,20 @@ void ConfigPanel::InitSTC(cbStyledTextCtrl *stc)
     stc->SetReadOnly(true);
     stc->SetUseHorizontalScrollBar(false);
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(wxT("editor"));
-    wxString sFont = cfg->Read(wxT("/font"), wxEmptyString);
-    wxFont fnt(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-    if (!sFont.IsEmpty())
+    // Colourise.
+    EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
+    if (colour_set)
     {
-        wxNativeFontInfo nfi;
-        nfi.FromString(sFont);
-        fnt.SetNativeFontInfo(nfi);
-    }
+        ConfigManager* cfg = Manager::Get()->GetConfigManager(wxT("editor"));
+        wxString sFont = cfg->Read(wxT("/font"), wxEmptyString);
+        wxFont fnt(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+        if (!sFont.IsEmpty())
+        {
+            wxNativeFontInfo nfi;
+            nfi.FromString(sFont);
+            fnt.SetNativeFontInfo(nfi);
+        }
 
-    if (stc)
-    {
-        // Colourise.
-        EditorColourSet* colour_set = Manager::Get()->GetEditorManager()->GetColourSet();
-        if (!colour_set)
-            return;
         stc->StyleSetFont(wxSCI_STYLE_DEFAULT, fnt);
         colour_set->Apply(colour_set->GetHighlightLanguage(wxT("C/C++")), stc, false, true);
     }

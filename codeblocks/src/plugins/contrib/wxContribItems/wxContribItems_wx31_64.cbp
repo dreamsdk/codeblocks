@@ -19,18 +19,6 @@
 					<Add directory="wxFlatNotebook/include" />
 				</Compiler>
 			</Target>
-			<Target title="wxDateTimePicker">
-				<Option platforms="Windows;" />
-				<Option output="../../../devel31_64/wxdatetimepicker" prefix_auto="1" extension_auto="1" />
-				<Option object_output="../../../.objs31_64/plugins/contrib/wxContribItems/wxDateTimePicker" />
-				<Option type="3" />
-				<Option compiler="gcc" />
-				<Option createStaticLib="1" />
-				<Compiler>
-					<Add directory="wxDateTimePicker/include" />
-					<Add directory="wxDateTimePicker/images" />
-				</Compiler>
-			</Target>
 			<Target title="wxChartCtrl">
 				<Option platforms="Windows;" />
 				<Option output="../../../devel31_64/wxchartctrl" prefix_auto="1" extension_auto="1" />
@@ -65,9 +53,6 @@
 				<Compiler>
 					<Add directory="wxImagePanel/include" />
 				</Compiler>
-				<Linker>
-					<Add option="-Wl,--export-all-symbols" />
-				</Linker>
 			</Target>
 			<Target title="wxSpeedButton">
 				<Option platforms="Windows;" />
@@ -76,9 +61,6 @@
 				<Option type="3" />
 				<Option compiler="gcc" />
 				<Option createStaticLib="1" />
-				<Linker>
-					<Add option="-Wl,--export-all-symbols" />
-				</Linker>
 			</Target>
 			<Target title="wxKWIC">
 				<Option platforms="Windows;" />
@@ -90,9 +72,6 @@
 				<Compiler>
 					<Add directory="KWIC/include" />
 				</Compiler>
-				<Linker>
-					<Add option="-Wl,--export-all-symbols" />
-				</Linker>
 			</Target>
 			<Target title="wxLED">
 				<Option platforms="Windows;" />
@@ -107,9 +86,6 @@
 					<Add directory="wxled/led/include" />
 					<Add directory="wxled/gizmosled/include" />
 				</Compiler>
-				<Linker>
-					<Add option="-Wl,--export-all-symbols" />
-				</Linker>
 			</Target>
 			<Target title="wxMathPlot">
 				<Option platforms="Windows;" />
@@ -121,9 +97,6 @@
 				<Compiler>
 					<Add directory="wxmathplot" />
 				</Compiler>
-				<Linker>
-					<Add option="-Wl,--export-all-symbols" />
-				</Linker>
 			</Target>
 			<Environment>
 				<Variable name="WX_CFG" value="" />
@@ -132,10 +105,9 @@
 			</Environment>
 		</Build>
 		<VirtualTargets>
-			<Add alias="All" targets="wxFlatNoteBook;wxDateTimePicker;wxChartCtrl;wxCustomButton;wxImagePanel;wxSpeedButton;wxKWIC;wxLED;wxMathPlot;" />
+			<Add alias="All" targets="wxFlatNoteBook;wxChartCtrl;wxCustomButton;wxImagePanel;wxSpeedButton;wxKWIC;wxLED;wxMathPlot;" />
 		</VirtualTargets>
 		<Compiler>
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
@@ -146,9 +118,9 @@
 			<Add option="-D_WIN64" />
 			<Add option="-DWXMAKINGDLL" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
+			<Add option="-std=gnu++11" />
 			<Add directory="$(#WX31_64.include)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 		</Compiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-import" />
@@ -245,24 +217,6 @@
 		</Unit>
 		<Unit filename="KWIC/src/wx/xrc/xh_kwxlinearregulatorhandler.cpp">
 			<Option target="wxKWIC" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/images/DateTime.xpm">
-			<Option target="wxDateTimePicker" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/images/DateTime16.xpm">
-			<Option target="wxDateTimePicker" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/include/DateTimeCtrl.h">
-			<Option target="wxDateTimePicker" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/include/TimeCtrl.h">
-			<Option target="wxDateTimePicker" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/src/DateTimeCtrl.cpp">
-			<Option target="wxDateTimePicker" />
-		</Unit>
-		<Unit filename="wxDateTimePicker/src/TimeCtrl.cpp">
-			<Option target="wxDateTimePicker" />
 		</Unit>
 		<Unit filename="wxFlatNotebook/include/wx/wxFlatNotebook/fnb_customize_dlg.h">
 			<Option target="wxFlatNoteBook" />
@@ -537,6 +491,10 @@
 		<Unit filename="wxthings/src/toggle.cpp">
 			<Option target="wxCustomButton" />
 		</Unit>
-		<Extensions />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: ProjectData.cpp 11347 2018-03-26 14:24:13Z pecanh $
+// RCS-ID: $Id: ProjectData.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
 
 #if defined(CB_PRECOMP)
 #include "sdk.h"
@@ -42,6 +42,7 @@
 #include "BrowseTrackerDefs.h"
 #include "ProjectData.h"
 #include "BrowseTrackerLayout.h"
+#include "helpers.h"
 
 // ----------------------------------------------------------------------------
 ProjectData::ProjectData()
@@ -55,13 +56,13 @@ ProjectData::ProjectData(cbProject* pcbProject)
 {
     //ctor
     #if defined(LOGGING)
-    if (not pcbProject) asm("int3"); /*trap*/;
+    //if (not pcbProject) asm("int3"); /*trap*/;
     #endif
     if (not pcbProject) return;
     m_pCBProject = pcbProject;
     m_ProjectFilename = pcbProject->GetFilename();
     m_CurrIndexEntry = 0;
-    m_LastIndexEntry = MaxEntries-1;
+    m_LastIndexEntry = Helpers::GetMaxAllocEntries()-1;
     m_pEdMgr = Manager::Get()->GetEditorManager();
     m_ActivationCount = 0;
     m_bLayoutLoaded = false;
@@ -109,7 +110,7 @@ void ProjectData::AddEditor( wxString /*filePath */)
 ////
 ////    // not found, stow new data into arrays
 ////    int index = m_LastIndexEntry;
-////    if (++index >= MaxEntries) index = 0;
+////    if (++index >= Helpers::GetMaxEntries()) index = 0;
 ////    m_LastIndexEntry = index;
 ////    m_EditorBaseArray[index] = eb;
 ////    m_cbEditorArray[index] = cbed;
@@ -162,7 +163,7 @@ BrowseMarks* ProjectData::HashAddBrowse_Marks( const wxString fullPath )
 
     EditorBase* eb = m_pEdMgr->GetEditor(fullPath);
     #if defined(LOGGING)
-        if(not eb) asm("int3"); /*trap*/
+        //if(not eb) asm("int3"); /*trap*/
     #endif
     if(not eb) return 0;
     wxString filePath = eb->GetFilename();
@@ -244,12 +245,12 @@ void ProjectData::DumpHash( const wxString
     FileBrowse_MarksHash* phash = &m_FileBrowse_MarksArchive;
     FileBrowse_MarksHash& hash = *phash;
 
-    LOGIT( _T("--- DumpProjectHash ---[%s]Count[%lu]"), hashType.wx_str(), static_cast<unsigned long>(hash.size()), m_ProjectFilename.wx_str() );
+    LOGIT(wxString::Format("--- DumpProjectHash ---[%s]Count[%zu]Name[%s]", hashType, hash.size(), m_ProjectFilename));
     for (FileBrowse_MarksHash::iterator it = hash.begin(); it != hash.end(); it++)
     {
         wxString filename = it->first; //an Editor filename withing this project
         BrowseMarks* p = it->second;    // ptr to array of Editor Browse/Book mark cursor positions
-        LOGIT( _T("filename[%s]BrowseMark*[%p]name[%s]"), filename.c_str(), p, p->GetFilePath().c_str() );
+        LOGIT(wxString::Format("filename[%s]BrowseMark*[%p]name[%s]", filename, p, p->GetFilePath()));
     }
 
     #endif
@@ -269,15 +270,16 @@ void ProjectData::DumpBrowse_Marks( const wxString
     FileBrowse_MarksHash* phash = &m_FileBrowse_MarksArchive;
     FileBrowse_MarksHash& hash = *phash;
 
-    LOGIT( _T("Dump_%s Size[%lu]"), hashType.wx_str(), static_cast<unsigned long>(hash.size()) );
+    LOGIT(wxString::Format("Dump_%s Size[%zu]", hashType, hash.size()));
 
     for (FileBrowse_MarksHash::iterator it = hash.begin(); it != hash.end(); ++it)
     {
         wxString filename = it->first;
         BrowseMarks* p = it->second;
-        LOGIT( _T("Filename[%s]%s*[%p]name[%s]"), filename.c_str(), hashType.c_str(), p, p->GetFilePath().c_str() );
+        LOGIT(wxString::Format("Filename[%s]%s*[%p]name[%s]", filename, hashType, p, (p ? p->GetFilePath() : wxString())));
         if (p)
-        {   //dump the browse marks
+        {
+            //dump the browse marks
             p->Dump();
         }
     }

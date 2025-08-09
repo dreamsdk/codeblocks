@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11862 $
- * $Id: ccoptionsprjdlg.cpp 11862 2019-09-29 12:54:26Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/ccoptionsprjdlg.cpp $
+ * $Revision: 13471 $
+ * $Id: ccoptionsprjdlg.cpp 13471 2024-02-20 02:38:52Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/ccoptionsprjdlg.cpp $
  */
 
 #include <sdk.h>
@@ -33,13 +33,13 @@ BEGIN_EVENT_TABLE(CCOptionsProjectDlg, wxPanel)
     EVT_BUTTON(XRCID("btnDelete"), CCOptionsProjectDlg::OnDelete)
 END_EVENT_TABLE()
 
-CCOptionsProjectDlg::CCOptionsProjectDlg(wxWindow* parent, cbProject* project, NativeParser* np) :
+CCOptionsProjectDlg::CCOptionsProjectDlg(wxWindow* parent, cbProject* project, ParseManager* pm) :
     m_Project(project),
-    m_NativeParser(np),
-    m_Parser(&np->GetParser())
+    m_ParseManager(pm),
+    m_Parser(&pm->GetParser())
 {
     wxXmlResource::Get()->LoadPanel(this, parent, _T("pnlProjectCCOptions"));
-    m_OldPaths = m_NativeParser->ParseProjectSearchDirs(*m_Project);
+    m_OldPaths = m_ParseManager->ParseProjectSearchDirs(*m_Project);
 
     wxListBox* control = XRCCTRL(*this, "lstPaths", wxListBox);
     control->Clear();
@@ -122,7 +122,7 @@ void CCOptionsProjectDlg::OnApply()
                 m_Parser->AddIncludeDir(newpaths[i]);
         }
 
-        m_NativeParser->SetProjectSearchDirs(*m_Project, newpaths);
+        m_ParseManager->SetProjectSearchDirs(*m_Project, newpaths);
         m_Project->SetModified(true);
 
         cbMessageBox(_("You have changed the C/C++ parser search paths for this project.\n"

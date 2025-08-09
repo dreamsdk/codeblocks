@@ -42,17 +42,17 @@ kwxLCDDisplay::kwxLCDDisplay( wxWindow *parent, const wxPoint& pos, const wxSize
     if(!wxWindow::Create(parent, -1, pos, size, wxSUNKEN_BORDER))
         return false;
 
-	mSegmentLen = 40;
-	mSegmentWidth = 10;
-	mSpace = 5;
+    mSegmentLen = 40;
+    mSegmentWidth = 10;
+    mSpace = 5;
 
-	mNumberDigits = 6;
+    mNumberDigits = 6;
 
-	mLightColour = wxColour( 0, 255, 0 );
-	mGrayColour = wxColour( 0, 64, 0 );
+    mLightColour = wxColour( 0, 255, 0 );
+    mGrayColour = wxColour( 0, 64, 0 );
 
-	SetBackgroundColour( wxColour( 0, 0, 0 ) );
-	return true;
+    SetBackgroundColour( wxColour( 0, 0, 0 ) );
+    return true;
 }
 
 kwxLCDDisplay::~kwxLCDDisplay()
@@ -153,13 +153,13 @@ void kwxLCDDisplay::DrawTwoDots( wxDC *dc, int digit )
 	int x = DigitX( digit );
 	int y = DigitY();
 
-	wxBrush brushOn( mLightColour, wxSOLID );
+	wxBrush brushOn(mLightColour, wxBRUSHSTYLE_SOLID);
 
 	x += ( sl / 2 ) - sw;
 	y += ( sl / 2 ) - sw;
 
 	dc->SetBrush( brushOn );
-	dc->SetPen( wxPen( GetBackgroundColour(), 1, wxSOLID ) );
+	dc->SetPen(wxPen( GetBackgroundColour(), 1, wxPENSTYLE_SOLID));
 
 	dc->DrawEllipse( x, y, 2 * sw, 2 * sw );
 
@@ -176,15 +176,15 @@ void kwxLCDDisplay::DrawSegment( wxDC *dc, int digit, int segment, bool state )
 	int x = DigitX( digit );
 	int y = DigitY();
 
-	wxBrush brushOn( mLightColour, wxSOLID );
-	wxBrush brushOff( mGrayColour, wxSOLID );
+	wxBrush brushOn( mLightColour, wxBRUSHSTYLE_SOLID );
+	wxBrush brushOff( mGrayColour, wxBRUSHSTYLE_SOLID );
 
 	if( state )
 		dc->SetBrush( brushOn );
 	else
 		dc->SetBrush( brushOff );
 
-	dc->SetPen( wxPen( GetBackgroundColour(), 1, wxSOLID ) );
+	dc->SetPen( wxPen( GetBackgroundColour(), 1, wxPENSTYLE_SOLID));
 
 	wxPoint points[4];
 	wxPoint p6[6];

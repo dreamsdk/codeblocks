@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11850 $
- * $Id: msvcworkspacebase.cpp 11850 2019-09-17 06:12:03Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/projectsimporter/msvcworkspacebase.cpp $
+ * $Revision: 12999 $
+ * $Id: msvcworkspacebase.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/projectsimporter/msvcworkspacebase.cpp $
  */
 
 #include "sdk.h"
@@ -94,7 +94,7 @@ void MSVCWorkspaceBase::updateProjects()
                 if (_workspaceConfigurations.Index(s) == wxNOT_FOUND)
                 {
                     _workspaceConfigurations.Add(s);
-                    Manager::Get()->GetLogManager()->DebugLog(F(_T("workspace config: '%s'"), s.wx_str()));
+                    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("workspace config: '%s'", s));
                 }
             }
         }
@@ -103,7 +103,7 @@ void MSVCWorkspaceBase::updateProjects()
     for (projIt = _projects.begin(); projIt != _projects.end(); ++projIt)
     {
         proj = projIt->second;
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("Project %s, %lu dependencies"), proj._project->GetTitle().wx_str(), static_cast<unsigned long>(proj._dependencyList.GetCount())));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Project %s, %zu dependencies", proj._project->GetTitle(), proj._dependencyList.GetCount()));
         for (i=0; i<proj._dependencyList.GetCount(); ++i)
         {
             depIt = _projects.find(proj._dependencyList[i]);
@@ -174,7 +174,7 @@ void MSVCWorkspaceBase::updateProjects()
                         continue;
                     }
 
-                    Manager::Get()->GetLogManager()->DebugLog(F(_T("Match '%s' to '%s'"), targetProj->GetFullTitle().wx_str(), targetDep->GetFullTitle().wx_str()));
+                    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Match '%s' to '%s'", targetProj->GetFullTitle(), targetDep->GetFullTitle()));
 
                     // now, update dependencies
                     TargetType type = targetDep->GetTargetType();

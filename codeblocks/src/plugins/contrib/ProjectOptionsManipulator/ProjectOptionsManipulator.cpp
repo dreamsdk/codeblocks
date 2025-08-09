@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11839 $
- * $Id: ProjectOptionsManipulator.cpp 11839 2019-09-06 06:55:07Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulator.cpp $
+ * $Revision: 12304 $
+ * $Id: ProjectOptionsManipulator.cpp 12304 2021-03-16 23:28:31Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulator.cpp $
  */
 
 #include "ProjectOptionsManipulator.h"
@@ -117,6 +117,7 @@ int ProjectOptionsManipulator::Execute()
   {
     ProjectOptionsManipulatorResultDlg dlg( Manager::Get()->GetAppWindow(), ID_PROJECT_OPTIONS_RESULT_DLG );
     dlg.ApplyResult(result);
+    PlaceWindow(&dlg);
     dlg.ShowModal(); // Don't care about return value
 
     ProjectOptionsManipulatorDlg::EProjectScanOption scan_opt = m_Dlg->GetScanOption();

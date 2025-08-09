@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11266 $
- * $Id: dlgformattersettings.cpp 11266 2018-01-15 17:54:23Z jenslody $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/dlgformattersettings.cpp $
+ * $Revision: 12490 $
+ * $Id: dlgformattersettings.cpp 12490 2021-08-05 23:50:23Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/astyle/dlgformattersettings.cpp $
  */
 
 #include "dlgformattersettings.h"
@@ -13,6 +13,7 @@
 #include <wx/checkbox.h>
 #include <wx/combobox.h>
 #include <wx/spinctrl.h>
+#include <wx/textctrl.h>
 #include <wx/xrc/xmlres.h>
 
 DlgFormatterSettings::DlgFormatterSettings(wxWindow *dlg) :

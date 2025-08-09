@@ -40,50 +40,40 @@
 		</VirtualTargets>
 		<Compiler>
 			<Add option="-Wall" />
-			<Add option="-std=gnu++11" />
 			<Add option="$(#CB_RELEASE_TYPE)" />
 			<Add option="-pipe" />
 			<Add option="-mthreads" />
 			<Add option="-fmessage-length=0" />
 			<Add option="-fexceptions" />
+			<Add option="-std=gnu++11" />
 			<Add option="-DHAVE_W32API_H" />
 			<Add option="-D__WXMSW__" />
 			<Add option="-D_WIN64" />
 			<Add option="-DWXUSINGDLL" />
 			<Add option="-DcbDEBUG" />
-			<Add option="-DNOPCH" />
+			<Add option="-Winvalid-pch" />
+			<Add option="-DCB_PRECOMP" />
 			<Add option="-DBUILDING_PLUGIN" />
 			<Add option="-DwxUSE_UNICODE" />
-			<Add option="-DwxDEBUG_LEVEL=0" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.include)" />
 			<Add directory="../../../include" />
 			<Add directory="../../../include/tinyxml" />
 			<Add directory="../../../sdk/wxscintilla/include" />
 			<Add directory="../../../include/scripting/include" />
-			<Add directory="../../../include/scripting/squirrel" />
-			<Add directory="../../../include/scripting/sqplus" />
-			<Add directory="../../../include/scripting/bindings" />
-			<Add directory="../../../include/mozilla_chardet" />
-			<Add directory="../../../include/mozilla_chardet/mfbt" />
-			<Add directory="../../../include/mozilla_chardet/nsprpub/pr/include" />
-			<Add directory="../../../include/mozilla_chardet/xpcom" />
-			<Add directory="../../../include/mozilla_chardet/xpcom/base" />
-			<Add directory="../../../include/mozilla_chardet/xpcom/glue" />
 		</Compiler>
 		<ResourceCompiler>
 			<Add directory="$(#WX31_64.include)" />
 		</ResourceCompiler>
 		<Linker>
 			<Add option="-Wl,--enable-auto-image-base" />
-			<Add option="-Wl,--export-all-symbols" />
 			<Add option="-Wl,--add-stdcall-alias" />
 			<Add option="-Wl,--enable-auto-import" />
 			<Add option="-mthreads" />
 			<Add library="wxmsw$(WX_VERSION)$(WX_SUFFIX)" />
 			<Add library="codeblocks" />
-			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)" />
+			<Add directory="$(#WX31_64.lib)/gcc_dll$(WX_CFG)/msw$(WX_SUFFIX)" />
 			<Add directory="../../../devel31_64" />
 		</Linker>
 		<ExtraCommands>
@@ -192,6 +182,12 @@
 		<Unit filename="properties/wxsstringproperty.h">
 			<Option target="wxSmithLib" />
 		</Unit>
+		<Unit filename="properties/wxstwolongproperty.cpp">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="properties/wxstwolongproperty.h">
+			<Option target="wxSmithLib" />
+		</Unit>
 		<Unit filename="wxsadvqpp.cpp">
 			<Option target="wxSmithLib" />
 		</Unit>
@@ -252,6 +248,28 @@
 		<Unit filename="wxsmith.h">
 			<Option target="wxSmithLib" />
 		</Unit>
+		<Unit filename="wxsmith/wxWidgetsGUIAppAdoptingDlg.wxs" />
+		<Unit filename="wxsmith/wxWidgetsGUIConfigPanel.wxs" />
+		<Unit filename="wxsmith/wxsArrayStringCheckEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsArrayStringEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsBitmapIconEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsChoicebookParentQP.wxs" />
+		<Unit filename="wxsmith/wxsDeleteItemRes.wxs" />
+		<Unit filename="wxsmith/wxsFontEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsFontFaceEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsImageComboEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsImageListEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsImageTreeEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsListbookParentQP.wxs" />
+		<Unit filename="wxsmith/wxsNewWindowDlg.wxs" />
+		<Unit filename="wxsmith/wxsNotebookParentQP.wxs" />
+		<Unit filename="wxsmith/wxsProjectConfigurationDlg.wxs" />
+		<Unit filename="wxsmith/wxsSettings.wxs" />
+		<Unit filename="wxsmith/wxsSimpleFontEditorDlg.wxs" />
+		<Unit filename="wxsmith/wxsSizerParentQP.wxs" />
+		<Unit filename="wxsmith/wxsStandardQP.wxs" />
+		<Unit filename="wxsmith/wxsmenueditor.wxs" />
+		<Unit filename="wxsmith/wxstoolbareditor.wxs" />
 		<Unit filename="wxsmithmime.cpp">
 			<Option target="wxSmithLib" />
 		</Unit>
@@ -396,6 +414,24 @@
 		<Unit filename="wxwidgets/defitems/wxscustomwidget.h">
 			<Option target="wxSmithLib" />
 		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewctrl.cpp">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewctrl.h">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewlistctrl.cpp">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewlistctrl.h">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewtreectrl.cpp">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxsdataviewtreectrl.h">
+			<Option target="wxSmithLib" />
+		</Unit>
 		<Unit filename="wxwidgets/defitems/wxsdatepickerctrl.cpp">
 			<Option target="wxSmithLib" />
 		</Unit>
@@ -424,6 +460,12 @@
 			<Option target="wxSmithLib" />
 		</Unit>
 		<Unit filename="wxwidgets/defitems/wxsdirpickerctrl.h">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxseditablelistbox.cpp">
+			<Option target="wxSmithLib" />
+		</Unit>
+		<Unit filename="wxwidgets/defitems/wxseditablelistbox.h">
 			<Option target="wxSmithLib" />
 		</Unit>
 		<Unit filename="wxwidgets/defitems/wxsfiledialog.cpp">

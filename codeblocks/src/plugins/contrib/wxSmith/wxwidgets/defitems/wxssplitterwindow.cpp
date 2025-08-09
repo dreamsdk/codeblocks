@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10959 $
-* $Id: wxssplitterwindow.cpp 10959 2017-01-14 22:40:56Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssplitterwindow.cpp $
+* $Revision: 13547 $
+* $Id: wxssplitterwindow.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxssplitterwindow.cpp $
 */
 
 #include "wxssplitterwindow.h"
@@ -50,7 +50,7 @@ namespace
 }
 
 wxsSplitterWindow::wxsSplitterWindow(wxsItemResData* Data):
-    wxsContainer(Data,&Reg.Info,wxsSplitterWindowEvents,wxsSplitterWindowStyles),
+    wxsContainer(Data,&Reg.Info,wxsSplitterWindowEvents,wxsSplitterWindowStyles, flContainer & ~flMinMaxSize),
     SashPos(0),
     MinPaneSize(10),
     Orientation(wxHORIZONTAL),
@@ -58,15 +58,15 @@ wxsSplitterWindow::wxsSplitterWindow(wxsItemResData* Data):
 {
 }
 
-wxObject* wxsSplitterWindow::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsSplitterWindow::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxSplitterWindow* Splitter = new wxSplitterWindow(Parent,GetId(),Pos(Parent),Size(Parent),Style());
-    SetupWindow(Splitter,Flags);
+    SetupWindow(Splitter,_Flags);
     if ( MinPaneSize != -1 )
     {
         Splitter->SetMinimumPaneSize(MinPaneSize);
     }
-    AddChildrenPreview(Splitter,Flags);
+    AddChildrenPreview(Splitter,_Flags);
     if ( GetChildCount() == 0 )
     {
     }
@@ -135,14 +135,14 @@ void wxsSplitterWindow::OnBuildCreatingCode()
     }
 }
 
-void wxsSplitterWindow::OnEnumContainerProperties(cb_unused long Flags)
+void wxsSplitterWindow::OnEnumContainerProperties(cb_unused long _Flags)
 {
     static const long    OrientValues[] = { wxHORIZONTAL, wxVERTICAL, 0 };
     static const wxChar* OrientNames[]  = { _T("horizontal"), _T("vertical"), 0 };
 
     WXS_LONG(wxsSplitterWindow,SashPos,_("Sash position"),_T("sashpos"),0);
     WXS_FLOAT(wxsSplitterWindow,SashGravity,_("Sash gravity"), _T("sashgravity"), 0.5);
-    WXS_LONG(wxsSplitterWindow,MinPaneSize,_("Min. pane size"),_T("minpanesize"),-1);
+    WXS_LONG(wxsSplitterWindow,MinPaneSize,_("Min. pane size"),_T("minsize"),-1);
     WXS_ENUM(wxsSplitterWindow,Orientation,_("Orientation"),_T("orientation"),OrientValues,OrientNames,wxHORIZONTAL);
 }
 

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsspinbutton.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinbutton.cpp $
+* $Revision: 13547 $
+* $Id: wxsspinbutton.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinbutton.cpp $
 */
 
 #include "wxsspinbutton.h"
@@ -80,16 +80,16 @@ void wxsSpinButton::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsSpinButton::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsSpinButton::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxSpinButton* Preview = new wxSpinButton(Parent,GetId(),Pos(Parent),Size(Parent),Style());
     if ( Value ) Preview->SetValue(Value);
     if ( Max > Min ) Preview->SetRange(Min,Max);
 
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsSpinButton::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsSpinButton::OnEnumWidgetProperties(cb_unused long _Flags)
 {
     WXS_LONG(wxsSpinButton,Value,_("Value"),_T("value"),0)
     WXS_LONG(wxsSpinButton,Min,_("Min Value"),_T("min"),0)

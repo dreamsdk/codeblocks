@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10685 $
-* $Id: wxsitemres.cpp 10685 2016-01-22 10:51:51Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemres.cpp $
+* $Revision: 13150 $
+* $Id: wxsitemres.cpp 13150 2023-01-14 11:37:46Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemres.cpp $
 */
 
 #include "wxsitemres.h"
@@ -375,9 +375,8 @@ bool wxsItemRes::CreateNewResource(NewResourceParams& Params)
                     }
                 }
                 Header.Replace(_T("$(HandlersScope)"),Scope);
-
-                // TODO: Use wxsCoder to save file's content, so it will
-                //       have proper encoding and EOL stuff
+                wxString Indentation, EOL;
+                Header = wxsCoder::RebuildCode(Indentation, Header.c_str(), Header.length(), EOL);
                 if ( !HdrFile.Write(Header) ) return false;
             }
 
@@ -422,8 +421,8 @@ bool wxsItemRes::CreateNewResource(NewResourceParams& Params)
                 SourceStr.Replace(_T("$(BaseClassName)"),Params.BaseClass);
                 SourceStr.Replace(_T("$(CtorInit)"),CtorInitCode);
                 SourceStr.Replace(_T("$(InternalHeadersPch)"),IntHeadersPch);
-                // TODO: Use wxsCoder to save file's content, so it will
-                //       have proper encoding and EOL stuff
+                wxString Indentation, EOL;
+                SourceStr = wxsCoder::RebuildCode(Indentation, SourceStr.c_str(), SourceStr.length(), EOL);
                 if ( !SrcFile.Write(SourceStr) ) return false;
             }
 
@@ -537,6 +536,7 @@ bool wxsItemRes::OnDeleteCleanup(bool ShowDialog)
     if ( ShowDialog )
     {
         wxsDeleteItemRes Dlg;
+        PlaceWindow(&Dlg);
         if ( Dlg.ShowModal() != wxID_OK )
         {
             return false;
@@ -613,4 +613,45 @@ bool wxsItemRes::OnPopupMenu(long Id)
         return true;
     }
     return false;
+}
+
+bool wxsItemRes::Rename(const wxString& oldName, const wxString& newName)
+{
+    const bool caseSensitive = wxFileName::IsCaseSensitive();
+    bool renamed = false;
+
+    if (m_WxsFileName.IsSameAs(oldName, caseSensitive))
+    {
+        m_WxsFileName = newName;
+        renamed = true;
+    }
+
+    if (m_SrcFileName.IsSameAs(oldName, caseSensitive))
+    {
+        m_SrcFileName = newName;
+        renamed = true;
+    }
+
+    if (m_HdrFileName.IsSameAs(oldName, caseSensitive))
+    {
+        m_HdrFileName = newName;
+        renamed = true;
+    }
+
+    if (m_XrcFileName.IsSameAs(oldName, caseSensitive))
+    {
+        m_XrcFileName = newName;
+        renamed = true;
+    }
+
+    return renamed;
+}
+
+void wxsItemRes::SetI18N(bool Value)
+{
+    if (m_UseI18n != Value)
+    {
+        m_UseI18n = Value;
+        GetProject()->NotifyChange();
+    }
 }

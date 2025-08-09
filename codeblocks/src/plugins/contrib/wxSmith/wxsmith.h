@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10874 $
-* $Id: wxsmith.h 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsmith.h $
+* $Revision: 12722 $
+* $Id: wxsmith.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsmith.h $
 */
 
 #ifndef WXSMITH_H
@@ -47,7 +47,7 @@ class wxsResource;
  * This class is a singleton, is registered in OnAttach and unregistered in
  * OnRelease.
  */
-class wxSmith : public cbPlugin
+class PLUGIN_EXPORT wxSmith : public cbPlugin
 {
     public:
 
@@ -122,6 +122,9 @@ class wxSmith : public cbPlugin
         /** \brief Procedure called when some project has been renamed - it will update resource browser */
         void OnProjectRenamed(CodeBlocksEvent& event);
 
+        /** \brief Procedure called when a file in some project has been renamed - it will update resource list */
+        void OnProjectFileRenamed(CodeBlocksEvent& event);
+
         /** \brief Called when clicked "Configure..." from wxSmith menu */
         void OnConfigure(wxCommandEvent& event);
 
@@ -133,9 +136,6 @@ class wxSmith : public cbPlugin
 
         /** \brief Function Generating background panes for resource and property browsers */
         void BuildBrowserParents();
-
-        /** \brief Function allowing to recover invalid wxs file */
-        static bool RecoverWxsFile( const wxString& WxsResourceSettings );
 
         void OnViewBrowsers(wxCommandEvent& event);
         void OnViewResourceBrowser(wxCommandEvent& event);

@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: legend.cpp 10024 2014-11-06 09:23:26Z jenslody $
+// RCS-ID:      $Id: legend.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -20,10 +20,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
@@ -410,7 +406,7 @@ void wxLegend::WriteLabel(
           iData < iDatas && iData < (page+1) * ROWS_PAGE;
           ++ iData )
     {
-        hp->SetBrush( wxBrush(GetColor(iData), wxSOLID) );
+        hp->SetBrush( wxBrush(GetColor(iData), wxBRUSHSTYLE_SOLID));
         hp->SetPen( *wxTRANSPARENT_PEN );
         hp->DrawRectangle( x, y+2, 10, 10 );
 

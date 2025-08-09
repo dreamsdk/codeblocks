@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision$
- * $Id$
- * $HeadURL$
+ * $Revision: 13569 $
+ * $Id: goto_file.cpp 13569 2024-09-14 04:47:37Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/goto_file.cpp $
  */
 
 #include "sdk.h"
@@ -12,12 +12,12 @@
 
 #ifndef WX_PRECOMP
     //(*InternalHeadersPCH(GotoFile)
-    #include <wx/sizer.h>
     #include <wx/listctrl.h>
-    #include <wx/string.h>
-    #include <wx/intl.h>
+    #include <wx/sizer.h>
     #include <wx/stattext.h>
     #include <wx/textctrl.h>
+    #include <wx/intl.h>
+    #include <wx/string.h>
     //*)
 
     #include <algorithm>
@@ -29,8 +29,8 @@
 //*)
 
 //(*IdInit(GotoFile)
-const long GotoFile::ID_TEXTCTRL1 = wxNewId();
-const long GotoFile::ID_RESULT_LIST = wxNewId();
+const wxWindowID GotoFile::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID GotoFile::ID_RESULT_LIST = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(GotoFile,wxDialog)
@@ -64,8 +64,8 @@ void GotoFile::BuildContent(wxWindow* parent, IncrementalSelectIterator *iterato
     m_ResultList->SetMinSize(wxSize(500,300));
     m_sizer->Add(m_ResultList, 1, wxALL|wxEXPAND, 5);
     SetSizer(m_sizer);
-    m_sizer->Fit(this);
     m_sizer->SetSizeHints(this);
+    Center();
     //*)
 
     SetTitle(title);

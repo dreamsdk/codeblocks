@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9426 $
- * $Id: cbeditorprintout.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbeditorprintout.cpp $
+ * $Revision: 12780 $
+ * $Id: cbeditorprintout.cpp 12780 2022-04-06 10:42:33Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/cbeditorprintout.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -16,191 +16,183 @@
     #include "logmanager.h"
     #include "cbeditor.h"
 #endif
-#include "cbstyledtextctrl.h"
 
+#include "cbstyledtextctrl.h"
 #include "cbeditorprintout.h"
 #include "printing_types.h"
+
 #include <wx/paper.h>
 
 cbEditorPrintout::cbEditorPrintout(const wxString& title, cbStyledTextCtrl* control, bool selectionOnly)
-        : wxPrintout(title),
-        m_TextControl(control)
+        : wxPrintout(title), m_selection(selectionOnly)
 {
     // ctor
-    m_SelStart = 0;
-    m_SelEnd = control->GetLength();
-    if (selectionOnly && !control->GetSelectedText().IsEmpty())
-    {
-        m_SelStart = control->GetSelectionStart();
-        m_SelEnd = control->GetSelectionEnd();
-    }
-    m_pPageSelStart = new wxArrayInt;
+    if (control)
+        m_controls.push_back(control);
 }
 
 cbEditorPrintout::~cbEditorPrintout()
 {
     // dtor
-    delete m_pPageSelStart;
-    m_pPageSelStart = nullptr;
+}
+
+void cbEditorPrintout::AddControl(cbStyledTextCtrl* control)
+{
+    if (control)
+    {
+        m_controls.push_back(control);
+        m_selection = false;
+    }
 }
 
 bool cbEditorPrintout::OnPrintPage(int page)
 {
-    wxDC *dc = GetDC();
-    if (dc)
+    const int maxPage = m_pages.size();
+    if (!page || page > maxPage)
     {
-        // scale DC
-        ScaleDC(dc);
-
-        // print selected page
-        int maxpage = m_pPageSelStart->GetCount();
-        if (page && page<maxpage)
-            m_printed = (*m_pPageSelStart)[page-1];
-        else
-        {
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("OnPrintPage ERROR: page = %d , maxpage = %d"), page, maxpage));
-            return false;
-        }
-
-        //Manager::Get()->GetLogManager()->DebugLog(_T("OnPrintPage: page %d , m_printed %d"), page, m_printed);
-        m_printed = m_TextControl->FormatRange (1, m_printed, m_SelEnd,
-                                                dc, dc, m_printRect, m_pageRect);
-        return true;
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("OnPrintPage ERROR: page = %d, maxpage = %d", page, maxPage));
+        return false;
     }
-    return false;
+
+    wxDC* dc = GetDC();
+    if (!dc)
+        return false;
+
+    // scale DC
+    ScaleDC(dc);
+
+    //Manager::Get()->GetLogManager()->DebugLog("OnPrintPage: page %d, page start %d", page, m_pages[page-1].pageStart);
+    m_controls[m_pages[page-1].ctrlIndex]->FormatRange(true, m_pages[page-1].pageStart, m_pages[page-1].selEnd, dc, dc, m_printRect, m_pageRect);
+    return true;
 }
 
-bool cbEditorPrintout::HasPage(cb_unused int page)
+bool cbEditorPrintout::HasPage(int page)
 {
-    return (m_printed < m_SelEnd);
+    return page && ((size_t)page <= m_pages.size());
 }
 
-void cbEditorPrintout::GetPageInfo(int *minPage, int *maxPage, int *selPageFrom, int *selPageTo)
+void cbEditorPrintout::GetPageInfo(int* minPage, int* maxPage, int* selPageFrom, int* selPageTo)
 {
     // initialize values
     *minPage = 0;
     *maxPage = 0;
     *selPageFrom = 0;
     *selPageTo = 0;
+
+    wxDC* dc = GetDC();
+    if (!dc)
+        return;
+
     // get print page information and convert to printer pixels
     wxSize ppiScr;
-    GetPPIScreen (&ppiScr.x, &ppiScr.y);
-    if (ppiScr.x == 0 || ppiScr.y == 0)
-    {
-        // guess
-        ppiScr.x = 96;
-        ppiScr.y = 96;
-    }
+    GetPPIScreen(&ppiScr.x, &ppiScr.y);
+    if (ppiScr.GetWidth() == 0 || ppiScr.GetHeight() == 0)
+        ppiScr = wxSize(96, 96);
 
-    wxPrintData* ppd = &(g_printer->GetPrintDialogData().GetPrintData());
-    // We cannot use GetSize from wxPrintData, because it always returns -1 for page.x and page.y,
     wxPrintPaperDatabase paperDB;
     paperDB.CreateDatabase();
-    wxSize page=paperDB.GetSize(ppd->GetPaperId());
-    if(ppd->GetOrientation() == wxLANDSCAPE )
+    wxPrintData& ppd = g_printer->GetPrintDialogData().GetPrintData();
+    wxPaperSize paperId = ppd.GetPaperId();
+    if (paperId == wxPAPER_NONE)
     {
-        int temp = page.x;
-        page.x = page.y;
-        page.y = temp;
+        cbMessageBox(_("No paper format specified from printer. Using DIN-A4 as default."),
+                     _("Unspecified paper format"),
+                     wxICON_WARNING | wxOK);
+
+        paperId = wxPAPER_A4;
+        ppd.SetPaperId(paperId);
+        g_printer->GetPrintDialogData().SetPrintData(ppd);
     }
 
-    // We have to divide through 254 instead of 25.4, because GetSize() of paperDB returns tenth of millimeters
-    page.x = static_cast<int> (page.x * ppiScr.x / 254);
-    page.y = static_cast<int> (page.y * ppiScr.y / 254);
-    m_pageRect = wxRect (0,
-                         0,
-                         page.x,
-                         page.y);
+    wxSize page = paperDB.GetSize(paperId);
+    if (ppd.GetOrientation() == wxLANDSCAPE)
+        page = wxSize(page.GetHeight(), page.GetWidth());
+
+    // We have to divide by 254.0 instead of 25.4, because GetSize() of paperDB returns tenth of millimeters
+    page.Scale(ppiScr.GetWidth()/254.0, ppiScr.GetHeight()/254.0);
+    m_pageRect = wxRect(page);
+
     // get margins information and convert to printer pixels
-    int  top = 15; // default 25
-    int  bottom = 15; // default 25
-    int  left = 20; // default 20
-    int  right = 15; // default 20
+    int top    = 15; // default 25
+    int bottom = 15; // default 25
+    int left   = 20; // default 20
+    int right  = 15; // default 20
 // TODO (Tiwag#1#): get margins from PageSetup Dialog
 //    wxPoint (top, left) = g_pageSetupData->GetMarginTopLeft();
 //    wxPoint (bottom, right) = g_pageSetupData->GetMarginBottomRight();
-    top = static_cast<int> (top * ppiScr.y / 25.4);
-    bottom = static_cast<int> (bottom * ppiScr.y / 25.4);
-    left = static_cast<int> (left * ppiScr.x / 25.4);
-    right = static_cast<int> (right * ppiScr.x / 25.4);
-    m_printRect = wxRect (left,
-                          top,
-                          page.x - (left + right),
-                          page.y - (top + bottom));
+    top    = static_cast <int> (top * ppiScr.GetHeight() / 25.4);
+    bottom = static_cast <int> (bottom * ppiScr.GetHeight() / 25.4);
+    left   = static_cast <int> (left * ppiScr.GetWidth() / 25.4);
+    right  = static_cast <int> (right * ppiScr.GetWidth() / 25.4);
+    m_printRect = wxRect(left, top, page.GetWidth() - (left + right), page.GetHeight() - (top + bottom));
 
-    // wxWidgets 2.4.2, have some printing-related bugs.
-    // one of them is that that GetDC always returns 0 in GetPageInfo.
-    // this means we can't count the pages...
-    wxDC *dc = GetDC();
-    if (dc)
+    ScaleDC(dc);
+
+    // count pages and save start value of each page
+    m_pages.clear();
+    const int numCtrl = m_controls.size();
+    for (int n = 0; n < numCtrl; ++n)
     {
-        ScaleDC(dc);
+        PageInfo info;
 
-        // count pages and save SelStart value of each page
-        m_pPageSelStart->Clear();
-        m_pPageSelStart->Add(m_SelStart);
-        m_printed = m_SelStart;
-        while (HasPage(*maxPage))
+        // get print range start and end
+        info.ctrlIndex = n;
+        info.pageStart = 0;
+        info.selEnd = m_controls[n]->GetLength();
+        if (m_selection && !m_controls[n]->GetSelectedText().empty())
         {
-            //Manager::Get()->GetLogManager()->DebugLog(_T("CountPages: PageCount %d , m_printed %d"), m_pPageSelStart->GetCount(), m_printed);
-            m_printed = m_TextControl->FormatRange (0, m_printed, m_SelEnd,
-                                             dc, dc, m_printRect, m_pageRect);
-            m_pPageSelStart->Add(m_printed);
-            *maxPage += 1;
+            info.pageStart = m_controls[n]->GetSelectionStart();
+            info.selEnd = m_controls[n]->GetSelectionEnd();
+        }
+
+        while (info.pageStart < info.selEnd)
+        {
+            //Manager::Get()->GetLogManager()->DebugLog(wxString::Format("CountPages: PageCount %d, page start %d", (int)m_pages.size(), info.pageStart));
+            m_pages.push_back(info);
+            info.pageStart = m_controls[n]->FormatRange(false, info.pageStart, info.selEnd, dc, dc, m_printRect, m_pageRect);
         }
     }
-    else
-        *maxPage = 32000; // use a fictitious high number
 
-    if (*maxPage > 0)
+    if (!m_pages.empty())
+    {
         *minPage = 1;
-    *selPageFrom = *minPage;
-    *selPageTo = *maxPage;
-    m_printed = m_SelStart;
+        *maxPage = m_pages.size();
+        *selPageFrom = *minPage;
+        *selPageTo = *maxPage;
+    }
 }
 
 bool cbEditorPrintout::OnBeginDocument(int startPage, int endPage)
 {
-    bool result = wxPrintout::OnBeginDocument(startPage, endPage);
-    // FIXME (Tiwag#1#): when the first time a printout is initiated
-    // and you request a page to print which is out of bounds of available pages
-    // it is not recognized by the above check, don't know how to fix this better
-    int maxpage = m_pPageSelStart->GetCount();
-    if( startPage > maxpage || endPage > maxpage )
+    const int maxPage = m_pages.size();
+    if (startPage > endPage || endPage > maxPage)
     {
-        Manager::Get()->GetLogManager()->DebugLog(F(_T("OnBeginDocument ERROR: startPage %d , endPage %d , maxpage %d "), startPage, endPage, maxpage));
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("OnBeginDocument ERROR: startPage %d, endPage %d, maxpage %d", startPage, endPage, maxPage));
         return false;
     }
-    return result;
+
+    return wxPrintout::OnBeginDocument(startPage, endPage);
 }
 
-bool cbEditorPrintout::ScaleDC(wxDC *dc)
+void cbEditorPrintout::ScaleDC(wxDC* dc)
 {
-    if (!dc)
-        return false;
     // get printer and screen sizing values
     wxSize ppiScr;
-    GetPPIScreen (&ppiScr.x, &ppiScr.y);
-    if (ppiScr.x == 0)
-    { // most possible guess 96 dpi
-        ppiScr.x = 96;
-        ppiScr.y = 96;
-    }
+    GetPPIScreen(&ppiScr.x, &ppiScr.y);
+    if (ppiScr.GetWidth() == 0 || ppiScr.GetHeight() == 0)
+        ppiScr = wxSize(96, 96);
+
     wxSize ppiPrt;
-    GetPPIPrinter (&ppiPrt.x, &ppiPrt.y);
-    if (ppiPrt.x == 0)
-    { // scaling factor to 1
-        ppiPrt.x = ppiScr.x;
-        ppiPrt.y = ppiScr.y;
-    }
-    wxSize dcSize = dc->GetSize();
+    GetPPIPrinter(&ppiPrt.x, &ppiPrt.y);
+    if (ppiPrt.GetWidth() == 0 || ppiPrt.GetHeight() == 0)
+        ppiPrt = ppiScr;
+
+    const wxSize dcSize = dc->GetSize();
     wxSize pageSize;
-    GetPageSizePixels (&pageSize.x, &pageSize.y);
+    GetPageSizePixels(&pageSize.x, &pageSize.y);
+
     // set user scale
-    float scale_x = (float)(ppiPrt.x * dcSize.x) /
-                    (float)(ppiScr.x * pageSize.x);
-    float scale_y = (float)(ppiPrt.y * dcSize.y) /
-                    (float)(ppiScr.y * pageSize.y);
-    dc->SetUserScale (scale_x, scale_y);
-    return true;
+    const double scale_x = (double)(ppiPrt.GetWidth()  * dcSize.GetWidth())  / (double)(ppiScr.GetWidth()  * pageSize.GetWidth());
+    const double scale_y = (double)(ppiPrt.GetHeight() * dcSize.GetHeight()) / (double)(ppiScr.GetHeight() * pageSize.GetHeight());
+    dc->SetUserScale(scale_x, scale_y);
 }

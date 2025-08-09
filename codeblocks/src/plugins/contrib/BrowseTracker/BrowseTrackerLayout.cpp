@@ -16,7 +16,7 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: BrowseTrackerLayout.cpp 11347 2018-03-26 14:24:13Z pecanh $
+// RCS-ID: $Id: BrowseTrackerLayout.cpp 13103 2022-12-09 14:16:20Z wh11204 $
 
 /*
 * This file is part of Code::Bocks, an open-source cross-platform IDE
@@ -25,9 +25,9 @@
 * This program is distributed under the terms of the GNU General Public License as published by
 * the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 *
-* $Revision: 11347 $
-* $Id: BrowseTrackerLayout.cpp 11347 2018-03-26 14:24:13Z pecanh $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/BrowseTracker/BrowseTrackerLayout.cpp $
+* $Revision: 13103 $
+* $Id: BrowseTrackerLayout.cpp 13103 2022-12-09 14:16:20Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/BrowseTracker/BrowseTrackerLayout.cpp $
 */
 
 #include "sdk_precomp.h"
@@ -124,7 +124,7 @@ bool BrowseTrackerLayout::Open(const wxString& filename, FileBrowse_MarksHash& m
         if (fname.IsEmpty())
         {
             //pMsg->DebugLog(_T("'File' node exists, but no filename?!?"));
-            pf = 0L;
+            pf = nullptr;
         }
         else
             pf = m_pProject->GetFileByFilename(fname);
@@ -227,7 +227,7 @@ bool BrowseTrackerLayout::Save(const wxString& filename, FileBrowse_MarksHash& m
     TiXmlElement* tgtidx = static_cast<TiXmlElement*>(rootnode->InsertEndChild(TiXmlElement("ActiveTarget")));
     tgtidx->SetAttribute("name", cbU2C(m_pProject->GetActiveBuildTarget()));
 
-    ProjectFile* active = 0L;
+    ProjectFile* active = nullptr;
     cbEditor* ed = Manager::Get()->GetEditorManager()->GetBuiltinActiveEditor();
     if (ed)
         active = ed->GetProjectFile();
@@ -284,19 +284,20 @@ void BrowseTrackerLayout::DumpBrowse_Marks( const wxString /*hashType*/, FileBro
 // ----------------------------------------------------------------------------
 {
     #if defined(LOGGING)
-    LOGIT( _T("--- DumpBrowseData ---[%s]"), hashType.c_str()  );
+    LOGIT(wxString::Format("--- DumpBrowseData ---[%s]", hashType));
 
     FileBrowse_MarksHash* phash = &m_FileBrowse_MarksArchive;
     #if defined(LOGGING)
-    LOGIT( _T("Dump_%s Size[%lu]"), hashType.wx_str(), static_cast<unsigned long>(phash->size()) );
+    LOGIT(wxString::Format("Dump_%s Size[%zu]", hashType, phash->size()));
     #endif
     for (FileBrowse_MarksHash::iterator it = phash->begin(); it != phash->end(); ++it)
     {
         wxString filename = it->first;
         BrowseMarks* p = it->second;
-        LOGIT( _T("Filename[%s]%s*[%p]name[%s]"), filename.c_str(), hashType.c_str(), p, p->GetFilePath().c_str() );
+        LOGIT(wxString::Format("Filename[%s]%s*[%p]name[%s]"), filename, hashType, p, (p ? p->GetFilePath() : wxString()));
         if (p)
-        {   //dump the browse marks
+        {
+            //dump the browse marks
             p->Dump();
         }
     }

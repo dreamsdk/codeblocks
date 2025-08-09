@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11086 $
-* $Id: wxsdrawingwindow.cpp 11086 2017-06-06 22:41:44Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdrawingwindow.cpp $
+* $Revision: 13381 $
+* $Id: wxsdrawingwindow.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsdrawingwindow.cpp $
 */
 
 #include "wxsdrawingwindow.h"
@@ -64,7 +64,7 @@ END_EVENT_TABLE()
 
 wxsDrawingWindow::wxsDrawingWindow(wxWindow* Parent,wxWindowID id,const wxPoint& pos,const wxSize& size,long style,const wxString& name):
     wxScrolledWindow(Parent,id,pos,size,style,name),
-    m_Bitmap(0),
+    m_Bitmap(nullptr),
     m_IsBlockFetch(false),
     m_DuringFetch(false),
     m_DuringChangeCnt(0),
@@ -86,7 +86,7 @@ wxsDrawingWindow::~wxsDrawingWindow()
 {
     m_IsDestroyed = true;
     delete m_Bitmap;
-    m_Bitmap = 0;
+    m_Bitmap = nullptr;
 }
 
 void wxsDrawingWindow::BeforeContentChanged()

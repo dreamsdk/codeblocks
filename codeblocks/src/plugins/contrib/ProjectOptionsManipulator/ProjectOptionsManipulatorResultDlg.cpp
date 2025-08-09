@@ -2,24 +2,24 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10861 $
- * $Id: ProjectOptionsManipulatorResultDlg.cpp 10861 2016-06-08 19:24:21Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulatorResultDlg.cpp $
+ * $Revision: 13550 $
+ * $Id: ProjectOptionsManipulatorResultDlg.cpp 13550 2024-09-14 04:36:54Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/ProjectOptionsManipulator/ProjectOptionsManipulatorResultDlg.cpp $
  */
 
 #include "ProjectOptionsManipulatorResultDlg.h"
 
 //(*InternalHeaders(ProjectOptionsManipulatorResultDlg)
+#include <wx/button.h>
+#include <wx/intl.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
-#include <wx/textctrl.h>
-#include <wx/intl.h>
-#include <wx/button.h>
 #include <wx/string.h>
+#include <wx/textctrl.h>
 //*)
 
 //(*IdInit(ProjectOptionsManipulatorResultDlg)
-const long ProjectOptionsManipulatorResultDlg::ID_TXT_RESULT = wxNewId();
+const wxWindowID ProjectOptionsManipulatorResultDlg::ID_TXT_RESULT = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(ProjectOptionsManipulatorResultDlg,wxDialog)
@@ -30,9 +30,9 @@ END_EVENT_TABLE()
 ProjectOptionsManipulatorResultDlg::ProjectOptionsManipulatorResultDlg(wxWindow* parent,wxWindowID id)
 {
 	//(*Initialize(ProjectOptionsManipulatorResultDlg)
-	wxStaticText* lblResult;
-	wxBoxSizer* bszMainV;
 	wxBoxSizer* bszMainH;
+	wxBoxSizer* bszMainV;
+	wxStaticText* lblResult;
 	wxStdDialogButtonSizer* sbzOK;
 
 	Create(parent, id, _("Project Options Plugin - Results"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER, _T("id"));
@@ -49,8 +49,8 @@ ProjectOptionsManipulatorResultDlg::ProjectOptionsManipulatorResultDlg(wxWindow*
 	bszMainV->Add(sbzOK, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5);
 	bszMainH->Add(bszMainV, 1, wxEXPAND, 5);
 	SetSizer(bszMainH);
-	bszMainH->Fit(this);
 	bszMainH->SetSizeHints(this);
+	Center();
 	//*)
 }
 

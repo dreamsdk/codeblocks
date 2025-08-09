@@ -15,9 +15,9 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
     public:
         explicit DebuggerConfiguration(const ConfigManagerWrapper &config);
 
-        virtual cbDebuggerConfiguration* Clone() const;
-        virtual wxPanel* MakePanel(wxWindow *parent);
-        virtual bool SaveChanges(wxPanel *panel);
+        cbDebuggerConfiguration* Clone() const override;
+        wxPanel* MakePanel(wxWindow *parent) override;
+        bool SaveChanges(wxPanel *panel) override;
     public:
         enum Flags
         {
@@ -37,13 +37,6 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
         wxString GetUserArguments(bool expandMacro = true);
         wxString GetDisassemblyFlavorCommand();
         wxString GetInitCommands();
-		
-		// DreamSDK::Start
-		bool IsLoaderNecessary();
-        wxString GetLoaderExecutable(bool expandMacro = true);
-        wxString GetLoaderArguments(const wxString& debuggee, bool expandMacro = true);
-        int GetLoaderWaitingTime();
-		// DreamSDK::End
 
 };
 

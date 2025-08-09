@@ -17,6 +17,7 @@
 #include <wx/hashset.h>
 
 class cbProject;
+class ProjectGlob;
 class ProjectBuildTarget;
 class pfDetails;
 
@@ -48,9 +49,10 @@ class DLLIMPORT ProjectFile
           * the internal variables. It does NOT rename the file on disk...
           * It updates @c file, @c relativeFilename, @c relativeToCommonTopLevelPath
           * and finally marks the parent project as modified.
-          * @note This allows renaming only the LAST part of the filename (the name and extension)
+          * @note This allows renaming only the LAST part of the filename (the name and extension).
+          * @note It will send the cbEVT_PROJECT_FILE_RENAMED event.
           */
-        void Rename(const wxString& new_name);
+        void Rename(const wxString& newName);
 
         /** Make this file belong to an additional build target.
           * @param targetName The build target to add this file to. */
@@ -188,6 +190,11 @@ class DLLIMPORT ProjectFile
 
         /** An array of strings, containing the names of all the build targets this file belongs to. */
         wxArrayString buildTargets;
+
+        /** If this file is part of a project glob, the id for glob will be stored here, InvalidGlobId otherwise **/
+        GlobId globId;
+
+        bool IsGlobValid() const { return globId != InvalidGlobId; }
 
         /** A string that represents the virtual folder this file will appear in.
           * This is a relative path which doesn't have to exist in the filesystem

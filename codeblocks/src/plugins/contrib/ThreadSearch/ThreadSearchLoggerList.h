@@ -25,40 +25,40 @@ class ThreadSearch;
 class ThreadSearchView;
 class ThreadSearchEvent;
 
-class ThreadSearchLoggerList : public wxEvtHandler, public ThreadSearchLoggerBase
+class ThreadSearchLoggerList : public ThreadSearchLoggerBase
 {
 public:
     /** Constructor. */
     ThreadSearchLoggerList(ThreadSearchView& threadSearchView, ThreadSearch& threadSearchPlugin,
-                            InsertIndexManager::eFileSorting fileSorting, wxPanel* pParent, long id);
+                            InsertIndexManager::eFileSorting fileSorting, wxWindow* pParent, long id);
 
     /** Destructor. */
-    virtual ~ThreadSearchLoggerList();
+    ~ThreadSearchLoggerList() override;
 
     /** Getter */
-    virtual eLoggerTypes GetLoggerType() {return TypeList;}
+    eLoggerTypes GetLoggerType() override { return TypeList; }
 
     /** Called by ThreadSearchView when new settings are applied. */
-    virtual void Update();
+    void Update() override;
 
     /** Called by ThreadSearchView to process a ThreadSearchEvent
       * sent by worker thread.
       */
-    virtual void OnThreadSearchEvent(const ThreadSearchEvent& event);
+    void OnThreadSearchEvent(const ThreadSearchEvent& event) override;
 
     /** Removes all items from logger. */
-    virtual void Clear();
+    void Clear() override;
 
     /** Called on search begin to prepare logger. */
-    virtual void OnSearchBegin(const ThreadSearchFindData& findData);
+    void OnSearchBegin(const ThreadSearchFindData& findData) override;
     /** Called on search end */
-    virtual void OnSearchEnd();
+    void OnSearchEnd() override;
 
     /** Returns the logger window. */
-    virtual wxWindow* GetWindow();
+    wxWindow* GetWindow() override;
 
     /** Sets focus on list window. */
-    virtual void SetFocus();
+    void SetFocus() override;
 
     /** Single click event handler */
     void OnLoggerListClick(wxListEvent& event);
@@ -68,7 +68,7 @@ public:
 
     /** Clicked in the header of the list control */
     void OnColumnClick(wxListEvent& event);
-protected:
+private:
     /** SetListColumns
       * The SimpleListLog constructor does not set the provided columns on Linux.
       * It is necessary to set columns after the ThreadSearchLoggerList constructor.
@@ -94,10 +94,10 @@ protected:
     bool IsLineResultLine(long index = -1);
 
     /** Dynamic events connection. */
-    virtual void ConnectEvents(wxEvtHandler* pEvtHandler);
+    void ConnectEvents(wxEvtHandler* pEvtHandler);
 
     /** Dynamic events disconnection. */
-    virtual void DisconnectEvents(wxEvtHandler* pEvtHandler);
+    void DisconnectEvents(wxEvtHandler* pEvtHandler);
 
     /** Contextual menu event handler */
     void OnLoggerListContextualMenu(wxContextMenuEvent& event);

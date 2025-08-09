@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11706 $
- * $Id: workspaceloader.cpp 11706 2019-05-25 21:39:45Z bluehazzard $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/workspaceloader.cpp $
+ * $Revision: 13644 $
+ * $Id: workspaceloader.cpp 13644 2025-03-29 05:36:19Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/workspaceloader.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -65,7 +65,7 @@ bool WorkspaceLoader::Open(const wxString& filename, wxString& Title)
     // If I click close AFTER pMan and pMsg are calculated,
     // I get a segfault.
     // I modified classes projectmanager and logmanager,
-    // so that when self==NULL, they do nothing
+    // so that when self==nullptr, they do nothing
     // (constructors, destructors and static functions excempted from this)
     // This way, we'll use the *manager::Get() functions to check for nulls.
 
@@ -112,13 +112,21 @@ bool WorkspaceLoader::Open(const wxString& filename, wxString& Title)
             wxFileName fname(projectFilename);
             wxFileName wfname(filename);
             fname.MakeAbsolute(wfname.GetPath(wxPATH_GET_VOLUME | wxPATH_GET_SEPARATOR));
-            cbProject* pProject = GetpMan()->LoadProject(fname.GetFullPath(), false); // don't activate it
-            if (!pProject)
+            // => verify if file exists !!
+            if (::wxFileExists(fname.GetFullPath()))
             {
-                GetpMsg()->LogError(wxString::Format(_("Unable to open \"%s\" during opening workspace \"%s\" "),
-                                                       projectFilename.c_str(),
-                                                       filename.c_str()));
-                failedProjects++;
+                cbProject* pProject = GetpMan()->LoadProject(fname.GetFullPath(), false); // don't activate it
+                if (!pProject)
+                {
+                    GetpMsg()->LogError(wxString::Format(_("Unable to open \"%s\" during opening workspace \"%s\""),
+                                                           projectFilename, filename));
+                    failedProjects++;
+                }
+            }
+            else
+            {
+                GetpMsg()->LogError(wxString::Format(_("The file \"%s\" no longer exists during opening workspace \"%s\""),
+                                                       projectFilename, filename));
             }
         }
         proj = proj->NextSiblingElement("Project");
@@ -277,7 +285,7 @@ bool WorkspaceLoader::LoadLayout(const wxString& filename)
         return false; // Can't load XML file?!
 
     if ( ! GetpMan() || ! GetpMsg() )
-        return false; // GetpMan or GetpMsg returns NULL?!
+        return false; // GetpMan or GetpMsg returns nullptr?!
 
     TiXmlElement* root = doc.FirstChildElement("CodeBlocks_workspace_layout_file");
     if (!root)
@@ -299,11 +307,11 @@ bool WorkspaceLoader::LoadLayout(const wxString& filename)
 
         if (major >= WORKSPACE_LAYOUT_FILE_VERSION_MAJOR && minor > WORKSPACE_LAYOUT_FILE_VERSION_MINOR)
         {
-            GetpMsg()->DebugLog(F(_T("Workspace layout file version is > %d.%d. Trying to load..."), WORKSPACE_LAYOUT_FILE_VERSION_MAJOR, WORKSPACE_LAYOUT_FILE_VERSION_MINOR));
+            GetpMsg()->DebugLog(wxString::Format("Workspace layout file version is > %d.%d. Trying to load...", WORKSPACE_LAYOUT_FILE_VERSION_MAJOR, WORKSPACE_LAYOUT_FILE_VERSION_MINOR));
             AnnoyingDialog dlg(_("Workspace layout file format is newer/unknown"),
-                                F(_("This workspace layout file was saved with a newer version of Code::Blocks.\n"
+                                wxString::Format(_("This workspace layout file was saved with a newer version of Code::Blocks.\n"
                                 "Will try to load, but you might see unexpected results.\n"
-                                "In this case close the workspace, delete %s and reopen the workspace."),filename.wx_str()),
+                                "In this case close the workspace, delete %s and reopen the workspace."),filename),
                                 wxART_WARNING,
                                 AnnoyingDialog::OK);
             dlg.ShowModal();
@@ -318,7 +326,7 @@ bool WorkspaceLoader::LoadLayout(const wxString& filename)
             {
                 msg << _("0.0 (unversioned) to 1.0:\n");
                 msg << _("  * save editor-pane layout and order.\n");
-                msg << _("\n");
+                msg << _T("\n");
             }
 
             if (!msg.IsEmpty())
@@ -363,10 +371,10 @@ bool WorkspaceLoader::LoadLayout(const wxString& filename)
         if (project)
         {
             GetpMan()->SetProject(project);
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("Project %s has been activated."), fname.GetFullPath().wx_str()));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Project %s has been activated.", fname.GetFullPath()));
         }
         else
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("Could not activate project: %s"), fname.GetFullPath().wx_str()));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Could not activate project: %s", fname.GetFullPath()));
     }
     // else XML element 'ActiveProject' not found?!
 

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 8525 $
- * $Id: copystrings.cpp 8525 2012-11-07 23:02:50Z killerbot $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/copystrings/copystrings.cpp $
+ * $Revision: 13148 $
+ * $Id: copystrings.cpp 13148 2023-01-13 18:30:53Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/copystrings/copystrings.cpp $
  */
 
 #include "sdk.h"
@@ -180,7 +180,7 @@ int copystrings::Execute()
             wxTheClipboard->SetData( new wxTextDataObject(result));
             wxTheClipboard->Close();
         }
-        cbMessageBox(_T("Literal strings copied to clipboard."));
+        cbMessageBox(_("Literal strings copied to clipboard."));
 	}
 	return -1;
 }

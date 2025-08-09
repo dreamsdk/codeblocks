@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10978 $
- * $Id: editarrayfiledlg.cpp 10978 2017-01-23 01:12:01Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editarrayfiledlg.cpp $
+ * $Revision: 12607 $
+ * $Id: editarrayfiledlg.cpp 12607 2021-12-23 08:50:04Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editarrayfiledlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -46,7 +46,7 @@ EditArrayFileDlg::EditArrayFileDlg(wxWindow* parent, wxArrayString& array, bool 
         wxFileName fname;
         fname.Assign(m_Array[i]);
         if (!m_UseRelativePaths && fname.IsRelative())
-            fname.Normalize(wxPATH_NORM_ALL & ~wxPATH_NORM_CASE, m_BasePath);
+            fname.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_TILDE | wxPATH_NORM_ABSOLUTE | wxPATH_NORM_LONG | wxPATH_NORM_SHORTCUT, m_BasePath);
         else if (m_UseRelativePaths && fname.IsAbsolute())
             fname.MakeRelativeTo(m_BasePath);
         m_Array[i] = fname.GetFullPath();

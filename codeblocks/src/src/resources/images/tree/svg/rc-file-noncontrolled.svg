@@ -1,0 +1,7 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)">
+    <path d="m1.19 296.9v-8.202h3.881l1.94 2.237v5.965z" fill="#f2f2f9" stroke="#9c9cb6" stroke-width=".2646"/>
+    <path d="m4.895 288.7v2.38h2.115" fill="#d0d0df" stroke="#9c9cb6" stroke-width=".2646px"/>
+    <path d="m2.117 292.502.529-.53 1.455 1.456 1.455-1.455.53.529-1.456 1.455 1.455 1.455-.529.53-1.455-1.456-1.455 1.456-.53-.53 1.456-1.455z" fill="#ff0202" fill-rule="evenodd" shape-rendering="crispEdges" stroke="#ff0202" stroke-width=".07938"/>
+  </g>
+</svg>

@@ -62,19 +62,31 @@ void ThreadSearchViewManagerLayout::RemoveViewFromManager()
 
         m_IsManaged = false;
         m_IsShown   = false;
+
+        // We need to delete this to make it behave like the notebook.
+        delete m_pThreadSearchView;
+        m_pThreadSearchView = nullptr;
     }
 }
 
 
-bool ThreadSearchViewManagerLayout::ShowView(bool show)
+bool ThreadSearchViewManagerLayout::ShowView(uint32_t flags)
 {
-    if ( (m_IsManaged == false) || (show == IsViewShown()) )
+    const bool show = ((flags & ShowViewFlags::Show) == ShowViewFlags::Show);
+    if ((m_IsManaged == false) || (show == IsViewShown()))
         return false;
+
+    wxWindow *focused = nullptr;
+    if ((flags & ShowViewFlags::PreserveFocus) == ShowViewFlags::PreserveFocus)
+        focused = wxWindow::FindFocus();
 
     CodeBlocksDockEvent evt(show ? cbEVT_SHOW_DOCK_WINDOW : cbEVT_HIDE_DOCK_WINDOW);
     evt.pWindow = (wxWindow*)m_pThreadSearchView;
     evt.shown = show;
     Manager::Get()->ProcessEvent(evt);
+
+    if (focused)
+        focused->SetFocus();
 
     m_IsShown = show;
 

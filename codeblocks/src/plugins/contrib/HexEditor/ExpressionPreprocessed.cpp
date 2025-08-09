@@ -17,7 +17,7 @@
 *
 * $Revision: 8566 $
 * $Id: ExpressionPreprocessed.cpp 8566 2012-11-14 23:39:16Z thomasdenk $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/ExpressionPreprocessed.cpp $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/ExpressionPreprocessed.cpp $
 */
 
 #include "ExpressionPreprocessed.h"

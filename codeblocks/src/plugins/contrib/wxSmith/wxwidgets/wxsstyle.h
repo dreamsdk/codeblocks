@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11434 $
-* $Id: wxsstyle.h 11434 2018-08-07 07:12:59Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsstyle.h $
+* $Revision: 12722 $
+* $Id: wxsstyle.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsstyle.h $
 */
 
 #ifndef __WXSSTYLE_H
@@ -30,6 +30,8 @@
 #include "../wxscodinglang.h"
 #include <wx/dynarray.h>
 #include <wx/arrstr.h>
+
+#include <cbplugin.h>
 
 // TODO: Think about non-macro implementation
 
@@ -76,7 +78,7 @@ struct wxsStyle
  * item. It means that item must have extra long variables to remember style
  * settings.
  */
-class wxsStyleSet
+class PLUGIN_EXPORT wxsStyleSet
 {
     public:
 

@@ -2,9 +2,9 @@
 <!DOCTYPE CodeBlocks_compiler_options>
 <CodeBlocks_compiler_options>
     <if platform="windows">
-        <Program name="C"         value="mingw32-gcc.exe"/>
-        <Program name="CPP"       value="mingw32-g++.exe"/>
-        <Program name="LD"        value="mingw32-g++.exe"/>
+        <Program name="C"         value="gcc.exe"/>
+        <Program name="CPP"       value="g++.exe"/>
+        <Program name="LD"        value="g++.exe"/>
         <Program name="DBGconfig" value="gdb_debugger:Default"/>
         <Program name="LIB"       value="ar.exe"/>
         <Program name="WINDRES"   value="windres.exe"/>
@@ -40,16 +40,31 @@
 
     <!-- Summary of GCC options: http://gcc.gnu.org/onlinedocs/gcc/Option-Summary.html -->
 
-    <Option name="Produce debugging symbols"
-            option="-g"
-            category="Debugging"
-            checkAgainst="-O -O1 -O2 -O3 -Os"
-            checkMessage="You have optimizations enabled. This is Not A Good Thing(tm) when producing debugging symbols..."
-            supersedes="-s"/>
-    <Option name="Optimize debugging executable (compile speed, execution speed and better debugging)"
-            option="-Og"
-            category="Debugging"
-            supersedes="-O -O1 -O2 -O3"/>
+    <Category name="Debugging">
+        <Option name="Produce debugging symbols"
+                option="-g"
+                checkAgainst="-O -O1 -O2 -O3 -Os"
+                checkMessage="You have optimizations enabled. This is Not A Good Thing(tm) when producing debugging symbols..."
+                supersedes="-s"/>
+        <Option name="Optimize debugging executable (compile speed, execution speed and better debugging)"
+                option="-Og"
+                supersedes="-O -O1 -O2 -O3"/>
+        <Option name="Tune Debugging for GDB"
+                option="-ggdb"
+                checkAgainst="-O1 -O2 -Os -O3 -O4 -gdwarf -gdwarf-4"
+                checkMessage="You have other optimizations or debugging settings that are not good for GDB."
+                supersedes="-s -gline-tables-only"/>
+        <Option name="Tune Debugging for DWARF for GDB"
+                option="-gdwarf"
+                checkAgainst="-Os -O1 -O2 -O3 -O4 -ggdb -gdwarf-4"
+                checkMessage="You have other optimizations or debugging settings that are not good for GDB."
+                supersedes="-s -gline-tables-only"/>
+        <Option name="Tune Debugging for DWARF for LLDB"
+                option="-gdwarf-4"
+                checkAgainst="-Os -O1 -O2 -O3 -O4 -ggdb -gdwarf"
+                checkMessage="You have other optimizations or debugging settings that are not good for LLDB."
+                supersedes="-s -gline-tables-only"/>
+    </Category>
     <Option name="Target x86 (32bit)"
             option="-m32"
             additionalLibs="-m32"
@@ -91,7 +106,7 @@
         <Option name="Warn whenever a switch statement has an index of enumerated type and lacks a case for one or more of the named codes of that enumeration"
                 option="-Wswitch-enum"/>
         <if exec="C -dumpversion"
-            regex="^[4-9]"
+            version_greater_equal="4"
             default="true">
             <Option name="Warn if a user supplied include directory does not exist"
                     option="-Wmissing-include-dirs"/>
@@ -145,7 +160,7 @@
         <Command name="LinkDynamic"
                  value="$linker -shared -Wl,--output-def=$def_output -Wl,--out-implib=$static_output -Wl,--dll $libdirs $link_objects $link_resobjects -o $exe_output $link_options $libs"/>
         <Command name="LinkStatic"
-                 value="cmd /c if exist $static_output del $static_output\n$lib_linker -r -s $static_output $link_objects"/>
+                 value="cmd /c if exist $static_output del $TO_WINDOWS_PATH{$static_output}\n$lib_linker -r -s $static_output $link_objects"/>
     </if>
     <else>
         <Command name="LinkNative"

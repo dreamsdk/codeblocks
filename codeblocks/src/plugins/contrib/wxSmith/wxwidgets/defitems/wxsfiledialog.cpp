@@ -16,9 +16,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11893 $
-* $Id: wxsfiledialog.cpp 11893 2019-11-02 06:40:18Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsfiledialog.cpp $
+* $Revision: 13547 $
+* $Id: wxsfiledialog.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsfiledialog.cpp $
 */
 
 #include "wxsfiledialog.h"
@@ -75,6 +75,7 @@ void wxsFileDialog::OnBuildCreatingCode()
                       m_Wildcard.wx_str());
             }
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             return;
         }
 
@@ -86,7 +87,7 @@ void wxsFileDialog::OnBuildCreatingCode()
     }
 }
 
-void wxsFileDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsFileDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsFileDialog,m_Message,_("Message"),_T("message"),_T(""),false);
     WXS_SHORT_STRING(wxsFileDialog,m_DefaultDir,_("Default directory"),_T("default_dir"),_T(""),false);

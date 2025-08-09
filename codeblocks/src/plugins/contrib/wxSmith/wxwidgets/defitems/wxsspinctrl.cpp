@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11154 $
-* $Id: wxsspinctrl.cpp 11154 2017-08-15 21:52:38Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinctrl.cpp $
+* $Revision: 13547 $
+* $Id: wxsspinctrl.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsspinctrl.cpp $
 */
 
 #include "wxsspinctrl.h"
@@ -26,7 +26,7 @@
 
 namespace
 {
-    wxsRegisterItem<wxsSpinCtrl> Reg(_T("SpinCtrl"),wxsTWidget,_T("Standard"),90);
+    wxsRegisterItem<wxsSpinCtrl> Reg(_T("SpinCtrl"),wxsTWidget,_T("Standard"),91);
 
     WXS_ST_BEGIN(wxsSpinCtrlStyles,_T(""))
         WXS_ST_CATEGORY("wxSpinCtrl")
@@ -83,14 +83,14 @@ void wxsSpinCtrl::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsSpinCtrl::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsSpinCtrl::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxSpinCtrl* Preview = new wxSpinCtrl(Parent,GetId(),Value,Pos(Parent),Size(Parent),Style(),Min,Max);
     if ( !Value.empty() ) Preview->SetValue(Value);
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsSpinCtrl::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsSpinCtrl::OnEnumWidgetProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsSpinCtrl,Value,_("Value"),_T("value"),_T(""),true)
     WXS_LONG(wxsSpinCtrl,Min,_("Min"),_T("min"),0)

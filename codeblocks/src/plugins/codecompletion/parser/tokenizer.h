@@ -170,7 +170,7 @@ public:
     /** Skip from the current position to the end of line, use with care outside this class!*/
     bool SkipToEOL();
 
-    /** Skip to then end of the C++ style comment */
+    /** Skip to the end of the C++ style comment */
     bool SkipToInlineCommentEnd();
 
     /** Check whether the Tokenizer reaches the end of the buffer (file) */
@@ -296,6 +296,10 @@ protected:
 
     /** Skip any "tab" "white-space" */
     bool SkipWhiteSpace();
+
+   /** Skip any invalid utf8 chars */
+   bool SkipInvalid();
+   int IsChrValidUTF8(uint32_t c);
 
     /** Skip backslash before newline */
     bool SkipBackslashBeforeEOL();

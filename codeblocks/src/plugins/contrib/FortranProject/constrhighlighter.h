@@ -45,6 +45,7 @@ class ConstrHighlighter
         void ClearHighlighting(cbStyledTextCtrl* control, bool forceAction=false);
         void DoWork(cbEditor* editor, FortranSourceForm fsForm);
         void ReadOptions();
+        int GetConstructStartPos(cbEditor* editor, FortranSourceForm fsForm);
 
     private:
         bool m_MakeHighlight;
@@ -52,8 +53,7 @@ class ConstrHighlighter
         wxColour m_UnfinColour;
         int m_CurrentPosition;
         FortranSourceForm m_CurrentSForm;
-        int m_IndicFound;
-        int m_IndicNotFound;
+        int m_IndicHighlight;
         bool m_WasCleared;
         std::set<wxString> m_KeywordSet;
         std::map<wxString, FConstruct::FConstructType> m_FConstructTypeMap;

@@ -58,13 +58,14 @@
 											<object class="wxStaticText" name="ID_STATICTEXT3">
 												<label>Filename:</label>
 											</object>
-											<flag>wxALIGN_TOP</flag>
+											<flag>wxALIGN_CENTER_VERTICAL</flag>
 										</object>
 										<object class="sizeritem">
-											<object class="wxStaticText" name="txtProjectFilename">
-												<label></label>
+											<object class="wxTextCtrl" name="txtProjectFilename">
+												<style>wxTE_READONLY</style>
 											</object>
 											<flag>wxEXPAND</flag>
+											<option>1</option>
 										</object>
 										<object class="sizeritem">
 											<object class="wxStaticText" name="ID_STATICTEXT4">
@@ -94,7 +95,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT5">
-														<label>The file must exist, no Makefile will be auto-generated!&#x0A;If you make changes here, the special settings in the projects build&#x0A;options will only be enabled (or disabled), if the project is saved.&#x0A;</label>
+														<label>The file must exist, no Makefile will be auto-generated!&#x0A;If you make changes here, the special settings in the projects build&#x0A;options will only be enabled (or disabled), if the project is saved.</label>
 														<fg>#800000</fg>
 													</object>
 													<flag>wxALIGN_LEFT</flag>
@@ -202,7 +203,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT10">
-														<label>(this setting is mostly useful for large projects containing similarly named files&#x0A;differing on extension only)&#x0A;</label>
+														<label>(this setting is mostly useful for large projects containing similarly named files&#x0A;differing on extension only)</label>
 														<fg>#800000</fg>
 													</object>
 													<flag>wxALIGN_LEFT</flag>
@@ -228,7 +229,7 @@
 												</object>
 												<object class="sizeritem">
 													<object class="wxStaticText" name="ID_STATICTEXT23">
-														<label>(disabling the checking for externally modified files is mostly useful for projects&#x0A;on slow network shares. Be careful, external modification might silently&#x0A;override the files, if you do not save them from inside Code::Blocks)&#x0A;</label>
+														<label>(disabling the checking for externally modified files is mostly useful for projects&#x0A;on slow network shares. Be careful, external modification might silently&#x0A;override the files, if you do not save them from inside Code::Blocks)</label>
 														<fg>#800000</fg>
 													</object>
 													<flag>wxALIGN_LEFT</flag>

@@ -34,7 +34,7 @@ wxsImage::wxsImage(wxsItemResData *Data) :
     wxsTool(Data, &Reg.Info, 0, 0)
 {
     int         n;
-    wxString    ss, tt;
+    wxString    ss;
     wxFileName  fn;
 
     // nothing selected yet
@@ -47,10 +47,10 @@ wxsImage::wxsImage(wxsItemResData *Data) :
     fn = Data->GetSrcFileName();
     ss = fn.GetPath((wxPATH_GET_VOLUME + wxPATH_GET_SEPARATOR));
     n  = ss.Len();
-    ss = ss + _("wximages") + ss[n-1];
+    ss = ss + "wximages" + ss[n-1];
 
     m_IDir = ss;
-    m_RDir = _("./wximages/");
+    m_RDir = "./wximages/";
     m_Base = fn.GetName();
 }
 
@@ -61,11 +61,9 @@ wxsImage::wxsImage(wxsItemResData *Data) :
  */
 void wxsImage::OnBuildCreatingCode()
 {
-    wxString    inc;
     wxString    vname;                  // this variable name
     wxString    bname;                  // name of the bitmap variable
     wxString    xname;                  // XPM data block name
-    wxString    ss, tt;                 // general use
 
     // have we already been here?
     if(m_IsBuilt) {
@@ -78,10 +76,10 @@ void wxsImage::OnBuildCreatingCode()
         case wxsCPP:
             {
                 vname = GetVarName();
-                bname = vname + _("_BMP");
-                xname = vname + _("_XPM");
-                AddHeader(_("<wx/image.h>"), GetInfo().ClassName, 0);
-                AddHeader(_("<wx/bitmap.h>"), GetInfo().ClassName, 0);
+                bname = vname + "_BMP";
+                xname = vname + "_XPM";
+                AddHeader("<wx/image.h>", GetInfo().ClassName, 0);
+                AddHeader("<wx/bitmap.h>", GetInfo().ClassName, 0);
 
                 // store the XPM data someplace
                 StoreXpmData();
@@ -111,11 +109,11 @@ void wxsImage::OnBuildCreatingCode()
 
 /*! \brief Enumerate the tool's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsImage::OnEnumToolProperties(cb_unused long Flags)
+void wxsImage::OnEnumToolProperties(cb_unused long _Flags)
 {
     // starting a new build cycle
     m_IsBuilt = false;
@@ -123,7 +121,7 @@ void wxsImage::OnEnumToolProperties(cb_unused long Flags)
 
     // details
     WXS_IMAGE(wxsImage, m_ImageData, _("Image"), _T("image"));
-    WXS_ARRAYSTRING(wxsImage, m_ImageData, _("Image as Text"), _T("image_text"), _("item2"));
+    WXS_ARRAYSTRING(wxsImage, m_ImageData, _("Image as Text"), _T("image_text"), "item2");
     WXS_BOOL(wxsImage, m_Include, _("Use Include File"), _T("use_include"), false);
 };
 

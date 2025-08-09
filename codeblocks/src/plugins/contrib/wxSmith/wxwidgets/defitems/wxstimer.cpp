@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxstimer.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstimer.cpp $
+* $Revision: 13547 $
+* $Id: wxstimer.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstimer.cpp $
 */
 
 #include "wxstimer.h"
@@ -67,7 +67,7 @@ void wxsTimer::OnBuildCreatingCode()
     }
 }
 
-void wxsTimer::OnEnumToolProperties(cb_unused long Flags)
+void wxsTimer::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_LONG(wxsTimer,m_Interval,_("Interval"),_T("interval"),0);
     WXS_BOOL(wxsTimer,m_OneShot,_("One Shot"),_T("oneshot"),false);

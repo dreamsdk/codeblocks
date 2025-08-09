@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsparent.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.h $
+* $Revision: 13547 $
+* $Id: wxsparent.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsparent.h $
 */
 
 #ifndef WXSPARENT_H
@@ -26,6 +26,7 @@
 #include "wxsitem.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 /** \brief This class represents widget with child items
  *
@@ -36,7 +37,7 @@
  * xml data since this will be used.
  *
  */
-class wxsParent: public wxsItem
+class PLUGIN_EXPORT wxsParent: public wxsItem
 {
     public:
 
@@ -122,7 +123,7 @@ class wxsParent: public wxsItem
          * This function may be overridden in child classes to add extra
          * configuration for each child, f.ex. configuration of sizer entries.
          */
-        virtual wxsPropertyContainer* OnBuildExtra() { return 0; }
+        virtual wxsPropertyContainer* OnBuildExtra() { return nullptr; }
 
         /** \brief Returning name of additional object created for child items
          *
@@ -160,13 +161,13 @@ class wxsParent: public wxsItem
          * here some additional properties before and/or after properties of
          * child item.
          *
-         * Default implementation calls Child->EnumItemProperties(Flags)
+         * Default implementation calls Child->EnumItemProperties(_Flags)
          * and Extra->EnumProperties at the end.
          *
-         * \note This function MUST call Child->EnumItemProperties(Flags)
+         * \note This function MUST call Child->EnumItemProperties(_Flags)
          *       somewhere in the code.
          */
-        void OnEnumChildProperties(wxsItem* Child,long Flags);
+        void OnEnumChildProperties(wxsItem* Child,long _Flags);
 
         /** \brief Rewritten xml reading function - it will add support for children loading */
         virtual bool OnXmlRead(TiXmlElement* Element,bool IsXRC,bool IsExtra);

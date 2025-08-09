@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxseventseditor.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxseventseditor.cpp $
+* $Revision: 13627 $
+* $Id: wxseventseditor.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxseventseditor.cpp $
 */
 
 #include "wxseventseditor.h"
@@ -35,8 +35,8 @@ namespace
 }
 
 wxsEventsEditor::wxsEventsEditor():
-    m_Item(0),
-    m_Events(0),
+    m_Item(nullptr),
+    m_Events(nullptr),
     m_Source(),
     m_Header(),
     m_Class(),
@@ -46,8 +46,8 @@ wxsEventsEditor::wxsEventsEditor():
 
 wxsEventsEditor::~wxsEventsEditor()
 {
-    m_Item = 0;
-    m_Events = 0;
+    m_Item = nullptr;
+    m_Events = nullptr;
     m_Ids.Clear();
 }
 
@@ -60,8 +60,8 @@ wxsEventsEditor& wxsEventsEditor::Get()
 void wxsEventsEditor::BuildEvents(wxsItem* Item,wxsPropertyGridManager* Grid)
 {
     m_Item = Item;
-    m_Data = 0;
-    m_Events = 0;
+    m_Data = nullptr;
+    m_Events = nullptr;
     m_Ids.Clear();
     m_Source.Clear();
     m_Header.Clear();
@@ -69,12 +69,7 @@ void wxsEventsEditor::BuildEvents(wxsItem* Item,wxsPropertyGridManager* Grid)
 
     int PageIndex = 1;              // TODO: Do not use fixed page number
     Grid->ClearPage(PageIndex);
-    #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
     Grid->SelectPage(PageIndex);
-    #else
-    Grid->SetTargetPage(PageIndex);
-    #endif
-
 
     if ( !m_Item )
     {
@@ -122,11 +117,10 @@ void wxsEventsEditor::BuildEvents(wxsItem* Item,wxsPropertyGridManager* Grid)
             m_Events->SetHandler(i,_T(""));
         }
 
-        m_Ids.Add(Grid->Append(NEW_IN_WXPG14X wxEnumProperty(Event->Entry,wxPG_LABEL,Const,Index)));
+        m_Ids.Add(Grid->Append(new wxEnumProperty(Event->Entry,wxPG_LABEL,Const,Index)));
     }
-    #if wxCHECK_VERSION(3, 0, 0) || wxCHECK_PROPGRID_VERSION(1, 4, 0)
+
     Grid->SelectPage(0);
-    #endif
 }
 
 void wxsEventsEditor::PGChanged(wxsItem* Item,wxsPropertyGridManager* Grid,wxPGId Id)
@@ -429,16 +423,27 @@ bool wxsEventsEditor::CreateNewFunction(const wxsEventDesc* Event,const wxString
                 return false;
             }
 
-            wxString NewFunctionCode;
-            NewFunctionCode <<
-                _T("\n")
-                _T("void ") << m_Class << _T("::") << NewFunctionName << _T("(") << Event->ArgType << _T("& event)\n")
-                _T("{\n")
-                _T("}\n");
-
-            // TODO: Replace line endings with propert string
-
             cbStyledTextCtrl* Ctrl = Editor->GetControl();
+
+            wxString EOL;
+            switch (Ctrl->GetEOLMode())
+            {
+                case wxSCI_EOL_CRLF:
+                    EOL = "\r\n";
+                    break;
+                case wxSCI_EOL_CR:
+                    EOL = "\r";
+                    break;
+                default:
+                    EOL = "\n";
+            }
+
+            wxString NewFunctionCode;
+            NewFunctionCode << EOL <<
+                "void " << m_Class << "::" << NewFunctionName << '(' << Event->ArgType << "& event)" << EOL <<
+                '{' << EOL <<
+                '}' << EOL;
+
             int LineNumber = Ctrl->GetLineCount();
             Ctrl->DocumentEnd();
             Ctrl->AddText(NewFunctionCode);
@@ -473,7 +478,7 @@ bool wxsEventsEditor::GotoHandler(int Index)
     }
 
     cbStyledTextCtrl* Ctrl = Editor->GetControl();
-    wxString FullText = Ctrl->GetText();
+    // wxString FullText = Ctrl->GetText();
     int Begin = 0;
     int End = Ctrl->GetLength();
     while ( Begin < End )

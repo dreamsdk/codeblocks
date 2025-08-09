@@ -100,12 +100,12 @@ struct RegExStruct
     }
     RegExStruct& operator=(const RegExStruct &obj)
     {
-        desc=obj.desc;
-        lt=obj.lt;
-        regex=obj.regex;
-        regexCompiled=false;
-        filename=obj.filename;
-        line=obj.line;
+        desc          = obj.desc;
+        lt            = obj.lt;
+        regex         = obj.regex;
+        regexCompiled = false;
+        filename      = obj.filename;
+        line          = obj.line;
         memcpy(msg, obj.msg, sizeof(msg));
 
         return *this;
@@ -203,7 +203,6 @@ struct CompilerPrograms
     wxString WINDRES;   // resource compiler
     wxString MAKE;      // make
     wxString DBGconfig; // debugger config name = "debugger_settings_name:config_name"
-    wxString LOADER;    // loader before running program -- DreamSDK
 };
 
 /// Struct to keep switches
@@ -284,6 +283,8 @@ class DLLIMPORT Compiler : public CompileOptionsBase
 
         /** @brief Check if the supplied string is a compiler warning/error */
         virtual CompilerLineType CheckForWarningsAndErrors(const wxString& line);
+        /** @brief Check if the supplied string is a compiler warning/error and additionally return information abut the regex that matched */
+        virtual CompilerLineType CheckForWarningsAndErrors(const wxString& line, long& regex_id, wxString& regex_desc);
         /** @brief Returns warning/error filename. Use it after a call to CheckForWarningsAndErrors() */
         virtual wxString GetLastErrorFilename()             { return m_ErrorFilename; }
         /** @brief Returns warning/error line number (as a string). Use it after a call to CheckForWarningsAndErrors() */
@@ -292,8 +293,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         virtual wxString GetLastError()                     { return m_Error; }
         /** @brief Get the compiler's name */
         virtual const wxString& GetName() const             { return m_Name; }
-		/** @brief Get the compiler's loader args (if any) -- DreamSDK */
-        virtual const wxString& GetLoaderArguments() const  { return m_LoaderArgs; }
         /** @brief Get the compiler's master path (must contain "bin", "include" and "lib") */
         virtual const wxString& GetMasterPath() const       { return m_MasterPath; }
         /** @brief Get the compiler's extra paths */
@@ -320,8 +319,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
 
         /** @brief Set the compiler's name */
         virtual void SetName(const wxString& name){ m_Name = name; }
-		/** @brief Set the compiler's loader arguments (if any) -- DreamSDK */
-        virtual void SetLoaderArguments(const wxString& loaderArgs){ m_LoaderArgs = loaderArgs; }
         /** @brief Set the compiler's master path (must contain "bin", "include" and "lib") */
         virtual void SetMasterPath(const wxString& path){ m_MasterPath = path; m_NeedValidityCheck = true; }
         /** @brief Set the compiler's extra paths */
@@ -409,9 +406,11 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         // keeps a copy of current settings (works only the first time it's called)
         void MirrorCurrentSettings();
 
+        // execute without creating taskbar icon
+        long Execute(const wxString& cmd, wxArrayString& output);
+
         // set the following members in your class
         wxString            m_Name;
-		wxString            m_LoaderArgs; // DreamSDK
         wxString            m_MasterPath;
         wxArrayString       m_ExtraPaths;
         CompilerToolsVector m_Commands[ctCount];
@@ -438,7 +437,6 @@ class DLLIMPORT Compiler : public CompileOptionsBase
         struct MirrorSettings
         {
             wxString         Name;
-			wxString         LoaderArgs; // DreamSDK
             wxString         MasterPath;
             wxArrayString    ExtraPaths;
             CompilerPrograms Programs;

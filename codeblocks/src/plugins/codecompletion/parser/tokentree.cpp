@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11514 $
- * $Id: tokentree.cpp 11514 2018-12-10 15:51:49Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/tokentree.cpp $
+ * $Revision: 13316 $
+ * $Id: tokentree.cpp 13316 2023-07-02 05:02:03Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/tokentree.cpp $
  */
 
 #include "tokentree.h"
@@ -32,12 +32,12 @@
         CCLogger::Get()->DebugLog(F(format, ##args))
     #define TRACE2(format, args...)
 #elif CC_TOKENTREE_DEBUG_OUTPUT == 2
-    #define TRACE(format, args...)                                              \
-        do                                                                      \
-        {                                                                       \
-            if (g_EnableDebugTrace)                                             \
-                CCLogger::Get()->DebugLog(F(format, ##args));                   \
-        }                                                                       \
+    #define TRACE(format, args...)                            \
+        do                                                    \
+        {                                                     \
+            if (g_EnableDebugTrace)                           \
+                CCLogger::Get()->DebugLog(F(format, ##args)); \
+        }                                                     \
         while (false)
     #define TRACE2(format, args...) \
         CCLogger::Get()->DebugLog(F(format, ##args))
@@ -340,8 +340,7 @@ size_t TokenTree::FindTokensInFile(const wxString& filename, TokenIdxSet& result
             result.insert(*it);
     }
 
-    TRACE(_T("TokenTree::FindTokensInFile() : Found %lu results for file '%s'."),
-          static_cast<unsigned long>(result.size()), f.wx_str());
+    TRACE(wxString::Format("TokenTree::FindTokensInFile() : Found %zu results for file '%s'.", result.size(), f));
     return result.size();
 }
 

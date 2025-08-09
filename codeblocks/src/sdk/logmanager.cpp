@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9426 $
- * $Id: logmanager.cpp 9426 2013-11-02 19:42:20Z alpha0010 $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/logmanager.cpp $
+ * $Revision: 13437 $
+ * $Id: logmanager.cpp 13437 2024-01-31 11:51:59Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/logmanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -21,8 +21,8 @@
 #include "logmanager.h"
 #include "loggers.h"
 
-template<> LogManager* Mgr<LogManager>::instance = nullptr;
-template<> bool  Mgr<LogManager>::isShutdown = false;
+template<> LogManager* DLLIMPORT Mgr<LogManager>::instance = nullptr;
+template<> bool DLLIMPORT Mgr<LogManager>::isShutdown = false;
 
 static NullLogger g_null_log;
 

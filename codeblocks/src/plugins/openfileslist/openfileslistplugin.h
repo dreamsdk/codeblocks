@@ -10,6 +10,7 @@
 #include <projectfile.h>
 
 #include <wx/dynarray.h>
+#include <functional>
 
 class wxTreeCtrl;
 class wxTreeEvent;
@@ -20,12 +21,8 @@ class EditorBase;
 struct TargetFilesData
 {
     TargetFilesData() : activeFile(nullptr) {} // ctor
-    // Functor for the std::set predicate to sort the opened editor files according to their tab order
-    struct compareLess
-    {
-        bool operator()(const ProjectFile* lhs, const ProjectFile* rhs) { return lhs->editorTabPos < rhs->editorTabPos; }
-    };
-    typedef std::set<ProjectFile*, compareLess> OpenFilesSet;
+
+    typedef std::set <ProjectFile*> OpenFilesSet;
     ProjectFile* activeFile;
     OpenFilesSet openFiles;
 };
@@ -38,14 +35,14 @@ class OpenFilesListPlugin : public cbPlugin
 {
     public:
         OpenFilesListPlugin();
-        virtual ~OpenFilesListPlugin();
+        ~OpenFilesListPlugin() override;
 
-        virtual int GetConfigurationGroup() const { return cgEditor; }
+        int GetConfigurationGroup() const override { return cgEditor; }
 
-        virtual void BuildMenu(wxMenuBar* menuBar);
+        void BuildMenu(wxMenuBar* menuBar) override;
 
-        virtual void OnAttach();
-        virtual void OnRelease(bool appShutDown);
+        void OnAttach() override;
+        void OnRelease(bool appShutDown) override;
     protected:
         int GetOpenFilesListIcon(EditorBase* ed);
         void RebuildOpenFilesTree();

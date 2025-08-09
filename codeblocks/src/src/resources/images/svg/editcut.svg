@@ -1,0 +1,23 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="a">
+      <stop stop-color="#eabb36" offset="0"/>
+      <stop stop-color="#f1d27a" offset="1"/>
+    </linearGradient>
+    <linearGradient id="e" x1="-.42" x2="-1.743" y1="294.5" y2="292.8" gradientTransform="translate(-2.93 .04)" gradientUnits="userSpaceOnUse" xlink:href="#a"/>
+  </defs>
+  <g transform="translate(0 -288.5)">
+    <g fill="#fbfdff" stroke="#5e647a" stroke-width=".4531">
+      <path transform="matrix(1.143 0 0 1.193 7.54 -55.96)" d="M-2.91 291.84c.15 0 .311-.01.395-.13a38.22 38.22 0 0 1 .972-2.208c.068-.123.088-.157.192-.279l.105-.103c.055-.057.055-.057.118-.003l.264.24c.395.455.495.458.522.896 0 .397-.086.53-.21.794l-.903 1.455c-.265.265-.53.269-.794.269h-.661" stroke-linejoin="round"/>
+      <path transform="matrix(1.143 0 0 1.193 7.54 -55.96)" d="M-2.91 291.84s-.31 0-.398-.132c-.283-.78-.631-1.488-.97-2.206a1.246 1.246 0 0 0-.192-.28l-.105-.103c-.055-.057-.055-.057-.118-.003l-.264.24c-.395.456-.46.459-.486.897 0 .397.05.53.174.794l.903 1.455c.265.264.53.269.794.269h.662"/>
+    </g>
+    <g transform="matrix(1.193 0 0 1.193 10.5 -55.81)" stroke="#9c770a" stroke-linejoin="round" stroke-width=".2218">
+      <ellipse cx="-3.91" cy="293.9" rx="1.054" ry="1.28" fill="url(#e)"/>
+      <ellipse cx="-3.906" cy="293.9" rx=".433" ry=".56" fill="#fff"/>
+    </g>
+    <g transform="matrix(1.193 0 0 1.193 7.324 -55.81)" stroke="#9c770a" stroke-linejoin="round" stroke-width=".2218">
+      <ellipse cx="-3.91" cy="293.9" rx="1.054" ry="1.28" fill="url(#e)"/>
+      <ellipse cx="-3.906" cy="293.9" rx=".433" ry=".56" fill="#fff"/>
+    </g>
+  </g>
+</svg>

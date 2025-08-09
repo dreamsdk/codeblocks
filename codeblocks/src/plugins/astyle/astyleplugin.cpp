@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11437 $
- * $Id: astyleplugin.cpp 11437 2018-08-07 07:13:40Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/astyle/astyleplugin.cpp $
+ * $Revision: 13627 $
+ * $Id: astyleplugin.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/astyle/astyleplugin.cpp $
  */
 
 #include <sdk.h>
@@ -155,7 +155,7 @@ void AStylePlugin::OnFormatProject( wxCommandEvent& /*event*/ )
                     if ( fileType == ftSource || fileType == ftHeader || fileType == ftTemplateSource )
                     {
                         FormatFile( filename );
-                        if ( false == progressDlg.Update( i++, wxString(_("Formatting ")) + pf->relativeFilename ) )
+                        if (!progressDlg.Update(i++, wxString::Format(_("Formatting %s"), pf->relativeFilename)))
                             break;
                     }
                 }
@@ -283,7 +283,6 @@ bool AStylePlugin::FormatEditor( cbEditor *ed )
     const int pos = control->GetCurrentPos();
     int start = control->GetSelectionStart();
     int end = control->GetSelectionEnd();
-    wxString fromWord;
     if (start != end)
     {
         onlySelected = true;

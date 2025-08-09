@@ -4,7 +4,7 @@
  *
  * $Revision: 10912 $
  * $Id: genericmultilinenotesdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/genericmultilinenotesdlg.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/genericmultilinenotesdlg.cpp $
  */
 
 #include "sdk_precomp.h"

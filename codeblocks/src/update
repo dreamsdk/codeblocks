@@ -21,7 +21,7 @@ fi
 copyImageFiles() {
     from=$1
     to=$2
-    echo "Copy ${from} to ${to}"
+    echo "Copy images from ${from} to ${to}"
 
     # This is done this stupid/convoluted way, because dash/posix doesn't have arrays!
     dirs="16x16 20x20 24x24 28x28 32x32 40x40 48x48 56x56 64x64"
@@ -31,6 +31,14 @@ copyImageFiles() {
         mkdir -p ${to}/${dir}
         cp -f ${from}/${dir}/*.png ${to}/${dir} > /dev/null
     done
+}
+
+copySvgFiles() {
+    from=$1
+    to=$2
+    echo "  Copy ${from}/svg to ${to}/svg"
+    mkdir -p ${to}/svg
+    cp -f ${from}/svg/*.svg ${to}/svg > /dev/null
 }
 
 echo Creating output directory tree
@@ -88,6 +96,7 @@ ${ZIPCMD} -0 -qu ../../${CB_DEVEL_RESDIR}/resources.zip \
     images/48x48/*.png \
     images/56x56/*.png \
     images/64x64/*.png \
+    images/svg/*.svg \
     images/tree/16x16/*.png \
     images/tree/20x20/*.png \
     images/tree/24x24/*.png \
@@ -97,6 +106,7 @@ ${ZIPCMD} -0 -qu ../../${CB_DEVEL_RESDIR}/resources.zip \
     images/tree/48x48/*.png \
     images/tree/56x56/*.png \
     images/tree/64x64/*.png \
+    images/tree/svg/*.svg \
     images/infopane/16x16/*.png \
     images/infopane/20x20/*.png \
     images/infopane/24x24/*.png \
@@ -106,6 +116,7 @@ ${ZIPCMD} -0 -qu ../../${CB_DEVEL_RESDIR}/resources.zip \
     images/infopane/48x48/*.png \
     images/infopane/56x56/*.png \
     images/infopane/64x64/*.png \
+    images/infopane/svg/*.svg \
     > /dev/null
 cd ../../sdk/resources
 ${ZIPCMD} -0 -qu ../../${CB_DEVEL_RESDIR}/manager_resources.zip \
@@ -122,6 +133,7 @@ ${ZIPCMD} -0 -qu ../../${CB_DEVEL_RESDIR}/manager_resources.zip \
     images/48x48/*.png \
     images/56x56/*.png \
     images/64x64/*.png \
+    images/svg/*.svg \
     > /dev/null
 echo Packing plugins UI bitmaps
 cd ../../plugins/compilergcc/resources
@@ -135,6 +147,7 @@ ${ZIPCMD} -0 -qu ../../../${CB_DEVEL_RESDIR}/compiler.zip \
     images/48x48/*.png \
     images/56x56/*.png \
     images/64x64/*.png \
+    images/svg/*.svg \
     > /dev/null
 cd ../../../plugins/codecompletion/resources
 ${ZIPCMD} -0 -qu ../../../${CB_DEVEL_RESDIR}/codecompletion.zip \
@@ -147,6 +160,7 @@ ${ZIPCMD} -0 -qu ../../../${CB_DEVEL_RESDIR}/codecompletion.zip \
     images/48x48/*.png \
     images/56x56/*.png \
     images/64x64/*.png \
+    images/svg/*.svg \
     > /dev/null
 cd ../../../plugins/abbreviations/resources
 ${ZIPCMD} -0 -qu ../../../${CB_DEVEL_RESDIR}/abbreviations.zip \
@@ -159,6 +173,7 @@ ${ZIPCMD} -0 -qu ../../../${CB_DEVEL_RESDIR}/abbreviations.zip \
     images/48x48/*.png \
     images/56x56/*.png \
     images/64x64/*.png \
+    images/svg/*.svg \
     > /dev/null
 cd ../../..
 
@@ -193,14 +208,10 @@ cp -f scripts/tests/*.script ${CB_OUTPUT_RESDIR}/scripts/tests > /dev/null
 rm excludes.txt
 
 # several contrib plugins
-if [ -d "${CB_DEVEL_RESDIR}/images/codesnippets" ]; then
-    mkdir -p ${CB_OUTPUT_RESDIR}/images/codesnippets
-    cp -f ${CB_DEVEL_RESDIR}/images/codesnippets/*.png ${CB_OUTPUT_RESDIR}/images/codesnippets > /dev/null
-fi
-
 if [ -d "${CB_DEVEL_RESDIR}/images/wxsmith" ]; then
     mkdir -p ${CB_OUTPUT_RESDIR}/images/wxsmith
     cp -f ${CB_DEVEL_RESDIR}/images/wxsmith/*.png ${CB_OUTPUT_RESDIR}/images/wxsmith > /dev/null
+    cp -f ${CB_DEVEL_RESDIR}/images/wxsmith/*.svg ${CB_OUTPUT_RESDIR}/images/wxsmith > /dev/null
 fi
 
 if [ -d "${CB_DEVEL_RESDIR}/lib_finder" ]; then
@@ -211,6 +222,7 @@ if [ -d "${CB_DEVEL_RESDIR}/SpellChecker" ]; then
     mkdir -p ${CB_OUTPUT_RESDIR}/SpellChecker
     cp -f ${CB_DEVEL_RESDIR}/SpellChecker/*.xml ${CB_OUTPUT_RESDIR}/SpellChecker > /dev/null
     copyImageFiles ${CB_DEVEL_RESDIR}/SpellChecker ${CB_OUTPUT_RESDIR}/SpellChecker
+    copySvgFiles ${CB_DEVEL_RESDIR}/SpellChecker ${CB_OUTPUT_RESDIR}/SpellChecker
 fi
 
 # misc. contrib plugin settings:

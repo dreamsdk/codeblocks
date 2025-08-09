@@ -31,7 +31,9 @@
 										<label>Selected compiler</label>
 										<orient>wxVERTICAL</orient>
 										<object class="sizeritem">
-											<object class="wxChoice" name="cmbCompiler" />
+											<object class="wxChoice" name="cmbCompiler">
+												<style>wxCB_SORT</style>
+											</object>
 											<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
 											<border>4</border>
 											<option>1</option>
@@ -395,6 +397,7 @@
 																<selection>0</selection>
 																<help>This option controls which executable would be used for linking. Auto detect means that C++ compiler would be used for C++ projects and C compiler for C projects.</help>
 															</object>
+															<flag>wxALIGN_CENTER_VERTICAL</flag>
 															<border>5</border>
 															<option>1</option>
 														</object>
@@ -743,7 +746,7 @@
 																			<object class="sizeritem">
 																				<object class="wxFlexGridSizer">
 																					<cols>2</cols>
-																					<rows>8</rows>
+																					<rows>7</rows>
 																					<vgap>8</vgap>
 																					<hgap>8</hgap>
 																					<growablecols>1</growablecols>
@@ -899,30 +902,6 @@
 																							</object>
 																							<object class="sizeritem">
 																								<object class="wxButton" name="btnMake">
-																									<label>...</label>
-																									<size>20,-1</size>
-																								</object>
-																								<flag>wxALIGN_TOP</flag>
-																							</object>
-																						</object>
-																						<flag>wxEXPAND</flag>
-																					</object>
-																					<object class="sizeritem">
-																						<object class="wxStaticText" name="ID_STATICTEXT32">
-																							<label>Loader for native executables:</label>
-																						</object>
-																						<flag>wxALIGN_TOP</flag>
-																					</object>
-																					<object class="sizeritem">
-																						<object class="wxBoxSizer">
-																							<object class="sizeritem">
-																								<object class="wxTextCtrl" name="txtLoader" />
-																								<flag>wxEXPAND</flag>
-																								<border>8</border>
-																								<option>1</option>
-																							</object>
-																							<object class="sizeritem">
-																								<object class="wxButton" name="btnLoader">
 																									<label>...</label>
 																									<size>20,-1</size>
 																								</object>
@@ -1186,31 +1165,32 @@
 																<label>Number of processes for parallel builds:</label>
 																<fg>#800000</fg>
 															</object>
-															<flag>wxTOP|wxRIGHT|wxALIGN_TOP</flag>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>4</border>
 														</object>
 														<object class="sizeritem">
 															<object class="wxSpinCtrl" name="spnParallelProcesses">
 																<value>0</value>
 																<max>65535</max>
+																<tooltip>Use a value of 0 if you want to use all available CPU resources.&#x0A;This means that the Code::Blocks build system would try to use all processor threads/cores.&#x0A;For most implementations this means all logical threads.&#x0A;For details see the implementation of wxThread::GetCPUCount for your platform.&#x0A;On Windows this might be limited to 64.</tooltip>
 															</object>
-															<flag>wxALIGN_TOP</flag>
+															<flag>wxEXPAND</flag>
 														</object>
 														<object class="sizeritem">
 															<object class="wxStaticText" name="ID_STATICTEXT26">
 																<label>Max nr. of errors to log (0=unlimited):</label>
 															</object>
-															<flag>wxTOP|wxRIGHT|wxALIGN_TOP</flag>
+															<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 															<border>4</border>
 														</object>
 														<object class="sizeritem">
 															<object class="wxSpinCtrl" name="spnMaxErrors">
 																<value>50</value>
 															</object>
-															<flag>wxALIGN_TOP</flag>
+															<flag>wxEXPAND</flag>
 														</object>
 													</object>
-													<flag>wxALL|wxEXPAND</flag>
+													<flag>wxALL</flag>
 													<border>8</border>
 												</object>
 												<object class="sizeritem">
@@ -1428,44 +1408,6 @@
 											</object>
 										</object>
 										<label>Other settings</label>
-									</object>
-									<object class="notebookpage">
-										<object class="wxPanel" name="tabAdvanced">
-											<object class="wxBoxSizer">
-												<orient>wxVERTICAL</orient>
-												<object class="sizeritem">
-													<object class="wxStaticText" name="ID_STATICTEXT34">
-														<label>IMPORTANT: These options are taken into account only when using the Run command in Code::Blocks.</label>
-														<fg>#800000</fg>
-													</object>
-													<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
-													<border>8</border>
-												</object>
-												<object class="sizeritem">
-													<object class="wxFlexGridSizer">
-														<cols>2</cols>
-														<vgap>8</vgap>
-														<hgap>8</hgap>
-														<growablecols>1</growablecols>
-														<object class="sizeritem">
-															<object class="wxStaticText" name="ID_STATICTEXT33">
-																<label>Loader for native executable arguments:</label>
-															</object>
-															<flag>wxTOP|wxRIGHT|wxALIGN_TOP</flag>
-															<border>4</border>
-														</object>
-														<object class="sizeritem">
-															<object class="wxTextCtrl" name="txtLoaderArguments" />
-															<flag>wxEXPAND</flag>
-															<option>1</option>
-														</object>
-													</object>
-													<flag>wxALL|wxEXPAND</flag>
-													<border>8</border>
-												</object>
-											</object>
-										</object>
-										<label>Advanced</label>
 									</object>
 								</object>
 								<flag>wxEXPAND</flag>

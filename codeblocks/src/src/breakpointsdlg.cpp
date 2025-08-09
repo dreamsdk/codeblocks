@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11752 $
- * $Id: breakpointsdlg.cpp 11752 2019-06-29 13:46:53Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/breakpointsdlg.cpp $
+ * $Revision: 12948 $
+ * $Id: breakpointsdlg.cpp 12948 2022-10-05 07:48:15Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/breakpointsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -76,41 +76,43 @@ BreakpointsDlg::BreakpointsDlg() :
     SetAutoLayout(TRUE);
     SetSizer(bs);
 
-    wxWindow *parent = Manager::Get()->GetAppWindow();
-    wxString sizeStr;
-    int selectedHeight;
-    {
-
-        const int targetHeight = floor(12.0 * cbGetActualContentScaleFactor(*parent));
-        const int possibleHeights[] = { 12, 16, 20, 24, 28, 32, 40, 48, 56, 64 };
-        selectedHeight = cbFindMinSize(targetHeight, possibleHeights, cbCountOf(possibleHeights));
-
-        sizeStr = wxString::Format(wxT("%dx%d/"), selectedHeight, selectedHeight);
-    }
+    wxWindow* parent = Manager::Get()->GetAppWindow();
     const double scaleFactor = cbGetContentScaleFactor(*parent);
+    const int targetHeight = wxRound(12 * scaleFactor);
+    static const int possibleHeights[] = { 12, 16, 20, 24, 28, 32, 40, 48, 56, 64 };
+    const int size = cbFindMinSize(targetHeight, possibleHeights, cbCountOf(possibleHeights));
+#ifdef __WXMSW__
+    const int imageListSize = size;
+#else
+    const int imageListSize = wxRound(size/scaleFactor);
+#endif
 
     // Setup the image list for the enabled/disabled icons.
-#ifdef __WXMSW__
-    m_icons.Create(selectedHeight, selectedHeight, true);
-#else
-    m_icons.Create(floor(selectedHeight / scaleFactor), floor(selectedHeight / scaleFactor), true);
-#endif // __WXMSW__
+    m_icons.Create(imageListSize, imageListSize, true);
 
-    const wxString &basepath = ConfigManager::GetDataFolder()
-                             + wxT("/manager_resources.zip#zip:/images/")
-                             + sizeStr;
-    wxBitmap icon = cbLoadBitmapScaled(basepath + wxT("breakpoint.png"), wxBITMAP_TYPE_PNG,
-                                       scaleFactor);
-    if (icon.IsOk())
-        m_icons.Add(icon);
-    icon = cbLoadBitmapScaled(basepath + wxT("breakpoint_disabled.png"), wxBITMAP_TYPE_PNG,
-                              scaleFactor);
-    if (icon.IsOk())
-        m_icons.Add(icon);
-    icon = cbLoadBitmapScaled(basepath + wxT("breakpoint_other.png"), wxBITMAP_TYPE_PNG,
-                              scaleFactor);
-    if (icon.IsOk())
-        m_icons.Add(icon);
+    wxString prefix(ConfigManager::GetDataFolder() + "/manager_resources.zip#zip:/images/");
+#if wxCHECK_VERSION(3, 1, 6)
+    prefix << "svg/";
+    const wxSize baseSize(12, 12);
+    const wxSize listSize(imageListSize, imageListSize);
+    wxBitmap icon1 = cbLoadBitmapBundleFromSVG(prefix + "breakpoint.svg", baseSize).GetBitmap(listSize);
+    wxBitmap icon2 = cbLoadBitmapBundleFromSVG(prefix + "breakpoint_disabled.svg", baseSize).GetBitmap(listSize);
+    wxBitmap icon3 = cbLoadBitmapBundleFromSVG(prefix + "breakpoint_other.svg", baseSize).GetBitmap(listSize);
+#else
+    prefix << wxString::Format("%dx%d/", imageListSize, imageListSize);
+    wxBitmap icon1 = cbLoadBitmap(prefix + "breakpoint.png");
+    wxBitmap icon2 = cbLoadBitmap(prefix + "breakpoint_disabled.png");
+    wxBitmap icon3 = cbLoadBitmap(prefix + "breakpoint_other.png");
+#endif
+    if (icon1.IsOk())
+        m_icons.Add(icon1);
+
+    if (icon2.IsOk())
+        m_icons.Add(icon2);
+
+    if (icon3.IsOk())
+        m_icons.Add(icon3);
+
     m_pList->SetImageList(&m_icons, wxIMAGE_LIST_SMALL);
 
     m_pList->InsertColumn(Type, _("Type"), wxLIST_FORMAT_LEFT, 128);

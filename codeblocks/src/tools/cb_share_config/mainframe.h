@@ -8,13 +8,13 @@
 
 
 //(*Headers(MainFrame)
+#include <wx/button.h>
+#include <wx/checklst.h>
+#include <wx/frame.h>
+#include <wx/listbox.h>
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
-#include <wx/checklst.h>
-#include <wx/listbox.h>
-#include <wx/button.h>
-#include <wx/frame.h>
 //*)
 
 #include <wx/arrstr.h>
@@ -33,21 +33,21 @@ class MainFrame: public wxFrame
 
 
 		//(*Identifiers(MainFrame)
-		static const long ID_LBL_STEPS;
-		static const long ID_LBL_FILE_SRC;
-		static const long ID_LBL_FILE_DST;
-		static const long ID_TXT_FILE_SRC;
-		static const long ID_BTN_FILE_SRC;
-		static const long ID_TXT_FILE_DST;
-		static const long ID_BTN_FILE_DST;
-		static const long ID_CFG_SRC;
-		static const long ID_LST_CFG;
-		static const long ID_BTN_TRANSFER;
-		static const long ID_BTN_UNCHECK;
-		static const long ID_BTN_EXPORT_ALL;
-		static const long ID_BTN_EXPORT;
-		static const long ID_BTN_SAVE;
-		static const long ID_BTN_CLOSE;
+		static const wxWindowID ID_LBL_STEPS;
+		static const wxWindowID ID_LBL_FILE_SRC;
+		static const wxWindowID ID_LBL_FILE_DST;
+		static const wxWindowID ID_TXT_FILE_SRC;
+		static const wxWindowID ID_BTN_FILE_SRC;
+		static const wxWindowID ID_TXT_FILE_DST;
+		static const wxWindowID ID_BTN_FILE_DST;
+		static const wxWindowID ID_CFG_SRC;
+		static const wxWindowID ID_LST_CFG;
+		static const wxWindowID ID_BTN_TRANSFER;
+		static const wxWindowID ID_BTN_UNCHECK;
+		static const wxWindowID ID_BTN_EXPORT_ALL;
+		static const wxWindowID ID_BTN_EXPORT;
+		static const wxWindowID ID_BTN_SAVE;
+		static const wxWindowID ID_BTN_CLOSE;
 		//*)
 
 //***********************************************************************
@@ -67,24 +67,24 @@ class MainFrame: public wxFrame
 
 
 		//(*Declarations(MainFrame)
-		wxBoxSizer* bszSteps;
-		wxGridSizer* grsAction;
-		wxTextCtrl* txtFileDst;
-		wxStaticBoxSizer* sbsSteps;
 		wxBoxSizer* bszMain;
-		wxStaticText* lblFileSrc;
-		wxCheckListBox* clbCfgSrc;
+		wxBoxSizer* bszSteps;
+		wxButton* btnFileDst;
 		wxButton* btnFileSrc;
+		wxCheckListBox* clbCfgSrc;
 		wxFlexGridSizer* flsFileDst;
 		wxFlexGridSizer* flsFileSrc;
-		wxTextCtrl* txtFileSrc;
-		wxGridSizer* grsFile;
+		wxGridSizer* grsAction;
 		wxGridSizer* grsCfg;
-		wxButton* btnFileDst;
-		wxListBox* lstCfgDst;
-		wxStaticText* lblFileDst;
+		wxGridSizer* grsFile;
 		wxGridSizer* grsFileLabel;
+		wxListBox* lstCfgDst;
+		wxStaticBoxSizer* sbsSteps;
+		wxStaticText* lblFileDst;
+		wxStaticText* lblFileSrc;
 		wxStaticText* lblSteps;
+		wxTextCtrl* txtFileDst;
+		wxTextCtrl* txtFileSrc;
 		//*)
 
 //***********************************************************************
@@ -101,6 +101,7 @@ class MainFrame: public wxFrame
                                const wxString& prefix = wxT(""));
     bool          TransferNode(TiXmlNode** node, const wxArrayString& path);
     void          AttachNode(size_t idx, TiXmlElement* root);
+    void          DoExport(bool selected_only);
     wxArrayString PathToArray (const wxString& path);
 
     // The following methods to load/save a TinyXML document are taken and

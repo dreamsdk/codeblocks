@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10874 $
-* $Id: lib_finder.h 10874 2016-07-16 20:00:28Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/lib_finder.h $
+* $Revision: 12415 $
+* $Id: lib_finder.h 12415 2021-05-09 12:49:44Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/lib_finder.h $
 */
 
 #ifndef LIB_AUTO_CONF_H
@@ -65,6 +65,7 @@ class lib_finder: public cbToolPlugin
         void UnregisterScripting();
         bool TryDownload(const wxString& ShortCode,const wxString& FileName);
 
+    public:
         // These functions are used in scripting bindings
 		static bool AddLibraryToProject(const wxString& LibName,cbProject* Project,const wxString& TargetName);
 		static bool RemoveLibraryFromProject(const wxString& LibName,cbProject* Project,const wxString& TargetName);
@@ -72,6 +73,7 @@ class lib_finder: public cbToolPlugin
 		static bool SetupTargetManually(CompileTargetBase* Target);
 		static bool EnsureIsDefined(const wxString& ShortCode);
 
+    private:
         ProjectConfiguration* GetProject(cbProject* Project);
 
         WX_DECLARE_HASH_MAP(cbProject*,ProjectConfiguration*,wxPointerHash,wxPointerEqual,ProjectMapT);

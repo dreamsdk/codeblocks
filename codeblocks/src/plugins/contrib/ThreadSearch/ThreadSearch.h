@@ -45,26 +45,28 @@ public:
     ThreadSearch();
 
     /** Destructor. */
-    virtual ~ThreadSearch();
+    virtual ~ThreadSearch() override;
 
     /** Return the plugin's configuration priority.
       * This is a number (default is 50) that is used to sort plugins
       * in configuration dialogs. Lower numbers mean the plugin's
       * configuration is put higher in the list.
       */
-    virtual int GetConfigurationPriority() const { return 50; }
+    virtual int GetConfigurationPriority() const override { return 50; }
 
     /** Return the configuration group for this plugin. Default is cgUnknown.
       * Notice that you can logically OR more than one configuration groups,
       * so you could set it, for example, as "cgCompiler | cgContribPlugin".
       */
-    virtual int GetConfigurationGroup() const { return cgContribPlugin; }
+    virtual int GetConfigurationGroup() const override { return cgEditor; }
 
     /** Return plugin's configuration panel.
       * @param parent The parent window.
       * @return A pointer to the plugin's cbConfigurationPanel. It is deleted by the caller.
       */
-    virtual cbConfigurationPanel* GetConfigurationPanel(wxWindow* parent);
+    virtual cbConfigurationPanel* GetConfigurationPanelEx(wxWindow* parent,
+                                                          cbConfigurationPanelColoursInterface *coloursInterface
+                                                         ) override;
 
     /** Return plugin's configuration panel for projects.
       * The panel returned from this function will be added in the project's
@@ -73,7 +75,11 @@ public:
       * @param project The project that is being edited.
       * @return A pointer to the plugin's cbConfigurationPanel. It is deleted by the caller.
       */
-    virtual cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* WXUNUSED(parent), cbProject* WXUNUSED(project)){ return 0; }
+    virtual cbConfigurationPanel* GetProjectConfigurationPanel(wxWindow* WXUNUSED(parent),
+                                                               cbProject* WXUNUSED(project)) override
+    {
+        return 0;
+    }
 
     /** This method is called by Code::Blocks and is used by the plugin
       * to add any menu items it needs on Code::Blocks's menu bar.\n
@@ -82,7 +88,7 @@ public:
       * just do nothing ;)
       * @param menuBar the wxMenuBar to create items in
       */
-    virtual void BuildMenu(wxMenuBar* menuBar);
+    virtual void BuildMenu(wxMenuBar* menuBar) override;
 
     /** This method is called by Code::Blocks core modules (EditorManager,
       * ProjectManager etc) and is used by the plugin to add any menu
@@ -99,7 +105,8 @@ public:
       * @param pMenu pointer to the popup menu
       * @param data pointer to FileTreeData object (to access/modify the file tree)
       */
-    virtual void BuildModuleMenu(const ModuleType type, wxMenu* pMenu, const FileTreeData* data = 0);
+    virtual void BuildModuleMenu(const ModuleType type, wxMenu* pMenu,
+                                 const FileTreeData* data = nullptr) override;
 
     /** This method is called by Code::Blocks and is used by the plugin
       * to add any toolbar items it needs on Code::Blocks's toolbar.\n
@@ -109,13 +116,20 @@ public:
       * @param toolBar the wxToolBar to create items on
       * @return The plugin should return true if it needed the toolbar, false if not
       */
-    virtual bool BuildToolBar(wxToolBar* toolBar);
+    virtual bool BuildToolBar(wxToolBar* toolBar) override;
 
     /** This method is called to update observers.
       * The pattern has not been implemented as there is only one observer
       * (the ThreadSearchView) that already holds a reference on the plugin.
       */
     void Notify();
+
+    /// Creates the view. Loads the settings and restores them.
+    /// It will also setup the view manager.
+    /// @param mgrType The requested manager type if this is called when changing manager type.
+    /// @param forceType Set to true to make the method use the passed manager type else the one
+    /// from the settings is used.
+    void CreateView(ThreadSearchViewManagerBase::eManagerTypes mgrType, bool forceType);
 
     // Setters
     void SetCtxMenuIntegration(bool ctxMenuIntegration)       {m_CtxMenuIntegration = ctxMenuIntegration;}
@@ -186,7 +200,7 @@ protected:
       * This means that a plugin might be loaded but <b>not</b> activated...\n
       * Think of this method as the actual constructor...
       */
-    virtual void OnAttach();
+    void OnAttach() override;
 
     /** Any descendent plugin should override this virtual method and
       * perform any necessary de-initialization. This method is called by
@@ -197,7 +211,7 @@ protected:
       *         case *don't* use Manager::Get()->Get...() functions or the
       *         behaviour is undefined...
       */
-    virtual void OnRelease(bool appShutDown);
+    void OnRelease(bool appShutDown) override;
 
     /** This method loads the plugin configuration from default.conf using
       * the standard ConfigManager
@@ -209,24 +223,20 @@ protected:
       * @param searchDirs : - undocumented -
       * @param searchMasks : - undocumented -
       */
-    virtual void LoadConfig(bool &showPanel, int &sashPosition,
+    virtual void LoadConfig(int &sashPosition,
                             ThreadSearchViewManagerBase::eManagerTypes& mgrType,
                             wxArrayString& searchPatterns, wxArrayString& searchDirs,
                             wxArrayString& searchMasks);
 
     /** This method saves the plugin configuration to default.conf using
       * the standard ConfigManager
-      * @param showPanel :    boolean telling if ThreadSearch panel is managed
-      *                       by the MessageManager.
       * @param sashPosition : position of the splitter window.
       * @param searchPatterns : - undocumented -
       * @param searchDirs : - undocumented -
       * @param searchMasks : - undocumented -
       */
-    virtual void SaveConfig(bool showPanel, int sashPosition,
-                            ThreadSearchViewManagerBase::eManagerTypes mgrType,
-                            const wxArrayString& searchPatterns, const wxArrayString& searchDirs,
-                            const wxArrayString& searchMasks);
+    virtual void SaveConfig(int sashPosition, const wxArrayString& searchPatterns,
+                            const wxArrayString& searchDirs, const wxArrayString& searchMasks);
 
 private:
     /** Event handler called when user clicks on the 'Thread search'
@@ -255,16 +265,15 @@ private:
       */
     void OnMnuViewThreadSearchUpdateUI(wxUpdateUIEvent& event);
 
-    /** Event handler called to update the 'Thread search'
-      * item of the 'Search' menu.
+    /** Event handler called to update the 'Search -> Thread search' and 'View -> Focus Thread
+      * Search' items in the menu.
       */
-    void OnMnuSearchThreadSearchUpdateUI(wxUpdateUIEvent& event);
-
-    void OnMnuViewFocusThreadSearchUpdateUI(wxUpdateUIEvent& event);
+    void OnUpdateUISearchRunning(wxUpdateUIEvent& event);
 
     // Toolbar controls events management
     void OnBtnOptionsClick(wxCommandEvent& event);
     void OnBtnSearchClick (wxCommandEvent& event);
+    void OnUpdateUIBtnSearch(wxUpdateUIEvent &event);
     void OnCboSearchExprEnter(wxCommandEvent &event);
 
     /** Removes the 'Thread search' item added in BuildMenu method.
@@ -286,6 +295,8 @@ private:
     void OnMnuEditCopyUpdateUI(wxUpdateUIEvent& event);
     void OnMnuEditPaste(wxCommandEvent& event);
 
+    void OnSettingsChanged(CodeBlocksEvent &event);
+    void OnEditorHook(cbEditor *editor, wxScintillaEvent &event);
 
     // Member variables
     wxString                             m_SearchedWord;              // Word under cursor on right click
@@ -311,6 +322,7 @@ private:
     wxSplitMode                          m_SplitterMode;              // Sets vertical or horizontal display for code
                                                                       // preview and search results (logger)
     InsertIndexManager::eFileSorting     m_FileSorting;               // Sorts file by name or by path
+    int m_EditorHookId;
 
     DECLARE_EVENT_TABLE();
 };

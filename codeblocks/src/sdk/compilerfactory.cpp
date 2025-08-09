@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11900 $
- * $Id: compilerfactory.cpp 11900 2019-11-04 19:35:21Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compilerfactory.cpp $
+ * $Revision: 12999 $
+ * $Id: compilerfactory.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/compilerfactory.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -184,7 +184,7 @@ Compiler* CompilerFactory::CreateCompilerCopy(Compiler* compiler, const wxString
     newC->ReloadOptions();
     RegisterCompiler(newC);
     newC->LoadSettings(_T("/user_sets"));
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("Added compiler \"%s\""), newC->GetName().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Added compiler \"%s\"", newC->GetName()));
     return newC; // return the index for the new compiler
 }
 
@@ -195,7 +195,7 @@ void CompilerFactory::RemoveCompiler(Compiler* compiler)
     Manager::Get()->GetConfigManager(_T("compiler"))->DeleteSubPath(_T("/user_sets/") + compiler->GetID());
 
     Compilers.Remove(compiler);
-    Manager::Get()->GetLogManager()->DebugLog(F(_T("Compiler \"%s\" removed"), compiler->GetName().wx_str()));
+    Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Compiler \"%s\" removed", compiler->GetName()));
 
     Compiler::m_CompilerIDs.Remove(compiler->GetID());
     delete compiler;
@@ -279,7 +279,7 @@ void CompilerFactory::LoadSettings()
 
         if (Compilers[i]->GetMasterPath().IsEmpty())
         {
-            Manager::Get()->GetLogManager()->DebugLog(F(_T("Master path of compiler ID \"%s\" is empty -> triggers auto-detection."), Compilers[i]->GetID().wx_str()));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Master path of compiler ID \"%s\" is empty -> triggers auto-detection.", Compilers[i]->GetID()));
             needAutoDetection = true;
         }
     }
@@ -296,40 +296,48 @@ void CompilerFactory::LoadSettings()
 
 Compiler* CompilerFactory::SelectCompilerUI(const wxString& message, const wxString& preselectedID)
 {
+    const size_t compCount = Compilers.GetCount();
+    if (!compCount)
+        return nullptr;
+
+    // first build a list of valid compilers
     int selected = -1;
-    const wxString lid = preselectedID.Lower();
-
-    // first build a list of available compilers
-    std::unique_ptr<wxString[]> comps(new wxString[Compilers.GetCount()]);
-
-    for (size_t i = 0; i < Compilers.GetCount(); ++i)
+    const wxString lid(preselectedID.Lower());
+    wxArrayString comps;
+    comps.Alloc(compCount);
+    for (size_t i = 0; i < compCount; ++i)
     {
-        comps[i] = Compilers[i]->GetName();
-        if (selected == -1)
+        if (Compilers[i]->IsValid())
         {
-            if (lid.IsEmpty())
+            const size_t pos = comps.Add(Compilers[i]->GetName());
+            if (selected == -1)
             {
-                if (Compilers[i] == s_DefaultCompiler)
-                    selected = i;
-            }
-            else
-            {
-                if (Compilers[i]->GetID().IsSameAs(lid))
-                    selected = i;
+                if (lid.empty())
+                {
+                    if (Compilers[i] == s_DefaultCompiler)
+                        selected = pos;
+                }
+                else
+                {
+                    if (Compilers[i]->GetID() == lid)
+                        selected = pos;
+                }
             }
         }
     }
+
+    // sort it alphabetically
+    comps.Sort();
+
     // now display a choice dialog
     wxSingleChoiceDialog dlg(nullptr,
                              message,
                              _("Compiler selection"),
-                             CompilerFactory::Compilers.GetCount(),
-                             comps.get());
+                             comps);
+
     dlg.SetSelection(selected);
     PlaceWindow(&dlg);
-    if (dlg.ShowModal() == wxID_OK)
-        return Compilers[dlg.GetSelection()];
-    return nullptr;
+    return (dlg.ShowModal() == wxID_OK) ? GetCompilerByName(dlg.GetStringSelection()) : nullptr;
 }
 
 wxString CompilerFactory::GetCompilerVersionString(const wxString& Id)

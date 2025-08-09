@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxscodegenerator.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxscodegenerator.h $
+* $Revision: 13547 $
+* $Id: wxscodegenerator.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxscodegenerator.h $
 */
 
 #ifndef WXSCODEGENERATOR_H
@@ -26,9 +26,10 @@
 #include "wxscodercontext.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 /** \brief Base class for items which generate source code */
-class wxsCodeGenerator
+class PLUGIN_EXPORT wxsCodeGenerator
 {
     public:
 
@@ -43,13 +44,13 @@ class wxsCodeGenerator
 
     protected:
 
-        virtual void OnBuildCreatingCode() = 0;              ///< \brief Building code manually creating resource, it may also be used to add header files
-        virtual void OnBuildHeadersCode() {}                 ///< \brief Building headers arrays, it's not required since headers can be added in OnBuildCreatingCode()
-        virtual void OnBuildDeclarationsCode() = 0;          ///< \brief Building variable declaration / forward declaration
-        virtual void OnBuildEventsConnectingCode() = 0;      ///< \brief Building code connecting events
-        virtual void OnBuildIdCode() = 0;                    ///< \brief Building code declaring class members and values of identifiers
-        virtual void OnBuildXRCFetchingCode() = 0;           ///< \brief Building code which fetches this item from xrc resource
-        virtual void OnUpdateFlags(cb_unused long& Flags) {} ///< \brief Function called to update context flags just before the code is generated, previous flags are restored after code is generated
+        virtual void OnBuildCreatingCode() = 0;               ///< \brief Building code manually creating resource, it may also be used to add header files
+        virtual void OnBuildHeadersCode() {}                  ///< \brief Building headers arrays, it's not required since headers can be added in OnBuildCreatingCode()
+        virtual void OnBuildDeclarationsCode() = 0;           ///< \brief Building variable declaration / forward declaration
+        virtual void OnBuildEventsConnectingCode() = 0;       ///< \brief Building code connecting events
+        virtual void OnBuildIdCode() = 0;                     ///< \brief Building code declaring class members and values of identifiers
+        virtual void OnBuildXRCFetchingCode() = 0;            ///< \brief Building code which fetches this item from xrc resource
+        virtual void OnUpdateFlags(cb_unused long& _Flags) {} ///< \brief Function called to update context flags just before the code is generated, previous flags are restored after code is generated
 
         /** \brief Getting current coding context */
         inline wxsCoderContext* GetCoderContext() { return m_Context; }

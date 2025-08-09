@@ -2,15 +2,15 @@
 #include "globals.h"
 
 //(*InternalHeaders(BindtoNewType)
-#include <wx/intl.h>
 #include <wx/button.h>
+#include <wx/intl.h>
 #include <wx/string.h>
 //*)
 
 //(*IdInit(BindtoNewType)
-const long BindtoNewType::ID_TEXTCTRL1 = wxNewId();
-const long BindtoNewType::ID_TEXTCTRL2 = wxNewId();
-const long BindtoNewType::ID_TEXTCTRL3 = wxNewId();
+const wxWindowID BindtoNewType::ID_TEXTCTRL1 = wxNewId();
+const wxWindowID BindtoNewType::ID_TEXTCTRL2 = wxNewId();
+const wxWindowID BindtoNewType::ID_TEXTCTRL3 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(BindtoNewType,wxDialog)
@@ -22,15 +22,14 @@ END_EVENT_TABLE()
 BindtoNewType::BindtoNewType(wxWindow* parent,wxWindowID id,const wxPoint& pos,const wxSize& size)
 {
 	//(*Initialize(BindtoNewType)
-	wxStaticText* StaticText2;
-	wxStaticText* StaticText1;
-	wxStaticText* StaticText3;
 	wxBoxSizer* BoxSizer1;
 	wxFlexGridSizer* FlexGridSizer1;
+	wxStaticText* StaticText1;
+	wxStaticText* StaticText2;
+	wxStaticText* StaticText3;
 	wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
 	Create(parent, wxID_ANY, _("Add New Type"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER, _T("wxID_ANY"));
-	SetClientSize(wxSize(400,180));
 	SetMinSize(wxSize(200,100));
 	BoxSizer1 = new wxBoxSizer(wxVERTICAL);
 	FlexGridSizer1 = new wxFlexGridSizer(3, 2, 0, 0);
@@ -56,8 +55,8 @@ BindtoNewType::BindtoNewType(wxWindow* parent,wxWindowID id,const wxPoint& pos,c
 	StdDialogButtonSizer1->Realize();
 	BoxSizer1->Add(StdDialogButtonSizer1, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, 5);
 	SetSizer(BoxSizer1);
-	SetSizer(BoxSizer1);
-	Layout();
+	Fit();
+	Center();
 	//*)
 }
 
@@ -73,7 +72,7 @@ void BindtoNewType::OnOK(wxCommandEvent& event)
         tc_BindC->GetValue().Trim() == wxEmptyString ||
         tc_C->GetValue().Trim() == wxEmptyString)
     {
-        wxString mstr = _T("All text fields should be filled!");
+        wxString mstr = "All text fields should be filled!";
         cbMessageBox(mstr, _("Error"), wxICON_ERROR);
         return;
     }

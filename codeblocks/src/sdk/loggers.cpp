@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11436 $
- * $Id: loggers.cpp 11436 2018-08-07 07:13:27Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/loggers.cpp $
+ * $Revision: 12643 $
+ * $Id: loggers.cpp 12643 2022-01-12 19:40:38Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/loggers.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -74,7 +74,7 @@ void TextCtrlLogger::UpdateSettings()
     control->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
     ConfigManager* cfgman = Manager::Get()->GetConfigManager(_T("message_manager"));
-    int size = cfgman->ReadInt(_T("/log_font_size"), platform::macosx ? 10 : 8);
+    int size = cfgman->ReadInt(_T("/log_font_size"), (platform::macosx ? 10 : 8));
 
     wxFont default_font(size, fixed ? wxFONTFAMILY_MODERN : wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
     wxFont bold_font(default_font);
@@ -293,14 +293,14 @@ wxString ListCtrlLogger::GetItemAsText(long item) const
     wxString text;
 
     wxListItem li_info;
-    li_info.m_itemId = item;
-    li_info.m_mask = wxLIST_MASK_TEXT;
+    li_info.SetId(item);
+    li_info.SetMask(wxLIST_MASK_TEXT);
 
     for (size_t i = 0; i < titles.GetCount(); ++i)
     {
-        li_info.m_col = i;
+        li_info.SetColumn(i);
         control->GetItem(li_info);
-        text << li_info.m_text << _T('|');
+        text << li_info.GetText() << _T('|');
     }
     return text;
 } // end of GetItemAsText
@@ -311,7 +311,7 @@ void ListCtrlLogger::UpdateSettings()
         return;
 
     ConfigManager* cfgman = Manager::Get()->GetConfigManager(_T("message_manager"));
-    int size = cfgman->ReadInt(_T("/log_font_size"), platform::macosx ? 10 : 8);
+    int size = cfgman->ReadInt(_T("/log_font_size"), (platform::macosx ? 10 : 8));
     wxFont default_font(size, fixed ? wxFONTFAMILY_MODERN : wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
     wxFont bold_font(default_font);
     wxFont italic_font(default_font);
@@ -367,10 +367,19 @@ void ListCtrlLogger::Append(const wxString& msg, Logger::level lv)
 
     int idx = control->GetItemCount();
 
+    bool autoScroll = false;
+#if wxCHECK_VERSION(3, 1, 3)
+    autoScroll = (idx > 0) && control->IsVisible(idx - 1);
+#endif
+
     control->Freeze();
     control->InsertItem(idx, msg);
     control->SetItemFont(idx, style[lv].font);
     control->SetItemTextColour(idx, style[lv].colour);
+
+    if (autoScroll)
+        control->EnsureVisible(idx);
+
     control->Thaw();
 }
 

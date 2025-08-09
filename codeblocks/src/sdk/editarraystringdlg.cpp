@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10912 $
- * $Id: editarraystringdlg.cpp 10912 2016-09-25 16:10:13Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editarraystringdlg.cpp $
+ * $Revision: 11996 $
+ * $Id: editarraystringdlg.cpp 11996 2020-03-26 21:04:41Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editarraystringdlg.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -66,7 +66,7 @@ void EditArrayStringDlg::EndModal(int retCode)
 
 void EditArrayStringDlg::OnAdd(wxCommandEvent& WXUNUSED(event))
 {
-    wxString w = cbGetTextFromUser(_("Add item"), _("Enter the new item:"));
+    wxString w = cbGetTextFromUser(_("Add item"), _("Enter the new item:"), wxString(), this);
     if (!w.IsEmpty())
         XRCCTRL(*this, "lstItems", wxListBox)->Append(w);
 }
@@ -76,7 +76,7 @@ void EditArrayStringDlg::OnEdit(wxCommandEvent& WXUNUSED(event))
     wxListBox* list = XRCCTRL(*this, "lstItems", wxListBox);
 
     wxString w = list->GetStringSelection();
-    w = cbGetTextFromUser(_("Edit item"), _("Edit the item:"), w);
+    w = cbGetTextFromUser(_("Edit item"), _("Edit the item:"), w, this);
     if (!w.IsEmpty())
         list->SetString(list->GetSelection(), w);
 }

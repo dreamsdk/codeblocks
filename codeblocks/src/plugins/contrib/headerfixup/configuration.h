@@ -8,17 +8,14 @@
 
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 //(*Headers(Configuration)
-#include <wx/sizer.h>
-#include <wx/button.h>
 #include <wx/panel.h>
-#include <wx/stattext.h>
-#include <wx/textctrl.h>
-#include <wx/listbox.h>
+class wxBoxSizer;
+class wxButton;
+class wxListBox;
+class wxStaticBoxSizer;
+class wxStaticText;
+class wxTextCtrl;
 //*)
 
 #include <wx/event.h>
@@ -37,16 +34,16 @@ public:
   virtual ~Configuration();
 
   //(*Identifiers(Configuration)
-  static const long ID_LST_GROUPS;
-  static const long ID_BTN_ADD_GROUP;
-  static const long ID_BTN_DELETE_GROUP;
-  static const long ID_BTN_RENAME_GROUP;
-  static const long ID_BTN_DEFAULTS;
-  static const long ID_LST_IDENTIFIERS;
-  static const long ID_BTN_ADD_IDENTIFIER;
-  static const long ID_BTN_DELETE_IDENTIFIERS;
-  static const long ID_BTN_CHANGE_IDENTIFIER;
-  static const long ID_TXT_HEADERS;
+  static const wxWindowID ID_LST_GROUPS;
+  static const wxWindowID ID_BTN_ADD_GROUP;
+  static const wxWindowID ID_BTN_DELETE_GROUP;
+  static const wxWindowID ID_BTN_RENAME_GROUP;
+  static const wxWindowID ID_BTN_DEFAULTS;
+  static const wxWindowID ID_LST_IDENTIFIERS;
+  static const wxWindowID ID_BTN_ADD_IDENTIFIER;
+  static const wxWindowID ID_BTN_DELETE_IDENTIFIERS;
+  static const wxWindowID ID_BTN_CHANGE_IDENTIFIER;
+  static const wxWindowID ID_TXT_HEADERS;
   //*)
 
 protected:
@@ -66,15 +63,15 @@ protected:
 
   //(*Declarations(Configuration)
   wxButton* m_AddGroup;
-  wxButton* m_DeleteIdentifier;
-  wxListBox* m_Identifiers;
-  wxButton* m_ChangeIdentifier;
-  wxButton* m_RenameGroup;
-  wxButton* m_Defaults;
-  wxTextCtrl* m_Headers;
-  wxButton* m_DeleteGroup;
   wxButton* m_AddIdentifier;
+  wxButton* m_ChangeIdentifier;
+  wxButton* m_Defaults;
+  wxButton* m_DeleteGroup;
+  wxButton* m_DeleteIdentifier;
+  wxButton* m_RenameGroup;
   wxListBox* m_Groups;
+  wxListBox* m_Identifiers;
+  wxTextCtrl* m_Headers;
   //*)
 
 private:

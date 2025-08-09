@@ -10,9 +10,7 @@ endif
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		$(CB_SQUIRREL_CFLAGS) \
 		-I$(top_srcdir)/src/include \
-		-I$(top_srcdir)/src/sdk/wxscintilla/include \
-		-I$(top_srcdir)/src/include/scripting/bindings \
-		-I$(top_srcdir)/src/include/scripting/sqplus
+		-I$(top_srcdir)/src/sdk/wxscintilla/include
 
 pluginlibdir = $(pkglibdir)/plugins
 
@@ -21,8 +19,7 @@ pluginlib_LTLIBRARIES = libhelp_plugin.la
 libhelp_plugin_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undefined -avoid-version
 
 libhelp_plugin_la_LIBADD = ../../../sdk/libcodeblocks.la \
-					$(WX_LIBS) \
-					$(CB_SQUIRREL_LIBS)
+					$(WX_LIBS)
 
 
 if ! HAVE_BZIP2
@@ -70,7 +67,20 @@ resources_forZIP = \
 	images/56x56/zoomin.png \
 	images/56x56/zoomout.png \
 	images/64x64/zoomin.png \
-	images/64x64/zoomout.png
+	images/64x64/zoomout.png \
+	images/svg/zoomin.svg \
+	images/svg/zoomout.svg
+
+docdatadir = $(datadir)/@PACKAGE@/docs
+if CODEBLOCKS_INSTALLERDOCS_FOUND
+docdata_DATA = \
+			$(top_srcdir)/windows_installer/Documentation/index.ini \
+			$(top_srcdir)/windows_installer/Documentation/*.pdf \
+			$(top_srcdir)/windows_installer/Documentation/*.chm
+else
+docdata_DATA = \
+			index.ini
+endif
 
 EXTRA_DIST = $(srcdir)/*.cbp \
 			Readme.txt \

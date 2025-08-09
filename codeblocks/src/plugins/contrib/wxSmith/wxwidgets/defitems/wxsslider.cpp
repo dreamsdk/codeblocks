@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsslider.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsslider.cpp $
+* $Revision: 13547 $
+* $Id: wxsslider.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsslider.cpp $
 */
 
 #include <wx/slider.h>
@@ -57,6 +57,7 @@ namespace
         WXS_EVI(EVT_COMMAND_SCROLL_THUMBRELEASE,wxEVT_SCROLL_THUMBRELEASE,wxScrollEvent,CmdScrollThumbRelease)
         WXS_EVI(EVT_COMMAND_SCROLL_CHANGED,wxEVT_SCROLL_CHANGED,wxScrollEvent,CmdScrollChanged)
         WXS_EVI(EVT_COMMAND_SLIDER_UPDATED,wxEVT_COMMAND_SLIDER_UPDATED,wxScrollEvent,CmdSliderUpdated)
+        WXS_EVI(EVT_SLIDER,wxEVT_SLIDER,wxCommandEvent,OnUpdate)
     WXS_EV_END()
 
 }
@@ -107,23 +108,19 @@ void wxsSlider::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsSlider::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsSlider::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxSlider* Preview = new wxSlider(Parent,GetId(),Value,Min,Max,Pos(Parent),Size(Parent),Style());
-#if wxCHECK_VERSION(3, 0, 0)
     if ( TickFrequency )    Preview->SetTickFreq(TickFrequency);
-#else
-    if ( TickFrequency )    Preview->SetTickFreq(TickFrequency,0);
-#endif
     if ( PageSize )         Preview->SetPageSize(PageSize);
     if ( LineSize )         Preview->SetLineSize(LineSize);
     if ( ThumbLength )      Preview->SetThumbLength(ThumbLength);
     if ( Tick )             Preview->SetTick(Tick);
     if ( SelMin || SelMax ) Preview->SetSelection(SelMin,SelMax);
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsSlider::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsSlider::OnEnumWidgetProperties(cb_unused long _Flags)
 {
    WXS_LONG(wxsSlider,Value,_("Value"),_T("value"),0)
    WXS_LONG(wxsSlider,Min,_("Min"),_T("min"),0)

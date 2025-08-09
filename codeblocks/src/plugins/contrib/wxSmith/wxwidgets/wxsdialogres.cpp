@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsdialogres.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsdialogres.cpp $
+* $Revision: 13381 $
+* $Id: wxsdialogres.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsdialogres.cpp $
 */
 
 #include "wxsdialogres.h"
@@ -85,7 +85,7 @@ const wxString wxsDialogRes::ResType = _T("wxDialog");
 wxString wxsDialogRes::OnGetAppBuildingCode()
 {
     return wxString::Format(
-        _T("\t%s Dlg(0);\n")
+        _T("\t%s Dlg(NULL);\n")
         _T("\tSetTopWindow(&Dlg);\n")
         _T("\tDlg.ShowModal();\n")
         _T("\twxsOK = false;\n"),

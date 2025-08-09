@@ -1,0 +1,33 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="d">
+      <stop stop-color="#c82f2e" offset="0"/>
+      <stop stop-color="#e06b6a" offset="1"/>
+    </linearGradient>
+    <linearGradient id="e" x1="7.673" x2=".794" y1="296.2" y2="289.7" gradientTransform="matrix(1 0 0 1.019 -.132 -5.461)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#57667d" offset="0"/>
+      <stop stop-color="#a6b4cc" offset="1"/>
+    </linearGradient>
+    <linearGradient id="f" x1="5.424" x2="2.778" y1="291.3" y2="289.7" gradientTransform="matrix(1.077 0 0 1.067 -.458 -19.3)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#bbb" offset="0"/>
+      <stop stop-color="#fff" offset="1"/>
+    </linearGradient>
+    <linearGradient id="g" x1="6.482" x2="1.984" y1="296.1" y2="293.6" gradientTransform="matrix(1.053 0 0 1 -.355 .132)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a6b4cc" offset="0"/>
+      <stop stop-color="#f2f6fb" offset="1"/>
+    </linearGradient>
+    <linearGradient id="h" x1="5.689" x2="2.646" y1="294.1" y2="294.1" gradientTransform="matrix(.9565 0 0 1.333 .115 -98.11)" gradientUnits="userSpaceOnUse" xlink:href="#d"/>
+    <linearGradient id="i" x1="5.689" x2="2.646" y1="294.1" y2="294.1" gradientTransform="matrix(.9565 0 0 1.333 .115 -97.31)" gradientUnits="userSpaceOnUse" xlink:href="#d"/>
+    <linearGradient id="j" x1="5.689" x2="2.646" y1="294.1" y2="294.1" gradientTransform="matrix(.9565 0 0 1.333 .115 -96.52)" gradientUnits="userSpaceOnUse" xlink:href="#d"/>
+  </defs>
+  <g transform="translate(0 -288.5)">
+    <g stroke="#284267">
+      <path d="M4.233 289.46h2.25l1.322 1.347v5.392c0 .26-.132.404-.397.404H.794c-.265 0-.397-.135-.397-.404v-6.335c0-.27.132-.405.397-.405z" fill="url(#e)" stroke-width=".2646px"/>
+      <path d="M2.249 289.46v1.693c0 .282.142.423.427.423h2.85c.285 0 .427-.141.427-.423v-1.694z" fill="url(#f)" stroke-width=".2646px"/>
+      <path d="M1.455 296.603v-2.778c0-.265.14-.397.418-.397h4.456c.279 0 .418.132.418.397v2.778z" fill="url(#g)" stroke-width=".2646px"/>
+    </g>
+    <path d="m2.646 293.8h2.91v0.529h-2.91z" fill="url(#h)"/>
+    <path d="m2.646 294.6h2.91v0.529h-2.91z" fill="url(#i)"/>
+    <path d="m2.646 295.4h2.91v0.529h-2.91z" fill="url(#j)"/>
+  </g>
+</svg>

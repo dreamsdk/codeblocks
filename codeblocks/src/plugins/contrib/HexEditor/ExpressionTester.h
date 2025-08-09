@@ -15,18 +15,18 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: ExpressionTester.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/ExpressionTester.h $
+* $Revision: 13570 $
+* $Id: ExpressionTester.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/ExpressionTester.h $
 */
 
 #ifndef EXPRESSIONTESTER_H
 #define EXPRESSIONTESTER_H
 
 //(*Headers(ExpressionTester)
-#include <wx/sizer.h>
-#include <wx/button.h>
 #include "scrollingdialog.h"
+#include <wx/button.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 //*)
@@ -43,33 +43,33 @@ class ExpressionTester: public wxScrollingDialog
 	private:
 
 		//(*Declarations(ExpressionTester)
-		wxButton* Button4;
 		wxButton* Button1;
-		wxStaticText* m_Parsing;
 		wxButton* Button2;
 		wxButton* Button3;
+		wxButton* Button4;
 		wxStaticText* StaticText1;
-		wxTextCtrl* m_Expr;
-		wxStaticText* StaticText3;
-		wxTextCtrl* m_Dump;
-		wxStaticText* StaticText4;
 		wxStaticText* StaticText2;
+		wxStaticText* StaticText3;
+		wxStaticText* StaticText4;
+		wxStaticText* m_Parsing;
 		wxStaticText* m_Result;
+		wxTextCtrl* m_Dump;
+		wxTextCtrl* m_Expr;
 		//*)
 
 		//(*Identifiers(ExpressionTester)
-		static const long ID_STATICTEXT1;
-		static const long ID_TEXTCTRL1;
-		static const long ID_BUTTON3;
-		static const long ID_STATICTEXT2;
-		static const long ID_STATICTEXT3;
-		static const long ID_STATICTEXT4;
-		static const long ID_STATICTEXT5;
-		static const long ID_STATICTEXT6;
-		static const long ID_TEXTCTRL2;
-		static const long ID_BUTTON4;
-		static const long ID_BUTTON2;
-		static const long ID_BUTTON1;
+		static const wxWindowID ID_STATICTEXT1;
+		static const wxWindowID ID_TEXTCTRL1;
+		static const wxWindowID ID_BUTTON3;
+		static const wxWindowID ID_STATICTEXT2;
+		static const wxWindowID ID_STATICTEXT3;
+		static const wxWindowID ID_STATICTEXT4;
+		static const wxWindowID ID_STATICTEXT5;
+		static const wxWindowID ID_STATICTEXT6;
+		static const wxWindowID ID_TEXTCTRL2;
+		static const wxWindowID ID_BUTTON4;
+		static const wxWindowID ID_BUTTON2;
+		static const wxWindowID ID_BUTTON1;
 		//*)
 
 		//(*Handlers(ExpressionTester)

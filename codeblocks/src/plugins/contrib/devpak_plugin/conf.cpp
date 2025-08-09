@@ -4,7 +4,7 @@
  *
  * $Revision: 7109 $
  * $Id: conf.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/devpak_plugin/conf.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/devpak_plugin/conf.cpp $
  */
 
 #include "conf.h"

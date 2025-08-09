@@ -15,13 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsadvqpp.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsadvqpp.h $
+* $Revision: 12722 $
+* $Id: wxsadvqpp.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsadvqpp.h $
 */
 
 #ifndef WXSADVQPP_H
 #define WXSADVQPP_H
+
+#include <cbplugin.h>
 
 #include "properties/wxsquickpropspanel.h"
 #include <wx/button.h>
@@ -38,7 +40,7 @@ class wxsAdvQPPChild;
  *
  * Each property group has it's title and can be hidden when it's unnecessary.
  */
-class wxsAdvQPP : public wxsQuickPropsPanel
+class PLUGIN_EXPORT wxsAdvQPP : public wxsQuickPropsPanel
 {
     public:
         /** \brief Ctor

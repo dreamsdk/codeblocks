@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11572 $
- * $Id: parserthread.cpp 11572 2019-02-16 06:52:30Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parserthread.cpp $
+ * $Revision: 13627 $
+ * $Id: parserthread.cpp 13627 2025-03-02 18:17:10Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/parserthread.cpp $
  */
 
 #include <sdk.h>
@@ -57,12 +57,12 @@
     #elif CC_PARSERTHREAD_DEBUG_OUTPUT == 2
         #define ADDTOKEN(format, args...) \
                 CCLogger::Get()->AddToken(F(format, ##args))
-        #define TRACE(format, args...)                                              \
-            do                                                                      \
-            {                                                                       \
-                if (g_EnableDebugTrace)                                             \
-                    CCLogger::Get()->DebugLog(F(format, ##args));                   \
-            }                                                                       \
+        #define TRACE(format, args...)                            \
+            do                                                    \
+            {                                                     \
+                if (g_EnableDebugTrace)                           \
+                    CCLogger::Get()->DebugLog(F(format, ##args)); \
+            }                                                     \
             while (false)
         #define TRACE2(format, args...) \
             CCLogger::Get()->DebugLog(F(format, ##args))
@@ -194,11 +194,13 @@ namespace ParserConsts
     const wxString kw_attribute    (_T("__attribute__"));
 }
 
+// ----------------------------------------------------------------------------
 ParserThread::ParserThread(ParserBase*          parent,
                            const wxString&      bufferOrFilename,
                            bool                 isLocal,
                            ParserThreadOptions& parserThreadOptions,
                            TokenTree*           tokenTree) :
+// ----------------------------------------------------------------------------
     m_Tokenizer(tokenTree),
     m_Parent(parent),
     m_TokenTree(tokenTree),
@@ -618,7 +620,7 @@ void ParserThread::DoParse()
 
             case ParserConsts::clbrace_chr:
                 {
-                    m_LastParent = 0L;
+                    m_LastParent = nullptr;
                     m_LastScope = tsUndefined;
                     m_Str.Clear();
                     // the only time we get to find a } is when recursively called by e.g. HandleClass
@@ -815,7 +817,7 @@ void ParserThread::DoParse()
                             break;
                     }
                     if (    !m_Str.IsEmpty()
-                         && m_LastParent != 0L
+                         && m_LastParent != nullptr
                          && m_LastParent->m_Index != -1
                          && m_LastParent->m_TokenKind == tkNamespace )
                     {
@@ -1577,8 +1579,8 @@ Token* ParserThread::DoAddToken(TokenKind       kind,
     else
     {
         newToken = new Token(newname, m_FileIdx, line, ++m_TokenTree->m_TokenTicketCount);
-        TRACE(_T("DoAddToken() : Created token='%s', file_idx=%u, line=%d, ticket=%lu"), newname.wx_str(),
-              m_FileIdx, line, static_cast<unsigned long>(m_TokenTree->m_TokenTicketCount));
+        TRACE(wxString::Format("DoAddToken() : Created token='%s', file_idx=%u, line=%d, ticket=%zu",
+                               newname, m_FileIdx, line, m_TokenTree->m_TokenTicketCount));
 
         Token* finalParent = localParent ? localParent : m_LastParent;
         if (kind == tkVariable && m_Options.parentIdxOfBuffer != -1)
@@ -1990,10 +1992,9 @@ void ParserThread::HandleClass(EClassType ct)
         // -------------------------------------------------------------------
         {
             wxString unnamedTmp;
-            unnamedTmp.Printf(_T("%s%s%u_%lu"),
-                              g_UnnamedSymbol.wx_str(),
-                              (ct == ctClass ? _T("Class") : (ct == ctUnion ? _T("Union") : _T("Struct"))),
-                              m_FileIdx, static_cast<unsigned long>(m_StructUnionUnnamedCount++));
+            unnamedTmp.Printf("%s%s%u_%zu", g_UnnamedSymbol,
+                              (ct == ctClass ? "Class" : (ct == ctUnion ? "Union" : "Struct")),
+                              m_FileIdx, m_StructUnionUnnamedCount++);
             Token* newToken = DoAddToken(tkClass, unnamedTmp, lineNr);
             // Maybe it is a bug here. I just fixed it.
             if (!newToken)
@@ -2699,7 +2700,7 @@ void ParserThread::HandleEnum()
         // we have an un-named enum
         if (m_ParsingTypedef)
         {
-            token.Printf(_T("%sEnum%u_%lu"), g_UnnamedSymbol.wx_str(), m_FileIdx, static_cast<unsigned long>(m_EnumUnnamedCount++));
+            token.Printf("%sEnum%u_%zu", g_UnnamedSymbol, m_FileIdx, m_EnumUnnamedCount++);
             m_LastUnnamedTokenName = token;
         }
         else
@@ -2709,7 +2710,7 @@ void ParserThread::HandleEnum()
     }
 
     // the token is now the expected enum name
-    Token* newEnum = 0L;
+    Token* newEnum = nullptr;
     unsigned int level = 0;
     if (   wxIsalpha(token.GetChar(0))
         || (token.GetChar(0) == ParserConsts::underscore_chr) )
@@ -2860,11 +2861,10 @@ bool ParserThread::CalcEnumExpression(Token* tokenParent, long& result, wxString
     m_Tokenizer.SetState(tsRawExpression);
 
     Expression exp;
-    wxString token, next;
 
     while (IS_ALIVE)
     {
-        token = m_Tokenizer.GetToken();
+        wxString token = m_Tokenizer.GetToken();
         if (token.IsEmpty())
             return false;
         if (token == _T("\\"))
@@ -3118,7 +3118,7 @@ void ParserThread::HandleTypedef()
         && (!m_LastParent->m_TemplateType.IsEmpty())
         && m_LastParent->m_TemplateType.Index(components.front()) != wxNOT_FOUND )
     {
-        wxArrayString templateType = m_LastParent->m_TemplateType;
+        // wxArrayString templateType = m_LastParent->m_TemplateType;
         alias = components.front();
         components.pop();
         ancestor = components.front();
@@ -3214,8 +3214,8 @@ bool ParserThread::ReadVarNames()
         {
             TRACE(F(_T("ReadVarNames() : Unexpected token '%s' for '%s', file '%s', line %d."),
                     token.wx_str(), m_Str.wx_str(), m_Tokenizer.GetFilename().wx_str(), m_Tokenizer.GetLineNumber()));
-            CCLogger::Get()->DebugLog(F(_T("ReadVarNames() : Unexpected token '%s' for '%s', file '%s', line %d."),
-                                        token.wx_str(), m_Str.wx_str(), m_Tokenizer.GetFilename().wx_str(), m_Tokenizer.GetLineNumber()));
+            CCLogger::Get()->DebugLog(wxString::Format("ReadVarNames() : Unexpected token '%s' for '%s', file '%s', line %d.",
+                                                       token, m_Str, m_Tokenizer.GetFilename(), m_Tokenizer.GetLineNumber()));
             success = false;
             break;
         }
@@ -3280,8 +3280,8 @@ bool ParserThread::ReadClsNames(wxString& ancestor)
         {
             TRACE(F(_T("ReadClsNames() : Unexpected token '%s' for '%s', file '%s', line %d."),
                     token.wx_str(), m_Str.wx_str(), m_Tokenizer.GetFilename().wx_str(), m_Tokenizer.GetLineNumber()));
-            CCLogger::Get()->DebugLog(F(_T("ReadClsNames() : Unexpected token '%s' for '%s', file '%s', line %d."),
-                                        token.wx_str(), m_Str.wx_str(), m_Tokenizer.GetFilename().wx_str(), m_Tokenizer.GetLineNumber()));
+            CCLogger::Get()->DebugLog(wxString::Format("ReadClsNames() : Unexpected token '%s' for '%s', file '%s', line %d.",
+                                                       token, m_Str, m_Tokenizer.GetFilename(), m_Tokenizer.GetLineNumber()));
             // The following code snippet freezes CC here:
             // typedef std::enable_if<N > 1, get_type_N<N-1, Tail...>> type;
             m_Tokenizer.UngetToken();

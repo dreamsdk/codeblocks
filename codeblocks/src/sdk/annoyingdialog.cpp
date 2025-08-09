@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10907 $
- * $Id: annoyingdialog.cpp 10907 2016-09-25 16:09:48Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/annoyingdialog.cpp $
+ * $Revision: 12999 $
+ * $Id: annoyingdialog.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/annoyingdialog.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -52,7 +52,7 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
     m_DontAnnoy = false;
     m_Id = id;
 
-    static_assert(wxMinimumVersion<2,8,12>::eval, "wxWidgets 2.8.12 is required");
+    static_assert(wxMinimumVersion<3,0,0>::eval, "wxWidgets 3.0.0 or higher is required");
 
     ConfigManagerContainer::StringSet disabled;
     ConfigManager* cfg = Manager::Get()->GetConfigManager(wxT("an_dlg"));
@@ -86,9 +86,9 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
             if (m_DefRet == rtSAVE_CHOICE)
                 m_DefRet = rtYES; // default value
             disabled.erase(it);
-            disabled.insert(m_Id + F(wxT(":%d"), m_DefRet));
+            disabled.insert(m_Id + wxString::Format(":%d", m_DefRet));
             // save updated format
-            cfg->Write(wxT("/disabled_ret"), disabled);
+            cfg->Write("/disabled_ret", disabled);
             return;
         }
         else if (it->BeforeLast(wxT(':')) == m_Id)
@@ -110,10 +110,15 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
     wxBoxSizer *outerSizer = new wxBoxSizer( wxVERTICAL );
 
     wxFlexGridSizer *mainArea = new wxFlexGridSizer(2, 0, 0);
-    wxStaticBitmap *bitmap = new wxStaticBitmap(this, -1, wxArtProvider::GetBitmap(icon,  wxART_MESSAGE_BOX), wxDefaultPosition);
+#if wxCHECK_VERSION(3, 1, 6)
+    wxStaticBitmap *bitmap = new wxStaticBitmap(this, wxID_ANY, wxArtProvider::GetBitmapBundle(icon, wxART_MESSAGE_BOX, wxSize(32, 32)));
+#else
+    const int height = cbFindMinSize16to64(wxRound(32*cbGetContentScaleFactor(*this)));
+    wxStaticBitmap *bitmap = new wxStaticBitmap(this, wxID_ANY, wxArtProvider::GetBitmap(icon, wxART_MESSAGE_BOX, wxSize(height, height)));
+#endif
     mainArea->Add(bitmap, 0, wxALL, 5);
 
-    wxStaticText *txt = new wxStaticText(this, -1, message, wxDefaultPosition, wxDefaultSize, 0);
+    wxStaticText *txt = new wxStaticText(this, wxID_ANY, message, wxDefaultPosition, wxDefaultSize, 0);
     mainArea->Add( txt, 0, wxALIGN_CENTER|wxALL, 5 );
 
     mainArea->Add( 1, 1, 0, wxGROW|wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT|wxTOP, 5 );
@@ -156,7 +161,7 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
         bTxt3 = b3.IsEmpty() ? wxString(_("&Cancel")) : b3;
     }
     else
-        cbThrow(wxString(_T("Fatal error:\nUndefined style in dialog ")) << caption);
+        cbThrow(_("Fatal error:\nUndefined style in dialog ")+caption);
 
     wxSizer* buttonSizer = nullptr;
     if (style < ONE_BUTTON) // standard buttons? use wxStdDialogButtonSizer
@@ -211,7 +216,7 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
     }
 
     outerSizer->Add( mainArea, 0, wxALIGN_CENTER_HORIZONTAL|wxALL, 5);
-    outerSizer->Add( buttonSizer, 0, wxALIGN_CENTER_HORIZONTAL);
+    outerSizer->Add( buttonSizer, 0, wxEXPAND);
 
     m_CheckBox = new wxCheckBox(this, wxID_ANY, _("Don't annoy me again!"), wxDefaultPosition, wxDefaultSize, 0);
     outerSizer->Add(m_CheckBox, 0, wxALIGN_LEFT|wxLEFT|wxRIGHT|wxBOTTOM, 5);
@@ -225,7 +230,7 @@ void AnnoyingDialog::Init(const wxString &caption, const wxString &id, const wxS
 void AnnoyingDialog::OnButton(wxCommandEvent& event)
 {
     if(!m_CheckBox)
-        cbThrow(_T("Ow... null pointer."));
+        cbThrow(_("Ow... null pointer."));
 
     int id = event.GetId();
     // convert IDs from standard buttons to dReturnType
@@ -252,8 +257,8 @@ void AnnoyingDialog::OnButton(wxCommandEvent& event)
         ConfigManager* cfg = Manager::Get()->GetConfigManager(wxT("an_dlg"));
         ConfigManagerContainer::StringSet disabled = cfg->ReadSSet(wxT("/disabled_ret"));
         // if we are supposed to remember the users choice, save the button
-        disabled.insert(m_Id + F(wxT(":%d"), m_DefRet == rtSAVE_CHOICE ? id : m_DefRet));
-        cfg->Write(wxT("/disabled_ret"), disabled);
+        disabled.insert(m_Id + wxString::Format(":%d", m_DefRet == rtSAVE_CHOICE ? id : m_DefRet));
+        cfg->Write("/disabled_ret", disabled);
     }
     EndModal(id);
 }

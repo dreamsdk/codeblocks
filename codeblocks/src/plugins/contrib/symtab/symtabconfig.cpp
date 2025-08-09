@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 7109 $
- * $Id: symtabconfig.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/symtab/symtabconfig.cpp $
+ * $Revision: 12304 $
+ * $Id: symtabconfig.cpp 12304 2021-03-16 23:28:31Z fuscated $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/symtab/symtabconfig.cpp $
  */
 
 #include "sdk.h"
@@ -181,6 +181,7 @@ void SymTabConfigDlg::OnLibraryPath(wxCommandEvent& WXUNUSED(event))
 #endif
 
   wxDirDialog dd(parent, _("Select directory for search"));
+  PlaceWindow(&dd);
   if (dd.ShowModal() == wxID_OK)
   {
     wxString path = dd.GetPath();
@@ -212,6 +213,7 @@ void SymTabConfigDlg::OnLibrary(wxCommandEvent& WXUNUSED(event))
   wxString es       = wxEmptyString;
 
   wxFileDialog fd(parent, caption, es, es, wildcard, wxFD_OPEN|compatibility::wxHideReadonly);
+  PlaceWindow(&fd);
   if (fd.ShowModal() == wxID_OK)
   {
     wxString path = fd.GetPath();
@@ -238,6 +240,7 @@ void SymTabConfigDlg::OnNM(wxCommandEvent& WXUNUSED(event))
   wxString es = wxEmptyString;
 
   wxFileDialog fd(parent, caption, es, es, wildcard, wxFD_OPEN|compatibility::wxHideReadonly);
+  PlaceWindow(&fd);
   if (fd.ShowModal() == wxID_OK)
   {
     wxString path = fd.GetPath();

@@ -34,7 +34,7 @@
 				</Linker>
 			</Target>
 			<Environment>
-				<Variable name="WX_CONFIG" value="wx-config --version=3.0" />
+				<Variable name="WX_CONFIG" value="wx-config" />
 			</Environment>
 		</Build>
 		<VirtualTargets>
@@ -113,6 +113,8 @@
 		<Unit filename="parserf.h" />
 		<Unit filename="parserthreadf.cpp" />
 		<Unit filename="parserthreadf.h" />
+		<Unit filename="preprocfunction.cpp" />
+		<Unit filename="preprocfunction.h" />
 		<Unit filename="projectdependencies.cpp" />
 		<Unit filename="projectdependencies.h" />
 		<Unit filename="resources/calltreeview.xrc" />
@@ -130,6 +132,8 @@
 		<Unit filename="tokenf.h" />
 		<Unit filename="tokenizerf.cpp" />
 		<Unit filename="tokenizerf.h" />
+		<Unit filename="tokenizerpp.cpp" />
+		<Unit filename="tokenizerpp.h" />
 		<Unit filename="usetokenf.cpp" />
 		<Unit filename="usetokenf.h" />
 		<Unit filename="workspacebrowserbuilder.cpp" />

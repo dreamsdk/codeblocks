@@ -33,7 +33,7 @@
 							</object>
 							<object class="sizeritem">
 								<object class="wxTextCtrl" name="txtCommand">
-									<style>wxTE_MULTILINE|wxTE_READONLY|wxTE_WORDWRAP|wxNO_BORDER</style>
+									<style>wxTE_MULTILINE|wxTE_READONLY|wxTE_WORDWRAP|wxBORDER_NONE</style>
 								</object>
 								<flag>wxBOTTOM|wxEXPAND</flag>
 								<border>16</border>
@@ -48,16 +48,7 @@
 										<border>5</border>
 									</object>
 									<object class="sizeritem">
-										<object class="wxComboBox" name="cmbAnswer">
-											<content>
-												<item>ALLOW execution of this command</item>
-												<item>ALLOW execution of this command for all scripts from now on</item>
-												<item>DENY execution of this command</item>
-												<item>Mark this script as TRUSTED for this session</item>
-												<item>Mark this script as TRUSTED permanently</item>
-											</content>
-											<selection>2</selection>
-											<style>wxCB_READONLY</style>
+										<object class="wxChoice" name="cmbAnswer">
 										</object>
 										<flag>wxALIGN_TOP</flag>
 									</object>
@@ -67,7 +58,7 @@
 							</object>
 							<object class="sizeritem">
 								<object class="wxStaticText" name="ID_STATICTEXT3">
-									<label>Scripts may contain malicious code so by default you are asked before a privileged&#x0D;&#x0A;command is allowed to execute. Only allow execution of this command if you trust&#x0D;&#x0A;the source of this script or you are confident enough that the above command is&#x0D;&#x0A;harmless for your system.&#x0D;&#x0A;&#x0D;&#x0A;If you mark the script as &quot;trusted&quot; you declare that you trust this script and explicitly&#x0D;&#x0A;allow it to execute privileged commands. You should only trust scripts that you wrote&#x0D;&#x0A;yourself or if they come from a trusty source.</label>
+									<label>Scripts may contain malicious code so by default you are asked before a privileged&#x0A;command is allowed to execute. Only allow execution of this command if you trust&#x0A;the source of this script or you are confident enough that the above command is&#x0A;harmless for your system.&#x0A;&#x0A;If you mark the script as &quot;trusted&quot; you declare that you trust this script and explicitly&#x0A;allow it to execute privileged commands. You should only trust scripts that you wrote&#x0A;yourself or if they come from a trusty source.</label>
 								</object>
 								<flag>wxALIGN_LEFT</flag>
 							</object>

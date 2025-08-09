@@ -4,7 +4,7 @@
  *
  * $Revision: 11505 $
  * $Id: parserthreadedtask.cpp 11505 2018-10-20 14:29:48Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/codecompletion/parser/parserthreadedtask.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/codecompletion/parser/parserthreadedtask.cpp $
  */
 
 #include <sdk.h>

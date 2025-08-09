@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10681 $
-* $Id: wxsfontfaceeditordlg.h 10681 2016-01-22 10:45:30Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontfaceeditordlg.h $
+* $Revision: 13547 $
+* $Id: wxsfontfaceeditordlg.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsfontfaceeditordlg.h $
 */
 
 #ifndef WXSFONTFACEEDITORDLG_H
@@ -25,15 +25,11 @@
 
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
 //(*Headers(wxsFontFaceEditorDlg)
+#include "scrollingdialog.h"
+#include <wx/button.h>
 #include <wx/sizer.h>
 #include <wx/textctrl.h>
-#include <wx/button.h>
-#include "scrollingdialog.h"
 //*)
 
 class wxsFontFaceEditorDlg: public wxScrollingDialog
@@ -44,8 +40,8 @@ class wxsFontFaceEditorDlg: public wxScrollingDialog
         virtual ~wxsFontFaceEditorDlg();
 
         //(*Identifiers(wxsFontFaceEditorDlg)
-        static const long ID_TEXTCTRL1;
-        static const long ID_BUTTON1;
+        static const wxWindowID ID_TEXTCTRL1;
+        static const wxWindowID ID_BUTTON1;
         //*)
 
     protected:
@@ -56,10 +52,10 @@ class wxsFontFaceEditorDlg: public wxScrollingDialog
         //*)
 
         //(*Declarations(wxsFontFaceEditorDlg)
-        wxTextCtrl* FaceName;
         wxButton* Button1;
         wxButton* Button2;
         wxButton* Button3;
+        wxTextCtrl* FaceName;
         //*)
 
     private:

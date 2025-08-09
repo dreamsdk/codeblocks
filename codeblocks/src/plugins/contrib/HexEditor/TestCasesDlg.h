@@ -15,20 +15,20 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10288 $
-* $Id: TestCasesDlg.h 10288 2015-05-15 10:58:29Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/TestCasesDlg.h $
+* $Revision: 13570 $
+* $Id: TestCasesDlg.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/TestCasesDlg.h $
 */
 
 #ifndef TESTCASESDLG_H
 #define TESTCASESDLG_H
 
 //(*Headers(TestCasesDlg)
-#include <wx/sizer.h>
-#include <wx/button.h>
 #include "scrollingdialog.h"
-#include <wx/timer.h>
+#include <wx/button.h>
 #include <wx/listbox.h>
+#include <wx/sizer.h>
+#include <wx/timer.h>
 //*)
 #include <wx/thread.h>
 
@@ -49,15 +49,15 @@ class TestCasesDlg: public wxScrollingDialog, public TestCasesBase::Output
     private:
 
 		//(*Declarations(TestCasesDlg)
-		wxListBox* ListBox1;
 		wxButton* Button1;
+		wxListBox* ListBox1;
 		wxTimer Timer1;
 		//*)
 
 		//(*Identifiers(TestCasesDlg)
-		static const long ID_LISTBOX1;
-		static const long ID_BUTTON1;
-		static const long ID_TIMER1;
+		static const wxWindowID ID_LISTBOX1;
+		static const wxWindowID ID_BUTTON1;
+		static const wxWindowID ID_TIMER1;
 		//*)
 
 		//(*Handlers(TestCasesDlg)

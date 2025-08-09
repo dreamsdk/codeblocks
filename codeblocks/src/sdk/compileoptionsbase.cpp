@@ -4,7 +4,7 @@
  *
  * $Revision: 11887 $
  * $Id: compileoptionsbase.cpp 11887 2019-10-26 09:12:28Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/compileoptionsbase.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/compileoptionsbase.cpp $
  */
 
 #include "sdk_precomp.h"

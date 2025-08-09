@@ -18,15 +18,17 @@ class FPImageList
     public:
         FPImageList(int imSize);
         virtual ~FPImageList();
-        wxImageList* GetImageList(){return m_pImlist;};
+        wxImageList* GetWxImageList(){return m_pImlist;};
         int GetImageIdx(const std::string& name);
-		int GetTokenKindImageIdx(TokenF* token);
+        int GetTokenKindImageIdx(TokenF* token);
+        int GetImageSize(){return m_ImSize;};
 
     private:
         void CreateImageList(int imSize);
 
         wxImageList* m_pImlist;
         StrIntMap m_ImgNr;
+        int m_ImSize;
 };
 
 #endif // FPIMAGELIST_H

@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsguifactory.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsguifactory.cpp $
+* $Revision: 13381 $
+* $Id: wxsguifactory.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsguifactory.cpp $
 */
 
 #include "wxsguifactory.h"
@@ -41,7 +41,7 @@ wxsGUIFactory::~wxsGUIFactory()
 
 wxsGUI* wxsGUIFactory::Build(const wxString& Name,wxsProject* Project)
 {
-    if ( GetHash().find(Name) == GetHash().end() ) return 0;
+    if ( GetHash().find(Name) == GetHash().end() ) return nullptr;
     wxsGUIFactory* Factory = GetHash()[Name];
     wxsGUI* NewGUI = Factory->OnCreate(Project);
     if ( NewGUI->GetName() != Name )
@@ -51,7 +51,7 @@ wxsGUI* wxsGUIFactory::Build(const wxString& Name,wxsProject* Project)
         Manager::Get()->GetLogManager()->DebugLog(_T("wxSmith:   Looks like bug in one wf wxsGUIFactory-derived classes or"));
         Manager::Get()->GetLogManager()->DebugLog(_T("wxSmith:   some hack attempt."));
         delete NewGUI;
-        return 0;
+        return nullptr;
     }
     return NewGUI;
 }
@@ -60,7 +60,7 @@ wxsGUI* wxsGUIFactory::SelectNew(const wxString& Message,wxsProject* Project)
 {
     if ( GetHash().empty() )
     {
-        return 0;
+        return nullptr;
     }
     if ( GetHash().size() == 1 )
     {
@@ -76,7 +76,7 @@ wxsGUI* wxsGUIFactory::SelectNew(const wxString& Message,wxsProject* Project)
     wxString SelectedGUI = ::wxGetSingleChoice(Message,_("Select GUI"), GUIList);
     if ( SelectedGUI.empty() )
     {
-        return 0;
+        return nullptr;
     }
 
     return Build(SelectedGUI,Project);

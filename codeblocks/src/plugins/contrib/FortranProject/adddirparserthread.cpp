@@ -1,6 +1,7 @@
 
 #include "adddirparserthread.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
     #include <logmanager.h>
 #endif
@@ -36,11 +37,12 @@ void ADirParserThread::ParseFiles()
     IncludeDB* pIncludeDB = new IncludeDB();
     wxArrayString* pADirFiles = m_pNativeParser->GetADirFiles();
     ArrayOfFortranSourceForm* pADirFileForms = m_pNativeParser->GetADirFileForms();
+    bool interpretCPP = m_pNativeParser->DoInterpretCPP();
 
     for (size_t i=0; i<pADirFiles->size(); i++)
     {
-        ParserThreadF* thread = new ParserThreadF(_T("#%&ThisIsAdditionalFileSearchDirectory&%#"), UnixFilename(pADirFiles->Item(i)), pTokens,
-                                                  pADirFileForms->at(i), false, pIncludeDB);
+        ParserThreadF* thread = new ParserThreadF("#%&ThisIsAdditionalFileSearchDirectory&%#", UnixFilename(pADirFiles->Item(i)), pTokens,
+                                                  pADirFileForms->at(i), false, pIncludeDB, interpretCPP);
         thread->Parse();
         delete thread;
     }

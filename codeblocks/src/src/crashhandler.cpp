@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 9410 $
- * $Id: crashhandler.cpp 9410 2013-10-19 23:45:48Z alpha0010 $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/crashhandler.cpp $
+ * $Revision: 13293 $
+ * $Id: crashhandler.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/crashhandler.cpp $
  */
 
 #ifdef __WXMSW__
@@ -27,7 +27,7 @@ inline void CrashHandlerSaveEditorFiles(wxString& buf)
 {
     wxString path;
     //get the "My Files" folder
-    HRESULT result = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, wxStringBuffer(path, MAX_PATH));
+    HRESULT result = SHGetFolderPath(nullptr, CSIDL_PERSONAL, nullptr, 0, wxStringBuffer(path, MAX_PATH));
     if (FAILED(result))
     {   //get at least the profiles folder
         path = ConfigManager::GetHomeFolder();

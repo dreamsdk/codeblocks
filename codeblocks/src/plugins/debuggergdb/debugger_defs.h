@@ -95,9 +95,9 @@ class DebuggerInfoCmd : public DebuggerCmd
         {
             m_Cmd = cmd;
         }
-        virtual ~DebuggerInfoCmd(){}
+        ~DebuggerInfoCmd() override {}
 
-        virtual void ParseOutput(const wxString& output);
+        void ParseOutput(const wxString& output) override;
         wxString m_Title;
 };
 
@@ -110,7 +110,7 @@ class DebuggerContinueBaseCmd : public DebuggerCmd
         {
         }
 
-        bool IsContinueCommand() const { return true; }
+        bool IsContinueCommand() const override { return true; }
 };
 
 /** Action-only debugger command to signal the watches tree to update. */
@@ -160,15 +160,15 @@ struct DebuggerBreakpoint : cbBreakpoint
     {}
 
     // from cbBreakpoint
-    virtual void SetEnabled(bool flag);
-    virtual wxString GetLocation() const;
-    virtual int GetLine() const;
-    virtual wxString GetLineString() const;
-    virtual wxString GetType() const;
-    virtual wxString GetInfo() const;
-    virtual bool IsEnabled() const;
-    virtual bool IsVisibleInEditor() const;
-    virtual bool IsTemporary() const;
+    void SetEnabled(bool flag) override;
+    wxString GetLocation() const override;
+    int GetLine() const override;
+    wxString GetLineString() const override;
+    wxString GetType() const override;
+    wxString GetInfo() const override;
+    bool IsEnabled() const override;
+    bool IsVisibleInEditor() const override;
+    bool IsTemporary() const override;
 
     BreakpointType type; ///< The type of this breakpoint.
     wxString filename; ///< The filename for the breakpoint (kept as relative).
@@ -217,23 +217,28 @@ class GDBWatch : public cbWatch
 {
     public:
         GDBWatch(wxString const &symbol);
-        virtual ~GDBWatch();
+        ~GDBWatch() override;
+
     public:
+        void GetSymbol(wxString &symbol) const override;
+        void SetSymbol(const wxString &symbol) override;
+        uint64_t GetAddress() const override;
+        void SetAddress(uint64_t address) override;
+        void GetValue(wxString &value) const override;
+        bool SetValue(const wxString &value) override;
+        bool GetIsValueErrorMessage() override;
+        void SetIsValueErrorMessage(bool value) override;
+        void GetFullWatchString(wxString &full_watch) const override;
+        void GetType(wxString &type) const override;
+        void SetType(const wxString &type) override;
 
-        virtual void GetSymbol(wxString &symbol) const;
-        virtual void GetValue(wxString &value) const;
-        virtual bool SetValue(const wxString &value);
-        virtual void GetFullWatchString(wxString &full_watch) const;
-        virtual void GetType(wxString &type) const;
-        virtual void SetType(const wxString &type);
-
-        virtual wxString GetDebugString() const;
+        wxString GetDebugString() const override;
 
         wxString MakeSymbolToAddress() const override;
         bool IsPointerType() const override;
+
     public:
         void SetDebugValue(wxString const &value);
-        void SetSymbol(const wxString& symbol);
 
         void SetFormat(WatchFormat format);
         WatchFormat GetFormat() const;
@@ -260,6 +265,9 @@ class GDBWatch : public cbWatch
         int m_array_count;
         bool m_is_array;
         bool m_forTooltip;
+        bool m_raw_value_is_message;   // True if the m_raw_value is a message instead of data
+
+        uint64_t m_address;
 };
 
 class GDBMemoryRangeWatch  : public cbWatch
@@ -269,8 +277,13 @@ class GDBMemoryRangeWatch  : public cbWatch
 
     public:
         void GetSymbol(wxString &symbol) const override { symbol = m_symbol; }
+        void SetSymbol(const wxString& symbol) override {m_symbol = symbol; }
+        uint64_t GetAddress() const override { return m_address; }
+        void SetAddress(uint64_t address) override { m_address = address; }
         void GetValue(wxString &value) const override { value = m_value; }
         bool SetValue(const wxString &value) override;
+        bool GetIsValueErrorMessage() override { return m_ValueErrorMessage; }
+        void SetIsValueErrorMessage(bool value) override { m_ValueErrorMessage = value; }
         void GetFullWatchString(wxString &full_watch) const override { full_watch = wxEmptyString; }
         void GetType(wxString &type) const override { type = wxT("Memory range"); }
         void SetType(cb_unused const wxString &type) override {}
@@ -280,7 +293,6 @@ class GDBMemoryRangeWatch  : public cbWatch
         wxString MakeSymbolToAddress() const override;
         bool IsPointerType() const override { return false; }
 
-        uint64_t GetAddress() const { return m_address; }
         uint64_t GetSize() const { return m_size; }
 
     private:
@@ -288,6 +300,7 @@ class GDBMemoryRangeWatch  : public cbWatch
         uint64_t m_size;
         wxString m_symbol;
         wxString m_value;
+        bool m_ValueErrorMessage;
 };
 
 typedef std::vector<cb::shared_ptr<GDBWatch>> WatchesContainer;
@@ -302,7 +315,7 @@ enum class WatchType
 
 typedef std::unordered_map<cb::shared_ptr<cbWatch>, WatchType> MapWatchesToType;
 
-bool IsPointerType(wxString type);
+bool IsPointerType(const wxString &type);
 wxString CleanStringValue(wxString value);
 
 enum DebuggerLanguage

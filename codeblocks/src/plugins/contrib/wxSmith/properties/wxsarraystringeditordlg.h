@@ -15,22 +15,23 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10972 $
-* $Id: wxsarraystringeditordlg.h 10972 2017-01-21 10:41:43Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsarraystringeditordlg.h $
+* $Revision: 13547 $
+* $Id: wxsarraystringeditordlg.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsarraystringeditordlg.h $
 */
 
 #ifndef WXSARRAYSTRINGEDITORDLG_H
 #define WXSARRAYSTRINGEDITORDLG_H
 
 //(*Headers(wxsArrayStringEditorDlg)
-#include <wx/sizer.h>
 #include "scrollingdialog.h"
+#include <wx/sizer.h>
 #include <wx/textctrl.h>
 //*)
 
+#include <cbplugin.h>
 
-class wxsArrayStringEditorDlg: public wxScrollingDialog
+class PLUGIN_EXPORT wxsArrayStringEditorDlg: public wxScrollingDialog
 {
     public:
 
@@ -38,7 +39,7 @@ class wxsArrayStringEditorDlg: public wxScrollingDialog
         virtual ~wxsArrayStringEditorDlg();
 
         //(*Identifiers(wxsArrayStringEditorDlg)
-        static const long ID_TEXTCTRL1;
+        static const wxWindowID ID_TEXTCTRL1;
         //*)
 
     protected:

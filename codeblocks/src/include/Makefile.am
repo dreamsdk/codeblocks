@@ -14,14 +14,7 @@ endif
 AM_CPPFLAGS = $(WX_CXXFLAGS) \
 			-I$(top_builddir)/src/include \
 			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/src/sdk/wxscintilla/include \
- 			-I$(top_srcdir)/src/include/scripting/sqplus \
-			-I$(top_srcdir)/src/include/mozilla_chardet \
-			-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
-			-I$(top_srcdir)/src/include/mozilla_chardet/nsprpub/pr/include \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
-			-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
+			-I$(top_srcdir)/src/sdk/wxscintilla/include
 
 # Because we are not generating any programs/libraries with this makefile,
 # $(CXXCOMPILE) is empty.
@@ -65,6 +58,7 @@ ALLHEADERS = annoyingdialog.h \
 				configuretoolsdlg.h \
 				confirmreplacedlg.h \
 				crc32.h \
+				cygwin.h \
 				debuggermanager.h \
 				editarrayfiledlg.h \
 				editarrayorderdlg.h \
@@ -74,6 +68,7 @@ ALLHEADERS = annoyingdialog.h \
 				editorlexerloader.h \
 				editormanager.h \
 				editor_hooks.h \
+				editor_utils.h \
 				editpairdlg.h \
 				editpathdlg.h \
 				edittooldlg.h \
@@ -133,49 +128,8 @@ ALLHEADERS = annoyingdialog.h \
 				toolsmanager.h \
 				uservarmanager.h \
 				workspaceloader.h \
-				xtra_res.h \
-				mozilla_chardet/CharDistribution.h \
-				mozilla_chardet/JpCntx.h \
-				mozilla_chardet/nsBig5Prober.h \
-				mozilla_chardet/nsCharSetProber.h \
-				mozilla_chardet/nsCodingStateMachine.h \
-				mozilla_chardet/nsEscCharsetProber.h \
-				mozilla_chardet/nsEUCJPProber.h \
-				mozilla_chardet/nsEUCKRProber.h \
-				mozilla_chardet/nsEUCTWProber.h \
-				mozilla_chardet/nsGB2312Prober.h \
-				mozilla_chardet/nsHebrewProber.h \
-				mozilla_chardet/nsLatin1Prober.h \
-				mozilla_chardet/nsMBCSGroupProber.h \
-				mozilla_chardet/nsPkgInt.h \
-				mozilla_chardet/nsSBCharSetProber.h \
-				mozilla_chardet/nsSBCSGroupProber.h \
-				mozilla_chardet/nsSJISProber.h \
-				mozilla_chardet/nsUniversalDetector.h \
-				mozilla_chardet/nsUTF8Prober.h \
-				mozilla_chardet/mfbt/mozilla/Alignment.h \
-				mozilla_chardet/mfbt/mozilla/Assertions.h \
-				mozilla_chardet/mfbt/mozilla/Attributes.h \
-				mozilla_chardet/mfbt/mozilla/Compiler.h \
-				mozilla_chardet/mfbt/mozilla/Likely.h \
-				mozilla_chardet/mfbt/mozilla/NullPtr.h \
-				mozilla_chardet/mfbt/mozilla/TypedEnum.h \
-				mozilla_chardet/mfbt/mozilla/Types.h \
-				mozilla_chardet/mfbt/mozilla/Util.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg_darwin.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg_linux.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg_openbsd.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg_win95.h \
-				mozilla_chardet/nsprpub/pr/include/prcpucfg_winnt.h \
-				mozilla_chardet/nsprpub/pr/include/prmem.h \
-				mozilla_chardet/nsprpub/pr/include/prtypes.h \
-				mozilla_chardet/xpcom/base/ErrorList.h \
-				mozilla_chardet/xpcom/base/nscore.h \
-				mozilla_chardet/xpcom/base/nsError.h \
-				mozilla_chardet/xpcom/glue/nsDebug.h \
-				mozilla_chardet/xpcom/glue/nsMemory.h
-
+				wxstringhash.h \
+				xtra_res.h
 
 sdk_HEADERS = $(ALLHEADERS)
 

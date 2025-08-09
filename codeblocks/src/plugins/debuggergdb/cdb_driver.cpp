@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11858 $
- * $Id: cdb_driver.cpp 11858 2019-09-29 12:53:40Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/cdb_driver.cpp $
+ * $Revision: 12795 $
+ * $Id: cdb_driver.cpp 12795 2022-04-16 03:47:18Z ollydbg $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/cdb_driver.cpp $
  */
 
 #include <sdk.h>
@@ -37,7 +37,7 @@ static wxRegEx reBP(_T("Breakpoint ([0-9]+) hit"));
 // one stack frame (to access current file; is there another way???)
 //  # ChildEBP RetAddr
 // 00 0012fe98 00401426 Win32GUI!WinMain+0x89 [c:\devel\tmp\win32 test\main.cpp @ 55]
-static wxRegEx reFile(_T("[ \t]([A-z]+.*)[ \t]+\\[([A-z]:)(.*) @ ([0-9]+)\\]"));
+static wxRegEx reFile(_T("[[:blank:]]([A-z]+.*)[[:blank:]]+\\[([A-z]:)(.*) @ ([0-9]+)\\]"));
 
 CDB_driver::CDB_driver(DebuggerGDB* plugin)
     : DebuggerDriver(plugin),
@@ -56,52 +56,55 @@ wxString CDB_driver::GetCommonCommandLine(const wxString& debugger)
 {
     wxString cmd;
     cmd << debugger;
-//    cmd << _T(" -g"); // ignore starting breakpoint
-    cmd << _T(" -G"); // ignore ending breakpoint
-    cmd << _T(" -lines"); // line info
+//    cmd << " -g"; // ignore starting breakpoint
+    cmd << " -G"; // ignore ending breakpoint
+    cmd << " -lines"; // line info
 
     if (m_Target->GetTargetType() == ttConsoleOnly)
-        cmd << wxT(" -2"); // tell the debugger to launch a console for us
+        cmd << " -2"; // tell the debugger to launch a console for us
 
     if (m_Dirs.GetCount() > 0)
     {
         // add symbols dirs
-        cmd << _T(" -y ");
-        for (unsigned int i = 0; i < m_Dirs.GetCount(); ++i)
+        cmd << " -y ";
+        for (size_t i = 0; i < m_Dirs.GetCount(); ++i)
             cmd << m_Dirs[i] << wxPATH_SEP;
 
         // add source dirs
-        cmd << _T(" -srcpath ");
-        for (unsigned int i = 0; i < m_Dirs.GetCount(); ++i)
+        cmd << " -srcpath ";
+        for (size_t i = 0; i < m_Dirs.GetCount(); ++i)
             cmd << m_Dirs[i] << wxPATH_SEP;
     }
     return cmd;
 }
 
-// FIXME (obfuscated#): Implement user arguments
-wxString CDB_driver::GetCommandLine(const wxString& debugger, const wxString& debuggee, cb_unused const wxString &userArguments)
+wxString CDB_driver::GetCommandLine(const wxString& debugger, const wxString& debuggee, const wxString& userArguments)
 {
     wxString cmd = GetCommonCommandLine(debugger);
-    cmd << _T(' ');
+    cmd << ' ';
 
     // finally, add the program to debug
     wxFileName debuggeeFileName(debuggee);
     if (debuggeeFileName.IsAbsolute())
         cmd << debuggee;
     else
-        cmd << m_Target->GetParentProject()->GetBasePath() << wxT("/") << debuggee;
+        cmd << m_Target->GetParentProject()->GetBasePath() << '/' << debuggee;
+
+    if (!userArguments.empty())
+        cmd << ' ' << userArguments;
 
     return cmd;
 }
 
-// FIXME (obfuscated#): Implement user arguments
-wxString CDB_driver::GetCommandLine(const wxString& debugger, int pid, cb_unused const wxString &userArguments)
+// User arguments has no sense when attaching to a running process
+wxString CDB_driver::GetCommandLine(const wxString& debugger, int pid, cb_unused const wxString& userArguments)
 {
     wxString cmd = GetCommonCommandLine(debugger);
     // finally, add the PID
-    cmd << _T(" -p ") << wxString::Format(_T("%d"), pid);
+    cmd << wxString::Format(" -p %d", pid);
     return cmd;
 }
+
 void CDB_driver::SetTarget(ProjectBuildTarget* target)
 {
     m_Target = target;
@@ -110,13 +113,13 @@ void CDB_driver::SetTarget(ProjectBuildTarget* target)
 void CDB_driver::Prepare(cb_unused bool isConsole, cb_unused int printElements,
                          cb_unused const RemoteDebugging &remoteDebugging)
 {
-	// The very first command won't get the right output back due to the spam on CDB launch.
-	// Throw in a dummy command to flush the output buffer.
-	m_QueueBusy = true;
-	QueueCommand(new DebuggerCmd(this,_T(".echo Clear buffer")),High);
+    // The very first command won't get the right output back due to the spam on CDB launch.
+    // Throw in a dummy command to flush the output buffer.
+    m_QueueBusy = true;
+    QueueCommand(new DebuggerCmd(this,_T(".echo Clear buffer")),High);
 
-	// Either way, get the PID of the child
-	QueueCommand(new CdbCmd_GetPID(this));
+    // Either way, get the PID of the child
+    QueueCommand(new CdbCmd_GetPID(this));
 }
 
 void CDB_driver::Start(cb_unused bool breakOnEntry)
@@ -188,6 +191,7 @@ void CDB_driver::Backtrace()
 {
     DoBacktrace(false);
 }
+
 void CDB_driver::DoBacktrace(bool switchToFirst)
 {
     if (Manager::Get()->GetDebuggerManager()->UpdateBacktrace())
@@ -220,14 +224,20 @@ void CDB_driver::SetMemoryRangeValue(cb_unused uint64_t addr, cb_unused const wx
     NOT_IMPLEMENTED();
 }
 
-void CDB_driver::MemoryDump()
+void CDB_driver::SetMemoryRangeValue(wxString address, const wxString& value)
 {
     NOT_IMPLEMENTED();
 }
 
+void CDB_driver::MemoryDump()
+{
+    QueueCommand(new CdbCmd_ExamineMemory(this));
+}
+
 void CDB_driver::RunningThreads()
 {
-    NOT_IMPLEMENTED();
+    if (Manager::Get()->GetDebuggerManager()->UpdateThreads())
+        QueueCommand(new CdbCmd_Threads(this));
 }
 
 void CDB_driver::InfoFrame()
@@ -280,6 +290,17 @@ void CDB_driver::UpdateWatches(cb_unused cb::shared_ptr<GDBWatch> localsWatch,
                                WatchesContainer &watches, bool ignoreAutoUpdate)
 {
     bool updateWatches = false;
+    if (localsWatch && localsWatch->IsAutoUpdateEnabled())
+    {
+        QueueCommand(new CdbCmd_LocalsFuncArgs(this, localsWatch, true));
+        updateWatches = true;
+    }
+    if (funcArgsWatch && funcArgsWatch->IsAutoUpdateEnabled())
+    {
+        QueueCommand(new CdbCmd_LocalsFuncArgs(this, funcArgsWatch, false));
+        updateWatches = true;
+    }
+
     for (WatchesContainer::iterator it = watches.begin(); it != watches.end(); ++it)
     {
         WatchesContainer::reference watch = *it;

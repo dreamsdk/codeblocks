@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Author: Francesco Montorsi
-# RCS-ID: $Id$
+# RCS-ID: $Id: acregen.sh 7947 2012-04-28 10:01:45Z mortenmacfly $
 # Creation date: 14/9/2005
 #
 # A simple script to generate the configure script for a wxCode component

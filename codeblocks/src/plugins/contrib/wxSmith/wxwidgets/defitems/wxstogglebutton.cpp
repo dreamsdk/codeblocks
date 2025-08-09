@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxstogglebutton.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstogglebutton.cpp $
+* $Revision: 13547 $
+* $Id: wxstogglebutton.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstogglebutton.cpp $
 */
 
 #include "wxstogglebutton.h"
@@ -71,14 +71,14 @@ void wxsToggleButton::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsToggleButton::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsToggleButton::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxToggleButton* Preview = new wxToggleButton(Parent,GetId(),Label,Pos(Parent),Size(Parent),Style());
     Preview->SetValue(IsChecked);
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsToggleButton::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsToggleButton::OnEnumWidgetProperties(cb_unused long _Flags)
 {
     WXS_STRING(wxsToggleButton,Label,_("Label"),_T("label"),_T(""),false)
     WXS_BOOL(wxsToggleButton,IsChecked,_("Is checked"),_T("checked"),false)

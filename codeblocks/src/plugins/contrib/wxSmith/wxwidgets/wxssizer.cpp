@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10868 $
-* $Id: wxssizer.cpp 10868 2016-06-14 05:41:59Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxssizer.cpp $
+* $Revision: 13547 $
+* $Id: wxssizer.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxssizer.cpp $
 */
 
 #include "wxssizer.h"
@@ -160,11 +160,11 @@ void wxsSizer::OnBuildDeclarationsCode()
     }
 }
 
-wxObject* wxsSizer::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsSizer::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxWindow* NewParent = Parent;
 
-    if ( !(Flags & pfExact) )
+    if ( !(_Flags & pfExact) )
     {
         NewParent = new wxsSizerPreview(Parent);
     }
@@ -178,34 +178,34 @@ wxObject* wxsSizer::OnBuildPreview(wxWindow* Parent,long Flags)
 
         // We pass either Parent passed to current BuildPreview function
         // or pointer to additional parent currently created
-        wxObject* ChildPreview = Child->BuildPreview(NewParent,Flags);
-        if ( !ChildPreview ) continue;
+        wxObject* ChildPreview = Child->BuildPreview(NewParent,_Flags);
+        if (!ChildPreview)
+            continue;
 
-        wxSizer* ChildAsSizer = wxDynamicCast(ChildPreview,wxSizer);
-        wxWindow* ChildAsWindow = wxDynamicCast(ChildPreview,wxWindow);
-        wxSizerItem* ChildAsItem = wxDynamicCast(ChildPreview,wxSizerItem);
+        const long SizerFlags = wxsSizerFlagsProperty::GetWxFlags(SizerExtra->Flags);
+        const long Proportion = SizerExtra->Proportion;
+        const long Pixels = SizerExtra->Border.GetPixels(Parent);
+        wxSizer* ChildAsSizer = wxDynamicCast(ChildPreview, wxSizer);
+        wxWindow* ChildAsWindow = wxDynamicCast(ChildPreview, wxWindow);
+        wxSizerItem* ChildAsItem = wxDynamicCast(ChildPreview, wxSizerItem);
         if ( ChildAsSizer )
         {
-            Sizer->Add(ChildAsSizer,SizerExtra->Proportion,
-                wxsSizerFlagsProperty::GetWxFlags(SizerExtra->Flags),
-                SizerExtra->Border.GetPixels(Parent));
+            Sizer->Add(ChildAsSizer, Proportion, SizerFlags, Pixels);
         }
         else if ( ChildAsWindow )
         {
-            Sizer->Add(ChildAsWindow,SizerExtra->Proportion,
-                wxsSizerFlagsProperty::GetWxFlags(SizerExtra->Flags),
-                SizerExtra->Border.GetPixels(Parent));
+            Sizer->Add(ChildAsWindow, (SizerFlags & wxSHAPED) ? 0 : Proportion, SizerFlags, Pixels);
         }
         else if ( ChildAsItem )
         {
-            ChildAsItem->SetProportion(SizerExtra->Proportion);
-            ChildAsItem->SetFlag(wxsSizerFlagsProperty::GetWxFlags(SizerExtra->Flags));
-            ChildAsItem->SetBorder(SizerExtra->Border.GetPixels(Parent));
+            ChildAsItem->SetProportion(Proportion);
+            ChildAsItem->SetFlag(SizerFlags);
+            ChildAsItem->SetBorder(Pixels);
             Sizer->Add(ChildAsItem);
         }
     }
 
-    if ( !(Flags & pfExact) )
+    if ( !(_Flags & pfExact) )
     {
         NewParent->SetSizer(Sizer);
         if ( !GetChildCount() )
@@ -280,9 +280,9 @@ wxString wxsSizer::OnXmlGetExtraObjectClass()
     return _T("sizeritem");
 }
 
-void wxsSizer::OnEnumItemProperties(long Flags)
+void wxsSizer::OnEnumItemProperties(long _Flags)
 {
-    OnEnumSizerProperties(Flags);
+    OnEnumSizerProperties(_Flags);
 }
 
 void wxsSizer::OnAddItemQPP(wxsAdvQPP* QPP)

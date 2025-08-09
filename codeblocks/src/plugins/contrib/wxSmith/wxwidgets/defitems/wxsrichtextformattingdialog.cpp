@@ -97,6 +97,7 @@ void wxsRichTextFormattingDialog::OnBuildCreatingCode()
 
             Codef(_T("%C(%s, %W, %t, %I, %P, %S);\n"), sFlags.wx_str(), m_sTitle.wx_str());
             BuildSetupWindowCode();
+            GetCoderContext()->AddDestroyingCode(wxString::Format(_T("%s->Destroy();\n"), GetVarName().wx_str()));
             break;
 
         case wxsUnknownLanguage: // fall-through
@@ -107,11 +108,11 @@ void wxsRichTextFormattingDialog::OnBuildCreatingCode()
 
 /*! \brief Enumerate the dialogue's properties.
  *
- * \param flags long    The control flags.
+ * \param _Flags long    The control flags.
  * \return void
  *
  */
-void wxsRichTextFormattingDialog::OnEnumToolProperties(cb_unused long Flags)
+void wxsRichTextFormattingDialog::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_FLAGS(wxsRichTextFormattingDialog, m_iFlags, _("Page Flags"), _T("page_flags"), arrPageValues, arrPageValueNames,
                                 wxRICHTEXT_FORMAT_FONT|wxRICHTEXT_FORMAT_TABS|wxRICHTEXT_FORMAT_BULLETS|wxRICHTEXT_FORMAT_INDENTS_SPACING )

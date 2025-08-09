@@ -4,7 +4,7 @@
  *
  * $Revision: 8690 $
  * $Id: helper.cpp 8690 2012-12-18 21:27:22Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/headerfixup/helper.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/headerfixup/helper.cpp $
  */
 
 #include "helper.h"

@@ -1,0 +1,23 @@
+<svg width="32" height="32" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <linearGradient id="b" x1="21" x2="8" y1="1041" y2="1023" gradientTransform="matrix(.5833 0 0 .5833 -.375 437.4)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9bc3d4" offset="0"/>
+      <stop stop-color="#f1f9fa" offset="1"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0 -1020)">
+    <circle transform="matrix(2.143 0 0 2.143 -.071 -1192)" cx="7.5" cy="1040" r="7" fill="url(#b)" stroke="#417e9a" stroke-width=".9333"/>
+    <g fill="#417e9a" stroke="#417e9a" stroke-linecap="round">
+      <path transform="matrix(3.275 0 0 -6.24 -16.76 1034)" d="M9.5 1.5h1V2h-1z" stroke-width=".2212"/>
+      <path transform="matrix(3.275 0 0 6.24 -16.76 1039)" d="M9.5 1.5h1V2h-1z" stroke-width=".2212"/>
+      <path transform="matrix(0 2.427 -7.397 0 41.67 1012)" d="M9.5 1.5h1V2h-1z" stroke-width=".236"/>
+      <path transform="matrix(0 2.457 -8.319 0 17.56 1011)" d="M9.5 1.5h1V2h-1z" stroke-width=".2212"/>
+    </g>
+    <g fill="none">
+      <path transform="translate(.698 1021) scale(1.519)" d="m15 5-6 6" stroke="#000" stroke-width="1.317"/>
+      <path transform="matrix(1.818 0 0 1.538 -2.455 1021)" d="M14 10H8.5" stroke="#000" stroke-width="1.315"/>
+      <path transform="matrix(1.805 0 0 1.83 43.83 1016)" d="m-13.5 13 6.5 6.5" stroke="red" stroke-width="1.651"/>
+      <path transform="matrix(1.666 0 0 1.596 41.99 1019)" d="m-13.5 20 7-7.5" stroke="red" stroke-width="1.84"/>
+    </g>
+  </g>
+</svg>

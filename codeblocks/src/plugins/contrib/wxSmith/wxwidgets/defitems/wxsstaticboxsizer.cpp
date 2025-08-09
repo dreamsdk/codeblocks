@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsstaticboxsizer.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstaticboxsizer.cpp $
+* $Revision: 13547 $
+* $Id: wxsstaticboxsizer.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstaticboxsizer.cpp $
 */
 
 #include "wxsstaticboxsizer.h"
@@ -62,7 +62,7 @@ void wxsStaticBoxSizer::OnBuildSizerCreatingCode()
     }
 }
 
-void wxsStaticBoxSizer::OnEnumSizerProperties(cb_unused long Flags)
+void wxsStaticBoxSizer::OnEnumSizerProperties(cb_unused long _Flags)
 {
     static const long    OrientValues[] = { wxHORIZONTAL, wxVERTICAL, 0 };
     static const wxChar* OrientNames[]  = { _T("wxHORIZONTAL"), _T("wxVERTICAL"), 0 };

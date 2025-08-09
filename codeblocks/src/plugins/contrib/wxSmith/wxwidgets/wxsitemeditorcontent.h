@@ -15,15 +15,17 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsitemeditorcontent.h 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditorcontent.h $
+* $Revision: 13627 $
+* $Id: wxsitemeditorcontent.h 13627 2025-03-02 18:17:10Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditorcontent.h $
 */
 
 #ifndef WXSITEMEDITORCONTENT_H
 #define WXSITEMEDITORCONTENT_H
 
 #include "wxsdrawingwindow.h"
+
+#include <wx/hashmap.h>
 
 class wxsItemEditorDragAssist;
 class wxsItemResData;
@@ -151,11 +153,7 @@ class wxsItemEditorContent: public wxsDrawingWindow
 
         /** \brief Processing mouse events */
         void OnKeyDown(wxKeyEvent& event);
-#if wxCHECK_VERSION(3, 0, 0)
         inline void SetCur(wxStockCursor Cur) { SetCursor(wxCursor(Cur)); }
-#else
-        inline void SetCur(int Cur) { SetCursor(wxCursor(Cur)); }
-#endif
         void RebuildDragPoints();
         void ClearDragPoints();
         void GreyDragPoints();

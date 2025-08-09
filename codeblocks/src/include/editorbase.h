@@ -31,12 +31,19 @@ class DLLIMPORT EditorBase : public wxPanel
 {
     DECLARE_EVENT_TABLE()
     public:
-        EditorBase(wxWindow* parent, const wxString& filename);
+        /** Constructor for the EditorBase class. Not really useful on its own.
+          * @param[in] parent The parent of the editor. It should be the same as the notebook object
+          *    in the EditorManager class.
+          * @param[in] filename The file name for this editor. Used to set the title and for other
+          *    file related features.
+          * @param[in] addCustomEditor Controls whether the editor is registered with the
+          *    EditorManager. @see EditorManager::AddCustomEditor.
+         */
+        EditorBase(wxWindow* parent, const wxString& filename, bool addCustomEditor = true);
         ~EditorBase() override;
 
-        /** Don't use this. It throws an exception if you do. */
-
-        void operator=(cb_optional const EditorBase& rhs){ cbThrow(_T("Can't assign an EditorBase* !!!")); }
+        EditorBase(const EditorBase&) = delete;
+        void operator=(const EditorBase&) = delete;
 
         /** @brief Get the editor's filename (if applicable).
           *
@@ -76,7 +83,7 @@ class DLLIMPORT EditorBase : public wxPanel
           *
           * @return The editor's title.
           */
-        virtual const wxString& GetTitle();
+        virtual const wxString& GetTitle() const;
 
         /** @brief Set the editor's title.
           *
@@ -137,8 +144,10 @@ class DLLIMPORT EditorBase : public wxPanel
           * if the user right-clicks in the editor area.
           * @param position The position to popup the context menu.
           * @param type The module's type.
+          * @param menuParent Used to call as this for the PopupMenu call. Can be nullptr.
           */
-        virtual void DisplayContextMenu(const wxPoint& position, ModuleType type = mtUnknown);
+        virtual void DisplayContextMenu(const wxPoint& position, ModuleType type,
+                                        wxWindow *menuParent);
 
         /** Should this kind of editor be visible in the open files tree?
           *
@@ -280,8 +289,6 @@ class DLLIMPORT EditorBase : public wxPanel
         wxString m_Filename;
         EditorBaseInternalData* m_pData; ///< Use this to add new vars/functions w/out breaking the ABI
     private:
-        EditorBase(cb_unused const EditorBase& rhs); // prevent copy construction
-
         /** one event handler for all popup menu entries */
         void OnContextMenuEntry(wxCommandEvent& event);
         void BasicAddToContextMenu(wxMenu* popup, ModuleType type);

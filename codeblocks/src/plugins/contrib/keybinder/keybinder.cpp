@@ -8,14 +8,9 @@
 // Copyright:   (c) Aleksandras Gluchovas and (c) Francesco Montorsi
 // Licence:     wxWidgets licence
 /////////////////////////////////////////////////////////////////////////////
-// RCS-ID:      $Id: keybinder.cpp 11983 2020-03-12 18:24:30Z fuscated $
+// RCS-ID:      $Id: keybinder.cpp 13199 2023-02-07 14:01:18Z wh11204 $
 
 // Modified Keybinder for CodeBlocks KeyBnder v2.0 2019/04/8
-
-#ifdef __GNUG__
-#pragma implementation "keybinder.h" //necessary for linux, else undefines when linking
-#endif
-
 
 // includes
 #include <wx/event.h>
@@ -855,9 +850,9 @@ int wxKeyBinder::MergeSubMenu(wxMenu* pMenu, int& modified)           //+v0.4.25
                 switch(c)
                 {
                     case _T('C'):
-                        if (menuItemLabel.Matches(_T("Copy"))) continue;
+                        if (menuItemLabel.Matches(_T("Copy"))) continue;  /*falls through*/
                     case _T('V'):
-                        if (menuItemLabel.Matches(_T("Paste"))) continue;
+                        if (menuItemLabel.Matches(_T("Paste"))) continue;  /*falls through*/
                     case _T('S'):
                         if (menuItemLabel.Matches(_T("Cut"))) continue;
                     default:
@@ -886,11 +881,7 @@ int wxKeyBinder::MergeSubMenu(wxMenu* pMenu, int& modified)           //+v0.4.25
             //   menu items will never match causing constant update overhead
             AddShortcut(nMenuItemID, menuItemKeyStr, true );
             #ifdef LOGGING
-                #if wxCHECK_VERSION(3, 0, 0)
-                wxLogMessage(_("Merge change type[%d]:item[%lu]:id[%d]:@[%p]text[%s]key[%s]"), changed, static_cast<unsigned long>(j), nMenuItemID, pMenuItem, pMenuItem->GetItemLabel().wx_str(), menuItemKeyStr.wx_str() );
-                #else
-                wxLogMessage(_("Merge change type[%d]:item[%lu]:id[%d]:@[%p]text[%s]key[%s]"), changed, static_cast<unsigned long>(j), nMenuItemID, pMenuItem, pMenuItem->GetText().wx_str(), menuItemKeyStr.wx_str() );
-                #endif
+                wxLogMessage(_("Merge change type[%d]:item[%zu]:id[%d]:@[%p]text[%s]key[%s]"), changed, j, nMenuItemID, pMenuItem, pMenuItem->GetItemLabel(), menuItemKeyStr);
             #endif
         }//if changed
         else
@@ -988,17 +979,9 @@ void wxKeyBinder::UpdateSubMenu(wxMenu* pMenu)
                 && (not wxMenuCmd::IsNumericMenuItem(pMenuItem)) )
             {
                 #ifdef LOGGING
-                 #if wxCHECK_VERSION(3, 0, 0)
                  wxLogMessage(_("UpdateAllCmd ById Failed on:[%d][%s]"), pMenuItem->GetId(), pMenuItem->GetItemLabel().GetData() );
-                 #else
-                 wxLogMessage(_("UpdateAllCmd ById Failed on:[%d][%s]"), pMenuItem->GetId(), pMenuItem->GetText().GetData() );
-                 #endif
                 #else
-                 #if wxCHECK_VERSION(3, 0, 0)
                  Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("KeyBinder failed UpdateByID on[%d][%s]"), nMenuItemID, pMenuItem->GetItemLabel().GetData()));
-                 #else
-                 Manager::Get()->GetLogManager()->DebugLog(wxString::Format(_("KeyBinder failed UpdateByID on[%d][%s]"), nMenuItemID, pMenuItem->GetText().GetData()));
-                 #endif
                 #endif
 ////                // When a .ini id cannot be found: (menu ids have shifted)
 ////                // The following code causes real problems when menu labels are duplicates
@@ -1221,7 +1204,7 @@ bool wxKeyBinder::LoadFromString(const wxString& cfgCmdString)
     //m_arrCmd.Clear();
 
     //-cont = p->GetFirstEntry(str, idx);
-    switch(true)
+    switch(1)
     {
         default:
         // try to decode this entry
@@ -1437,7 +1420,6 @@ bool wxKeyProfileArray::Load(wxConfigBase *p, const wxString &key)
 // ----------------------------------------------------------------------------
 // wxKeyMonitorTextCtrl
 // ----------------------------------------------------------------------------
-
 void wxKeyMonitorTextCtrl::OnKey(wxKeyEvent &event)
 {
     // backspace cannot be used as shortcut key...
@@ -1461,18 +1443,27 @@ void wxKeyMonitorTextCtrl::OnKey(wxKeyEvent &event)
         //-SetInsertionPointEnd();
 
         // Command must begin with 'Ctrl-' 'Alt-' or 'Shift-' F1-F??
-            wxString keyStrokeString = wxKeyBind::GetKeyStrokeString(event);
-            #if defined(LOGGING)
+        wxString keyStrokeString = wxKeyBind::GetKeyStrokeString(event);
+        #if defined(LOGGING)
             wxLogMessage( _T("KeyStrokString[%s]"),keyStrokeString.c_str() );
-            #endif
-        if (not keyStrokeString.IsEmpty() ) do{
-            if (keyStrokeString.Length() <2) { keyStrokeString.Clear(); break;}
+        #endif
+
+        switch (keyStrokeString.IsEmpty() ? 1 : 0)
+        {
+            case 1: break;
+            default:
+            if (keyStrokeString.Length() < 2) { keyStrokeString.Clear(); break;}
             if ( (keyStrokeString[0] == 'F') && (keyStrokeString.Mid(1,1).IsNumber()) ) break;
             if ( not (validCmdPrefixes.Contains(keyStrokeString.BeforeFirst('-'))) )
-            {    keyStrokeString.Clear();
-                break;
+            {   keyStrokeString.Clear(); break; }
+            // if not accepted as accelerator, disallow it. 2020/05/30
+            if ( keyStrokeString.AfterLast(wxT('-')).Length() )
+            {
+                wxAcceleratorEntry accelEntry;
+                bool ok = accelEntry.FromString(keyStrokeString);
+                if (not ok) { keyStrokeString.Clear(); break; }
             }
-        }while(0); //ifdo
+        }//switch
         SetValue( keyStrokeString );
         SetInsertionPointEnd();
     }
@@ -2521,6 +2512,7 @@ void wxKeyConfigPanel::OnAddProfile(wxCommandEvent &)
           "The new profile will be initially set to a copy of the last selected profile."),
         _("Add new profile"));
     dlg.SetValue(sel->GetName());
+    PlaceWindow(&dlg);
 
     bool valid = FALSE;
     while (!valid) {

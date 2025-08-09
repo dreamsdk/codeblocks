@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11539 $
- * $Id: filemanager.cpp 11539 2018-12-20 20:06:58Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/filemanager.cpp $
+ * $Revision: 12534 $
+ * $Id: filemanager.cpp 12534 2021-10-06 22:35:21Z bluehazzard $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/filemanager.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -157,7 +157,7 @@ LoaderBase* FileManager::Load(const wxString& file, bool reuseEditors)
         }
     }
 
-    if (file.StartsWith(_T("http://")))
+    if (file.StartsWith("http://"))
     {
         URLLoader *ul = new URLLoader(file);
         urlLoaderThread.Queue(ul);
@@ -166,7 +166,7 @@ LoaderBase* FileManager::Load(const wxString& file, bool reuseEditors)
 
     FileLoader *fl = new FileLoader(file);
 
-    if (file.length() > 2 && file[0] == _T('\\') && file[1] == _T('\\'))
+    if (file.length() > 2 && file[0] == '\\' && file[1] == '\\')
     {
         // UNC files behave like "normal" files, but since we know they are served over the network,
         // we can run them independently from local filesystem files for higher concurrency
@@ -181,22 +181,10 @@ LoaderBase* FileManager::Load(const wxString& file, bool reuseEditors)
 
 namespace platform
 {
-#if defined ( __WIN32__ ) || defined ( _WIN64 )
-    // Yes this is ugly. Feel free to come up with a better idea if you have one.
-    // Using the obvious wxRenameFile (or the underlying wxRename) is no option under Windows, since
-    // wxRename is simply a fuckshit wrapper around a CRT function which does not work the way
-    // the wxRename author assumes (MSVCRT rename fails if the target exists, instead of overwriting).
-    inline bool move(wxString const& old_name, wxString const& new_name)
-    {
-        // hopefully I got the unintellegible conversion stuff correct... at least it seems to work...
-        return ::MoveFileEx(wxFNCONV(old_name), wxFNCONV(new_name), MOVEFILE_REPLACE_EXISTING);
-    }
-#else
     inline bool move(wxString const& old_name, wxString const& new_name)
     {
         return ::wxRenameFile(old_name, new_name, true);
     };
-#endif
 }
 
 
@@ -219,30 +207,39 @@ bool FileManager::SaveUTF8(const wxString& name, const char* data, size_t len)
 {
     if (wxFileExists(name) == false)
     {
-        return wxFile(name, wxFile::write_excl).Write(data, len) == len;
+        wxFile file(name, wxFile::write_excl);
+        if (!file.IsOpened())
+            return false;
+        if (!data)
+            return false;
+        return file.Write(data, len) == len;
     }
-#if wxCHECK_VERSION(3, 0, 0)
     else if (wxFileName::Exists(name, wxFILE_EXISTS_SYMLINK))
     {
         // Enable editing symlinks. Do not use temp file->replace procedure
         // since that would get rid of the symlink. Writing directly causes
         // edits to reflect to the target file.
-        return wxFile(name, wxFile::write).Write(data, len) == len;
+        wxFile file(name, wxFile::write);
+        if (!file.IsOpened())
+            return false;
+        if (!data)
+            return false;
+        return file.Write(data, len) == len;
     }
-#endif // wxCHECK_VERSION(3, 0, 0)
     else
     {
         if (!wxFile::Access(name, wxFile::write))
             return false;
 
         wxString temp(name);
-        temp.append(wxT(".temp"));
+        temp.append(".temp");
 
         wxStructStat buff;
         wxLstat( name, &buff );
 
         wxFile f;
-        f.Create(temp, true, buff.st_mode);
+        if (!f.Create(temp, true, buff.st_mode))
+            return false;
 
         if (f.Write(data, len) == len)
         {
@@ -254,7 +251,7 @@ bool FileManager::SaveUTF8(const wxString& name, const char* data, size_t len)
             else
             {
                 wxString failed(name);
-                failed.append(wxT(".save-failed"));
+                failed.append(".save-failed");
                 platform::move(temp, failed);
             }
         }
@@ -268,13 +265,14 @@ bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncodin
     if (wxFileExists(name) == false)
     {
         wxFile f(name, wxFile::write_excl);
+        if (!f.IsOpened())
+            return false;
         return WriteWxStringToFile(f, data, encoding, bom);
     }
 
     // If the caller/user doesn't want a robust save operation do a direct write!
     bool directWrite = !robust;
 
-#if wxCHECK_VERSION(3, 0, 0)
     if (wxFileName::Exists(name, wxFILE_EXISTS_SYMLINK))
     {
         // Enable editing symlinks. Do not use temp file->replace procedure
@@ -282,11 +280,12 @@ bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncodin
         // edits to reflect to the target file.
         directWrite = true;
     }
-#endif // wxCHECK_VERSION(3, 0, 0)
 
     if (directWrite)
     {
         wxFile f(name, wxFile::write);
+        if (!f.IsOpened())
+            return false;
         return WriteWxStringToFile(f, data, encoding, bom);
     }
     else
@@ -295,13 +294,14 @@ bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncodin
             return false;
 
         wxString temp(name);
-        temp.append(wxT(".temp"));
+        temp.append(".temp");
 
         wxStructStat buff;
         wxLstat( name, &buff );
 
         wxFile f;
-        f.Create(temp, true, buff.st_mode);
+        if (!f.Create(temp, true, buff.st_mode))
+            return false;
 
         if (WriteWxStringToFile(f, data, encoding, bom))
         {
@@ -313,7 +313,7 @@ bool FileManager::Save(const wxString& name, const wxString& data, wxFontEncodin
             else
             {
                 wxString failed(name);
-                failed.append(wxT(".save-failed"));
+                failed.append(".save-failed");
                 platform::move(temp, failed);
             }
         }
@@ -433,12 +433,12 @@ bool FileManager::WriteWxStringToFile(wxFile& f, const wxString& data, wxFontEnc
 
         if (!buf || !(size = strlen(buf)))
         {
-            cbMessageBox(_T(    "The file could not be saved because it contains characters "
-                                "that can neither be represented in your current code page, "
-                                "nor be converted to UTF-8.\n"
-                                "The latter should actually not be possible.\n\n"
-                                "Please check your language/encoding settings and try saving again." ),
-                                _("Failure"), wxICON_WARNING | wxOK );
+            cbMessageBox(_("The file could not be saved because it contains characters "
+                           "that can neither be represented in your current code page, "
+                           "nor be converted to UTF-8.\n"
+                           "The latter should actually not be possible.\n\n"
+                           "Please check your language/encoding settings and try saving again."),
+                         _("Failure"), wxICON_WARNING | wxOK );
             return false;
         }
         else

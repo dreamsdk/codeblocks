@@ -4,7 +4,7 @@
 // Author:      Ryan Norton
 // Modified by:
 // Created:     09/05/03
-// RCS-ID:      $Id$
+// RCS-ID:      $Id: bzipstream.h 7947 2012-04-28 10:01:45Z mortenmacfly $
 // Copyright:   (c) Ryan Norton
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////

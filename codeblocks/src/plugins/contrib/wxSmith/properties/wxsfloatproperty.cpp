@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsfloatproperty.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsfloatproperty.cpp $
+* $Revision: 12197 $
+* $Id: wxsfloatproperty.cpp 12197 2020-08-11 08:14:14Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsfloatproperty.cpp $
 */
 
 #include "wxsfloatproperty.h"
@@ -35,7 +35,7 @@ wxsFloatProperty::wxsFloatProperty(const wxString& PGName, const wxString& DataN
 
 void wxsFloatProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
-    PGRegister(Object,Grid,Grid->AppendIn(Parent,NEW_IN_WXPG14X wxFloatProperty(GetPGName(),wxPG_LABEL,VALUE)));
+    PGRegister(Object,Grid,Grid->AppendIn(Parent,new wxFloatProperty(GetPGName(),wxPG_LABEL,VALUE)));
 }
 
 bool wxsFloatProperty::PGRead(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,

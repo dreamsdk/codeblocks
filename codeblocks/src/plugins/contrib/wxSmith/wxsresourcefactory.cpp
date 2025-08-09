@@ -15,20 +15,20 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsresourcefactory.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsresourcefactory.cpp $
+* $Revision: 13381 $
+* $Id: wxsresourcefactory.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsresourcefactory.cpp $
 */
 
 #include "wxsresourcefactory.h"
 
 // TODO: Support dynamic loading / unloading of factories
 
-wxsResourceFactory* wxsResourceFactory::m_UpdateQueue = 0;
-wxsResourceFactory* wxsResourceFactory::m_Initialized = 0;
+wxsResourceFactory* wxsResourceFactory::m_UpdateQueue = nullptr;
+wxsResourceFactory* wxsResourceFactory::m_Initialized = nullptr;
 wxsResourceFactory::HashT wxsResourceFactory::m_Hash;
 wxString wxsResourceFactory::m_LastExternalName;
-wxsResourceFactory* wxsResourceFactory::m_LastExternalFactory = 0;
+wxsResourceFactory* wxsResourceFactory::m_LastExternalFactory = nullptr;
 bool wxsResourceFactory::m_AllAttached = false;
 
 wxsResourceFactory::wxsResourceFactory()
@@ -85,7 +85,7 @@ wxsResource* wxsResourceFactory::Build(const wxString& ResourceType,wxsProject* 
     ResourceInfo& Info = m_Hash[ResourceType];
     if ( !Info.m_Factory )
     {
-        return 0;
+        return nullptr;
     }
     return Info.m_Factory->OnCreate(Info.m_Number,Project);
 }
@@ -103,7 +103,7 @@ bool wxsResourceFactory::CanHandleExternal(const wxString& FileName)
         }
     }
     m_LastExternalName = wxEmptyString;
-    m_LastExternalFactory = 0;
+    m_LastExternalFactory = nullptr;
     return false;
 }
 
@@ -119,7 +119,7 @@ wxsResource* wxsResourceFactory::BuildExternal(const wxString& FileName)
         wxsResource* Res = Factory->OnBuildExternal(FileName);
         if ( Res ) return Res;
     }
-    return 0;
+    return nullptr;
 }
 
 void wxsResourceFactory::BuildSmithMenu(wxMenu* menu)

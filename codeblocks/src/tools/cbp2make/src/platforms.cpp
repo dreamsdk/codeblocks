@@ -90,10 +90,11 @@ void CPlatform::Assign(const CPlatform& Platform)
 CString CPlatform::Name(const OS_Type PlatformOS)
 {
     switch (PlatformOS) {
-    default:
-    case CPlatform::OS_Other:
-    case CPlatform::OS_Count:
-    { }
+    case CPlatform::OS_Count: // fall-though
+    case CPlatform::OS_Other: // fall-though
+    default: {
+        return "Other";
+    }
     case CPlatform::OS_Unix: {
         return STR_UNIX;
     }
@@ -239,6 +240,8 @@ void CPlatform::Reset(const CPlatform::OS_Type OS)
 {
     m_OS_Type = OS;
     switch (m_OS_Type) {
+    case CPlatform::OS_Other: // fall-through
+    case CPlatform::OS_Count: // fall-through
     default:
     case CPlatform::OS_Unix: {
         m_Cmd_Null = "/dev/null";
@@ -259,8 +262,8 @@ void CPlatform::Reset(const CPlatform::OS_Type OS)
         m_Cmd_ChangeDir = "cd $dir";
         m_PathDelimiter = '/';
         //
-        m_StaticLibraryExtensions.Clear()<<"a"<<"lib";
-        m_DynamicLibraryExtensions.Clear()<<"so";
+        m_StaticLibraryExtensions.Clear() <<"a" << "lib";
+        m_DynamicLibraryExtensions.Clear() << "so";
         break;
     }
     case CPlatform::OS_MSys: {
@@ -305,8 +308,8 @@ void CPlatform::Reset(const CPlatform::OS_Type OS)
         m_Cmd_ChangeDir = "cd $dir";
         m_PathDelimiter = '\\';
         //
-        m_StaticLibraryExtensions.Clear()<<"lib"<<"a";
-        m_DynamicLibraryExtensions.Clear()<<"dll";
+        m_StaticLibraryExtensions.Clear() << "lib" << "a";
+        m_DynamicLibraryExtensions.Clear() << "dll";
         break;
     }
     case CPlatform::OS_Mac: {
@@ -328,8 +331,8 @@ void CPlatform::Reset(const CPlatform::OS_Type OS)
         m_Cmd_ChangeDir = "cd $dir";
         m_PathDelimiter = '/';
         //
-        m_StaticLibraryExtensions.Clear()<<"a";
-        m_DynamicLibraryExtensions.Clear()<<"dylib";
+        m_StaticLibraryExtensions.Clear() << "a";
+        m_DynamicLibraryExtensions.Clear() << "dylib";
         break;
     }
     }
@@ -555,9 +558,9 @@ void CPlatformSet::Read(const TiXmlElement *ConfigRoot)
 
         TiXmlElement* platform = _platform->ToElement();
 
-        if (strcmp(platform->Value(), "platform") !=0 )
-            break;
-        if (0!=platform) {
+        if (0 != platform) {
+            if (strcmp(platform->Value(), "platform") != 0)
+                break;
             CPlatform *p = new CPlatform();
             p->Read(platform);
             m_Platforms.push_back(p);

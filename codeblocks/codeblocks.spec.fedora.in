@@ -1,7 +1,7 @@
 %global svnrev             @REVISION@
 
 Name:       codeblocks
-Version:	20.03
+Version:	25.03
 Release:	1%{?dist}
 Summary:	An open source, cross platform, free C++ IDE
 License:    GPLv3+
@@ -21,7 +21,6 @@ BuildRequires:	squirrel-devel
 BuildRequires:	astyle-devel
 BuildRequires:	libappstream-glib
 %endif
-BuildRequires:	gamin-devel
 BuildRequires:	zip
 BuildRequires:	dos2unix
 BuildRequires:	desktop-file-utils
@@ -125,7 +124,7 @@ make %{?_smp_mflags}
 %make_install
 
 %if 0%{?fedora}
-appstream-util validate-relax --nonet %{buildroot}/%{_datadir}/appdata/*.{appdata,metainfo}.xml
+appstream-util validate-relax --nonet %{buildroot}/%{_datadir}/metainfo/*.{appdata,metainfo}.xml
 %endif
 desktop-file-validate	%{buildroot}/%{_datadir}/applications/codeblocks.desktop
 
@@ -185,13 +184,14 @@ fi
 %{plugindir}/libcompiler.so
 %{plugindir}/libdebugger.so
 %{plugindir}/libdefaultmimehandler.so
+%{plugindir}/libDisplayEvents.so
 %{plugindir}/liboccurrenceshighlighting.so
 %{plugindir}/libopenfileslist.so
 %{plugindir}/libprojectsimporter.so
 %{plugindir}/libscriptedwizard.so
 %{plugindir}/libtodo.so
 
-%{_datadir}/appdata/%{name}.appdata.xml
+%{_datadir}/metainfo/%{name}.appdata.xml
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/48x48/mimetypes/*.png
 %{_datadir}/mime/packages/%{name}.xml
@@ -213,6 +213,7 @@ fi
 %{pkgdatadir}/compiler.zip
 %{pkgdatadir}/debugger.zip
 %{pkgdatadir}/defaultmimehandler.zip
+%{pkgdatadir}/DisplayEvents.zip
 %{pkgdatadir}/manager_resources.zip
 %{pkgdatadir}/occurrenceshighlighting.zip
 %{pkgdatadir}/openfileslist.zip
@@ -284,6 +285,7 @@ fi
 %{pkgdatadir}/ProjectOptionsManipulator.zip
 %{pkgdatadir}/RegExTestbed.zip
 %{pkgdatadir}/rndgen.zip
+%{pkgdatadir}/clangd_client.zip
 %{pkgdatadir}/ReopenEditor.zip
 %{pkgdatadir}/SymTab.zip
 %{pkgdatadir}/wxsmith.zip
@@ -329,6 +331,7 @@ fi
 %{plugindir}/libRegExTestbed.so
 %{plugindir}/libReopenEditor.so
 %{plugindir}/librndgen.so
+%{plugindir}/libclangd_client.so
 %{plugindir}/libSymTab.so
 %{plugindir}/libwxsmith.so
 %{plugindir}/libwxSmithAui.so
@@ -336,10 +339,12 @@ fi
 %{plugindir}/libNassiShneiderman.so
 %{plugindir}/libSpellChecker.so
 %{plugindir}/libSmartIndent*.so
-%{_datadir}/appdata/%{name}-contrib.metainfo.xml
-
+%{_datadir}/metainfo/%{name}-contrib.metainfo.xml
 
 %changelog
+* Sun Mar 02 2025 Morten MacFly <mortenmacfly@codeblocks.org> - 25.03-1
+- New release.
+
 * Thu Feb 20 2020 Teodor Petrov <tpetrov@codeblocks.org> - 20.03-1
 - New release.
 

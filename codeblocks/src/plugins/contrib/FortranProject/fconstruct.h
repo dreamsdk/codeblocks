@@ -40,6 +40,8 @@ class FConstruct
             fclSelectType_type_is,
             fclSelectType_class_is,
             fclSelectType_class_default,
+            fclSelectRank_start,
+            fclSelectRank_rank,
             fclType_type,
             fclType_end_type,
             fclEnum_enum,

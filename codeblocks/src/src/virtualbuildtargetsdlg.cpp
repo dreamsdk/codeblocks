@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11904 $
- * $Id: virtualbuildtargetsdlg.cpp 11904 2019-11-07 19:14:33Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/virtualbuildtargetsdlg.cpp $
+ * $Revision: 13570 $
+ * $Id: virtualbuildtargetsdlg.cpp 13570 2024-09-14 05:03:57Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/virtualbuildtargetsdlg.cpp $
  */
 
 #include "sdk.h"
@@ -41,11 +41,11 @@ VirtualBuildTargetsDlg::VirtualBuildTargetsDlg(wxWindow* parent,wxWindowID /*id*
     btnRemove = (wxButton*)FindWindow(XRCID("ID_BTN_REMOVE"));
     lstTargets = (wxCheckListBox*)FindWindow(XRCID("ID_LST_TARGETS"));
 
-    Connect(XRCID("ID_LST_ALIASES"),wxEVT_COMMAND_LISTBOX_SELECTED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnAliasesSelect);
-    Connect(XRCID("ID_BTN_ADD"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnAddClick);
-    Connect(XRCID("ID_BTN_EDIT"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnEditClick);
-    Connect(XRCID("ID_BTN_REMOVE"),wxEVT_COMMAND_BUTTON_CLICKED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnRemoveClick);
-    Connect(XRCID("ID_LST_TARGETS"),wxEVT_COMMAND_CHECKLISTBOX_TOGGLED,(wxObjectEventFunction)&VirtualBuildTargetsDlg::OnTargetsToggled);
+    Connect(XRCID("ID_LST_ALIASES"),wxEVT_COMMAND_LISTBOX_SELECTED,wxCommandEventHandler(VirtualBuildTargetsDlg::OnAliasesSelect));
+    Connect(XRCID("ID_BTN_ADD"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(VirtualBuildTargetsDlg::OnAddClick));
+    Connect(XRCID("ID_BTN_EDIT"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(VirtualBuildTargetsDlg::OnEditClick));
+    Connect(XRCID("ID_BTN_REMOVE"),wxEVT_COMMAND_BUTTON_CLICKED,wxCommandEventHandler(VirtualBuildTargetsDlg::OnRemoveClick));
+    Connect(XRCID("ID_LST_TARGETS"),wxEVT_COMMAND_CHECKLISTBOX_TOGGLED,wxCommandEventHandler(VirtualBuildTargetsDlg::OnTargetsToggled));
     //*)
     XRCCTRL(*this, "wxID_OK", wxButton)->SetDefault();
 
@@ -118,7 +118,7 @@ void VirtualBuildTargetsDlg::OnUpdateUI(cb_unused wxUpdateUIEvent& event)
 void VirtualBuildTargetsDlg::OnAddClick(cb_unused wxCommandEvent& event)
 {
     wxString targetName = cbGetTextFromUser(_("Enter the new virtual build target name:"),
-                                            _("New virtual build target"));
+                                            _("New virtual build target"), wxString(), this);
     if (targetName.IsEmpty())
         return;
 
@@ -146,7 +146,7 @@ void VirtualBuildTargetsDlg::OnEditClick(cb_unused wxCommandEvent& event)
 {
     wxString targetName = cbGetTextFromUser(_("Enter the new virtual build target name:"),
                                             _("Edit virtual build target"),
-                                            lstAliases->GetStringSelection());
+                                            lstAliases->GetStringSelection(), this);
 
     // is name unchanged, or user cancelled?
     if (targetName.IsEmpty() || targetName == lstAliases->GetStringSelection())

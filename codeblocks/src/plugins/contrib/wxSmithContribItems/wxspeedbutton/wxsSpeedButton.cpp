@@ -42,7 +42,7 @@ namespace
         _T("rcoll@theriver.com"),       // Author's email
         _T(""),                         // Item's homepage
         _T("Contrib"),                  // Category in palette
-        90,                             // Priority in palette
+        50,                             // Priority in palette
         _T("SpeedButton"),              // Base part of names for new items
         wxsCPP,                         // List of coding languages supported by this item
         1, 0,                           // Version
@@ -77,7 +77,7 @@ wxsSpeedButton::wxsSpeedButton(wxsItemResData* Data):
 
 // start with a clean slate
 
-    mLabel      = _("");
+    mLabel      = wxString();
     mGlyphCount = 0;
     mMargin     = 2;
     mUseInclude = true;
@@ -91,12 +91,11 @@ wxsSpeedButton::wxsSpeedButton(wxsItemResData* Data):
 
 //------------------------------------------------------------------------------
 
-void wxsSpeedButton::OnBuildCreatingCode() {
-int         n;
-wxString    inc;
-wxString    vname;                  // name of this var
-wxString    bname;                  // name of wxBitmap for the button
-wxString    ss, tt;
+void wxsSpeedButton::OnBuildCreatingCode()
+{
+    int         n;
+    wxString    vname;                  // name of this var
+    wxString    bname;                  // name of wxBitmap for the button
 
 // valid language?
 
@@ -147,7 +146,7 @@ wxString    s,v;
 
 // make a name for the bitmap
 
-    v = GetVarName() + _("_BMP");
+    v = GetVarName() + "_BMP";
 
 // no image
 
@@ -165,8 +164,8 @@ wxString    s,v;
 
     else if ((IsImageXPM(mGlyph)) && (mUseInclude)) {
         s = mGlyph.FileName;
-        s.Replace(_("\\"), _("/"), true);
-        s = _T("\"") + s + _T("\"");
+        s.Replace("\\", "/", true);
+        s = "\"" + s + "\"";
         AddHeader(s, GetInfo().ClassName, 0);
 
         s = GetXPMName(mGlyph);
@@ -177,7 +176,7 @@ wxString    s,v;
 
     else if (! mGlyph.FileName.IsEmpty()) {
         s = mGlyph.FileName;
-        s.Replace(_("\\"), _("/"), true);
+        s.Replace("\\", "/", true);
 
         Codef(_T("wxBitmap %s(%t, wxBITMAP_TYPE_ANY);\n"), v.wx_str(), s.wx_str());
     }
@@ -330,7 +329,7 @@ static const wxChar* TypeNames[]  = {_T("Simple Button"), _T("Toggle Button"), _
     WXS_LONG(  wxsSpeedButton, mGlyphCount, _("Glyph Count"),         _T("glyphcount"), 0)
     WXS_BOOL(  wxsSpeedButton, mUseInclude, _("Use XPM As #include"), _T("useinclude"), true);
     WXS_LONG(  wxsSpeedButton, mMargin,     _("Margin Space"),        _T("margin"),     2)
-    WXS_BOOL(  wxsSpeedButton, mButtonDown, _("Button DOWN"),         _("buttondown"),  false);
+    WXS_BOOL(  wxsSpeedButton, mButtonDown, _("Button DOWN"),         _T("buttondown"), false);
     WXS_ENUM(  wxsSpeedButton, mButtonType, _("Button Type"),         _T("buttontype"), TypeValues, TypeNames, 1);
     WXS_LONG(  wxsSpeedButton, mGroupIndex, _("Group Index"),         _T("groupindex"), 0)
     WXS_BOOL(  wxsSpeedButton, mAllowAllUp, _("Allow All Up"),        _T("allowallup"), true);

@@ -6,9 +6,9 @@
 #ifndef CB_PRECOMP
     #include <wx/thread.h>
     #include <wx/event.h>
-
-    #include <cbthreadpool.h>
 #endif
+
+#include <cbthreadpool.h>
 
 class NativeParserF;
 

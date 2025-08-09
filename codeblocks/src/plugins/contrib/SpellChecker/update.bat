@@ -45,7 +45,8 @@ for %%g in (16x16,20x20,24x24,28x28,32x32,40x40,48x48,56x56,64x64) do (
     call:mkdirSilent %~2\%%g
     xcopy /D /Y %~1\%%g\*.png %~2\%%g > nul
 )
-REM     call:mkdirSilent "%CB_OUTPUT_RESDIR%\images\ThreadSearch\32x32"
-REM     xcopy /D /y "%CB_DEVEL_RESDIR%\images\ThreadSearch\32x32\*.png" "%CB_OUTPUT_RESDIR%\images\ThreadSearch\32x32" > nul
+echo From %~1\svg to %~2\svg
+call:mkdirSilent %~2\svg
+xcopy /D /Y %~1\svg\*.svg %~2\svg > nul
 endlocal
 GOTO:EOF

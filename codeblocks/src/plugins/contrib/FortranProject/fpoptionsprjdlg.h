@@ -10,8 +10,9 @@
 #ifndef CB_PRECOMP
     #include <wx/intl.h>
     #include <settings.h>
-    #include <configurationpanel.h>
 #endif
+
+#include <configurationpanel.h>
 
 #include "nativeparserf.h"
 #include "parserf.h"
@@ -30,15 +31,21 @@ public:
     virtual void OnCancel(){}
 
 protected:
-    void OnAdd(wxCommandEvent& event);
+    void OnAddDir(wxCommandEvent& event);
+    void OnAddFile(wxCommandEvent& event);
     void OnEdit(wxCommandEvent& event);
     void OnDelete(wxCommandEvent& event);
+    void OnAddInclude(cb_unused wxCommandEvent& event);
+    void OnEditInclude(cb_unused wxCommandEvent& event);
+    void OnDeleteInclude(cb_unused wxCommandEvent& event);
     void OnUpdateUI(wxUpdateUIEvent& event);
 
 private:
     cbProject*    m_pProject;
     NativeParserF* m_pNativeParser;
     wxArrayString m_OldPaths;
+    wxArrayString m_OldPathsInclude;
+    wxString      m_OldCPPMacros;
 
     DECLARE_EVENT_TABLE()
 };

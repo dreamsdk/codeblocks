@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsstringproperty.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsstringproperty.cpp $
+* $Revision: 12557 $
+* $Id: wxsstringproperty.cpp 12557 2021-12-07 19:39:34Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsstringproperty.cpp $
 */
 
 #include "wxsstringproperty.h"
@@ -40,20 +40,25 @@ wxsStringProperty::wxsStringProperty(const wxString& PGName, const wxString& Dat
 {}
 
 
-void wxsStringProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
+void wxsStringProperty::PGCreate(wxsPropertyContainer* Object, wxPropertyGridManager* Grid, wxPGId Parent)
 {
     wxString Fixed = VALUE;
     Fixed.Replace(_T("\n"),_T("\\n"));
     wxPGId Id;
-    if ( IsLongString )
+    if (IsLongString)
     {
-        Id = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxLongStringProperty(GetPGName(),wxPG_LABEL,Fixed));
+        wxLongStringProperty* Property = new wxLongStringProperty(GetPGName(), wxPG_LABEL, Fixed);
+        Property->SetHelpString(m_HelpString);
+        Id = Grid->AppendIn(Parent, Property);
     }
     else
     {
-        Id = Grid->AppendIn(Parent,NEW_IN_WXPG14X wxStringProperty(GetPGName(),wxPG_LABEL,Fixed));
+        wxStringProperty* Property = new wxStringProperty(GetPGName(), wxPG_LABEL, Fixed);
+        Property->SetHelpString(m_HelpString);
+        Id = Grid->AppendIn(Parent, Property);
     }
-    PGRegister(Object,Grid,Id);
+
+    PGRegister(Object, Grid, Id);
 }
 
 bool wxsStringProperty::PGRead(cb_unused wxsPropertyContainer* Object,

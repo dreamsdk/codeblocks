@@ -4,7 +4,7 @@
  *
  * $Revision: 11859 $
  * $Id: debuggeroptionsprjdlg.cpp 11859 2019-09-29 12:53:55Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/debuggergdb/debuggeroptionsprjdlg.cpp $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/debuggergdb/debuggeroptionsprjdlg.cpp $
  */
 
 #include <sdk.h>
@@ -15,7 +15,6 @@
 #include <wx/button.h>
 #include <wx/choice.h>
 #include <wx/checkbox.h>
-#include <wx/spinctrl.h> // DreamSDK
 #include <cbproject.h>
 #include <editpathdlg.h>
 #include <manager.h>
@@ -182,10 +181,6 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(rd.extendedRemote);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(rd.additionalShellCmdsAfter);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(rd.additionalShellCmdsBefore);
-		// DreamSDK::Start
-		XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(rd.loaderArguments);
-        XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue((int)rd.loaderWaitingTime);
-		// DreamSDK::End
     }
     else
     {
@@ -200,10 +195,6 @@ void DebuggerOptionsProjectDlg::LoadCurrentRemoteDebuggingRecord()
         XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->SetValue(false);
         XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->SetValue(wxEmptyString);
         XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->SetValue(wxEmptyString);
-		// DreamSDK::Start
-		XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->SetValue(wxEmptyString);
-        XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->SetValue(LOADER_WAITING_TIME_DISABLED);
-		// DreamSDK::End
     }
 }
 
@@ -233,10 +224,6 @@ void DebuggerOptionsProjectDlg::SaveCurrentRemoteDebuggingRecord()
     rd.extendedRemote = XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->GetValue();
     rd.additionalShellCmdsAfter = XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->GetValue();
     rd.additionalShellCmdsBefore = XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->GetValue();
-	// DreamSDK::Start
-	rd.loaderArguments = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl)->GetValue();
-    rd.loaderWaitingTime = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl)->GetValue();
-	// DreamSDK::End
 }
 
 void DebuggerOptionsProjectDlg::OnTargetSel(wxCommandEvent& WXUNUSED(event))
@@ -318,15 +305,6 @@ void DebuggerOptionsProjectDlg::OnUpdateUI(wxUpdateUIEvent& WXUNUSED(event))
     XRCCTRL(*this, "chkExtendedRemote", wxCheckBox)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsAfter", wxTextCtrl)->Enable(en);
     XRCCTRL(*this, "txtShellCmdsBefore", wxTextCtrl)->Enable(en);
-	// DreamSDK::Start
-	wxTextCtrl* txt = XRCCTRL(*this, "txtLoaderArguments", wxTextCtrl);
-    txt->SetToolTip(_(LOADER_ARGUMENTS_TOOLTIP));
-    txt->Enable(en);
-    wxSpinCtrl* spn = XRCCTRL(*this, "spnLoaderWaitingTime", wxSpinCtrl);
-    spn->SetRange(LOADER_WAITING_TIME_DISABLED, LOADER_WAITING_TIME_MAX);
-    spn->SetToolTip(wxString::Format(_("%s\nSet it to 0 to use the system default"), _(LOADER_WAITING_TIME_TOOLTIP)));
-    spn->Enable(en);
-	// DreamSDK::End
 }
 
 void DebuggerOptionsProjectDlg::OnApply()

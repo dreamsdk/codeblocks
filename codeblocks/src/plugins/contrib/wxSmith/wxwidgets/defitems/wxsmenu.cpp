@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxsmenu.cpp 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenu.cpp $
+* $Revision: 13547 $
+* $Id: wxsmenu.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsmenu.cpp $
 */
 
 #include "wxsmenu.h"
@@ -228,7 +228,7 @@ void wxsMenu::OnBuildCreatingCode()
     }
 }
 
-void wxsMenu::OnEnumToolProperties(cb_unused long Flags)
+void wxsMenu::OnEnumToolProperties(cb_unused long _Flags)
 {
     if ( GetParent() )
     {

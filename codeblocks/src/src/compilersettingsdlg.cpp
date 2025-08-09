@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10931 $
- * $Id: compilersettingsdlg.cpp 10931 2016-12-04 16:30:27Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/src/compilersettingsdlg.cpp $
+ * $Revision: 13293 $
+ * $Id: compilersettingsdlg.cpp 13293 2023-05-30 15:53:23Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/src/compilersettingsdlg.cpp $
  */
 
 #include <sdk.h>
@@ -125,7 +125,7 @@ void CompilerSettingsDlg::AddPluginPanels()
     ConfigurationPanelsArray local;
 
     // step 1
-    Manager::Get()->GetPluginManager()->GetConfigurationPanels(cgCompiler, lb, local);
+    Manager::Get()->GetPluginManager()->GetConfigurationPanels(cgCompiler, lb, local, nullptr);
     for (size_t i = 0; i < local.GetCount(); ++i)
     {
         cbConfigurationPanel* panel = local[i];
@@ -193,6 +193,23 @@ void CompilerSettingsDlg::UpdateListbookImages()
 
 void CompilerSettingsDlg::OnPageChanging(cb_unused wxListbookEvent& event)
 {
+    const int selection = event.GetSelection();
+    if (selection == wxNOT_FOUND)
+        return;
+
+    wxListbook* lb = XRCCTRL(*this, "nbMain", wxListbook);
+    wxWindow *page = lb->GetPage(selection);
+    if (page == nullptr)
+        return;
+
+    for (cbConfigurationPanel *panel : m_PluginPanels)
+    {
+        if (panel == page)
+        {
+            panel->OnPageChanging();
+            break;
+        }
+    }
 }
 
 void CompilerSettingsDlg::OnPageChanged(wxListbookEvent& event)

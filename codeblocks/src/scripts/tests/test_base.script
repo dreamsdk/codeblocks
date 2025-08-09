@@ -17,35 +17,40 @@ global_failed_tests <- 0;
 
 class script_test_base
 {
+    // Stores the last position. It only grows in a section by 4 characters.
+    // This makes it easier to read IMO.
+    lastTarget = 30;
+
+    function StartNewSection(title)
+    {
+        ::print("\n");
+        ::print("--------------- " + title + " ---------------\n");
+        lastTarget = 30;
+    }
+
     function Run()
     {
-
     }
 
     function error(message)
     {
-        ::print("[ERROR] "+ message );
+        ::print("[ERROR] " + message);
     }
 
     function format_output(name, result)
     {
         local name_length = name.len();
-        local needed_tabs = 0;
-        local free_space = 20 - name_length;
-        if(free_space < 0)
-        {
-            free_space = 50 - name_length;
-        }
-        if(free_space < 0)
-            free_space = 4;
 
-        needed_tabs = free_space; //% 8;
-        local output = "Test: " + name;
-        local i = 0;
-        for(;i<needed_tabs;i++)
+        local free_space = lastTarget - name_length;
+        while (free_space <= 0)
         {
-            output += " ";
+            lastTarget += 4;
+            free_space = lastTarget - name_length;
         }
+
+        local output = "Test: " + name;
+        for (local i = 0; i < free_space; i++)
+            output += ".";
         output += result;
         return output;
     }
@@ -65,23 +70,29 @@ class script_test_base
         passed(name);
     }
 
-    function failed(name,message)
+    function failed(name, messageGot, messageNeeded)
     {
         //sa.Pause();
         ::failed_tests++;
         ::global_failed_tests++;
-        error(format_output(name,"FAILED " + message +"\n"));//(got " + to_test + " needed "+result+") \n"));
+        error(format_output(name, "FAILED\n"));
+        error("\tgot:    " + messageGot + "\n");
+        error("\tneeded: " + messageNeeded + "\n");
         //sa.Resume();
     }
 
-    function made_failed(name,message)
+    function made_failed(name, message)
     {
         ::global_made_tests++;
-        failed(name,message);
+        ::failed_tests++;
+        ::global_failed_tests++;
+        error(format_output(name, "MADE-FAILED\n"));
+        error("\t" + message + "\n");
     }
 
     function clear_test_result()
     {
+        lastTarget = 30;
         ::made_tests = 0;
         ::passed_tests = 0;
         ::failed_tests = 0;
@@ -128,7 +139,7 @@ class script_test_base
         }
         else
         {
-            failed(name,"(got " + to_test + " needed "+result+")");
+            failed(name, to_test , result);
         }
         return false;
     }
@@ -144,7 +155,7 @@ class script_test_base
         }
         else
         {
-            failed(name,"(got " + to_test + " needed true)");
+            failed(name, to_test , "true");
         }
         return false;
     }
@@ -160,8 +171,7 @@ class script_test_base
         }
         else
         {
-
-            failed(name,"(got " + to_test + " needed false)");
+            failed(name, to_test, "false");
         }
         return false;
     }
@@ -177,7 +187,7 @@ class script_test_base
         }
         else
         {
-            failed(name,"(got " + typeof to_test + " needed " + typeof type + ")");
+            failed(name, typeof to_test, typeof type);
         }
         return false;
     }
@@ -200,18 +210,34 @@ class script_test_base
     {
         ::made_tests++;
         ::global_made_tests++;
-        // some workaround for some wired errors, this has to be tracked down
-        local tmp_string = to_test + " ";
-        local i = 0;
-        result += " ";
-        for(i=0; i < tmp_string.len() && i < result.len();i++)
-        {
-            if(tmp_string[i] != result[i])
-            {
 
-                failed(name, "(got \"" + to_test + "\" needed \"" + result + "\")");
-                return false;
+        // By adding a white space at the end we make a cheap ass to string conversion
+        local tmp_string = to_test + " ";
+        local tmp_result = result + " ";
+
+        local i = 0;
+        local test_failed = false;
+        if (tmp_string.len() != tmp_result.len()) {
+            error("length mismatch: got " + (tmp_result.len() - 1) + " needed " + (tmp_string.len() - 1));
+            test_failed = true;
+        }
+        else
+        {
+            for (i=0; i < tmp_string.len() && i < tmp_result.len();i++)
+            {
+                if(tmp_string[i] != tmp_result[i])
+                {
+                    error("failed in pos " + i + " " + tmp_string[i] + " != " + tmp_result[i]);
+                    test_failed = true;
+                    break;
+                }
             }
+        }
+
+        if (test_failed)
+        {
+            failed(name, "\"" + to_test + "\"", "\"" + result + "\" fail at pos " + i);
+            return false;
         }
 
         passed(name);

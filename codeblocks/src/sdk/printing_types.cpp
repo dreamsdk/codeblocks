@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 10769 $
- * $Id: printing_types.cpp 10769 2016-02-06 14:26:58Z mortenmacfly $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/printing_types.cpp $
+ * $Revision: 12579 $
+ * $Id: printing_types.cpp 12579 2021-12-14 09:27:57Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/printing_types.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -28,21 +28,13 @@ void InitPrinting()
     {
         g_printer = new wxPrinter;
         int paperid = Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/printerdialog/paperid"), wxPAPER_A4 );
-        #if wxCHECK_VERSION(3, 0, 0)
         wxPrintOrientation paperorientation  = static_cast<wxPrintOrientation>( Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/printerdialog/paperorientation"), wxPORTRAIT ) );
-        #else
-        int paperorientation  = Manager::Get()->GetConfigManager(_T("app"))->ReadInt(_T("/printerdialog/paperorientation"), wxPORTRAIT );
-        #endif
         wxPrintData* ppd = &(g_printer->GetPrintDialogData().GetPrintData());
         ppd->SetPaperId((wxPaperSize)paperid);
-        #if wxCHECK_VERSION(3, 0, 0)
         if (paperorientation == wxPORTRAIT)
             ppd->SetOrientation(wxPORTRAIT);
         else
             ppd->SetOrientation(wxLANDSCAPE);
-        #else
-        ppd->SetOrientation(paperorientation);
-        #endif
     }
 
 //    if (!g_pageSetupData)

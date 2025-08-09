@@ -24,7 +24,7 @@ class WatchesDlg : public wxPanel, public cbWatchesDlg
     public:
         WatchesDlg();
 
-        wxWindow* GetWindow() { return this; }
+        wxWindow* GetWindow() override { return this; }
 
         void AddWatch(cb::shared_ptr<cbWatch> watch) override;
         void AddSpecialWatch(cb::shared_ptr<cbWatch> watch, bool readonly) override;
@@ -51,6 +51,10 @@ class WatchesDlg : public wxPanel, public cbWatchesDlg
         void OnMenuExamineMemory(cb_unused wxCommandEvent &event);
         void OnMenuAutoUpdate(wxCommandEvent &event);
         void OnMenuUpdate(wxCommandEvent &event);
+        void WatchToString(wxString &result, const cbWatch &watch, const wxString &indent = wxString());
+        void OnMenuCopyToClipboardData(cb_unused wxCommandEvent &event);
+        void OnMenuCopyToClipboardRow(cb_unused wxCommandEvent &event);
+        void OnMenuCopyToClipboardTree(cb_unused wxCommandEvent &event);
 
         void OnDebuggerUpdated(CodeBlocksEvent &event);
 
@@ -85,7 +89,8 @@ class ValueTooltip :
 #endif
 {
     public:
-        ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *parent);
+        ValueTooltip(const cb::shared_ptr<cbWatch> &watch, wxWindow *parent,
+                     const wxPoint &screenPosition);
         ~ValueTooltip();
 
         void Dismiss();
@@ -93,7 +98,7 @@ class ValueTooltip :
     protected:
         virtual void OnDismiss();
     private:
-        void Fit();
+        void UpdateSizeAndFit(wxWindow *usedToGetDisplay, const wxPoint &screenPosition);
         void ClearWatch();
     private:
 
@@ -103,7 +108,6 @@ class ValueTooltip :
     private:
         wxPropertyGrid *m_grid;
         wxBoxSizer *m_sizer;
-        wxPanel *m_panel;
 
         wxTimer m_timer;
         int m_outsideCount;

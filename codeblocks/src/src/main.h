@@ -20,8 +20,9 @@
 #include "find_replace.h"
 #include "sdk_events.h"
 #include "recentitemslist.h"
-#include "scripting/bindings/sc_base_types.h"
 #include "scrollingdialog.h"
+
+#include <unordered_map>
 
 WX_DECLARE_HASH_MAP(int, wxString, wxIntegerHash, wxIntegerEqual, PluginIDsMap);
 WX_DECLARE_HASH_MAP(cbPlugin*, wxToolBar*, wxPointerHash, wxPointerEqual, PluginToolbarsMap);
@@ -35,7 +36,7 @@ class DebuggerMenuHandler;
 class DebuggerToolbarHandler;
 class InfoPane;
 class wxGauge;
-class ProjectManagerUI;
+class cbProjectManagerUI;
 
 struct ToolbarInfo
 {
@@ -60,26 +61,16 @@ struct ToolbarInfo
 class MainFrame : public wxFrame
 {
     public:
-        // needed for binding with SqPlus
-        MainFrame& operator=(cb_unused const MainFrame& rhs) // prevent assignment operator
-        {
-            cbThrow(_T("Can't use MainFrame's operator="));
-            return *this;
-        }
+        MainFrame& operator=(const MainFrame&) = delete;
+        MainFrame(const MainFrame&) = delete;
     private:
-        MainFrame(cb_unused const MainFrame& rhs); // prevent copy construction
-
-        wxAuiManager m_LayoutManager;
-        LayoutViewsMap m_LayoutViews;
-        LayoutViewsMap m_LayoutMessagePane;
-        bool LayoutDifferent(const wxString& layout1,const wxString& layout2,const wxString& delimiter=_("|"));
-        bool LayoutMessagePaneDifferent(const wxString& layout1,const wxString& layout2, bool checkSelection=false);
+        bool LayoutDifferent(const wxString& layout1, const wxString& layout2,
+                             const wxString& delimiter);
+        bool LayoutMessagePaneDifferent(const wxString& layout1, const wxString& layout2,
+                                        bool checkSelection=false);
     public:
-        std::unique_ptr<wxAcceleratorTable> m_pAccel;
-        std::unique_ptr<wxAcceleratorEntry[]> m_pAccelEntries;
-        size_t              m_AccelCount;
 
-        MainFrame(wxWindow* parent = (wxWindow*)NULL);
+        MainFrame(wxWindow* parent = nullptr);
         ~MainFrame();
 
         bool Open(const wxString& filename, bool addToHistory = true);
@@ -95,12 +86,15 @@ class MainFrame : public wxFrame
 
         void StartupDone();
 
+        /** \brief Return true if the log pane is visible to the user
+         */
+        bool IsLogPaneVisible();
+
         cbProjectManagerUI* GetProjectManagerUI() { return m_pPrjManUI; }
     private:
         // event handlers
 
         void OnEraseBackground(wxEraseEvent& event);
-        void OnSize(wxSizeEvent& event);
         void OnApplicationClose(wxCloseEvent& event);
         void OnStartHereLink(wxCommandEvent& event);
 
@@ -113,7 +107,6 @@ class MainFrame : public wxFrame
 
         // common function to show context menu for toggle toolbars
         void PopupToggleToolbarMenu();
-        void SetChecksForViewToolbarsMenu(wxMenu &menu);
 
         // File->New submenu entries handler
         void OnFileNewWhat(wxCommandEvent& event);
@@ -157,6 +150,7 @@ class MainFrame : public wxFrame
         void OnEditSwapHeaderSource(wxCommandEvent& event);
         void OnEditGotoMatchingBrace(wxCommandEvent& event);
         void OnEditHighlightMode(wxCommandEvent& event);
+        void OnEditHighlightModeUpdateUI(wxUpdateUIEvent &event);
         void OnEditFoldAll(wxCommandEvent& event);
         void OnEditUnfoldAll(wxCommandEvent& event);
         void OnEditToggleAllFolds(wxCommandEvent& event);
@@ -224,6 +218,7 @@ class MainFrame : public wxFrame
         void OnSettingsEnvironment(wxCommandEvent& event);
         void OnSettingsKeyBindings(wxCommandEvent& event);
         void OnGlobalUserVars(wxCommandEvent& event);
+        void OnBackticks(wxCommandEvent& event);
         void OnSettingsEditor(wxCommandEvent& event);
         void OnSettingsCompiler(wxCommandEvent& event);
         void OnSettingsDebugger(wxCommandEvent& event);
@@ -259,6 +254,7 @@ class MainFrame : public wxFrame
         void OnViewMenuUpdateUI(wxUpdateUIEvent& event);
         void OnSearchMenuUpdateUI(wxUpdateUIEvent& event);
         void OnProjectMenuUpdateUI(wxUpdateUIEvent& event);
+        void OnUpdateCheckablePluginMenu(wxUpdateUIEvent &event);
 
         // project events
         void OnProjectActivated(CodeBlocksEvent& event);
@@ -344,7 +340,6 @@ class MainFrame : public wxFrame
         bool DoOpenFile(const wxString& filename, bool addToHistory = true);
         void DoOnFileOpen(bool bProject = false);
 
-        void DoCreateStatusBar();
         void DoUpdateStatusBar();
         void DoUpdateAppTitle();
         void DoUpdateLayout();
@@ -364,7 +359,14 @@ class MainFrame : public wxFrame
         #if wxUSE_STATUSBAR
         wxStatusBar *OnCreateStatusBar(int number, long style, wxWindowID id, const wxString& name) override;
         #endif
-    protected:
+    private:
+        wxAuiManager m_LayoutManager;
+        LayoutViewsMap m_LayoutViews;
+        LayoutViewsMap m_LayoutMessagePane;
+        std::unique_ptr<wxAcceleratorTable> m_pAccel;
+        std::unique_ptr<wxAcceleratorEntry[]> m_pAccelEntries;
+        size_t m_AccelCount;
+
         RecentItemsList m_filesHistory, m_projectsHistory;
 
         /// "Close FullScreen" button. Only shown when in FullScreen view
@@ -402,8 +404,10 @@ class MainFrame : public wxFrame
         typedef std::map<int, const wxString> MenuIDToScript; // script menuitem ID -> script function name
         MenuIDToScript m_MenuIDToScript;
 
+        typedef std::unordered_map<int, wxString> MenuIDToLanguage;
+        MenuIDToLanguage m_MapMenuIDToLanguage;
+
         wxScrollingDialog* m_pBatchBuildDialog;
-        wxButton*          m_pHighlightButton;
 
         DebuggerMenuHandler*    m_debuggerMenuHandler;
         DebuggerToolbarHandler* m_debuggerToolbarHandler;

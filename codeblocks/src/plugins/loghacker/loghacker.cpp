@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 11954 $
- * $Id: loghacker.cpp 11954 2020-01-09 18:26:46Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/loghacker/loghacker.cpp $
+ * $Revision: 11951 $
+ * $Id: loghacker.cpp 11951 2020-01-09 15:08:16Z mortenmacfly $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/loghacker/loghacker.cpp $
  */
 
 #include "sdk.h"

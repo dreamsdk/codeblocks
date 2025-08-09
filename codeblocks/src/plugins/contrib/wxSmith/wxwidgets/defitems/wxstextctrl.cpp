@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxstextctrl.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstextctrl.cpp $
+* $Revision: 13547 $
+* $Id: wxstextctrl.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstextctrl.cpp $
 */
 
 #include "wxstextctrl.h"
@@ -28,9 +28,6 @@ namespace
 
     WXS_ST_BEGIN(wxsTextCtrlStyles,_T(""))
         WXS_ST(wxTE_NO_VSCROLL)
-#if !wxCHECK_VERSION(3, 0, 0)
-        WXS_ST(wxTE_AUTO_SCROLL)
-#endif
         WXS_ST(wxTE_PROCESS_ENTER)
         WXS_ST(wxTE_PROCESS_TAB)
         WXS_ST(wxTE_MULTILINE)
@@ -89,13 +86,13 @@ void wxsTextCtrl::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsTextCtrl::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsTextCtrl::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxTextCtrl* Preview = new wxTextCtrl(Parent,GetId(),Text,Pos(Parent),Size(Parent),Style());
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsTextCtrl::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsTextCtrl::OnEnumWidgetProperties(cb_unused long _Flags)
 {
     WXS_STRING(wxsTextCtrl,Text,_("Text"),_T("value"),_T(""),false)
     WXS_LONG(wxsTextCtrl,MaxLength,_("Max Length"),_T("maxlength"),0)

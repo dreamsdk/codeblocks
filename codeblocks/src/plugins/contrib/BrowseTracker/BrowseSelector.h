@@ -16,7 +16,7 @@
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-// RCS-ID: $Id: BrowseSelector.h 10361 2015-07-26 08:13:26Z jenslody $
+// RCS-ID: $Id: BrowseSelector.h 12470 2021-06-24 19:45:05Z pecanh $
 
 #ifndef BROWSE_SELECTOR_H
 #define BROWSE_SELECTOR_H
@@ -28,6 +28,7 @@
 class wxListBox;
 class wxAuiNotebook;
 class wxPanel;
+class BrowseTracker;
 
 // ----------------------------------------------------------------------------
 class BrowseSelector : public wxScrollingDialog
@@ -47,7 +48,7 @@ class BrowseSelector : public wxScrollingDialog
          * Parameterized constructor
          * \param parent dialog parent window
          */
-        BrowseSelector(wxWindow* parent, BrowseTracker* pBrowseTracker, bool bDirection);
+        BrowseSelector(wxWindow* parent, BrowseTracker* pBrowseTracker, int menuID);
 
         /**
          * Destructor
@@ -59,14 +60,16 @@ class BrowseSelector : public wxScrollingDialog
          * dialog
          * \param parent dialog parent window
          */
-        void Create(wxWindow* parent, BrowseTracker* pBrowseTracker, bool bDirection);
+        void Create(wxWindow* parent, BrowseTracker* pBrowseTracker, int menuID);
 
         /// Event handling
         void OnKeyUp(wxKeyEvent &event);
+        void OnKeyDown(wxKeyEvent &event);
         void OnNavigationKey(wxKeyEvent &event);
         void OnItemSelected(wxCommandEvent &event);
         void OnPanelPaint(wxPaintEvent &event);
         void OnPanelEraseBg(wxEraseEvent &event);
+        void OnWindowKillFocus(wxFocusEvent& event);
         int  PopulateListControl(EditorBase* pEditor);
 
     private:
@@ -92,8 +95,10 @@ class BrowseSelector : public wxScrollingDialog
          */
         void PaintStraightGradientBox(wxDC& dc, const wxRect& rect, const wxColour& startColor, const wxColour& endColor, bool  vertical = true);
 
-        BrowseTracker*      m_pBrowseTracker;
-        bool                m_bDirection;
+        BrowseTracker*  m_pBrowseTracker;
+        int             m_menuID;
+        int             m_KeyDownCode;
+        int             m_KeyDownMods;
 
 };
 

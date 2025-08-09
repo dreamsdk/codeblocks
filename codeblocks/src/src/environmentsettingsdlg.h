@@ -6,25 +6,33 @@
 #ifndef ENVIRONMENTSETTINGSDLG_H
 #define ENVIRONMENTSETTINGSDLG_H
 
+#include <configurationpanel.h>
 #include <scrollingdialog.h>
 #include <pluginmanager.h>
 
 class wxAuiDockArt;
-class wxListbookEvent;
 class wxCheckListBox;
+class wxColourPickerEvent;
+class wxListbookEvent;
 
-class EnvironmentSettingsDlg : public wxScrollingDialog
+class EnvironmentSettingsDlg : public wxScrollingDialog, public cbConfigurationPanelColoursInterface
 {
-	public:
-		EnvironmentSettingsDlg(wxWindow* parent, wxAuiDockArt* art);
-		virtual ~EnvironmentSettingsDlg();
-		virtual void EndModal(int retCode);
-	protected:
+    public:
+        EnvironmentSettingsDlg(wxWindow* parent, wxAuiDockArt* art);
+        ~EnvironmentSettingsDlg() override;
+        void EndModal(int retCode) override;
+
+    public:
+        // From cbConfigurationPanelColoursInterface
+        wxColour GetValue(const wxString &id) override;
+        void SetValue(const wxString &id, const wxColour &colour) override;
+        void ResetDefault(const wxString &id) override;
+
+    protected:
         void OnPageChanging(wxListbookEvent& event);
         void OnPageChanged(wxListbookEvent& event);
         void OnSetAssocs(wxCommandEvent& event);
         void OnManageAssocs(wxCommandEvent& event);
-        void OnChooseColour(wxCommandEvent& event);
         void OnResetDefaultColours(wxCommandEvent& event);
         void OnUseIpcCheck(wxCommandEvent& event);
         void OnPlaceCheck(wxCommandEvent& event);
@@ -38,9 +46,13 @@ class EnvironmentSettingsDlg : public wxScrollingDialog
 
         void OnChooseAppColourCategory(wxCommandEvent &event);
         void OnChooseAppColourItem(wxCommandEvent &event);
-        void OnClickAppColour(wxCommandEvent &event);
-	private:
+        void OnClickAppColour(wxColourPickerEvent &event);
+        void OnClickAppColourDefault(wxCommandEvent &event);
+        void OnClickAppResetAll(wxCommandEvent &event);
+
+    private:
         void AddPluginPanels();
+        void DoChooseAppColourItem(int index);
         void LoadListbookImages();
         void UpdateListbookImages();
 
@@ -48,6 +60,7 @@ class EnvironmentSettingsDlg : public wxScrollingDialog
         void WriteApplicationColours();
         wxString AnnoyingDlgReturnToString(const wxString& caption);
         wxString StringToAnnoyingDlgReturn(const wxString& caption);
+
     private:
         wxAuiDockArt* m_pArt;
         ConfigurationPanelsArray m_PluginPanels;

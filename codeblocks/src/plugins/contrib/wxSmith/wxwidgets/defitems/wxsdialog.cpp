@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsdialog.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsdialog.cpp $
+* $Revision: 13547 $
+* $Id: wxsdialog.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsdialog.cpp $
 */
 
 #include <wx/app.h>        // wxTheApp
@@ -39,7 +39,6 @@ namespace
         WXS_ST(wxRESIZE_BORDER)
         WXS_ST(wxCLOSE_BOX)
         WXS_ST(wxDIALOG_NO_PARENT)
-        WXS_ST(wxTAB_TRAVERSAL)
         WXS_ST(wxMAXIMIZE_BOX)
         WXS_ST(wxMINIMIZE_BOX)
         WXS_ST(wxFRAME_SHAPED)
@@ -99,14 +98,14 @@ void wxsDialog::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsDialog::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsDialog::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
-    wxWindow* NewItem = 0;
-    wxDialog* Dlg = 0;
+    wxWindow* NewItem = nullptr;
+    wxDialog* Dlg = nullptr;
 
     // In case of frame and dialog when in "Exact" mode, we do not create
     // new object, but use Parent and call Create for it.
-    if ( Flags & pfExact )
+    if ( _Flags & pfExact )
     {
         Dlg = wxDynamicCast(Parent,wxDialog);
         if ( Dlg )
@@ -116,8 +115,8 @@ wxObject* wxsDialog::OnBuildPreview(wxWindow* Parent,long Flags)
             Dlg->Move(Pos(wxTheApp->GetTopWindow()));
         }
         NewItem = Dlg;
-        SetupWindow(NewItem,Flags);
-        AddChildrenPreview(NewItem,Flags);
+        SetupWindow(NewItem,_Flags);
+        AddChildrenPreview(NewItem,_Flags);
         if ( Centered )
         {
             Dlg->Centre();
@@ -127,8 +126,8 @@ wxObject* wxsDialog::OnBuildPreview(wxWindow* Parent,long Flags)
     {
         NewItem = new wxsGridPanel(Parent,GetId(),wxPoint(0,0),Size(Parent),0);
         NewItem->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
-        SetupWindow(NewItem,Flags);
-        AddChildrenPreview(NewItem,Flags);
+        SetupWindow(NewItem,_Flags);
+        AddChildrenPreview(NewItem,_Flags);
 
         // wxPanel tends to behave very strange when it has children and no sizer,
         // we have to manually resize it's content
@@ -161,7 +160,7 @@ wxObject* wxsDialog::OnBuildPreview(wxWindow* Parent,long Flags)
     return NewItem;
 }
 
-void wxsDialog::OnEnumContainerProperties(cb_unused long Flags)
+void wxsDialog::OnEnumContainerProperties(cb_unused long _Flags)
 {
     WXS_SHORT_STRING(wxsDialog,Title,_("Title"),_T("title"),_T(""),false)
     WXS_BOOL(wxsDialog,Centered,_("Centered"),_T("centered"),false);

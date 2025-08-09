@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 11905 $
- * $Id: cbproject.cpp 11905 2019-11-09 12:05:32Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/cbproject.cpp $
+ * $Revision: 13242 $
+ * $Id: cbproject.cpp 13242 2023-03-24 00:23:35Z bluehazzard $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/cbproject.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -63,7 +63,8 @@ cbProject::cbProject(const wxString& filename) :
     m_ExtendedObjectNamesGeneration(false),
     m_AutoShowNotesOnLoad(false),
     m_CheckForExternallyModifiedFiles(true),
-    m_pExtensionsElement(nullptr)
+    m_pExtensionsElement(nullptr),
+    m_Notifications(true)
 {
     SetCompilerID(CompilerFactory::GetDefaultCompilerID());
     SetModified(false);
@@ -222,6 +223,10 @@ cbProject& cbProject::operator=(const cbProject &p)
 
 void cbProject::NotifyPlugins(wxEventType type, const wxString& targetName, const wxString& oldTargetName)
 {
+    // A cbProject may have turned off event notifications
+    // Eg., Clangd_client should not broadcast changes regarding its dummy cbProject.
+    if (not m_Notifications) return;
+
     CodeBlocksEvent event(type);
     event.SetProject(this);
     event.SetBuildTargetName(targetName);
@@ -386,12 +391,18 @@ void cbProject::Open()
     FileType ft = FileTypeOf(m_Filename);
     if (ft == ftCodeBlocksProject)
     {
-        Manager::Get()->GetLogManager()->Log(_("Opening ") + m_Filename);
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Opening %s"), m_Filename));
         m_CurrentlyLoading = true;
         ProjectLoader loader(this);
         m_Loaded = loader.Open(m_Filename, &m_pExtensionsElement);
         fileUpgraded = loader.FileUpgraded();
         fileModified = loader.FileModified();
+
+        // First time update globs on project load
+        // This is needed so on workspace loading so all projects are up to date after first loading
+        for (const ProjectGlob& glob : m_Globs)
+            loader.UpdateGlob(glob);
+
         m_CurrentlyLoading = false;
 
         if (m_Loaded)
@@ -422,8 +433,8 @@ void cbProject::Open()
 
     long time = timer.Time();
     if (time >= 100)
-        Manager::Get()->GetLogManager()->Log(F(wxT("cbProject::Open took: %.3f seconds."),
-                                               time / 1000.0f));
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("cbProject::Open() took: %.3f seconds."),
+                                                              time / 1000.0f));
 } // end of Open
 
 void cbProject::CalculateCommonTopLevelPath()
@@ -484,7 +495,7 @@ void cbProject::CalculateCommonTopLevelPath()
         }
     }
 #ifdef ctlp_measuring
-    Manager::Get()->GetLogManager()->DebugLogError(F(_T("%s::%s:%d  took : %d ms"), cbC2U(__FILE__).c_str(),cbC2U(__PRETTY_FUNCTION__).c_str(), __LINE__, (int)sw.Time()));
+    Manager::Get()->GetLogManager()->DebugLogError(wxString::Format("%s::%s:%d took: %ld ms", cbC2U(__FILE__),cbC2U(__PRETTY_FUNCTION__), __LINE__, sw.Time()));
 #endif
 
     m_CommonTopLevelPath = base.GetFullPath();
@@ -504,7 +515,7 @@ void cbProject::CalculateCommonTopLevelPath()
         if (   (prjHasUNCName && fileHasUNCName)
             || (   !prjHasUNCName
                 && !fileHasUNCName
-                && vol.IsSameAs(f->file.GetVolume()) ) )
+                && vol.IsSameAs(f->file.GetVolume(), false) ) )
         {
             wxFileName relFileCTLP(f->file);
             relFileCTLP.MakeRelativeTo( m_CommonTopLevelPath );
@@ -586,7 +597,7 @@ bool cbProject::SaveAs()
         return true;
     }
 
-    cbMessageBox(_("Couldn't save project ") + m_Filename + _("\n(Maybe the file is write-protected?)"), _("Warning"), wxICON_WARNING);
+    cbMessageBox(wxString::Format(_("Couldn't save project %s\n(Maybe the file is write-protected?)"), m_Filename), _("Warning"), wxICON_WARNING);
     return false;
 }
 
@@ -603,7 +614,7 @@ bool cbProject::Save()
         return true;
     }
 
-    cbMessageBox(_("Couldn't save project ") + m_Filename + _("\n(Maybe the file is write-protected?)"), _("Warning"), wxICON_WARNING);
+    cbMessageBox(wxString::Format(_("Couldn't save project %s\n(Maybe the file is write-protected?)"), m_Filename), _("Warning"), wxICON_WARNING);
     return false;
 }
 
@@ -1058,13 +1069,22 @@ void cbProject::RemoveVirtualFolders(const wxString &folder)
     SetModified(true);
 }
 
-void cbProject::ReplaceVirtualFolder(const wxString &oldFolder, const wxString &newFolder)
+void cbProject::ReplaceVirtualFolder(const wxString& oldFolder, const wxString& newFolder)
 {
-    int idx = m_VirtualFolders.Index(oldFolder);
-    if (idx != wxNOT_FOUND)
-        m_VirtualFolders[idx] = newFolder;
-    else
+    bool found = false;
+    for (wxString& folder : m_VirtualFolders)
+    {
+        if (folder.StartsWith(oldFolder))
+        {
+            folder.Replace(oldFolder, newFolder, false);
+            found = true;
+        }
+    }
+
+    if (!found)
+    {
         m_VirtualFolders.Add(newFolder);
+    }
 
     // now loop all project files and rename this virtual folder
     for (FilesList::iterator it = m_Files.begin(); it != m_Files.end(); ++it)
@@ -1073,13 +1093,12 @@ void cbProject::ReplaceVirtualFolder(const wxString &oldFolder, const wxString &
         if (f && !f->virtual_path.IsEmpty())
         {
             if (f->virtual_path.StartsWith(oldFolder))
-                f->virtual_path.Replace(oldFolder, newFolder);
+                f->virtual_path.Replace(oldFolder, newFolder, false);
         }
     }
 
     SetModified(true);
 }
-
 
 void cbProject::SetVirtualFolders(const wxArrayString& folders)
 {
@@ -1157,7 +1176,7 @@ ProjectFile* cbProject::GetFile(int index)
     }
 
     if (index < 0 || index >= static_cast<int>(m_Files.size()))
-        return NULL;
+        return nullptr;
 
     return m_FileArray.Item(index);
 }
@@ -1207,6 +1226,9 @@ bool cbProject::QueryCloseAllFiles()
     return true;
 }
 
+// FIXME This call is rather strange. It advertises that it will close the files, but in fact it
+// removes all files from the project, deallocates all ProjectFile instances and returns. This
+// leaves the ProjectBuildTarget ProjectFile instances to be dangling. I don't undestand!!!
 bool cbProject::CloseAllFiles(bool dontsave)
 {
     // first try to close modified editors
@@ -1272,16 +1294,16 @@ ProjectBuildTarget* cbProject::AddBuildTarget(const wxString& targetName)
     target->SetTitle(targetName);
     target->SetCompilerID(GetCompilerID()); // same compiler as project's
     target->SetOutputFilename(wxFileName(GetOutputFilename()).GetFullName());
-    target->SetWorkingDir(_T("."));
-    target->SetObjectOutput(_T(".objs"));
-    target->SetDepsOutput(_T(".deps"));
+    target->SetWorkingDir(".");
+    target->SetObjectOutput(".objs");
+    target->SetDepsOutput(".deps");
     m_Targets.Add(target);
 
     // remove any virtual targets with the same name
     if (HasVirtualBuildTarget(targetName))
     {
         RemoveVirtualBuildTarget(targetName);
-        Manager::Get()->GetLogManager()->LogWarning(F(_T("Deleted existing virtual target '%s' because real target was added with the same name"), targetName.wx_str()));
+        Manager::Get()->GetLogManager()->LogWarning(wxString::Format(_("Deleted existing virtual target '%s' because real target was added with the same name"), targetName));
     }
 
     SetModified(true);
@@ -1402,6 +1424,10 @@ bool cbProject::RemoveBuildTarget(int index)
     ProjectBuildTarget* target = GetBuildTarget(index);
     if (target)
     {
+        // The macro manager stores pointers to projects and targets, so we need to clear it to prevent
+        // dangling pointer bugs.
+        Manager::Get()->GetMacrosManager()->Reset();
+
         const wxString targetTitle = target->GetTitle();
 
         // remove target from any virtual targets it belongs to
@@ -1536,9 +1562,8 @@ void cbProject::ReOrderTargets(const wxArrayString& nameOrder)
     LogManager* msgMan = Manager::Get()->GetLogManager();
     if (nameOrder.GetCount() != m_Targets.GetCount())
     {
-        msgMan->DebugLog(F(_T("cbProject::ReOrderTargets() : Count does not match (%lu sent, %lu had)..."),
-                           static_cast<unsigned long>(nameOrder.GetCount()),
-                           static_cast<unsigned long>(m_Targets.GetCount())));
+        msgMan->DebugLog(wxString::Format("cbProject::ReOrderTargets() : Count does not match (%zu sent, %zu had)...",
+                                          nameOrder.GetCount(), m_Targets.GetCount()));
         return;
     }
 
@@ -1547,7 +1572,7 @@ void cbProject::ReOrderTargets(const wxArrayString& nameOrder)
         ProjectBuildTarget* target = GetBuildTarget(nameOrder[i]);
         if (!target)
         {
-            msgMan->DebugLog(F(_T("cbProject::ReOrderTargets() : Target \"%s\" not found..."), nameOrder[i].wx_str()));
+            msgMan->DebugLog(wxString::Format("cbProject::ReOrderTargets() : Target \"%s\" not found...", nameOrder[i]));
             break;
         }
 
@@ -1579,14 +1604,14 @@ bool cbProject::DefineVirtualBuildTarget(const wxString& alias, const wxArrayStr
 {
     if (targets.GetCount() == 0)
     {
-        Manager::Get()->GetLogManager()->LogWarning(F(_T("Can't define virtual build target '%s': Group of build targets is empty!"), alias.wx_str()));
+        Manager::Get()->GetLogManager()->LogWarning(wxString::Format(_("Can't define virtual build target '%s': Group of build targets is empty!"), alias));
         return false;
     }
 
     ProjectBuildTarget* existing = GetBuildTarget(alias);
     if (existing)
     {
-        Manager::Get()->GetLogManager()->LogWarning(F(_T("Can't define virtual build target '%s': Real build target exists with that name!"), alias.wx_str()));
+        Manager::Get()->GetLogManager()->LogWarning(wxString::Format(_("Can't define virtual build target '%s': Real build target exists with that name!"), alias));
         return false;
     }
 
@@ -1876,14 +1901,124 @@ void cbProject::ProjectFileRenamed(ProjectFile* pf)
     }
 }
 
-void cbProject::SetGlobs(const std::vector<Glob>& globs)
+void cbProject::RemoveGlob(const ProjectGlob& glob)
 {
+
+    std::vector<ProjectGlob>::iterator itr = std::find(m_Globs.begin(), m_Globs.end(), glob);
+    if (itr != m_Globs.end())
+        m_Globs.erase(itr);
+
+    std::vector<ProjectFile*> filesToRemove;
+    for (ProjectFile* file : m_Files)
+    {
+        if( file->globId == glob.GetId())
+            filesToRemove.push_back(file);
+    }
+
+    for (ProjectFile* file : filesToRemove)
+    {
+        RemoveFile(file);
+    }
+
+    if (filesToRemove.size() > 0)
+        Touch();
+}
+
+void cbProject::RemoveGlobs(const std::vector<ProjectGlob>& globs)
+{
+
+    for (std::vector<ProjectGlob>::const_iterator toRemoveItr = globs.begin(); toRemoveItr != globs.end(); toRemoveItr++)
+    {
+        const std::vector<ProjectGlob>::iterator itr = std::find(m_Globs.begin(), m_Globs.end(), *toRemoveItr);
+        if (itr != m_Globs.end())
+            m_Globs.erase(itr);
+    }
+    std::vector<ProjectFile*> filesToRemove;
+    for (ProjectFile* file : m_Files)
+    {
+        bool found = false;
+        // File is in no glob
+        if (!file->IsGlobValid())
+            continue;
+        // search all remaining globs for this file id
+        for (const ProjectGlob& remainingGlob : m_Globs)
+        {
+            if (remainingGlob.GetId() == file->globId)
+            {
+                found = true;
+                break;
+            }
+        }
+        if (!found)
+            filesToRemove.push_back(file);
+    }
+
+    for (ProjectFile* file : filesToRemove)
+    {
+        RemoveFile(file);
+    }
+
+    if (filesToRemove.size() > 0)
+        Touch();
+}
+
+void cbProject::AddGlob(const ProjectGlob& glob)
+{
+    if (glob.IsValid() && !SearchGlob(glob.GetId()).IsValid())
+    {
+        m_Globs.push_back(glob);
+    }
+}
+
+void cbProject::SetGlobs(std::vector<ProjectGlob>& globs)
+{
+    std::sort(globs.begin(), globs.end());
+    std::vector<ProjectGlob> toRemove;
+    for (const ProjectGlob& glob : m_Globs)
+    {
+        if (!std::binary_search(globs.begin(), globs.end(), glob))
+        {
+            toRemove.push_back(glob);
+        }
+    }
+    RemoveGlobs(toRemove);
     m_Globs = globs;
 }
 
-std::vector<cbProject::Glob> cbProject::GetGlobs() const
+const std::vector<ProjectGlob> cbProject::GetGlobs() const
 {
     return m_Globs;
+}
+
+ProjectGlob cbProject::SearchGlob(const wxString& path, const wxString& wildCard, bool recursive) const
+{
+    ProjectGlob glob = ProjectGlob(path, wildCard, recursive);
+    return SearchGlob(glob.GetId());
+}
+
+ProjectGlob cbProject::SearchGlob(const GlobId& id) const
+{
+    for (const ProjectGlob& gl : m_Globs)
+    {
+        if (gl.GetId() == id)
+        {
+            return gl;
+        }
+    }
+    return ProjectGlob();   // invalid glob
+}
+
+ProjectGlob cbProject::SearchGlob(const wxString& id) const
+{
+    long long tmp = std::stoll(id.ToStdString());
+    for (const ProjectGlob& gl : m_Globs)
+    {
+        if (gl.GetId() == tmp)
+        {
+            return gl;
+        }
+    }
+    return ProjectGlob();   // invalid glob
 }
 
 wxString cbGetDynamicLinkerPathForTarget(cbProject *project, ProjectBuildTarget* target)

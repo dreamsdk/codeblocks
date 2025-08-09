@@ -3,18 +3,15 @@
 
 #include <wx/wxprec.h>
 
-#ifdef __BORLANDC__
-    #pragma hdrstop
-#endif
-
 #include <set>
 
 //(*Headers(RegExDlg)
-#include <wx/checkbox.h>
 #include "scrollingdialog.h"
-#include <wx/textctrl.h>
+#include <wx/checkbox.h>
 #include <wx/choice.h>
 #include <wx/html/htmlwin.h>
+#include <wx/stattext.h>
+#include <wx/textctrl.h>
 //*)
 
 #include <wx/html/htmlwin.h>
@@ -43,30 +40,29 @@ class RegExDlg: public wxScrollingDialog
 	protected:
 
 		//(*Handlers(RegExDlg)
-		void RunBenchmark(wxCommandEvent& event);
-		void OnInit(wxInitDialogEvent& event);
-		void OnRegExItemActivated(wxListEvent& event);
-        void OnUpdateUI(wxUpdateUIEvent& event);
 		void OnClose(wxCloseEvent& event);
+		void OnValueChanged(wxCommandEvent& event);
+		void OnQuoteChanged(wxCommandEvent& event);
+		void OnOptionChanged(wxCommandEvent& event);
+		void OnSyntaxSelect(wxCommandEvent& event);
 		//*)
 
 	private:
 
-
         wxArrayString GetBuiltinMatches(const wxString& text);
-        wxArrayString GetPregMatches(const wxString& text);
+        void Reevaluate();
+        void ShowError(bool Error);
 
         //(*Declarations(RegExDlg)
+        wxCheckBox* m_newlines;
         wxCheckBox* m_nocase;
+        wxChoice* m_syntax;
         wxHtmlWindow* m_output;
-        wxTextCtrl* m_text;
+        wxStaticText* StaticText4;
         wxTextCtrl* m_quoted;
         wxTextCtrl* m_regex;
-        wxCheckBox* m_newlines;
-        wxChoice* m_library;
+        wxTextCtrl* m_text;
         //*)
-
-        wxRegEx m_wxre;
 
         typedef std::set<RegExDlg*> VisibleDialogs;
         static VisibleDialogs m_visible_dialogs;

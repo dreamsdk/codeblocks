@@ -1,0 +1,11 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)" stroke="#000">
+    <rect transform="matrix(.4436 0 0 .4436 11.71 288.4)" x="-25.2" y="1.5" width="16.7" height="16.7" fill="#fff" stroke-linecap="round" stroke-width="1.193"/>
+    <path transform="matrix(.2646 0 0 .2646 .7938 290.8)" d="m17-6.5v28h10v-28z" fill="#808080" stroke-width="2"/>
+    <g fill="none" stroke-width="2">
+      <path transform="matrix(.2646 0 0 .2646 0 291.7)" d="m2.5 18 17.5-27.5"/>
+      <path transform="matrix(.2646 0 0 .2646 0 291.7)" d="m14.5 3.754e-5h15.5"/>
+      <path transform="matrix(.2646 0 0 .2646 0 291.7)" d="m8.5 9h21"/>
+    </g>
+  </g>
+</svg>

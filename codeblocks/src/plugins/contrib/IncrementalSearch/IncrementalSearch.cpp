@@ -4,9 +4,9 @@
  *
  * Copyright: 2008 Jens Lody
  *
- * $Revision: 11790 $
- * $Id: IncrementalSearch.cpp 11790 2019-07-14 15:03:15Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/IncrementalSearch/IncrementalSearch.cpp $
+ * $Revision: 12967 $
+ * $Id: IncrementalSearch.cpp 12967 2022-10-08 09:27:23Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/IncrementalSearch/IncrementalSearch.cpp $
  */
 
 #include "sdk.h"
@@ -37,7 +37,7 @@
 // We are using an anonymous namespace so we don't litter the global one.
 namespace
 {
-    PluginRegistrant<IncrementalSearch> reg(_T("IncrementalSearch"));
+    PluginRegistrant<IncrementalSearch> reg("IncrementalSearch");
     const int idIncSearchFocus = wxNewId();
     const int idIncSearchCombo = wxNewId();
 }
@@ -51,9 +51,9 @@ public:
     // Create popup control
     virtual bool Create(wxWindow* parent)
     {
-        ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
-        wxArrayString choices = cfg->ReadArrayString(_T("/incremental_search/last_searched_items"));
-        m_MaxHistoryLen = cfg->ReadInt(_T("/incremental_search/max_items_in_history"),20);
+        ConfigManager* cfg = Manager::Get()->GetConfigManager("editor");
+        wxArrayString choices = cfg->ReadArrayString("/incremental_search/last_searched_items");
+        m_MaxHistoryLen = cfg->ReadInt("/incremental_search/max_items_in_history", 20);
 
         return wxListBox::Create(parent,wxID_ANY,wxPoint(0,0),wxSize(250,-1), choices, wxLB_SINGLE);
     }
@@ -149,9 +149,9 @@ END_EVENT_TABLE()
 IncrementalSearch::IncrementalSearch():
         m_SearchText(wxEmptyString),
         m_textCtrlBG_Default( wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW) ),
-        m_pToolbar(0l),
-        m_pTextCtrl(0l),
-        m_pEditor(0l),
+        m_pToolbar(nullptr),
+        m_pTextCtrl(nullptr),
+        m_pEditor(nullptr),
         m_NewPos(-1),
         m_OldPos(-1),
         m_SelStart(-1),
@@ -170,10 +170,8 @@ IncrementalSearch::IncrementalSearch():
     // Make sure our resources are available.
     // In the generated boilerplate code we have no resources but when
     // we add some, it will be nice that this code is in place already ;)
-    if (!Manager::LoadResource(_T("IncrementalSearch.zip")))
-    {
-        NotifyMissingFile(_T("IncrementalSearch.zip"));
-    }
+    if (!Manager::LoadResource("IncrementalSearch.zip"))
+        NotifyMissingFile("IncrementalSearch.zip");
 }
 
 // destructor
@@ -191,13 +189,18 @@ void IncrementalSearch::OnAttach()
     // (see: does not need) this plugin...
 
     {
-        const wxString prefix = ConfigManager::GetDataFolder() + wxT("/IncrementalSearch.zip#zip:/images");
+        const wxString prefix(ConfigManager::GetDataFolder()+"/IncrementalSearch.zip#zip:/images");
         m_ArtProvider = new cbArtProvider(prefix);
 
-        m_ArtProvider->AddMapping(wxT("incremental_search/highlight"), wxT("incsearchhighlight.png"));
-        m_ArtProvider->AddMapping(wxT("incremental_search/selected_only"), wxT("incsearchselectedonly.png"));
-        m_ArtProvider->AddMapping(wxT("incremental_search/case"), wxT("incsearchcase.png"));
-        m_ArtProvider->AddMapping(wxT("incremental_search/regex"), wxT("incsearchregex.png"));
+#if wxCHECK_VERSION(3, 1, 6)
+        const wxString ext(".svg");
+#else
+        const wxString ext(".png");
+#endif
+        m_ArtProvider->AddMapping("incremental_search/highlight",     "incsearchhighlight"+ext);
+        m_ArtProvider->AddMapping("incremental_search/selected_only", "incsearchselectedonly"+ext);
+        m_ArtProvider->AddMapping("incremental_search/case",          "incsearchcase"+ext);
+        m_ArtProvider->AddMapping("incremental_search/regex",         "incsearchregex"+ext);
 
         wxArtProvider::Push(m_ArtProvider);
     }
@@ -212,16 +215,16 @@ void IncrementalSearch::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN, new cbEventFunctor<IncrementalSearch, CodeBlocksEvent>(this, &IncrementalSearch::OnEditorEvent));
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_CLOSE, new cbEventFunctor<IncrementalSearch, CodeBlocksEvent>(this, &IncrementalSearch::OnEditorEvent));
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("editor");
     int sel=-1;
-    sel = cfg->ReadInt(_T("/incremental_search/highlight_default_state"),0);
-    m_Highlight = (sel == 1) || ((sel == 2) && cfg->ReadBool(_T("/incremental_search/highlight_all_occurrences"),false));
-    sel = cfg->ReadInt(_T("/incremental_search/selected_default_state"),0);
-    m_SelectedOnly = (sel == 1) || ((sel == 2) && cfg->ReadBool(_T("/incremental_search/search_selected_only"),false));
-    sel = cfg->ReadInt(_T("/incremental_search/match_case_default_state"),0);
-    m_flags |= ((sel == 1) || ((sel == 2) && cfg->ReadInt(_T("/incremental_search/match_case"),false)))?wxSCI_FIND_MATCHCASE:0;
-    sel = cfg->ReadInt(_T("/incremental_search/regex_default_state"),0);
-    m_flags |= ((sel == 1) || ((sel == 2) && cfg->ReadInt(_T("/incremental_search/regex"),false)))?wxSCI_FIND_REGEXP:0;
+    sel = cfg->ReadInt("/incremental_search/highlight_default_state", 0);
+    m_Highlight = (sel == 1) || ((sel == 2) && cfg->ReadBool("/incremental_search/highlight_all_occurrences", false));
+    sel = cfg->ReadInt("/incremental_search/selected_default_state", 0);
+    m_SelectedOnly = (sel == 1) || ((sel == 2) && cfg->ReadBool("/incremental_search/search_selected_only", false));
+    sel = cfg->ReadInt("/incremental_search/match_case_default_state", 0);
+    m_flags |= ((sel == 1) || ((sel == 2) && cfg->ReadInt("/incremental_search/match_case", false))) ? wxSCI_FIND_MATCHCASE : 0;
+    sel = cfg->ReadInt("/incremental_search/regex_default_state", 0);
+    m_flags |= ((sel == 1) || ((sel == 2) && cfg->ReadInt("/incremental_search/regex", false))) ? wxSCI_FIND_REGEXP : 0;
 }
 
 void IncrementalSearch::OnRelease(bool /*appShutDown*/)
@@ -231,24 +234,20 @@ void IncrementalSearch::OnRelease(bool /*appShutDown*/)
     // which means you must not use any of the SDK Managers
     // NOTE: after this function, the inherited member variable
     // m_IsAttached will be FALSE...
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
-    if (cfg->ReadInt(_T("/incremental_search/highlight_default_state"),0) == 2)
-    {
-        cfg->Write(_T("/incremental_search/highlight_all_occurrences"),m_Highlight);
-    }
-    if (cfg->ReadInt(_T("/incremental_search/selected_default_state"),0) == 2)
-    {
-        cfg->Write(_T("/incremental_search/search_selected_only"),m_SelectedOnly);
-    }
-    if (cfg->ReadInt(_T("/incremental_search/match_case_default_state"),0) == 2)
-    {
-        cfg->Write(_T("/incremental_search/match_case"),m_flags & wxSCI_FIND_MATCHCASE);
-    }
-    if (cfg->ReadInt(_T("/incremental_search/regex_default_state"),0) == 2)
-    {
-        cfg->Write(_T("/incremental_search/regex"),m_flags & wxSCI_FIND_REGEXP);
-    }
-    cfg->Write(_T("/incremental_search/last_searched_items"), m_pChoice->GetStrings());
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("editor");
+    if (cfg->ReadInt("/incremental_search/highlight_default_state", 0) == 2)
+        cfg->Write("/incremental_search/highlight_all_occurrences", m_Highlight);
+
+    if (cfg->ReadInt("/incremental_search/selected_default_state", 0) == 2)
+        cfg->Write("/incremental_search/search_selected_only", m_SelectedOnly);
+
+    if (cfg->ReadInt("/incremental_search/match_case_default_state", 0) == 2)
+        cfg->Write("/incremental_search/match_case", m_flags & wxSCI_FIND_MATCHCASE);
+
+    if (cfg->ReadInt("/incremental_search/regex_default_state", 0) == 2)
+        cfg->Write("/incremental_search/regex", m_flags & wxSCI_FIND_REGEXP);
+
+    cfg->Write("/incremental_search/last_searched_items", m_pChoice->GetStrings());
     m_pTextCtrl->Disconnect(wxEVT_KEY_DOWN);
     m_pTextCtrl->Disconnect(wxEVT_KILL_FOCUS);
 
@@ -288,13 +287,14 @@ void IncrementalSearch::BuildMenu(wxMenuBar* menuBar)
                                                 _("&Incremental search\tCtrl-I"),
                                                 _("Set focus on Incremental Search input and show the toolbar, if hidden") );
 
+        wxString prefix(ConfigManager::GetDataFolder()+"/IncrementalSearch.zip#zip:/images/");
+#if wxCHECK_VERSION(3, 1, 6)
+        wxBitmapBundle image = cbLoadBitmapBundleFromSVG(prefix+"svg/incsearchfocus.svg", wxSize(16, 16));
+#else
         const int imageSize = Manager::Get()->GetImageSize(Manager::UIComponent::Menus);
-        const double uiScale = Manager::Get()->GetUIScaleFactor(Manager::UIComponent::Menus);
-        const wxString prefix = ConfigManager::GetDataFolder()
-                              + wxString::Format(wxT("/IncrementalSearch.zip#zip:/images/%dx%d/"),
-                                                imageSize, imageSize);
-        wxBitmap image = cbLoadBitmapScaled(prefix + wxT("incsearchfocus.png"), wxBITMAP_TYPE_PNG,
-                                            uiScale);
+        prefix << wxString::Format("%dx%d/", imageSize, imageSize);
+        wxBitmap image = cbLoadBitmap(prefix+"incsearchfocus.png");
+#endif
         itemTmp->SetBitmap(image);
 
         // find "Find previous" and insert after it
@@ -358,7 +358,7 @@ bool IncrementalSearch::BuildToolBar(wxToolBar* toolBar)
     {
         return false;
     }
-    Manager::Get()->AddonToolBar(toolBar, _T("incremental_search_toolbar"));
+    Manager::Get()->AddonToolBar(toolBar, "incremental_search_toolbar");
     m_pToolbar = toolBar;
     m_pToolbar->EnableTool(XRCID("idIncSearchClear"), false);
     m_pToolbar->EnableTool(XRCID("idIncSearchPrev"), false);
@@ -369,9 +369,6 @@ bool IncrementalSearch::BuildToolBar(wxToolBar* toolBar)
                                    wxSize(160,-1), wxTE_PROCESS_ENTER);
     if (m_pComboCtrl)
     {
-#if !wxCHECK_VERSION(3, 0, 0) || WXWIN_COMPATIBILITY_2_8
-        m_pComboCtrl->SetTextIndent(0);
-#endif // !wxCHECK_VERSION(3, 0, 0) || WXWIN_COMPATIBILITY_2_8
         m_pToolbar->InsertControl(1, m_pComboCtrl);
         m_pToolbar->Realize();
         m_pTextCtrl = m_pComboCtrl->GetTextCtrl();
@@ -445,7 +442,7 @@ void IncrementalSearch::OnKeyDown(wxKeyEvent& event)
         control->SetIndicatorCurrent(m_IndicHighlight);
         control->IndicatorClearRange(0, control->GetLength());
         control->GotoPos(m_NewPos);
-        if(Manager::Get()->GetConfigManager(_T("editor"))->ReadBool(_T("/incremental_search/select_found_text_on_escape"),false))
+        if(Manager::Get()->GetConfigManager("editor")->ReadBool("/incremental_search/select_found_text_on_escape", false))
         {
             m_SelStart = m_NewPos;
             m_SelEnd = m_SelStart + m_LengthFound;
@@ -468,7 +465,7 @@ void IncrementalSearch::OnFocusToolbar(wxCommandEvent& /*event*/)
     }
     DoFocusToolbar();
 
-    if (Manager::Get()->GetConfigManager(_T("editor"))->ReadBool(_T("/incremental_search/select_text_on_focus"), false))
+    if (Manager::Get()->GetConfigManager("editor")->ReadBool("/incremental_search/select_text_on_focus", false))
     {
         m_pTextCtrl->SetSelection(-1,-1);
     }
@@ -736,11 +733,11 @@ void IncrementalSearch::HighlightText()
     // then set the new ones (if any)
     if (m_NewPos != wxSCI_INVALID_POSITION && !m_SearchText.empty())
     {
-        ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
-        wxColour colourTextFound(cfg->ReadColour(_T("/incremental_search/text_found_colour"), wxColour(160, 32, 240)));
+        ConfigManager* cfg = Manager::Get()->GetConfigManager("editor");
+        wxColour colourTextFound(cfg->ReadColour("/incremental_search/text_found_colour", wxColour(160, 32, 240)));
 
         // center last found phrase on the screen, if wanted
-        if (cfg->ReadBool(_T("/incremental_search/center_found_text_on_screen"), true))
+        if (cfg->ReadBool("/incremental_search/center_found_text_on_screen", true))
         {
             int line = control->LineFromPosition(m_NewPos);
             int onScreen = control->LinesOnScreen() >> 1;
@@ -767,7 +764,7 @@ void IncrementalSearch::HighlightText()
         if (m_Highlight)
         {
             // highlight all occurrences of the found phrase if wanted
-            wxColour colourTextHighlight(cfg->ReadColour(_T("/incremental_search/highlight_colour"), wxColour(255, 165, 0)));
+            wxColour colourTextHighlight(cfg->ReadColour("/incremental_search/highlight_colour", wxColour(255, 165, 0)));
             SetupIndicator(ctrlLeft, m_IndicHighlight, colourTextHighlight);
             if(ctrlRight)
                 SetupIndicator(ctrlRight, m_IndicHighlight, colourTextHighlight);
@@ -814,8 +811,8 @@ void IncrementalSearch::DoSearch(int fromPos, int startPos, int endPos)
 
     if (m_NewPos == wxSCI_INVALID_POSITION || m_LengthFound == 0)
     {
-        ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("editor"));
-        wxColour colourTextCtrlBG_Wrapped(cfg->ReadColour(_T("/incremental_search/wrapped_colour"), wxColour(127, 127, 255)));
+        ConfigManager* cfg = Manager::Get()->GetConfigManager("editor");
+        wxColour colourTextCtrlBG_Wrapped(cfg->ReadColour("/incremental_search/wrapped_colour", wxColour(127, 127, 255)));
         // if not found or out of range, wrap search
         // show that search wrapped, by colouring the textCtrl
         m_pTextCtrl->SetBackgroundColour(colourTextCtrlBG_Wrapped);
@@ -824,7 +821,7 @@ void IncrementalSearch::DoSearch(int fromPos, int startPos, int endPos)
         m_LengthFound = newEndPos - m_NewPos;
         if (m_NewPos == wxSCI_INVALID_POSITION  || m_LengthFound == 0)
         {
-            wxColour colourTextCtrlBG_NotFound(cfg->ReadColour(_T("/incremental_search/text_not_found_colour"), wxColour(255, 127, 127)));
+            wxColour colourTextCtrlBG_NotFound(cfg->ReadColour("/incremental_search/text_not_found_colour", wxColour(255, 127, 127)));
             // if still not found, show it by colouring the textCtrl
             m_pTextCtrl->SetBackgroundColour(colourTextCtrlBG_NotFound);
         }

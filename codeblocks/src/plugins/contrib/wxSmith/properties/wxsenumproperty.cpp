@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10771 $
-* $Id: wxsenumproperty.cpp 10771 2016-02-06 14:29:31Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsenumproperty.cpp $
+* $Revision: 12197 $
+* $Id: wxsenumproperty.cpp 12197 2020-08-11 08:14:14Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsenumproperty.cpp $
 */
 
 #include "wxsenumproperty.h"
@@ -42,7 +42,7 @@ wxsEnumProperty::wxsEnumProperty(const wxString& PGName, const wxString& DataNam
 void wxsEnumProperty::PGCreate(wxsPropertyContainer* Object,wxPropertyGridManager* Grid,wxPGId Parent)
 {
     wxPGChoices PGC(Names,Values);
-    PGRegister(Object,Grid,Grid->AppendIn(Parent,NEW_IN_WXPG14X wxEnumProperty(GetPGName(),wxPG_LABEL,PGC,VALUE)));
+    PGRegister(Object,Grid,Grid->AppendIn(Parent,new wxEnumProperty(GetPGName(),wxPG_LABEL,PGC,VALUE)));
 }
 
 bool wxsEnumProperty::PGRead(cb_unused wxsPropertyContainer* Object,
@@ -58,11 +58,7 @@ bool wxsEnumProperty::PGWrite(wxsPropertyContainer* Object, wxPropertyGridManage
 {
     if ( UpdateEntries )
     {
-        #if wxCHECK_VERSION(3, 0, 0)
         wxPGChoices(Id->GetChoices()).Set(Names,Values);
-        #else
-        Grid->GetPropertyChoices(Id).Set(Names,Values);
-        #endif
     }
     Grid->SetPropertyValue(Id,VALUE);
     return true;

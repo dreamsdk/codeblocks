@@ -17,9 +17,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11000 $
-* $Id: wxsgrid.cpp 11000 2017-02-06 19:12:28Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgrid.cpp $
+* $Revision: 13547 $
+* $Id: wxsgrid.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsgrid.cpp $
 */
 
 #include "wxsgrid.h"
@@ -155,7 +155,7 @@ void wxsGrid::OnBuildCreatingCode()
 
 //------------------------------------------------------------------------------
 
-wxObject* wxsGrid::OnBuildPreview( wxWindow* parent, long flags )
+wxObject* wxsGrid::OnBuildPreview( wxWindow* parent, long _Flags)
 {
     wxGrid* preview = new wxGrid( parent, GetId(), Pos(parent), Size(parent), Style() );
 
@@ -164,7 +164,7 @@ wxObject* wxsGrid::OnBuildPreview( wxWindow* parent, long flags )
         if ( m_ColsCount>=0 && m_RowsCount>=0 && (m_ColsCount>0 || m_RowsCount>0) )
         {
             preview->CreateGrid( m_RowsCount, m_ColsCount );
-            SetupWindow( preview, flags );
+            SetupWindow( preview, _Flags );
 
             preview->EnableEditing( !m_ReadOnly);
             preview->EnableGridLines( m_GridLines );
@@ -226,9 +226,9 @@ wxObject* wxsGrid::OnBuildPreview( wxWindow* parent, long flags )
 
 //------------------------------------------------------------------------------
 
-void wxsGrid::OnEnumWidgetProperties(long Flags)
+void wxsGrid::OnEnumWidgetProperties(long _Flags)
 {
-    if ( Flags & flSource )
+    if ( _Flags & flSource )
     {
         WXS_LONG       ( wxsGrid, m_ColsCount,       _("Number of columns"),    _T("cols"),            0);
         WXS_LONG       ( wxsGrid, m_RowsCount,       _("Number of rows"),       _T("rows"),            0);
@@ -240,8 +240,8 @@ void wxsGrid::OnEnumWidgetProperties(long Flags)
         WXS_LONG       ( wxsGrid, m_DefaultColSize,  _("Default Column Width"), _T("defaultcolsize"), -1);
         WXS_COLOUR     ( wxsGrid, m_LabelTextColour, _("Label Text Colour"),    _T("labeltextcolour") );
         WXS_FONT       ( wxsGrid, m_LabelFont,       _("Label Text Font"),      _T("labelfont") );
-        WXS_ARRAYSTRING( wxsGrid, m_ColLabels,       _("Column Labels"),        _T("collabels"), _T("item"));
-        WXS_ARRAYSTRING( wxsGrid, m_RowLabels,       _("Row Labels"),           _T("rowlabels"), _T("item"));
-        WXS_ARRAYSTRING( wxsGrid, m_CellText,        _("Cell Data"),            _T("celltext"),  _T("item"));
+        WXS_ARRAYSTRING( wxsGrid, m_ColLabels,       _("Column Labels"),        _T("collabels"), "item");
+        WXS_ARRAYSTRING( wxsGrid, m_RowLabels,       _("Row Labels"),           _T("rowlabels"), "item");
+        WXS_ARRAYSTRING( wxsGrid, m_CellText,        _("Cell Data"),            _T("celltext"),  "item");
     }
 }

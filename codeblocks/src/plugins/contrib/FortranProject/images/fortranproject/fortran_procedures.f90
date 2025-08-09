@@ -22,16 +22,16 @@ function list_of_other_fortran_keywords()
                 default, dimension, direct, do, double, doubleprecision, else, &
                 elseif, elsewhere, encoding, end, endassociate, endblockdata, enddo, &
                 endfile, endforall, endfunction, endif, endinterface, endmodule, endprocedure, endprogram, &
-                endselect, endsubroutine, endtype, endwhere, entry, eor, equivalence, &
-                err, errmsg, exist, exit, external, final, file, flush, fmt, forall, form, format, &
+                endselect, endsubroutine, endtype, endwhere, entry, equivalence, &
+                err, errmsg, exist, exit, external, final, file, flush, forall, form, format, &
                 formatted, function, go, goto, if, implicit, in, include, inout, &
-                integer, inquire, intent, interface, intrinsic, iomsg, iolength, &
-                iostat, kind, len, logical, module, named, namelist, nextrec, nml, &
+                integer, inquire, intent, interface, intrinsic, &
+                kind, len, logical, module, named, namelist, nextrec, &
                 none, nopass, nullify, number, only, open, opened, operator, optional, out, pad, &
                 parameter, pass, pending, pointer, pos, position, precision, &
                 print, private, program, protected, public, quote, read, readwrite, &
-                real, rec, recl, recursive, result, return, rewind, save, select, &
-                selectcase, selecttype, sequential, stat, status, stop, stream, &
+                real, recursive, result, return, rewind, save, select, &
+                selectcase, selecttype, sequential, status, stop, stream, &
                 subroutine, target, then, to, type, unformatted, unit, use, value, &
                 volatile, wait, where, while, write, procedure, elemental, pure, sequence, &
                 import, is, &
@@ -39,7 +39,7 @@ function list_of_other_fortran_keywords()
                 decorate, extends, generic, non_overridable, enum, endenum, enumerator, typealias, &
                 submodule, endsubmodule, concurrent, contiguous, endblock, non_intrinsic, codimension, &
                 impure, critical, endcritical, lock, unlock, error, sync, all, memory, images, deferred, &
-                fail, image, event, post, wait, change, team, endteam, non_recursive
+                fail, image, event, post, wait, change, team, endteam, non_recursive, rank
 
 end function
 
@@ -100,6 +100,87 @@ function ACOSH(X)
     ! and lies between 0 <= acosh(x) <= pi.
     ! Standard: Fortran 2008 and later.
     real, complex :: ACOSH, X
+end function
+
+function ACOSD(X)
+    ! Computes the arccosine of X (inverse of COS(X)) expressed in degrees.
+    ! Arguments: X 	-The type shall either be REAL with a magnitude that is less than or equal to one.
+    real :: ACOSD, X
+end function
+
+function ASIND(X)
+    ! Computes the arcsine of X (inverse of SIN(X)) expressed in degrees.
+    ! Arguments: X 	-The type shall either be REAL with a magnitude that is less than or equal to one.
+    real :: ASIND, X
+end function
+
+function ATAND(X)
+    ! Computes the arctangent of X (inverse of TAN(X)) expressed in degrees.
+    ! Arguments: X 	-The type shall either be REAL.
+    real :: ATAND, X
+end function
+
+function ATAN2D(X)
+    ! Computes the arctangent of X (inverse of TAN(X)) expressed in degrees.
+    ! Arguments: X 	-The type shall either be REAL.
+    real :: ATAND, X
+end function
+
+function COSD(X)
+    ! Computes the cosine of X.
+    ! Input value is in degrees.
+    real :: X, COSD
+end function
+
+function SIND(X)
+    ! Computes the sine of X.
+    ! Input value is in degrees.
+    real :: X, SIND
+end function
+
+function TAND(X)
+    ! Computes the tangent of X.
+    ! Input value is in degrees.
+    real :: X, TAND
+end function
+
+function ACOSPI(X)
+    ! Computes the arc cosine (inverse cosine) function value for a real value x.
+    ! Result value is between 0 and 1.
+    real :: X, ACOSPI
+end function
+
+function ASINPI(X)
+    ! Computes the arc sine (inverse sine) function value for a real value x.
+    ! Result value is between -0.5 and 0.5.
+    real :: X, ASINPI
+end function
+
+function ATANPI(Y, X)
+    ! Computes the arc tangent (inverse tangent) function value for a real value x.
+    ! Result value is between -0.5 and 0.5.
+    real :: Y, X, ATANPI
+end function
+
+function ATAN2PI(Y, X)
+    ! Computes the arc tangent (inverse tangent) function value for a real value x.
+    ! Result value is between -0.5 and 0.5.
+    real :: Y, X, ATAN2PI
+end function
+
+function COSPI(X)
+    ! Returns the cosine function value for real values x in half revolutions.
+    real :: X, COSPI
+end function
+
+function SINPI(X)
+    ! Returns the sine function value for real values x in half revolutions.
+    real :: X, SINPI
+end function
+
+function TANPI(X)
+    ! Returns the tangent function value for real values x in half revolutions.
+    real :: X, TANPI
 end function
 
 character(len=*) function ADJUSTL(STRING)
@@ -1881,6 +1962,8 @@ subroutine MOVE_ALLOC(FROM, TO[, STAT, ERRMSG])
     ! Arguments:
     !    FROM   -ALLOCATABLE, INTENT(INOUT), may be of any type and kind.
     !    TO     -ALLOCATABLE, INTENT(OUT), shall be of the same type, kind and rank as FROM.
+    !    STAT (optional) -noncoindexed integer scalar.
+    !    ERRMSG (optional) -noncoindexed default character scalar. 
     ! Standard:
     !    Fortran 2003 and later
     type(any_type), allocatable :: FROM(:[,:,...]), TO(:[,:,...])
@@ -2303,6 +2386,14 @@ function SELECTED_REAL_KIND([P, R, RADIX])
     !    Fortran 95 and later
     integer, optional :: P, R, RADIX
     integer :: SELECTED_REAL_KIND
+end function
+
+function SELECTED_LOGICAL_KIND(B)
+    ! Returns as a default integer
+    ! scalar the value of a kind type parameter of a logical type whose storage size in bits is at
+    ! least B bits, or -1 if no such type is available.
+    integer, intent(in) :: B
+    integer :: SELECTED_LOGICAL_KIND
 end function
 
 function SET_EXPONENT(X, I)
@@ -3131,22 +3222,24 @@ integer function IMAGE_INDEX (COARRAY, SUB [, TEAM] [, TEAM_NUMBER])
     integer, optional :: TEAM_NUMBER
 end function
 
-subroutine ATOMIC_DEFINE (ATOM, VALUE)
+subroutine ATOMIC_DEFINE (ATOM, VALUE [, STAT])
     ! Defines the variable ATOM with the value VALUE atomically.
     ! Standard:
     !    Fortan 2008 and later.
     ! Arguments:
     !  ATOM   Scalar coarray or coindexed variable of either integer type with ATOMIC_INT_KIND kind or logical type with ATOMIC_LOGICAL_KIND kind.
     !  VALUE  Scalar and of the same type as ATOM. If the kind is different, the value is converted to the kind of ATOM.
+    ! STAT (optional) INTENT(OUT) Noncoindexed integer scalar.
 end subroutine
 
-subroutine ATOMIC_REF (ATOM, VALUE)
+subroutine ATOMIC_REF (ATOM, VALUE [, STAT])
     ! Atomically assigns the value of the variable ATOM to VALUE.
     ! Standard:
     !    Fortan 2008 and later.
     ! Arguments:
     !  ATOM   Scalar coarray or coindexed variable of either integer type with ATOMIC_INT_KIND kind or logical type with ATOMIC_LOGICAL_KIND kind.
     !  VALUE  Scalar and of the same type as ATOM. If the kind is different, the value is converted to the kind of ATOM.
+    ! STAT (optional) INTENT(OUT) Noncoindexed integer scalar.
 end subroutine
 
 subroutine ATOMIC_ADD(ATOM, VALUE [, STAT])
@@ -3396,6 +3489,43 @@ logical function IS_CONTIGUOUS(ARRAY)
     type(any_type), dimension(..) :: ARRAY
 end function
 
+enumerator function NEXT(a [,stat])
+    ! Returns the next enumerator after a in the sequence of the type of a or a
+    ! itself if it is last in this sequence.
+    type(enumerator), inten(in) :: a
+    integer, intent(out) :: stat
+end function
+
+enumerator function PREVIOUS(a [,stat] )
+    ! Returns the previous enumerator to a in the sequence of the type of a
+    ! or a itself if it is first in this sequence.
+    type(enumerator), inten(in) :: a
+    integer, intent(out) :: stat
+end function
+
+subroutine SPLIT(string, set, pos [,back])
+    ! Updates the integer pos to the position of the next
+    ! (or previous) separator in string.
+    character(len=*), intent(in) :: string ! Input string for split.
+    character(len=*), intent(in) :: set  ! Holds a set of separator characters.
+    integer, intent(inout) :: pos ! Position of the first separator in 'string' after position 'pos'.
+    logical, intent(in), optional :: back ! Go in the backward direction.
+end subroutine
+
+subroutine TOKENIZE(string, set, tokens [,separator])
+    character(len=*), intent(in) :: string ! Input string to tokenize.
+    character(len=*), intent(in) :: set  ! Holds a set of separator characters.
+    character(len=:), allocatable, intent(out) :: tokens(:)  ! Allocated with tokens.
+    character(len=1), allocatable, intent(out) :: separator(:)  ! Allocated with separators.
+end subroutine
+
+subroutine TOKENIZE(string, set, first, last)
+    character(len=*), intent(in) :: string ! Input string to tokenize.
+    character(len=*), intent(in) :: set  ! Holds a set of separator characters.
+    integer, allocatable, intent(out) :: first(:)  ! Assigned with the starting positions of the tokens.
+    integer, allocatable, intent(out) :: last(:)  ! Assigned with the finishing positions of the tokens.
+end subroutine
+
 subroutine __fortran_statement_OPEN(UNIT, NEWUNIT, FILE, ACCESS, ACTION, ASYNCHRONOUS, BLANK, DECIMAL, DELIM, &
                     ENCODING, ERR, FORM, IOSTAT, PAD, POSITION, RECL, ROUND, SIGN, STATUS)
     ! Connect or reconnect an external file to an input/output unit.
@@ -3410,8 +3540,8 @@ subroutine __fortran_statement_OPEN(UNIT, NEWUNIT, FILE, ACCESS, ACTION, ASYNCHR
     character(len=*), intent(in) :: DECIMAL ! Specifies the default decimal edit mode: 'POINT' (default) or 'COMMA'.
     character(len=*), intent(in) :: DELIM   ! Specifies delimiter for character constants in namelist: 'APOSTROPHE', 'QUOTE' or 'NONE'.
     character(len=*), intent(in) :: ENCODING ! Shall be: 'DEFAULT' or 'UTF-8'.
-    integer, intent(in)          :: ERR      ! Statement label to go if error occurs.
-    character(len=*), intent(in) :: FORM     ! Shall be: 'DEFAULT' or 'UTF-8'.
+    integer, intent(out)         :: ERR      ! Statement label to go if error occurs.
+    character(len=*), intent(in) :: FORM     ! Shall be: 'FORMATTED' or 'UNFORMATTED'.
     integer, intent(out) :: IOSTAT     ! Returns: a zero value if no error, a positive value if an error.
     character(len=*), intent(in) :: PAD      ! Specifies if input records are padded with blanks: 'YES' (default) or 'NO'.
     character(len=*), intent(in) :: POSITION ! Specifies the file position for a file connected: 'ASIS', 'REWIND', 'APPEND'.
@@ -3419,6 +3549,94 @@ subroutine __fortran_statement_OPEN(UNIT, NEWUNIT, FILE, ACCESS, ACTION, ASYNCHR
     character(len=*), intent(in) :: ROUND ! Rounding mode to be used: 'UP', 'DOWN', 'ZERO', 'NEAREST', 'COMPATIBLE' or 'PROCESSOR_DEFINED' (default).
     character(len=*), intent(in) :: SIGN ! Specifies the sign mode in effect: 'PLUS', 'SUPPRESS' or 'PROCESSOR_DEFINED' (default).
     character(len=*), intent(in) :: STATUS ! Specifies the status of the file when it is opened: 'OLD', 'NEW', 'SCRATCH', 'REPLACE', or 'UNKNOWN'. 
+end subroutine
+
+subroutine __fortran_statement_READ(UNIT, FMT, NML, ADVANCE, ASYNCHRONOUS, BLANK, DECIMAL, END, EOR, ERR, &
+                    ID, IOMSG, IOSTAT, PAD, POS, REC, ROUND, SIZE )
+    ! Read data from UNIT.
+    
+    integer, intent(in) :: UNIT         ! External file unit number.
+    character(len=*), intent(in) :: FMT ! Format specification 
+    type(*), intent(in) :: NML          ! Namelist group name
+    character(len=*), intent(in) :: ADVANCE ! 'YES' or 'NO'. Determines whether advancing read occurs.
+    character(len=*), intent(in) :: ASYNCHRONOUS ! 'YES' or 'NO'. Determines whether this read statement is synchronous or asynchronous.
+    character(len=*), intent(in) :: BLANK    ! Controls how interpreted blanks. Values: 'NULL' or 'ZERO'.
+    character(len=*), intent(in) :: DECIMAL  ! Controls decimal edit mode: 'POINT' or 'COMMA'.
+    integer, intent(out)          :: END     ! Statement label to go if end-of-file occurs.
+    integer, intent(out)          :: EOR     ! Statement label to go if end-of-record occurs.
+    integer, intent(out)          :: ERR     ! Statement label to go if error occurs.
+    integer, intent(out)          :: ID      ! Used in n asynchronous read statement.
+    character(len=*), intent(out) :: IOMSG   ! Explanatory message assigned if an error, end-of-file, or end-of-record condition occurs.
+    integer, intent(out) :: IOSTAT  ! Zero if no error or end-of-file or end-of-record occurs. Non-zero values in other cases.
+    character(len=*), intent(in) :: PAD      ! Specifies if input record are padded with blanks: 'YES' (default) or 'NO'.
+    integer, intent(in) :: POS      ! Specifies the file position in file storage units (only in stream access). 
+    integer, intent(in) :: REC      ! Specifies the number of the record that is to be read (only in direct access).
+    character(len=*), intent(in) :: ROUND ! Rounding mode to be used: 'UP', 'DOWN', 'ZERO', 'NEAREST', 'COMPATIBLE' or 'PROCESSOR_DEFINED' (default).
+    integer, intent(out) :: SIZE ! Defined with the count of characters transferred.
+end subroutine
+
+subroutine __fortran_statement_WRITE(UNIT, FMT, NML, ADVANCE, ASYNCHRONOUS, DECIMAL, DELIM, ERR, &
+                    ID, IOMSG, IOSTAT, POS, REC, ROUND, SIGN)
+    ! Write data from to UNIT.
+    
+    integer, intent(in) :: UNIT         ! External file unit number.
+    character(len=*), intent(in) :: FMT ! Format specification 
+    type(*), intent(in) :: NML          ! Namelist group name
+    character(len=*), intent(in) :: ADVANCE ! 'YES' or 'NO'. Determines whether advancing write occurs.
+    character(len=*), intent(in) :: ASYNCHRONOUS ! 'YES' or 'NO'. Determines whether this write statement is synchronous or asynchronous.
+    character(len=*), intent(in) :: DECIMAL  ! Controls decimal edit mode: 'POINT' or 'COMMA'.
+    character(len=*), intent(in) :: DELIM    ! 'APOSTROPHE', 'QUOTE', or 'NONE'.
+    integer, intent(out)          :: ERR     ! Statement label to go if error occurs.
+    integer, intent(out)          :: ID      ! Used in an asynchronous write statement.
+    character(len=*), intent(out) :: IOMSG   ! Explanatory message assigned if an error condition occurs.
+    integer, intent(out) :: IOSTAT  ! Zero if no error occurs. Non-zero values in other cases.
+    character(len=*), intent(in) :: PAD      ! Specifies if input record are padded with blanks: 'YES' (default) or 'NO'.
+    integer, intent(in) :: POS      ! Specifies the file position in file storage units (only in stream access). 
+    integer, intent(in) :: REC      ! Specifies the number of the record that is to be written (only in direct access).
+    character(len=*), intent(in) :: ROUND ! Rounding mode to be used: 'UP', 'DOWN', 'ZERO', 'NEAREST', 'COMPATIBLE' or 'PROCESSOR_DEFINED' (default).
+    character(len=*), intent(in) :: SIGN  ! 'PLUS', 'SUPPRESS', or 'PROCESSOR_DEFINED'
+end subroutine
+
+subroutine __fortran_statement_INQUIRE(UNIT, FILE, ACCESS, ACTION, ASYNCHRONOUS, BLANK, DECIMAL, DELIM, DIRECT, ENCODING, ERR, EXIST, &
+                    FORM, FORMATTED, ID, IOMSG, IOSTAT, NAME, NAMED, NEXTREC, NUMBER, OPENED, PAD, PENDING, POS, POSITION, READ, READWRITE, RECL, ROUND, SEQUENTIAL, SIGN, SIZE, STREAM, UNFORMATTED, WRITE)
+    ! Inquire about properties of a particular named FILE or of the connection to UNIT.
+
+    integer, intent(in) :: UNIT         ! External file unit number to be inquired.
+    character(len=*), intent(in) :: FILE   ! The name of the file to be inquired.
+    character(len=*), intent(out) :: ACCESS ! Access mode one from 'SEQUENTIAL', 'DIRECT', 'STREAM' or 'UNDEFINED'.
+    character(len=*), intent(out) :: ACTION ! Assigns value 'READ', 'WRITE' or 'READWRITE' if connected. 'UNDEFINED' if not connected.
+    character(len=*), intent(out) :: ASYNCHRONOUS ! Assigns value 'YES', 'NO'. 'UNDEFINED' if not connected.
+    character(len=*), intent(out) :: BLANK ! Assigns value 'ZERO', 'NULL'. 'UNDEFINED' if not connected.
+    character(len=*), intent(out) :: DECIMAL ! Assigns value 'COMMA' or 'POINT' corresponding to the decimal edit mode in effect. 'UNDEFINED' if not connected, or if the connection is not for formatted input/output.
+    character(len=*), intent(out) :: DELIM ! Assigns value 'APOSTROPHE', 'QUOTE', or 'NONE'  corresponding to the delimiter mode in effect for a connection for formatted input/output. 'UNDEFINED' if not connected, or if the connection is not for formatted input/output.
+    character(len=*), intent(out) :: DIRECT ! Assigns value 'YES', 'NO' corresponding to the allowed access methods for the file. 'UNKNOWN' if it is unable to determine.
+    character(len=*), intent(out) :: ENCODING ! Assigns value 'UTF-8', 'UNDEFINED', or 'UNKNOWN', or other specific encoding form.
+    logical, intent(out) :: EXIST ! Assigns TRUE if file with the name FILE exists, FALSE otherwise.
+    character(len=*), intent(out) :: FORM  ! Value 'FORMATTED', 'UNFORMATTED' or 'UNDEFINED' is assigned.
+    character(len=*), intent(out) :: FORMATTED  ! Value 'YES' if formatted is allowed, 'NO' if formatted is not allowed, or 'UNKNOWN' if is impossible to determine.
+    integer :: ID  
+    character(len=*), intent(out) :: NAME  ! Name of the file is assigned.
+    logical, intent(out) :: NAMED ! TRUE if file has a name, FALSE otherwise.
+    integer, intent(out) :: NEXTREC ! Assigns value of the next record number.
+    integer, intent(out) :: NUMBER ! Assigns value of the external unit number that is connected to the file.
+    logical, intent(out) :: OPENED ! TRUE if the file specified is connected to a unit; otherwise, FALSE is assigned. 
+    character(len=*), intent(out) :: PAD  ! 'YES' or 'NO' corresponding to the pad mode in effect.
+    logical, intent(out) :: PENDING ! Is used to determine whether previously pending asynchronous data transfers are complete.
+    integer, intent(out) :: POS ! Assigns the number of the file storage unit immediately following the current position of a file connected for stream access.
+    character(len=*), intent(out) :: POSITION  ! Values 'REWIND', 'APPEND', 'ASIS' or 'UNDEFINED' are assigned.
+    character(len=*), intent(out) :: READ  ! 'YES' if read is allowed, 'NO' if read is not allowed, 'UNKNOWN' if it is impossible to determine.
+    character(len=*), intent(out) :: READWRITE  ! 'YES' if readwrite is allowed, 'NO' if readwrite is not allowed, 'UNKNOWN' if it is impossible to determine.
+    integer, intent(out) :: RECL ! Assigns the value of the record length of a connection for direct access.
+    character(len=*), intent(out) :: ROUND  ! Assigns the value 'UP', 'DOWN', 'ZERO', 'NEAREST', 'COMPATIBLE', or 'PROCESSOR DEFINED', corresponding to the I/O rounding mode in effect for a connection.
+    character(len=*), intent(out) :: SEQUENTIAL  ! Value 'YES' if SEQUENTIAL is allowed, 'NO' if SEQUENTIAL is not allowed, or 'UNKNOWN' if is impossible to determine.
+    character(len=*), intent(out) :: SIGN  ! Assigns the value 'PLUS', 'SUPPRESS', or 'PROCESSOR DEFINED', corresponding to the sign mode in effect for a connection for formatted input/output.
+    integer, intent(out) :: SIZE ! Assigns the size of the file in file storage units.
+    character(len=*), intent(out) :: STREAM  ! Value 'YES' if STREAM is allowed, 'NO' if STREAM is not allowed, or 'UNKNOWN' if is impossible to determine.
+    character(len=*), intent(out) :: UNFORMATTED  ! Value 'YES' if unformatted is allowed, 'NO' if unformatted is not allowed, or 'UNKNOWN' if is impossible to determine.
+    character(len=*), intent(out) :: WRITE  ! 'YES' if write is allowed, 'NO' if write is not allowed, 'UNKNOWN' if it is impossible to determine.
+    integer, intent(out)          :: ERR     ! Statement label to go if error occurs.
+    character(len=*), intent(out) :: IOMSG   ! Explanatory message assigned if an error condition occurs.
+    integer, intent(out) :: IOSTAT  ! Zero if no error occurs. Non-zero values in other cases.
 end subroutine
 
 module OpenMP

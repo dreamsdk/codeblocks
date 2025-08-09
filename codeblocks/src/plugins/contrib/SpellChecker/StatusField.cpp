@@ -7,6 +7,10 @@
 #include <wx/msgdlg.h>
 #include <wx/filefn.h>
 
+#if wxCHECK_VERSION(3, 1, 6)
+#include <wx/dir.h>
+#endif
+
 #include <algorithm>
 #include <vector>
 
@@ -30,7 +34,6 @@ const int idEditPersonalDictionary = wxNewId();
 SpellCheckerStatusField::SpellCheckerStatusField(wxWindow* parent, SpellCheckerPlugin *plugin, SpellCheckerConfig *sccfg)
     :wxPanel(parent, wxID_ANY),
      m_bitmap(NULL),
-     m_text(NULL),
      m_sccfg(sccfg),
      m_plugin(plugin)
 {
@@ -66,87 +69,85 @@ SpellCheckerStatusField::~SpellCheckerStatusField()
     Disconnect(wxEVT_LEFT_UP, wxMouseEventHandler(SpellCheckerStatusField::OnPressed));
 }
 
-static wxBitmap LoadImageInPath(const wxString &path, wxString fileName,
-                                const wxWindow &windowForScaling)
+#if wxCHECK_VERSION(3, 1, 6)
+static wxBitmapBundle LoadImageInPath(const wxString& path, const wxString& fileName, const wxSize& size)
 {
-    const double actualScaleFactor = cbGetActualContentScaleFactor(windowForScaling);
-    const int size = cbFindMinSize16to64(16 * actualScaleFactor);
-    const wxString sizePath = wxString::Format(wxT("%dx%d"), size, size);
-
-    wxString imgPath = path + wxFILE_SEP_PATH + sizePath + wxFILE_SEP_PATH;
-
-    wxBitmap bmp = cbLoadBitmapScaled(imgPath + fileName, wxBITMAP_TYPE_PNG,
-                                      cbGetContentScaleFactor(windowForScaling));
-    if (bmp.IsOk())
-    {
-        const wxString msg = wxString::Format(wxT("Loading image: '%s' succeeded!"),
-                                              (imgPath + fileName).wx_str());
-        Manager::Get()->GetLogManager()->DebugLog(msg);
-        return bmp;
-    }
-
-    // some dictionaries are distributed with hyphens
-    wxString fileName2 = fileName;
-    fileName2.Replace(wxT("-"), wxT("_"));
-
-    const wxString msg1 = wxString::Format(wxT("Loading image: '%s' failed!"),
-                                           (imgPath + fileName).wx_str());
-    if (fileName == fileName2)
-    {
-        Manager::Get()->GetLogManager()->DebugLog(msg1);
-        return wxNullBitmap;
-    }
-
-    bmp = cbLoadBitmapScaled(imgPath + fileName2, wxBITMAP_TYPE_PNG,
-                             cbGetContentScaleFactor(windowForScaling));
+    const wxString imgPath(path+"/svg/");
+    wxBitmapBundle bmp = cbLoadBitmapBundleFromSVG(imgPath+fileName, size);
     if (!bmp.IsOk())
-    {
-        const wxString msg2 = wxString::Format(wxT("Loading image: '%s' failed!"),
-                                              (imgPath + fileName2).wx_str());
-        Manager::Get()->GetLogManager()->DebugLog(msg1);
-        Manager::Get()->GetLogManager()->DebugLog(msg2);
-    }
-
-    const wxString msg = wxString::Format(wxT("Loading image: '%s' succeeded!"),
-                                          (imgPath + fileName2).wx_str());
-    Manager::Get()->GetLogManager()->DebugLog(msg);
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Loading image: '%s' failed!"), imgPath+fileName));
 
     return bmp;
 }
+#else
+static wxBitmap LoadImageInPath(const wxString& path, const wxString& fileName, const wxSize& size)
+{
+    const wxString imgPath(path+wxString::Format("/%dx%d/", size.GetWidth(), size.GetHeight()));
+    wxBitmap bmp = cbLoadBitmap(imgPath+fileName, wxBITMAP_TYPE_PNG);
+    if (!bmp.IsOk())
+        Manager::Get()->GetLogManager()->Log(wxString::Format(_("Loading image: '%s' failed!"), imgPath+fileName));
 
-//void SpellCheckerStatusField::SetLanguage(const wxString &language)
+    return bmp;
+}
+#endif
+
 void SpellCheckerStatusField::Update()
 {
     wxString name;
     wxString fileName;
 
+#if wxCHECK_VERSION(3, 1, 6)
+    wxBitmapBundle bm;
+    const wxString ext(".svg");
+#else
+    wxBitmap bm;
+    const wxString ext(".png");
+#endif
+
     if (m_sccfg->GetEnableOnlineChecker())
     {
         name = m_sccfg->GetDictionaryName();
-        fileName = name + _T(".png");
+        fileName = name + ext;
+        // Some dictionaries are distributed with hyphens
+        fileName.Replace("-", "_");
     }
     else
     {
         name = _("off");
-        fileName = _T("disabled.png");
+        fileName = "disabled"+ext;
     }
 
     m_text->SetLabel(name);
 
-    wxBitmap bm;
-    {
-        wxString bmpPath = m_sccfg->GetRawBitmapPath();
-        Manager::Get()->GetMacrosManager()->ReplaceEnvVars(bmpPath);
-        bm = LoadImageInPath(bmpPath, fileName, *this);
-    }
+    wxString bmpPath(m_sccfg->GetRawBitmapPath());
+    Manager::Get()->GetMacrosManager()->ReplaceEnvVars(bmpPath);
 
+    // Get bitmap size
+#if wxCHECK_VERSION(3, 1, 6)
+    const int height = 20;
+#else
+    const int height = cbFindMinSize16to64(wxRound(20*cbGetContentScaleFactor(*this)));
+#endif
+    const wxSize bmpSize(height, height);
+
+    // Try loading
+    bm = LoadImageInPath(bmpPath, fileName, bmpSize);
+
+    // Not found?. If name.xxx is not found and name.length() == 2 try name_NAME.xxx
     if (!bm.IsOk())
     {
-        const wxString bmpPath = m_plugin->GetOnlineCheckerConfigPath();
-        bm = LoadImageInPath(bmpPath, fileName, *this);
+        const wxString languageCode(fileName.BeforeLast('.'));
+        if (languageCode.length() == 2)
+        {
+            const wxString newFileName(languageCode.Lower()+"_"+languageCode.Upper()+ext);
+            bm = LoadImageInPath(bmpPath, newFileName, bmpSize);
+        }
     }
 
-    bool imgOK = false;
+    // Still not found?. Try in another place
+    if (!bm.IsOk())
+        bm = LoadImageInPath(m_plugin->GetOnlineCheckerConfigPath(), fileName, bmpSize);
+
     if (bm.IsOk())
     {
         m_text->Hide();
@@ -160,17 +161,16 @@ void SpellCheckerStatusField::Update()
         {
             m_bitmap = new wxStaticBitmap(this, wxID_ANY, bm);
             m_bitmap->Connect(wxEVT_LEFT_UP,
-                              wxMouseEventHandler(SpellCheckerStatusField::OnPressed), nullptr,
+                              wxMouseEventHandler(SpellCheckerStatusField::OnPressed),
+                              nullptr,
                               this);
         }
-
-        imgOK = true;
     }
-
-    if (!imgOK)
+    else
     {
         if (m_bitmap)
             m_bitmap->Hide();
+
         m_text->Show();
     }
 
@@ -184,14 +184,12 @@ void SpellCheckerStatusField::OnSize(cb_unused wxSizeEvent &event)
 
 void SpellCheckerStatusField::DoSize()
 {
-    wxSize msize = this->GetSize();
-
+    const wxSize msize(GetSize());
     m_text->SetSize(msize);
-
     if (m_bitmap)
     {
-        wxSize bsize = m_bitmap->GetSize();
-        m_bitmap->Move(msize.x/2 - bsize.x/2, msize.y/2 - bsize.y/2);
+        const wxSize bsize(m_bitmap->GetSize());
+        m_bitmap->Move((msize.GetWidth()-bsize.GetWidth())/2, (msize.GetHeight()-bsize.GetHeight())/2);
     }
 }
 

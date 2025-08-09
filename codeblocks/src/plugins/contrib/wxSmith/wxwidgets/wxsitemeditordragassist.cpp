@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxsitemeditordragassist.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditordragassist.cpp $
+* $Revision: 13381 $
+* $Id: wxsitemeditordragassist.cpp 13381 2023-10-27 12:55:51Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditordragassist.cpp $
 */
 
 #include "wxsitemeditordragassist.h"
@@ -25,13 +25,13 @@
 #include <manager.h>
 
 wxsItemEditorDragAssist::wxsItemEditorDragAssist(wxsItemEditorContent* Content):
-    m_PreviousTarget(0),
-    m_PreviousParent(0),
+    m_PreviousTarget(nullptr),
+    m_PreviousParent(nullptr),
     m_PreviousAddAfter(false),
-    m_TargetBitmap(0),
+    m_TargetBitmap(nullptr),
     m_TargetRect(0,0,0,0),
     m_IsTarget(false),
-    m_ParentBitmap(0),
+    m_ParentBitmap(nullptr),
     m_ParentRect(0,0,0,0),
     m_IsParent(false),
     m_Content(Content)
@@ -46,17 +46,17 @@ wxsItemEditorDragAssist::~wxsItemEditorDragAssist()
 
 void wxsItemEditorDragAssist::NewDragging()
 {
-    m_PreviousTarget = 0;
-    m_PreviousParent = 0;
+    m_PreviousTarget = nullptr;
+    m_PreviousParent = nullptr;
     if ( m_TargetBitmap )
     {
         delete m_TargetBitmap;
-        m_TargetBitmap = 0;
+        m_TargetBitmap = nullptr;
     }
     if ( m_ParentBitmap )
     {
         delete m_ParentBitmap;
-        m_ParentBitmap = 0;
+        m_ParentBitmap = nullptr;
     }
     m_IsTarget = false;
     m_IsParent = false;
@@ -71,7 +71,7 @@ void wxsItemEditorDragAssist::DrawExtra(wxsItem* Target,wxsItem* Parent,bool Add
         switch ( AssistType() )
         {
             case dtOutline:
-                DC->SetPen(wxPen(ParentColour(),2,wxSOLID));
+                DC->SetPen(wxPen(ParentColour(),2,wxPENSTYLE_SOLID));
                 DC->DrawRectangle(m_ParentRect.x,m_ParentRect.y,m_ParentRect.width,m_ParentRect.height);
                 break;
 
@@ -90,7 +90,7 @@ void wxsItemEditorDragAssist::DrawExtra(wxsItem* Target,wxsItem* Parent,bool Add
         switch ( AssistType() )
         {
             case dtOutline:
-                DC->SetPen(wxPen(TargetColour(),2,wxSOLID));
+                DC->SetPen(wxPen(TargetColour(),2,wxPENSTYLE_SOLID));
                 DC->DrawRectangle(m_TargetRect.x,m_TargetRect.y,m_TargetRect.width,m_TargetRect.height);
                 break;
 
@@ -135,7 +135,7 @@ void wxsItemEditorDragAssist::RebuildParentAssist()
         if ( m_ParentBitmap )
         {
             delete m_ParentBitmap;
-            m_ParentBitmap = 0;
+            m_ParentBitmap = nullptr;
         }
 
         switch ( AssistType() )
@@ -163,7 +163,7 @@ void wxsItemEditorDragAssist::RebuildParentAssist()
         if ( m_ParentBitmap )
         {
             delete m_ParentBitmap;
-            m_ParentBitmap = 0;
+            m_ParentBitmap = nullptr;
         }
         m_IsParent = false;
     }
@@ -186,7 +186,7 @@ void wxsItemEditorDragAssist::RebuildTargetAssist()
         if ( m_TargetBitmap )
         {
             delete m_TargetBitmap;
-            m_TargetBitmap = 0;
+            m_TargetBitmap = nullptr;
         }
 
         switch ( AssistType() )
@@ -214,7 +214,7 @@ void wxsItemEditorDragAssist::RebuildTargetAssist()
         if ( m_TargetBitmap )
         {
             delete m_TargetBitmap;
-            m_TargetBitmap = 0;
+            m_TargetBitmap = nullptr;
         }
         m_IsTarget = false;
     }

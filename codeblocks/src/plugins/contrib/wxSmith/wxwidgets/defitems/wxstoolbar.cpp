@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11019 $
-* $Id: wxstoolbar.cpp 11019 2017-02-21 23:52:17Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbar.cpp $
+* $Revision: 13547 $
+* $Id: wxstoolbar.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxstoolbar.cpp $
 */
 
 #include "wxstoolbar.h"
@@ -41,10 +41,12 @@ namespace
                 wxScrollingDialog(0,-1,_("ToolBar editor"),wxDefaultPosition,wxDefaultSize,wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
             {
                 wxBoxSizer* Sizer = new wxBoxSizer(wxVERTICAL);
-                Sizer->Add(Editor = new wxsToolBarEditor(this,ToolBar),1,wxEXPAND,0);
+                Editor = new wxsToolBarEditor(this,ToolBar);
+                Sizer->Add(Editor, 1, wxEXPAND|wxBOTTOM, 5);
                 Sizer->Add(CreateButtonSizer(wxOK|wxCANCEL),0,wxEXPAND,15);
                 SetSizer(Sizer);
                 Sizer->SetSizeHints(this);
+                Fit();
                 PlaceWindow(this,pdlCentre,true);
             }
 
@@ -162,10 +164,10 @@ void wxsToolBar::OnBuildCreatingCode()
     }
 }
 
-void wxsToolBar::OnEnumToolProperties(cb_unused long Flags)
+void wxsToolBar::OnEnumToolProperties(cb_unused long _Flags)
 {
     WXS_SIZE(wxsToolBar,m_BitmapSize,_("Use Bitmap size"),_("  Bitmapwidth"),_("  Bitmapheight"),_("  Bmp in Dialog Units"),_T("bitmapsize"));
-    WXS_SIZE(wxsToolBar,m_Margins,_("Use Margins"),_("  Marginwidth"),_("  MarginhHeight"),_("  Margin in Dialog Units "),_T("margins"));
+    WXS_SIZE(wxsToolBar,m_Margins,_("Use Margins"),_("  Marginwidth"),_("  Marginheight"),_("  Margin in Dialog Units "),_T("margins"));
     WXS_LONG(wxsToolBar,m_Packing,_("Packing"),_T("packing"),-1);
     WXS_LONG(wxsToolBar,m_Separation,_("Separation"),_T("separation"),-1);
 }
@@ -260,14 +262,19 @@ bool wxsToolBar::OnXmlReadChild(TiXmlElement* Elem,bool IsXRC,bool IsExtra)
         wxString ClassName = cbC2U(Elem->Attribute("class"));
         if ( ClassName == _T("separator") )
         {
-            wxsToolBarItem* Child = new wxsToolBarItem(GetResourceData(),true);
+            wxsToolBarItem* Child = new wxsToolBarItem(GetResourceData(), wxsToolBarItem::Separator);
             AddChild(Child);
             return Child->XmlRead(Elem,IsXRC,IsExtra);
         }
-
-        if ( ClassName == _T("tool") )
+        else if ( ClassName == _T("stretchable") )
         {
-            wxsToolBarItem* Child = new wxsToolBarItem(GetResourceData(),false);
+            wxsToolBarItem* Child = new wxsToolBarItem(GetResourceData(), wxsToolBarItem::Stretchable);
+            AddChild(Child);
+            return Child->XmlRead(Elem,IsXRC,IsExtra);
+        }
+        else if ( ClassName == _T("tool") )
+        {
+            wxsToolBarItem* Child = new wxsToolBarItem(GetResourceData(), wxsToolBarItem::Normal);
             AddChild(Child);
             return Child->XmlRead(Elem,IsXRC,IsExtra);
         }

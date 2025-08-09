@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8335 $
-* $Id: wxsitemeditor.h 8335 2012-09-03 07:43:04Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditor.h $
+* $Revision: 13503 $
+* $Id: wxsitemeditor.h 13503 2024-04-21 09:43:24Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxsitemeditor.h $
 */
 
 #ifndef WXSITEMEDITOR_H
@@ -56,6 +56,21 @@ class wxsItemEditor : public wxsEditor
         /** \brief Notifying that configuration has been changed */
         static void ConfigChanged();
 
+        /** \brief PasteBefore from context menu */
+        void PasteBefore() { SetInsertionType(itBefore); Paste(); }
+
+        /** \brief PasteInto from context menu */
+        void PasteInto()   { SetInsertionType(itInto);   Paste(); }
+
+        /** \brief PasteAfter from context menu */
+        void PasteAfter()  { SetInsertionType(itAfter);  Paste(); }
+
+        /** \brief Copying from main menu or context menu*/
+        virtual void Copy();
+
+        /** \brief Cutting from main menu or context menu*/
+        virtual void Cut();
+
     protected:
 
         /** \brief Returns true if resource is modified, false otherwise */
@@ -81,12 +96,6 @@ class wxsItemEditor : public wxsEditor
 
         /** \brief Redoing */
         virtual void Redo();
-
-        /** \brief Cutting */
-        virtual void Cut();
-
-        /** \brief Copying */
-        virtual void Copy();
 
         /** \brief Pasting */
         virtual void Paste();
@@ -142,7 +151,11 @@ class wxsItemEditor : public wxsEditor
         void RebuildIcons();
 
         /** \brief Building icon for one button */
-        void BuildInsTypeIcon(wxBitmapButton* Btn,const wxImage& Original,int ButtonType);
+#if wxCHECK_VERSION(3, 1, 6)
+        void BuildInsTypeIcon(wxBitmapButton* Btn, const wxBitmapBundle& Original, const wxBitmapBundle& Checked, int ButtonType);
+#else
+        void BuildInsTypeIcon(wxBitmapButton* Btn, const wxImage& Original, int ButtonType);
+#endif
 
         /** \brief Opening or closing Quick Props panel */
         void ToggleQuickPropsPanel(bool Open);
@@ -200,6 +213,20 @@ class wxsItemEditor : public wxsEditor
         bool m_QuickPropsOpen;              ///< \brief Set to true if quick properties panel is opened
         wxsItem* m_PopupCaller;             ///< \brief Item which requested popup to be shown
 
+#if wxCHECK_VERSION(3, 1, 6)
+        static wxBitmapBundle m_InsPointImg;
+        static wxBitmapBundle m_InsIntoImg;
+        static wxBitmapBundle m_InsBeforeImg;
+        static wxBitmapBundle m_InsAfterImg;
+        static wxBitmapBundle m_InsPointSelImg;
+        static wxBitmapBundle m_InsIntoSelImg;
+        static wxBitmapBundle m_InsBeforeSelImg;
+        static wxBitmapBundle m_InsAfterSelImg;
+        static wxBitmapBundle m_DelImg;
+        static wxBitmapBundle m_PreviewImg;
+        static wxBitmapBundle m_QuickPropsImgOpen;
+        static wxBitmapBundle m_QuickPropsImgClose;
+#else
         static wxImage m_InsPointImg;
         static wxImage m_InsIntoImg;
         static wxImage m_InsBeforeImg;
@@ -209,6 +236,8 @@ class wxsItemEditor : public wxsEditor
         static wxImage m_QuickPropsImgOpen;
         static wxImage m_QuickPropsImgClose;
         static wxImage m_SelectedImg;
+#endif
+
         static WindowSet m_AllEditors;
         static bool m_ImagesLoaded;
 

@@ -1,6 +1,7 @@
 
 #include "bufferparserthread.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
     #include <logmanager.h>
 #endif
@@ -41,10 +42,15 @@ void BufferParserThread::ParseBuffer(wxString& buffer, wxString& filename, wxStr
         return;
     TokensArrayF* pTokens = new TokensArrayF();
     IncludeDB* pIncludeDB = new IncludeDB();
+    std::map<wxString,wxString>* aIncludeFiles = m_pNativeParser->GetAdditionalIncludeFiles();
+    bool interpretCPP = m_pNativeParser->DoInterpretCPP();
+    std::vector<wxString>* strMacrosVec = m_pNativeParser->GetProjectCPPMacrosCopy(projFilename);
 
-    ParserThreadF thread(projFilename, UnixFilename(filename), pTokens, fsForm, pIncludeDB, buffer);
+    ParserThreadF thread(projFilename, UnixFilename(filename), pTokens, fsForm, pIncludeDB, interpretCPP, aIncludeFiles,
+                         strMacrosVec, buffer);
     thread.Parse();
     delete pIncludeDB;
+    delete strMacrosVec;
 
     m_pNativeParser->GetParser()->SetNewCurrentTokens(pTokens);
 

@@ -4,129 +4,49 @@
 		<object class="wxBoxSizer">
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
-				<object class="wxStaticBoxSizer">
-					<label>Debugger configuration</label>
-					<orient>wxVERTICAL</orient>
+				<object class="wxBoxSizer">
 					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="m_staticText3">
-									<label>Executable path:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxTextCtrl" name="txtExecutablePath" />
-								<flag>wxRIGHT|wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
-							<object class="sizeritem">
-								<object class="wxButton" name="btnBrowse">
-									<label>...</label>
-									<style>wxBU_EXACTFIT</style>
-								</object>
-								<flag>wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
+						<object class="wxStaticText" name="m_staticText3">
+							<label>Executable path:</label>
 						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+						<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 						<border>5</border>
 					</object>
 					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT2">
-									<label>Arguments:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxTextCtrl" name="txtArguments" />
-								<flag>wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
+						<object class="wxTextCtrl" name="txtExecutablePath" />
+						<flag>wxRIGHT|wxEXPAND</flag>
+						<border>5</border>
+						<option>1</option>
+					</object>
+					<object class="sizeritem">
+						<object class="wxButton" name="btnBrowse">
+							<label>...</label>
+							<style>wxBU_EXACTFIT</style>
 						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+						<flag>wxALIGN_CENTER_VERTICAL</flag>
 						<border>5</border>
 					</object>
 				</object>
-				<flag>wxEXPAND</flag>
+				<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+				<border>5</border>
 			</object>
 			<object class="sizeritem">
-				<object class="wxStaticBoxSizer">
-					<label>Loader configuration</label>
-					<orient>wxVERTICAL</orient>
+				<object class="wxBoxSizer">
 					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT3">
-									<label>Executable path:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxTextCtrl" name="txtLoaderExecutablePath" />
-								<flag>wxRIGHT|wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
-							<object class="sizeritem">
-								<object class="wxButton" name="btnLoaderBrowse">
-									<label>...</label>
-									<style>wxBU_EXACTFIT</style>
-								</object>
-								<flag>wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
+						<object class="wxStaticText" name="ID_STATICTEXT2">
+							<label>Arguments:</label>
 						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+						<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
 						<border>5</border>
 					</object>
 					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT4">
-									<label>Arguments:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxTextCtrl" name="txtLoaderArguments" />
-								<flag>wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
-						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
+						<object class="wxTextCtrl" name="txtArguments" />
+						<flag>wxEXPAND</flag>
 						<border>5</border>
-					</object>
-					<object class="sizeritem">
-						<object class="wxBoxSizer">
-							<object class="sizeritem">
-								<object class="wxStaticText" name="ID_STATICTEXT5">
-									<label>Waiting time:</label>
-								</object>
-								<flag>wxRIGHT|wxALIGN_CENTER_VERTICAL</flag>
-								<border>5</border>
-							</object>
-							<object class="sizeritem">
-								<object class="wxSpinCtrl" name="spnLoaderWaitingTime" />
-								<flag>wxEXPAND</flag>
-								<border>5</border>
-								<option>1</option>
-							</object>
-						</object>
-						<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
-						<border>5</border>
+						<option>1</option>
 					</object>
 				</object>
-				<flag>wxEXPAND</flag>
+				<flag>wxTOP|wxLEFT|wxRIGHT|wxEXPAND</flag>
 				<border>5</border>
 			</object>
 			<object class="sizeritem">

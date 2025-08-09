@@ -1,0 +1,6 @@
+<svg width="32" height="32" shape-rendering="crispEdges" version="1.1" viewBox="0 0 8.467 8.467" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0 -288.5)">
+    <rect transform="matrix(.4069 0 0 .4034 10.85 288.4)" x="-26" y="5.5" width="19.5" height="10.5" fill="#fff" stroke="#0c0505" stroke-linecap="round" stroke-width="1.306"/>
+    <path transform="matrix(.4216 0 0 .4063 10.62 288.3)" d="m-12.24 5.689 5.24 5.311-5.24 5.311" fill="none" stroke="#000" stroke-width="1.279"/>
+  </g>
+</svg>

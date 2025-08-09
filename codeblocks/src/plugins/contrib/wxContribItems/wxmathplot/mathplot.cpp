@@ -24,10 +24,6 @@
 // (Added by J.L.Blanco, Aug 2007)
 // #define MATHPLOT_DO_LOGGING
 
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
-
 #ifndef WX_PRECOMP
 #include "wx/object.h"
 #include "wx/font.h"
@@ -92,7 +88,7 @@ wxBitmap mpLayer::GetColourSquare(int side)
 {
     wxBitmap square(side, side, -1);
     wxColour filler = m_pen.GetColour();
-    wxBrush brush(filler, wxSOLID);
+    wxBrush brush(filler, wxBRUSHSTYLE_SOLID);
     wxMemoryDC dc;
     dc.SelectObject(square);
     dc.SetBackground(brush);
@@ -822,7 +818,7 @@ void mpScaleX::Plot(wxDC & dc, mpWindow & w)
                     else
                         dc.DrawLine( p, orgy, p, orgy+4);
                 } else { // draw grid dotted lines
-                    m_pen.SetStyle(wxDOT);
+                    m_pen.SetStyle(wxPENSTYLE_DOT);
                     dc.SetPen(m_pen);
                     if ((m_flags == mpALIGN_BOTTOM) && !m_drawOutsideMargins) {
                         dc.DrawLine( p, orgy+4, p, minYpx );
@@ -833,7 +829,7 @@ void mpScaleX::Plot(wxDC & dc, mpWindow & w)
                             dc.DrawLine( p, 0/*-w.GetScrY()*/, p, w.GetScrY() );
                         }
                     }
-                    m_pen.SetStyle(wxSOLID);
+                    m_pen.SetStyle(wxPENSTYLE_SOLID);
                     dc.SetPen(m_pen);
                 }
                 // Write ticks labels in s string
@@ -1059,7 +1055,7 @@ void mpScaleY::Plot(wxDC & dc, mpWindow & w)
                     dc.DrawLine( orgx-4, p, orgx, p); //( orgx, p, orgx+4, p);
                 }
             } else {
-                m_pen.SetStyle(wxDOT);
+                m_pen.SetStyle(wxPENSTYLE_DOT);
                 dc.SetPen( m_pen);
                 if ((m_flags == mpALIGN_LEFT) && !m_drawOutsideMargins) {
                     dc.DrawLine( orgx-4, p, endPx, p);
@@ -1070,7 +1066,7 @@ void mpScaleY::Plot(wxDC & dc, mpWindow & w)
                     dc.DrawLine( 0/*-w.GetScrX()*/, p, w.GetScrX(), p);
                         }
                 }
-                m_pen.SetStyle(wxSOLID);
+                m_pen.SetStyle(wxPENSTYLE_SOLID);
                 dc.SetPen( m_pen);
             }
             // Print ticks labels
@@ -1320,7 +1316,7 @@ void mpWindow::OnMouseMove(wxMouseEvent     &event)
         if (event.m_leftDown) {
             if (m_movingInfoLayer == NULL) {
                 wxClientDC dc(this);
-                wxPen pen(*wxBLACK, 1, wxDOT);
+                wxPen pen(*wxBLACK, 1, wxPENSTYLE_DOT);
                 dc.SetPen(pen);
                 dc.SetBrush(*wxTRANSPARENT_BRUSH);
                 dc.DrawRectangle(m_mouseLClick_X, m_mouseLClick_Y, event.GetX() - m_mouseLClick_X, event.GetY() - m_mouseLClick_Y);
@@ -1934,13 +1930,21 @@ bool mpWindow::UpdateBBox()
             if (first)
             {
                 first = FALSE;
-                m_minX = f->GetMinX(); m_maxX=f->GetMaxX();
-                m_minY = f->GetMinY(); m_maxY=f->GetMaxY();
+                m_minX = f->GetMinX();
+                m_maxX=f->GetMaxX();
+                m_minY = f->GetMinY();
+                m_maxY=f->GetMaxY();
             }
             else
             {
-                if (f->GetMinX()<m_minX) m_minX=f->GetMinX(); if (f->GetMaxX()>m_maxX) m_maxX=f->GetMaxX();
-                if (f->GetMinY()<m_minY) m_minY=f->GetMinY(); if (f->GetMaxY()>m_maxY) m_maxY=f->GetMaxY();
+                if (f->GetMinX() < m_minX)
+                    m_minX = f->GetMinX();
+                if (f->GetMaxX() > m_maxX)
+                    m_maxX = f->GetMaxX();
+                if (f->GetMinY() < m_minY)
+                    m_minY=f->GetMinY();
+                if (f->GetMaxY() > m_maxY)
+                    m_maxY=f->GetMaxY();
             }
         }
         //node = node->GetNext();

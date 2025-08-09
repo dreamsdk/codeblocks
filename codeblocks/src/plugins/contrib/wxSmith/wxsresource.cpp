@@ -15,14 +15,15 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsresource.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsresource.cpp $
+* $Revision: 13152 $
+* $Id: wxsresource.cpp 13152 2023-01-14 20:35:30Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsresource.cpp $
 */
 
 #include "wxsresource.h"
 #include "wxsextresmanager.h"
 #include "wxsresourcetreeitemdata.h"
+#include "wxwidgets/wxsitemres.h"
 
 #include "cbauibook.h"
 #include <editormanager.h>
@@ -31,6 +32,7 @@ namespace
 {
     const int EditOpenId = wxNewId();
     const int EditCloseId = wxNewId();
+    const int ChangeI18NId = wxNewId();
     const int DeleteId = wxNewId();
 }
 
@@ -64,7 +66,16 @@ class wxsResource::wxsResourceRootTreeItemData: public wxsResourceTreeItemData
             {
                 Menu.Append(EditOpenId,_("Open editor"));
             }
+
             Menu.AppendSeparator();
+
+            wxsItemRes* item = dynamic_cast <wxsItemRes *> (m_Resource);
+            if (item)
+            {
+                Menu.Append(ChangeI18NId, item->IsI18N() ? _("Disable internationalization")
+                                                         : _("Enable internationalization"));
+            }
+
             Menu.Append(DeleteId,_("Delete this resource"));
 
             m_Resource->OnFillPopupMenu(&Menu);
@@ -86,6 +97,12 @@ class wxsResource::wxsResourceRootTreeItemData: public wxsResourceTreeItemData
                 return true;
             }
 
+            if ( Id == ChangeI18NId )
+            {
+                ToggleI18N();
+                return true;
+            }
+
             if ( Id == DeleteId )
             {
                 DeleteResource();
@@ -93,6 +110,15 @@ class wxsResource::wxsResourceRootTreeItemData: public wxsResourceTreeItemData
             }
 
             return m_Resource->OnPopupMenu(Id);
+        }
+
+        void ToggleI18N()
+        {
+            wxsItemRes* item = dynamic_cast <wxsItemRes *> (m_Resource);
+            if (item)
+            {
+                item->SetI18N(!item->IsI18N());
+            }
         }
 
         void DeleteResource()
@@ -111,16 +137,17 @@ wxsResource::wxsResource(wxsProject* Owner,const wxString& ResourceType,const wx
     m_ResourceName(wxEmptyString),
     m_GUI(GUI),
     m_Owner(Owner),
-    m_Editor(0),
+    m_Editor(nullptr),
     m_Language(wxsCPP)
-{}
+{
+}
 
 wxsResource::~wxsResource()
 {
     if ( m_Editor )
     {
         wxsEditor* EditorStore = m_Editor;
-        m_Editor = 0;
+        m_Editor = nullptr;
         EditorStore->Close();
     }
 
@@ -155,7 +182,7 @@ void wxsResource::EditClose()
 
 void wxsResource::EditorClosed()
 {
-    m_Editor = 0;
+    m_Editor = nullptr;
     if ( !m_Owner )
     {
         wxsExtRes()->EditorClosed(this);
@@ -175,13 +202,15 @@ bool wxsResource::ReadConfig(const TiXmlElement* Node)
 {
     m_ResourceName = cbC2U(Node->Attribute("name"));
     m_Language = wxsCodeMarks::Id(cbC2U(Node->Attribute("language")));
-    if ( GetResourceName().empty() ) return false;
+    if ( GetResourceName().empty() )
+        return false;
+
     return OnReadConfig(Node);
 }
 
 bool wxsResource::WriteConfig(TiXmlElement* Node)
 {
-    bool Result = OnWriteConfig(Node);
+    const bool Result = OnWriteConfig(Node);
     Node->SetAttribute("name",cbU2C(m_ResourceName));
     Node->SetAttribute("language",cbU2C(wxsCodeMarks::Name(m_Language)));
     return Result;

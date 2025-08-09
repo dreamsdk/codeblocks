@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 11855 $
-* $Id: wxsbitmapiconeditordlg.h 11855 2019-09-25 22:45:50Z bluehazzard $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconeditordlg.h $
+* $Revision: 13547 $
+* $Id: wxsbitmapiconeditordlg.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/properties/wxsbitmapiconeditordlg.h $
 */
 
 #ifndef WXSBITMAPICONEDITORDLG_H
@@ -45,19 +45,19 @@ class wxsBitmapIconEditorDlg: public wxScrollingDialog
         virtual ~wxsBitmapIconEditorDlg();
 
         //(*Identifiers(wxsBitmapIconEditorDlg)
-        static const long ID_RADIOBUTTON1;
-        static const long ID_RADIOBUTTON2;
-        static const long ID_TEXTCTRL1;
-        static const long ID_BUTTON3;
-        static const long ID_RADIOBUTTON3;
-        static const long ID_STATICTEXT1;
-        static const long ID_COMBOBOX2;
-        static const long ID_STATICTEXT2;
-        static const long ID_COMBOBOX1;
-        static const long ID_RADIOBUTTON4;
-        static const long ID_TEXTCTRL2;
-        static const long ID_STATICBITMAP1;
-        static const long ID_BUTTON1;
+        static const wxWindowID ID_RADIOBUTTON1;
+        static const wxWindowID ID_RADIOBUTTON2;
+        static const wxWindowID ID_TEXTCTRL1;
+        static const wxWindowID ID_BUTTON3;
+        static const wxWindowID ID_RADIOBUTTON3;
+        static const wxWindowID ID_STATICTEXT1;
+        static const wxWindowID ID_COMBOBOX2;
+        static const wxWindowID ID_STATICTEXT2;
+        static const wxWindowID ID_COMBOBOX1;
+        static const wxWindowID ID_RADIOBUTTON4;
+        static const wxWindowID ID_TEXTCTRL2;
+        static const wxWindowID ID_STATICBITMAP1;
+        static const wxWindowID ID_BUTTON1;
         //*)
 
     protected:

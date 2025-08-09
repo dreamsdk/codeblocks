@@ -17,7 +17,7 @@
 *
 * $Revision: 10688 $
 * $Id: wxsadvqppchild.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsadvqppchild.cpp $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsadvqppchild.cpp $
 */
 
 #include "wxsadvqppchild.h"

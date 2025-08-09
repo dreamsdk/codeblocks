@@ -1,45 +1,48 @@
 
 #include "formatindentdlg.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
-    #include <editormanager.h>
     #include <configmanager.h>
-    #include <cbstyledtextctrl.h>
-    #include "cbeditor.h"
 #endif
 
+#include <manager.h>
+#include <cbstyledtextctrl.h>
+#include <editormanager.h>
+#include "cbeditor.h"
+
 //(*InternalHeaders(FormatIndentDlg)
-#include <wx/intl.h>
 #include <wx/button.h>
+#include <wx/intl.h>
 #include <wx/string.h>
 //*)
 
 //(*IdInit(FormatIndentDlg)
-const long FormatIndentDlg::ID_STATICTEXT1 = wxNewId();
-const long FormatIndentDlg::ID_STATICTEXT3 = wxNewId();
-const long FormatIndentDlg::ID_RADIOBUTTON1 = wxNewId();
-const long FormatIndentDlg::ID_RADIOBUTTON2 = wxNewId();
-const long FormatIndentDlg::ID_RADIOBUTTON3 = wxNewId();
-const long FormatIndentDlg::ID_PANEL1 = wxNewId();
-const long FormatIndentDlg::ID_STATICTEXT2 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX2 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX3 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX4 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX5 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX6 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX1 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX7 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX8 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX9 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX10 = wxNewId();
-const long FormatIndentDlg::ID_PANEL3 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX11 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX12 = wxNewId();
-const long FormatIndentDlg::ID_CHECKBOX13 = wxNewId();
-const long FormatIndentDlg::ID_STATICTEXT4 = wxNewId();
-const long FormatIndentDlg::ID_SPINCTRL1 = wxNewId();
-const long FormatIndentDlg::ID_PANEL2 = wxNewId();
-const long FormatIndentDlg::ID_NOTEBOOK1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_STATICTEXT1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_STATICTEXT3 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_RADIOBUTTON1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_RADIOBUTTON2 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_RADIOBUTTON3 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_PANEL1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_STATICTEXT2 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX2 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX3 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX4 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX5 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX6 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX7 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX8 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX9 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX10 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_PANEL3 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX11 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX12 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_CHECKBOX13 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_STATICTEXT4 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_SPINCTRL1 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_PANEL2 = wxNewId();
+const wxWindowID FormatIndentDlg::ID_NOTEBOOK1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(FormatIndentDlg,wxDialog)
@@ -51,16 +54,16 @@ END_EVENT_TABLE()
 FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
 {
 	//(*Initialize(FormatIndentDlg)
+	wxBoxSizer* BoxSizer1;
+	wxBoxSizer* BoxSizer2;
+	wxBoxSizer* BoxSizer3;
 	wxBoxSizer* BoxSizer4;
-	wxBoxSizer* BoxSizer6;
 	wxBoxSizer* BoxSizer5;
+	wxBoxSizer* BoxSizer6;
 	wxBoxSizer* BoxSizer7;
 	wxBoxSizer* BoxSizer8;
-	wxBoxSizer* BoxSizer2;
-	wxBoxSizer* BoxSizer1;
 	wxBoxSizer* BoxSizer9;
 	wxStaticBoxSizer* StaticBoxSizer1;
-	wxBoxSizer* BoxSizer3;
 	wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
 	Create(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("wxID_ANY"));
@@ -84,8 +87,6 @@ FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
 	BoxSizer2->Add(rb_Selection, 0, wxALL|wxALIGN_CENTER_VERTICAL, 5);
 	BoxSizer4->Add(BoxSizer2, 0, wxBOTTOM|wxLEFT|wxRIGHT|wxALIGN_LEFT, 5);
 	Panel1->SetSizer(BoxSizer4);
-	BoxSizer4->Fit(Panel1);
-	BoxSizer4->SetSizeHints(Panel1);
 	Panel3 = new wxPanel(Notebook1, ID_PANEL3, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL3"));
 	BoxSizer6 = new wxBoxSizer(wxVERTICAL);
 	BoxSizer7 = new wxBoxSizer(wxHORIZONTAL);
@@ -125,8 +126,6 @@ FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
 	BoxSizer8->Add(cb_SELECTTYPEafter, 1, wxALL|wxALIGN_LEFT, 2);
 	BoxSizer6->Add(BoxSizer8, 1, wxALL|wxEXPAND, 5);
 	Panel3->SetSizer(BoxSizer6);
-	BoxSizer6->Fit(Panel3);
-	BoxSizer6->SetSizeHints(Panel3);
 	Panel2 = new wxPanel(Notebook1, ID_PANEL2, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL, _T("ID_PANEL2"));
 	BoxSizer5 = new wxBoxSizer(wxVERTICAL);
 	cb_TrimLines = new wxCheckBox(Panel2, ID_CHECKBOX11, _("Trim lines from right"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX11"));
@@ -148,8 +147,6 @@ FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
 	StaticBoxSizer1->Add(BoxSizer9, 0, wxALL|wxALIGN_LEFT, 2);
 	BoxSizer5->Add(StaticBoxSizer1, 0, wxALL|wxALIGN_LEFT, 5);
 	Panel2->SetSizer(BoxSizer5);
-	BoxSizer5->Fit(Panel2);
-	BoxSizer5->SetSizeHints(Panel2);
 	Notebook1->AddPage(Panel1, _("Scope"), false);
 	Notebook1->AddPage(Panel3, _("Statements"), false);
 	Notebook1->AddPage(Panel2, _("Others"), false);
@@ -160,10 +157,10 @@ FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
 	StdDialogButtonSizer1->Realize();
 	BoxSizer1->Add(StdDialogButtonSizer1, 0, wxALL|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
 	SetSizer(BoxSizer1);
-	BoxSizer1->Fit(this);
 	BoxSizer1->SetSizeHints(this);
+	Center();
 
-	Connect(ID_CHECKBOX12,wxEVT_COMMAND_CHECKBOX_CLICKED,(wxObjectEventFunction)&FormatIndentDlg::OnCbTabAsEditorClick);
+	Connect(ID_CHECKBOX12,wxEVT_COMMAND_CHECKBOX_CLICKED,wxCommandEventHandler(FormatIndentDlg::OnCbTabAsEditorClick));
 	//*)
 
 	rb_Selection->Disable();
@@ -187,24 +184,24 @@ FormatIndentDlg::FormatIndentDlg(wxWindow* parent)
     else
         rb_CurrentFile->SetValue(true);
 
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
 
-    cb_PROGafter->SetValue(cfg->ReadBool(_T("/indent_prog_fun_sub_after"), true));
-    cb_MODafter->SetValue(cfg->ReadBool(_T("/indent_module_after"), true));
-    cb_CONTMod->SetValue(cfg->ReadBool(_T("/indent_contains_module"), true));
-    cb_CONTModAfter->SetValue(cfg->ReadBool(_T("/indent_contains_module_after"), true));
-    cb_CONTProc->SetValue(cfg->ReadBool(_T("/indent_contains_procedure"), true));
-    cb_CONTProcAfter->SetValue(cfg->ReadBool(_T("/indent_contains_procedure_after"), true));
-    cb_CONTType->SetValue(cfg->ReadBool(_T("/indent_contains_typedef"), true));
-    cb_CONTTypeAfter->SetValue(cfg->ReadBool(_T("/indent_contains_typedef_after"), true));
-    cb_SELECTCASEafter->SetValue(cfg->ReadBool(_T("/indent_selectcase_after"), true));
-    cb_SELECTTYPEafter->SetValue(cfg->ReadBool(_T("/indent_selecttype_after"), true));
+    cb_PROGafter->SetValue(cfg->ReadBool("/indent_prog_fun_sub_after", true));
+    cb_MODafter->SetValue(cfg->ReadBool("/indent_module_after", true));
+    cb_CONTMod->SetValue(cfg->ReadBool("/indent_contains_module", true));
+    cb_CONTModAfter->SetValue(cfg->ReadBool("/indent_contains_module_after", true));
+    cb_CONTProc->SetValue(cfg->ReadBool("/indent_contains_procedure", true));
+    cb_CONTProcAfter->SetValue(cfg->ReadBool("/indent_contains_procedure_after", true));
+    cb_CONTType->SetValue(cfg->ReadBool("/indent_contains_typedef", true));
+    cb_CONTTypeAfter->SetValue(cfg->ReadBool("/indent_contains_typedef_after", true));
+    cb_SELECTCASEafter->SetValue(cfg->ReadBool("/indent_selectcase_after", true));
+    cb_SELECTTYPEafter->SetValue(cfg->ReadBool("/indent_selecttype_after", true));
 
-    cb_TrimLines->SetValue(cfg->ReadBool(_T("/indent_trim_right"), true));
-    bool sae = cfg->ReadBool(_T("/indent_same_as_editor"), true);
+    cb_TrimLines->SetValue(cfg->ReadBool("/indent_trim_right", true));
+    bool sae = cfg->ReadBool("/indent_same_as_editor", true);
     cb_TabAsEditor->SetValue(sae);
-    cb_UseTabs->SetValue(cfg->ReadBool(_T("/indent_use_tabs"), false));
-    spc_Spaces->SetValue(cfg->ReadInt(_T("/indent_tab_width"), 4));
+    cb_UseTabs->SetValue(cfg->ReadBool("/indent_use_tabs", false));
+    spc_Spaces->SetValue(cfg->ReadInt("/indent_tab_width", 4));
 
     cb_UseTabs->Enable(!sae);
     spc_Spaces->Enable(!sae);
@@ -219,23 +216,23 @@ FormatIndentDlg::~FormatIndentDlg()
 
 void FormatIndentDlg::OnOK(wxCommandEvent& event)
 {
-    ConfigManager* cfg = Manager::Get()->GetConfigManager(_T("fortran_project"));
+    ConfigManager* cfg = Manager::Get()->GetConfigManager("fortran_project");
 
-    cfg->Write(_T("/indent_prog_fun_sub_after"), (bool)cb_PROGafter->GetValue());
-    cfg->Write(_T("/indent_module_after"), (bool)cb_MODafter->GetValue());
-    cfg->Write(_T("/indent_contains_module"), (bool)cb_CONTMod->GetValue());
-    cfg->Write(_T("/indent_contains_module_after"), (bool)cb_CONTModAfter->GetValue());
-    cfg->Write(_T("/indent_contains_procedure"), (bool)cb_CONTProc->GetValue());
-    cfg->Write(_T("/indent_contains_procedure_after"), (bool)cb_CONTProcAfter->GetValue());
-    cfg->Write(_T("/indent_contains_typedef"), (bool)cb_CONTType->GetValue());
-    cfg->Write(_T("/indent_contains_typedef_after"), (bool)cb_CONTTypeAfter->GetValue());
-    cfg->Write(_T("/indent_selectcase_after"), (bool)cb_SELECTCASEafter->GetValue());
-    cfg->Write(_T("/indent_selecttype_after"), (bool)cb_SELECTTYPEafter->GetValue());
+    cfg->Write("/indent_prog_fun_sub_after", (bool)cb_PROGafter->GetValue());
+    cfg->Write("/indent_module_after", (bool)cb_MODafter->GetValue());
+    cfg->Write("/indent_contains_module", (bool)cb_CONTMod->GetValue());
+    cfg->Write("/indent_contains_module_after", (bool)cb_CONTModAfter->GetValue());
+    cfg->Write("/indent_contains_procedure", (bool)cb_CONTProc->GetValue());
+    cfg->Write("/indent_contains_procedure_after", (bool)cb_CONTProcAfter->GetValue());
+    cfg->Write("/indent_contains_typedef", (bool)cb_CONTType->GetValue());
+    cfg->Write("/indent_contains_typedef_after", (bool)cb_CONTTypeAfter->GetValue());
+    cfg->Write("/indent_selectcase_after", (bool)cb_SELECTCASEafter->GetValue());
+    cfg->Write("/indent_selecttype_after", (bool)cb_SELECTTYPEafter->GetValue());
 
-    cfg->Write(_T("/indent_trim_right"), (bool)cb_TrimLines->GetValue());
-    cfg->Write(_T("/indent_same_as_editor"), (bool)cb_TabAsEditor->GetValue());
-    cfg->Write(_T("/indent_use_tabs"), (bool)cb_UseTabs->GetValue());
-    cfg->Write(_T("/indent_tab_width"), (int)spc_Spaces->GetValue());
+    cfg->Write("/indent_trim_right", (bool)cb_TrimLines->GetValue());
+    cfg->Write("/indent_same_as_editor", (bool)cb_TabAsEditor->GetValue());
+    cfg->Write("/indent_use_tabs", (bool)cb_UseTabs->GetValue());
+    cfg->Write("/indent_tab_width", (int)spc_Spaces->GetValue());
 
     EndModal(wxID_OK);
 }

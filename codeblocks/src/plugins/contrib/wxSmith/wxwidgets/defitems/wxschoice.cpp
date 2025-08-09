@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10688 $
-* $Id: wxschoice.cpp 10688 2016-01-22 12:24:56Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxschoice.cpp $
+* $Revision: 13547 $
+* $Id: wxschoice.cpp 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxschoice.cpp $
 */
 
 #include <wx/choice.h>
@@ -45,7 +45,8 @@ wxsChoice::wxsChoice(wxsItemResData* Data):
         &Reg.Info,
         wxsChoiceEvents,
         wxsChoiceStyles),
-    DefaultSelection(-1)
+        DefaultSelection(-1),
+        UseItemsArray(false)
 {}
 
 
@@ -56,22 +57,49 @@ void wxsChoice::OnBuildCreatingCode()
         case wxsCPP:
         {
             AddHeader(_T("<wx/choice.h>"),GetInfo().ClassName,hfInPCH);
-            Codef(_T("%C(%W, %I, %P, %S, 0, 0, %T, %V, %N);\n"));
 
-            for ( size_t i = 0; i <  ArrayChoices.GetCount(); ++i )
+            if (UseItemsArray)
             {
-                if ( DefaultSelection == (int)i )
-                {
-                    Codef(_T("%ASetSelection( "));
-                }
-                Codef(_T("%AAppend(%t)"),ArrayChoices[i].wx_str());
-                if ( DefaultSelection == (int)i )
-                {
-                    Codef(_T(" )"));
-                }
-                Codef(_T(";\n"));
-            }
+              size_t count = ArrayChoices.GetCount();
 
+              if (count != 0)
+              {
+                // Create const array of items
+                Codef(_T("const wxString %O_choices[] = {\n"));
+                for ( size_t i = 0; i <  count; ++i )
+                {
+                  Codef(_T("%t,\n"),ArrayChoices[i].wx_str());
+                }
+                Codef(_T("};\n"));
+
+                wxString code = wxString::Format(_T("%%C(%%W, %%I, %%P, %%S, %zu, %%O_choices, %%T, %%V, %%N);\n"), count);
+                Codef(code);
+                if ( DefaultSelection != -1 )
+                  Codef(wxString::Format(_T("%%ASetSelection(%ld);\n"), DefaultSelection));
+              }
+              else
+              {
+                Codef(_T("%C(%W, %I, %P, %S, 0, 0, %T, %V, %N);\n"));
+              }
+            }
+            else
+            {
+                Codef(_T("%C(%W, %I, %P, %S, 0, 0, %T, %V, %N);\n"));
+
+                for ( size_t i = 0; i <  ArrayChoices.GetCount(); ++i )
+                {
+                    if ( DefaultSelection == (int)i )
+                    {
+                        Codef(_T("%ASetSelection( "));
+                    }
+                    Codef(_T("%AAppend(%t)"),ArrayChoices[i].wx_str());
+                    if ( DefaultSelection == (int)i )
+                    {
+                        Codef(_T(" )"));
+                    }
+                    Codef(_T(";\n"));
+                }
+            }
             BuildSetupWindowCode();
             return;
         }
@@ -84,7 +112,7 @@ void wxsChoice::OnBuildCreatingCode()
     }
 }
 
-wxObject* wxsChoice::OnBuildPreview(wxWindow* Parent,long Flags)
+wxObject* wxsChoice::OnBuildPreview(wxWindow* Parent,long _Flags)
 {
     wxChoice* Preview = new wxChoice(Parent,GetId(),Pos(Parent),Size(Parent),0,0,Style());
 
@@ -96,11 +124,12 @@ wxObject* wxsChoice::OnBuildPreview(wxWindow* Parent,long Flags)
             Preview->SetSelection(Val);
         }
     }
-    return SetupWindow(Preview,Flags);
+    return SetupWindow(Preview,_Flags);
 }
 
-void wxsChoice::OnEnumWidgetProperties(cb_unused long Flags)
+void wxsChoice::OnEnumWidgetProperties(cb_unused long _Flags)
 {
-    WXS_ARRAYSTRING(wxsChoice,ArrayChoices,_("Choices"),_T("content"),_T("item"))
-    WXS_LONG(wxsChoice,DefaultSelection,_("Selection"),_T("selection"),-1)
+    WXS_ARRAYSTRING(wxsChoice,ArrayChoices, _("Choices"), "content", "item")
+    WXS_BOOL(wxsChoice,UseItemsArray, _("Use Items Array"), "use_items_array", false)
+    WXS_LONG(wxsChoice,DefaultSelection, _("Selection"), "selection", -1)
 }

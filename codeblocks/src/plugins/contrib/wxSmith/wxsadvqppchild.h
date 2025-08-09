@@ -15,19 +15,21 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8251 $
-* $Id: wxsadvqppchild.h 8251 2012-08-28 02:31:00Z ollydbg $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxsadvqppchild.h $
+* $Revision: 12722 $
+* $Id: wxsadvqppchild.h 12722 2022-02-23 09:31:26Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxsadvqppchild.h $
 */
 
 #ifndef WXSADVQPPCHILD_H
 #define WXSADVQPPCHILD_H
 
+#include <cbplugin.h>
+
 #include <wx/panel.h>
 #include "wxsadvqpp.h"
 
 /** \brief Child of advanced quick props panel */
-class wxsAdvQPPChild : public wxPanel
+class PLUGIN_EXPORT wxsAdvQPPChild : public wxPanel
 {
     public:
 

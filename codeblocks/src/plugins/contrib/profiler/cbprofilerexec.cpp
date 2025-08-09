@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
  * http://www.gnu.org/licenses/gpl-3.0.html
  *
- * $Revision: 10549 $
- * $Id: cbprofilerexec.cpp 10549 2015-10-31 11:21:01Z fuscated $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/profiler/cbprofilerexec.cpp $
+ * $Revision: 12639 $
+ * $Id: cbprofilerexec.cpp 12639 2022-01-06 14:39:26Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/profiler/cbprofilerexec.cpp $
  */
 
 #include "sdk.h"
@@ -43,52 +43,49 @@ int CBProfilerExecDlg::Execute(wxString exename, wxString dataname, struct_confi
 {
     // gprof optional parameters
     wxString param = config.txtExtra;
-    if (config.chkAnnSource && !config.txtAnnSource.IsEmpty()) param << _T(" -A")  << config.txtAnnSource;
-    if (config.chkMinCount)                                    param << _T(" -m ") << config.spnMinCount;
-    if (config.chkBrief)                                       param << _T(" -b");
-    if (config.chkFileInfo)                                    param << _T(" -i");
-    if (config.chkUnusedFunctions)                             param << _T(" -z");
-    if (config.chkStaticCallGraph)                             param << _T(" -c");
-    if (config.chkNoStatic)                                    param << _T(" -a");
-    if (config.chkSum)                                         param << _T(" -s");
+    if (config.chkAnnSource && !config.txtAnnSource.IsEmpty()) param << " -A"  << config.txtAnnSource;
+    if (config.chkMinCount)                                    param << " -m " << config.spnMinCount;
+    if (config.chkBrief)                                       param << " -b";
+    if (config.chkFileInfo)                                    param << " -i";
+    if (config.chkUnusedFunctions)                             param << " -z";
+    if (config.chkStaticCallGraph)                             param << " -c";
+    if (config.chkNoStatic)                                    param << " -a";
+    if (config.chkSum)                                         param << " -s";
 
     wxString cmd;
-    cmd << _T("gprof ") << param << _T(" \"") << exename << _T("\" \"") << dataname << _T("\"");
+    cmd << "gprof " << param << " \"" << exename << "\" \"" << dataname << '"';
 
-    int pid = -1;
+    int exitCode;
 
     { // begin lifetime of wxBusyInfo
-      wxBusyInfo wait(_("Please wait, while running gprof..."), parent);
-      Manager::Get()->GetLogManager()->DebugLog(F(_T("Profiler: Running command %s"), cmd.wx_str()));
-      pid = wxExecute(cmd, gprof_output, gprof_errors);
+        wxBusyInfo wait(_("Please wait, while running gprof..."), parent);
+        Manager::Get()->GetLogManager()->DebugLog(wxString::Format("Profiler: Running command %s", cmd));
+        exitCode = wxExecute(cmd, gprof_output, gprof_errors);
     } // end lifetime of wxBusyInfo
 
-    if (pid == -1)
+    if (exitCode == -1)  // not found
     {
         wxString msg = _("Unable to execute gprof.\nBe sure the gprof executable is in the OS global path.\nC::B Profiler could not complete the operation.");
         cbMessageBox(msg, _("Error"), wxICON_ERROR | wxOK, (wxWindow*)Manager::Get()->GetAppWindow());
         Manager::Get()->GetLogManager()->DebugLog(msg);
-
         return -1;
     }
-    else
-    {
-        wxXmlResource::Get()->LoadObject(this, parent, _T("dlgCBProfilerExec"),_T("wxScrollingDialog"));
-        wxFont font(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-        outputFlatProfileArea     = XRCCTRL(*this, "lstFlatProfile",     wxListCtrl);
-        outputHelpFlatProfileArea = XRCCTRL(*this, "txtHelpFlatProfile", wxTextCtrl);
-        outputHelpFlatProfileArea->SetFont(font);
-        outputCallGraphArea       = XRCCTRL(*this, "lstCallGraph",       wxListCtrl);
-        outputHelpCallGraphArea   = XRCCTRL(*this, "txtHelpCallGraph",   wxTextCtrl);
-        outputHelpCallGraphArea->SetFont(font);
-        outputMiscArea            = XRCCTRL(*this, "txtMisc",            wxTextCtrl);
-        outputMiscArea->SetFont(font);
 
-        if(!gprof_output.IsEmpty())
-            ShowOutput(gprof_output, false);
-        else
-            ShowOutput(gprof_errors, true);
-    }
+    wxXmlResource::Get()->LoadObject(this, parent, "dlgCBProfilerExec", "wxScrollingDialog");
+    wxFont font(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    outputFlatProfileArea     = XRCCTRL(*this, "lstFlatProfile",     wxListCtrl);
+    outputHelpFlatProfileArea = XRCCTRL(*this, "txtHelpFlatProfile", wxTextCtrl);
+    outputHelpFlatProfileArea->SetFont(font);
+    outputCallGraphArea       = XRCCTRL(*this, "lstCallGraph",       wxListCtrl);
+    outputHelpCallGraphArea   = XRCCTRL(*this, "txtHelpCallGraph",   wxTextCtrl);
+    outputHelpCallGraphArea->SetFont(font);
+    outputMiscArea            = XRCCTRL(*this, "txtMisc",            wxTextCtrl);
+    outputMiscArea->SetFont(font);
+
+    if (!gprof_output.IsEmpty())
+        ShowOutput(gprof_output, false);
+    else
+        ShowOutput(gprof_errors, true);
 
     return 0;
 }
@@ -96,7 +93,7 @@ int CBProfilerExecDlg::Execute(wxString exename, wxString dataname, struct_confi
 void CBProfilerExecDlg::ShowOutput(const wxArrayString& msg, bool error)
 {
     const size_t maxcount(msg.GetCount());
-    if ( !maxcount )
+    if (!maxcount)
         return;
 
     if (!error)
@@ -105,12 +102,11 @@ void CBProfilerExecDlg::ShowOutput(const wxArrayString& msg, bool error)
 
         // Parsing Flat Profile
         size_t count(0);
-        if (msg[count].Find(_T("Flat profile")) != -1)
+        if (msg[count].Find("Flat profile") != wxNOT_FOUND)
             ParseFlatProfile(msg, progress, maxcount, count);
 
         // Parsing Call Graph
-        if ((count < maxcount) &&
-            (msg[count].Find(_T("Call graph"))   != -1))
+        if ((count < maxcount) && (msg[count].Find("Call graph") != wxNOT_FOUND))
             ParseCallGraph(msg, progress, maxcount, count);
 
         // The rest of the lines, if any, is printed in the Misc tab
@@ -118,14 +114,9 @@ void CBProfilerExecDlg::ShowOutput(const wxArrayString& msg, bool error)
     }
     else
     {
-        wxString output;
-        for (size_t count(0); count < maxcount; ++count )
-        {
-            output << msg[count] << _T("\n");
-        }
-        outputMiscArea->SetValue(output);
-        const wxColour colour(255,0,0);
-        outputMiscArea->SetForegroundColour(colour);
+        outputMiscArea->SetValue(wxJoin(msg, '\n'));
+        outputMiscArea->SetForegroundColour(wxColour(255, 0, 0));
+        XRCCTRL(*this, "tabs", wxNotebook)->SetSelection(2);
     }
 
     ShowModal();
@@ -426,7 +417,7 @@ void CBProfilerExecDlg::WriteToFile(wxCommandEvent& /*event*/)
                             wxEmptyString,
                             _T("*.*"),
                             wxFD_SAVE);
-
+    PlaceWindow(&filedialog);
     if (filedialog.ShowModal() == wxID_OK)
     {
         wxFFile file(filedialog.GetPath().c_str(), _T("w"));

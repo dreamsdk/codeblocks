@@ -16,9 +16,9 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10665 $
-* $Id: wxsFlatNotebook.cpp 10665 2016-01-17 13:58:48Z fuscated $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmithContribItems/wxflatnotebook/wxsFlatNotebook.cpp $
+* $Revision: 12680 $
+* $Id: wxsFlatNotebook.cpp 12680 2022-01-26 08:45:23Z wh11204 $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmithContribItems/wxflatnotebook/wxsFlatNotebook.cpp $
 */
 
 #include "wxsFlatNotebook.h"
@@ -106,12 +106,12 @@ namespace
                 FlexGridSizer1 = new wxFlexGridSizer(0, 1, 0, 0);
                 StaticBoxSizer1 = new wxStaticBoxSizer(wxVERTICAL, this, _("Label"));
                 Label = new wxTextCtrl(this, ID_TEXTCTRL1, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_TEXTCTRL1"));
-                StaticBoxSizer1->Add(Label, 0, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+                StaticBoxSizer1->Add(Label, 0, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL, 5);
                 FlexGridSizer1->Add(StaticBoxSizer1, 1, wxLEFT|wxRIGHT|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
                 StaticBoxSizer2 = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Selection"));
                 Selected = new wxCheckBox(this, ID_CHECKBOX1, _("Selected"), wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator, _T("ID_CHECKBOX1"));
                 Selected->SetValue(false);
-                StaticBoxSizer2->Add(Selected, 1, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
+                StaticBoxSizer2->Add(Selected, 1, wxBOTTOM|wxEXPAND|wxALIGN_CENTER_VERTICAL, 5);
                 FlexGridSizer1->Add(StaticBoxSizer2, 1, wxLEFT|wxRIGHT|wxEXPAND|wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL, 5);
                 SetSizer(FlexGridSizer1);
                 FlexGridSizer1->Fit(this);
@@ -445,6 +445,7 @@ bool wxsFlatNotebook::OnPopup(long Id)
     if ( Id == popupNewPageId )
     {
         wxTextEntryDialog Dlg(0,_("Enter name of new page"),_("Adding page"),_("New page"));
+        PlaceWindow(&Dlg);
         if ( Dlg.ShowModal() == wxID_OK )
         {
             wxsItem* Panel = wxsItemFactory::Build(_T("wxPanel"),GetResourceData());

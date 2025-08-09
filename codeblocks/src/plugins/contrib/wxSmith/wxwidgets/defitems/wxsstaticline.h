@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsstaticline.h 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstaticline.h $
+* $Revision: 13547 $
+* $Id: wxsstaticline.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/defitems/wxsstaticline.h $
 */
 
 #ifndef WXSSTATICLINE_H
@@ -36,8 +36,8 @@ class wxsStaticLine: public wxsWidget
     private:
 
         virtual void OnBuildCreatingCode();
-        virtual wxObject* OnBuildPreview(wxWindow* Parent,long Flags);
-        virtual void OnEnumWidgetProperties(long Flags);
+        virtual wxObject* OnBuildPreview(wxWindow* Parent,long _Flags);
+        virtual void OnEnumWidgetProperties(long _Flags);
 
 };
 

@@ -15,21 +15,21 @@
 * You should have received a copy of the GNU General Public License
 * along with HexEditor. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 10288 $
-* $Id: SearchDialog.h 10288 2015-05-15 10:58:29Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/HexEditor/SearchDialog.h $
+* $Revision: 13570 $
+* $Id: SearchDialog.h 13570 2024-09-14 05:03:57Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/HexEditor/SearchDialog.h $
 */
 
 #ifndef SEARCHDIALOG_H
 #define SEARCHDIALOG_H
 
 //(*Headers(SearchDialog)
-#include <wx/combobox.h>
-#include <wx/sizer.h>
-#include <wx/button.h>
-#include <wx/radiobut.h>
 #include "scrollingdialog.h"
+#include <wx/button.h>
+#include <wx/combobox.h>
 #include <wx/radiobox.h>
+#include <wx/radiobut.h>
+#include <wx/sizer.h>
 //*)
 
 #include "FileContentBase.h"
@@ -47,23 +47,23 @@ class SearchDialog: public wxScrollingDialog
 		void BuildContent(wxWindow* parent);
 
 		//(*Identifiers(SearchDialog)
-		static const long ID_COMBOBOX1;
-		static const long ID_RADIOBUTTON1;
-		static const long ID_RADIOBUTTON2;
-		static const long ID_RADIOBUTTON3;
-		static const long ID_BUTTON1;
-		static const long ID_RADIOBOX2;
-		static const long ID_RADIOBOX1;
+		static const wxWindowID ID_COMBOBOX1;
+		static const wxWindowID ID_RADIOBUTTON1;
+		static const wxWindowID ID_RADIOBUTTON2;
+		static const wxWindowID ID_RADIOBUTTON3;
+		static const wxWindowID ID_BUTTON1;
+		static const wxWindowID ID_RADIOBOX2;
+		static const wxWindowID ID_RADIOBOX1;
 		//*)
 
 		//(*Declarations(SearchDialog)
-		wxRadioButton* m_SearchTypeString;
-		wxComboBox* m_SearchValue;
-		wxRadioButton* m_SearchTypeExpression;
 		wxButton* Button1;
+		wxComboBox* m_SearchValue;
 		wxRadioBox* m_Direction;
 		wxRadioBox* m_StartFrom;
+		wxRadioButton* m_SearchTypeExpression;
 		wxRadioButton* m_SearchTypeHex;
+		wxRadioButton* m_SearchTypeString;
 		//*)
 
 		//(*Handlers(SearchDialog)

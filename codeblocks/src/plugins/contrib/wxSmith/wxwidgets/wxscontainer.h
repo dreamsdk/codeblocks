@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 8704 $
-* $Id: wxscontainer.h 8704 2012-12-23 20:32:03Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/wxwidgets/wxscontainer.h $
+* $Revision: 13547 $
+* $Id: wxscontainer.h 13547 2024-09-14 04:35:04Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/wxwidgets/wxscontainer.h $
 */
 
 #ifndef WXSCONTAINER_H
@@ -29,13 +29,14 @@
 #include "wxsflags.h"
 
 #include <prep.h>
+#include <cbplugin.h>
 
 using namespace wxsFlags;
 
 /** \brief Container is a class which represents widget that can
  *         have child items or one of root items
  */
-class wxsContainer: public wxsParent
+class PLUGIN_EXPORT wxsContainer: public wxsParent
 {
     public:
 
@@ -66,7 +67,7 @@ class wxsContainer: public wxsParent
          * there will be Variable name and identifier and at the end, all
          * required base properties.
          */
-        virtual void OnEnumContainerProperties(long Flags) = 0;
+        virtual void OnEnumContainerProperties(long _Flags) = 0;
 
         /** \brief Function which adds new items to QPP
          *
@@ -96,7 +97,7 @@ class wxsContainer: public wxsParent
         virtual bool OnCanAddChild(wxsItem* Item,bool ShowMessage);
 
         /** \brief Function adding children items into preview window */
-        void AddChildrenPreview(wxWindow* This,long Flags);
+        void AddChildrenPreview(wxWindow* This,long _Flags);
 
         /** \brief Function adding code generating child items */
         void AddChildrenCode();
@@ -108,7 +109,7 @@ class wxsContainer: public wxsParent
          * Function enumerating item properties. The implementation
          * does call EnumContainerProperties() and adds all default properties.
          */
-        virtual void OnEnumItemProperties(long Flags);
+        virtual void OnEnumItemProperties(long _Flags);
 
         /** \brief Function Adding QPPChild panels for base properties of this
          *         container.

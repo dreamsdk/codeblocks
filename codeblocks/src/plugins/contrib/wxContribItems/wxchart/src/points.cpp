@@ -5,7 +5,7 @@
 // Modified by:
 // Created:
 // Copyright:   (C) 2006, Paolo Gava
-// RCS-ID:      $Id: points.cpp 9270 2013-08-18 05:22:02Z mortenmacfly $
+// RCS-ID:      $Id: points.cpp 13182 2023-02-01 03:15:11Z ollydbg $
 // Licence:     wxWindows licence
 /////////////////////////////////////////////////////////////////////////////
 
@@ -19,10 +19,6 @@
 
 // For compilers that support precompilation, includes "wx.h".
 #include <wx/wxprec.h>
-
-#ifdef __BORLANDC__
-#pragma hdrstop
-#endif
 
 #include "wx/points.h"
 
@@ -171,7 +167,7 @@ ChartValue wxPoints::GetXVal(
     if ( num > n )
         return m_vPoints.Item( n ).m_xval;
 
-	return ( 0 );
+    return 0;
 
 }
 
@@ -190,7 +186,7 @@ ChartValue wxPoints::GetYVal(
     if ( num > n )
         return m_vPoints.Item( n ).m_yval;
 
-	return ( 0 );
+    return 0;
 }
 
 //+++-S-cf-------------------------------------------------------------------
@@ -208,7 +204,7 @@ ChartColor wxPoints::GetColor(
     if ( num > n )
         return m_vPoints.Item( n ).m_col;
 
-	return ( 0 );
+    return 0;
 }
 
 //+++-S-cf-------------------------------------------------------------------
@@ -251,7 +247,7 @@ ChartValue wxPoints::GetMinX() const
     if ( n > 0 )
         return m_vPoints.Item( 0 ).m_xval;
 
-	return 0;
+    return 0;
 }
 
 //+++-S-cf-------------------------------------------------------------------

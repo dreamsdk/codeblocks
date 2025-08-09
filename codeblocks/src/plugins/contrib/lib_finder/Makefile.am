@@ -5,14 +5,7 @@ AM_CPPFLAGS = $(WX_CXXFLAGS) \
 		-I$(top_srcdir)/src/include \
 		-I$(top_srcdir)/src/sdk/wxscintilla/include \
 		-I$(srcdir)/../wxContribItems/wxFlatNotebook/include \
-		-I$(top_srcdir)/src/include/scripting/sqplus \
-		-I$(top_srcdir)/src/include/scripting/bindings \
-		-I$(top_srcdir)/src/include/mozilla_chardet \
-		-I$(top_srcdir)/src/include/mozilla_chardet/mfbt \
-		-I$(top_srcdir)/src/include/mozilla_chardet/nsprpub/pr/include \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/base \
-		-I$(top_srcdir)/src/include/mozilla_chardet/xpcom/glue
+		-I$(top_srcdir)/src/include/scripting/bindings
 
 pluginlibdir = $(pkglibdir)/plugins
 
@@ -22,8 +15,7 @@ liblib_finder_la_LDFLAGS = @MODULE_SHARED_LDFLAGS@ -version-info 0:1:0 -no-undef
 
 liblib_finder_la_LIBADD = ../../../sdk/libcodeblocks.la \
 		../wxContribItems/wxFlatNotebook/libwxflatnotebook.la \
-		$(WX_LIBS) \
-		$(CB_TINYXML_LIBS)
+		$(WX_LIBS)
 
 liblib_finder_la_SOURCES = \
 		librariesdlg.cpp \

@@ -2,9 +2,9 @@
  * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
  * http://www.gnu.org/licenses/lgpl-3.0.html
  *
- * $Revision: 9753 $
- * $Id: editor_hooks.cpp 9753 2014-04-15 05:12:55Z ollydbg $
- * $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/sdk/editor_hooks.cpp $
+ * $Revision: 12999 $
+ * $Id: editor_hooks.cpp 12999 2022-11-01 13:12:28Z wh11204 $
+ * $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/sdk/editor_hooks.cpp $
  */
 
 #include "sdk_precomp.h"
@@ -128,10 +128,10 @@ void EditorHooks::CallHooks(cbEditor* editor, wxScintillaEvent& event)
             const char *p = functor->GetTypeName();
             int   status;
             char *realname;
-            realname = abi::__cxa_demangle(p, 0, 0, &status);
+            realname = abi::__cxa_demangle(p, nullptr, nullptr, &status);
             wxString txt;
-            // if the demangled C++ function name success, then realname is not NULL
-            if (realname != 0)
+            // if the demangled C++ function name success, then realname is not nullptr
+            if (realname != nullptr)
             {
                 txt = wxString::FromUTF8(realname);
                 free(realname);
@@ -141,7 +141,7 @@ void EditorHooks::CallHooks(cbEditor* editor, wxScintillaEvent& event)
 
             wxEventType type = event.GetEventType();
             txt << GetScintillaEventName(type);
-            Manager::Get()->GetLogManager()->DebugLog(F(wxT("%s take %ld ms"), txt.wx_str(), sw.Time()));
+            Manager::Get()->GetLogManager()->DebugLog(wxString::Format("%s take %ld ms", txt, sw.Time()));
 #endif // EDITOR_HOOK_PERFORMANCE_MEASURE
         }
 

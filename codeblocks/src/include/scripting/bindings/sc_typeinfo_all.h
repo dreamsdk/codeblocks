@@ -1,0 +1,362 @@
+/*
+ * This file is part of the Code::Blocks IDE and licensed under the GNU Lesser General Public License, version 3
+ * http://www.gnu.org/licenses/lgpl-3.0.html
+ *
+ * $Revision$
+ * $Id$
+ * $HeadURL$
+ */
+
+#ifndef CB_SC_TYPEINFO_ALL_H
+#define CB_SC_TYPEINFO_ALL_H
+
+#include "cbeditor.h" // needed for alignof(cbEditor)
+#include "cbproject.h" // needed for alignof(cbProject)
+
+class CompilerFactory;
+class EditorManager;
+class FileTreeData;
+class PluginInfo;
+class ProjectFile;
+class ProjectManager;
+class ScriptingManager;
+class UserVariableManager;
+
+class TiXmlAttribute;
+class TiXmlDocument;
+class TiXmlElement;
+class TiXmlHandle;
+class TiXmlNode;
+class TiXmlPrinter;
+
+/// @file
+/// This file contains type traits for all C++ classes/structs known to Squirrel through our
+/// binding.
+/// The traits provide information about:
+///  * the type tag which should  be unique;
+///  * the squirrel name of the class/struct;
+///  * the base class of the class/struct;
+///  * the type use for calling release hooks (@sa ReleaseHookType);
+///  * the alignment of the class if it must be non-default (@sa TypeAlignment for details);
+
+namespace ScriptBindings
+{
+
+enum class TypeTag : uint32_t
+{
+    Unassigned = 0,
+    wxString = 0x8000,
+    wxColour,
+    wxPoint,
+    wxSize,
+    wxArrayString,
+    wxFileName,
+    cbEditor,
+    cbProject,
+    CompileOptionsBase,
+    CompileTargetBase,
+    CompilerFactory,
+    ConfigManager,
+    EditArrayFileDlg,
+    EditArrayOrderDlg,
+    EditArrayStringDlg,
+    EditPairDlg,
+    EditPathDlg,
+    EditorBase,
+    EditorManager,
+    FileTreeData,
+    GenericMultiLineNotesDlg,
+    IONamespace,
+    PluginInfo,
+    ProgressDialog,
+    ProjectBuildTarget,
+    ProjectFile,
+    ProjectManager,
+    ScriptingManager,
+    UserVariableManager,
+
+    TiXmlDocument,
+    TiXmlElement,
+    TiXmlAttribute,
+    TiXmlHandle,
+    TiXmlNode,
+    TiXmlPrinter,
+
+    Last
+};
+
+template<>
+struct TypeInfo<wxString>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxString);
+    static constexpr const SQChar *className = _SC("wxString");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<wxArrayString>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxArrayString);
+    static constexpr const SQChar *className = _SC("wxArrayString");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<wxColour>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxColour);
+    static constexpr const SQChar *className = _SC("wxColour");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<wxPoint>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxPoint);
+    static constexpr const SQChar *className = _SC("wxPoint");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<wxSize>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxSize);
+    static constexpr const SQChar *className = _SC("wxSize");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<wxFileName>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::wxFileName);
+    static constexpr const SQChar *className = _SC("wxFileName");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<cbEditor>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::cbEditor);
+    static constexpr const SQChar *className = _SC("cbEditor");
+    using baseClass = EditorBase;
+};
+
+template<>
+struct TypeInfo<cbProject>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::cbProject);
+    static constexpr const SQChar *className = _SC("cbProject");
+    using baseClass = CompileTargetBase;
+};
+
+template<>
+struct TypeInfo<ConfigManager>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::ConfigManager);
+    static constexpr const SQChar *className = _SC("ConfigManager");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<CompileOptionsBase>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::CompileOptionsBase);
+    static constexpr const SQChar *className = _SC("CompileOptionsBase");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<CompileTargetBase>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::CompileTargetBase);
+    static constexpr const SQChar *className = _SC("CompileTargetBase");
+    using baseClass = CompileOptionsBase;
+};
+
+template<>
+struct TypeInfo<CompilerFactory>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::CompilerFactory);
+    static constexpr const SQChar *className = _SC("CompilerFactory");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<EditorBase>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::EditorBase);
+    static constexpr const SQChar *className = _SC("EditorBase");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<EditorManager> {
+    static const uint32_t typetag = uint32_t(TypeTag::EditorManager);
+    static constexpr const SQChar *className = _SC("EditorManager");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<FileTreeData>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::FileTreeData);
+    static constexpr const SQChar *className = _SC("FileTreeData");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<PluginInfo>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::PluginInfo);
+    static constexpr const SQChar *className = _SC("PluginInfo");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<ProjectBuildTarget>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::ProjectBuildTarget);
+    static constexpr const SQChar *className = _SC("ProjectBuildTarget");
+    using baseClass = CompileTargetBase;
+};
+
+class ProgressDialog;
+
+template<>
+struct TypeInfo<ProgressDialog> {
+    static const uint32_t typetag = uint32_t(TypeTag::ProgressDialog);
+    static constexpr const SQChar *className = _SC("ProgressDialog");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<ProjectFile>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::ProjectFile);
+    static constexpr const SQChar *className = _SC("ProjectFile");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<ProjectManager>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::ProjectManager);
+    static constexpr const SQChar *className = _SC("ProjectManager");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<ScriptingManager>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::ScriptingManager);
+    static constexpr const SQChar *className = _SC("ScriptingManager");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<UserVariableManager>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::UserVariableManager);
+    static constexpr const SQChar *className = _SC("UserVariableManager");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<TiXmlNode>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlNode);
+    static constexpr const SQChar *className = _SC("TiXmlNode");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<TiXmlPrinter>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlPrinter );
+    static constexpr const SQChar *className = _SC("TiXmlPrinter");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<TiXmlDocument>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlDocument);
+    static constexpr const SQChar *className = _SC("TiXmlDocument");
+    using baseClass = TiXmlNode;
+};
+
+template<>
+struct TypeInfo<TiXmlElement>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlElement);
+    static constexpr const SQChar *className = _SC("TiXmlElement");
+    using baseClass = TiXmlNode;
+};
+
+template<>
+struct TypeInfo<TiXmlHandle>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlHandle);
+    static constexpr const SQChar *className = _SC("TiXmlHandle");
+    using baseClass = void;
+};
+
+template<>
+struct TypeInfo<TiXmlAttribute>
+{
+    static const uint32_t typetag = uint32_t(TypeTag::TiXmlAttribute);
+    static constexpr const SQChar *className = _SC("TiXmlAttribute");
+    using baseClass = void;
+};
+
+template<>
+struct ReleaseHookType<cbEditor>
+{
+    using type = void;
+};
+
+template<>
+struct ReleaseHookType<EditorManager>
+{
+    using type = void;
+};
+
+template<>
+struct ReleaseHookType<ProjectManager>
+{
+    using type = void;
+};
+
+template<>
+struct ReleaseHookType<ScriptingManager>
+{
+    using type = void;
+};
+
+template<>
+struct TypeAlignment<CompileTargetBase>
+{
+    static constexpr const int value = TypeAlignment<cbProject>::value;
+};
+
+template<>
+struct TypeAlignment<CompileOptionsBase>
+{
+    static constexpr const int value = TypeAlignment<CompileTargetBase>::value;
+};
+
+template<>
+struct TypeAlignment<ProjectBuildTarget>
+{
+    static constexpr const int value = TypeAlignment<CompileTargetBase>::value;
+};
+
+template<>
+struct TypeAlignment<EditorBase>
+{
+    static constexpr const int value = TypeAlignment<cbEditor>::value;
+};
+
+} // namespace ScriptBindings
+
+#endif // CB_SC_TYPEINFO_ALL_H

@@ -66,8 +66,8 @@ class DLLIMPORT cbEditor : public EditorBase
             stVertical
         };
 
-        /** Don't use this. It throws an exception if you do. */
-        void operator=(cb_unused const cbEditor& rhs){ cbThrow(_T("Can't assign an cbEditor* !!!")); }
+        cbEditor(const cbEditor&) = delete;
+        cbEditor& operator=(const cbEditor&) = delete;
 
         // properties
 
@@ -253,6 +253,12 @@ class DLLIMPORT cbEditor : public EditorBase
         /** Highlight the specified line as error. */
         virtual void SetErrorLine(int line);
 
+        /** Highlight the specified line as warning. */
+        void SetWarningLine(int line) const;
+
+        /** Delete all error and warning highlighting. */
+        void DeleteAllErrorAndWarningMarkers() const;
+
         /** Split the editor window.
           * @param split The type of split: horizontal or vertical. */
         void Split(SplitType split);
@@ -315,8 +321,6 @@ class DLLIMPORT cbEditor : public EditorBase
         /// Should be called after new file is created. Calling SaveAs does the same thing.
         void SetEditorStyle();
     private:
-        cbEditor(cb_unused const cbEditor& rhs); // prevent copy construction
-
         // functions
         bool LineHasMarker(int marker, int line = -1) const;
         void MarkerToggle(int marker, int line = -1);

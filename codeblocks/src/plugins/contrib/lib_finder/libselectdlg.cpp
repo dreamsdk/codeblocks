@@ -16,34 +16,34 @@
 * along with wxSmith; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
 *
-* $Revision: 10290 $
-* $Id: libselectdlg.cpp 10290 2015-05-15 10:58:40Z jenslody $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/lib_finder/libselectdlg.cpp $
+* $Revision: 13551 $
+* $Id: libselectdlg.cpp 13551 2024-09-14 04:37:24Z mortenmacfly $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/lib_finder/libselectdlg.cpp $
 */
 
 #include "libselectdlg.h"
 
 //(*InternalHeaders(LibSelectDlg)
-#include <wx/checklst.h>
-#include <wx/checkbox.h>
-#include <wx/sizer.h>
 #include <wx/button.h>
-#include <wx/radiobut.h>
-#include <wx/string.h>
+#include <wx/checkbox.h>
+#include <wx/checklst.h>
 #include <wx/intl.h>
+#include <wx/radiobut.h>
+#include <wx/sizer.h>
 #include <wx/stattext.h>
+#include <wx/string.h>
 //*)
 
 #include <manager.h>
 #include <configmanager.h>
 
 //(*IdInit(LibSelectDlg)
-const long LibSelectDlg::ID_STATICTEXT1 = wxNewId();
-const long LibSelectDlg::ID_CHECKLISTBOX1 = wxNewId();
-const long LibSelectDlg::ID_RADIOBUTTON1 = wxNewId();
-const long LibSelectDlg::ID_RADIOBUTTON2 = wxNewId();
-const long LibSelectDlg::ID_RADIOBUTTON3 = wxNewId();
-const long LibSelectDlg::ID_CHECKBOX1 = wxNewId();
+const wxWindowID LibSelectDlg::ID_STATICTEXT1 = wxNewId();
+const wxWindowID LibSelectDlg::ID_CHECKLISTBOX1 = wxNewId();
+const wxWindowID LibSelectDlg::ID_RADIOBUTTON1 = wxNewId();
+const wxWindowID LibSelectDlg::ID_RADIOBUTTON2 = wxNewId();
+const wxWindowID LibSelectDlg::ID_RADIOBUTTON3 = wxNewId();
+const wxWindowID LibSelectDlg::ID_CHECKBOX1 = wxNewId();
 //*)
 
 BEGIN_EVENT_TABLE(LibSelectDlg,wxScrollingDialog)
@@ -56,8 +56,8 @@ LibSelectDlg::LibSelectDlg(wxWindow* parent,const wxArrayString& Names,bool addO
 {
 	//(*Initialize(LibSelectDlg)
 	wxBoxSizer* BoxSizer1;
-	wxStdDialogButtonSizer* StdDialogButtonSizer1;
 	wxStaticBoxSizer* StaticBoxSizer1;
+	wxStdDialogButtonSizer* StdDialogButtonSizer1;
 
 	Create(parent, wxID_ANY, _("Setting up libraries"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE, _T("wxID_ANY"));
 	BoxSizer1 = new wxBoxSizer(wxVERTICAL);
@@ -83,7 +83,6 @@ LibSelectDlg::LibSelectDlg(wxWindow* parent,const wxArrayString& Names,bool addO
 	StdDialogButtonSizer1->Realize();
 	BoxSizer1->Add(StdDialogButtonSizer1, 0, wxLEFT|wxRIGHT|wxEXPAND, 10);
 	SetSizer(BoxSizer1);
-	BoxSizer1->Fit(this);
 	BoxSizer1->SetSizeHints(this);
 	Center();
 	//*)

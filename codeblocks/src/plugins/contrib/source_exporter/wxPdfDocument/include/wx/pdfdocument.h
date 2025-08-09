@@ -209,6 +209,18 @@ public:
   */
   virtual double GetImageScale();
 
+  /// Returns the page orientation.
+  /**
+  * \return page orientation.
+  */
+  virtual int GetPageOrientation();
+
+  /// Returns the default page orientation.
+  /**
+  * \return page orientation.
+  */
+  virtual int GetDefaultPageOrientation();
+
   /// Returns the page width in units.
   /**
   * \return int page width.
@@ -348,6 +360,17 @@ public:
                               wxPdfLayout layout = wxPDF_LAYOUT_CONTINUOUS,
                               double zoomFactor = 100.);
 
+  /// Defines the paper handling when printing (simplex / duplex).
+  /**
+  * The paper handling option that shall be used when printing the file from the print dialog.
+  * \param paperHandling Can be one of the following values:
+  *   \li wxPDF_PAPERHANDLING_DEFAULT: use the default of the viewer app
+  *   \li wxPDF_PAPERHANDLING_SIMPLEX: print single-sided
+  *   \li wxPDF_PAPERHANDLING_DUPLEX_FLIP_SHORT_EDGE: duplex and flip at the short edge of the sheet
+  *   \li wxPDF_PAPERHANDLING_DUPLEX_FLIP_LONG_EDGE: duplex and flip at the long edge of the sheet
+  */
+  virtual void SetPaperHandling(wxPdfPaperHandling paperHandling);
+
   /// Enable or disable kerning.
   /**
   * When enabled, kerning is applied to text output.
@@ -374,6 +397,7 @@ public:
   *   \li wxPDF_VIEWER_FITWINDOW:       Fit window to page size
   *   \li wxPDF_VIEWER_CENTERWINDOW:    Center window on screen
   *   \li wxPDF_VIEWER_DISPLAYDOCTITLE: Display document title in title bar
+  *   \li wxPDF_VIEWER_NOPRINTSCALING:  Set page scaling to none when printing
   */
   virtual void SetViewerPreferences(int preferences = 0);
 
@@ -461,9 +485,10 @@ public:
   *   \li wxPORTRAIT
   *   \li wxLANDSCAPE
   * The default value is the one passed to the constructor.
+  * \param useDefaultPageSize Flag whether to use the default page size or the current page size
   * \see FPDF(), Header(), Footer(), SetMargins()
   */
-  virtual void AddPage(int orientation = -1);
+  virtual void AddPage(int orientation = -1, bool useDefaultPageSize = true);
 
   virtual void AddPage(int orientation, wxPaperSize format);
 
@@ -515,13 +540,35 @@ public:
 
   /// Add an image pattern
   /**
-  * Add a pattern which can be reference in draw or fill pattern methods
+  * Add an image pattern which can be referenced in draw or fill pattern methods
   * \param patternName the name of the pattern (case sensitive)
-  * \param image the image to use for the pattern
-  * \param width the display width
-  * \param height the display height
+  * \param image the image to be used as a pattern
+  * \param width the display width of the pattern
+  * \param height the display height of the pattern
   */
   virtual bool AddPattern(const wxString& patternName, const wxImage& image, double width, double height);
+
+  /// Add a template based pattern
+  /**
+  * Add a template based pattern which can be referenced in draw or fill pattern methods
+  * \param patternName the name of the pattern (case sensitive)
+  * \param templateId the id of the template to be used as a pattern
+  * \param width the display width of the pattern
+  * \param height the display height of the pattern
+  */
+  virtual bool AddPattern(const wxString& patternName, int templateId, double width, double height);
+
+  /// Add a hatched pattern
+  /**
+  * Add a hatched pattern which can be referenced in draw or fill pattern methods
+  * \param patternName the name of the pattern (case sensitive)
+  * \param patternStyle the pattern style to be used as a pattern
+  * \param width the display width
+  * \param height the display height
+  * \param drawColour the foreground colour used for hatching
+  * \param fillColour the background colour to fill the pattern background (optional)
+  */
+  virtual bool AddPattern(const wxString& patternName, wxPdfPatternStyle patternStyle, double width, double height, const wxColour& drawColour, const wxColour& fillColour = wxColour());
 
   /// Defines the colour used for all drawing operations.
   /**
@@ -787,9 +834,10 @@ public:
   /**
   * A font must be selected.
   * \param s The string whose length is to be computed
+  * \param charSpacing Extra amount of spacing between characters (optional)
   * \return int
   */
-  virtual double GetStringWidth(const wxString& s);
+  virtual double GetStringWidth(const wxString& s, double charSpacing = 0);
 
   /// Defines the line width.
   /**
@@ -1027,6 +1075,20 @@ public:
   */
   virtual void Shape(const wxPdfShape& shape, int style = wxPDF_STYLE_DRAW);
 
+  /// Performs a rotation around the current position.
+  /**
+  * \param angle angle in degrees.
+  *
+  * The rotation affects all elements which are printed after the method call
+  * (with the exception of the clickable areas).
+  *
+  * Remarks:
+  * \li Only the display is altered. The GetX() and GetY() methods are not affected,
+  *  nor the automatic page break mechanism.
+  * \li Rotation is not kept from page to page. Each page begins with a null rotation.
+  */
+  virtual void Rotate(double angle);
+
   /// Performs a rotation around a given center.
   /**
   * \param angle angle in degrees.
@@ -1041,7 +1103,7 @@ public:
   *  nor the automatic page break mechanism.
   * \li Rotation is not kept from page to page. Each page begins with a null rotation.
   */
-  virtual void Rotate(double angle, double x = -1, double y = -1);
+  virtual void Rotate(double angle, double x, double y);
 
   /// Sets the font embedding mode
   /**
@@ -1887,56 +1949,99 @@ public:
   */
   virtual void StartTransform();
 
+  /// Performs scaling in X direction only with the current position as the scaling center.
+  /**
+  * A scaling transformation is applied for the X direction.
+  * \param sx: scaling factor for width as percent. 0 is not allowed.
+  */
+  virtual bool ScaleX(double sx);
+
   /// Performs scaling in X direction only
   /**
   * A scaling transformation is applied for the X direction.
   * \param sx: scaling factor for width as percent. 0 is not allowed.
-  * \param x: abscissa of the scaling center. Default is current x position
-  * \param y: ordinate of the scaling center. Default is current y position
+  * \param x: abscissa of the scaling center.
+  * \param y: ordinate of the scaling center.
   */
-  virtual bool ScaleX(double sx, double x = -1, double y = -1);
+  virtual bool ScaleX(double sx, double x, double y);
+
+  /// Performs scaling in Y direction only with the current position as the scaling center.
+  /**
+  * A scaling transformation is applied for the Y direction.
+  * \param sy: scaling factor for height as percent. 0 is not allowed.
+  */
+  virtual bool ScaleY(double sy);
 
   /// Performs scaling in Y direction only
   /**
   * A scaling transformation is applied for the Y direction.
   * \param sy: scaling factor for height as percent. 0 is not allowed.
-  * \param x: abscissa of the scaling center. Default is current x position
-  * \param y: ordinate of the scaling center. Default is current y position
+  * \param x: abscissa of the scaling center.
+  * \param y: ordinate of the scaling center.
   */
-  virtual bool ScaleY(double sy, double x = -1, double y = -1);
+  virtual bool ScaleY(double sy, double x, double y);
+
+  /// Performs equal scaling in X and Y direction with the current position as the scaling center.
+  /**
+  * A scaling transformation is applied for both - X and Y - directions.
+  * \param s: scaling factor for width and height as percent. 0 is not allowed.
+  */
+  virtual bool ScaleXY(double s);
 
   /// Performs equal scaling in X and Y direction
   /**
   * A scaling transformation is applied for both - X and Y - directions.
   * \param s: scaling factor for width and height as percent. 0 is not allowed.
-  * \param x: abscissa of the scaling center. Default is current x position
-  * \param y: ordinate of the scaling center. Default is current y position
+  * \param x: abscissa of the scaling center.
+  * \param y: ordinate of the scaling center.
   */
-  virtual bool ScaleXY(double s, double x = -1, double y = -1);
+  virtual bool ScaleXY(double s, double x, double y);
+
+  /// Performs scaling in X and Y direction with the current position as the scaling center.
+  /**
+  * A scaling transformation is applied independently for X and Y direction.
+  * \param sx: scaling factor for width in percent. 0 is not allowed.
+  * \param sy: scaling factor for height in percent. 0 is not allowed.
+  */
+  virtual bool Scale(double sx, double sy);
 
   /// Performs scaling in X and Y direction
   /**
   * A scaling transformation is applied independently for X and Y direction.
   * \param sx: scaling factor for width in percent. 0 is not allowed.
   * \param sy: scaling factor for height in percent. 0 is not allowed.
-  * \param x: abscissa of the scaling center. Default is current x position
-  * \param y: ordinate of the scaling center. Default is current y position
+  * \param x: abscissa of the scaling center.
+  * \param y: ordinate of the scaling center.
   */
-  virtual bool Scale(double sx, double sy, double x = -1, double y = -1);
+  virtual bool Scale(double sx, double sy, double x, double y);
+
+  /// Performs a horizontal mirroring transformation
+  /**
+  * Alias for scaling -100% in x-direction
+  * \note The current position is used as the scaling center.
+  */
+  virtual void MirrorH();
 
   /// Performs a horizontal mirroring transformation
   /**
   * Alias for scaling -100% in x-direction
   * \param x: abscissa of the axis of reflection
   */
-  virtual void MirrorH(double x = -1);
+  virtual void MirrorH(double x);
+
+  /// Performs a vertical mirroring transformation
+  /**
+  * Alias for scaling -100% in y-direction
+  * \note The current position is used as the scaling center.
+  */
+  virtual void MirrorV();
 
   /// Performs a vertical mirroring transformation
   /**
   * Alias for scaling -100% in y-direction
   * \param y: abscissa of the axis of reflection
   */
-  virtual void MirrorV(double y = -1);
+  virtual void MirrorV(double y);
 
   /// Moves the X origin
   /**
@@ -1957,13 +2062,25 @@ public:
   */
   virtual void Translate(double tx, double ty);
 
+  /// Performs a skewing in X direction only with the current position as the skewing center.
+  /**
+  * \param xAngle: angle in degrees between -90 (skew to the left) and 90 (skew to the right)
+  */
+  virtual bool SkewX(double xAngle);
+
   /// Performs a skewing in both X direction only
   /**
   * \param xAngle: angle in degrees between -90 (skew to the left) and 90 (skew to the right)
   * \param x: abscissa of the skewing center. default is current x position
   * \param y: ordinate of the skewing center. default is current y position
   */
-  virtual bool SkewX(double xAngle, double x = -1, double y = -1);
+  virtual bool SkewX(double xAngle, double x, double y);
+
+  /// Performs a skewing in Y direction only with the current position as the skewing center.
+  /**
+  * \param yAngle: angle in degrees between -90 (skew to the bottom) and 90 (skew to the top)
+  */
+  virtual bool SkewY(double yAngle);
 
   /// Performs a skewing in Y direction only
   /**
@@ -1971,7 +2088,14 @@ public:
   * \param x: abscissa of the skewing center. default is current x position
   * \param y: ordinate of the skewing center. default is current y position
   */
-  virtual bool SkewY(double yAngle, double x = -1, double y = -1);
+  virtual bool SkewY(double yAngle, double x, double y);
+
+  /// Performs a skewing in both X and Y directions with the current position as the skewing center.
+  /**
+  * \param xAngle: angle in degrees between -90 (skew to the left) and 90 (skew to the right)
+  * \param yAngle: angle in degrees between -90 (skew to the bottom) and 90 (skew to the top)
+  */
+  virtual bool Skew(double xAngle, double yAngle);
 
   /// Performs a skewing in both X and Y directions
   /**
@@ -1980,7 +2104,7 @@ public:
   * \param x: abscissa of the skewing center. default is current x position
   * \param y: ordinate of the skewing center. default is current y position
   */
-  virtual bool Skew(double xAngle, double yAngle, double x = -1, double y = -1);
+  virtual bool Skew(double xAngle, double yAngle, double x, double y);
 
   virtual void Transform( double a, double b, double c, double d, double tx, double ty );
 
@@ -2315,10 +2439,22 @@ public:
   /// Uses a template in current page or in another template
   /**
   * Uses the specified template just like an image in the current page or
+  * in another template at the current position with default size.
+  *
+  * The width or height is calculated using GetTemplateSize internally.
+  *
+  * \param templateId A valid template ID
+  * \see BeginTemplate(), EndTemplate(), ImportPage()
+  */
+  virtual void UseTemplate(int templateId);
+
+  /// Uses a template in current page or in another template
+  /**
+  * Uses the specified template just like an image in the current page or
   * in another template.
   *
-  * All parameters are optional. The width or height is calculated using
-  * GetTemplateSize internally.
+  * Width and height parameters are optional. The width or height is calculated
+  * using GetTemplateSize internally.
   * By default the size as defined by BeginTemplate is used.
   *
   * \param templateId A valid template ID
@@ -2331,7 +2467,7 @@ public:
   * Attention: The template may be displayed distorted, if both width and height
   * are given with values > 0 and do not correspond to the dimensions of the template.
   */
-  virtual void UseTemplate(int templateId, double x = -1, double y = -1, double width = 0, double height = 0);
+  virtual void UseTemplate(int templateId, double x, double y, double width = 0, double height = 0);
 
   /// Sets a source file for the external template feature.
   /**
@@ -2501,6 +2637,23 @@ public:
                           const wxString& attachName = wxEmptyString,
                           const wxString& description = wxEmptyString);
 
+  /// Set PDF/A-1b conformance
+  /**
+  * Sets the document conformance to PDF/A-1 Level B
+  * \param enable flag whether PDF/A-1b conformance should be enabled
+  * 
+  * \note It is the user's responsibility to use only PDF features that in fact do conform with PDF/A-1b,
+  * i.e., all fonts embedded, no transparency/alpha channel, no document protection
+  */
+  void SetPdfA1Conformance(bool enable);
+
+  /// Get PDF/A-1b conformance
+  /**
+  * Gets the document conformance intent for PDF/A-1 Level B
+  * \return flag whether PDF/A-1b conformance is enabled
+  */
+  bool GetPdfA1Conformance() const { return m_isPdfA1; }
+
   /// Set message translation mode
   /**
   * Sets the message translation mode which controls the handling of msg tags in XML output
@@ -2561,10 +2714,11 @@ protected:
   /**
   * A font must be selected.
   * \param s The string whose length is to be computed
+  * \param charSpacing Extra amount of spacing between characters (optional)
   * \return int
   * \note This method expects the text already to be preprocessed in respect to visual layout.
   */
-  virtual double DoGetStringWidth(const wxString& s);
+  virtual double DoGetStringWidth(const wxString& s, double charSpacing = 0);
 
   /// Prints a cell (rectangular area) with optional borders, background colour and character string.
   /**
@@ -2632,6 +2786,9 @@ protected:
   /// Add spot colours
   virtual void PutSpotColours();
 
+  /// Initialize object ids of patterns
+  virtual void InitPatternIds();
+
   /// Add patterns
   virtual void PutPatterns();
 
@@ -2665,7 +2822,13 @@ protected:
   /// Add info.
   virtual void PutInfo();
 
-  /// Addcatalog
+  /// Add colour profile
+  virtual void PutColourProfile();
+
+  /// Add XMP meta data
+  virtual void PutMetaData();
+
+  /// Add catalog
   virtual void PutCatalog();
 
   /// Add object dictionary
@@ -2782,9 +2945,18 @@ protected:
 
   void LoadZapfDingBats();
 
+  /**
+   * \brief 
+   * \return Get the height of the header at the top of the page
+   */
+   double GetHeaderHeight() const; 
+
 private:
   /// Return a string key by a font name and a font encoding
   wxString MakeFontKey(const wxString& fontName, const wxString& fontEncoding);
+
+  /// Apply viewport for image tag in markup handling
+  wxArrayDouble ApplyViewport(const wxString& viewport, double width, double height);
 
 private:
   bool                 m_yAxisOriginTop;      ///< flag whether the origin of the y axis resides at the top (or bottom) of the page
@@ -2806,7 +2978,9 @@ private:
   wxSize               m_defPageSize;         ///< default page width
   wxSize               m_curPageSize;         ///< current page width
   wxPdfPageSizeMap*    m_pageSizes;           ///< array indicating page size changes
+  wxXmlNode*           m_xmlRoot;             ///< root node of current markup tree
 
+  wxString             m_userUnit;            ///< string representation of user unit
   double               m_k;                   ///< scale factor (number of points in user unit)
   double               m_fwPt;                ///< width of page format in points
   double               m_fhPt;                ///< height of page format in points
@@ -2817,6 +2991,7 @@ private:
   double               m_w;                   ///< current width of page in user unit
   double               m_h;                   ///< current height of page in user unit
   double               m_imgscale;            ///< image scale factor
+  double               m_headerHeight;        ///< height of the user defined header
 
   double               m_tMargin;             ///< top margin
   double               m_bMargin;             ///< page break margin
@@ -2872,6 +3047,7 @@ private:
   bool                 m_colourFlag;          ///< indicates whether fill and text colours are different
   bool                 m_wsApply;             ///< Flag whether to apply explicit word spacing
   double               m_ws;                  ///< word spacing
+  double               m_charSpacing;         ///< character spacing
   wxPdfTextRenderMode  m_textRenderMode;      ///< text render mode
 
   bool                 m_autoPageBreak;       ///< automatic page breaking
@@ -2880,6 +3056,7 @@ private:
   wxPdfZoom            m_zoomMode;            ///< zoom display mode
   double               m_zoomFactor;          ///< zoom factor
   wxPdfLayout          m_layoutMode;          ///< layout display mode
+  wxPdfPaperHandling   m_paperHandling;       ///< simplex / duplex printing
   int                  m_viewerPrefs;         ///< viewer preferences
 
   wxString             m_title;               ///< title
@@ -2934,6 +3111,11 @@ private:
   // File attachments
   int                  m_nAttachments;        ///< attachments object number
   wxPdfAttachmentMap*  m_attachments;         ///< array of file attachments
+
+  // PDF/A-1 conformance
+  bool                 m_isPdfA1;             ///< flag whether document should conform with PDF/A-1
+  int                  m_nMetaData;           ///< object number of meta data
+  int                  m_nColourProfile;      ///< object number of colour profile
 
   bool                 m_translate;           ///< flag whether messages in msg tags should be translated
 

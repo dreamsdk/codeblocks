@@ -1,6 +1,7 @@
 
 #include "fpimagelist.h"
 
+#include <sdk.h>
 #ifndef CB_PRECOMP
     #include <wx/string.h>
     #include <wx/bitmap.h>
@@ -22,179 +23,72 @@ FPImageList::~FPImageList()
 
 void FPImageList::CreateImageList(int imSize)
 {
-    wxString prefix2;
-    if (imSize <= 19)
+    m_ImSize = imSize;
+    static const std::string images[41][2] =
     {
-        m_pImlist = new wxImageList(16, 16);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/16x16/");
-    }
-    else if (imSize <= 23)
-    {
-        m_pImlist = new wxImageList(20, 20);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/20x20/");
-    }
-    else if (imSize <= 27)
-    {
-        m_pImlist = new wxImageList(24, 24);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/24x24/");
-    }
-    else if (imSize <= 31)
-    {
-        m_pImlist = new wxImageList(28, 28);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/28x28/");
-    }
-    else if (imSize <= 39)
-    {
-        m_pImlist = new wxImageList(32, 32);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/32x32/");
-    }
-    else if (imSize <= 47)
-    {
-        m_pImlist = new wxImageList(40, 40);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/40x40/");
-    }
-    else if (imSize <= 55)
-    {
-        m_pImlist = new wxImageList(48, 48);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/48x48/");
-    }
-    else if (imSize <= 63)
-    {
-        m_pImlist = new wxImageList(56, 56);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/56x56/");
-    }
-    else
-    {
-        m_pImlist = new wxImageList(64, 64);
-        prefix2 = ConfigManager::GetDataFolder() + _T("/images/fortranproject/64x64/");
-    }
-    wxBitmap bmp;
+    {"ctor_public", "use"},
+    {"class_public", "module"},
+    {"method_public", "subroutine"},
+    {"method_protected", "function"},
+    {"method_private", "program"},
+    {"typedef", "type"},
+    {"interface", "interface"},
+    {"funcs_folder", "function_folder"},
+    {"others_folder", "others_folder"},
+    {"symbols_folder", "symbols_folder"},
+    {"preproc", "preproc"},
+    {"var_public", "variable"},
+    {"interface_function", "interface_function"},
+    {"interface_subroutine", "interface_subroutine"},
+    {"procedure", "procedure"},
+    {"subroutine_private", "subroutine_private"},
+    {"function_private", "function_private"},
+    {"var_private", "variable_private"},
+    {"var_protected", "variable_protected"},
+    {"typedef_private", "type_private"},
+    {"interface_private", "interface_private"},
+    {"access_list_private", "access_list_private"},
+    {"access_list_public", "access_list_public"},
+    {"access_list_protected", "access_list_protected"},
+    {"procedure_private", "procedure_private"},
+    {"interface_function_private", "interface_function_private"},
+    {"interface_subroutine_private", "interface_subroutine_private"},
+    {"class", "submodule"},
+    {"interface_subroutine_gen_private", "interface_sub_gen_private"},
+    {"interface_subroutine_gen", "interface_sub_gen"},
+    {"interface_function_gen_private", "interface_fun_gen_private"},
+    {"interface_function_gen", "interface_fun_gen"},
+    {"typedef_abstract", "type_abstract"},
+    {"typedef_abstract_private", "type_abstract_private"},
+    {"dtor_public", "procedure_final"},
+    {"subroutine_call", "subroutine_call"},
+    {"function_call", "function_call"},
+    {"subroutine_calledby", "subroutine_calledby"},
+    {"function_calledby", "function_calledby"},
+    {"typedefs_folder", "typedefs_folder"},
+    {"unknown", "unknown"}
+    };
 
-    bmp = cbLoadBitmap(prefix2 + _T("ctor_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["use"] = 0;
-    bmp = cbLoadBitmap(prefix2 + _T("class_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["module"] = 1;
-    bmp = cbLoadBitmap(prefix2 + _T("method_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["subroutine"] = 2;
-    bmp = cbLoadBitmap(prefix2 + _T("method_protected.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["function"] = 3;
-    bmp = cbLoadBitmap(prefix2 + _T("method_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["program"] = 4;
-    bmp = cbLoadBitmap(prefix2 + _T("typedef.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["type"] = 5;
-    bmp = cbLoadBitmap(prefix2 + _T("interface.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface"] = 6;
-    bmp = cbLoadBitmap(prefix2 + _T("funcs_folder.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["function_folder"] = 7;
-    bmp = cbLoadBitmap(prefix2 + _T("others_folder.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["others_folder"] = 8;
-    bmp = cbLoadBitmap(prefix2 + _T("symbols_folder.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["symbols_folder"] = 9;
-    bmp = cbLoadBitmap(prefix2 + _T("preproc.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["preproc"] = 10;
-    bmp = cbLoadBitmap(prefix2 + _T("var_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["variable"] = 11;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_function.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_function"] = 12;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_subroutine.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_subroutine"] = 13;
-    bmp = cbLoadBitmap(prefix2 + _T("procedure.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["procedure"] = 14;
+    imSize = cbFindMinSize16to64(imSize);
+    m_pImlist = new wxImageList(imSize, imSize);
 
-    bmp = cbLoadBitmap(prefix2 + _T("subroutine_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["subroutine_private"] = 15;
-    bmp = cbLoadBitmap(prefix2 + _T("function_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["function_private"] = 16;
-    bmp = cbLoadBitmap(prefix2 + _T("var_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["variable_private"] = 17;
-    bmp = cbLoadBitmap(prefix2 + _T("var_protected.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["variable_protected"] = 18;
-    bmp = cbLoadBitmap(prefix2 + _T("typedef_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["type_private"] = 19;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_private"] = 20;
-    bmp = cbLoadBitmap(prefix2 + _T("access_list_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["access_list_private"] = 21;
-    bmp = cbLoadBitmap(prefix2 + _T("access_list_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["access_list_public"] = 22;
-    bmp = cbLoadBitmap(prefix2 + _T("access_list_protected.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["access_list_protected"] = 23;
-    bmp = cbLoadBitmap(prefix2 + _T("procedure_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["procedure_private"] = 24;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_function_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_function_private"] = 25;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_subroutine_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_subroutine_private"] = 26;
-    bmp = cbLoadBitmap(prefix2 + _T("class.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["submodule"] = 27;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_subroutine_gen_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_sub_gen_private"] = 28;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_subroutine_gen.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_sub_gen"] = 29;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_function_gen_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_fun_gen_private"] = 30;
-    bmp = cbLoadBitmap(prefix2 + _T("interface_function_gen.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["interface_fun_gen"] = 31;
-    bmp = cbLoadBitmap(prefix2 + _T("typedef_abstract.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["type_abstract"] = 32;
-    bmp = cbLoadBitmap(prefix2 + _T("typedef_abstract_private.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["type_abstract_private"] = 33;
-    bmp = cbLoadBitmap(prefix2 + _T("dtor_public.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["procedure_final"] = 34;
-    bmp = cbLoadBitmap(prefix2 + _T("subroutine_call.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["subroutine_call"] = 35;
-    bmp = cbLoadBitmap(prefix2 + _T("function_call.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["function_call"] = 36;
-    bmp = cbLoadBitmap(prefix2 + _T("subroutine_calledby.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["subroutine_calledby"] = 37;
-    bmp = cbLoadBitmap(prefix2 + _T("function_calledby.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["function_calledby"] = 38;
-    bmp = cbLoadBitmap(prefix2 + _T("typedefs_folder.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["typedefs_folder"] = 39;
+    wxString prefix(ConfigManager::GetDataFolder() + "/FortranProject.zip#zip:/images/fortranproject/");
+#if wxCHECK_VERSION(3, 1, 6)
+    prefix << "svg/";
+#else
+    prefix << wxString::Format("%dx%d/", imSize, imSize);
+#endif
 
-    bmp = cbLoadBitmap(prefix2 + _T("unknown.png"), wxBITMAP_TYPE_PNG);
-    m_pImlist->Add(bmp);
-    m_ImgNr["unknown"] = 40;
+    for (int i = 0; i < 41; ++i)
+    {
+#if wxCHECK_VERSION(3, 1, 6)
+        wxBitmap bmp = cbLoadBitmapBundleFromSVG(prefix + images[i][0] + ".svg", wxSize(imSize, imSize)).GetBitmap(wxDefaultSize);
+#else
+        wxBitmap bmp = cbLoadBitmap(prefix + images[i][0] + ".png");
+#endif
+        m_pImlist->Add(bmp);
+        m_ImgNr[images[i][1]] = i;
+    }
 
     m_ImgNr["none"] = -1;
 }
@@ -255,14 +149,14 @@ int FPImageList::GetTokenKindImageIdx(TokenF* token)
             }
         case tkInterface:
             {
-                if (token->m_TypeDefinition.IsSameAs(_T("subroutine")))
+                if (token->m_TypeDefinition.IsSameAs("subroutine"))
                 {
                     if (token->m_TokenAccess == taPrivate)
                         return m_ImgNr["interface_sub_gen_private"];
                     else
                         return m_ImgNr["interface_sub_gen"];
                 }
-                else if (token->m_TypeDefinition.IsSameAs(_T("function")))
+                else if (token->m_TypeDefinition.IsSameAs("function"))
                 {
                     if (token->m_TokenAccess == taPrivate)
                         return m_ImgNr["interface_fun_gen_private"];
@@ -289,6 +183,8 @@ int FPImageList::GetTokenKindImageIdx(TokenF* token)
 
         case tkPreprocessor: return m_ImgNr["preproc"];
 
+        case tkMacroDefine: return m_ImgNr["preproc"];
+
         case tkFile: return m_ImgNr["none"];
 
         case tkVariable:
@@ -307,14 +203,14 @@ int FPImageList::GetTokenKindImageIdx(TokenF* token)
 
         case tkProcedure:
             {
-                if (token->m_TypeDefinition.IsSameAs(_T("subroutine")))
+                if (token->m_TypeDefinition.IsSameAs("subroutine"))
                 {
                     if (token->m_TokenAccess == taPrivate)
                         return m_ImgNr["subroutine_private"];
                     else
                         return m_ImgNr["subroutine"];
                 }
-                else if (token->m_TypeDefinition.IsSameAs(_T("function")))
+                else if (token->m_TypeDefinition.IsSameAs("function"))
                 {
                     if (token->m_TokenAccess == taPrivate)
                         return m_ImgNr["function_private"];
@@ -347,4 +243,3 @@ int FPImageList::GetTokenKindImageIdx(TokenF* token)
         default: return m_ImgNr["unknown"];
     }
 }
-

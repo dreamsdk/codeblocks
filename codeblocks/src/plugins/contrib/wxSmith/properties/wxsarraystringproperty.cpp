@@ -15,9 +15,9 @@
 * You should have received a copy of the GNU General Public License
 * along with wxSmith. If not, see <http://www.gnu.org/licenses/>.
 *
-* $Revision: 7109 $
-* $Id: wxsarraystringproperty.cpp 7109 2011-04-15 11:53:16Z mortenmacfly $
-* $HeadURL: svn://svn.code.sf.net/p/codeblocks/code/branches/release-20.xx/src/plugins/contrib/wxSmith/properties/wxsarraystringproperty.cpp $
+* $Revision: 12304 $
+* $Id: wxsarraystringproperty.cpp 12304 2021-03-16 23:28:31Z fuscated $
+* $HeadURL: https://svn.code.sf.net/p/codeblocks/code/branches/release-25.03/src/plugins/contrib/wxSmith/properties/wxsarraystringproperty.cpp $
 */
 
 #include "wxsarraystringproperty.h"
@@ -37,6 +37,7 @@ wxsArrayStringProperty::wxsArrayStringProperty(const wxString& PGName,const wxSt
 bool wxsArrayStringProperty::ShowEditor(wxsPropertyContainer* Object)
 {
     wxsArrayStringEditorDlg Dlg(0,VALUE);
+    PlaceWindow(&Dlg);
     return Dlg.ShowModal() == wxID_OK;
 }
 
