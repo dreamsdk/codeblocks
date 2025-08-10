@@ -1,8 +1,13 @@
 @echo off
 
-set TITLE=wxWidgets MinGW Builder
+set TITLE=wxWidgets for Windows Builder
 title %TITLE%
 cls
+
+echo =============================================================================
+echo %TITLE%
+echo =============================================================================
+echo.
 
 rem Initialization
 set BASE_DIR=%~dp0
