@@ -1,4 +1,4 @@
-# Code::Blocks 20.03 for DreamSDK
+# Code::Blocks 25.03 for DreamSDK
 
 ![Code::Blocks for DreamSDK](./codeblocks/src/src/resources/start_here/title_1712.png)
 
@@ -6,7 +6,7 @@
 
 [DreamSDK](https://dreamsdk.org "DreamSDK") is a modern, ready-to-use environment for the [Sega Dreamcast](https://en.wikipedia.org/wiki/Dreamcast) development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
 
-**This repository hold a special version of the official Code::Blocks 20.03 stable release modified for adding full support of DreamSDK.**
+**This repository hold a special version of the official Code::Blocks 25.03 stable release modified for adding full support of DreamSDK.**
 
 Notables changes of this special release of **Code::Blocks** includes:
 
@@ -18,15 +18,30 @@ If you are interested about Code::Blocks but not in Sega Dreamcast development u
 
 ## Introduction
 
-This repository will allow you to build [Code::Blocks 20.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) binary.
+This repository will allow you to build [Code::Blocks 25.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) binary.
 
-Code::Blocks 20.03 is available in both 32-bits and 64-bits. You will need to build both versions from this source. The 32-bits release should support Windows XP, as DreamSDK is targeting from Windows XP to Windows 11. For that, you will need to use specific versions of libraries/compilers, some of them are provided in this repository.
+Code::Blocks 25.03 is available in both 32-bits and 64-bits. You will need to build both versions from the same source.
+Unlike Code::Blocks 17.12 or 20.03, Code::Blocks 25.03 does not support Windows XP: it only works with Windows 10 and later.
 
-By the way, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP, which is the case of Code::Blocks for DreamSDK.
+In summary, the goal of this repository is to generate the following packages: 
+- `.\packager\dist\codeblocks-25.03-dreamsdk-addon-bin-x86.7z` for 32-bit;
+- `.\packager\dist\codeblocks-25.03-dreamsdk-addon-bin-x64.7z` for 64-bit.
+
+This package will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
+This patcher is available in the `codeblocks-patcher` repository.
+
+The recipe to follow is:
+
+1. Install prerequisites
+2. Build wxMSW
+3. Build a debug build of **Code::Blocks for DreamSDK** and debug it
+4. Build a release build of **Code::Blocks for DreamSDK**
+5. Make the final packages that will be embedded in **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`)
+6. Make the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) itself (see `codeblocks-patcher` repository)
 
 ## Prerequisites
 
-Install all the prerequisites below before trying to work with this repository.
+Install all the prerequisites below before trying to work with this repository. Some are provided for convenience while others must be downloaded manually.
 
 These **are** provided directly in this repository, under the `tools` directory:
 
@@ -36,38 +51,55 @@ These **are** provided directly in this repository, under the `tools` directory:
 
 These **are not** provided in this repository but could be easily downloaded:
 
-* [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks... you'll need Code::Blocks**).
-* [Boost 1.64.0](https://www.boost.org/users/history/version_1_64_0.html) for 32-bits release and [Boost 1.74.0](https://www.boost.org/users/history/version_1_74_0.html) for 64-bits release.
+* [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks you will need Code::Blocks**).
+* [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
 * [7-Zip](http://www.7-zip.org).
- 
+
+## Building wxMSW
+
+After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once; fortunately because this process is really very long (even if it would indeed be theoretically possible to use the `-jx` parameter where `x` is the number of jobs that could be launched in parallel, it is preferred not to do so to be sure of successful builds).
+
+1. Open the `.\wxMSW\build.ini` file and adapt it as needed.
+2. Double-click on the `.\wxMSW\build.cmd` file.
+
+The `.\wxMSW\bin` directory will be created, that will contains both `debug` and `release` binaries, both on 32-bit and 64-bit.
+
 ## Installing Boost
 
-### 32-bits release (x86)
+Boost is used for some plugins in Code::Blocks, for example for the [Nassi–Shneiderman](https://wiki.codeblocks.org/index.php/NassiShneiderman_plugin) plugin.
 
-The last version of the **Boost** libraries supporting **Windows XP** is the `1.64.0` version. After that version, Windows XP is unsupported. To keep the XP support you must use that specific version.
+This section explains how to install Boost for Code::Blocks; and it assumes that the 64-bit version is the one that will be built.
 
-1. Unzip [boost 1.64.0](https://dl.bintray.com/boostorg/release/1.64.0/source/boost_1_64_0.7z).
-2. Open the [TDM-GCC-32](http://tdm-gcc.tdragon.net) prompt.
+1. Unzip [boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html). The location where Boost is unzipped is called officially `$BOOST_ROOT`. Usually, `$BOOST_ROOT` will be set as `C:\Program Files\boost\boost_1_87_0`, but it could be `C:\boost_1_87_0` or whatever you want.
+2. Open a Windows Command prompt.
 3. Enter the following commands:
 
-		cd /D <path>\boost_1_64_0
+		set WINLIBS_ROOT=C:\mingw64
+		set CODEBLOCKS_ROOT=C:\Program Files\CodeBlocks
+		set BOOST_ROOT=C:\Program Files\boost\boost_1_87_0
+		set PATH=%WINLIBS_ROOT%\bin\;%PATH%
+		cd /D %BOOST_ROOT%
 		bootstrap gcc
-		b2 --toolset=gcc "--prefix=C:\Program Files\CodeBlocks" install
+		b2 --toolset=gcc "--prefix=%CODEBLOCKS_ROOT%" boost.stacktrace.from_exception=off install
 
-For your information, the official Code::Blocks 20.03 32-bits release is not supporting Windows XP due to an incompatible [Dr. MinGW](https://github.com/jrfonseca/drmingw "Dr. MinGW") component version, but this special release will support that.
-
-### 64-bits release (x64)
-
-... TODO ...
+After running those commands, Boost is indeed installed, but we need to configure Code::Blocks IDE, as explained below.
 
 ## Configuring Code::Blocks IDE
 
 To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and both toolchains if not already done.
 
 1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
-2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_64` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
+2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
 4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
-5. Select (or create) the `wx` variable, enter `./wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field. Please use the provided `wxMSW` directory provided in that repository.
+5. Select (or create) the `wx` variable, enter `.\wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field.
+
+## Making a Code::Blocks debug build
+
+1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
+2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-g -O0` in the `base` field.
+3. autorevision.h??
+4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
+5. Run the `.\codeblocks\src\update.bat` file.
 
 ## Debugging your Code::Blocks build
 
@@ -85,13 +117,11 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 **Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
 4. The GNU Debugger (GDB) included in the latest release of **TDM-GCC** is buggy: some breakpoints are never reached. You should use a newer GNU Debugger (GDB) binary, for example the one included in **DreamSDK** (i.e. `E:\DreamSDK\bin\gdb.exe`). To change that, you may update the Debugger profile inside Code::Blocks (in the `Settings` menu).
 
-## Building a Code::Blocks release
+## Making a Code::Blocks release build
 
-for 64 check than Nuwen is defined for GCC Compiler
-
-1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
+ 
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
-3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11983` is the official revision for the `20.03` release.
+3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11983` is the official revision for the `25.03` release.
 
 		/*11983*/
 		//don't include this header, only configmanager-revision.cpp should do this.
@@ -139,28 +169,6 @@ Please verify the following:
 
 * The `cb_release_type` global variable should be set to `-g -O0` in order to activate debug symbols.
 * Sometimes the **GDB** version included in **TDM-GCC-32** is buggy. Try to use another **GDB** build (like the one included in **DreamSDK** itself).
-
-### The message 'Mismatch between the program and library build versions detected.' is displayed ###
- 
-When you rebuild the whole **Code::Blocks** workspace, the following message may be displayed:
-
-	Fatal Error: Mismatch between the program and library build versions detected.
-	The library used 2.8 (wchar_t,compiler with C++ ABI 1008,STL containers,compatible with 2.8),
-	and your program used 2.8 (wchar_t,compiler with C++ ABI 1002,STL containers,compatible with 2.8).
-
-The only difference is the C++ ABI version i.e. `1008` vs. `1002`.
-
-After some investigation, the problem arises from the fact that **Code::Blocks** was compiled with **gcc 5.1.0**, which defines `__GXX_ABI_VERSION` as `1008`, but the pre-compiled wxWidgets library was made with **clang 3.6**, which defines `__GXX_ABI_VERSION` as `1002` ([See reference](https://groups.google.com/forum/#!topic/wx-users/bzXESX__828)).
-
-To solve this issue, you may need to recompile the provided `wxMSW` library ([wxWidgets](https://www.wxwidgets.org/)):
-
-1. Open the **TDM-GCC-32** command prompt from the `Start` menu.
-2. Type `cd .\wxMSW\build\msw` then `mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=release VENDOR=cb CXXFLAGS=-fpermissive` ([Read more](https://wiki.wxwidgets.org/WxWidgets_Build_Configurations)). This should update the `.\wxMSW\lib\gcc_dll\wxmsw28u_gcc_cb.dll` file.
-3. Copy the updated `.\wxMSW\lib\gcc_dll\wxmsw28u_gcc_cb.dll` file to `.\codeblocks\src\devel\` (this is important!).
-3. Rebuild the **Code::Blocks** source.
-4. Try again.
-
-**Note:** You may need to enable debugging for **wxWidgets**, in this case you should just set the `BUILD` parameter to `debug` (i.e. `BUILD=debug`). Do this if you want to debug the wxWidgets library. 
 
 ### Couldn't add an image to the image list. ###
 
