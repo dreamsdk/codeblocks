@@ -32,12 +32,9 @@ In summary, the goal of this repository is to generate the following packages:
 This package will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
 This patcher is available in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) repository.
 
-## Initial settings
+## Prerequisites
 
-This section contains instructions to follow after the initial cloning is complete.
-
-### Prerequisites
-
+This section contains instructions to follow after the initial cloning is complete. 
 Install all the prerequisites below before trying to work with this repository. Some are provided for convenience while others must be downloaded manually.
 
 These **are** provided directly in this repository, under the `tools` directory:
@@ -51,6 +48,18 @@ These **are not** provided in this repository but could be easily downloaded:
 - [7-Zip](http://www.7-zip.org).
 - [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
 - [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks you will need Code::Blocks**).
+
+### Install WinLibs toolchains
+
+Just unzip the 2 WinLibs toolchains in the drive root, usually `C:\`:
+- 32-bit will be unzipped in `C:\mingw32`
+- 64-bit will be unzipped in `C:\mingw64`
+
+### Install other prerequisites
+
+1. Make sure `zip` and `upx` are available in your `PATH` variable.
+2. Install [7-Zip](http://www.7-zip.org) using the default settings and make sure `7z` is available in your `PATH` variable.
+3. Install [Code::Blocks](https://www.codeblocks.org) with the default settings. It's easiest to install Code::Blocks in 64-bit if you plan to compile the 64-bit version; do the same for the 32-bit version, although it's not required. This document will assume you'll follow this rule.
 
 ### Building wxMSW
 
@@ -83,12 +92,14 @@ After running those commands, Boost is indeed installed, but we need to configur
 
 ### Configuring Code::Blocks IDE
 
-To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and both toolchains if not already done.
+To build **Code::Blocks** you will need **Code::Blocks**. Install the IDE and both toolchains if not already done (see above).
 
-1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks.workspace` file. This will open the `Code::Blocks wx2.8.x` workspace.
-2. Select the **Settings** > **Global Variable** menu item then select (or create) the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
-4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
-5. Select (or create) the `wx` variable, enter `.\wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field.
+1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks_wx32_64.workspace` file for 64-bit build or the `CodeBlocks_wx32.workspace` file for 32-bit build. This will open the `CodeBlocks Workspace wx3.2.x (64 bit)` workspace.
+2. Select the **Settings** > **Global Variable** menu item in Code::Blocks. Select (or create) the following variables:
+    - the `wx32_64` variable, enter `.\wxMSW` (e.g. `C:\codeblocks\wxMSW\bin\x64\release`) in the `base` field.
+    - the `cb_release_type` variable and enter `-g -O0` in the `base` field.    
+	- the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
+3. Select the **Settings** > **Compiler** menu item in Code::Blocks, then select the `C:\mingw64` base directory for the `GNU GCC Compiler`.
 
 ## Debug build
 
