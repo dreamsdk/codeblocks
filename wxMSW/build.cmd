@@ -61,6 +61,11 @@ rem Prepare build
 call :cleandir %OUTPUT_DIR%
 call :cleandir %LOGS_DIR%
 
+rem Patch before build: enable wxUSE_GRAPHICS_DIRECT2D
+rem See: https://forums.codeblocks.org/index.php/topic,24288.msg165637.html#msg165637
+call :patch %BASE_DIR%\src\include\wx\msw\setup.h
+call :patch %BASE_DIR%\src\include\wx\msw\setup_inc.h
+
 rem Build necessary libraries
 if "%BUILD64%"=="1" goto build64
 goto build32
@@ -131,12 +136,14 @@ if "%_arch%"=="x64" set PATH=%TOOLCHAIN64_HOME%\bin;%PATH%
 if "%_arch%"=="x86" set PATH=%TOOLCHAIN32_HOME%\bin;%PATH%
 
 echo --- Clean --- >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFG=64 clean >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% clean >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFG=64 clean >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% clean >> %_logfile% 2>&1
 
 echo --- Build --- >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -f makefile.gcc MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 setup_h >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" setup_h >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" >> %_logfile% 2>&1
 
 if "%errorlevel%"=="0" goto build_success
 goto build_fail
@@ -181,4 +188,11 @@ endlocal & set %1=%tempvar%
 goto :eof
 :trimsub
 set tempvar=%*
+goto :eof
+
+:patch
+setlocal EnableDelayedExpansion
+set _file=%1
+powershell -Command "(Get-Content '!_file!') -replace '#if defined\(_MSC_VER\) && _MSC_VER >= 1600', '#if (defined(_MSC_VER) && _MSC_VER >= 1600) || defined(__GNUC__)' | Set-Content '!_file!'"
+endlocal
 goto :eof
