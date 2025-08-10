@@ -20,7 +20,7 @@ If you are interested about Code::Blocks but not in Sega Dreamcast development u
 
 ## Introduction
 
-This repository will allow you to build [Code::Blocks 25.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) binary.
+This repository will allow you to build [Code::Blocks 25.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher).
 
 Code::Blocks 25.03 is available in both 32-bits and 64-bits. You will need to build both versions from the same source.
 Unlike Code::Blocks 17.12 or 20.03, Code::Blocks 25.03 does not support Windows XP: it only works with Windows 10 and later.
@@ -30,18 +30,11 @@ In summary, the goal of this repository is to generate the following packages:
 - `.\packager\dist\codeblocks-25.03-dreamsdk-addon-bin-x64.7z` for 64-bit.
 
 This package will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
-This patcher is available in the `codeblocks-patcher` repository.
-
-The recipe to follow is:
-
-1. Install prerequisites
-2. Build wxMSW
-3. Build a debug build of **Code::Blocks for DreamSDK** and debug it
-4. Build a release build of **Code::Blocks for DreamSDK**
-5. Make the final packages that will be embedded in **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`)
-6. Make the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) itself (see `codeblocks-patcher` repository)
+This patcher is available in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) repository.
 
 ## Initial settings
+
+This section contains instructions to follow after the initial cloning is complete.
 
 ### Prerequisites
 
@@ -49,15 +42,15 @@ Install all the prerequisites below before trying to work with this repository. 
 
 These **are** provided directly in this repository, under the `tools` directory:
 
-* [TDM-GCC-64 9.2.0](https://jmeubank.github.io/tdm-gcc/) for 32-bits release (**yes this is normal**) and [Nuwen 16.1](https://nuwen.net/mingw.html) for 64-bits release.
-* [Zip 3.00 from Info-ZIP](http://infozip.sourceforge.net/ "Info-ZIP"). 
-* [Ultimate Packer for eXecutables](https://upx.github.io/ "UPX") (UPX).
+- [GCC 14.2.0 (with POSIX threads) + LLVM/Clang/LLD/LLDB 19.1.7 + MinGW-w64 12.0.0 UCRT from WinLibs](https://winlibs.com/ "WinLibs")
+- [Zip 3.00 from Info-ZIP](http://infozip.sourceforge.net/ "Info-ZIP").
+- [Ultimate Packer for eXecutables](https://upx.github.io/ "UPX") (UPX).
 
 These **are not** provided in this repository but could be easily downloaded:
 
-* [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks you will need Code::Blocks**).
-* [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
-* [7-Zip](http://www.7-zip.org).
+- [7-Zip](http://www.7-zip.org).
+- [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
+- [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks you will need Code::Blocks**).
 
 ### Building wxMSW
 
