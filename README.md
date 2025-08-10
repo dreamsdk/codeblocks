@@ -16,6 +16,8 @@ Notables changes of this special release of **Code::Blocks** includes:
 
 If you are interested about Code::Blocks but not in Sega Dreamcast development using DreamSDK, then we can use this version if you want to, or you can simply use the regular Code::Blocks program.
 
+**Note:** a new `sdk` (`codeblocks.dll`) module is needed to expose the required `CallHooks()` function in the *Squirrel* script, that's why almost all compiled binaries are provided in the generated patch.
+
 ## Introduction
 
 This repository will allow you to build [Code::Blocks 25.03](https://www.codeblocks.org "Code::Blocks") for embedding it in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) binary.
@@ -39,7 +41,9 @@ The recipe to follow is:
 5. Make the final packages that will be embedded in **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`)
 6. Make the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`) itself (see `codeblocks-patcher` repository)
 
-## Prerequisites
+## Initial settings
+
+### Prerequisites
 
 Install all the prerequisites below before trying to work with this repository. Some are provided for convenience while others must be downloaded manually.
 
@@ -55,7 +59,7 @@ These **are not** provided in this repository but could be easily downloaded:
 * [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
 * [7-Zip](http://www.7-zip.org).
 
-## Building wxMSW
+### Building wxMSW
 
 After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once; fortunately because this process is really very long (even if it would indeed be theoretically possible to use the `-jx` parameter where `x` is the number of jobs that could be launched in parallel, it is preferred not to do so to be sure of successful builds).
 
@@ -64,7 +68,7 @@ After installing all the prerequisites, you need to build **wxWidgets for Window
 
 The `.\wxMSW\bin` directory will be created, that will contains both `debug` and `release` binaries, both on 32-bit and 64-bit.
 
-## Installing Boost
+### Installing Boost
 
 Boost is used for some plugins in Code::Blocks, for example for the [Nassi–Shneiderman](https://wiki.codeblocks.org/index.php/NassiShneiderman_plugin) plugin.
 
@@ -84,7 +88,7 @@ This section explains how to install Boost for Code::Blocks; and it assumes that
 
 After running those commands, Boost is indeed installed, but we need to configure Code::Blocks IDE, as explained below.
 
-## Configuring Code::Blocks IDE
+### Configuring Code::Blocks IDE
 
 To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and both toolchains if not already done.
 
@@ -93,7 +97,9 @@ To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and
 4. Select (or create) the `cb_release_type` variable and enter `-g -O0` in the `base` field.
 5. Select (or create) the `wx` variable, enter `.\wxMSW` (e.g. `C:\codeblocks\wxMSW`) in the `base` field.
 
-## Making a Code::Blocks debug build
+## Debug build
+
+### Making a Code::Blocks debug build
 
 1. Make your changes in the **Code:Blocks** source (basically in `sdk`, `Compiler` and `Debugger` targets).
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-g -O0` in the `base` field.
@@ -101,7 +107,7 @@ To build **Code::Blocks** you will need... **Code::Blocks**. Install the IDE and
 4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 5. Run the `.\codeblocks\src\update.bat` file.
 
-## Debugging your Code::Blocks build
+### Debugging your Code::Blocks build
 
 If you want to debug the **Code::Blocks** build, select the `src` target and install a **DreamSDK** working package in `E:\DreamSDK\`.
 If you don't have an `E:` drive, you have to do some modifications:
@@ -117,9 +123,10 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 **Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
 4. The GNU Debugger (GDB) included in the latest release of **TDM-GCC** is buggy: some breakpoints are never reached. You should use a newer GNU Debugger (GDB) binary, for example the one included in **DreamSDK** (i.e. `E:\DreamSDK\bin\gdb.exe`). To change that, you may update the Debugger profile inside Code::Blocks (in the `Settings` menu).
 
-## Making a Code::Blocks release build
+## Release build
 
- 
+### Making a Code::Blocks release build
+
 2. Select the **Settings** > **Global Variable** menu item then select the `cb_release_type` variable and enter `-O2` in the `base` field.
 3. Change the content of the `.\codeblocks\src\include\autorevision.h` file. In normal conditions, this file is created automatically when using **SVN** and the `autorevision` tool. Or you may just create this `autorevision.h` file manually. The SVN revision `11983` is the official revision for the `25.03` release.
 
@@ -146,7 +153,7 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 5. Run the `.\codeblocks\src\update.bat` file.
 
-## Making the package
+### Making the package
 
 After building the **Code::Blocks** release, you need to build the package that will be embedded in the **Code::Blocks Patcher for DreamSDK**.
 
@@ -156,8 +163,6 @@ After building the **Code::Blocks** release, you need to build the package that 
 4. Build the `.\cbpatcher\src\splash\codeblocks-splash.lpi` in **Release** mode from **Lazarus**, then pack the `.\cbpatcher\src\engine\embedded\codeblocks-splash.exe` file with **UPX**.
 5. Build the `.\cbpatcher\src\codeblocks-patcher.lpi` in **Release** mode from **Lazarus**. No need to pack this with **UPX**.
 6. Done! You should have now the `codeblocks-patcher.exe` file which can be embedded in the **DreamSDK Setup** file. Don't be surprised, it's a big file around `10MB`.
-
-**Note:** a new `sdk` (`codeblocks.dll`) module is needed to expose the required `CallHooks()` function in the *Squirrel* script, that's why almost all compiled binaries are provided in the generated patch.
 
 ## FAQ
 
