@@ -52,8 +52,8 @@ These **are not** provided in this repository but could be easily downloaded:
 ### Install WinLibs toolchains
 
 Just unzip the 2 WinLibs toolchains in the drive root, usually `C:\`:
-- 32-bit will be unzipped in `C:\mingw32`
 - 64-bit will be unzipped in `C:\mingw64`
+- 32-bit will be unzipped in `C:\mingw32`
 
 ### Install other prerequisites
 
@@ -63,7 +63,7 @@ Just unzip the 2 WinLibs toolchains in the drive root, usually `C:\`:
 
 ### Building wxMSW
 
-After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once; fortunately because this process is really very long (even if it would indeed be theoretically possible to use the `-jx` parameter where `x` is the number of jobs that could be launched in parallel, it is preferred not to do so to be sure of successful builds).
+After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once; fortunately because this process is really very long (even if it runs multiple jobs using the `-j` switch for `make`).
 
 1. Open the `.\wxMSW\build.ini` file and adapt it as needed.
 2. Double-click on the `.\wxMSW\build.cmd` file.
@@ -86,7 +86,7 @@ This section explains how to install Boost for Code::Blocks; and it assumes that
 		set PATH=%WINLIBS_ROOT%\bin\;%PATH%
 		cd /D %BOOST_ROOT%
 		bootstrap gcc
-		b2 --toolset=gcc "--prefix=%CODEBLOCKS_ROOT%" boost.stacktrace.from_exception=off install
+		b2 install --toolset=gcc "--prefix=%CODEBLOCKS_ROOT%" boost.stacktrace.from_exception=off
 
 After running those commands, Boost is indeed installed, but we need to configure Code::Blocks IDE, as explained below.
 
@@ -95,11 +95,14 @@ After running those commands, Boost is indeed installed, but we need to configur
 To build **Code::Blocks** you will need **Code::Blocks**. Install the IDE and both toolchains if not already done (see above).
 
 1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks_wx32_64.workspace` file for 64-bit build or the `CodeBlocks_wx32.workspace` file for 32-bit build. This will open the `CodeBlocks Workspace wx3.2.x (64 bit)` workspace.
-2. Select the **Settings** > **Global Variable** menu item in Code::Blocks. Select (or create) the following variables:
-    - the `wx32_64` variable, enter `.\wxMSW` (e.g. `C:\codeblocks\wxMSW\bin\x64\release`) in the `base` field.
-    - the `cb_release_type` variable and enter `-g -O0` in the `base` field.    
-	- the `boost` variable. In the `base` directory field, enter `C:\Program Files\CodeBlocks`. In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87` then in the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
-3. Select the **Settings** > **Compiler** menu item in Code::Blocks, then select the `C:\mingw64` base directory for the `GNU GCC Compiler`.
+2. The **Global Variable** window should be shown automatically, if not, select the **Settings** > **Global Variable** menu item in Code::Blocks. Select (or create) the following variables:
+    - For the `wx32_64` variable, enter `.\wxMSW\bin\${arch}\debug` in the `base` field, where `${arch}` will be `x86` or `x64` (e.g. `C:\codeblocks\wxMSW\bin\x64\debug`).
+    - For the `cb_release_type` variable, enter `-g -O0` in the `base` field.    
+	- For the `boost` variable:
+        - In the `base` directory field, enter `C:\Program Files\CodeBlocks`.
+		- In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87`.
+		- In the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
+3. Select the **Settings** > **Compiler** menu item in Code::Blocks, then select the `C:\mingw64` base directory for the `GNU GCC Compiler` for 64-bit or `C:\mingw32` for 32-bit.
 
 ## Debug build
 
@@ -111,7 +114,7 @@ To build **Code::Blocks** you will need **Code::Blocks**. Install the IDE and bo
 4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 5. Run the `.\codeblocks\src\update.bat` file.
 
-### Debugging your Code::Blocks build
+### Running and debugging your Code::Blocks build
 
 If you want to debug the **Code::Blocks** build, select the `src` target and install a **DreamSDK** working package in `E:\DreamSDK\`.
 If you don't have an `E:` drive, you have to do some modifications:
@@ -157,7 +160,7 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows).
 5. Run the `.\codeblocks\src\update.bat` file.
 
-### Making the package
+### Making the final package that will be embedded in Code::Blocks Partcher for DreamSDK
 
 After building the **Code::Blocks** release, you need to build the package that will be embedded in the **Code::Blocks Patcher for DreamSDK**.
 
