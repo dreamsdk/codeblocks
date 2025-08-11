@@ -92,17 +92,41 @@ After running those commands, Boost is indeed installed, but we need to configur
 
 ### Configuring Code::Blocks IDE
 
-To build **Code::Blocks** you will need **Code::Blocks**. Install the IDE and both toolchains if not already done (see above).
+To build **Code::Blocks** you will need **Code::Blocks**.
+Install the IDE then unzip both toolchains if not already done (see above). Now, it's necessary to configure Debuggers and Compilers in Code::Blocks.
 
-1. Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks_wx32_64.workspace` file for 64-bit build or the `CodeBlocks_wx32.workspace` file for 32-bit build. This will open the `CodeBlocks Workspace wx3.2.x (64 bit)` workspace.
-2. The **Global Variable** window should be shown automatically, if not, select the **Settings** > **Global Variable** menu item in Code::Blocks. Select (or create) the following variables:
-    - For the `wx32_64` variable, enter `.\wxMSW\bin\${arch}\debug` in the `base` field, where `${arch}` will be `x86` or `x64` (e.g. `C:\codeblocks\wxMSW\bin\x64\debug`).
-    - For the `cb_release_type` variable, enter `-g -O0` in the `base` field.    
-	- For the `boost` variable:
-        - In the `base` directory field, enter `C:\Program Files\CodeBlocks`.
-		- In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87`.
-		- In the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
-3. Select the **Settings** > **Compiler** menu item in Code::Blocks, then select the `C:\mingw64` base directory for the `GNU GCC Compiler` for 64-bit or `C:\mingw32` for 32-bit.
+#### Configure Debuggers in Code::Blocks
+
+[You can follow the official guide from WinLibs for configuration Debuggers and Compilers](https://winlibs.com/#usage-codeblocks).
+
+Select the **Settings** > **Debugger** menu item in Code::Blocks. Here, nothing fancy, you just have to select the correct GNU Debugger (GDB) binary:
+![Debugger Settings in Code::Blocks](./rsrc/debugger.png)
+
+#### Configure Compilers in Code::Blocks
+
+Select the **Settings** > **Compiler** menu item in Code::Blocks. You have to configure the compiler as described in the [WinLibs guide](https://winlibs.com/#usage-codeblocks).
+![Compiler Settings / Toolchain executables in Code::Blocks](./rsrc/compiler1.png)
+
+Then, select the options forcing the build of static binaries. If not doing so, you will be forced to redistribute MinGW-w64 runtime libraries (DLL), something that we don't want for Code::Blocks:
+![Compiler Settings / Compiler Flags in Code::Blocks](./rsrc/compiler2.png)
+
+#### Global Variables configuration
+
+After making this configuration, you can open the Code::Blocks IDE project in Code::Blocks.
+
+Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks_wx32_64.workspace` file for 64-bit build or the `CodeBlocks_wx32.workspace` file for 32-bit build.
+This will open the `CodeBlocks Workspace wx3.2.x (64 bit)` workspace.
+
+The **Global Variables** window should be shown automatically, if not, select the **Settings** > **Global Variables** menu item in Code::Blocks. Select (or create) the following variables:
+- For the `wx32_64` variable, enter `.\wxMSW\bin\${arch}\debug` in the `base` field, where `${arch}` will be `x86` or `x64` (e.g. `C:\codeblocks\wxMSW\bin\x64\debug`).
+- For the `cb_release_type` variable, enter `-g -O0` in the `base` field.    
+- For the `boost` variable:
+	- In the `base` directory field, enter `C:\Program Files\CodeBlocks`.
+	- In the `include` field, enter `C:\Program Files\CodeBlocks\include\boost-1_87`.
+	- In the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
+
+Here is an example of the **Global Variables** window filled in:
+![Global Variables in Code::Blocks](./rsrc/variables.png)
 
 ## Debug build
 
