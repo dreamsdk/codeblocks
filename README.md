@@ -97,7 +97,7 @@ Install the IDE then unzip both toolchains if not already done (see above). Now,
 
 #### Configure Debuggers in Code::Blocks
 
-[You can follow the official guide from WinLibs for configuration Debuggers and Compilers](https://winlibs.com/#usage-codeblocks).
+[You can follow the official guide from WinLibs for configuring Debuggers and Compilers](https://winlibs.com/#usage-codeblocks).
 
 Select the **Settings** > **Debugger** menu item in Code::Blocks. Here, nothing fancy, you just have to select the correct GNU Debugger (GDB) binary:
 ![Debugger Settings in Code::Blocks](./rsrc/debugger.png)
@@ -107,7 +107,8 @@ Select the **Settings** > **Debugger** menu item in Code::Blocks. Here, nothing 
 Select the **Settings** > **Compiler** menu item in Code::Blocks. You have to configure the compiler as described in the [WinLibs guide](https://winlibs.com/#usage-codeblocks).
 ![Compiler Settings / Toolchain executables in Code::Blocks](./rsrc/compiler1.png)
 
-Then, select the options forcing the build of static binaries. If not doing so, you will be forced to redistribute MinGW-w64 runtime libraries (DLL), something that we don't want for Code::Blocks:
+Then, select the options forcing the build of static binaries. If not doing so, you will be forced to redistribute MinGW-w64 runtime libraries (DLL), something that we don't want for Code::Blocks.
+Select `Static libgcc`, `Static libstdc++` and `Static linking`:
 ![Compiler Settings / Compiler Flags in Code::Blocks](./rsrc/compiler2.png)
 
 #### Global Variables configuration
@@ -129,6 +130,8 @@ Here is an example of the **Global Variables** window filled in:
 ![Global Variables in Code::Blocks](./rsrc/variables.png)
 
 ## Debug build
+
+You can now try to build Code::Blocks.
 
 ### Making a Code::Blocks debug build
 
