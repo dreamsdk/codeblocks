@@ -140,9 +140,7 @@ echo --- %_build_ver% --- >> %_logfile% 2>&1
 if "%_arch%"=="x64" set PATH=%TOOLCHAIN64_HOME%\bin;%PATH%
 if "%_arch%"=="x86" set PATH=%TOOLCHAIN32_HOME%\bin;%PATH%
 
-set /a "_make_jobs=%NUMBER_OF_PROCESSORS% / 2"
-if %_make_jobs% lss 1 set _make_jobs=1
-set _make_common_flags=-j%_make_jobs% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 RUNTIME_LIBS=static UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag%
+set _make_common_flags=-f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 RUNTIME_LIBS=static UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag%
 set _make_clean64_flags=CFG=64 VENDOR=%VENDOR64%
 set _make_clean32_flags=VENDOR=%VENDOR32%
 set _make_build_static_flags=-static -static-libgcc -static-libstdc++
@@ -168,10 +166,12 @@ if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_clean32_flags% clea
 
 echo. >> %_logfile% 2>&1
 echo --- Build --- >> %_logfile% 2>&1
+set /a "_make_jobs=%NUMBER_OF_PROCESSORS% / 2"
+if %_make_jobs% lss 1 set _make_jobs=1
 if "%_arch%"=="x64" mingw32-make %_make_common_flags% %_make_build64_flags% setup_h >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make %_make_common_flags% %_make_build64_flags% >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make -j%_make_jobs% %_make_common_flags% %_make_build64_flags% >> %_logfile% 2>&1
 if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_build32_flags% setup_h >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_build32_flags% >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make -j%_make_jobs% %_make_common_flags% %_make_build32_flags% >> %_logfile% 2>&1
 
 if "%errorlevel%"=="0" goto build_success
 goto build_fail
