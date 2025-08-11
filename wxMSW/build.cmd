@@ -125,8 +125,8 @@ setlocal
 
 set _arch=x%1
 set _build_type=%2
-set _debug_flag=0
-if "%_build_type%"=="debug" set _debug_flag=1
+set _debug_flag=1
+if "%_build_type%"=="debug" set _debug_flag=2
 set _suffix=
 if "%_arch%"=="x64" set _suffix=64
 set _logfile="%LOGS_DIR%\%_arch%-%_build_type%.log"
