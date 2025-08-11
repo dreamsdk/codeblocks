@@ -140,20 +140,44 @@ echo --- %_build_ver% --- >> %_logfile% 2>&1
 if "%_arch%"=="x64" set PATH=%TOOLCHAIN64_HOME%\bin;%PATH%
 if "%_arch%"=="x86" set PATH=%TOOLCHAIN32_HOME%\bin;%PATH%
 
-echo --- Clean --- >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFG=64 clean >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% clean >> %_logfile% 2>&1
+set /a "_make_jobs=%NUMBER_OF_PROCESSORS% / 2"
+if %_make_jobs% lss 1 set _make_jobs=1
+set _make_common_flags=-j%_make_jobs% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 RUNTIME_LIBS=static UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag%
+set _make_clean64_flags=CFG=64 VENDOR=%VENDOR64%
+set _make_clean32_flags=VENDOR=%VENDOR32%
+set _make_build_static_flags=-static -static-libgcc -static-libstdc++
+set _make_build64_flags=CFG=64 VENDOR=%VENDOR64% CFLAGS="%FLAGS% %_make_build_static_flags%" CXXFLAGS="%FLAGS% %_make_build_static_flags%" CPPFLAGS="%FLAGS% %_make_build_static_flags%" LDFLAGS="%_make_build_static_flags%" WINDRES="windres %WINDRES64_FLAGS%"
+set _make_build32_flags=VENDOR=%VENDOR32% CFLAGS="%FLAGS% %_make_build_static_flags% -m32" CXXFLAGS="%FLAGS% %_make_build_static_flags% -m32" CPPFLAGS="%FLAGS% %_make_build_static_flags% -m32" LDFLAGS="%_make_build_static_flags% -m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386"
 
+echo. >> %_logfile% 2>&1
+echo --- Parameters --- >> %_logfile% 2>&1
+echo Common Flags: %_make_common_flags% >> %_logfile% 2>&1
+if "%_arch%"=="x64" (
+	echo Clean: %_make_clean64_flags% >> %_logfile% 2>&1
+	echo Build: %_make_build64_flags% >> %_logfile% 2>&1
+)
+if "%_arch%"=="x86" (
+	echo Clean: %_make_clean32_flags% >> %_logfile% 2>&1
+	echo Build: %_make_build32_flags% >> %_logfile% 2>&1
+)
+
+echo. >> %_logfile% 2>&1
+echo --- Clean --- >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make %_make_common_flags% %_make_clean64_flags% clean >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_clean32_flags% clean >> %_logfile% 2>&1
+
+echo. >> %_logfile% 2>&1
 echo --- Build --- >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 setup_h >> %_logfile% 2>&1
-if "%_arch%"=="x64" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR64% CFLAGS="%FLAGS%" CXXFLAGS="%FLAGS%" CPPFLAGS="%FLAGS%" WINDRES="windres %WINDRES64_FLAGS%" CFG=64 >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" setup_h >> %_logfile% 2>&1
-if "%_arch%"=="x86" mingw32-make -j%NUMBER_OF_PROCESSORS% -f makefile.gcc USE_XRC=1 USE_OPENGL=1 MONOLITHIC=1 SHARED=1 UNICODE=1 BUILD=%_build_type% DEBUG_FLAG=%_debug_flag% VENDOR=%VENDOR32% CFLAGS="%FLAGS% -m32" CXXFLAGS="%FLAGS% -m32" CPPFLAGS="%FLAGS% -m32" LDFLAGS="-m32" WINDRES="windres %WINDRES32_FLAGS% -F pe-i386" >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make %_make_common_flags% %_make_build64_flags% setup_h >> %_logfile% 2>&1
+if "%_arch%"=="x64" mingw32-make %_make_common_flags% %_make_build64_flags% >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_build32_flags% setup_h >> %_logfile% 2>&1
+if "%_arch%"=="x86" mingw32-make %_make_common_flags% %_make_build32_flags% >> %_logfile% 2>&1
 
 if "%errorlevel%"=="0" goto build_success
 goto build_fail
 
 :build_success
+echo. >> %_logfile% 2>&1
 echo --- Install --- >> %_logfile% 2>&1
 rem Copy libraries
 mkdir %_output_dir%\lib
@@ -172,6 +196,7 @@ if "%_build_type%"=="release" (
 rem Copy headers
 xcopy %BASE_DIR%\src\include %_output_dir%\include /E /H /C /I >> %_logfile% 2>&1
 
+echo. >> %_logfile% 2>&1
 echo --- End --- >> %_logfile% 2>&1
 goto build_exit
 
