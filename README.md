@@ -128,6 +128,7 @@ Result:
     - **Make program:** `mingw32-make.exe`
 
 Result:
+
 ![Compiler Settings / Toolchain executables in Code::Blocks](./rsrc/compiler1.png)
 
 Then, select the options forcing the build of static binaries. If not doing so, you will be forced to redistribute MinGW-w64 runtime libraries (DLL), something that we don't want for Code::Blocks.
@@ -139,6 +140,7 @@ Then, select the options forcing the build of static binaries. If not doing so, 
 	- `Static linking [-static]`
 	
 Result:
+
 ![Compiler Settings / Compiler Flags in Code::Blocks](./rsrc/compiler2.png)
 
 You can now validate the **Compiler settings** dialog by clicking **OK**.
