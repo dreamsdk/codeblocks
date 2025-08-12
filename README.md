@@ -61,7 +61,7 @@ Just unzip the 2 WinLibs toolchains in the drive root, usually `C:\`:
 
 1. Make sure `zip` and `upx` are available in your `PATH` variable.
 2. Install [7-Zip](http://www.7-zip.org) using the default settings and make sure `7z` is available in your `PATH` variable.
-3. Download [Code::Blocks](https://www.codeblocks.org) without the embedded compiler, as we will use our own. Install it with the default settings. It's easiest to install Code::Blocks in 64-bit if you plan to compile the 64-bit version (i.e., `codeblocks-25.03-setup.exe`); do the same for the 32-bit version (i.e., `codeblocks-25.03mingw-32bit-setup.exe`), although it's not required. This document will assume you'll follow this rule.
+3. Download [Code::Blocks](https://www.codeblocks.org) without the embedded compiler, as we will use our own. Install it with the default settings. It's easiest to install Code::Blocks in 64-bit if you plan to compile the 64-bit version (i.e., `codeblocks-25.03-setup.exe`); do the same for the 32-bit version (i.e., `codeblocks-25.03-32bit-setup.exe`), although it's not required. This document will assume you'll follow this rule.
 4. Install [DreamSDK](https://www.dreamsdk.org) using the default settings.
 
 ### Building wxMSW
@@ -108,6 +108,7 @@ As always, this section assumes that you are setting up things for 64-bit, but a
 4. Click **OK**.
 
 Result:
+
 ![Debugger Settings in Code::Blocks](./rsrc/debugger.png)
 
 **Note:** [This part has been written using the WinLibs official guide as base](https://winlibs.com/#usage-codeblocks).
