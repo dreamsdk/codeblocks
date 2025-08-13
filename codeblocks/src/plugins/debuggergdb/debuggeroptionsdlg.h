@@ -37,7 +37,13 @@ class DebuggerConfiguration : public cbDebuggerConfiguration
         wxString GetUserArguments(bool expandMacro = true);
         wxString GetDisassemblyFlavorCommand();
         wxString GetInitCommands();
-
+		
+		// DreamSDK::Start
+		bool IsLoaderNecessary();
+        wxString GetLoaderExecutable(bool expandMacro = true);
+        wxString GetLoaderArguments(const wxString& debuggee, bool expandMacro = true);
+        int GetLoaderWaitingTime();
+		// DreamSDK::End
 };
 
 #endif // DEBUGGEROPTIONSDLG_H

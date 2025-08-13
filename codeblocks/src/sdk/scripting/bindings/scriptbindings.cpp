@@ -27,6 +27,9 @@
 #include <unordered_map>
 #include "wxstringhash.h"
 
+// DreamSDK
+#include "projectloader_hooks.h"
+
 namespace ScriptBindings
 {
 
@@ -1432,6 +1435,19 @@ namespace ScriptBindings
         return 1;
     }
 
+    // DreamSDK::Start
+    SQInteger cbProject_CallHooks(HSQUIRRELVM v)
+    {
+        // this, isLoading
+        ExtractParams2<cbProject*, bool> extractor(v);
+        if (!extractor.Process("cbProject::CallHooks"))
+            return extractor.ErrorMessage();
+
+        ProjectLoaderHooks::CallHooks(extractor.p0, extractor.p0->GetExtensionsNode()->ToElement(), extractor.p1);
+        return 0;  // void function
+    }
+    // DreamSDK::End
+
     SQInteger ProjectManager_GetDefaultPath(HSQUIRRELVM v)
     {
         // this
@@ -2824,6 +2840,10 @@ namespace ScriptBindings
                        _SC("cbProject::GetExpandedVirtualBuildTargetGroup"));
             BindMethod(v, _SC("CanAddToVirtualBuildTarget"), cbProject_CanAddToVirtualBuildTarget,
                        _SC("cbProject::CanAddToVirtualBuildTarget"));
+            // DreamSDK::Start
+            BindMethod(v, _SC("CallHooks"), cbProject_CallHooks,
+                       _SC("cbProject::CallHooks"));
+            // DreamSDK::End
 
             BindDefaultInstanceCmp<cbProject>(v);
             // Put the class in the root table. This must be last!

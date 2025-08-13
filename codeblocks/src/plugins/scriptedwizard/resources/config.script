@@ -73,6 +73,7 @@ function RegisterWizards()
     RegisterWizard(wizProject,     _T("tricore"),      _("TriCore Project"),       _("Embedded Systems"));
     RegisterWizard(wizProject,     _T("ppc"),          _("PowerPC Project"),       _("Embedded Systems"));
     RegisterWizard(wizProject,     _T("mcs51"),        _("MCS51 Project"),         _("Embedded Systems"));
+    RegisterWizard(wizProject,     _T("dc"),           _T("Sega Dreamcast Project"),_T("Embedded Systems"));	
     //
     // file wizards
     //
