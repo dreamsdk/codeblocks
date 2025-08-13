@@ -109,7 +109,7 @@ As always, this section assumes that you are setting up things for 64-bit, but a
 
 Result:
 
-![Debugger Settings in Code::Blocks](./rsrc/debugger.png)
+![Debugger Settings in Code::Blocks](./resources/readme/debugger.png)
 
 **Note:** [This part has been written using the WinLibs official guide as base](https://winlibs.com/#usage-codeblocks).
 
@@ -129,7 +129,7 @@ Result:
 
 Result:
 
-![Compiler Settings / Toolchain executables in Code::Blocks](./rsrc/compiler1.png)
+![Compiler Settings / Toolchain executables in Code::Blocks](./resources/readme/compiler1.png)
 
 Then, select the options forcing the build of static binaries. If not doing so, you will be forced to redistribute MinGW-w64 runtime libraries (DLL), something that we don't want for Code::Blocks.
 
@@ -141,7 +141,7 @@ Then, select the options forcing the build of static binaries. If not doing so, 
 	
 Result:
 
-![Compiler Settings / Compiler Flags in Code::Blocks](./rsrc/compiler2.png)
+![Compiler Settings / Compiler Flags in Code::Blocks](./resources/readme/compiler2.png)
 
 You can now validate the **Compiler settings** dialog by clicking **OK**.
 
@@ -166,14 +166,14 @@ The **Global Variables** window should be shown automatically, if not, select th
 	- In the `lib` field, enter `C:\Program Files\CodeBlocks\lib`.
 
 Here is an example of the **Global Variables** window filled in:
-![Global Variables in Code::Blocks](./rsrc/variables.png)
+![Global Variables in Code::Blocks](./resources/readme/variables.png)
 
 **Note regarding wx32_64**: In practice, we will use only the `release` build of wxMSW, as we won't debug wxMSW itself. But if for some reasons, you want to use the Debug builds of wxMSW, then input `${root}\wxMSW\bin\${arch}\debug` in `base` field (and do the adaptations for the rest). You will need to update the `WX_SUFFIX` project variable in all projects using wxMSW:
 1. Click on **Project** > **Build options...**.
 2. Click on the **Custom Variables** tab.
 3. In the **Variables** list, select the `WX_SUFFIX` variable and click on **Edit**.
 4. In the **Value** field, input `ud` (for Unicode/Debug).
-![Update WX_SUFFIX variable in Code::Blocks](./rsrc/wxsuffix.png)
+![Update WX_SUFFIX variable in Code::Blocks](./resources/readme/wxsuffix.png)
 5. Validate everything by clicking **OK**.
 
 This `WX_SUFFIX` variable need to be updated on all projects using wxMSW, so it could be really long to update.
@@ -202,7 +202,7 @@ If you want to debug the **Code::Blocks** build, you must first install a **Drea
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\compiler_dc-gcc.xml`
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\options_dc-gcc.xml`
 3. You can now run/debug the produced Code::Blocks IDE by using the left or right arrows in the toolbar.
-![Toolbar in Code::Blocks](./rsrc/toolbar.png)
+![Toolbar in Code::Blocks](./resources/readme/toolbar.png)
 4. In the debugged **Code::Blocks** (and NOT your regular Code::Blocks you used to build this special edition!), go to the **Settings** > **Compiler** menu, 
 select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset defaults**.
 **Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
