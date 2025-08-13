@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0"?>
 <!DOCTYPE CodeBlocks_compiler>
 <CodeBlocks_compiler name="GNU GCC Compiler for Sega Dreamcast"
-                     id="dc-gcc"					 
-					 weight="72"
-					 platform="windows">
+                     id="dc-gcc"
+                     weight="72"
+                     platform="windows">
     <Path type="master">
         <Search envVar="DREAMSDK_HOME" for="C"/>
         <Search envVar="PATH" for="C"/>
-		<Search path="C:\DreamSDK\opt\toolchains\dc\sh-elf"/>
-		<Fallback path="C:\DreamSDK\opt\toolchains\dc\sh-elf"/>        
+        <Search path="C:\DreamSDK\opt\toolchains\dc\sh-elf"/>
+        <Fallback path="C:\DreamSDK\opt\toolchains\dc\sh-elf"/>
     </Path>	
 </CodeBlocks_compiler>
