@@ -32,10 +32,16 @@
             checkAgainst="-O -O1 -O2 -O3 -O4 -Os"
             checkMessage="You have optimizations enabled. This is Not A Good Thing(tm) when producing debugging symbols..."
             supersedes="-s"/>
+    <Option name="Disable most optimization"
+            option="-O0"
+            category="Debugging"
+            checkAgainst="-O -O1 -O2 -O3 -O4 -Os"
+            checkMessage="You have optimizations enabled. This is Not A Good Thing(tm) when producing debugging symbols..."
+            supersedes="-s"/>
     <Option name="Optimize debugging executable (compile speed, execution speed and better debugging)"
             option="-Og"
             category="Debugging"
-            supersedes="-O -O1 -O2 -O3 -O4 -Os"/>            
+            supersedes="-O -O0 -O1 -O2 -O3 -O4 -Os"/>            
    
     <!-- profiling -->
     <Option name="Profile code when executed"
@@ -54,7 +60,7 @@
             category="Optimization"
             checkAgainst="-g -ggdb"
             checkMessage="You have debugging symbols enabled. This is Not A Good Thing(tm) when optimizing..."
-            supersedes="-O -O1 -O2 -O3 -Os"/> 
+            supersedes="-O -O1 -O2 -O3 -Os"/>
 
     <Command name="CompileObject" value="$compiler $options $includes -c $file -o $object"/>
     <Command name="CompileObject" ext="cpp" value="$compiler $options $includes -c $file -o $object"/>
