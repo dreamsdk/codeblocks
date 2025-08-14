@@ -1,14 +1,30 @@
 /*******************************************************************************
-	Sega Dreamcast Project
-	
-	Project name : [PROJECT_NAME]
-	Created on   : [NOW]
+    Sega Dreamcast Project
+    
+    Project name : [PROJECT_NAME]
+    Created on   : [NOW]
 *******************************************************************************/
 
 #define PROJECT_NAME "[PROJECT_NAME]"
 
+/* This example simply demonstrates what needs to be done to have a properly
+   managed Debug and Release targets in a project created by Code::Blocks.
+
+   For KallistiOS demonstrations, see the examples provided with KallistiOS:
+   /opt/toolchains/dc/kos/examples/dreamcast 
+
+   If you're new to Sega Dreamcast development, this is a must-read:
+   https://dreamcast.wiki/Getting_Started_with_Dreamcast_development
+
+   You can also browse the online help here:
+   https://kos-docs.dreamcast.wiki/
+   
+   If you need support, feel free to join the official Discord channel:
+   https://discord.gg/bpDZHT78PA */
+
 #include <kos.h>
 [KOSLIBS_INC]
+
 #ifdef DEBUG
 #include <kos/dbgio.h>
 #include <arch/gdb.h>
@@ -28,30 +44,24 @@
    the current KOS defaults, use INIT_DEFAULT (or leave it out entirely). */
 KOS_INIT_FLAGS(INIT_DEFAULT | INIT_MALLOCSTATS);
 
-[IF ROMDISK]/* Declaration of the romdisk
-   You can access the files inside it by using the "/rd" mounting point. */
-extern uint8 romdisk[];
-KOS_INIT_ROMDISK(romdisk);[ENDIF ROMDISK]
-
 /* Your program's main entry point */
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
 #ifdef DEBUG
-	/* This is needed for the Debug target.
-	   This instruction is used for initializing the connection with the debugger.
-	   Don't forget to configure Dreamcast Tool (dc-tool) utility from DreamSDK Manager. */
-	gdb_init();
-	
-	/* Greetings... */
-	printf("Connection established to %s!", PROJECT_NAME);
-	
-	/* Example: Set the framebuffer as the output device for dbgio. */
+    /* This is required for the Debug target.
+       This instruction initializes the connection with GNU Debugger (GDB).
+       Don't forget to configure Dreamcast Tool (dc-tool) by using
+       DreamSDK Manager. */
+    gdb_init();
+    printf("Connection established with %s!", PROJECT_NAME);
+    
+    /* Example: Set the framebuffer as the output device for dbgio. */
     /* dbgio_dev_select("fb"); */
 #endif
 
     /* Your program start here... */
     printf("\nHello world from %s!\n\n", PROJECT_NAME);
 
-	/* Bye... */
+    /* Bye... */
     return 0;
 }
