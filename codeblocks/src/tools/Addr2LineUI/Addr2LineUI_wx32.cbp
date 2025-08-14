@@ -3,7 +3,7 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="Addr2LineUI wx3.2.x" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="default">
 				<Option platforms="Windows;" />
@@ -11,7 +11,7 @@
 				<Option working_dir="../../devel32" />
 				<Option object_output="../../.objs32/tools/Addr2LineUI" />
 				<Option type="0" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
 					<Add option="-O2" />
