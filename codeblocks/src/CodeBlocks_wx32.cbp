@@ -4,14 +4,14 @@
 	<Project>
 		<Option title="Code::Blocks wx3.2.x (32 bit)" />
 		<Option default_target="src" />
-		<Option compiler="gcc" />
+		<Option compiler="gnu_gcc_compiler_32-bit" />
 		<Build>
 			<Target title="tinyXML">
 				<Option output="devel32/txml" prefix_auto="1" extension_auto="1" />
 				<Option working_dir="" />
 				<Option object_output=".objs32" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-DEXPORT_LIB" />
 					<Add directory="include/tinyxml" />
@@ -21,7 +21,7 @@
 				<Option output="$(TARGET_OBJECT_DIR)/autorevision" prefix_auto="1" extension_auto="1" />
 				<Option object_output=".objs32" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="-v +wx +int +t .. include/autorevision.h" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
@@ -37,7 +37,7 @@
 				<Option working_dir="tools/ConsoleRunner" />
 				<Option object_output=".objs32" />
 				<Option type="1" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option projectLinkerOptionsRelation="1" />
 				<Compiler>
 					<Add option="-Os" />
@@ -48,7 +48,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs32" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-DEXPORT_LIB" />
 					<Add directory="include/scripting/include" />
@@ -59,7 +59,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs32" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-D__WX__" />
 					<Add option="-DWINVER=0x0501" />
@@ -86,7 +86,7 @@
 				<Option working_dir="devel32" />
 				<Option object_output=".objs32" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --verbose -p debug" />
 				<Option createStaticLib="1" />
 				<Option projectLinkerOptionsRelation="2" />
@@ -131,7 +131,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="0" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option projectLinkerOptionsRelation="2" />
 				<Compiler>
@@ -182,7 +182,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -213,7 +213,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -245,7 +245,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -274,7 +274,7 @@
 				<Option working_dir="" />
 				<Option object_output=".objs32" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Compiler>
 					<Add option="-DDEPSLIB_WINDOWS" />
 				</Compiler>
@@ -289,7 +289,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;devel32/libdepslib.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -325,7 +325,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -355,7 +355,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -385,7 +385,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -415,7 +415,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -445,7 +445,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -475,7 +475,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -505,7 +505,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -535,7 +535,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -566,7 +566,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -596,7 +596,7 @@
 				<Option object_output=".objs32" />
 				<Option external_deps="devel32/libcodeblocks.a;" />
 				<Option type="3" />
-				<Option compiler="gcc" />
+				<Option compiler="gnu_gcc_compiler_32-bit" />
 				<Option parameters="--debug-log --no-dde --no-check-associations --multiple-instance --no-splash-screen --verbose -p debug" />
 				<Option host_application="./codeblocks.exe" />
 				<Option run_host_application_in_terminal="0" />
@@ -4068,18 +4068,6 @@
 		<Unit filename="src/dlgaboutplugin.h">
 			<Option target="src" />
 		</Unit>
-		<Unit filename="src/editprojectglobsdlg.cpp">
-			<Option target="src" />
-		</Unit>
-		<Unit filename="src/editprojectglobsdlg.h">
-			<Option target="src" />
-		</Unit>
-		<Unit filename="src/manageglobsdlg.cpp">
-			<Option target="src" />
-		</Unit>
-		<Unit filename="src/manageglobsdlg.h">
-			<Option target="src" />
-		</Unit>
 		<Unit filename="src/editkeywordsdlg.cpp">
 			<Option target="src" />
 		</Unit>
@@ -4090,6 +4078,12 @@
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/editorconfigurationdlg.h">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/editprojectglobsdlg.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/editprojectglobsdlg.h">
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/environmentsettingsdlg.cpp">
@@ -4126,6 +4120,12 @@
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/main.h">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/manageglobsdlg.cpp">
+			<Option target="src" />
+		</Unit>
+		<Unit filename="src/manageglobsdlg.h">
 			<Option target="src" />
 		</Unit>
 		<Unit filename="src/notebookstyles.cpp">
@@ -4354,10 +4354,10 @@
 		<Unit filename="wxsmith/editprojectglobsdlg.wxs">
 			<Option target="src" />
 		</Unit>
-		<Unit filename="wxsmith/manageglobsdlg.wxs">
+		<Unit filename="wxsmith/goto_file.wxs">
 			<Option target="src" />
 		</Unit>
-		<Unit filename="wxsmith/goto_file.wxs">
+		<Unit filename="wxsmith/manageglobsdlg.wxs">
 			<Option target="src" />
 		</Unit>
 		<Extensions>
