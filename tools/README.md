@@ -5,12 +5,11 @@ These packages are provided here for convenience only, because some of them beco
 
 ## Toolchains ##
 
-* **x64**: [Nuwen MinGW 16.1](https://nuwen.net/mingw.html) (GCC 8)
-* **x86**: [TDM-GCC-64 9.2.0](https://jmeubank.github.io/tdm-gcc/) with `-m32` switch (GCC 9)
+[WinLibs - GCC+MinGW-w64 compiler for Windows](https://winlibs.com/)
 
 ## UPX ##
 
-[UPX 3.96](https://upx.github.io/)
+[UPX 5.0.2](https://upx.github.io/)
 
 ## Zip from Info-ZIP ##
 
