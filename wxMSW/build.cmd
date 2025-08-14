@@ -59,7 +59,17 @@ rem Check if we are sure to proceed...
 echo This script will cleanup all the produced binaries,
 echo Then will rebuild everything related to wxWidgets.
 echo This will takes a lot of time.
-pause
+
+:confirm
+set "_choice="
+set /p _choice="Continue? [Y/N] "
+if not defined _choice goto confirm
+if /i "%_choice%"=="Y" goto proceed
+if /i "%_choice%"=="N" goto finish
+echo Invalid choice. Please enter Y or N.
+goto confirm
+
+:proceed
 echo.
 
 rem Prepare build
