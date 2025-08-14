@@ -3,7 +3,9 @@ set TITLE=Code::Blocks for DreamSDK Packager
 title %TITLE%
 cls
 
+echo =============================================================================
 echo %TITLE%
+echo =============================================================================
 echo.
 
 rem Initialize internal stuff
@@ -66,9 +68,13 @@ rem Done!
 :finish
 popd
 echo.
-echo ---
-echo %TITLE% is done!
+echo =============================================================================
+echo %TITLE% is done.
 echo Check the output directory: %OUTPUT_DIR%
+echo.
+echo All generated packages can now be copied in "src/engine/embedded/packages"
+echo in the "codeblocks-patcher" root directory.
+echo =============================================================================
 pause
 goto :eof
 
@@ -92,7 +98,8 @@ set _arch=x%1
 set _package_file=codeblocks-%CB_VERSION%-dreamsdk-addon-bin-%_arch%.7z
 set _cb_source_dir=%CB_SOURCE32_DIR_NAME%
 if "%_arch%"=="x64" set _cb_source_dir=%CB_SOURCE64_DIR_NAME%
-set _cb_source_path=..\codeblocks\src\%_cb_source_dir%
+set _cb_source_path=%BASE_DIR%\..\codeblocks\src\%_cb_source_dir%
+if not exist "%_cb_source_path%" goto makepack_error_cbnotgenerated
 set _toolchain=%TOOLCHAIN32_HOME%
 if "%_arch%"=="x64" set _toolchain=%TOOLCHAIN64_HOME%
 set _strip="%_toolchain%\bin\strip.exe"
@@ -130,21 +137,22 @@ copy share\CodeBlocks\plugins\*.dll %CB_SHARE_PLUGINS_DIR%
 rem Compilers
 set COMPILER_FILE=share\CodeBlocks\compilers\compiler_dc-gcc.xml
 copy %COMPILER_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{msys}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
 
 rem Compilers Options
 set OPTIONS_FILE=share\CodeBlocks\compilers\options_dc-gcc.xml
 copy %OPTIONS_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
-call %JREPL% "\bT%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "T{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{msys}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\bT%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "T{msys}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
 
 rem Project Wizard
 copy share\CodeBlocks\templates\wizard\config.script %CB_SHARE_TMPL_DIR%
 xcopy share\CodeBlocks\templates\wizard\dc %CB_SHARE_TMPL_DIR%\dc\ /E
 
-rem Splash file
-set SPLASH_FILE=share\CodeBlocks\images\splash_1312.png
-copy %SPLASH_FILE% %CB_SHARE_IMAGES_DIR%
+rem Splash files
+copy share\CodeBlocks\images\splash_1312.png %CB_SHARE_IMAGES_DIR%
+copy share\CodeBlocks\images\splash_2003.png %CB_SHARE_IMAGES_DIR%
+copy share\CodeBlocks\images\splash_2503.png %CB_SHARE_IMAGES_DIR%
 
 rem All files were copied!
 cd %PACKAGE_DIR%
@@ -168,6 +176,11 @@ rem Finally, create the package!
 move %_package_file% ..\%OUTPUT_DIR%
 cd ..
 rmdir /S %PACKAGE_DIR% /Q
+goto makepack_exit
+
+:makepack_error_cbnotgenerated
+echo Code::Blocks %_arch% is not generated, skipping.
+goto makepack_exit
 
 :makepack_exit
 rem Package was created!
