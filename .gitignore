@@ -48,3 +48,4 @@ wxMSW/src/lib/gcc_dll*
 packager/dist/
 build.ini
 mkpkg.ini
+/codeblocks/src/plugins/contrib/clangd_client/clangd_client.zip
