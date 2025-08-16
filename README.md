@@ -215,13 +215,12 @@ You will have to check and copy the wxMSW libraries now if not already done, but
 
 If you want to debug the **Code::Blocks** build, you must first install a **DreamSDK** working package in `C:\DreamSDK\`. If you don't have an `C:` drive (really?!), you have to do some changes:
 
-1. Change the `DREAMSDK_HOME_DEBUG_DRIVE` variable in `.\packager\mkpkg.cmd`.
-2. Change the `C:` drive reference in the 2 files below:
+1. Change the `C:` drive reference in the 2 files below:
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\compiler_dc-gcc.xml`
 	- `.\codeblocks\src\plugins\compilergcc\resources\compilers\options_dc-gcc.xml`
-3. You can now run/debug the produced Code::Blocks IDE by using the left or right arrows in the toolbar.
+2. You can now run/debug the produced Code::Blocks IDE by using the left or right arrows in the toolbar.
 ![Toolbar in Code::Blocks](./resources/readme/toolbar.png)
-4. In the debugged **Code::Blocks** (and NOT your regular Code::Blocks you used to build this special edition!), go to the **Settings** > **Compiler** menu, 
+3. In the debugged **Code::Blocks** (and NOT your regular Code::Blocks you used to build this special edition!), go to the **Settings** > **Compiler** menu, 
 select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset defaults**.
 **Code::Blocks** should detect the **DreamSDK** package environment used for debug your **Code::Blocks** build.
 
@@ -266,8 +265,9 @@ After building the **Code::Blocks** release, you need to build the package that 
 
 1. Follow the instructions for building a Release build (see above), if not already done.
 2. Go to the `.\packager` directory.
-3. From there, run the `mkpkg.cmd` file.
-4. All packages are now available in `.\packager\dist` directory.
+3. Copy the `mkpkg.template.ini` file to `mkpkg.ini`, adjust if necessary; in particular, change the `DREAMSDK_HOME_DEBUG_DRIVE` variable if you changed `compiler_dc-gcc.xml` and `options_dc-gcc.xml` files.
+4. From there, run the `mkpkg.cmd` file.
+5. All packages are now available in `.\packager\dist` directory.
 
 The next step is now outside of this repository: you have to copy all packages generated into the [Code::Blocks Patcher for DreamSDK repository](https://github.com/dreamsdk/codeblocks-patcher), in the following directory: `.\codeblocks-patcher\src\engine\embedded\packages\`. You may now build/rebuild the **Code::Blocks Patcher for DreamSDK** project starting from this point.
 
