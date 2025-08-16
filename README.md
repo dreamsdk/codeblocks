@@ -6,11 +6,11 @@
 
 [DreamSDK](https://dreamsdk.org "DreamSDK") is a modern, ready-to-use environment for the [Sega Dreamcast](https://en.wikipedia.org/wiki/Dreamcast) development, designed for the **Microsoft Windows** platform. It's a package composed by a lot of pre-compiled tools; and Code::Blocks is a nice IDE which unleash the power of **DreamSDK**.
 
-**This repository hold a special version of the official Code::Blocks 25.03 stable release modified for adding full support of DreamSDK.**
+**This repository hold a special edition of the official Code::Blocks 25.03 stable release modified for adding full support of DreamSDK.**
 
-If you are interested about Code::Blocks but not in Sega Dreamcast development using DreamSDK, you may use the official Code::Blocks release then. But if you are interested in Sega Dreamcast development using DreamSDK AND regular development, you can use this special edition of Code::Blocks without any issue, as the changes performed in this fork are not destructive, they only applies in DreamSDK profile.
+If you are interested about Code::Blocks but not in Sega Dreamcast development using DreamSDK, you may use the official Code::Blocks release then. But if you are interested in Sega Dreamcast development using DreamSDK, and at the same time, you are interested in regular development, you can use this special edition of Code::Blocks without any issue, as the changes performed in this fork are not destructive, they only applies in DreamSDK profile.
 
-Notables changes of this special release of **Code::Blocks** includes:
+Notables changes of this special edition of **Code::Blocks** includes:
 
 * New compiler/options file (`dc-gcc`) which specify the `GNU GCC Compiler for Sega Dreamcast` compiler.
 * The `compiler` and `debugger` plugins have been patched to run the loader (i.e. `dc-tool`) before running the target.
@@ -30,8 +30,10 @@ In summary, the goal of this repository is to generate the following packages:
 - `.\packager\dist\codeblocks-25.03-dreamsdk-addon-bin-x86.7z` for 32-bit;
 - `.\packager\dist\codeblocks-25.03-dreamsdk-addon-bin-x64.7z` for 64-bit.
 
-This package will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
+These packages will be embedded in the **Code::Blocks Patcher for DreamSDK** (`codeblocks-patcher.exe`).
 This patcher is available in the [Code::Blocks Patcher for DreamSDK](https://github.com/dreamsdk/codeblocks-patcher) repository.
+
+This documents assumes that you're using a 64-bit Windows. 64-bit Windows can build 32-bit binaries as well.
 
 ## Prerequisites
 
@@ -49,7 +51,7 @@ These **are not** provided in this repository but could be easily downloaded:
 - [7-Zip](http://www.7-zip.org).
 - [Boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html).
 - [Code::Blocks](https://www.codeblocks.org) (**yes, for building Code::Blocks you will need Code::Blocks**).
-- [DreamSDK](https://www.dreamsdk.org) (this is not required for building Code::Blocks but will be for testing the special release that we will build using this repository).
+- [DreamSDK](https://www.dreamsdk.org) (this is not required for building Code::Blocks but will be for testing the special edition that we will build using this repository).
 
 ### Install WinLibs toolchains
 
@@ -61,15 +63,16 @@ Just unzip the 2 WinLibs toolchains in the drive root, usually `C:\`:
 
 1. Make sure `zip` and `upx` are available in your `PATH` variable.
 2. Install [7-Zip](http://www.7-zip.org) using the default settings and make sure `7z` is available in your `PATH` variable.
-3. Download [Code::Blocks](https://www.codeblocks.org) without the embedded compiler, as we will use our own. Install it with the default settings. It's easiest to install Code::Blocks in 64-bit if you plan to compile the 64-bit version (i.e., `codeblocks-25.03-setup.exe`); do the same for the 32-bit version (i.e., `codeblocks-25.03-32bit-setup.exe`), although it's not required. This document will assume you'll follow this rule.
-4. Install [DreamSDK](https://www.dreamsdk.org) using the default settings.
+3. Download [Code::Blocks](https://www.codeblocks.org) without the embedded compiler, as we will use our own (i.e., `codeblocks-25.03-setup.exe` for 64-bit or `codeblocks-25.03-32bit-setup.exe` for 32-bit). Install it with the default settings.
+4. Install [DreamSDK](https://www.dreamsdk.org) using the default settings (i.e., it needs to be installed in `C:\DreamSDK`).
 
 ### Building wxMSW
 
 After installing all the prerequisites, you need to build **wxWidgets for Windows**, i.e. **wxMSW**. You only need to do that once; fortunately because this process is really very long.
 
-1. Open the `.\wxMSW\build.ini` file and adapt it as needed.
-2. Double-click on the `.\wxMSW\build.cmd` file.
+1. Copy the `.\wxMSW\build.template.ini` and name it `build.ini`.
+2. Open the `.\wxMSW\build.ini` file and adapt it as needed.
+3. Double-click on the `.\wxMSW\build.cmd` file.
 
 The `.\wxMSW\bin` directory will be created, that will contains both `debug` and `release` wxWidgets for Windows builds, both on 32-bit and 64-bit flavours.
 
@@ -77,7 +80,7 @@ The `.\wxMSW\bin` directory will be created, that will contains both `debug` and
 
 Boost is used for some plugins in Code::Blocks, for example for the [Nassi–Shneiderman](https://wiki.codeblocks.org/index.php/NassiShneiderman_plugin) plugin.
 
-This section explains how to install Boost for Code::Blocks; and it assumes that the 64-bit version is the one that will be built.
+This section explains how to install Boost for Code::Blocks.
 
 1. Unzip [boost 1.87.0](http://www.boost.org/users/history/version_1_87_0.html). The location where Boost is unzipped is called officially `$BOOST_ROOT`. Usually, `$BOOST_ROOT` will be set as `C:\Program Files\boost\boost_1_87_0`, but it could be `C:\boost_1_87_0` or whatever you want.
 2. Open a Windows Command prompt.
@@ -91,21 +94,23 @@ This section explains how to install Boost for Code::Blocks; and it assumes that
 		bootstrap gcc
 		b2 install --toolset=gcc "--prefix=%CODEBLOCKS_ROOT%" boost.stacktrace.from_exception=off
 
-After running those commands, Boost is indeed installed. Now we need to configure Code::Blocks IDE, as explained below.
+After running those commands, Boost is indeed installed. If using a 64-bit Windows, it will be installed for both 64-bit and 32-bit (as using the WinLibs 64-bit toolchain allow to build both CPU architectures), and of course if you compiled under a 32-bit Windows, only 32-bit has been built. Now we need to configure Code::Blocks IDE, as explained below.
 
 ### Configuring Code::Blocks IDE
 
 To build **Code::Blocks** you will indeed need **Code::Blocks**.
 Install the IDE without the embedded MinGW compiler (as it isn't needed) then unzip both WinLibs toolchains if not already done (see above). Now, it's necessary to configure Debuggers and Compilers in Code::Blocks.
 
-As always, this section assumes that you are setting up things for 64-bit, but adjust the settings if necessary.
+As always, this section assumes that you are setting up things on 64-bit Windows, but adjust the settings if necessary.
 
 #### Configure Debuggers in Code::Blocks
 
 1. Select the **Settings** > **Debugger** menu item in Code::Blocks.
 2. Click on **GDB/CDB debugger** then **Default**.
-3. In Executable path, input the correct GNU Debugger (GDB) binary: `C:\mingw64\bin\gdb.exe`
-4. Click **OK**.
+3. In **Executable path**, input the correct GNU Debugger (GDB) binary: `C:\mingw64\bin\gdb.exe`
+4. Select the **GDB/CDG debugger** then click on **Create config**. Enter the name `Default (32-bit)` and click **OK**.
+5. In **Executable path**, input: `C:\mingw32\bin\gdb.exe`.
+4. Click **OK** to close the **Debugger settings** window.
 
 Result:
 
@@ -115,9 +120,13 @@ Result:
 
 #### Configure Compilers in Code::Blocks
 
+The Code::Blocks project is expecting to use the `GNU GCC Compiler` profile for 64-bit project, while the `GNU GCC Compiler (32-bit)` profile would be used for 32-bit Windows.
+Please note, the `GNU GCC Compiler (32-bit)` is not the official compiler expected by the Code::Blocks 32-bit source, but it make things easier as we can build both 64-bit and 32-bit Code::Blocks binaries on a single machine like this.
+
+Let's configure the 64-bit profile, `GNU GCC Compiler`:
 1. Select the **Settings** > **Compiler** menu item in Code::Blocks.
 2. Select the **GNU GCC Compiler (default)** profile in the list if not already done.
-3. Click on **Toolchain eXecutables** and input `C:\mingw64` in **Compiler's installation directory**.
+3. Click on **Toolchain executables** and input `C:\mingw64` in **Compiler's installation directory**.
 4. In the **Program files** sub-tab, input the following:
     - **C compiler:** `x86_64-w64-mingw32-gcc.exe`
     - **C++ compiler:** `x86_64-w64-mingw32-g++.exe`
@@ -143,6 +152,15 @@ Result:
 
 ![Compiler Settings / Compiler Flags in Code::Blocks](./resources/readme/compiler2.png)
 
+Now it's time to create the 32-bit profile, named `GNU GCC Compiler (32-bit)`:
+7. In the **Selected compiler**, make sure to select the `GNU GCC Compiler` we just configured earlier.
+8. Click on **Copy**. In the box, enter the following name by replacing the `Copy of GNU GCC Compiler` by `GNU GCC Compiler (32-bit)`. Click on **OK**. Validate the warning displayed now.
+9. Go to **Toolchain executables** and change the **Compiler's installation directory**: `C:\mingw32`.
+10. In the **Program files** sub-tab:
+    - Change the executables prefixes: `x86_64` needs to be replaced by `i686` (i.e., `x86_64-w64-mingw32-gcc.exe` becomes `i686-w64-mingw32-gcc.exe`).
+    - **Debugger**: Select `GDB/CDB debugger: Default (32-bit)`
+    - You don't have to update **Resource compiler** and **Make program**.    	
+
 You can now validate the **Compiler settings** dialog by clicking **OK**.
 
 #### Global Variables configuration
@@ -154,7 +172,7 @@ Start **Code::Blocks** then open the `.\codeblocks\codeblocks\src\CodeBlocks_wx3
 As always in this document, we will consider that you want to build the 64-bit release, so we will open the `CodeBlocks_wx32_64.workspace` file. This will open the `CodeBlocks Workspace wx3.2.x (64 bit)` workspace in your Code::Blocks IDE.
 
 The **Global Variables** window should be shown automatically, if not, select the **Settings** > **Global Variables** menu item in Code::Blocks. Select (or create) the following variables:
-- For the `wx32_64` variable: 
+- For the `wx32_64` variable (`wx32` for 32-bit release):
     - In the `base` field, enter `${root}\wxMSW\bin\${arch}\release`, where `${root}` is the directory path where this repository is stored and `${arch}` will be `x86` or `x64` (e.g. `C:\codeblocks\wxMSW\bin\x64\release` if you cloned this in `C:\codeblocks`).
 	- In the `include` field, enter `${root}\wxMSW\bin\${arch}\release\include` (e.g., `C:\codeblocks-25.03\wxMSW\bin\x64\release\include`)
 	- In the `lib` field, enter `${root}\wxMSW\bin\${arch}\release\lib` (e.g., `C:\codeblocks-25.03\wxMSW\bin\x64\release\lib`)
@@ -191,7 +209,7 @@ Again, this part of the document assumes that 64-bit Code::Blocks will be built 
 3. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows). Basically, you may right-click in the `CodeBlocks Workspace wx3.2.x (64 bit)` root node and select **Rebuild workspace**.
 4. The debug build is stored in `.\codeblocks\src\devel32_64`. 
 
-You will have to copy the wxMSW libraries now, but this will be done only once (or as soon as you have to rebuild wxMSW for some reason). Copy the `wxmsw32u_gcc_custom.dll` and `wxmsw32u_gl_gcc_custom.dll` files in the `.\codeblocks\src\devel32_64` directory. If you are using Debug release of wxMSW, then of course you will copy the `wxmsw32ud_gcc_custom.dll` and `wxmsw32ud_gl_gcc_custom.dll` files instead.
+You will have to check and copy the wxMSW libraries now if not already done, but this will be done only once (or as soon as you have to rebuild wxMSW for some reason). From the `.\wxMSW\bin` appropriate directory, copy the `wxmsw32u_gcc_custom.dll` and `wxmsw32u_gl_gcc_custom.dll` files in the `.\codeblocks\src\devel32_64` directory if they aren't copied already. If you are using Debug release of wxMSW, then of course you will copy the `wxmsw32ud_gcc_custom.dll` and `wxmsw32ud_gl_gcc_custom.dll` files instead.
 
 ### Running and debugging your Code::Blocks build
 
@@ -238,9 +256,9 @@ select the **GNU GCC Compiler for Sega Dreamcast** profile and click on **Reset 
 4. Rebuild the [the whole workspace](http://wiki.codeblocks.org/index.php/Installing_Code::Blocks_from_source_on_Windows). Basically, you may right-click in the `CodeBlocks Workspace wx3.2.x (64 bit)` root node and select **Rebuild workspace**.
 5. Run the `.\codeblocks\src\update32_64.bat` file.
 
-The release build is stored in `.\codeblocks\src\output32_64`.
+The release build is stored in `.\codeblocks\src\output32_64` (`output32` for 32-bit).
 
-**Note:** The wxMSW libraries are automatically copied from `devel32_64`, so you don't have to manually copy these libraries.
+**Note:** The wxMSW libraries are automatically copied from `devel32_64` (`devel32` for 32-bit), so you don't have to manually copy these libraries.
 
 ### Making the final package that will be embedded in Code::Blocks Partcher for DreamSDK
 
@@ -249,6 +267,11 @@ After building the **Code::Blocks** release, you need to build the package that 
 1. Follow the instructions for building a Release build (see above), if not already done.
 2. Go to the `.\packager` directory.
 3. From there, run the `mkpkg.cmd` file.
+4. All packages are now available in `.\packager\dist` directory.
+
+The next step is now outside of this repository: you have to copy all packages generated into the [Code::Blocks Patcher for DreamSDK repository](https://github.com/dreamsdk/codeblocks-patcher), in the following directory: `.\codeblocks-patcher\src\engine\embedded\packages\`. You may now build/rebuild the **Code::Blocks Patcher for DreamSDK** project starting from this point.
+
+**Et voilà!**
 
 ## FAQ
 
