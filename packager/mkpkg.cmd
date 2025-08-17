@@ -130,13 +130,13 @@ copy share\CodeBlocks\plugins\*.dll %CB_SHARE_PLUGINS_DIR%
 rem Compilers
 set COMPILER_FILE=share\CodeBlocks\compilers\compiler_dc-gcc.xml
 copy %COMPILER_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{msys}" /f %PACKAGE_DIR%\%COMPILER_FILE% /o -
 
 rem Compilers Options
 set OPTIONS_FILE=share\CodeBlocks\compilers\options_dc-gcc.xml
 copy %OPTIONS_FILE% %CB_SHARE_COMPILERS_DIR%
-call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
-call %JREPL% "\bT%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "T{app}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\b%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "{msys}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
+call %JREPL% "\bT%DREAMSDK_HOME_DEBUG_DRIVE%\\DreamSDK\b" "T{msys}" /f %PACKAGE_DIR%\%OPTIONS_FILE% /o -
 
 rem Project Wizard
 copy share\CodeBlocks\templates\wizard\config.script %CB_SHARE_TMPL_DIR%
