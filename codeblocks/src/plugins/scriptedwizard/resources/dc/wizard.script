@@ -4,7 +4,7 @@
 //
 // Project: Sega Dreamcast Project (DreamSDK)
 // Author:  The DreamSDK Team (https://dreamsdk.org)
-// Last Update: 2025-08-16
+// Last Update: 2025-08-28
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -48,7 +48,7 @@ Referential <- {
 }
 Constants <- {
 	WizardName = _T("DreamSDK Wizard")
-	DebugMode = false
+	DebugMode = true
 	DefaultCompilerId = _T("dc-gcc")
 }
 
@@ -473,6 +473,8 @@ function HandleLibraries(project)
 // add user library information to the project
 function HandleUserLibraries(project)
 {
+	Trace(_T("HandleUserLibraries"));
+
 	local separator = _T(":");
 
 	local buffer = ::wxArrayString();
@@ -480,19 +482,26 @@ function HandleUserLibraries(project)
 	local sortData = LibraryInformation.LibrarySortList;
 
 	// Add libraries name with weight (sort data)
+	Trace(_T("  Input dataset to sort:"));
 	for(local i = 0; i < libraries.GetCount(); i++)
 	{
 		local library = libraries.Item(i);
 		local sortIndex = sortData.Item(i);
-		buffer.Add(sortIndex + separator + library, 1);
+		local sortDataItem = sortIndex + separator + library;
+		Trace(_T("    " + sortDataItem));
+		buffer.Add(sortDataItem, 1);
 	}
-	buffer = JumpDownSort(buffer);
+	buffer = QuickSort(buffer);
 
 	// Everything is now sorted.
 	// Remove the weight information before adding the libs to the project.
+	Trace(_T("  Dataset sorted, adding libraries to project:"));
 	for(local i = 0; i < buffer.GetCount(); i++)
 	{
-		project.AddLinkLib(buffer.Item(i).AfterFirst(separator));
+		local library = buffer.Item(i);
+		Trace(_T("    " + library));
+		local library = library.AfterFirst(separator);
+		project.AddLinkLib(library);
 	}
 }
 
@@ -532,33 +541,40 @@ function GetFileLibraryInfo(isLangCPP, fileId)
 // generate user library information (includes/libs)
 function GenerateUserLibraryInformation()
 {
+	Trace(_T("GenerateUserLibraryInformation"));
+	
 	LibraryInformation.IncludeBufferText = _T("");
 	LibraryInformation.IncludeDirectoryList.Clear();
 	LibraryInformation.LibraryList.Clear();
 	LibraryInformation.LibrarySortList.Clear();
-
+	
 	for (local i = 0; i < ProjectSettings.SelectedLibraryList.GetCount(); i++)
 	{
 		local selectedLibraryName = ProjectSettings.SelectedLibraryList.Item(i);
 		local selectedLibraryIndex = GetReferentialIndex(selectedLibraryName);
+		
+		Trace(_T("  Handling: ") + selectedLibraryName);
 
-		// Handle includes
+		// Handle includes	
 		LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("\r\n// ") + selectedLibraryName + _T("\r\n");
 		local libraryInc = GetReferentialInclude(selectedLibraryIndex);
 		for(local j = 0; j < libraryInc.GetCount(); j++)
 		{
-			LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include ") + libraryInc.Item(j) + _T("\r\n");
-		}
+			LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include ") + libraryInc.Item(j) + _T("\r\n");			
+		}		
 		
 		// Handle include directories
+		Trace(_T("    Includes Directories:"));
 		local includeDirectoryList = GetReferentialIncludeDirectory(selectedLibraryIndex);
 		for(local j = 0; j < includeDirectoryList.GetCount(); j++)
 		{
 			local includeDirectory = includeDirectoryList.Item(j);
 			LibraryInformation.IncludeDirectoryList.Add(includeDirectory, 1);
-		}
+			Trace(_T("      ") + includeDirectory);
+		}		
 
 		// Handle libraries
+		Trace(_T("    Libraries:"));
 		local libraryNameList = GetReferentialLibrary(selectedLibraryIndex);
 		local librarySortList = GetReferentialLibrarySortIndex(selectedLibraryIndex);
 		for(local j = 0; j < libraryNameList.GetCount(); j++)
@@ -567,6 +583,7 @@ function GenerateUserLibraryInformation()
 			local librarySortIndex = librarySortList.Item(j);
 			LibraryInformation.LibraryList.Add(libraryName, 1);
 			LibraryInformation.LibrarySortList.Add(librarySortIndex, 1);
+			Trace(_T("      ") + libraryName);
 		}
 	}
 }
@@ -749,19 +766,105 @@ function HandleDirective(buffer, directive, enabled)
 }
 
 // -----------------------------------------------------------------------------
-// sort an wxArrayString (or any array type) using the jump-down sort algorithm.
+// sort an wxArrayString (or any array type) using the jump-down sort algorithm
 function JumpDownSort(array)
 {
-	for(local i = array.GetCount() - 1; i > 0; i--)
-		for(local j = 0; j < i; j++)
-			if (array.Item(i) < array.Item(j))
-			{
-				local tmp = array.Item(i);
-				array.SetItem(i, array.Item(j));
-				array.SetItem(j, tmp);
-			}
+    local n = array.GetCount();
+    local tmp = [];
 
-	return array;
+    // extract all wxStrings as pure strings
+    for (local i = 0; i < n; i++)
+        tmp.append(array.Item(i).tostring());
+
+    // standard insertion sort (pure strings)
+    for (local i = 1; i < n; i++)
+    {
+        local key = tmp[i];
+        local j = i - 1;
+        while (j >= 0 && tmp[j] > key)
+        {
+            tmp[j + 1] = tmp[j];
+            j--;
+        }
+        tmp[j + 1] = key;
+    }
+
+    // clear original array and refill
+    array.Clear();
+    foreach (s in tmp)
+        array.Add(_T(s), 1);
+
+    return array;
+}
+
+// -----------------------------------------------------------------------------
+// sort an wxArrayString (or any array type) using the quick sort algorithm
+function QuickSort(array)
+{
+    local n = array.GetCount();
+    local tmp = [];
+
+    // Extract all wxStrings as pure strings
+    for (local i = 0; i < n; i++)
+        tmp.append(array.Item(i).tostring());
+
+    // Iterative QuickSort
+    function partition(lst, low, high)
+    {
+        local pivot = lst[(low + high) / 2];
+        local i = low;
+        local j = high;
+
+        while (i <= j)
+        {
+            while (lst[i] < pivot) i++;
+            while (lst[j] > pivot) j--;
+
+            if (i <= j)
+            {
+                local t = lst[i];
+                lst[i] = lst[j];
+                lst[j] = t;
+                i++;
+                j--;
+            }
+        }
+        return [i, j];
+    }
+
+    function quicksort_iter(lst)
+    {
+        local stack = [];
+        stack.append([0, lst.len() - 1]);
+
+        while (stack.len() > 0)
+        {
+            local range = stack.pop();
+            local low = range[0];
+            local high = range[1];
+
+            if (low < high)
+            {
+                local res = partition(lst, low, high);
+                local i = res[0];
+                local j = res[1];
+
+                // Push sub-ranges onto stack
+                if (low < j) stack.append([low, j]);
+                if (i < high) stack.append([i, high]);
+            }
+        }
+    }
+
+    // Perform QuickSort on tmp
+    quicksort_iter(tmp);
+
+    // Clear original array and refill
+    array.Clear();
+    foreach (s in tmp)
+        array.Add(_T(s), 1);   // wxWidgets conversion
+
+    return array;
 }
 
 // -----------------------------------------------------------------------------
