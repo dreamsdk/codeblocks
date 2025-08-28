@@ -48,7 +48,7 @@ Referential <- {
 }
 Constants <- {
 	WizardName = _T("DreamSDK Wizard")
-	DebugMode = true
+	DebugMode = false
 	DefaultCompilerId = _T("dc-gcc")
 }
 
@@ -224,16 +224,13 @@ function OnLeave_SettingsPage(fwd)
 function GetSoftwareDevelopmentKitHomeDir()
 {
 	local result = ReplaceMacros(_T("$(#DREAMSDK_HOME)"));
-	Trace(_T("GetSoftwareDevelopmentKitHomeDir = ") + result);
 	return result;
 }
 
 // -----------------------------------------------------------------------------
 // get the MSYS root base folder for DreamSDK
 function GetSoftwareDevelopmentKitMsysDir()
-{
-	Trace(_T("GetSoftwareDevelopmentKitMsysDir"));
-	
+{	
 	local result = _T("");
 	local buffer = _T("");	
 	local filePath = GetSoftwareDevelopmentKitHomeDir()
@@ -244,9 +241,7 @@ function GetSoftwareDevelopmentKitMsysDir()
 	// used by DreamSDK: MinGW/MSYS (1) or MinGW-w64/MSYS2 (2)
 	if (IO.FileExists(filePath))
 	{
-		buffer = IO.ReadFileContents(filePath);
-		Trace(_T("GetSoftwareDevelopmentKitMsysDir: Foundation = ") + buffer);
-		
+		buffer = IO.ReadFileContents(filePath);		
 		if (buffer.Find(_T("1")) != -1)
 		{
 			// MinGW/MSYS
@@ -268,8 +263,7 @@ function GetSoftwareDevelopmentKitMsysDir()
 		   "Sorry, your DreamSDK installation looks like broken.\n" +
 		   "Please reinstall or read the FAQ in the DreamSDK Help."));
 	}
-	
-	Trace(_T("GetSoftwareDevelopmentKitMsysDir = ") + result);	
+
 	return result;
 }
 
@@ -393,8 +387,12 @@ function InitializeWizard()
 	
 	Trace(_T("InitializeWizard: ") + configFile);
 
+	Trace(_T("SoftwareDevelopmentKitHomeDir: " + GetSoftwareDevelopmentKitHomeDir()));
+	Trace(_T("SoftwareDevelopmentKitMsysDir: " + GetSoftwareDevelopmentKitMsysDir()));
+
 	// Handle DreamSDK IDE helper directory
 	FileSystemObjects.SoftwareDevelopmentKitHelperDir = GetSoftwareDevelopmentKitHelperDir();
+	Trace(_T("SoftwareDevelopmentKitHelperDir: " + FileSystemObjects.SoftwareDevelopmentKitHelperDir));
 	if (!IO.DirectoryExists(FileSystemObjects.SoftwareDevelopmentKitHelperDir))
 	{
 		return false;
@@ -419,11 +417,12 @@ function InitializeWizard()
 		return false;
 	}
 	FileSystemObjects.WizardLibraryInformationDir = exportPath;	
+	Trace(_T("WizardLibraryInformationDir: " + FileSystemObjects.WizardLibraryInformationDir));
 
 	// Static Files
 	FileSystemObjects.TemplateStaticFilesDir = FileSystemObjects.WizardBaseDir
 		+ _T("files") + wxFILE_SEP_PATH;
-
+	
 	// Dynamic Files
 	FileSystemObjects.TemplateDynamicFilesDir = FileSystemObjects.WizardBaseDir
 		+ _T("templates") + wxFILE_SEP_PATH;
@@ -560,7 +559,7 @@ function GenerateUserLibraryInformation()
 		local libraryInc = GetReferentialInclude(selectedLibraryIndex);
 		for(local j = 0; j < libraryInc.GetCount(); j++)
 		{
-			LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include ") + libraryInc.Item(j) + _T("\r\n");			
+			LibraryInformation.IncludeBufferText = LibraryInformation.IncludeBufferText + _T("#include ") + libraryInc.Item(j) + _T("\r\n");
 		}		
 		
 		// Handle include directories
