@@ -153,6 +153,7 @@ Result:
 ![Compiler Settings / Compiler Flags in Code::Blocks](./resources/readme/compiler2.png)
 
 Now it's time to create the 32-bit profile, named `GNU GCC Compiler (32-bit)`:
+
 7. In the **Selected compiler**, make sure to select the `GNU GCC Compiler` we just configured earlier.
 8. Click on **Copy**. In the box, enter the following name by replacing the `Copy of GNU GCC Compiler` by `GNU GCC Compiler (32-bit)`. Click on **OK**. Validate the warning displayed now.
 9. Go to **Toolchain executables** and change the **Compiler's installation directory**: `C:\mingw32`.
