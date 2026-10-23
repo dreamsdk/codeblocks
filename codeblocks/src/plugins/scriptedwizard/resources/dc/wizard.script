@@ -4,7 +4,7 @@
 //
 // Project: Sega Dreamcast Project (DreamSDK)
 // Author:  The DreamSDK Team (https://dreamsdk.org)
-// Last Update: 2025-08-28
+// Last Update: 2026-10-23
 //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -398,10 +398,12 @@ function InitializeWizard()
 		return false;
 	}
 	
-	// Check if integration is enabled	
+	// Check if integration is enabled
+	// IniFileGetString returns a wxString instance, which is always true in Squirrel,
+	// so the value must be compared explicitly.
 	local isIntegrationEnabled = IniFileGetString(configFile, _T("Global"),
 		_T("CodeBlocks"), _T("0"));
-	if (!isIntegrationEnabled)
+	if (isIntegrationEnabled.tostring() != "1")
 	{
 		return false;
 	}
@@ -474,33 +476,35 @@ function HandleUserLibraries(project)
 {
 	Trace(_T("HandleUserLibraries"));
 
-	local separator = _T(":");
-
-	local buffer = ::wxArrayString();
+	local entries = [];
 	local libraries = LibraryInformation.LibraryList;
 	local sortData = LibraryInformation.LibrarySortList;
 
-	// Add libraries name with weight (sort data)
+	// Pair each library with its weight (sort data)
 	Trace(_T("  Input dataset to sort:"));
 	for(local i = 0; i < libraries.GetCount(); i++)
 	{
-		local library = libraries.Item(i);
-		local sortIndex = sortData.Item(i);
-		local sortDataItem = sortIndex + separator + library;
-		Trace(_T("    " + sortDataItem));
-		buffer.Add(sortDataItem, 1);
+		local library = libraries.Item(i).tostring();
+		local weight = (i < sortData.GetCount()) ? sortData.Item(i).tostring() : "0";
+		Trace(_T("    " + weight + ":" + library));
+
+		// A dependency that isn't a known port produces an empty library name
+		if (library == "")
+		{
+			Trace(_T("    (skipped: empty library name)"));
+			continue;
+		}
+
+		entries.append([weight, library]);
 	}
-	buffer = QuickSort(buffer);
+	entries = StableSortByWeight(entries);
 
 	// Everything is now sorted.
-	// Remove the weight information before adding the libs to the project.
 	Trace(_T("  Dataset sorted, adding libraries to project:"));
-	for(local i = 0; i < buffer.GetCount(); i++)
+	foreach (entry in entries)
 	{
-		local library = buffer.Item(i);
-		Trace(_T("    " + library));
-		local library = library.AfterFirst(separator);
-		project.AddLinkLib(library);
+		Trace(_T("    " + entry[0] + ":" + entry[1]));
+		project.AddLinkLib(_T(entry[1]));
 	}
 }
 
@@ -797,73 +801,24 @@ function JumpDownSort(array)
 }
 
 // -----------------------------------------------------------------------------
-// sort an wxArrayString (or any array type) using the quick sort algorithm
-function QuickSort(array)
+// sort an array of [weight, library] pairs on the weight only, using a stable
+// insertion sort: libraries with the same weight keep their declared order,
+// which is the link order required by the port (e.g. mbedtls mbedx509 mbedcrypto)
+function StableSortByWeight(entries)
 {
-    local n = array.GetCount();
-    local tmp = [];
-
-    // Extract all wxStrings as pure strings
-    for (local i = 0; i < n; i++)
-        tmp.append(array.Item(i).tostring());
-
-    // Iterative QuickSort
-    function partition(lst, low, high)
+    for (local i = 1; i < entries.len(); i++)
     {
-        local pivot = lst[(low + high) / 2];
-        local i = low;
-        local j = high;
-
-        while (i <= j)
+        local key = entries[i];
+        local j = i - 1;
+        while (j >= 0 && entries[j][0] > key[0])
         {
-            while (lst[i] < pivot) i++;
-            while (lst[j] > pivot) j--;
-
-            if (i <= j)
-            {
-                local t = lst[i];
-                lst[i] = lst[j];
-                lst[j] = t;
-                i++;
-                j--;
-            }
+            entries[j + 1] = entries[j];
+            j--;
         }
-        return [i, j];
+        entries[j + 1] = key;
     }
 
-    function quicksort_iter(lst)
-    {
-        local stack = [];
-        stack.append([0, lst.len() - 1]);
-
-        while (stack.len() > 0)
-        {
-            local range = stack.pop();
-            local low = range[0];
-            local high = range[1];
-
-            if (low < high)
-            {
-                local res = partition(lst, low, high);
-                local i = res[0];
-                local j = res[1];
-
-                // Push sub-ranges onto stack
-                if (low < j) stack.append([low, j]);
-                if (i < high) stack.append([i, high]);
-            }
-        }
-    }
-
-    // Perform QuickSort on tmp
-    quicksort_iter(tmp);
-
-    // Clear original array and refill
-    array.Clear();
-    foreach (s in tmp)
-        array.Add(_T(s), 1);   // wxWidgets conversion
-
-    return array;
+    return entries;
 }
 
 // -----------------------------------------------------------------------------
@@ -888,41 +843,41 @@ function ForceSettingsRefresh(project)
 // read an INI file
 function IniFileGetString(filePath, sectionName, keyName, defaultValue)
 {
-	if (IO.FileExists(filePath))
-	{
-		local buffer = IO.ReadFileContents(filePath);
-		
-		local sectionNameStart = _T("[") + sectionName + _T("]");
-		local sectionNameEnd = _T("\n") + keyName + _T("=");
-		
-		// Search for section start
-		local findStart = buffer.Find(sectionNameStart);
-		if (findStart == -1)
-			return defaultValue;
+	if (!IO.FileExists(filePath))
+		return defaultValue;
 
-		// search for key in section
-		local findEnd = buffer.Find(sectionNameEnd);
-		if (findEnd == -1 || findEnd <= findStart)
-			return defaultValue;
-		
-		// Remove everything before sectionNameEnd (i.e., the key we want)
-		buffer.Remove(0, findEnd + 1);			
-		
-		// Remove "<keyName>="
-		local keyNameStart = keyName + _T("=");
-		buffer.Remove(0, keyNameStart.Length());
-					
-		// Extract first line of the buffer
-		local keyNameEnd = _T("\n");
-		findEnd = buffer.Find(keyNameEnd);
-		if (findEnd != -1) {
-			buffer.Remove(findEnd - 1, buffer.Length() - findEnd + 1);
-		}
-		
-		return buffer;
-		
-	}
-	return defaultValue;
+	local buffer = IO.ReadFileContents(filePath);
+
+	// Normalize line endings (CRLF, CR or LF) and make the first line start with "\n"
+	buffer.Replace(_T("\r\n"), _T("\n"));
+	buffer.Replace(_T("\r"), _T("\n"));
+	buffer = _T("\n") + buffer;
+
+	// Search for section start and drop everything up to it
+	local sectionNameStart = _T("\n[") + sectionName + _T("]");
+	local findStart = buffer.Find(sectionNameStart);
+	if (findStart == -1)
+		return defaultValue;
+	buffer.Remove(0, findStart + sectionNameStart.Length());
+
+	// Keep only the content of this section
+	local findNextSection = buffer.Find(_T("\n["));
+	if (findNextSection != -1)
+		buffer.Remove(findNextSection, buffer.Length() - findNextSection);
+
+	// Search for the key in the section and remove everything up to "<keyName>="
+	local keyNameStart = _T("\n") + keyName + _T("=");
+	local findKey = buffer.Find(keyNameStart);
+	if (findKey == -1)
+		return defaultValue;
+	buffer.Remove(0, findKey + keyNameStart.Length());
+
+	// Extract first line of the buffer
+	local findEnd = buffer.Find(_T("\n"));
+	if (findEnd != -1)
+		buffer.Remove(findEnd, buffer.Length() - findEnd);
+
+	return buffer;
 }
 
 // -----------------------------------------------------------------------------
