@@ -53,8 +53,12 @@ int main(int argc, char *argv[])
        Don't forget to configure Dreamcast Tool (dc-tool) by using
        DreamSDK Manager. */
     gdb_init();
-    printf("Connection established with %s!", PROJECT_NAME);
-    
+    dbglog(DBG_INFO, "Connection established with %s!\n", PROJECT_NAME);
+
+    /* Use dbglog() to print debug messages to the console on your computer,
+       e.g.: dbglog(DBG_INFO, "value is: 0x%08X\n", variable);
+       These messages are removed from the Release target (DBGLOG_DISABLED). */
+
     /* Example: Set the framebuffer as the output device for dbgio. */
     /* dbgio_dev_select("fb"); */
 #endif
